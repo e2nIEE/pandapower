@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg id="svg2" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="135.13mm" viewBox="0 0 31.75 135.13" width="31.75mm" version="1.0" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+ <metadata id="metadata53">
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g stroke-linejoin="round" stroke="#000" stroke-linecap="round">
+  <ellipse id="ellipse7" fill-rule="evenodd" rx="1.7633" ry="1.587" cy="2.2923" cx="23.629" stroke-width=".70533px"/>
+  <path id="path11" d="m23.629 5.29v109.33l2.116-8.4641h-3.8793l1.7633 8.4641" stroke-dasharray="7.05555556, 3.38666667" stroke-width=".35267px" fill="none"/>
+ </g>
+ <text id="text13" style="word-spacing:0px;letter-spacing:0px" font-weight="400" xml:space="preserve" font-size="3.3867px" y="13.828886 112378.91" x="0 0" font-family="&apos;Lucida Sans Typewriter&apos;" fill="#000000"><tspan id="tspan15" x="0 0" y="13.828886 112378.91"><tspan id="tspan17" style="text-decoration-line:underline;text-decoration:underline" font-weight="400" dy="0 0" dx="0 0" font-family="&apos;Lucida Sans Typewriter&apos;" fill="#000000">V</tspan></tspan></text>
+ <g id="g19" transform="scale(.28222)">
+  <rect id="rect21" height="18" width="39" y="5" x="0" fill="#fff"/>
+ </g>
+ <text id="text23" style="word-spacing:0px;letter-spacing:0px" font-weight="400" xml:space="preserve" font-size="3.3867px" y="6.4911079 261275.97" x="0 0" font-family="Leelawadee" fill="#000000"><tspan id="tspan25" x="0 0" y="6.4911079 261275.97"><tspan id="tspan27" font-family="Leelawadee" dx="0 0" dy="0 0" font-weight="400" fill="#000000">bus</tspan></tspan></text>
+ <g stroke-linejoin="round" stroke="#000" stroke-linecap="round" stroke-width=".70533px" fill="none">
+  <path id="path29" d="m-265.56-500.79m289.54 623.16v7.0536"/>
+  <path id="path31" d="m16.928 129.43h14.107"/>
+  <path id="path33" d="m19.044 131.9h9.8748"/>
+  <path id="path35" d="m21.513 134.37h4.9373"/>
+ </g>
+ <g id="g37" transform="scale(.28222)">
+  <rect id="rect39" height="18" width="39" y="5" x="0" fill="#fff"/>
+ </g>
+ <g>
+  <text id="text41" style="word-spacing:0px;letter-spacing:0px" font-weight="400" xml:space="preserve" font-size="3.3867px" y="6.4911079 261275.97" x="0 0" font-family="Leelawadee" fill="#000000"><tspan id="tspan43" x="0 0" y="6.4911079 261275.97"><tspan id="tspan45" font-family="Leelawadee" dx="0 0" dy="0 0" font-weight="400" fill="#000000">bus</tspan></tspan></text>
+  <ellipse id="ellipse47" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd" rx="1.7633" ry="1.587" stroke="#000" cy="121.49" cx="23.981" stroke-width=".70533px"/>
+ </g>
+</svg>

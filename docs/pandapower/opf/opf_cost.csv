@@ -1,0 +1,5 @@
+**Parameter**;**Datatype**;**Explanation**
+sgen.cost_per_kw;float;currently not used
+sgen.cost_per_kvar;float;currently not used
+gen.cost_per_kw;float;currently not used
+gen.cost_per_kvar;float;currently not used

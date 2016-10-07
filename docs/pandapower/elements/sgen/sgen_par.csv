@@ -1,0 +1,13 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the static generator
+type;string;"| naming conventions:
+| *""PV""* - photovoltaic system
+| *""WP""* - wind power system
+| *""CHP""* - combined heating and power system";type of generator
+bus*;integer;;index of connected bus
+p_kw*;float;:math:`\leq` 0;active power of the static generator [kW]
+q_kvar*;float;;reactive power of the static generator [kVar]
+sn_kva;float;:math:`>` 0;rated power ot the static generator [kVA]
+scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
+in_service*;boolean;"| *""True""* - in service
+| *""False""* - out of service";specifies if the generator is in service. Only in service elements are considered during loadflow calculation

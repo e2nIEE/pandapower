@@ -1,0 +1,64 @@
+﻿.. _ward:
+
+=============
+Ward
+=============
+.. seealso::
+    :ref:`Create Ward<create_ward>`
+    
+**Parameters**
+
+*net.ward*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: ward_par.csv
+   :delim: ;
+   :widths: 10, 10, 15, 40
+
+*necessary for executing a loadflow calculation.
+
+**Loadflow Model**
+
+.. image:: /pandapower/elements/ward/ward.png
+	:width: 15em
+	:align: center
+
+The ward equivalent is a combination of a constant apparent power consumption and a constant impedance load. The constant apparent power is given by:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+   P_{const} &= ps\_kw\\
+   Q_{const} &= qs\_kvar\\
+   \end{align*}
+    
+The shunt admittance part of the ward equivalent is calculated as described :ref:`here<shunt>`:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+   \underline{y}_{shunt} &= \frac{pz\_kw + j \cdot qz\_kvar}{S_{N}}
+   \end{align*}
+
+**Results**
+
+*net.res_ward*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
+.. csv-table:: 
+   :file: ward_res.csv
+   :delim: ;
+   :widths: 10, 10, 50
+
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+   vm\_pu &= v_{bus} \\
+   p\_kw &= P_{const} + Re(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}}) \\
+   q\_kvar &= Q_{const} + Im(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}})
+   \end{align*}

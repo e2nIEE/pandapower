@@ -1,0 +1,5 @@
+**Parameter**;**Datatype**;**Explanation**
+vm_pu;float;voltage magnitude [p.u]
+va_degree;float;voltage angle [degree]
+p_kw;float;resulting active power demand [kW]
+q_kvar;float;resulting reactive power demand [kvar]

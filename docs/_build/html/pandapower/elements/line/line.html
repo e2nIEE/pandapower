@@ -1,0 +1,313 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Line &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="pandapower Elements" href="../../elements.html" />
+    <link rel="next" title="Switch" href="../switch/switch.html" />
+    <link rel="prev" title="Bus" href="../bus/bus.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../switch/switch.html" title="Switch"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../bus/bus.html" title="Bus"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" accesskey="U">pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="line">
+<h1>Line<a class="headerlink" href="#line" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-line"><span class="std std-ref">Create Line</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.line</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="11%" />
+<col width="28%" />
+<col width="44%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the line</td>
+</tr>
+<tr class="row-odd"><td>std_type</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>standard type which can be used to easily define line parameters with the pandapower standard type library</td>
+</tr>
+<tr class="row-even"><td>from_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>Index of bus where the line starts</td>
+</tr>
+<tr class="row-odd"><td>to_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>Index of bus where the line ends</td>
+</tr>
+<tr class="row-even"><td>length_km*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>length of the line [km]</td>
+</tr>
+<tr class="row-odd"><td>r_ohm_per_km*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>resistance of the line [Ohm per km]</td>
+</tr>
+<tr class="row-even"><td>x_ohm_per_km*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>inductance of the line [Ohm per km]</td>
+</tr>
+<tr class="row-odd"><td>c_nf_per_km*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>capacitance of the line [nF per km]</td>
+</tr>
+<tr class="row-even"><td>imax_ka*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>maximal thermal current [kA]</td>
+</tr>
+<tr class="row-odd"><td>parallel*</td>
+<td>integer</td>
+<td><span class="math">\(\geq\)</span> 1</td>
+<td>number of parallel line systems</td>
+</tr>
+<tr class="row-even"><td>df*</td>
+<td>float</td>
+<td>0...1</td>
+<td>derating factor (scaling) for imax_ka</td>
+</tr>
+<tr class="row-odd"><td>type</td>
+<td>string</td>
+<td><div class="first line-block">
+<div class="line">Naming conventions:</div>
+</div>
+<div class="last line-block">
+<div class="line"><em>&#8220;ol&#8221;</em> - overhead line </div>
+<div class="line"><em>&#8220;cs&#8221;</em> - underground cable system</div>
+</div>
+</td>
+<td>type of line</td>
+</tr>
+<tr class="row-even"><td>in_service*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;True&#8221;</em> - in service</div>
+<div class="line"><em>&#8220;False&#8221;</em> - out of service</div>
+</div>
+</td>
+<td>specifies if the line is in service. Only in service elements are considered during loadflow calculation</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Defining a line with length zero leads to a division by zero in the loadflow and is therefore not allowed. Lines with a very low impedance might lead to convergence problems in the loadflow
+for the same reason. If you want to directly connect two busses, please use the switch element instead of a line with a small impedance!</p>
+</div>
+<p><em>net.line_geodata</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="13%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>coords</td>
+<td>list</td>
+<td>List of (x,y) tuples that mark the inflexion points of the line</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Loadflow Model</strong></p>
+<p>Lines are modelled with the <span class="math">\(\pi\)</span>-equivalent circuit:</p>
+<a class="reference internal image-reference" href="../../../_images/line.png"><img alt="alternate Text" class="align-center" src="../../../_images/line.png" style="width: 25em;" /></a>
+<p>The elements in the equivalent circuit are calculated from the parameters in the net.line dataframe as:</p>
+<div class="math">
+\[\begin{align*}
+ \underline{Z} &amp;= (r\_ohm\_per\_km + j \cdot x\_ohm\_per\_km) \cdot \frac{length\_km}{parallel}  \\
+ \underline{Y}&amp;= j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^9 \cdot length\_km \cdot parallel
+\end{align*}\]</div><p>The power system frequency <span class="math">\(f\)</span> is defined when creating an empty network, the default value is <span class="math">\(f = 50 Hz\)</span>.</p>
+<p>The parameters are then transformed in the per unit system:</p>
+<div class="math">
+\[\begin{align*}
+ Z_{N} &amp;= \frac{V_{N}^2}{S_{N}} \\
+ \underline{z} &amp;= \frac{\underline{Z}}{Z_{N}} \\
+ \underline{y} &amp;= \underline{Y} \cdot Z_{N} \\
+ \end{align*}\]</div><p>Where <span class="math">\(S_{N} = 1 \ MVA\)</span> (see <a class="reference internal" href="../../about_units.html#conventions"><span class="std std-ref">per unit system</span></a>) and <span class="math">\(U_{N}\)</span> is the nominal voltage at the from bus.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
+If you want to connect different voltage levels, either use a transformer or an impedance element.</p>
+</div>
+<p><strong>Results</strong></p>
+<p><em>net.res_line</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="13%" />
+<col width="69%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>p_from_kw</td>
+<td>float</td>
+<td>active power flow into the line at &#8220;from&#8221; bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_from_kvar</td>
+<td>float</td>
+<td>reactive power flow into the line at &#8220;from&#8221; bus [kVar]</td>
+</tr>
+<tr class="row-even"><td>p_to_kw</td>
+<td>float</td>
+<td>active power flow into the line at &#8220;to&#8221; bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_to_kvar</td>
+<td>float</td>
+<td>reactive power flow into the line at &#8220;to&#8221; bus [kVar]</td>
+</tr>
+<tr class="row-even"><td>pl_kw</td>
+<td>float</td>
+<td>active power losses of the line [kW]</td>
+</tr>
+<tr class="row-odd"><td>ql_kvar</td>
+<td>float</td>
+<td>reactive power consumption of the line [kVar]</td>
+</tr>
+<tr class="row-even"><td>i_ka</td>
+<td>float</td>
+<td>Maximum current at &#8220;to&#8221; bus or &#8220;from&#8221; bus [kA]</td>
+</tr>
+<tr class="row-odd"><td>loading_percent</td>
+<td>float</td>
+<td>line loading of Imax_ka [%]</td>
+</tr>
+</tbody>
+</table>
+<p>The loadflow results in the net.res_line table are defined as:</p>
+<div class="math">
+\[\begin{align*}
+ p\_from\_kw &amp;= Re(\underline{v}_{from} \cdot \underline{i}_{from}) \\
+ q\_from\_kvar &amp;= Im(\underline{v}_{from} \cdot \underline{i}_{from}) \\
+ p\_to\_kw &amp;= Re(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+ q\_to\_kvar &amp;= Im(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+     pl\_kw &amp;= p\_from\_kw + p\_to\_kw \\
+     ql\_kvar &amp;= q\_from\_kvar + q\_to\_kvar \\
+ i\_ka &amp;= max(i_{from}, i_{to}) \\
+ loading\_percent &amp;= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100
+ \end{align*}\]</div></div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../bus/bus.html"
+                        title="previous chapter">Bus</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../switch/switch.html"
+                        title="next chapter">Switch</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/pandapower/elements/line/line.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../switch/switch.html" title="Switch"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../bus/bus.html" title="Bus"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" >pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

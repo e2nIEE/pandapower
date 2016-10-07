@@ -1,0 +1,8 @@
+*.pyc
+.tox/
+*~
+build/
+dist/
+PYPOWER.egg-info/
+doc/api/
+doc/.build/*

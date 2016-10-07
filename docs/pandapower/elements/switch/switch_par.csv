@@ -1,0 +1,18 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+bus*;integer;;index of connected bus
+name;string;;name of the switch
+element*;integer; ;"| index of the element the switch is connected to:
+
+| - bus index if et = *""b""*
+| - line index if et = *""l""*
+| - trafo index if et = *""t""*"
+et*;string;"| *""b""* - bus-bus switch
+| *""l""* - bus-line switch
+| *""t""* - bus-trafo switch";element type the switch connects to
+type;string;"| naming conventions: 
+| *""CB""* - circuit breaker
+| *""LS""* - load switch
+| *""LBS""* - load break switch
+| *""DS""* - disconnecting switch";type of switch
+closed*;boolean;"| *""False""* - open
+| *""True""* - closed";signals the switching state of the switch

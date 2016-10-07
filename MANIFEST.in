@@ -1,0 +1,11 @@
+include LICENSE
+include AUTHORS
+include README.rst
+include *.cfg
+include *.ini
+include *.rst
+recursive-include pandapower/test *
+global-include *.p
+global-include *.py
+
+recursive-include doc *

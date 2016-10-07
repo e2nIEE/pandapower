@@ -1,0 +1,18 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the line
+std_type;string;;standard type which can be used to easily define line parameters with the pandapower standard type library
+from_bus*;integer;;Index of bus where the line starts
+to_bus*;integer;;Index of bus where the line ends
+length_km*;float;:math:`>` 0;length of the line [km]
+r_ohm_per_km*;float;:math:`\geq` 0   ;resistance of the line [Ohm per km]
+x_ohm_per_km*;float;:math:`\geq` 0   ;inductance of the line [Ohm per km]
+c_nf_per_km*;float;:math:`\geq` 0   ;capacitance of the line [nF per km]
+imax_ka*;float;:math:`>` 0   ;maximal thermal current [kA]
+parallel*;integer;:math:`\geq` 1;number of parallel line systems
+df*;float;0...1 ;derating factor (scaling) for imax_ka
+type;string;"| Naming conventions:
+
+| *""ol""* - overhead line 
+| *""cs""* - underground cable system";type of line
+in_service*;boolean;"| *""True""* - in service
+| *""False""* - out of service";specifies if the line is in service. Only in service elements are considered during loadflow calculation

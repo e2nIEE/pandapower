@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Unit System and Conventions &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="About pandapower" href="about.html" />
+    <link rel="next" title="License" href="about_license.html" />
+    <link rel="prev" title="Why pandapower?" href="about_why.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="about_license.html" title="License"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="about_why.html" title="Why pandapower?"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="about.html" accesskey="U">About pandapower</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="unit-system-and-conventions">
+<span id="conventions"></span><h1>Unit System and Conventions<a class="headerlink" href="#unit-system-and-conventions" title="Permalink to this headline">¶</a></h1>
+<p>The unit is always given in the variable name, so that for example &#8216;loading_percent&#8217; can be read as &#8216;loading [%]&#8217;.</p>
+<p><strong>Three Phase System</strong></p>
+<p>For the three phase system, the following conventions apply:</p>
+<blockquote>
+<div><ul class="simple">
+<li>voltage values are given as phase-to-phase voltages</li>
+<li>current values are given as phase currents</li>
+<li>power values are given as three-phase power flows</li>
+</ul>
+</div></blockquote>
+<p>The power equation in the three phase system is therefore given as <span class="math">\(S = \sqrt3 \cdot V \cdot I\)</span>.</p>
+<p>Since pandapower was developed for distribution systems, all power values are given in kW or kVar.</p>
+<p><strong>per Unit System</strong></p>
+<p>Bus voltages are given in the per unit system. The per unit values are relative to the phase-to-phase voltages defined in net.bus.vn_kv for each bus.</p>
+<p>Internally, pandapower calculates with a nominal apparent power of <span class="math">\(S_{N} = 1 MVA\)</span> for the per unit system, which however should not be relevant for the user since all power values are given in physical units.</p>
+<p><strong>Signing System</strong></p>
+<p>For all bus-based power values, the signing is based on the consumer viewpoint:</p>
+<blockquote>
+<div><ul class="simple">
+<li>positive active power is power consumption, negative active power is power generation</li>
+<li>positive reactive power is inductive consumption, negative reactive power is capacitive consumption</li>
+</ul>
+</div></blockquote>
+<p>The power flow values for branch elements (lines &amp; transformer) are always defined as the power flow into the branch element.</p>
+<p><strong>Frequency</strong></p>
+<p>The frequency can be defined when creating an empty network. The frequency is only used to calculate the shunt admittance of lines, since the line reactance is given directly in ohm per kilometer.</p>
+<p>The standard frequency in pandapower is 50 Hz, and the pandapower standard types are also chosen for 50 Hz systems. If you use a different frequency, please be aware that the line reactance values might not be realistic.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="about_why.html"
+                        title="previous chapter">Why pandapower?</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="about_license.html"
+                        title="next chapter">License</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/about_units.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="about_license.html" title="License"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="about_why.html" title="Why pandapower?"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="about.html" >About pandapower</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Optimal Power Flow &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="pandapower Network Analysis" href="nc.html" />
+    <link rel="next" title="Topological Searches" href="nc_topology.html" />
+    <link rel="prev" title="Diagnostic Function" href="loadflow_diagnostic.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="nc_topology.html" title="Topological Searches"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="loadflow_diagnostic.html" title="Diagnostic Function"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="nc.html" accesskey="U">pandapower Network Analysis</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="optimal-power-flow">
+<h1>Optimal Power Flow<a class="headerlink" href="#optimal-power-flow" title="Permalink to this headline">¶</a></h1>
+<p id="ppopf"><strong>pandapower optimal power flow</strong></p>
+<p>The pandapower optimal power flow is the tool for optimizing your grid state. It is reading constraints and costs from the pandapower tables and is processing it into the pypower case file that is handed over to the pypower OPF.
+Hitherto we only have a limited set of constraints and cost function options, that is fitting our special use cases. In the future, this module will be developed further in order to allow opf calculations with more felxible cost functions.</p>
+<p>You can find the documentation of the pypower OPF under <a class="reference external" href="http://www.pserc.cornell.edu/matpower/manual.pdf">http://www.pserc.cornell.edu/matpower/manual.pdf</a>
+In theory, the pandapower OPF can do exactly the same, it just requires an extension of the pandapower &lt;-&gt; pypower interface</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The pandapower OPF is a recent development that is still growing. If you have further requirements you are very welcome to design your own cost functions or use your own solvers.
+For coordination, please contact <a class="reference external" href="mailto:friederike&#46;meier&#37;&#52;&#48;uni-kassel&#46;de">friederike<span>&#46;</span>meier<span>&#64;</span>uni-kassel<span>&#46;</span>de</a>
+Also we like to discuss future use cases in our weekly meeting.</p>
+</div>
+<p><strong>Input constraints</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="22%" />
+<col width="56%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>bus.max_vm_pu</td>
+<td>float</td>
+<td>Maximum voltage</td>
+</tr>
+<tr class="row-odd"><td>bus.min_vm_pu</td>
+<td>float</td>
+<td>Minimum voltage</td>
+</tr>
+<tr class="row-even"><td>sgen.max_p_kw</td>
+<td>float</td>
+<td>Maximum active ower</td>
+</tr>
+<tr class="row-odd"><td>sgen.min_p_kw</td>
+<td>float</td>
+<td>Minimum active power</td>
+</tr>
+<tr class="row-even"><td>sgen.max_q_kvar</td>
+<td>float</td>
+<td>Maximum reactive ower</td>
+</tr>
+<tr class="row-odd"><td>sgen.min_q_kvar</td>
+<td>float</td>
+<td>Minimum reactive power</td>
+</tr>
+<tr class="row-even"><td>sgen.controllable</td>
+<td>bool</td>
+<td>States if sgen is controllable or not, sgen will not be used for optimization if it is not controllable</td>
+</tr>
+<tr class="row-odd"><td>gen.max_p_kw</td>
+<td>float</td>
+<td>Maximum active ower</td>
+</tr>
+<tr class="row-even"><td>gen.min_p_kw</td>
+<td>float</td>
+<td>Minimum active power</td>
+</tr>
+<tr class="row-odd"><td>gen.max_q_kvar</td>
+<td>float</td>
+<td>Maximum reactive ower</td>
+</tr>
+<tr class="row-even"><td>gen.min_q_kvar</td>
+<td>float</td>
+<td>Minimum reactive power</td>
+</tr>
+<tr class="row-odd"><td>gen.controllable</td>
+<td>bool</td>
+<td>States if a gen is controllable or not. Currently gens must be controllable, because there is no method to respect uncontrollable gens yet.</td>
+</tr>
+<tr class="row-even"><td>line.max_loading_percent</td>
+<td>float</td>
+<td>Maximum loading of the line with respect to i_max_ka</td>
+</tr>
+<tr class="row-odd"><td>trafo.max_loading_percent</td>
+<td>float</td>
+<td>Maxuimum loading of the transformer with respect to sn_kva and ist corresponding current at 1.0 p.u.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Input Costs</strong></p>
+<p>The costs for power can be written into the pandapower tables. They will be used to create the pypower gencost array in the future.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="22%" />
+<col width="56%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>sgen.cost_per_kw</td>
+<td>float</td>
+<td>currently not used</td>
+</tr>
+<tr class="row-odd"><td>sgen.cost_per_kvar</td>
+<td>float</td>
+<td>currently not used</td>
+</tr>
+<tr class="row-even"><td>gen.cost_per_kw</td>
+<td>float</td>
+<td>currently not used</td>
+</tr>
+<tr class="row-odd"><td>gen.cost_per_kvar</td>
+<td>float</td>
+<td>currently not used</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Available cost functions</strong></p>
+<p>At the moment we only have the following cost function:</p>
+<div class="math">
+\[\begin{split}max\{P_G\} \hspace{1cm}\text{subject to:}\hspace{1cm} U_{min} &lt;\ U_B\ &amp;&lt; U_{max}\\
+P_{min} &lt;\ P_G\ &amp;&lt; P_{max}\\
+Q_{min} &lt;\ Q_G\ &amp;&lt; Q_{max}\\
+I_{Branch} &amp;&lt;\ I_{max}\end{split}\]</div>
+<p><strong>OPF Output</strong></p>
+<p>The result of the OPF are written to the &#8220;official&#8221; pandapower result tables such as res_bus, res_sgen, res_gen etc.
+So you find the optimal setting values of the generator in their respective result tables.
+Also you can see the resulting voltage and loading values in res_line, res_trafo and res_bus.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="loadflow_diagnostic.html"
+                        title="previous chapter">Diagnostic Function</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nc_topology.html"
+                        title="next chapter">Topological Searches</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/nc_optimalpowerflow.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="nc_topology.html" title="Topological Searches"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="loadflow_diagnostic.html" title="Diagnostic Function"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="nc.html" >pandapower Network Analysis</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

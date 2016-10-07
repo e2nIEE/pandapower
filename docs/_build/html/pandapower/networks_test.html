@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Simple pandapower test networks &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Generic pandapower Networks" href="networks.html" />
+    <link rel="next" title="Random pandapower networks" href="networks_random.html" />
+    <link rel="prev" title="Generic pandapower Networks" href="networks.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="networks_random.html" title="Random pandapower networks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="networks.html" title="Generic pandapower Networks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="networks.html" accesskey="U">Generic pandapower Networks</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="simple-pandapower-test-networks">
+<h1>Simple pandapower test networks<a class="headerlink" href="#simple-pandapower-test-networks" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="four-load-branch">
+<h2>Four load branch<a class="headerlink" href="#four-load-branch" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.panda_four_load_branch">
+<code class="descclassname">pandapower.networks.</code><code class="descname">panda_four_load_branch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.panda_four_load_branch" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a simple six bus system with four radial low voltage nodes connected to     a medium valtage slack bus. At every low voltage node the same load is connected.</p>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>net</strong> - Returns the required four load system</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>import pandapower.networks as pn</p>
+<p>net_four_load = pn.panda_four_load_branch()</p>
+</div></blockquote>
+</dd></dl>
+
+<a class="reference internal image-reference" href="../_images/simple_nw_panda_four_load_branch.png"><img alt="alternate Text" class="align-center" src="../_images/simple_nw_panda_four_load_branch.png" style="width: 10em;" /></a>
+</div>
+<hr class="docutils" />
+<div class="section" id="four-loads-with-branches-out">
+<h2>Four loads with branches out<a class="headerlink" href="#four-loads-with-branches-out" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.four_loads_with_branches_out">
+<code class="descclassname">pandapower.networks.</code><code class="descname">four_loads_with_branches_out</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.four_loads_with_branches_out" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a simple ten bus system with four radial low voltage nodes connected to     a medium valtage slack bus. At every of the four radial low voltage nodes another low voltage     node with a load is connected via cable.</p>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>net</strong> - Returns the required four load system with branches</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>import pandapower.networks as pn</p>
+<p>net_four_load_with_branches = pn.four_loads_with_branches_out()</p>
+</div></blockquote>
+</dd></dl>
+
+<a class="reference internal image-reference" href="../_images/simple_nw_four_loads_with_branches_out.png"><img alt="alternate Text" class="align-center" src="../_images/simple_nw_four_loads_with_branches_out.png" style="width: 20em;" /></a>
+</div>
+<hr class="docutils" />
+<div class="section" id="four-bus-system">
+<h2>Four bus system<a class="headerlink" href="#four-bus-system" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.simple_four_bus_system">
+<code class="descclassname">pandapower.networks.</code><code class="descname">simple_four_bus_system</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.simple_four_bus_system" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a simple four bus system with two radial low voltage nodes connected to     a medium valtage slack bus. At both low voltage nodes the a load and a static generator is     connected.</p>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>net</strong> - Returns the required four bus system</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>import pandapower.networks as pn</p>
+<p>net_simple_four_bus = pn.simple_four_bus_system()</p>
+</div></blockquote>
+</dd></dl>
+
+<a class="reference internal image-reference" href="../_images/simple_nw_simple_four_bus_system.png"><img alt="alternate Text" class="align-center" src="../_images/simple_nw_simple_four_bus_system.png" style="width: 15em;" /></a>
+</div>
+<hr class="docutils" />
+<div class="section" id="medium-voltage-open-ring">
+<h2>Medium voltage open ring<a class="headerlink" href="#medium-voltage-open-ring" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.simple_mv_open_ring_net">
+<code class="descclassname">pandapower.networks.</code><code class="descname">simple_mv_open_ring_net</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.simple_mv_open_ring_net" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creates a simple medium voltage open ring network with loads at every medium     voltage node.
+As an example this function is used in the topology and diagnostic docu.</p>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>net</strong> - Returns the required simple medium voltage open ring network</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>import pandapower.networks as pn</p>
+<p>net_simple_open_ring = pn.simple_mv_open_ring_net()</p>
+</div></blockquote>
+</dd></dl>
+
+<a class="reference internal image-reference" href="../_images/simple_nw_simple_mv_open_ring_net.png"><img alt="alternate Text" class="align-center" src="../_images/simple_nw_simple_mv_open_ring_net.png" style="width: 25em;" /></a>
+<hr class="docutils" />
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Simple pandapower test networks</a><ul>
+<li><a class="reference internal" href="#four-load-branch">Four load branch</a></li>
+<li><a class="reference internal" href="#four-loads-with-branches-out">Four loads with branches out</a></li>
+<li><a class="reference internal" href="#four-bus-system">Four bus system</a></li>
+<li><a class="reference internal" href="#medium-voltage-open-ring">Medium voltage open ring</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="networks.html"
+                        title="previous chapter">Generic pandapower Networks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="networks_random.html"
+                        title="next chapter">Random pandapower networks</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/networks_test.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="networks_random.html" title="Random pandapower networks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="networks.html" title="Generic pandapower Networks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="networks.html" >Generic pandapower Networks</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,4082 @@
+{
+ "Al 150": {
+  "type": "ol",
+  "r_ohm_per_km": 0.192,
+  "q_mm2": 150.0,
+  "ices": 0.04679602,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.455,
+  "x_ohm_per_km": 0.357,
+  "conductor": "Al"
+ },
+ "Al 95": {
+  "type": "ol",
+  "r_ohm_per_km": 0.303,
+  "q_mm2": 95.0,
+  "ices": 0.04570774,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.34,
+  "x_ohm_per_km": 0.371,
+  "conductor": "Al"
+ },
+ "NEKBA 3x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.268,
+  "q_mm2": 70.0,
+  "ices": 3.536909,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 325.0,
+  "imax_ka": 0.229,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Cu"
+ },
+ "A2XHSY 95 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 0.0,
+  "ices": 2.405098,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 221.0,
+  "imax_ka": 0.289,
+  "x_ohm_per_km": 0.129,
+  "conductor": "Al"
+ },
+ "M-NMP-95-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 0.2086,
+  "c_nf_per_km": 8.000188472752606,
+  "imax_ka": 0.48,
+  "x_ohm_per_km": 0.31883333333333336
+ },
+ "Al/St 265/35(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.109,
+  "q_mm2": 240.0,
+  "ices": 0.0647,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.68,
+  "x_ohm_per_km": 0.4,
+  "conductor": "Al"
+ },
+ "Al/St 50/8(2)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.595,
+  "q_mm2": 50.0,
+  "ices": 0.04625189,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.700000000000001,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.377,
+  "conductor": "Al"
+ },
+ "10032449 - Kab 12kV 3x120 NKBA sm": {
+  "type": "cs",
+  "r_ohm_per_km": 0.184,
+  "c_nf_per_km": 410.0,
+  "imax_ka": 0.294,
+  "x_ohm_per_km": 0.097
+ },
+ "NAEKEBA 3x150 RM(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.989633,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 370.0,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.12,
+  "conductor": "Al"
+ },
+ "N2XS(FL)2Y 1x800RM/50  64/110kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0251,
+  "q_mm2": 800.0,
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 210.0,
+  "imax_ka": 0.89,
+  "x_ohm_per_km": 0.1225221
+ },
+ "Leitungstyp(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0,
+  "q_mm2": 0.0,
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 94.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.08
+ },
+ "NAKLEY 3x120(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.256,
+  "q_mm2": 120.0,
+  "ices": 2.611871,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.248,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "10032505 K 120 N2XS2Y rm": {
+  "type": "cs",
+  "r_ohm_per_km": 0.157,
+  "c_nf_per_km": 345.0,
+  "imax_ka": 0.364,
+  "x_ohm_per_km": 0.118
+ },
+ "NAYY-J 4x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.27,
+  "x_ohm_per_km": 0.08
+ },
+ "NA2YSY 1x300rm 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1042,
+  "q_mm2": 300.0,
+  "endtmp_deg": 150.0,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.44,
+  "x_ohm_per_km": 0.1068142
+ },
+ "OH2": {
+  "type": "ol",
+  "r_ohm_per_km": 1.3207,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.321,
+  "conductor": "Cu"
+ },
+ "B-BT-2X185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "Al 120(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.242,
+  "q_mm2": 120.0,
+  "ices": 0.04625189,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.39,
+  "x_ohm_per_km": 0.364,
+  "conductor": "Al"
+ },
+ "B-TDC-A\u00c9RIEN-6-MONO": {
+  "type": "cs",
+  "r_ohm_per_km": 3.5639,
+  "c_nf_per_km": 916.6661576496956,
+  "imax_ka": 0.035,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "10032449 - X Kab 12kV 3x120 NKBA sm": {
+  "type": "cs",
+  "r_ohm_per_km": 0.184,
+  "c_nf_per_km": 410.0,
+  "imax_ka": 0.294,
+  "x_ohm_per_km": 0.097
+ },
+ "NFA2X 4 x 35": {
+  "type": "ol",
+  "r_ohm_per_km": 0.876,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.132,
+  "x_ohm_per_km": 0.072
+ },
+ "H-FICP": {
+  "type": "cs",
+  "r_ohm_per_km": 0.076,
+  "c_nf_per_km": 360.00052352671275,
+  "imax_ka": 0.539,
+  "x_ohm_per_km": 0.08416666666666668
+ },
+ "B-XN-95-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4099,
+  "c_nf_per_km": 558.7664793717959,
+  "imax_ka": 0.22,
+  "x_ohm_per_km": 0.06666666666666667
+ },
+ "NAYY-J 4x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.641,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.142,
+  "x_ohm_per_km": 0.085
+ },
+ "NYY-J 4x16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.15,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.098,
+  "x_ohm_per_km": 0.09
+ },
+ "NAEKBA 3x25": {
+  "type": "cs",
+  "r_ohm_per_km": 1.2,
+  "q_mm2": 25.0,
+  "ices": 2.6,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.154,
+  "conductor": "Al"
+ },
+ "Freileitung 4x 70 Al": {
+  "type": "ol",
+  "r_ohm_per_km": 0.33,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "B-GKN-K-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4932,
+  "c_nf_per_km": 447.11928679283136,
+  "imax_ka": 0.19,
+  "x_ohm_per_km": 0.06916666666666667
+ },
+ "NA2XS(F)2Y 1x120RM 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 2.549839,
+  "isolation": "VPE",
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 235.0,
+  "imax_ka": 0.286,
+  "x_ohm_per_km": 0.1266062,
+  "conductor": "Al"
+ },
+ "NA2XSY 3x1x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.000387,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.1225221,
+  "conductor": "Al"
+ },
+ "NAEKEBA 3x120 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 0.0,
+  "ices": 5.57,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.231,
+  "x_ohm_per_km": 0.129,
+  "conductor": "Al"
+ },
+ "Al 35": {
+  "type": "ol",
+  "r_ohm_per_km": 0.822,
+  "q_mm2": 35.0,
+  "ices": 0.04461946,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.18,
+  "x_ohm_per_km": 0.403,
+  "conductor": "Al"
+ },
+ "B-T-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2238,
+  "c_nf_per_km": 1874.5269197363434,
+  "imax_ka": 0.22,
+  "x_ohm_per_km": 0.06833333333333334
+ },
+ "M-XKDT-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.156,
+  "c_nf_per_km": 250.00058460874925,
+  "imax_ka": 0.376,
+  "x_ohm_per_km": 0.09
+ },
+ "M-XKDT-240AL+35-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1654,
+  "c_nf_per_km": 267.43335604208147,
+  "imax_ka": 0.4,
+  "x_ohm_per_km": 0.08433333333333333
+ },
+ "10032561 - Kab 12kV 3x1x185 NA2XS2Y rm 25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.169,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.111
+ },
+ "NKY 1x95rm 0.6/1kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1937,
+  "q_mm2": 95.0,
+  "endtmp_deg": 180.0,
+  "c_nf_per_km": 860.0,
+  "imax_ka": 0.305,
+  "x_ohm_per_km": 0.100531
+ },
+ "B-C-4": {
+  "type": "ol",
+  "r_ohm_per_km": 1.571,
+  "c_nf_per_km": 8.23892088739045,
+  "imax_ka": 0.125,
+  "x_ohm_per_km": 0.3090833333333334
+ },
+ "B-XN-2X150-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1316,
+  "c_nf_per_km": 1222.1242821788157,
+  "imax_ka": 0.522,
+  "x_ohm_per_km": 0.0325
+ },
+ "Line380kV": {
+  "type": "ol",
+  "r_ohm_per_km": 0.0328,
+  "c_nf_per_km": 11.5,
+  "imax_ka": 1.32,
+  "x_ohm_per_km": 0.312
+ },
+ "B-T-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 1223.6627799620373,
+  "imax_ka": 0.08,
+  "x_ohm_per_km": 0.075
+ },
+ "NAKLEY 3x150(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.202,
+  "q_mm2": 120.0,
+  "ices": 4.7,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 430.0,
+  "imax_ka": 0.277,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "Al 25": {
+  "type": "ol",
+  "r_ohm_per_km": 1.18,
+  "q_mm2": 95.0,
+  "ices": 0.0233,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.145,
+  "x_ohm_per_km": 0.403,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.644,
+  "q_mm2": 50.0,
+  "ices": 1.89,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 175.0,
+  "imax_ka": 0.172,
+  "x_ohm_per_km": 0.146,
+  "conductor": "Al"
+ },
+ "NA2XS(F)2Y,001,150AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "c_nf_per_km": 254.0,
+  "imax_ka": 0.32,
+  "x_ohm_per_km": 0.1222
+ },
+ "10032505 12kV 3x1x120 N2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.157,
+  "c_nf_per_km": 345.0,
+  "imax_ka": 0.364,
+  "x_ohm_per_km": 0.118
+ },
+ "Leitungstyp_Freileitung220": {
+  "type": "ol",
+  "r_ohm_per_km": 0.0674,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 12.50003,
+  "imax_ka": 1.193,
+  "x_ohm_per_km": 0.331,
+  "conductor": "Cu"
+ },
+ "NEKBA 3x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.193,
+  "q_mm2": 95.0,
+  "ices": 3.808979,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 350.0,
+  "imax_ka": 0.274,
+  "x_ohm_per_km": 0.127,
+  "conductor": "Cu"
+ },
+ "NHEKBA 95 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.193,
+  "q_mm2": 0.0,
+  "ices": 3.798096,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 349.0,
+  "imax_ka": 0.299,
+  "x_ohm_per_km": 0.127,
+  "conductor": "Al"
+ },
+ "NA2XSY 3x1x185(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 3.199542,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 280.0,
+  "imax_ka": 0.361,
+  "x_ohm_per_km": 0.1193805,
+  "conductor": "Al"
+ },
+ "NEKBA 3x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 50.0,
+  "ices": 3.101597,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 285.0,
+  "imax_ka": 0.185,
+  "x_ohm_per_km": 0.141,
+  "conductor": "Cu"
+ },
+ "B-GKN-K-3X35+35": {
+  "type": "cs",
+  "r_ohm_per_km": 1.0,
+  "c_nf_per_km": 2.652582384864923,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.8333333333333334
+ },
+ "Cu 25": {
+  "type": "ol",
+  "r_ohm_per_km": 0.746,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.16,
+  "x_ohm_per_km": 0.35
+ },
+ "B-GKN-K-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2466,
+  "c_nf_per_km": 558.7664793717959,
+  "imax_ka": 0.28,
+  "x_ohm_per_km": 0.06833333333333334
+ },
+ "NYY-J 4x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.185,
+  "x_ohm_per_km": 0.085
+ },
+ "NAEKEFA 3x70(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 70.0,
+  "ices": 3.482495,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 320.0,
+  "imax_ka": 0.178,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Al"
+ },
+ "M-GKT-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.156,
+  "c_nf_per_km": 269.8631215066178,
+  "imax_ka": 0.376,
+  "x_ohm_per_km": 0.09416666666666668
+ },
+ "NA2YSY 1x120rm 6/10kV ir": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2567,
+  "q_mm2": 120.0,
+  "ices": 2.000258,
+  "isolation": "PVC",
+  "endtmp_deg": 150.0,
+  "c_nf_per_km": 350.0,
+  "imax_ka": 0.295,
+  "x_ohm_per_km": 0.1130973,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x150(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.76423,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 254.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "NHEKBA 120 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.153,
+  "q_mm2": 0.0,
+  "ices": 4.102814,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 377.0,
+  "imax_ka": 0.339,
+  "x_ohm_per_km": 0.124,
+  "conductor": "Al"
+ },
+ "NEKBA 3x95(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.193,
+  "q_mm2": 95.0,
+  "ices": 3.808979,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 350.0,
+  "imax_ka": 0.274,
+  "x_ohm_per_km": 0.127,
+  "conductor": "Cu"
+ },
+ "NAKLEY 1x70rm 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 70.0,
+  "ices": 3.600029,
+  "isolation": "Papier",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 330.0,
+  "imax_ka": 0.254,
+  "x_ohm_per_km": 0.1299991,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 95.0,
+  "ices": 3.373667,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.213,
+  "x_ohm_per_km": 0.128,
+  "conductor": "Al"
+ },
+ "NA2YSY 1x120rm 12/20kV ir": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2567,
+  "q_mm2": 120.0,
+  "endtmp_deg": 150.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.295,
+  "x_ohm_per_km": 0.1193805
+ },
+ "NHEKBA 120 mm\u00b2(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.153,
+  "q_mm2": 0.0,
+  "ices": 4.102814,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 377.0,
+  "imax_ka": 0.339,
+  "x_ohm_per_km": 0.124,
+  "conductor": "Al"
+ },
+ "OH1": {
+  "type": "ol",
+  "r_ohm_per_km": 0.4917,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.2847,
+  "conductor": "Cu"
+ },
+ "NEKBA 3x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.124,
+  "q_mm2": 150.0,
+  "ices": 4.407533,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 405.0,
+  "imax_ka": 0.354,
+  "x_ohm_per_km": 0.121,
+  "conductor": "Cu"
+ },
+ "ALDREY 95mm\u00b2": {
+  "type": "ol",
+  "r_ohm_per_km": 0.3578,
+  "q_mm2": 0.0,
+  "ices": 0.06529678,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.32,
+  "x_ohm_per_km": 0.3826,
+  "conductor": "Al"
+ },
+ "B-TDC-A\u00c9RIEN-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4476,
+  "c_nf_per_km": 1500.0008550701102,
+  "imax_ka": 0.115,
+  "x_ohm_per_km": 0.06916666666666667
+ },
+ "B-T-2X240-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0725,
+  "c_nf_per_km": 4331.720086132115,
+  "imax_ka": 0.54,
+  "x_ohm_per_km": 0.03166666666666667
+ },
+ "B-T-10": {
+  "type": "cs",
+  "r_ohm_per_km": 2.1181,
+  "c_nf_per_km": 1221.6733431733887,
+  "imax_ka": 0.065,
+  "x_ohm_per_km": 0.07833333333333334
+ },
+ "Al/St 35/6(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.835,
+  "q_mm2": 35.0,
+  "ices": 0.04636071,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.12,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.402,
+  "conductor": "Al"
+ },
+ "B-TDC-A\u00c3\u2030RIEN-6-MONO": {
+  "type": "cs",
+  "r_ohm_per_km": 3.5639,
+  "c_nf_per_km": 916.6661576496956,
+  "imax_ka": 0.035,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "10032333 12kV 3x35/6 AL/": {
+  "type": "ol",
+  "r_ohm_per_km": 0.824,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.402
+ },
+ "NAYY 4x150SE 0.6/1kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2067,
+  "q_mm2": 150.0,
+  "ices": 0.2099835,
+  "isolation": "PVC",
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 830.0,
+  "imax_ka": 0.27,
+  "x_ohm_per_km": 0.08042478,
+  "conductor": "Al"
+ },
+ "N2XS(FL)2Y 1x185RM/25 64/110kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1021,
+  "q_mm2": 185.0,
+  "ices": 7.799156,
+  "isolation": "VPE",
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 130.0,
+  "imax_ka": 0.461,
+  "x_ohm_per_km": 0.1570796,
+  "conductor": "Cu"
+ },
+ "NAKLEY 1x120rm 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 4.399915,
+  "isolation": "Papier",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 400.0,
+  "imax_ka": 0.332,
+  "x_ohm_per_km": 0.119,
+  "conductor": "Al"
+ },
+ "NAYSEY 3x35rm/16 6/10kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.876,
+  "q_mm2": 35.0,
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.123,
+  "x_ohm_per_km": 0.1159876
+ },
+ "M-XKDT-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.241,
+  "c_nf_per_km": 208.33382050729105,
+  "imax_ka": 0.299,
+  "x_ohm_per_km": 0.09916666666666667
+ },
+ "10032449 12kV 3x120 NKBA": {
+  "type": "cs",
+  "r_ohm_per_km": 0.184,
+  "c_nf_per_km": 410.0,
+  "imax_ka": 0.294,
+  "x_ohm_per_km": 0.097
+ },
+ "NAEKEBA 3x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 5.114914,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 470.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "NEKBA 3x50(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 50.0,
+  "ices": 3.101597,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 285.0,
+  "imax_ka": 0.185,
+  "x_ohm_per_km": 0.141,
+  "conductor": "Cu"
+ },
+ "NA2XSY 3x1x300": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "q_mm2": 300.0,
+  "ices": 3.800272,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.471,
+  "x_ohm_per_km": 0.1099557,
+  "conductor": "Al"
+ },
+ "10032333 - X Frltg 12kV 3x35/6 AL/ST": {
+  "type": "ol",
+  "r_ohm_per_km": 0.824,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.402
+ },
+ "M-C-7-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 0.5142,
+  "c_nf_per_km": 8.456432642949373,
+  "imax_ka": 0.255,
+  "x_ohm_per_km": 0.30058333333333337
+ },
+ "NAKLEY 185 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 0.0,
+  "ices": 5.104032,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 469.0,
+  "imax_ka": 0.366,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 2.971003,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 273.0,
+  "imax_ka": 0.361,
+  "x_ohm_per_km": 0.118,
+  "conductor": "Al"
+ },
+ "M-GKT-T-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.246,
+  "c_nf_per_km": 224.88593458884816,
+  "imax_ka": 0.299,
+  "x_ohm_per_km": 0.09916666666666667
+ },
+ "NFA2X 4x70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.379
+ },
+ "B-T-25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.8409,
+  "c_nf_per_km": 1374.9926050185811,
+  "imax_ka": 0.105,
+  "x_ohm_per_km": 0.07166666666666667
+ },
+ "NA2YSY 1x120rm 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2567,
+  "q_mm2": 120.0,
+  "endtmp_deg": 150.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.265,
+  "x_ohm_per_km": 0.1193805
+ },
+ "NA2XS2Y 3x1x300(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "q_mm2": 300.0,
+  "ices": 3.58044,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 329.0,
+  "imax_ka": 0.471,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "UG2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2647,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.0823,
+  "conductor": "Cu"
+ },
+ "B-T-16-RE": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 1223.6627799620373,
+  "imax_ka": 0.08,
+  "x_ohm_per_km": 0.075
+ },
+ "Al 50": {
+  "type": "ol",
+  "r_ohm_per_km": 0.571,
+  "q_mm2": 50.0,
+  "ices": 0.04461946,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.4,
+  "imax_ka": 0.225,
+  "x_ohm_per_km": 0.392,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x120": {
+  "type": "cs",
+  "r_ohm_per_km": 0.256,
+  "q_mm2": 120.0,
+  "ices": 2.557457,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 235.0,
+  "imax_ka": 0.285,
+  "x_ohm_per_km": 0.127,
+  "conductor": "Al"
+ },
+ "B-BT-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "N2XSY 3x1x35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.524,
+  "q_mm2": 35.0,
+  "ices": 1.8,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 160.0,
+  "imax_ka": 0.189,
+  "x_ohm_per_km": 0.1507964,
+  "conductor": "Cu"
+ },
+ "B-GKN-K-95 AL+50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.374,
+  "c_nf_per_km": 2.652582384864923,
+  "imax_ka": 0.195,
+  "x_ohm_per_km": 0.059166666666666666
+ },
+ "M-GKT-T-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.493,
+  "c_nf_per_km": 179.90874767107852,
+  "imax_ka": 0.202,
+  "x_ohm_per_km": 0.11166666666666668
+ },
+ "Line220kV": {
+  "type": "ol",
+  "r_ohm_per_km": 0.0653,
+  "c_nf_per_km": 9.08,
+  "imax_ka": 1.14,
+  "x_ohm_per_km": 0.398
+ },
+ "NA2XS2Y 1x240 RE 12/20 kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.13,
+  "q_mm2": 240.0,
+  "ices": 3.30837,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 304.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "M-GKT-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.483,
+  "c_nf_per_km": 179.90874767107852,
+  "imax_ka": 0.202,
+  "x_ohm_per_km": 0.11166666666666668
+ },
+ "NHEKBA 95 mm\u00b2(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.193,
+  "q_mm2": 0.0,
+  "ices": 3.798096,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 349.0,
+  "imax_ka": 0.299,
+  "x_ohm_per_km": 0.127,
+  "conductor": "Al"
+ },
+ "N2XSY 3x1x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.193,
+  "q_mm2": 95.0,
+  "ices": 2.4,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 220.0,
+  "imax_ka": 0.323,
+  "x_ohm_per_km": 0.1288053,
+  "conductor": "Cu"
+ },
+ "NAEKEFA 3x300": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "q_mm2": 300.0,
+  "ices": 6.312022,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 580.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.107,
+  "conductor": "Al"
+ },
+ "B-BT-185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "N2XSY 3x1x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.268,
+  "q_mm2": 70.0,
+  "ices": 2.2,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 200.0,
+  "imax_ka": 0.271,
+  "x_ohm_per_km": 0.1350885,
+  "conductor": "Cu"
+ },
+ "NAYY 1x150RM 0.6/1kV ir": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2067,
+  "q_mm2": 150.0,
+  "ices": 0.389985,
+  "isolation": "PVC",
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 720.0,
+  "imax_ka": 0.328,
+  "x_ohm_per_km": 0.1897522,
+  "conductor": "Al"
+ },
+ "B-T-6-MONO": {
+  "type": "cs",
+  "r_ohm_per_km": 3.5639,
+  "c_nf_per_km": 458.3397102808099,
+  "imax_ka": 0.05,
+  "x_ohm_per_km": 0.09333333333333334
+ },
+ "M-C-8-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 0.4155,
+  "c_nf_per_km": 8.663334068968837,
+  "imax_ka": 0.305,
+  "x_ohm_per_km": 0.29358333333333336
+ },
+ "SS": {
+  "type": "cs",
+  "r_ohm_per_km": 0.06,
+  "c_nf_per_km": 604.8,
+  "imax_ka": 0.5,
+  "x_ohm_per_km": 0.09
+ },
+ "10032801 - X Kab 12kV 3x70 NKBA sm": {
+  "type": "cs",
+  "r_ohm_per_km": 0.318,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.212,
+  "x_ohm_per_km": 0.104
+ },
+ "B-T-10-BI": {
+  "type": "cs",
+  "r_ohm_per_km": 2.1181,
+  "c_nf_per_km": 1221.6733431733887,
+  "imax_ka": 0.065,
+  "x_ohm_per_km": 0.07833333333333334
+ },
+ "NAYY 150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.073
+ },
+ "NAKLEY 3x150(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.202,
+  "q_mm2": 120.0,
+  "ices": 4.7,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 430.0,
+  "imax_ka": 0.277,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "10032298 12kV 3x70/12 Al": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.379
+ },
+ "NA2XS2Y 3x1x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.76423,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 254.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "B-XN-150-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2633,
+  "c_nf_per_km": 611.0488781774835,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.065
+ },
+ "Al/St 95/15(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.306,
+  "q_mm2": 95.0,
+  "ices": 0.04744899,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.3,
+  "imax_ka": 0.35,
+  "x_ohm_per_km": 0.355,
+  "conductor": "Al"
+ },
+ "Al/St 70/12": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "q_mm2": 70.0,
+  "ices": 0.04679602,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.364,
+  "conductor": "Al"
+ },
+ "NA2XS(FL)2Y 3x1x150 RE": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "B-T-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1433,
+  "c_nf_per_km": 2049.995244495158,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.06666666666666667
+ },
+ "Al/St 25/4(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 1.203,
+  "q_mm2": 25.0,
+  "ices": 0.04570774,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 8.86,
+  "imax_ka": 0.14,
+  "x_ohm_per_km": 0.413,
+  "conductor": "Al"
+ },
+ "N2XS2Y 3x1x35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.524,
+  "q_mm2": 50.0,
+  "ices": 1.739985,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 158.999,
+  "imax_ka": 0.189,
+  "x_ohm_per_km": 0.152,
+  "conductor": "Cu"
+ },
+ "N2XS(FL)2Y 1x300RM/25 64/110kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0613,
+  "q_mm2": 300.0,
+  "ices": 9.002249,
+  "isolation": "VPE",
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 150.0,
+  "imax_ka": 0.594,
+  "x_ohm_per_km": 0.1445133,
+  "conductor": "Cu"
+ },
+ "Cu 70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.255,
+  "q_mm2": 70.0,
+  "ices": 0.04690485,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.15,
+  "imax_ka": 0.31,
+  "x_ohm_per_km": 0.384,
+  "conductor": "Cu"
+ },
+ "NAYY-J 4x240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.08,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "NA2XS(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 250.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "B-TDC-A\u00c3\u2030RIEN-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 1223.652169632498,
+  "imax_ka": 0.06,
+  "x_ohm_per_km": 0.075
+ },
+ "10032333 - Frltg 12kV 3x35/6 AL/ST": {
+  "type": "ol",
+  "r_ohm_per_km": 0.824,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.402
+ },
+ "B-C-4-BI": {
+  "type": "ol",
+  "r_ohm_per_km": 1.571,
+  "c_nf_per_km": 8.23892088739045,
+  "imax_ka": 0.125,
+  "x_ohm_per_km": 0.3091666666666667
+ },
+ "10032311 K 120/20 Al/St": {
+  "type": "ol",
+  "r_ohm_per_km": 0.237,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.361
+ },
+ "Subtransmission_110kV": {
+  "type": "ol",
+  "r_ohm_per_km": 0.0819,
+  "c_nf_per_km": 0.156,
+  "imax_ka": 1.36,
+  "x_ohm_per_km": 0.345
+ },
+ "NAKLEY 3x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.644,
+  "q_mm2": 50.0,
+  "ices": 1.958903,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 180.0,
+  "imax_ka": 0.15,
+  "x_ohm_per_km": 0.229,
+  "conductor": "Al"
+ },
+ "Freileitung 4x 50 Al": {
+  "type": "ol",
+  "r_ohm_per_km": 0.34,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "NA2YSY 3x150 RM/25(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "ices": 2.94,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.298,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "NAEKEBA 3x120RM 12/20kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2559,
+  "q_mm2": 120.0,
+  "ices": 3.690356,
+  "isolation": "Papier",
+  "endtmp_deg": 155.0,
+  "c_nf_per_km": 338.0,
+  "imax_ka": 0.235,
+  "x_ohm_per_km": 0.1234646,
+  "conductor": "Al"
+ },
+ "Al/St 35/6": {
+  "type": "ol",
+  "r_ohm_per_km": 0.835,
+  "q_mm2": 35.0,
+  "ices": 0.04636071,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.12,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.402,
+  "conductor": "Al"
+ },
+ "null": {
+  "type": "cs",
+  "r_ohm_per_km": 0.169,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.111
+ },
+ "N2XS2Y 3x1x185(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0991,
+  "q_mm2": 50.0,
+  "ices": 2.96998,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 272.998,
+  "imax_ka": 0.461,
+  "x_ohm_per_km": 0.117,
+  "conductor": "Cu"
+ },
+ "NA2YSY 1x150rm 12/20kV ir": {
+  "type": "ol",
+  "r_ohm_per_km": 0.2092,
+  "q_mm2": 150.0,
+  "endtmp_deg": 150.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.325,
+  "x_ohm_per_km": 0.1162389
+ },
+ "Leitungstyp_90MVA": {
+  "type": "cs",
+  "r_ohm_per_km": 0.122,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 154.00150000000002,
+  "imax_ka": 0.6,
+  "x_ohm_per_km": 0.139,
+  "conductor": "Cu"
+ },
+ "M-TST-8": {
+  "type": "cs",
+  "r_ohm_per_km": 0.143,
+  "c_nf_per_km": 233.3635878908764,
+  "imax_ka": 0.286,
+  "x_ohm_per_km": 0.08916666666666667
+ },
+ "NA2XSY 3x1x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.641,
+  "q_mm2": 50.0,
+  "ices": 2.10038,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 180.0,
+  "imax_ka": 0.172,
+  "x_ohm_per_km": 0.1445133,
+  "conductor": "Al"
+ },
+ "B-TT-2X240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0435,
+  "c_nf_per_km": 4331.720086132115,
+  "imax_ka": 0.648,
+  "x_ohm_per_km": 0.03333333333333333
+ },
+ "NAKBA 4x 50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.09,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "NAYY 4x50SE 0.6/1kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.6417,
+  "q_mm2": 50.0,
+  "ices": 0.1500193,
+  "isolation": "PVC",
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 670.0,
+  "imax_ka": 0.141,
+  "x_ohm_per_km": 0.084823,
+  "conductor": "Al"
+ },
+ "NAKBA 0.6/1 kV 3x150/ 70sm": {
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "endtmp_deg": 180.0,
+  "c_nf_per_km": 950.0,
+  "imax_ka": 0.281,
+  "x_ohm_per_km": 0.08199557
+ },
+ "NAEKBA 3x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.641,
+  "q_mm2": 50.0,
+  "ices": 2.666285,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 245.0,
+  "imax_ka": 0.144,
+  "x_ohm_per_km": 0.142,
+  "conductor": "Al"
+ },
+ "Al 120": {
+  "type": "ol",
+  "r_ohm_per_km": 0.242,
+  "q_mm2": 120.0,
+  "ices": 0.04625189,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.39,
+  "x_ohm_per_km": 0.364,
+  "conductor": "Al"
+ },
+ "B-C-5": {
+  "type": "ol",
+  "r_ohm_per_km": 1.011,
+  "c_nf_per_km": 8.578451432653159,
+  "imax_ka": 0.165,
+  "x_ohm_per_km": 0.29725
+ },
+ "NAEKBA 3x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.993986,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 367.0,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.12,
+  "conductor": "Al"
+ },
+ "NEKBA 3x240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.075,
+  "q_mm2": 240.0,
+  "ices": 5.767882,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 530.0,
+  "imax_ka": 0.468,
+  "x_ohm_per_km": 0.108,
+  "conductor": "Cu"
+ },
+ "NEKBA 3x25(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.73,
+  "q_mm2": 25.0,
+  "ices": 2.160235,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 198.5,
+  "imax_ka": 0.129,
+  "x_ohm_per_km": 0.1583,
+  "conductor": "Cu"
+ },
+ "NAEKEBA 3x150 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.989633,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 370.0,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.12,
+  "conductor": "Al"
+ },
+ "B-TDC-16-RE": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 1223.6627799620373,
+  "imax_ka": 0.08,
+  "x_ohm_per_km": 0.075
+ },
+ "NA2XSY 3x1x150(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.000387,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.1225221,
+  "conductor": "Al"
+ },
+ "NAKLEY 3x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.202,
+  "q_mm2": 120.0,
+  "ices": 4.7,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 430.0,
+  "imax_ka": 0.277,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "10kV NA2XS2Y 3x1x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.11
+ },
+ "NHEKBA 50 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 0.0,
+  "ices": 3.101597,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 285.0,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.141,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x240(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 4.842844,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 445.0,
+  "imax_ka": 0.367,
+  "x_ohm_per_km": 0.112,
+  "conductor": "Al"
+ },
+ "B-X-240-ALSE": {
+  "type": "cs",
+  "r_ohm_per_km": 0.16,
+  "c_nf_per_km": 645.5855008284248,
+  "imax_ka": 0.38,
+  "x_ohm_per_km": 0.0625
+ },
+ "B-GN-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4932,
+  "c_nf_per_km": 447.11928679283136,
+  "imax_ka": 0.19,
+  "x_ohm_per_km": 0.06916666666666667
+ },
+ "NAEKEFA 3x185(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 5.114914,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 470.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "M-GKT-F-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.246,
+  "c_nf_per_km": 224.88593458884816,
+  "imax_ka": 0.299,
+  "x_ohm_per_km": 0.09916666666666667
+ },
+ "NA2XS2Y 3x1x240(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 3.30837,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 304.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "B-P-35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.6068,
+  "c_nf_per_km": 687.1779926231069,
+  "imax_ka": 0.125,
+  "x_ohm_per_km": 0.07666666666666667
+ },
+ "B-P-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 611.8181270690944,
+  "imax_ka": 0.08,
+  "x_ohm_per_km": 0.0825
+ },
+ "NAKLEY 3x120": {
+  "type": "cs",
+  "r_ohm_per_km": 0.256,
+  "q_mm2": 120.0,
+  "ices": 2.611871,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.248,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "M-FICP": {
+  "type": "cs",
+  "r_ohm_per_km": 0.02,
+  "c_nf_per_km": 1214.9967933106839,
+  "imax_ka": 1.821,
+  "x_ohm_per_km": 0.027500000000000004
+ },
+ "10032311 - X Frltg 12kV 3x120/20 Al/St": {
+  "type": "ol",
+  "r_ohm_per_km": 0.237,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.361
+ },
+ "B-G-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.4662,
+  "c_nf_per_km": 364.73007791892684,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.075
+ },
+ "N2XS2Y 3x1x400 RM/35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.047,
+  "q_mm2": 400.0,
+  "ices": 4.0,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 370.0,
+  "imax_ka": 0.671,
+  "x_ohm_per_km": 0.1068142,
+  "conductor": "Cu"
+ },
+ "M-XKDT-400AL+35-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1053,
+  "c_nf_per_km": 267.43335604208147,
+  "imax_ka": 0.475,
+  "x_ohm_per_km": 0.07925
+ },
+ "B-GKN-K-25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.9266,
+  "c_nf_per_km": 409.85050428547913,
+  "imax_ka": 0.135,
+  "x_ohm_per_km": 0.07166666666666667
+ },
+ "NEKBA 3x35(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.524,
+  "q_mm2": 35.0,
+  "ices": 2.883941,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 265.0,
+  "imax_ka": 0.155,
+  "x_ohm_per_km": 0.146,
+  "conductor": "Cu"
+ },
+ "B-BT-2X150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "M-FIC": {
+  "type": "cs",
+  "r_ohm_per_km": 0.06,
+  "c_nf_per_km": 404.9989311035613,
+  "imax_ka": 0.607,
+  "x_ohm_per_km": 0.0825
+ },
+ "NAYBY 3x150/70sm/sm 0.6/1kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2075,
+  "q_mm2": 150.0,
+  "ices": 0.2400201,
+  "isolation": "PVC",
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 910.0,
+  "imax_ka": 0.27,
+  "x_ohm_per_km": 0.07225663,
+  "conductor": "Al"
+ },
+ "NAKLEY 3x1x70(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 50.0,
+  "ices": 3.7,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 330.0,
+  "imax_ka": 0.183,
+  "x_ohm_per_km": 0.13,
+  "conductor": "Al"
+ },
+ "NFA2X 4 x 70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.443,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.205,
+  "x_ohm_per_km": 0.069
+ },
+ "B-T-185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1142,
+  "c_nf_per_km": 2038.191252882509,
+  "imax_ka": 0.31,
+  "x_ohm_per_km": 0.06666666666666667
+ },
+ "NEKBA 3x120(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.153,
+  "q_mm2": 120.0,
+  "ices": 4.081048,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 375.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.124,
+  "conductor": "Cu"
+ },
+ "NAEKBA 3x300": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "q_mm2": 300.0,
+  "ices": 5.256391,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 483.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.108,
+  "conductor": "Al"
+ },
+ "B-GKN-K-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.4662,
+  "c_nf_per_km": 364.73007791892684,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.075
+ },
+ "M-PPB-TF-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.224,
+  "c_nf_per_km": 249.8732606542757,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.08583333333333333
+ },
+ "N2XS(F)2Y 1x120RM/16 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1563,
+  "q_mm2": 120.0,
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 235.0,
+  "imax_ka": 0.36700000000000005,
+  "x_ohm_per_km": 0.1266062
+ },
+ "NA2XS(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "NA2XSY 3x1x400": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0778,
+  "q_mm2": 400.0,
+  "ices": 4.299793,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 380.0,
+  "imax_ka": 0.535,
+  "x_ohm_per_km": 0.1068142,
+  "conductor": "Al"
+ },
+ "NEKBA 3x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.099,
+  "q_mm2": 185.0,
+  "ices": 4.78843,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 440.0,
+  "imax_ka": 0.402,
+  "x_ohm_per_km": 0.118,
+  "conductor": "Cu"
+ },
+ "NAYY-J 4x35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.876,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.122,
+  "x_ohm_per_km": 0.083
+ },
+ "10032329 K 25/4 Al/St": {
+  "type": "ol",
+  "r_ohm_per_km": 1.203,
+  "c_nf_per_km": 8.0,
+  "imax_ka": 0.14,
+  "x_ohm_per_km": 0.413
+ },
+ "B-G-25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.9266,
+  "c_nf_per_km": 409.85050428547913,
+  "imax_ka": 0.135,
+  "x_ohm_per_km": 0.07166666666666667
+ },
+ "NAYY 70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.16,
+  "x_ohm_per_km": 0.082
+ },
+ "10032505 - X Kab 12kV 3x1x120 N2XS2Y rm 16": {
+  "type": "cs",
+  "r_ohm_per_km": 0.157,
+  "c_nf_per_km": 345.0,
+  "imax_ka": 0.364,
+  "x_ohm_per_km": 0.118
+ },
+ "NA2XSY 3x1x240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 3.499907,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.1130973,
+  "conductor": "Al"
+ },
+ "B-X-150-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2633,
+  "c_nf_per_km": 611.0488781774835,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.065
+ },
+ "M-N-5-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 1.011,
+  "c_nf_per_km": 7.864906771124495,
+  "imax_ka": 0.165,
+  "x_ohm_per_km": 0.32383333333333336
+ },
+ "NA2XS2Y 3x1x120(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.256,
+  "q_mm2": 120.0,
+  "ices": 2.557457,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 235.0,
+  "imax_ka": 0.285,
+  "x_ohm_per_km": 0.127,
+  "conductor": "Al"
+ },
+ "B-T-95-ALSE": {
+  "type": "cs",
+  "r_ohm_per_km": 0.3712,
+  "c_nf_per_km": 1874.5269197363434,
+  "imax_ka": 0.175,
+  "x_ohm_per_km": 0.06666666666666667
+ },
+ "10032306 - Kab 12kV 3x1x185 NA2XS2Y rm 16": {
+  "type": "cs",
+  "r_ohm_per_km": 0.169,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.111
+ },
+ "SS-Schiene": {
+  "type": "cs",
+  "r_ohm_per_km": 0.06,
+  "c_nf_per_km": 604.8,
+  "imax_ka": 0.5,
+  "x_ohm_per_km": 0.09
+ },
+ "M-XKDT-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.483,
+  "c_nf_per_km": 166.66705640583282,
+  "imax_ka": 0.202,
+  "x_ohm_per_km": 0.11166666666666668
+ },
+ "N2XS(FL)2Y 1x185RM/25 64/110kV it.TypLne": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1021,
+  "q_mm2": 185.0,
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 130.0,
+  "imax_ka": 0.461,
+  "x_ohm_per_km": 0.1570796
+ },
+ "NAKLEY 3x1x95 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 50.0,
+  "ices": 4.0,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 370.0,
+  "imax_ka": 0.219,
+  "x_ohm_per_km": 0.124,
+  "conductor": "Al"
+ },
+ "B-X-95-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4099,
+  "c_nf_per_km": 558.7664793717959,
+  "imax_ka": 0.22,
+  "x_ohm_per_km": 0.06666666666666667
+ },
+ "A2XS2YT 3x1x70 RM/16": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 50.0,
+  "ices": 2.2,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 200.0,
+  "imax_ka": 0.22,
+  "x_ohm_per_km": 0.1,
+  "conductor": "Al"
+ },
+ "B-GN-25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.9266,
+  "c_nf_per_km": 409.85050428547913,
+  "imax_ka": 0.135,
+  "x_ohm_per_km": 0.07166666666666667
+ },
+ "Al/St 150/25": {
+  "type": "ol",
+  "r_ohm_per_km": 0.194,
+  "q_mm2": 150.0,
+  "ices": 0.04897258,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.059999999999999,
+  "imax_ka": 0.47,
+  "x_ohm_per_km": 0.352,
+  "conductor": "Al"
+ },
+ "Sammelschiene": {
+  "type": "cs",
+  "r_ohm_per_km": 0.06,
+  "c_nf_per_km": 604.8,
+  "imax_ka": 0.5,
+  "x_ohm_per_km": 0.09
+ },
+ "UG1": {
+  "type": "cs",
+  "r_ohm_per_km": 0.162,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.0832,
+  "conductor": "Cu"
+ },
+ "NAKBA 4x 95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.086,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "B-GKN-K-2X240 AL+150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.077,
+  "c_nf_per_km": 2.652582384864923,
+  "imax_ka": 0.674,
+  "x_ohm_per_km": 0.029583333333333333
+ },
+ "NA2XRY 3x150/70sm/sm 0.6/1kV": {
+  "type": "ol",
+  "r_ohm_per_km": 0.207,
+  "q_mm2": 150.0,
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 590.0,
+  "imax_ka": 0.3,
+  "x_ohm_per_km": 0.06911504
+ },
+ "ALDREY 50mm\u00b2": {
+  "type": "ol",
+  "r_ohm_per_km": 0.663,
+  "q_mm2": 0.0,
+  "ices": 0.06529678,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.376,
+  "conductor": "Al"
+ },
+ "M-GKT-T-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.159,
+  "c_nf_per_km": 269.8631215066178,
+  "imax_ka": 0.376,
+  "x_ohm_per_km": 0.09416666666666668
+ },
+ "NAKLEY 1x150rm 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 4.70028,
+  "isolation": "Papier",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 430.0,
+  "imax_ka": 0.362,
+  "x_ohm_per_km": 0.116,
+  "conductor": "Al"
+ },
+ "10032306 K 185 NA2XS2Y r": {
+  "type": "cs",
+  "r_ohm_per_km": 0.169,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.111
+ },
+ "A2YHSY 150 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "ices": 2.796879,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 257.0,
+  "imax_ka": 0.351,
+  "x_ohm_per_km": 0.121,
+  "conductor": "Al"
+ },
+ "M-PHT-120-AD": {
+  "type": "ol",
+  "r_ohm_per_km": 0.2919,
+  "c_nf_per_km": 7.565164961634759,
+  "imax_ka": 0.445,
+  "x_ohm_per_km": 0.3358333333333334
+ },
+ "NEKBA 3x25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.73,
+  "q_mm2": 25.0,
+  "ices": 2.160235,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 198.5,
+  "imax_ka": 0.129,
+  "x_ohm_per_km": 0.1583,
+  "conductor": "Cu"
+ },
+ "M-XKDT-95AL+16-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4127,
+  "c_nf_per_km": 187.32536801916083,
+  "imax_ka": 0.234,
+  "x_ohm_per_km": 0.09716666666666667
+ },
+ "M-NMP-8-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 0.4155,
+  "c_nf_per_km": 7.581080455943948,
+  "imax_ka": 0.305,
+  "x_ohm_per_km": 0.3355
+ },
+ "NHEKBA 50 mm\u00b2(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 0.0,
+  "ices": 3.101597,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 285.0,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.141,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 4.331353,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 398.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.116,
+  "conductor": "Al"
+ },
+ "NA2XSY 3x1x120": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 2.800143,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.285,
+  "x_ohm_per_km": 0.1256637,
+  "conductor": "Al"
+ },
+ "NEKBA 3x70(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.268,
+  "q_mm2": 70.0,
+  "ices": 3.536909,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 325.0,
+  "imax_ka": 0.229,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Cu"
+ },
+ "Overhead_20_kV": {
+  "type": "ol",
+  "r_ohm_per_km": 0.51,
+  "c_nf_per_km": 8.09,
+  "imax_ka": 10,
+  "x_ohm_per_km": 0.366
+ },
+ "B-BT-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "NA2XS(4)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 150.0,
+  "ices": 2.26,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 200.0,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.135,
+  "conductor": "Al"
+ },
+ "NHEKBA 70 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.268,
+  "q_mm2": 0.0,
+  "ices": 3.50426,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 322.0,
+  "imax_ka": 0.247,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Al"
+ },
+ "Al/St  50/8": {
+  "type": "ol",
+  "r_ohm_per_km": 0.595,
+  "q_mm2": 50.0,
+  "ices": 0.04992,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.03967832,
+  "conductor": "Al"
+ },
+ "NYY 50": {
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 50,
+  "c_nf_per_km": 0,
+  "imax_ka": 0.188,
+  "x_ohm_per_km": 0.085
+ },
+ "NAKBA 4x 25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.094,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "Freileitung 4x 35 Cu": {
+  "type": "ol",
+  "r_ohm_per_km": 0.35,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "B-TDC-A\u00c9RIEN-2#$%#5-MONO": {
+  "type": "cs",
+  "r_ohm_per_km": 8.5222,
+  "c_nf_per_km": 838.0807519156874,
+  "imax_ka": 0.02,
+  "x_ohm_per_km": 0.08833333333333333
+ },
+ "10032801 12kV 3x70 NKBA": {
+  "type": "cs",
+  "r_ohm_per_km": 0.318,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.212,
+  "x_ohm_per_km": 0.104
+ },
+ "NAEKBA 3x240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 4.842844,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 445.0,
+  "imax_ka": 0.367,
+  "x_ohm_per_km": 0.112,
+  "conductor": "Al"
+ },
+ "N2XS2Y 3x1x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.124,
+  "q_mm2": 50.0,
+  "ices": 2.759986,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 253.99899999999997,
+  "imax_ka": 0.409,
+  "x_ohm_per_km": 0.121,
+  "conductor": "Cu"
+ },
+ "NA2YSY 3x150 RM/25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "ices": 2.94,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.298,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.323,
+  "q_mm2": 95.0,
+  "ices": 2.350684,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 216.0,
+  "imax_ka": 0.251,
+  "x_ohm_per_km": 0.1316,
+  "conductor": "Al"
+ },
+ "NAKLEY 3x70se 0.6/1kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 70.0,
+  "ices": 0.4135463,
+  "isolation": "Papier",
+  "endtmp_deg": 180.0,
+  "c_nf_per_km": 760.0,
+  "imax_ka": 0.184,
+  "x_ohm_per_km": 0.06898937,
+  "conductor": "Al"
+ },
+ "B-BT-4X240+185": {
+  "type": "cs",
+  "r_ohm_per_km": 1.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.8333333333333334
+ },
+ "NAKLEY 3x1x240 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 50.0,
+  "ices": 5.8,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 530.0,
+  "imax_ka": 0.361,
+  "x_ohm_per_km": 0.104,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x400(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.085,
+  "q_mm2": 400.0,
+  "ices": 4.004869,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 368.0,
+  "imax_ka": 0.535,
+  "x_ohm_per_km": 0.105,
+  "conductor": "Al"
+ },
+ "Al/St 70/12(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "q_mm2": 70.0,
+  "ices": 0.04679602,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.364,
+  "conductor": "Al"
+ },
+ "NAKLEY 3x1x95 RM(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 50.0,
+  "ices": 4.0,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 370.0,
+  "imax_ka": 0.219,
+  "x_ohm_per_km": 0.124,
+  "conductor": "Al"
+ },
+ "AL 25": {
+  "type": "ol",
+  "r_ohm_per_km": 1.165,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.145,
+  "x_ohm_per_km": 0.349
+ },
+ "NAYBY 3x300/150sm/sm 0.6/1kV": {
+  "r_ohm_per_km": 0.1025,
+  "q_mm2": 300.0,
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 1000.0,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.07225663
+ },
+ "NAEKBA 3x300(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "q_mm2": 300.0,
+  "ices": 5.256391,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 483.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.108,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x120(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 3.700151,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.244,
+  "x_ohm_per_km": 0.1225,
+  "conductor": "Al"
+ },
+ "10032801 K 70 NKBA sm": {
+  "type": "cs",
+  "r_ohm_per_km": 0.318,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.212,
+  "x_ohm_per_km": 0.104
+ },
+ "N2XS2Y 3x1x300": {
+  "type": "cs",
+  "r_ohm_per_km": 0.059,
+  "q_mm2": 300.0,
+  "ices": 3.672,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 330.0,
+  "imax_ka": 0.599,
+  "x_ohm_per_km": 0.109,
+  "conductor": "Cu"
+ },
+ "M-GKT-F-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.159,
+  "c_nf_per_km": 269.8631215066178,
+  "imax_ka": 0.376,
+  "x_ohm_per_km": 0.09416666666666668
+ },
+ "A2XHSY 150 mm\u00b2(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "ices": 2.796879,
+  "isolation": "PVC",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 257.0,
+  "imax_ka": 0.367,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "10032643 - Kab 12kV 3x1x500 NA2XS(FL)2Y rm 35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.068,
+  "c_nf_per_km": 613.0,
+  "imax_ka": 0.603,
+  "x_ohm_per_km": 0.096
+ },
+ "Leitungstyp": {
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.25,
+  "x_ohm_per_km": 0.082
+ },
+ "A2XHSY 150 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "ices": 2.796879,
+  "isolation": "PVC",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 257.0,
+  "imax_ka": 0.367,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "NAEKEFA 3x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 70.0,
+  "ices": 3.482495,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 320.0,
+  "imax_ka": 0.178,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Al"
+ },
+ "N2XSF2Y 300 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.06,
+  "q_mm2": 0.0,
+  "ices": 3.602206,
+  "isolation": "PVC",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 331.0,
+  "imax_ka": 0.69,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "Leitungstyp_65MVA": {
+  "type": "cs",
+  "r_ohm_per_km": 0.161,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 137.0006,
+  "imax_ka": 0.412,
+  "x_ohm_per_km": 0.142,
+  "conductor": "Cu"
+ },
+ "NA2XS(F)2Y 1x150RM 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 254.0,
+  "imax_ka": 0.32,
+  "x_ohm_per_km": 0.122208,
+  "conductor": "Al"
+ },
+ "NHEKBA 70 mm\u00b2(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.268,
+  "q_mm2": 0.0,
+  "ices": 3.50426,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 322.0,
+  "imax_ka": 0.247,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Al"
+ },
+ "YHCY 50 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 0.0,
+  "ices": 3.101597,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 285.0,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.141,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 1x150 RM(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "B-TO-25": {
+  "type": "cs",
+  "r_ohm_per_km": 1.5363,
+  "c_nf_per_km": 409.85050428547913,
+  "imax_ka": 0.09,
+  "x_ohm_per_km": 0.07166666666666667
+ },
+ "B-XN-240-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.16,
+  "c_nf_per_km": 645.5855008284248,
+  "imax_ka": 0.38,
+  "x_ohm_per_km": 0.0625
+ },
+ "M-N-5-CW": {
+  "type": "ol",
+  "r_ohm_per_km": 2.414,
+  "c_nf_per_km": 7.864906771124495,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.32383333333333336
+ },
+ "10032298 K 70/12 Al/St": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.379
+ },
+ "NAEKBA 3x120": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 3.700151,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 340.0,
+  "imax_ka": 0.244,
+  "x_ohm_per_km": 0.1225,
+  "conductor": "Al"
+ },
+ "Cu 50": {
+  "type": "ol",
+  "r_ohm_per_km": 0.357,
+  "q_mm2": 50.0,
+  "ices": 0.04636071,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.26,
+  "imax_ka": 0.25,
+  "x_ohm_per_km": 0.394,
+  "conductor": "Cu"
+ },
+ "Al/St 120/20(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.237,
+  "q_mm2": 120.0,
+  "ices": 0.0478843,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.78,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.358,
+  "conductor": "Al"
+ },
+ "B-TDC-A\u00c3\u2030RIEN-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4476,
+  "c_nf_per_km": 1500.0008550701102,
+  "imax_ka": 0.115,
+  "x_ohm_per_km": 0.06916666666666667
+ },
+ "B-GN-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.4662,
+  "c_nf_per_km": 364.73007791892684,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.075
+ },
+ "NAEKBA 3x400": {
+  "type": "cs",
+  "r_ohm_per_km": 0.078,
+  "q_mm2": 400.0,
+  "ices": 5.659054,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 520.0,
+  "imax_ka": 0.478,
+  "x_ohm_per_km": 0.104,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 1x150 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "NA2XSEY 3x50rm 8.7/15kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.6438,
+  "q_mm2": 50.0,
+  "ices": 1.700165,
+  "isolation": "VPE",
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 210.0,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.1225221,
+  "conductor": "Al"
+ },
+ "Ay 70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.498,
+  "q_mm2": 70.0,
+  "ices": 0.05441398,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.255,
+  "x_ohm_per_km": 0.39,
+  "conductor": "Al"
+ },
+ "10032449 K 120 NKBA sm": {
+  "type": "cs",
+  "r_ohm_per_km": 0.184,
+  "c_nf_per_km": 410.0,
+  "imax_ka": 0.294,
+  "x_ohm_per_km": 0.097
+ },
+ "B-C-4-MONO": {
+  "type": "ol",
+  "r_ohm_per_km": 1.571,
+  "c_nf_per_km": 8.23892088739045,
+  "imax_ka": 0.062,
+  "x_ohm_per_km": 0.3090833333333334
+ },
+ "NFA2X 4 x 25": {
+  "type": "ol",
+  "r_ohm_per_km": 1.2,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.107,
+  "x_ohm_per_km": 0.075
+ },
+ "NAEKEFA 3x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 4.835227,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 444.40000000000003,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.1,
+  "conductor": "Al"
+ },
+ "M-XKDT-240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.095,
+  "c_nf_per_km": 308.3335238343137,
+  "imax_ka": 0.487,
+  "x_ohm_per_km": 0.0875
+ },
+ "NA2XS2Y 3x1x240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 3.30837,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 304.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "B-T-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4476,
+  "c_nf_per_km": 1500.0088128172652,
+  "imax_ka": 0.15,
+  "x_ohm_per_km": 0.06916666666666667
+ },
+ "NA2XY 3x70sm 0.6/1kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4438,
+  "q_mm2": 70.0,
+  "ices": 0.1100251,
+  "isolation": "VPE",
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 510.0,
+  "imax_ka": 0.195,
+  "x_ohm_per_km": 0.07225663,
+  "conductor": "Al"
+ },
+ "NAKBA 4x 16": {
+  "type": "cs",
+  "r_ohm_per_km": 0.099,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "B-T-6-BI": {
+  "type": "cs",
+  "r_ohm_per_km": 3.5639,
+  "c_nf_per_km": 916.6794205616198,
+  "imax_ka": 0.05,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "NAEKEBA 3x185(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 5.114914,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 470.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "B-TDC-6-BI": {
+  "type": "cs",
+  "r_ohm_per_km": 3.5639,
+  "c_nf_per_km": 916.6794205616198,
+  "imax_ka": 0.05,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "10032298 - Frltg 12kV 3x70/12 Al/St": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.379
+ },
+ "NA2XS2Y 3x1x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.446,
+  "q_mm2": 70.0,
+  "ices": 2.13,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 196.0,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.1376,
+  "conductor": "Al"
+ },
+ "YTK 3 x 1 x 25": {
+  "type": "ol",
+  "r_ohm_per_km": 1.2,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.09,
+  "x_ohm_per_km": 0.09
+ },
+ "M-TST-5": {
+  "type": "cs",
+  "r_ohm_per_km": 0.392,
+  "c_nf_per_km": 162.88712650740027,
+  "imax_ka": 0.169,
+  "x_ohm_per_km": 0.10416666666666667
+ },
+ "NA2XS(3)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 250.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x400": {
+  "type": "cs",
+  "r_ohm_per_km": 0.085,
+  "q_mm2": 400.0,
+  "ices": 4.004869,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 368.0,
+  "imax_ka": 0.535,
+  "x_ohm_per_km": 0.105,
+  "conductor": "Al"
+ },
+ "NHEKBA 35 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.524,
+  "q_mm2": 0.0,
+  "ices": 2.894824,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 266.0,
+  "imax_ka": 0.168,
+  "x_ohm_per_km": 0.146,
+  "conductor": "Al"
+ },
+ "10032300 12kV 3x95/15 Al": {
+  "type": "ol",
+  "r_ohm_per_km": 0.306,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.35,
+  "x_ohm_per_km": 0.369
+ },
+ "NA2XS(F)2Y 3x1x150 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 250.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "M-N-8-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 0.4155,
+  "c_nf_per_km": 8.55192560880451,
+  "imax_ka": 0.305,
+  "x_ohm_per_km": 0.29925
+ },
+ "Al 70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.428,
+  "q_mm2": 70.0,
+  "ices": 0.0451636,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.24,
+  "imax_ka": 0.27,
+  "x_ohm_per_km": 0.382,
+  "conductor": "Al"
+ },
+ "M-NMP-150-AD": {
+  "type": "ol",
+  "r_ohm_per_km": 0.2362,
+  "c_nf_per_km": 8.329108688475857,
+  "imax_ka": 0.515,
+  "x_ohm_per_km": 0.307
+ },
+ "B-GKN-K-35 AL+16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.009,
+  "c_nf_per_km": 2.652582384864923,
+  "imax_ka": 0.108,
+  "x_ohm_per_km": 0.19916666666666666
+ },
+ "N2XS2Y 1x500RM 12/20kV it": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0456,
+  "q_mm2": 500.0,
+  "ices": 4.380325,
+  "isolation": "VPE",
+  "endtmp_deg": 250.0,
+  "c_nf_per_km": 402.0,
+  "imax_ka": 0.755,
+  "x_ohm_per_km": 0.1024159,
+  "conductor": "Cu"
+ },
+ "NAEKEFA 3x120(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 4.24429,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 390.0,
+  "imax_ka": 0.244,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "NEKBA 3x150rm 12/20kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1259,
+  "q_mm2": 150.0,
+  "endtmp_deg": 155.0,
+  "c_nf_per_km": 370.0,
+  "imax_ka": 0.345,
+  "x_ohm_per_km": 0.10367260000000002
+ },
+ "NAEKEFA 3x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 95.0,
+  "ices": 3.359519,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.213,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "NAKLEY 3x120(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.256,
+  "q_mm2": 120.0,
+  "ices": 2.611871,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.248,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "B-GN-150-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2633,
+  "c_nf_per_km": 611.0488781774835,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.065
+ },
+ "M-GKT-F-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.493,
+  "c_nf_per_km": 179.90874767107852,
+  "imax_ka": 0.202,
+  "x_ohm_per_km": 0.11166666666666668
+ },
+ "AL 35": {
+  "type": "ol",
+  "r_ohm_per_km": 0.833,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.18,
+  "x_ohm_per_km": 0.34
+ },
+ "A2XHSY 240 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 0.0,
+  "ices": 3.395432,
+  "isolation": "PVC",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 312.0,
+  "imax_ka": 0.483,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 70.0,
+  "ices": 3.000387,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 275.7,
+  "imax_ka": 0.178,
+  "x_ohm_per_km": 0.1351,
+  "conductor": "Al"
+ },
+ "NA2XS(F)2Y 3x1x95 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 95.0,
+  "ices": 2.339801,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 216.0,
+  "imax_ka": 0.252,
+  "x_ohm_per_km": 0.1316327,
+  "conductor": "Al"
+ },
+ "Al/St 265/35": {
+  "type": "ol",
+  "r_ohm_per_km": 0.109,
+  "q_mm2": 240.0,
+  "ices": 0.0647,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.68,
+  "x_ohm_per_km": 0.4,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x120rm 12/20kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2534,
+  "q_mm2": 120.0,
+  "endtmp_deg": 155.0,
+  "c_nf_per_km": 350.0,
+  "imax_ka": 0.235,
+  "x_ohm_per_km": 0.1068142
+ },
+ "NAKLEY 3x95se 0.6/1kV_TR": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 95.0,
+  "ices": 0.4570774,
+  "isolation": "Papier",
+  "endtmp_deg": 180.0,
+  "c_nf_per_km": 840.0,
+  "imax_ka": 0.221,
+  "x_ohm_per_km": 0.06801548,
+  "conductor": "Al"
+ },
+ "NAEKEFA 3x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 5.114914,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 470.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "NAYY 35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.868,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.0274
+ },
+ "NA2XS(5)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.13,
+  "q_mm2": 240.0,
+  "ices": 3.30837,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 304.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "10032311 12kV 3x120/20 A": {
+  "type": "ol",
+  "r_ohm_per_km": 0.237,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.361
+ },
+ "NA2XSY 3x150rm 12/20kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.94,
+  "isolation": "VPE",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.31,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "Underground_20kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.501,
+  "c_nf_per_km": 151,
+  "imax_ka": 3.2,
+  "x_ohm_per_km": 0.716
+ },
+ "B-C-8": {
+  "type": "ol",
+  "r_ohm_per_km": 0.4158,
+  "c_nf_per_km": 9.400751971961286,
+  "imax_ka": 0.305,
+  "x_ohm_per_km": 0.2724166666666667
+ },
+ "B-P-25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.8409,
+  "c_nf_per_km": 687.4963025092906,
+  "imax_ka": 0.105,
+  "x_ohm_per_km": 0.07833333333333334
+ },
+ "Al/St 50/8(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.595,
+  "q_mm2": 50.0,
+  "ices": 0.04625189,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.700000000000001,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.377,
+  "conductor": "Al"
+ },
+ "B-XKN-K-150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2633,
+  "c_nf_per_km": 611.0488781774835,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.065
+ },
+ "NEKBA 3x120": {
+  "type": "cs",
+  "r_ohm_per_km": 0.153,
+  "q_mm2": 120.0,
+  "ices": 4.081048,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 375.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.124,
+  "conductor": "Cu"
+ },
+ "NYY 4x 95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.082,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "B-GKN-K-10": {
+  "type": "cs",
+  "r_ohm_per_km": 2.1181,
+  "c_nf_per_km": 610.8366715866944,
+  "imax_ka": 0.065,
+  "x_ohm_per_km": 0.0875
+ },
+ "NYY 35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.524,
+  "q_mm2": 35,
+  "endtmp_deg": 0,
+  "c_nf_per_km": 0,
+  "imax_ka": 0.159,
+  "x_ohm_per_km": 0.085
+ },
+ "NA2XSY 3x1x240(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 3.499907,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.1130973,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x185(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 2.971003,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 273.0,
+  "imax_ka": 0.361,
+  "x_ohm_per_km": 0.118,
+  "conductor": "Al"
+ },
+ "B-BT-240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "NAEKBA 3x150(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.993986,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 367.0,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.12,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 3x1x300": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "q_mm2": 300.0,
+  "ices": 3.58044,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 329.0,
+  "imax_ka": 0.471,
+  "x_ohm_per_km": 0.11,
+  "conductor": "Al"
+ },
+ "Al/St230/30mm\u00b2": {
+  "type": "ol",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.63,
+  "x_ohm_per_km": 0.386,
+  "conductor": "Al"
+ },
+ "B-GKN-K-2X50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2466,
+  "c_nf_per_km": 894.2385735856627,
+  "imax_ka": 0.38,
+  "x_ohm_per_km": 0.0035
+ },
+ "NA2YSY 3x240 RM/25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 0.0,
+  "ices": 3.51,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.391,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "Al/St 25/4": {
+  "type": "ol",
+  "r_ohm_per_km": 1.203,
+  "q_mm2": 25.0,
+  "ices": 0.04570774,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 8.86,
+  "imax_ka": 0.14,
+  "x_ohm_per_km": 0.413,
+  "conductor": "Al"
+ },
+ "B-GKN-K-240 AL+150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.154,
+  "c_nf_per_km": 2.652582384864923,
+  "imax_ka": 0.337,
+  "x_ohm_per_km": 0.059166666666666666
+ },
+ "Al/St 150/25(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.194,
+  "q_mm2": 150.0,
+  "ices": 0.04897258,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.059999999999999,
+  "imax_ka": 0.47,
+  "x_ohm_per_km": 0.352,
+  "conductor": "Al"
+ },
+ "M-GKT-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.241,
+  "c_nf_per_km": 224.88593458884816,
+  "imax_ka": 0.299,
+  "x_ohm_per_km": 0.09916666666666667
+ },
+ "NFA2X 4 x 50": {
+  "type": "ol",
+  "r_ohm_per_km": 0.641,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.165,
+  "x_ohm_per_km": 0.072
+ },
+ "Al/St 95/15": {
+  "type": "ol",
+  "r_ohm_per_km": 0.306,
+  "q_mm2": 95.0,
+  "ices": 0.04744899,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.3,
+  "imax_ka": 0.35,
+  "x_ohm_per_km": 0.355,
+  "conductor": "Al"
+ },
+ "B-GN-240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.096,
+  "c_nf_per_km": 645.5855008284248,
+  "imax_ka": 0.47,
+  "x_ohm_per_km": 0.06
+ },
+ "B-T-50_EP": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4476,
+  "c_nf_per_km": 1500.0088128172652,
+  "imax_ka": 0.15,
+  "x_ohm_per_km": 0.06916666666666667
+ },
+ "10032333 K 35/6 AL/ST": {
+  "type": "ol",
+  "r_ohm_per_km": 0.824,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.17,
+  "x_ohm_per_km": 0.402
+ },
+ "B-FIC": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4158,
+  "c_nf_per_km": 9.400751971961286,
+  "imax_ka": 0.305,
+  "x_ohm_per_km": 0.2724166666666667
+ },
+ "NA2XS2Y 1x150 RM(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "NAYBY 3x120/70sm/sm 0.6/1kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2542,
+  "q_mm2": 120.0,
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 900.0,
+  "imax_ka": 0.24,
+  "x_ohm_per_km": 0.07225663
+ },
+ "10032306 12kV 3x1x185 NA": {
+  "type": "cs",
+  "r_ohm_per_km": 0.169,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.111
+ },
+ "AL 50": {
+  "type": "ol",
+  "r_ohm_per_km": 0.584,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.225,
+  "x_ohm_per_km": 0.326
+ },
+ "10032596 - Kab 12kV 3x1x240 NA2XS2Y rm 25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.13,
+  "c_nf_per_km": 456.0,
+  "imax_ka": 0.415,
+  "x_ohm_per_km": 0.106
+ },
+ "B-P-70+50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.3099,
+  "c_nf_per_km": 787.7904424810333,
+  "imax_ka": 0.18,
+  "x_ohm_per_km": 0.0725
+ },
+ "A2XHSY 120 mm\u00b2": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 0.0,
+  "ices": 2.5999,
+  "isolation": "PVC",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 238.9,
+  "imax_ka": 0.329,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "B-C-6": {
+  "type": "ol",
+  "r_ohm_per_km": 0.6938,
+  "c_nf_per_km": 8.88084582452776,
+  "imax_ka": 0.205,
+  "x_ohm_per_km": 0.28758333333333336
+ },
+ "A2YHSY 150 mm\u00b2(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 0.0,
+  "ices": 2.796879,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 257.0,
+  "imax_ka": 0.351,
+  "x_ohm_per_km": 0.121,
+  "conductor": "Al"
+ },
+ "Al/St 70/12(2)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.413,
+  "q_mm2": 70.0,
+  "ices": 0.04679602,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.29,
+  "x_ohm_per_km": 0.364,
+  "conductor": "Al"
+ },
+ "Al 150(1)": {
+  "type": "ol",
+  "r_ohm_per_km": 0.192,
+  "q_mm2": 150.0,
+  "ices": 0.04679602,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.455,
+  "x_ohm_per_km": 0.357,
+  "conductor": "Al"
+ },
+ "B-T-150-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2384,
+  "c_nf_per_km": 2049.995244495158,
+  "imax_ka": 0.225,
+  "x_ohm_per_km": 0.065
+ },
+ "M-XKDT-400": {
+  "type": "cs",
+  "r_ohm_per_km": 0.06,
+  "c_nf_per_km": 308.3335238343137,
+  "imax_ka": 0.607,
+  "x_ohm_per_km": 0.099
+ },
+ "NAYSEY 3x185rm/25 6/10kV": {
+  "type": "cs",
+  "r_ohm_per_km": 0.16399999999999998,
+  "q_mm2": 185.0,
+  "endtmp_deg": 160.0,
+  "c_nf_per_km": 470.0,
+  "imax_ka": 0.307,
+  "x_ohm_per_km": 0.09299114
+ },
+ "N2XS2Y 3x1x240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0754,
+  "q_mm2": 50.0,
+  "ices": 3.299968,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 303.999,
+  "imax_ka": 0.532,
+  "x_ohm_per_km": 0.112,
+  "conductor": "Cu"
+ },
+ "10032505 - Kab 12kV 3x1x120 N2XS2Y rm 16": {
+  "type": "cs",
+  "r_ohm_per_km": 0.157,
+  "c_nf_per_km": 345.0,
+  "imax_ka": 0.364,
+  "x_ohm_per_km": 0.118
+ },
+ "NA2XSY 3x1x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 3.199542,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 280.0,
+  "imax_ka": 0.361,
+  "x_ohm_per_km": 0.1193805,
+  "conductor": "Al"
+ },
+ "NEKBA 3x35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.524,
+  "q_mm2": 35.0,
+  "ices": 2.883941,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 265.0,
+  "imax_ka": 0.155,
+  "x_ohm_per_km": 0.146,
+  "conductor": "Cu"
+ },
+ "NAYY 4x150": {
+  "type": "cs",
+  "r_ohm_per_km": 0.08,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "UG3": {
+  "type": "cs",
+  "r_ohm_per_km": 0.822,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.0847,
+  "conductor": "Cu"
+ },
+ "N2XSY 3x1x50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.387,
+  "q_mm2": 50.0,
+  "ices": 1.9,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 180.0,
+  "imax_ka": 0.222,
+  "x_ohm_per_km": 0.1445133,
+  "conductor": "Cu"
+ },
+ "B-TO-95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.4099,
+  "c_nf_per_km": 558.7664793717959,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.06833333333333334
+ },
+ "B-X-2X150-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1316,
+  "c_nf_per_km": 1222.1242821788157,
+  "imax_ka": 0.522,
+  "x_ohm_per_km": 0.0325
+ },
+ "NA2XS2Y 3x1x150 RE/25(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.72,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "Freileitung 4x 25 Al": {
+  "type": "ol",
+  "r_ohm_per_km": 0.37,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "NYY-J 4x25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.727,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.128,
+  "x_ohm_per_km": 0.088
+ },
+ "NAKLEY 3x1x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 50.0,
+  "ices": 3.7,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 330.0,
+  "imax_ka": 0.183,
+  "x_ohm_per_km": 0.13,
+  "conductor": "Al"
+ },
+ "N2XS2Y 3x1x185": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0991,
+  "q_mm2": 50.0,
+  "ices": 2.96998,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 272.998,
+  "imax_ka": 0.461,
+  "x_ohm_per_km": 0.117,
+  "conductor": "Cu"
+ },
+ "B-T-50-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.7434,
+  "c_nf_per_km": 1500.0088128172652,
+  "imax_ka": 0.12,
+  "x_ohm_per_km": 0.06833333333333334
+ },
+ "B-TDC-A\u00c3\u2030RIEN-2#$%#5-MONO": {
+  "type": "cs",
+  "r_ohm_per_km": 8.5222,
+  "c_nf_per_km": 838.0807519156874,
+  "imax_ka": 0.02,
+  "x_ohm_per_km": 0.08833333333333333
+ },
+ "NA2XS": {
+  "type": "cs",
+  "r_ohm_per_km": 0.13,
+  "q_mm2": 240.0,
+  "ices": 3.30837,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 304.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "N2YSY 1x120rm 12/20kV ir": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1556,
+  "q_mm2": 120.0,
+  "endtmp_deg": 150.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.38,
+  "x_ohm_per_km": 0.1193805
+ },
+ "NAYY 50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.641,
+  "q_mm2": 50,
+  "c_nf_per_km": 0,
+  "imax_ka": 0.151,
+  "x_ohm_per_km": 0.102
+ },
+ "NA2XS2Y 3x1x150 RE/25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.72,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.126,
+  "conductor": "Al"
+ },
+ "Freileitung 4x 35 Al": {
+  "type": "ol",
+  "r_ohm_per_km": 0.35,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "B-TDC-A\u00c9RIEN-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 1223.652169632498,
+  "imax_ka": 0.06,
+  "x_ohm_per_km": 0.075
+ },
+ "B-BT-50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "B-TDC-25_EP": {
+  "type": "cs",
+  "r_ohm_per_km": 0.8409,
+  "c_nf_per_km": 1374.9926050185811,
+  "imax_ka": 0.105,
+  "x_ohm_per_km": 0.07166666666666667
+ },
+ "NAKBA 4x 35": {
+  "type": "cs",
+  "r_ohm_per_km": 0.092,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "NFA2X 4x25": {
+  "type": "ol",
+  "r_ohm_per_km": 1.2,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.107,
+  "x_ohm_per_km": 0.075
+ },
+ "NAYY-J 4x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.082,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "N2XS2Y 3x1x150(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.124,
+  "q_mm2": 50.0,
+  "ices": 2.759986,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 253.99899999999997,
+  "imax_ka": 0.409,
+  "x_ohm_per_km": 0.121,
+  "conductor": "Cu"
+ },
+ "Kab 12kV 3x1x185 NA2XS2Y rm 16 - 10032306": {
+  "type": "cs",
+  "r_ohm_per_km": 0.169,
+  "c_nf_per_km": 406.0,
+  "imax_ka": 0.358,
+  "x_ohm_per_km": 0.111
+ },
+ "AL 70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.429,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.27,
+  "x_ohm_per_km": 0.316
+ },
+ "Al/St 50/8": {
+  "type": "ol",
+  "r_ohm_per_km": 0.595,
+  "q_mm2": 50.0,
+  "ices": 0.04625189,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.700000000000001,
+  "imax_ka": 0.21,
+  "x_ohm_per_km": 0.377,
+  "conductor": "Al"
+ },
+ "B-C-7": {
+  "type": "ol",
+  "r_ohm_per_km": 0.5146,
+  "c_nf_per_km": 9.151409227783983,
+  "imax_ka": 0.255,
+  "x_ohm_per_km": 0.27949999999999997
+ },
+ "OH3": {
+  "type": "ol",
+  "r_ohm_per_km": 2.0167,
+  "q_mm2": 0.0,
+  "ices": 0.0,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 1.0,
+  "x_ohm_per_km": 0.3343,
+  "conductor": "Cu"
+ },
+ "NAEKEBA 3x240 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 4.829785,
+  "isolation": "PVC",
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 460.0,
+  "imax_ka": 0.367,
+  "x_ohm_per_km": 0.112,
+  "conductor": "Al"
+ },
+ "NA2XSY 3x1x240(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.125,
+  "q_mm2": 240.0,
+  "ices": 3.499907,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.1130973,
+  "conductor": "Al"
+ },
+ "M-C-5-CU": {
+  "type": "ol",
+  "r_ohm_per_km": 1.011,
+  "c_nf_per_km": 7.963052319364497,
+  "imax_ka": 0.165,
+  "x_ohm_per_km": 0.31816666666666665
+ },
+ "NEKBA 3x70(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.268,
+  "q_mm2": 70.0,
+  "ices": 3.536909,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 325.0,
+  "imax_ka": 0.229,
+  "x_ohm_per_km": 0.132,
+  "conductor": "Cu"
+ },
+ "NAKBA 4x 70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.087,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "NYY-J 4x95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.193,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.275,
+  "x_ohm_per_km": 0.082
+ },
+ "M-XKDT-150AL+25-AL": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2679,
+  "c_nf_per_km": 187.27231637146352,
+  "imax_ka": 0.285,
+  "x_ohm_per_km": 0.09075
+ },
+ "NAEKBA 3x70(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.443,
+  "q_mm2": 70.0,
+  "ices": 3.000387,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 275.7,
+  "imax_ka": 0.178,
+  "x_ohm_per_km": 0.1351,
+  "conductor": "Al"
+ },
+ "B-TDC-16": {
+  "type": "cs",
+  "r_ohm_per_km": 1.3306,
+  "c_nf_per_km": 1223.6627799620373,
+  "imax_ka": 0.08,
+  "x_ohm_per_km": 0.075
+ },
+ "B-TDC-95+50": {
+  "type": "cs",
+  "r_ohm_per_km": 0.2238,
+  "c_nf_per_km": 1874.5269197363434,
+  "imax_ka": 0.22,
+  "x_ohm_per_km": 0.06833333333333334
+ },
+ "B-GKN-K-150 AL+95": {
+  "type": "cs",
+  "r_ohm_per_km": 0.245,
+  "c_nf_per_km": 2.652582384864923,
+  "imax_ka": 0.253,
+  "x_ohm_per_km": 0.059166666666666666
+ },
+ "NAEKBA 3x25(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 1.2,
+  "q_mm2": 25.0,
+  "ices": 2.6,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 240.0,
+  "imax_ka": 0.1,
+  "x_ohm_per_km": 0.154,
+  "conductor": "Al"
+ },
+ "Test-Leitung": {
+  "type": "cs",
+  "r_ohm_per_km": 0.08,
+  "q_mm2": 0.0,
+  "endtmp_deg": 80.0,
+  "c_nf_per_km": 300.0,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.12
+ },
+ "Cu 35": {
+  "type": "ol",
+  "r_ohm_per_km": 0.51,
+  "q_mm2": 35.0,
+  "ices": 0.04603423,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 9.0,
+  "imax_ka": 0.2,
+  "x_ohm_per_km": 0.407,
+  "conductor": "Cu"
+ },
+ "B-T-2#$%#5-BI": {
+  "type": "cs",
+  "r_ohm_per_km": 8.5222,
+  "c_nf_per_km": 838.0834044980722,
+  "imax_ka": 0.03,
+  "x_ohm_per_km": 0.08833333333333333
+ },
+ "NAEKEFA 3x120": {
+  "type": "cs",
+  "r_ohm_per_km": 0.253,
+  "q_mm2": 120.0,
+  "ices": 4.24429,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 390.0,
+  "imax_ka": 0.244,
+  "x_ohm_per_km": 0.123,
+  "conductor": "Al"
+ },
+ "NA2XSY 3x1x150(2)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 3.000387,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 260.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.1225221,
+  "conductor": "Al"
+ },
+ "B-T-300": {
+  "type": "cs",
+  "r_ohm_per_km": 0.0693,
+  "c_nf_per_km": 2474.9919941982157,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.065
+ },
+ "Freileitung 4x 25 Cu": {
+  "type": "ol",
+  "r_ohm_per_km": 0.37,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.0
+ },
+ "10032311 - Frltg 12kV 3x120/20 Al/St": {
+  "type": "ol",
+  "r_ohm_per_km": 0.237,
+  "c_nf_per_km": 10.0,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.361
+ },
+ "NA2XS(FL)2Y 3x1x150 RM": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.759877,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 250.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "10032596 - X Kab 12kV 3x1x240 NA2XS2Y rm 25": {
+  "type": "cs",
+  "r_ohm_per_km": 0.13,
+  "c_nf_per_km": 456.0,
+  "imax_ka": 0.415,
+  "x_ohm_per_km": 0.106
+ },
+ "Alu 4x70": {
+  "type": "ol",
+  "r_ohm_per_km": 0.429,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.27,
+  "x_ohm_per_km": 0.316
+ },
+ "NA2XS2Y 3x1x150(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.206,
+  "q_mm2": 150.0,
+  "ices": 2.76423,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 254.0,
+  "imax_ka": 0.319,
+  "x_ohm_per_km": 0.122,
+  "conductor": "Al"
+ },
+ "B-T-240-ALSE": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1449,
+  "c_nf_per_km": 2165.8600430660576,
+  "imax_ka": 0.3,
+  "x_ohm_per_km": 0.0625
+ },
+ "N2XS2Y 3x1x300(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.059,
+  "q_mm2": 300.0,
+  "ices": 3.672,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 330.0,
+  "imax_ka": 0.599,
+  "x_ohm_per_km": 0.109,
+  "conductor": "Cu"
+ },
+ "NAEKBA 3x95(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.32,
+  "q_mm2": 95.0,
+  "ices": 3.373667,
+  "isolation": "PVC",
+  "endtmp_deg": 90.0,
+  "c_nf_per_km": 310.0,
+  "imax_ka": 0.213,
+  "x_ohm_per_km": 0.128,
+  "conductor": "Al"
+ },
+ "NAEKBA 3x400(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.078,
+  "q_mm2": 400.0,
+  "ices": 5.659054,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 520.0,
+  "imax_ka": 0.478,
+  "x_ohm_per_km": 0.104,
+  "conductor": "Al"
+ },
+ "NA2XS2Y 1x240 RE 12/20 kV(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.13,
+  "q_mm2": 240.0,
+  "ices": 3.30837,
+  "isolation": "VPE",
+  "endtmp_deg": 110.0,
+  "c_nf_per_km": 304.0,
+  "imax_ka": 0.417,
+  "x_ohm_per_km": 0.113,
+  "conductor": "Al"
+ },
+ "Al/St 120/20": {
+  "type": "ol",
+  "r_ohm_per_km": 0.237,
+  "q_mm2": 120.0,
+  "ices": 0.0478843,
+  "isolation": "PVC",
+  "endtmp_deg": 200.0,
+  "c_nf_per_km": 10.78,
+  "imax_ka": 0.41,
+  "x_ohm_per_km": 0.358,
+  "conductor": "Al"
+ },
+ "B-BT-2X240": {
+  "type": "cs",
+  "r_ohm_per_km": 0.1,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.001,
+  "x_ohm_per_km": 0.08333333333333334
+ },
+ "NAEKBA 3x185(1)": {
+  "type": "cs",
+  "r_ohm_per_km": 0.164,
+  "q_mm2": 185.0,
+  "ices": 4.331353,
+  "isolation": "PVC",
+  "endtmp_deg": 65.0,
+  "c_nf_per_km": 398.0,
+  "imax_ka": 0.314,
+  "x_ohm_per_km": 0.116,
+  "conductor": "Al"
+ },
+ "NYY-J 4x70": {
+  "type": "cs",
+  "r_ohm_per_km": 0.271,
+  "c_nf_per_km": 0.0,
+  "imax_ka": 0.228,
+  "x_ohm_per_km": 0.082
+ }
+}

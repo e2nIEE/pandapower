@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Random pandapower networks &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Generic pandapower Networks" href="networks.html" />
+    <link rel="next" title="CIGRE Networks" href="networks_cigre.html" />
+    <link rel="prev" title="Simple pandapower test networks" href="networks_test.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="networks_cigre.html" title="CIGRE Networks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="networks_test.html" title="Simple pandapower test networks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="networks.html" accesskey="U">Generic pandapower Networks</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="random-pandapower-networks">
+<h1>Random pandapower networks<a class="headerlink" href="#random-pandapower-networks" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="random-line-network">
+<h2>Random line network<a class="headerlink" href="#random-line-network" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.random_line_network">
+<code class="descclassname">pandapower.networks.</code><code class="descname">random_line_network</code><span class="sig-paren">(</span><em>voltage_level=20.0, nr_busses_main=5, p_pv=0.5, p_wp=0.5, p_pv_range=[0, 0], q_pv_range=[0, 0], p_wp_range=[0, 0], q_wp_range=[0, 0], p_load_range=[200, 1600], q_load_range=[0, 0], line_length_range=[0.1, 1.4], linetypes=[], branches=[]</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.random_line_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a random line network (without transformer) with one load at every bus. Dependent on the    propabilities for pv plant and wp plant each bus has a pv and/or wp plant.
+The network can be either a simple one line network or a branched network.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>voltage_level</strong> (float, default 20.0) - network voltage level</p>
+<p><strong>nr_busses_main</strong> (int, default 5) - number of main busses to create</p>
+<p><strong>p_pv</strong> (float, default 0.5) - probability of PV generator creation</p>
+<p><strong>p_wp</strong> (float, default 0.5) - probability of WP generator creation</p>
+<p><strong>line_length_range</strong> (list, default [0.1, 1.4])  - range for line lengths: [l_min_km, l_max_km]</p>
+<p><strong>p_pv_range</strong> (list, default [0, 0]) - range for the active power of each pv plant: [min_p_kw, max_p_kw]</p>
+<p><strong>q_pv_range</strong> (list, default [0, 0]) - range for the reactive power of each pv plant: [min_q_kvar, max_q_kvar]</p>
+<p><strong>p_wp_range</strong> (list, default [0, 0]) - range for the active power of each wp plant: [min_p_kw, max_p_kw]</p>
+<p><strong>q_wp_range</strong> (list, default [0, 0]) - range for the reactive power of each wp plant: [q_min_kw, q_max_kw]</p>
+<p><strong>p_load_range</strong> (list, default [200, 1600]) - range for the active power of each load: [min_p_kw, max_p_kw]</p>
+<p><strong>q_load_range</strong> (list, default [0, 0]) - range for the reactive power of each load: [min_q_kvar, max_q_kvar]</p>
+<p><strong>linetypes</strong> (list, default []) - list of all possible linetypes used in the grid. For each line one of these types is                     randomly chosen. If empty, one of the overall available types is chosen.</p>
+<p class="last"><strong>branches</strong> (list, default []) - list of tuples to add additional branches to the network. Each tuple has to be                     in the form of (start_bus, nr_busses), so branches=[(2,5), (4,3)] adds one                     branch that is 5 lines long and starts at bus 2 and one branch that is 3 lines                     long and starts at bus 4. If branches is an empty list, the network is a simple                     one line network.</p>
+</dd>
+</dl>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>net</strong> - randomly created pandapower network</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>import pandapower.networks as pn</p>
+<p>net = pn.random_line_network()</p>
+<p><strong>With defined standard types and probabilities:</strong></p>
+<p>net = pn.random_line_networ(p_pv=0.7, p_wp=0.4, linetypes=[&#8220;NAYY 4x120 SE&#8221;,              &#8220;NAYY 4x150 SE&#8221;, &#8220;NA2XS2Y 1x95 RM/25 12/20 kV&#8221;])</p>
+</div></blockquote>
+</dd></dl>
+
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
+
+<span class="n">net1_1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">random_line_network</span><span class="p">(</span><span class="n">nr_busses_main</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">p_pv</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">p_wp</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">net1_2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">random_line_network</span><span class="p">(</span><span class="n">nr_busses_main</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">p_pv</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">p_wp</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">net1_3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">random_line_network</span><span class="p">(</span><span class="n">nr_busses_main</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">p_pv</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">p_wp</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">branches</span><span class="o">=</span><span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../_images/random_nw_random_line_network.png"><img alt="alternate Text" class="align-center" src="../_images/random_nw_random_line_network.png" style="width: 30em;" /></a>
+</div>
+<hr class="docutils" />
+<div class="section" id="random-empty-grid">
+<h2>Random empty grid<a class="headerlink" href="#random-empty-grid" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.random_empty_grid">
+<code class="descclassname">pandapower.networks.</code><code class="descname">random_empty_grid</code><span class="sig-paren">(</span><em>num_busses</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.random_empty_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a random line network with one line to every bus (tree structure). The probability whether
+the next created bus is connected to the last created bus (1-p) or randomly to any of the already
+created busses (p) is given by p.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>num_busses</strong> (int) - number of busses</p>
+<p class="last"><strong>p</strong> (float) - probability that the currently created bus is connected to any of the already created              busses and not to the last created bus</p>
+</dd>
+</dl>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>net</strong> - Returns the random empyt grid</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>import pandapower.networks as pn</p>
+<p>net = pn.networksrandom_empty_grid(5, 0)</p>
+</div></blockquote>
+<p>Graphical Examples:</p>
+</dd></dl>
+
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
+
+<span class="n">net2_1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">random_empty_grid</span><span class="p">(</span><span class="n">num_busses</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">net2_2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">random_empty_grid</span><span class="p">(</span><span class="n">num_busses</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">net2_3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">random_empty_grid</span><span class="p">(</span><span class="n">num_busses</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../_images/random_nw_random_empty_grid.png"><img alt="alternate Text" class="align-center" src="../_images/random_nw_random_empty_grid.png" style="width: 40em;" /></a>
+</div>
+<hr class="docutils" />
+<div class="section" id="set-up-random-empty-grid-with-loads">
+<h2>Set up random empty grid with loads<a class="headerlink" href="#set-up-random-empty-grid-with-loads" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.networks.setup_grid">
+<code class="descclassname">pandapower.networks.</code><code class="descname">setup_grid</code><span class="sig-paren">(</span><em>num_busses</em>, <em>seed=None</em>, <em>p=0</em>, <em>num_loads=None</em>, <em>deviation=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.networks.setup_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a random network by using function random_empty_grid and fills it with loads. The loads
+are randomly assigned to the nodes and always have an active power of 200 kW. The number of
+loads can be given directly or by a voltage value which must be reached by the load dependent
+voltage drop.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><strong>num_busses</strong> (int) - number of busses</dd>
+<dt>Optional:</dt>
+<dd><p class="first"><strong>seed</strong> (int) - initialization of the random</p>
+<p><strong>p</strong> (float) - probability that the currently created bus is connected to any of the             already created busses and not to the last created bus (consider random_empty_grid)</p>
+<p><strong>num_loads</strong> - number of loads to fill the random network</p>
+<p class="last"><strong>deviation</strong> - alternative way to determine the number of loads</p>
+</dd>
+<dt>RETURN:</dt>
+<dd><strong>net</strong> - Return the random grid with loads</dd>
+</dl>
+<p>EXAMPLE:</p>
+<blockquote>
+<div>import pandapower.networks as pn
+net = pn.networks.setup_grid(5, p=0.3, num_loads=7)</div></blockquote>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Random pandapower networks</a><ul>
+<li><a class="reference internal" href="#random-line-network">Random line network</a></li>
+<li><a class="reference internal" href="#random-empty-grid">Random empty grid</a></li>
+<li><a class="reference internal" href="#set-up-random-empty-grid-with-loads">Set up random empty grid with loads</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="networks_test.html"
+                        title="previous chapter">Simple pandapower test networks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="networks_cigre.html"
+                        title="next chapter">CIGRE Networks</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/networks_random.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="networks_cigre.html" title="CIGRE Networks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="networks_test.html" title="Simple pandapower test networks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="networks.html" >Generic pandapower Networks</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

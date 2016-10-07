@@ -1,0 +1,10 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the bus
+vn_kv*;float;:math:`>` 0;rated voltage of the bus [kV]
+type;string;"| naming conventions:
+| *""n""* - node
+| *""b""* - busbar
+| *""m""* - muff";type variable to classify busses
+zone;string;;can be used to group busses, for example network groups / regions
+in_service*;boolean;"| *""True""* - in service
+| *""False""* - out of service";specifies if the bus is in service. Only in service busses are considered during loadflow calculation

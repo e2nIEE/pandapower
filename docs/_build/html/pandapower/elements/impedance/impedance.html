@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Impedance &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="pandapower Elements" href="../../elements.html" />
+    <link rel="next" title="Ward" href="../ward/ward.html" />
+    <link rel="prev" title="Shunt" href="../shunt/shunt.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../ward/ward.html" title="Ward"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../shunt/shunt.html" title="Shunt"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" accesskey="U">pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="impedance">
+<h1>Impedance<a class="headerlink" href="#impedance" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-impedance"><span class="std std-ref">Create Impedance</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.impedance</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="13%" />
+<col width="20%" />
+<col width="53%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the impedance</td>
+</tr>
+<tr class="row-odd"><td>from_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of bus where the impedance starts</td>
+</tr>
+<tr class="row-even"><td>to_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of bus where the impedance ends</td>
+</tr>
+<tr class="row-odd"><td>r_pu*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>resistance of the impedance [p.u]</td>
+</tr>
+<tr class="row-even"><td>x_pu*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>reactance of the impedance [p.u]</td>
+</tr>
+<tr class="row-odd"><td>sn_kva*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>reference apparent power for the impedance per unit values [kVA]</td>
+</tr>
+<tr class="row-even"><td>in_service*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;True&#8221;</em> - in service</div>
+<div class="line"><em>&#8220;False&#8221;</em> - out of service</div>
+</div>
+</td>
+<td>specifies if the imepdance is in service. Only in service elements are considered during loadflow calculation</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+<p><strong>Loadflow Model</strong></p>
+<p>The impedance is modelled as a simple longitudinal per unit impedance:</p>
+<a class="reference internal image-reference" href="../../../_images/impedance.png"><img alt="alternate Text" class="align-center" src="../../../_images/impedance.png" style="width: 25em;" /></a>
+<p>The per unit values given in the parameter table are assumed to be relative to the rated voltage of from and to bus as well as to the apparent power given in the table.
+The per unit values are therefore transformed into the network per unit system:</p>
+<div class="math">
+\[\begin{align*}
+ \underline{z}_{impedance} &amp;= r\_pu + j \cdot x_{pu} \\
+ \underline{z} &amp;= \underline{z}_{impedance} \frac{S_{N}}{sn\_kva}
+ \end{align*}\]</div><p>with <span class="math">\(S_{N} = 1 \ MVA\)</span> (see <a class="reference internal" href="../../about_units.html#conventions"><span class="std std-ref">per unit system</span></a>).</p>
+<p><strong>Results</strong></p>
+<p><em>net.res_impedance</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="13%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>p_from_kw</td>
+<td>float</td>
+<td>active power flow into the impedance at &#8220;from&#8221; bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_from_kvar</td>
+<td>float</td>
+<td>reactive power flow into the impedance at &#8220;from&#8221; bus [kVAr]</td>
+</tr>
+<tr class="row-even"><td>p_to_kw</td>
+<td>float</td>
+<td>active power flow into the impedance at &#8220;to&#8221; bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_to_kvar</td>
+<td>float</td>
+<td>reactive power flow into the impedance at &#8220;to&#8221; bus [kVAr]</td>
+</tr>
+<tr class="row-even"><td>pl_kw</td>
+<td>float</td>
+<td>active power losses of the impedance [kW]</td>
+</tr>
+<tr class="row-odd"><td>ql_kvar</td>
+<td>float</td>
+<td>reactive power consumption of the impedance [kVar]</td>
+</tr>
+<tr class="row-even"><td>i_from_ka</td>
+<td>float</td>
+<td>current at from bus [kA]</td>
+</tr>
+<tr class="row-odd"><td>i_to_ka</td>
+<td>float</td>
+<td>current at to bus [kA]</td>
+</tr>
+</tbody>
+</table>
+<div class="math">
+\[\begin{align*}
+ i\_from\_ka &amp;= i_{from}\\
+ i\_to\_ka &amp;= i_{to}\\
+ p\_from\_kw &amp;= Re(\underline{v}_{from} \cdot \underline{i}_{from}) \\
+ q\_from\_kvar &amp;= Im(\underline{v}_{from} \cdot \underline{i}_{from}) \\
+ p\_to\_kw &amp;= Re(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+ q\_to\_kvar &amp;= Im(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+     pl\_kw &amp;= p\_from\_kw + p\_to\_kw \\
+     ql\_kvar &amp;= q\_from\_kvar + q\_to\_kvar \\
+ \end{align*}\]</div></div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../shunt/shunt.html"
+                        title="previous chapter">Shunt</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../ward/ward.html"
+                        title="next chapter">Ward</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/pandapower/elements/impedance/impedance.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../ward/ward.html" title="Ward"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../shunt/shunt.html" title="Shunt"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" >pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

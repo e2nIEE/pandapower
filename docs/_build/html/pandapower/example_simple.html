@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Simple Example Network &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Examples" href="example.html" />
+    <link rel="next" title="Multi-Voltage Level Example Network" href="example_realistic.html" />
+    <link rel="prev" title="Examples" href="example.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="example_realistic.html" title="Multi-Voltage Level Example Network"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="example.html" title="Examples"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="example.html" accesskey="U">Examples</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="simple-example-network">
+<span id="simple-example"></span><h1>Simple Example Network<a class="headerlink" href="#simple-example-network" title="Permalink to this headline">¶</a></h1>
+<p>The following example contains all basic elements that are supported by the pandapower format. It is a simple example to show the
+basic principles of creating a pandapower network.</p>
+<p>This example is also available as an interactive jupyter notebook (see <span class="xref std std-ref">pandapower tutorials</span>).</p>
+<p>The finally generated network of this example may be generated and illustrated as below.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
+
+<span class="n">net_complete</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_example_simple</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple.png" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="section" id="create-network">
+<h2>Create Network<a class="headerlink" href="#create-network" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div>In this example a new network will be created. It starts by typing:</div></blockquote>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
+
+<span class="n">net</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_empty_network</span><span class="p">()</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create busses</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">bus1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;HV Busbar&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">110</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;HV Busbar 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">110</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;HV Transformer Bus&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">110</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;n&quot;</span><span class="p">)</span>
+<span class="n">bus4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;MV Transformer Bus&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;n&quot;</span><span class="p">)</span>
+<span class="n">bus5</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;MV Station 1&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus6</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;MV Station 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus7</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;MV Station 3&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus8</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;MV Station 4&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_busses.png" />
+<p><em>bus table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">name</span>                <span class="n">vn_kv</span>  <span class="nb">type</span>  <span class="n">zone</span>  <span class="n">in_service</span>
+
+<span class="mi">0</span>      <span class="n">HV</span> <span class="n">Busbar</span>           <span class="mi">110</span>    <span class="n">b</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">1</span>      <span class="n">HV</span> <span class="n">Busbar</span> <span class="mi">2</span>         <span class="mi">110</span>    <span class="n">b</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">2</span>      <span class="n">HV</span> <span class="n">Transformer</span> <span class="n">Bus</span>  <span class="mi">110</span>    <span class="n">n</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">3</span>      <span class="n">MV</span> <span class="n">Transformer</span> <span class="n">Bus</span>  <span class="mi">20</span>     <span class="n">n</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">4</span>      <span class="n">MV</span> <span class="n">Station</span> <span class="mi">1</span>        <span class="mi">20</span>     <span class="n">b</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">5</span>      <span class="n">MV</span> <span class="n">Station</span> <span class="mi">2</span>        <span class="mi">20</span>     <span class="n">b</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">6</span>      <span class="n">MV</span> <span class="n">Station</span> <span class="mi">3</span>        <span class="mi">20</span>     <span class="n">b</span>     <span class="kc">None</span>  <span class="kc">True</span>
+<span class="mi">7</span>      <span class="n">MV</span> <span class="n">Station</span> <span class="mi">4</span>        <span class="mi">20</span>     <span class="n">b</span>     <span class="kc">None</span>  <span class="kc">True</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create external grid</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">,</span> <span class="n">va_degree</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_ext_grids.png" />
+<p><em>external grid table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">bus</span>  <span class="n">vm_pu</span>  <span class="n">va_degree</span>  <span class="n">name</span>  <span class="n">sk_max</span>  <span class="n">sk_min</span>  <span class="n">rx_max</span>  <span class="n">rx_min</span>  <span class="n">in_service</span>
+
+<span class="mi">0</span>      <span class="mi">0</span>    <span class="mi">1</span>      <span class="mi">20</span>         <span class="n">NaN</span>   <span class="n">NaN</span>     <span class="n">NaN</span>     <span class="n">NaN</span>     <span class="n">NaN</span>     <span class="kc">True</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create transformer</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_transformer</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;110kV/20kV transformer&quot;</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;HV_MV_Feeder1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_trafos.png" />
+<p><em>transformer table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">name</span>                    <span class="n">std_type</span>      <span class="n">hv_bus</span>  <span class="n">lv_bus</span>  <span class="n">sn_kva</span>
+
+<span class="mi">0</span>      <span class="mi">110</span><span class="n">kV</span><span class="o">/</span><span class="mi">20</span><span class="n">kV</span> <span class="n">transformer</span>  <span class="n">HV_MV_Feeder1</span> <span class="mi">2</span>       <span class="mi">3</span>       <span class="mi">25000</span>
+
+
+<span class="n">index</span>  <span class="o">...</span>  <span class="n">vn_hv_kv</span>  <span class="n">vn_lv_kv</span>  <span class="n">vsc_percent</span>  <span class="n">vscr_percent</span>  <span class="n">pfe_kw</span>  <span class="n">i0_percent</span>
+
+<span class="mi">0</span>      <span class="o">...</span>  <span class="mf">110.0</span>   <span class="mi">20</span>      <span class="mf">12.0</span>         <span class="mf">0.16</span>          <span class="mf">0.0</span>     <span class="mf">0.0</span>
+
+
+<span class="n">index</span>  <span class="o">...</span>  <span class="n">tp_side</span> <span class="n">tp_mid</span>  <span class="n">tp_min</span> <span class="n">tp_max</span>  <span class="n">tp_st_percent</span>  <span class="n">tp_pos</span>  <span class="n">in_service</span>
+
+<span class="mi">0</span>      <span class="o">...</span>  <span class="mi">1</span>       <span class="mi">0</span>       <span class="o">-</span><span class="mi">2</span>     <span class="mi">2</span>       <span class="mf">2.5</span>            <span class="mf">0.0</span>     <span class="kc">True</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create lines</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">line1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;N2XS(FL)2Y 1x300RM/25 64/110kV it&quot;</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Line 1&quot;</span><span class="p">)</span>
+<span class="n">line2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="mf">0.075</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NA2YSY 1x300rm 12/20kV it&quot;</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Line 2&quot;</span><span class="p">)</span>
+<span class="n">line3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="mf">0.125</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NA2YSY 1x300rm 12/20kV it&quot;</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Line 3&quot;</span><span class="p">)</span>
+<span class="n">line4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="mf">0.175</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NA2YSY 1x300rm 12/20kV it&quot;</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Line 4&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_lines.png" />
+<p><em>line table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">name</span>    <span class="n">std_type</span>                           <span class="kn">from</span> <span class="nn">bus</span>  <span class="n">to</span> <span class="n">bus</span>  <span class="n">length_km</span>
+
+<span class="mi">0</span>      <span class="n">Line</span> <span class="mi">1</span>  <span class="n">N2XS</span><span class="p">(</span><span class="n">FL</span><span class="p">)</span><span class="mi">2</span><span class="n">Y</span> <span class="mi">1</span><span class="n">x300RM</span><span class="o">/</span><span class="mi">25</span> <span class="mi">64</span><span class="o">/</span><span class="mi">110</span><span class="n">kV</span> <span class="n">it</span>  <span class="mi">0</span>         <span class="mi">1</span>       <span class="mf">0.225</span>
+<span class="mi">1</span>      <span class="n">Line</span> <span class="mi">2</span>  <span class="n">NA2YSY</span> <span class="mi">1</span><span class="n">x300rm</span> <span class="mi">12</span><span class="o">/</span><span class="mi">20</span><span class="n">kV</span> <span class="n">it</span>          <span class="mi">4</span>         <span class="mi">5</span>       <span class="mf">0.075</span>
+<span class="mi">2</span>      <span class="n">Line</span> <span class="mi">3</span>  <span class="n">NA2YSY</span> <span class="mi">1</span><span class="n">x300rm</span> <span class="mi">12</span><span class="o">/</span><span class="mi">20</span><span class="n">kV</span> <span class="n">it</span>          <span class="mi">4</span>         <span class="mi">6</span>       <span class="mf">0.125</span>
+<span class="mi">3</span>      <span class="n">Line</span> <span class="mi">4</span>  <span class="n">NA2YSY</span> <span class="mi">1</span><span class="n">x300rm</span> <span class="mi">12</span><span class="o">/</span><span class="mi">20</span><span class="n">kV</span> <span class="n">it</span>          <span class="mi">4</span>         <span class="mi">7</span>       <span class="mf">0.175</span>
+
+
+<span class="n">index</span>  <span class="o">...</span>  <span class="n">r_ohm_per_km</span>  <span class="n">x_ohm_per_km</span>  <span class="n">c_nf_per_km</span>  <span class="n">imax_ka</span>  <span class="n">df</span>  <span class="nb">type</span>  <span class="n">in_service</span>
+
+<span class="mi">0</span>      <span class="o">...</span>  <span class="mf">0.0613</span>        <span class="mf">0.144513</span>      <span class="mf">150.0000</span>     <span class="mf">0.594</span>    <span class="mi">1</span>   <span class="n">cs</span>    <span class="kc">True</span>
+<span class="mi">1</span>      <span class="o">...</span>  <span class="mf">0.1042</span>        <span class="mf">0.106814</span>      <span class="mf">340.0000</span>     <span class="mf">0.440</span>    <span class="mi">1</span>   <span class="n">cs</span>    <span class="kc">True</span>
+<span class="mi">2</span>      <span class="o">...</span>  <span class="mf">0.1042</span>        <span class="mf">0.106814</span>      <span class="mf">340.0000</span>     <span class="mf">0.440</span>    <span class="mi">1</span>   <span class="n">cs</span>    <span class="kc">True</span>
+<span class="mi">3</span>      <span class="o">...</span>  <span class="mf">0.1042</span>        <span class="mf">0.106814</span>      <span class="mf">340.0000</span>     <span class="mf">0.440</span>    <span class="mi">1</span>   <span class="n">cs</span>    <span class="kc">True</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create switches</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="c1"># (Circuit breaker)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;CB&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;CB&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="c1"># (Load break switches)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line3</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">line3</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line4</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="n">line4</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_switches.png" />
+<p><em>switch table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">bus</span>  <span class="n">element</span>  <span class="n">et</span>  <span class="nb">type</span>  <span class="n">closed</span>
+
+<span class="mi">0</span>      <span class="mi">1</span>    <span class="mi">2</span>        <span class="n">b</span>   <span class="n">CB</span>    <span class="mi">1</span>
+<span class="mi">1</span>      <span class="mi">3</span>    <span class="mi">4</span>        <span class="n">b</span>   <span class="n">CB</span>    <span class="mi">1</span>
+<span class="mi">2</span>      <span class="mi">4</span>    <span class="mi">1</span>        <span class="n">l</span>   <span class="n">LBS</span>   <span class="mi">1</span>
+<span class="mi">3</span>      <span class="mi">5</span>    <span class="mi">1</span>        <span class="n">l</span>   <span class="n">LBS</span>   <span class="mi">1</span>
+<span class="mi">4</span>      <span class="mi">4</span>    <span class="mi">2</span>        <span class="n">l</span>   <span class="n">LBS</span>   <span class="mi">1</span>
+<span class="mi">5</span>      <span class="mi">6</span>    <span class="mi">2</span>        <span class="n">l</span>   <span class="n">LBS</span>   <span class="mi">1</span>
+<span class="mi">6</span>      <span class="mi">4</span>    <span class="mi">3</span>        <span class="n">l</span>   <span class="n">LBS</span>   <span class="mi">1</span>
+<span class="mi">7</span>      <span class="mi">7</span>    <span class="mi">3</span>        <span class="n">l</span>   <span class="n">LBS</span>   <span class="mi">1</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create generator / static generator / load</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">6000</span><span class="p">,</span> <span class="n">vm_pu</span> <span class="o">=</span> <span class="mf">1.05</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_sgen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2000</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">20000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">4000</span><span class="p">,</span> <span class="n">scaling</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_gens_sgens_loads.png" />
+<p><em>gen table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">name</span>  <span class="n">bus</span>   <span class="n">p_kw</span>  <span class="n">vm_pu</span>  <span class="n">sn_kva</span>  <span class="n">scaling</span>  <span class="n">in_service</span>  <span class="nb">type</span>
+
+<span class="mi">0</span>      <span class="kc">None</span>  <span class="mi">5</span>    <span class="o">-</span><span class="mi">6000</span>  <span class="mf">1.05</span>   <span class="kc">None</span>    <span class="mi">1</span>        <span class="kc">True</span>        <span class="n">sync</span>
+</pre></div>
+</div>
+<p><em>sgen table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">name</span>  <span class="n">bus</span>   <span class="n">p_kw</span>  <span class="n">q_kvar</span>  <span class="n">sn_kva</span>  <span class="n">scaling</span>  <span class="n">in_service</span>  <span class="nb">type</span>
+
+<span class="mi">0</span>      <span class="kc">None</span>  <span class="mi">6</span>    <span class="o">-</span><span class="mi">2000</span>  <span class="mi">0</span>       <span class="kc">None</span>    <span class="mi">1</span>        <span class="kc">True</span>        <span class="n">PV</span>
+</pre></div>
+</div>
+<p><em>load table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">name</span>  <span class="n">bus</span>  <span class="n">p_kw</span>   <span class="n">q_kvar</span>  <span class="n">sn_kva</span>  <span class="n">scaling</span>  <span class="n">in_service</span>
+
+<span class="mi">0</span>      <span class="n">NaN</span>   <span class="mi">7</span>    <span class="mi">20000</span>  <span class="mi">4000</span>    <span class="n">NaN</span>     <span class="mf">0.6</span>      <span class="kc">True</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Create shunt</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_shunt</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=-</span><span class="mi">960</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Shunt&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="alternate Text" class="align-center" src="../_images/example_network_simple_shunts.png" />
+<p><em>shunt table:</em></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">index</span>  <span class="n">bus</span>  <span class="n">name</span>   <span class="n">p_kw</span>   <span class="n">q_kvar</span>  <span class="n">in_service</span>
+
+<span class="mi">0</span>      <span class="mi">2</span>    <span class="n">Shunt</span>  <span class="mf">0.0</span>   <span class="o">-</span><span class="mf">960.0</span>   <span class="mi">1</span>
+</pre></div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="powerflow-and-result-tables">
+<h2>Powerflow and Result Tables<a class="headerlink" href="#powerflow-and-result-tables" title="Permalink to this headline">¶</a></h2>
+<p>By executing a loadflow, the following pandapower tables contain all the results of the different components (bus, line, trafo,
+ext_grid, gen, sgen, load):</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runpp</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">res_bus</span><span class="p">:</span>
+
+<span class="n">index</span>  <span class="n">vm_pu</span>     <span class="n">va_degree</span>   <span class="n">p_kw</span>           <span class="n">q_kvar</span>
+
+<span class="mi">0</span>      <span class="mf">1.000000</span>  <span class="mf">20.000000</span>  <span class="o">-</span><span class="mf">4019.069403</span>   <span class="o">-</span><span class="mf">124.661744</span>
+<span class="mi">1</span>      <span class="mf">0.999995</span>  <span class="mf">19.999394</span>   <span class="mf">0.000000</span>       <span class="mf">0.000000</span>
+<span class="mi">2</span>      <span class="mf">0.999995</span>  <span class="mf">19.999394</span>   <span class="mf">0.000000</span>       <span class="mf">0.000000</span>
+<span class="mi">3</span>      <span class="mf">1.049846</span>  <span class="mf">18.878819</span>   <span class="mf">0.000000</span>       <span class="mf">0.000000</span>
+<span class="mi">4</span>      <span class="mf">1.049846</span>  <span class="mf">18.878819</span>   <span class="mf">0.000000</span>       <span class="mf">0.000000</span>
+<span class="mi">5</span>      <span class="mf">1.050000</span>  <span class="mf">18.882804</span>  <span class="o">-</span><span class="mf">6000.000000</span>   <span class="o">-</span><span class="mf">2224.389105</span>
+<span class="mi">6</span>      <span class="mf">1.049908</span>  <span class="mf">18.882284</span>  <span class="o">-</span><span class="mf">2000.000000</span>    <span class="mf">0.000000</span>
+<span class="mi">7</span>      <span class="mf">1.049218</span>  <span class="mf">18.855331</span>   <span class="mf">12000.000000</span>   <span class="mf">2400.000000</span>
+
+
+
+<span class="n">res_line</span><span class="p">:</span>
+
+<span class="n">index</span>   <span class="n">p_from_kw</span>      <span class="n">q_from_kvar</span>   <span class="n">p_to_kw</span>       <span class="n">q_to_kvar</span>      <span class="n">i_ka</span>
+
+<span class="mi">0</span>       <span class="mf">4019.069403</span>    <span class="mf">124.661744</span>   <span class="o">-</span><span class="mf">4019.05095</span>   <span class="o">-</span><span class="mf">2.529124e+02</span>   <span class="mf">0.021136</span>
+<span class="mi">1</span>      <span class="o">-</span><span class="mf">5999.274219</span>   <span class="o">-</span><span class="mf">2227.177476</span>   <span class="mf">6000.00000</span>    <span class="mf">2.224389e+03</span>   <span class="mf">0.175962</span>
+<span class="mi">2</span>      <span class="o">-</span><span class="mf">1999.881838</span>   <span class="o">-</span><span class="mf">5.765624</span>      <span class="mf">2000.00000</span>   <span class="o">-</span><span class="mf">5.017320e-09</span>   <span class="mf">0.054991</span>
+<span class="mi">3</span>       <span class="mf">12006.200877</span>   <span class="mf">2398.120414</span>  <span class="o">-</span><span class="mf">12000.00000</span>  <span class="o">-</span><span class="mf">2.400000e+03</span>   <span class="mf">0.336699</span>
+
+
+<span class="n">index</span>  <span class="o">...</span>  <span class="n">loading_percent</span>
+
+<span class="mi">0</span>      <span class="o">...</span>  <span class="mf">3.558313</span>
+<span class="mi">1</span>      <span class="o">...</span>  <span class="mf">39.991403</span>
+<span class="mi">2</span>      <span class="o">...</span>  <span class="mf">12.497907</span>
+<span class="mi">3</span>      <span class="o">...</span>  <span class="mf">76.522474</span>
+
+
+
+<span class="n">res_load</span><span class="p">:</span>
+
+<span class="n">index</span>  <span class="n">p_kw</span>   <span class="n">q_kvar</span>
+
+<span class="mi">0</span>      <span class="mi">12000</span>  <span class="mi">2400</span>
+
+
+<span class="n">res_sgen</span><span class="p">:</span>
+
+<span class="n">index</span>   <span class="n">p_kw</span>  <span class="n">q_kvar</span>
+
+<span class="mi">0</span>      <span class="o">-</span><span class="mi">2000</span>  <span class="mi">0</span>
+
+
+<span class="n">res_gen</span><span class="p">:</span>
+
+<span class="n">index</span>   <span class="n">p_kw</span>   <span class="n">q_kvar</span>       <span class="n">va_degree</span>
+
+<span class="mi">0</span>      <span class="o">-</span><span class="mi">6000</span>  <span class="o">-</span><span class="mf">2224.389105</span>  <span class="mf">18.882804</span>
+
+
+<span class="n">res_shunt</span><span class="p">:</span>
+
+<span class="n">index</span>  <span class="n">vm_pu</span>      <span class="n">p_kw</span>   <span class="n">q_kvar</span>
+
+<span class="mi">0</span>      <span class="mf">1.000028</span>  <span class="mf">0.0</span>    <span class="o">-</span><span class="mf">960.053767</span>
+
+
+<span class="n">res_trafo</span><span class="p">:</span>
+
+<span class="n">index</span>  <span class="n">p_hv_kw</span>     <span class="n">q_hv_kvar</span>    <span class="n">p_lv_kw</span>      <span class="n">q_lv_kvar</span>   <span class="n">i_ka</span>      <span class="n">loading_percent</span>
+
+<span class="mi">0</span>      <span class="mf">4019.05095</span>  <span class="mf">252.912379</span>  <span class="o">-</span><span class="mf">4007.04482</span>  <span class="o">-</span><span class="mf">165.177314</span>  <span class="mf">0.110275</span>  <span class="mf">10.067553</span>
+
+
+
+<span class="n">res_ext_grid</span><span class="p">:</span>
+
+<span class="n">index</span>   <span class="n">p_kw</span>          <span class="n">q_kvar</span>
+
+<span class="mi">0</span>      <span class="o">-</span><span class="mf">4019.069403</span>  <span class="o">-</span><span class="mf">124.661744</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Simple Example Network</a><ul>
+<li><a class="reference internal" href="#create-network">Create Network</a></li>
+<li><a class="reference internal" href="#powerflow-and-result-tables">Powerflow and Result Tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="example.html"
+                        title="previous chapter">Examples</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="example_realistic.html"
+                        title="next chapter">Multi-Voltage Level Example Network</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/example_simple.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="example_realistic.html" title="Multi-Voltage Level Example Network"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="example.html" title="Examples"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="example.html" >Examples</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

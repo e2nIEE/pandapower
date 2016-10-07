@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Shunt &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="pandapower Elements" href="../../elements.html" />
+    <link rel="next" title="Impedance" href="../impedance/impedance.html" />
+    <link rel="prev" title="Generator" href="../gen/gen.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../impedance/impedance.html" title="Impedance"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../gen/gen.html" title="Generator"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" accesskey="U">pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="shunt">
+<span id="id1"></span><h1>Shunt<a class="headerlink" href="#shunt" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-shunt"><span class="std std-ref">Create Shunt</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.shunt</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="12%" />
+<col width="29%" />
+<col width="47%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the shunt</td>
+</tr>
+<tr class="row-odd"><td>bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of bus where the impedance starts</td>
+</tr>
+<tr class="row-even"><td>p_kw*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>shunt active power in kW at v= 1.0 p.u.</td>
+</tr>
+<tr class="row-odd"><td>q_kvar*</td>
+<td>float</td>
+<td>&nbsp;</td>
+<td>shunt reactive power in kvar at v= 1.0 p.u.</td>
+</tr>
+<tr class="row-even"><td>in_service*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;True&#8221;</em> - in service</div>
+<div class="line"><em>&#8220;False&#8221;</em> - out of service</div>
+</div>
+</td>
+<td>specifies if the shunt is in service. Only in service elements are considered during loadflow calculation</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id2"><span class="problematic" id="id3">*</span></a>necessary for executing a loadflow calculation.</p>
+<p><strong>Loadflow Model</strong></p>
+<a class="reference internal image-reference" href="../../../_images/shunt.png"><img alt="alternate Text" class="align-center" src="../../../_images/shunt.png" style="width: 12em;" /></a>
+<p>The power values are given at <span class="math">\(v = 1 pu\)</span> or <span class="math">\(V = V_{N}\)</span>:</p>
+<div class="math">
+\[\begin{align*}
+\underline{S}_{shunt, ref} &amp;= p\_kw + j \cdot q\_kvar
+\end{align*}\]</div><p>Since <span class="math">\(\underline{S}_{shunt, ref}\)</span> is the apparent power at the nominal voltage, we know that:</p>
+<div class="math">
+\[\begin{align*}
+\underline{S}_{shunt, ref} &amp;= \frac{\underline{Y}_{shunt}}{V_{N}^2} \\
+\underline{Y}_{shunt} &amp;= \frac{\underline{S}_{shunt, ref}}{V_{N}^2}
+\end{align*}\]</div><p>Converting to the per unit system results in:</p>
+<div class="math">
+\[\begin{align*}
+\underline{y}_{shunt} &amp;= \frac{\underline{S}_{shunt, ref}}{V_{N}^2} \cdot Z_{N}\\
+                      &amp;= \frac{\underline{S}_{shunt, ref}}{V_{N}^2} \cdot \frac{V_{N}^2}{S_{N}} \\
+                      &amp;= \frac{S_{shunt, ref}}{S_{N}}
+\end{align*}\]</div><p>with <span class="math">\(S_{N} = 1 \ MVA\)</span> (see <a class="reference internal" href="../../about_units.html#conventions"><span class="std std-ref">per unit system</span></a>).</p>
+<p><strong>Results</strong></p>
+<p><em>net.res_shunt</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="17%" />
+<col width="67%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>p_kw</td>
+<td>float</td>
+<td>shunt active power consumption [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_kvar</td>
+<td>float</td>
+<td>shunt reactive power consumption [kVAr]</td>
+</tr>
+<tr class="row-even"><td>vm_pu</td>
+<td>float</td>
+<td>voltage magnitude at shunt bus [pu]</td>
+</tr>
+</tbody>
+</table>
+<div class="math">
+\[\begin{align*}
+ p\_kw &amp;= Re(\underline{v}_{bus} \cdot \underline{i}_{shunt}) \\
+ q\_kvar &amp;= Im(\underline{v}_{bus} \cdot \underline{i}_{shunt}) \\
+ vm\_pu &amp;= v_{bus}
+ \end{align*}\]</div></div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../gen/gen.html"
+                        title="previous chapter">Generator</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../impedance/impedance.html"
+                        title="next chapter">Impedance</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/pandapower/elements/shunt/shunt.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../impedance/impedance.html" title="Impedance"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../gen/gen.html" title="Generator"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" >pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

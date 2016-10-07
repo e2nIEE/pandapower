@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Run a Powerflow &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Powerflow" href="nc_loadflow.html" />
+    <link rel="next" title="Known Problems and Caveats" href="loadflow_caveats.html" />
+    <link rel="prev" title="Powerflow" href="nc_loadflow.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="loadflow_caveats.html" title="Known Problems and Caveats"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="nc_loadflow.html" title="Powerflow"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="nc.html" >pandapower Network Analysis</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="nc_loadflow.html" accesskey="U">Powerflow</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="run-a-powerflow">
+<h1>Run a Powerflow<a class="headerlink" href="#run-a-powerflow" title="Permalink to this headline">¶</a></h1>
+<p id="pploadflow">A power flow in pandapower is executed by the runpp function. Internally the pandapower power flow is executed with pypower (see <a class="reference internal" href="about.html#about"><span class="std std-ref">about pandapower</span></a>).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net[&#8220;_mpc_last_cycle&#8221;].
+However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.</p>
+</div>
+<dl class="function">
+<dt id="pandapower.runpp">
+<code class="descclassname">pandapower.</code><code class="descname">runpp</code><span class="sig-paren">(</span><em>net</em>, <em>init='flat'</em>, <em>calculate_voltage_angles=False</em>, <em>tolerance_kva=1e-05</em>, <em>trafo_model='t'</em>, <em>trafo_loading='current'</em>, <em>enforce_q_lims=False</em>, <em>suppress_warnings=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.runpp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs PANDAPOWER Flow</p>
+<p>Note: May raise pandapower.api.run[&#8220;load&#8221;]flowNotConverged</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><strong>net</strong> - The Pandapower format network</dd>
+</dl>
+<p>Optional:</p>
+<blockquote>
+<div><p><strong>init</strong> (str, &#8220;flat&#8221;) - initialization method of the loadflow
+Pandapower supports three methods for initializing the loadflow:</p>
+<blockquote>
+<div><ul class="simple">
+<li>&#8220;flat&#8221;- flat start with voltage of 1.0pu and angle of 0° at all busses as initial solution</li>
+<li>&#8220;dc&#8221; - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow.</li>
+<li>&#8220;results&#8221; - voltage vector of last loadflow from net.res_bus is used as initial solution. This can be useful to accelerate convergence in iterative loadflows like time series calculations.</li>
+</ul>
+</div></blockquote>
+<p><strong>calculate_voltage_angles</strong> (bool, False) - consider voltage angles in loadflow calculation</p>
+<blockquote>
+<div><p>If True, voltage angles are considered in the  loadflow calculation. In some cases with
+large differences in voltage angles (for example in case of transformers with high
+voltage shift), the difference between starting and end angle value is very large.
+In this case, the loadflow might be slow or it might not converge at all. That is why 
+the possibility of neglecting the voltage angles of transformers and ext_grids is
+provided to allow and/or accelarate convergence for networks where calculation of 
+voltage angles is not necessary. Note that if calculate_voltage_angles is True the
+loadflow is initialized with a DC power flow (init = &#8220;dc&#8221;)</p>
+<p>The default value is False because pandapower was developed for distribution networks.
+Please be aware that this parameter has to be set to True in meshed network for correct
+results!</p>
+</div></blockquote>
+<p><strong>tolerance_kva</strong> (float, 1e-5) - loadflow termination condition referring to P / Q mismatch of node power in kva</p>
+<p><strong>trafo_model</strong> (str, &#8220;t&#8221;)  - transformer equivalent circuit model
+Pandapower provides two equivalent circuit models for the transformer:</p>
+<blockquote>
+<div><ul class="simple">
+<li>&#8220;t&#8221; - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.</li>
+<li>&#8220;pi&#8221; - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.</li>
+</ul>
+</div></blockquote>
+<p><strong>trafo_loading</strong> (str, &#8220;current&#8221;) - mode of calculation for transformer loading</p>
+<blockquote>
+<div><p>Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.</p>
+<ul class="simple">
+<li>&#8220;current&#8221;- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.</li>
+<li>&#8220;power&#8221; - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.</li>
+</ul>
+</div></blockquote>
+<p><strong>enforce_q_lims</strong> (bool, False) - respect generator reactive power limits</p>
+<blockquote>
+<div>If True, the reactive power limits in net.gen.max_q_kvar/min_q_kvar are respected in the
+loadflow. This is done by running a second loadflow if reactive power limits are
+violated at any generator, so that the runtime for the loadflow will increase if reactive
+power has to be curtailed.</div></blockquote>
+<p><strong>suppress_warnings</strong> (bool, True) - suppress warnings in pypower</p>
+<blockquote>
+<div>If set to True, warnings are disabled during the loadflow. Because of the way data is
+processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
+suppressed by this option, however keep in mind all other pypower warnings are also suppressed.</div></blockquote>
+<p><strong>**kwargs</strong> - options to use for PYPOWER.runpf</p>
+</div></blockquote>
+</dd></dl>
+
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Neglecting voltage angles is only valid in radial networks! pandapower was developed for distribution networks, which is why omitting the voltage angles is the default.
+However be aware that voltage angle differences in networks with multiple galvanically coupled external grids lead to balancing power flows between slack nodes.
+That is why voltage angles always have to be considered in meshed network, such as in the sub-transmission level!</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="nc_loadflow.html"
+                        title="previous chapter">Powerflow</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="loadflow_caveats.html"
+                        title="next chapter">Known Problems and Caveats</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/loadflow_run.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="loadflow_caveats.html" title="Known Problems and Caveats"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="nc_loadflow.html" title="Powerflow"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="nc.html" >pandapower Network Analysis</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="nc_loadflow.html" >Powerflow</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pandapower Toolbox &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="pandapower API" href="api.html" />
+    <link rel="next" title="pandapower Network Analysis" href="nc.html" />
+    <link rel="prev" title="Save and Load Networks" href="api_file_io.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="nc.html" title="pandapower Network Analysis"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="api_file_io.html" title="Save and Load Networks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" accesskey="U">pandapower API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pandapower-toolbox">
+<h1>pandapower Toolbox<a class="headerlink" href="#pandapower-toolbox" title="Permalink to this headline">¶</a></h1>
+<p>The pandapower toolbox is a collection of helper functions that are implemented for the pandapower framework. It is
+designed for functions of common application that fit nowhere else. Have a look at the available functions to save
+yourself the effort of maybe implementing something twice. If you develop some functionality which could be
+interesting to other users as well and do not fit into one of the specialized packages, feel welcome to add your
+contribution. To improve overview functions are loosely grouped by functionality, please adhere to this notion when
+adding your own functions and feel free to open new groups as needed.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you implement a function that might be useful for others, it is mandatory to add a short docstring to make browsing
+the toolbox practical. Ideally further comments if appropriate and a reference of authorship should be added as well.</p>
+</div>
+<div class="section" id="result-information">
+<h2>Result Information<a class="headerlink" href="#result-information" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.toolbox.lf_info">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">lf_info</code><span class="sig-paren">(</span><em>net</em>, <em>numv=1</em>, <em>numi=2</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.lf_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints some basic information of the results in a net.
+(max/min voltage, max trafo load, max line load)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.overloaded_lines">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">overloaded_lines</code><span class="sig-paren">(</span><em>net</em>, <em>max_load=100</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.overloaded_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the results for all lines with loading_percent &gt; max_load or None, if
+there are none.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.violated_busses">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">violated_busses</code><span class="sig-paren">(</span><em>net</em>, <em>u_min</em>, <em>u_max</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.violated_busses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the results for all busses with if vm_pu is not within u_max and u_min or None, if
+there are none.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.equal_nets">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">equal_nets</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>check_only_results=False</em>, <em>tol=1e-14</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.equal_nets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compares two networks. The networks are considered equal
+if they share the same keys and values, except of the
+&#8216;et&#8217; (elapsed time) entry which differs depending on
+runtime conditions and entries stating with &#8216;_&#8217;</p>
+</dd></dl>
+
+</div>
+<div class="section" id="simulation-setup-and-preparation">
+<h2>Simulation Setup and Preparation<a class="headerlink" href="#simulation-setup-and-preparation" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.toolbox.convert_format">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">convert_format</code><span class="sig-paren">(</span><em>net</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.convert_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts old nets to new format to ensure consistency. Converted net is returned</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.add_zones_to_elements">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">add_zones_to_elements</code><span class="sig-paren">(</span><em>net, elements=['line', 'trafo', 'ext_grid', 'switch']</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.add_zones_to_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds zones to elements, inferring them from the zones of busses they are
+connected to.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.create_continuous_bus_index">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">create_continuous_bus_index</code><span class="sig-paren">(</span><em>net</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.create_continuous_bus_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a continuous bus index starting at zero and replaces all
+references of old indices by the new ones.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.set_scaling_by_type">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">set_scaling_by_type</code><span class="sig-paren">(</span><em>net</em>, <em>scalings</em>, <em>scale_load=True</em>, <em>scale_sgen=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.set_scaling_by_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets scaling of loads and/or sgens according to a dictionary
+mapping type to a scaling factor. Note that the type-string is case
+sensitive.
+E.g. scaling = {&#8220;pv&#8221;: 0.8, &#8220;bhkw&#8221;: 0.6}</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>net</strong> &#8211; </li>
+<li><strong>scaling</strong> &#8211; A dictionary containing a mapping from element type to</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>scaling factor.
+:return:</p>
+</dd></dl>
+
+</div>
+<div class="section" id="topology-modification">
+<h2>Topology Modification<a class="headerlink" href="#topology-modification" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.toolbox.close_switch_at_line_with_two_open_switches">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">close_switch_at_line_with_two_open_switches</code><span class="sig-paren">(</span><em>net</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.close_switch_at_line_with_two_open_switches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds lines that have opened switches at both ends and closes one of them.
+Function is usually used when optimizing section points (Trennstellen) to
+prevent the algorithm from ignoring isolated lines.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.drop_inactive_elements">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">drop_inactive_elements</code><span class="sig-paren">(</span><em>net</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.drop_inactive_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops any elements not in service AND any elements connected to inactive
+busses.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.drop_busses">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">drop_busses</code><span class="sig-paren">(</span><em>net</em>, <em>busses</em>, <em>also_drop_elements=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.drop_busses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops busses and by default safely drops all elements connected to them as well.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.drop_trafos">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">drop_trafos</code><span class="sig-paren">(</span><em>net</em>, <em>trafos</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.drop_trafos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes all trafos and in the given list of indices and removes
+any switches connected to it.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.drop_lines">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">drop_lines</code><span class="sig-paren">(</span><em>net</em>, <em>lines</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.drop_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes all lines and their geodata in the given list of indices and removes
+any switches connected to it.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.fuse_busses">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">fuse_busses</code><span class="sig-paren">(</span><em>net</em>, <em>b1</em>, <em>b2</em>, <em>drop=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.fuse_busses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
+if drop=True (default).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.set_element_status">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">set_element_status</code><span class="sig-paren">(</span><em>net</em>, <em>busses</em>, <em>in_service</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.set_element_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets busses and all elements connected to them out of service.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.select_subnet">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">select_subnet</code><span class="sig-paren">(</span><em>net</em>, <em>busses</em>, <em>include_switch_busses=False</em>, <em>include_results=False</em>, <em>keep_everything_else=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.select_subnet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects a subnet by a list of bus indices and returns a net with all elements
+connected to them.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="item-element-selection">
+<h2>Item/Element Selection<a class="headerlink" href="#item-element-selection" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.toolbox.get_element_index">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">get_element_index</code><span class="sig-paren">(</span><em>net</em>, <em>element</em>, <em>name</em>, <em>exact_match=True</em>, <em>regex=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.get_element_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the element identified by the element string and a name.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - pandapower network</p>
+<p><strong>element</strong> - line indices of lines that are considered. If None, all lines in the network are                   considered.</p>
+<p class="last"><strong>name</strong> - if True, switches are also considered as connected elements.</p>
+</dd>
+</dl>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>connections</strong> - pandapower Series with number of connected elements for each bus. If a                       selection of lines is given, only busses connected to these lines are in                       the returned series.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.next_bus">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">next_bus</code><span class="sig-paren">(</span><em>net</em>, <em>bus</em>, <em>element_id</em>, <em>et='line'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.next_bus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index of the second bus an element is connected to, given a
+first one. E.g. the from_bus given the to_bus of a line.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.get_connected_elements">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">get_connected_elements</code><span class="sig-paren">(</span><em>net</em>, <em>element</em>, <em>busses</em>, <em>respect_switches=True</em>, <em>respect_in_service=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.get_connected_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns elements connected to a given bus.</p>
+<p>INPUT:</p>
+<blockquote>
+<div><p><strong>net</strong> (PandapowerNet)</p>
+<p><strong>element</strong> (string, name of the element table)</p>
+<p><strong>busses</strong> (single integer or iterable of ints)</p>
+</div></blockquote>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>respect_switches</strong> (boolean, True)    - True: open switches will be respected</dt>
+<dd>False: open switches will be ignored</dd>
+<dt><strong>respect_in_service</strong> (boolean, False) - True: in_service status of connected lines will be</dt>
+<dd><blockquote class="first">
+<div>respected</div></blockquote>
+<p class="last">False: in_service status will be ignored</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>cl</strong> (set) - Returns connected lines.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.get_connected_busses">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">get_connected_busses</code><span class="sig-paren">(</span><em>net</em>, <em>busses</em>, <em>consider=('l'</em>, <em>'s'</em>, <em>'t')</em>, <em>respect_switches=True</em>, <em>respect_in_service=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.get_connected_busses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns busses connected to given busses. The source busses will NOT be returned.</p>
+<p>INPUT:</p>
+<blockquote>
+<div><p><strong>net</strong> (PandapowerNet)</p>
+<p><strong>busses</strong> (single integer or iterable of ints)</p>
+</div></blockquote>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>respect_switches</strong> (boolean, True)        - True: open switches will be respected</dt>
+<dd>False: open switches will be ignored</dd>
+<dt><strong>respect_in_service</strong> (boolean, False)     - True: in_service status of connected busses</dt>
+<dd>will be respected
+False: in_service status will be
+ignored</dd>
+<dt><strong>consider</strong> (iterable, (&#8220;l&#8221;, &#8220;s&#8221;, &#8220;t&#8221;))    - Determines, which types of connections will</dt>
+<dd>be will be considered.
+l: lines
+s: switches
+t: trafos</dd>
+</dl>
+</div></blockquote>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>cl</strong> (set) - Returns connected busses.</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.toolbox.get_connected_switches">
+<code class="descclassname">pandapower.toolbox.</code><code class="descname">get_connected_switches</code><span class="sig-paren">(</span><em>net</em>, <em>busses</em>, <em>consider=('b'</em>, <em>'l'</em>, <em>'t')</em>, <em>status='all'</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.toolbox.get_connected_switches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns switches connected to given busses.</p>
+<p>INPUT:</p>
+<blockquote>
+<div><p><strong>net</strong> (PandapowerNet)</p>
+<p><strong>busses</strong> (single integer or iterable of ints)</p>
+</div></blockquote>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>respect_switches</strong> (boolean, True)        - True: open switches will be respected</dt>
+<dd>False: open switches will be ignored</dd>
+<dt><strong>respect_in_service</strong> (boolean, False)     - True: in_service status of connected</dt>
+<dd><blockquote class="first">
+<div>busses will be respected</div></blockquote>
+<p class="last">False: in_service status will be ignored</p>
+</dd>
+<dt><strong>consider</strong> (iterable, (&#8220;l&#8221;, &#8220;s&#8221;, &#8220;t&#8221;))    - Determines, which types of connections</dt>
+<dd>will be will be considered.
+l: lines
+s: switches
+t: trafos</dd>
+<dt><strong>status</strong> (string, (&#8220;all&#8221;, &#8220;closed&#8221;, &#8220;open&#8221;))    - Determines, which switches will</dt>
+<dd>be considered</dd>
+</dl>
+</div></blockquote>
+<p>RETURN:</p>
+<blockquote>
+<div><strong>cl</strong> (set) - Returns connected busses.</div></blockquote>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pandapower Toolbox</a><ul>
+<li><a class="reference internal" href="#result-information">Result Information</a></li>
+<li><a class="reference internal" href="#simulation-setup-and-preparation">Simulation Setup and Preparation</a></li>
+<li><a class="reference internal" href="#topology-modification">Topology Modification</a></li>
+<li><a class="reference internal" href="#item-element-selection">Item/Element Selection</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="api_file_io.html"
+                        title="previous chapter">Save and Load Networks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nc.html"
+                        title="next chapter">pandapower Network Analysis</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/api_toolbox.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="nc.html" title="pandapower Network Analysis"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="api_file_io.html" title="Save and Load Networks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" >pandapower API</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

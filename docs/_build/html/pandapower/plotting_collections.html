@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Create Matplotlib Collections &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="Plotting pandapower Networks" href="plotting.html" />
+    <link rel="next" title="Draw Collections" href="plotting_draw.html" />
+    <link rel="prev" title="Plotting pandapower Networks" href="plotting.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="plotting_draw.html" title="Draw Collections"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="plotting.html" title="Plotting pandapower Networks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="plotting.html" accesskey="U">Plotting pandapower Networks</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="create-matplotlib-collections">
+<h1>Create Matplotlib Collections<a class="headerlink" href="#create-matplotlib-collections" title="Permalink to this headline">¶</a></h1>
+<p>Matplotlib collections can be created from pandapower networks with the following functions:</p>
+<div class="section" id="busses">
+<h2>Busses<a class="headerlink" href="#busses" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="plotting.create_bus_collection">
+<code class="descclassname">plotting.</code><code class="descname">create_bus_collection</code><span class="sig-paren">(</span><em>net</em>, <em>busses</em>, <em>size=5</em>, <em>marker='o'</em>, <em>patch_type='circle'</em>, <em>colors=None</em>, <em>infofunc=None</em>, <em>cmap=None</em>, <em>picker=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.create_bus_collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a matplotlib patch collection</p>
+<p>Busses are the nodal points of the network that all other elements connect to.</p>
+<p>Input:</p>
+<blockquote>
+<div><p><strong>net</strong> (PandapowerNet) - The pandapower network</p>
+<p><strong>busses</strong> (list) - The busses for which the collections are created</p>
+</div></blockquote>
+<p>Optional:</p>
+<blockquote>
+<div><p><strong>size</strong> (int, 5) - patch size</p>
+<p><strong>marker</strong> (str, &#8220;o&#8221;) - patch</p>
+<p><strong>patch_type</strong> (str, &#8220;circle&#8221;) - patch</p>
+<p><em>colors*</em> (list, None) -</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="lines">
+<h2>Lines<a class="headerlink" href="#lines" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="plotting.create_line_collection">
+<code class="descclassname">plotting.</code><code class="descname">create_line_collection</code><span class="sig-paren">(</span><em>net</em>, <em>lines</em>, <em>use_line_geodata=True</em>, <em>infofunc=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.create_line_collection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="plotting.create_direct_line_collection">
+<code class="descclassname">plotting.</code><code class="descname">create_direct_line_collection</code><span class="sig-paren">(</span><em>net</em>, <em>lines=None</em>, <em>gis_components=None</em>, <em>linewidth=1.0</em>, <em>alpha=0.75</em>, <em>zorder=1</em>, <em>color=(0.4</em>, <em>0.4</em>, <em>0.4)</em>, <em>linestyles='solid'</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.create_direct_line_collection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="sectioning-points">
+<h2>Sectioning Points<a class="headerlink" href="#sectioning-points" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="plotting.create_trennstellen_collection">
+<code class="descclassname">plotting.</code><code class="descname">create_trennstellen_collection</code><span class="sig-paren">(</span><em>net</em>, <em>switches=None</em>, <em>scale=10</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.create_trennstellen_collection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="transformers">
+<h2>Transformers<a class="headerlink" href="#transformers" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="plotting.create_trafo_collection">
+<code class="descclassname">plotting.</code><code class="descname">create_trafo_collection</code><span class="sig-paren">(</span><em>net</em>, <em>tid</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.create_trafo_collection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a Collection of lines from the
+lv-bus to the hv-bus. Note: its recommended to
+make them somewhat thicker using linewidths,
+in order to make them visible</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Create Matplotlib Collections</a><ul>
+<li><a class="reference internal" href="#busses">Busses</a></li>
+<li><a class="reference internal" href="#lines">Lines</a></li>
+<li><a class="reference internal" href="#sectioning-points">Sectioning Points</a></li>
+<li><a class="reference internal" href="#transformers">Transformers</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="plotting.html"
+                        title="previous chapter">Plotting pandapower Networks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="plotting_draw.html"
+                        title="next chapter">Draw Collections</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/plotting_collections.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="plotting_draw.html" title="Draw Collections"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="plotting.html" title="Plotting pandapower Networks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="plotting.html" >Plotting pandapower Networks</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the generator
+type;string;"| naming conventions:
+| *""sync""* - synchronous generator
+| *""async""* - asynchronous generator
+";type variable to classify generators
+bus*;integer;;index of connected bus
+p_kw*;float;:math:`\leq` 0;the real power of the generator [kW]
+vm_pu*;float;;voltage set point of the generator [p.u]
+sn_kva;float;:math:`>` 0;nominal power of the generator [kVA]
+min_q_kvar;float;;minimal reactive power of the generator [kVar]
+max_q_kvar;float;;maximal reactive power of the generator [kVar]
+scaling*;float;:math:`\leq` 0;scaling factor for the active power
+in_service*;boolean;"| *""True""* - in service
+| *""False""* - out of service";specifies if the generator is in service. Only in service elements are considered during loadflow calculation

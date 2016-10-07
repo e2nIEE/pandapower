@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Load &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="pandapower Elements" href="../../elements.html" />
+    <link rel="next" title="Static Generator" href="../sgen/sgen.html" />
+    <link rel="prev" title="Switch" href="../switch/switch.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../sgen/sgen.html" title="Static Generator"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../switch/switch.html" title="Switch"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" accesskey="U">pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="load">
+<h1>Load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-load"><span class="std std-ref">Create Load</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.load</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="12%" />
+<col width="29%" />
+<col width="47%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the load</td>
+</tr>
+<tr class="row-odd"><td>bus *</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of connected bus</td>
+</tr>
+<tr class="row-even"><td>p_kw*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>active power of the load [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_kvar*</td>
+<td>float</td>
+<td>&nbsp;</td>
+<td>reactive power of the load [kVar]</td>
+</tr>
+<tr class="row-even"><td>sn_kva</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>rated power of the load [kVA]</td>
+</tr>
+<tr class="row-odd"><td>scaling *</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>scaling factor for active and reactive power</td>
+</tr>
+<tr class="row-even"><td>in_service*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;True&#8221;</em> - in service</div>
+<div class="line"><em>&#8220;False&#8221;</em> - out of service</div>
+</div>
+</td>
+<td>specifies if the load is in service. Only in service elements are considered during loadflow calculation</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+<p><strong>Loadflow Model</strong></p>
+<p>Loads are modelled as PQ-busses in the loadflow calculation:</p>
+<a class="reference internal image-reference" href="../../../_images/pq.png"><img alt="alternate Text" class="align-center" src="../../../_images/pq.png" style="width: 8em;" /></a>
+<p>The PQ-Values are calculated from the parameter table values as:</p>
+<div class="math">
+\[\begin{align*}
+ P_{load} = p\_kw \cdot scaling \\
+ Q_{load} = q\_kvar \cdot scaling \\
+ \end{align*}\]</div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Loads should always have a positive p_kw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (sgen element) instead of a negative load.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the loadflow!</p>
+</div>
+<p><strong>Results</strong></p>
+<p><em>net.res_load</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="15%" />
+<col width="69%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>p_kw</td>
+<td>float</td>
+<td>resulting active power demand after scaling [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_kvar</td>
+<td>float</td>
+<td>resulting reactive power demand after scaling [kVar]</td>
+</tr>
+</tbody>
+</table>
+<p>The power values in the net.res_load table are equivalent to <span class="math">\(P_{load}\)</span> and <span class="math">\(Q_{load}\)</span>.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../switch/switch.html"
+                        title="previous chapter">Switch</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../sgen/sgen.html"
+                        title="next chapter">Static Generator</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/pandapower/elements/load/load.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../sgen/sgen.html" title="Static Generator"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../switch/switch.html" title="Switch"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" >pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

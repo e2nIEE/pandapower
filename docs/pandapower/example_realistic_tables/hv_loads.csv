@@ -1,0 +1,6 @@
+**index**;**load_name**;**bus**;**p**;**q**
+0;MV Net 0;Bus SB 4;38000;6000
+1;MV Net 1;Bus HV1;38000;6000
+2;MV Net 2;Bus HV2;38000;6000
+3;MV Net 3;Bus HV3;38000;6000
+4;MV Net 4;Bus HV4;38000;6000

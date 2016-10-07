@@ -1,0 +1,4 @@
+**Parameter**;**Datatype**;**Explanation**
+p_kw;float;active power demand of the ward equivalent [kW]
+q_kvar;float;reactive power demand of the ward equivalent [kVar]
+vm_pu;float;voltage at the ward bus [p.u]

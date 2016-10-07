@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Switch &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="pandapower Elements" href="../../elements.html" />
+    <link rel="next" title="Load" href="../load/load.html" />
+    <link rel="prev" title="Line" href="../line/line.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../load/load.html" title="Load"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../line/line.html" title="Line"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" accesskey="U">pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="switch">
+<span id="switch-model"></span><h1>Switch<a class="headerlink" href="#switch" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-switch"><span class="std std-ref">Create Switch</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.switch</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="12%" />
+<col width="29%" />
+<col width="47%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of connected bus</td>
+</tr>
+<tr class="row-odd"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the switch</td>
+</tr>
+<tr class="row-even"><td>element*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td><div class="first line-block">
+<div class="line">index of the element the switch is connected to:</div>
+</div>
+<div class="last line-block">
+<div class="line">- bus index if et = <em>&#8220;b&#8221;</em></div>
+<div class="line">- line index if et = <em>&#8220;l&#8221;</em></div>
+<div class="line">- trafo index if et = <em>&#8220;t&#8221;</em></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>et*</td>
+<td>string</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;b&#8221;</em> - bus-bus switch</div>
+<div class="line"><em>&#8220;l&#8221;</em> - bus-line switch</div>
+<div class="line"><em>&#8220;t&#8221;</em> - bus-trafo switch</div>
+</div>
+</td>
+<td>element type the switch connects to</td>
+</tr>
+<tr class="row-even"><td>type</td>
+<td>string</td>
+<td><div class="first last line-block">
+<div class="line">naming conventions: </div>
+<div class="line"><em>&#8220;CB&#8221;</em> - circuit breaker</div>
+<div class="line"><em>&#8220;LS&#8221;</em> - load switch</div>
+<div class="line"><em>&#8220;LBS&#8221;</em> - load break switch</div>
+<div class="line"><em>&#8220;DS&#8221;</em> - disconnecting switch</div>
+</div>
+</td>
+<td>type of switch</td>
+</tr>
+<tr class="row-odd"><td>closed*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;False&#8221;</em> - open</div>
+<div class="line"><em>&#8220;True&#8221;</em> - closed</div>
+</div>
+</td>
+<td>signals the switching state of the switch</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+<p><strong>Loadflow Model</strong></p>
+<p><em>Bus-Bus-Switches:</em></p>
+<p>Two busses that are connected with a closed bus-bus switches are fused internally for the loadflow, open bus-bus switches are ignored:</p>
+<a class="reference internal image-reference" href="../../../_images/bus-bus-switches.png"><img alt="alternate Text" class="align-center" src="../../../_images/bus-bus-switches.png" style="width: 18em;" /></a>
+<p>This has the following advantages compared to modelling the switch as a small impedance:</p>
+<blockquote>
+<div><ul class="simple">
+<li>there is no voltage drop over the switch (ideal switch)</li>
+<li>no convergence problems due to small impedances / large admittances</li>
+<li>less busses in the admittance matrix</li>
+</ul>
+</div></blockquote>
+<p><em>Bus-Element-Switches:</em></p>
+<p>When the loadflow is calculated internally for every open bus-element switch an auxilary bus is created in the pypower case file. The pypower branch that corresponds to the element is then connected to this bus. This has the following advantages compared to modelling the switch by setting the element out of service:</p>
+<blockquote>
+<div><ul class="simple">
+<li>loading current is considered</li>
+<li>information about switch position is preserved</li>
+<li>difference between open switch and out of service line (e.g. faulty line) can be modelled</li>
+</ul>
+</div></blockquote>
+<p>Closed bus-element switches are ignored:</p>
+<a class="reference internal image-reference" href="../../../_images/bus-element-switches.png"><img alt="alternate Text" class="align-center" src="../../../_images/bus-element-switches.png" style="width: 30em;" /></a>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../line/line.html"
+                        title="previous chapter">Line</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../load/load.html"
+                        title="next chapter">Load</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../../_sources/pandapower/elements/switch/switch.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../load/load.html" title="Load"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../line/line.html" title="Line"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../elements.html" >pandapower Elements</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

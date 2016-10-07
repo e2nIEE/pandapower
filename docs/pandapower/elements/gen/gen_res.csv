@@ -1,0 +1,5 @@
+**Parameter**;**Datatype**;**Explanation**
+p_kw;float;resulting active power demand after scaling [kW]
+q_kvar;float; resulting reactive power demand after scaling [kVar]
+va_degree;float;generator voltage anlge [degree]
+vm_pu;float;voltage at the generator [p.u]

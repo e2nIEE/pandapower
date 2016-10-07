@@ -1,0 +1,22 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the transformer
+std_type;string;;transformer standard type name
+hv_bus*;integer;;high voltage bus index of the transformer
+lv_bus*;integer;;low voltage bus index of the transformer
+sn_kva*;float;:math:`>` 0;rated apparent power of the transformer [kVA]
+vn_hv_kv*;float;:math:`>` 0;rated voltage at high voltage bus [kV]
+vn_lv_kv*;float;:math:`>` 0;rated voltage at low voltage bus [kV]
+vsc_percent*;float;:math:`>` 0;short circuit voltage [%]
+vscr_percent*;float;:math:`\geq`  0;"real component of
+short circuit voltage [%]"
+pfe_kw*;float;:math:`\geq` 0;iron losses [kW]
+i0_percent*;float;:math:`\geq` 0;open loop losses in [%]
+shift_degree*;float;;transformer phase shift angle
+tp_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
+tp_mid;integer;;rated tap position
+tp_min;integer;;minimum tap position
+tp_max;integer;;maximum tap position
+tp_st_percent;float;:math:`>` 0;tap step size [%]
+tp_pos;integer;;current position of tap changer
+in_service*;boolean;"| *""True""* - in service
+| *""False""* - out of service";specifies if the transformer is in service. Only in service elements are considered during loadflow calculation

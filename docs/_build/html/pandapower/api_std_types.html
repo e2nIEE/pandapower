@@ -1,0 +1,329 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Standard Type Libraries &mdash; pandapower 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pandapower 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="pandapower API" href="api.html" />
+    <link rel="next" title="Save and Load Networks" href="api_file_io.html" />
+    <link rel="prev" title="Create Functions" href="api_create.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="api_file_io.html" title="Save and Load Networks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="api_create.html" title="Create Functions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" accesskey="U">pandapower API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="standard-type-libraries">
+<span id="std-types"></span><h1>Standard Type Libraries<a class="headerlink" href="#standard-type-libraries" title="Permalink to this headline">¶</a></h1>
+<p>Lines and transformer have two different categories of parameters: parameter that depend on the specific element (like the length of a line or the bus to which a transformer is connected to etc.) and parameter that only
+depend on the type of line or transformer which is used (like the rated power of a transformer or the resistance per kilometer line).</p>
+<p>The standard type library provides a database of different types for transformer and lines, so that you only have to chose a certain type and not
+define all parameters individually for each line or transformer. The standard types are saved in the network as a dictionary in the form of:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">std_types</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;standard_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;parameter&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span><span class="o">..</span><span class="p">},</span> <span class="s2">&quot;trafo&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;standard_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;parameter&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span><span class="o">..</span><span class="p">},</span> <span class="s2">&quot;trafo3w&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;standard_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;parameter&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span><span class="o">..</span><span class="p">}}</span>
+</pre></div>
+</div>
+<p>The create_line and create_transformer functions use this database when you create a line or transformer with a certain standard type.
+You can also use the standard type functions directly to create new types in the database, directly load type data, change types or check if a certain type exists.
+You can also add additional type parameters which are not added to the pandas table by default (e.g. diameter of the conductor).</p>
+<p>For a introduction on how to use the standard type library, see the <span class="xref std std-ref">interactive tutorial</span>.</p>
+<p>The pandapower standard types that every pandapower network is initialized as:</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The pandapower standard types are compatible with 50 Hz systems, please be aware that the standard type values might not be realistic for 60 Hz (or other) power systems.</p>
+</div>
+<div class="section" id="show-all-available-standard-types">
+<h2>Show all Available Standard Types<a class="headerlink" href="#show-all-available-standard-types" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.available_std_types">
+<code class="descclassname">pandapower.</code><code class="descname">available_std_types</code><span class="sig-paren">(</span><em>net</em>, <em>element='line'</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.available_std_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the all standard types available for this network as a table.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - Pandapower Network</p>
+<p class="last"><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+</dd>
+</dl>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>typedata</strong> - table of standard type parameters</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="create-standard-type">
+<h2>Create Standard Type<a class="headerlink" href="#create-standard-type" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.create_std_type">
+<code class="descclassname">pandapower.</code><code class="descname">create_std_type</code><span class="sig-paren">(</span><em>net</em>, <em>data</em>, <em>name</em>, <em>element='line'</em>, <em>overwrite=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_std_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates type data in the type database. The parameters that are used for
+the loadflow have to be at least contained in data. These parameters are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>c_nf_per_km, r_ohm_per_km, x_ohm_per_km and imax_ka (for lines)</li>
+<li>sn_kva, vn_hv_kv, vn_lv_kv, vsc_percent, vscr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)</li>
+<li>sn_hv_kva, sn_mv_kva, sn_lv_kva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)</li>
+</ul>
+</div></blockquote>
+<p>additional parameters can be added and later loaded into pandapower with the function
+&#8220;parameter_from_std_type&#8221;.</p>
+<p>* only considered in loadflow if calculate_voltage_angles = True</p>
+<p>The standard type is saved into the pandapower library of the given network by default.</p>
+<p>INPUT:</p>
+<blockquote>
+<div><p><strong>net</strong> - The pandapower network</p>
+<p><strong>data</strong> - dictionary of standard type parameters</p>
+<p><strong>name</strong> - name of the standard type as string</p>
+<p><strong>element</strong> - &#8220;line&#8221;, &#8220;trafo&#8221; or &#8220;trafo3w&#8221;</p>
+</div></blockquote>
+<p>EXAMPLE:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">line_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;c_nf_per_km&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;r_ohm_per_km&quot;</span><span class="p">:</span> <span class="mf">0.642</span><span class="p">,</span> <span class="s2">&quot;x_ohm_per_km&quot;</span><span class="p">:</span> <span class="mf">0.083</span><span class="p">,</span> <span class="s2">&quot;imax_ka&quot;</span><span class="p">:</span> <span class="mf">0.142</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;cs&quot;</span><span class="p">,</span> <span class="s2">&quot;q_mm2&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pandapower</span><span class="o">.</span><span class="n">create_std_type</span><span class="p">(</span><span class="n">line_data</span><span class="p">,</span> <span class="s2">&quot;NAYY 4×50 SE&quot;</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="s1">&#39;line&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="copy-standard-types">
+<h2>Copy Standard Types<a class="headerlink" href="#copy-standard-types" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.copy_std_types">
+<code class="descclassname">pandapower.</code><code class="descname">copy_std_types</code><span class="sig-paren">(</span><em>to_net</em>, <em>from_net</em>, <em>element='line'</em>, <em>overwrite=True</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.copy_std_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfers all standard types of one network to another.</p>
+<p>INPUT:</p>
+<blockquote>
+<div><p><strong>to_net</strong> - The pandapower network to which the standard types are copied</p>
+<p><strong>from_net</strong> - The pandapower network from which the standard types are taken</p>
+<p><strong>element</strong> - &#8220;line&#8221; or &#8220;trafo&#8221;</p>
+<p><strong>overwrite</strong> - if True, overwrites standard types which already exist in to_net</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="load-standard-types">
+<h2>Load Standard Types<a class="headerlink" href="#load-standard-types" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.load_std_type">
+<code class="descclassname">pandapower.</code><code class="descname">load_std_type</code><span class="sig-paren">(</span><em>net</em>, <em>name</em>, <em>element='line'</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.load_std_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads linetype data from the linetypes data base. Issues a warning if
+linetype is unknown.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - The pandapower network</p>
+<p><strong>name</strong> - name of the standard type as string</p>
+<p class="last"><strong>element</strong> - &#8220;line&#8221; or &#8220;trafo&#8221;</p>
+</dd>
+</dl>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>typedata</strong> - dictionary containing type data</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="check-if-standard-type-exists">
+<h2>Check if Standard Type Exists<a class="headerlink" href="#check-if-standard-type-exists" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.std_type_exists">
+<code class="descclassname">pandapower.</code><code class="descname">std_type_exists</code><span class="sig-paren">(</span><em>net</em>, <em>name</em>, <em>element='line'</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.std_type_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a standard type exists.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - Pandapower Network</p>
+<p><strong>name</strong> - name of the standard type as string</p>
+<p class="last"><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+</dd>
+</dl>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>exists</strong> - True if standard type exists, False otherwise</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="change-standard-type">
+<h2>Change Standard Type<a class="headerlink" href="#change-standard-type" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.change_std_type">
+<code class="descclassname">pandapower.</code><code class="descname">change_std_type</code><span class="sig-paren">(</span><em>net</em>, <em>eid</em>, <em>name</em>, <em>element='line'</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.change_std_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the type of a given element in pandapower. Changes only parameter that are given
+for the type.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - pandapower network</p>
+<p><strong>eid</strong> - element index (either line or transformer index)</p>
+<p><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+<p><strong>name</strong> - name of the new standard type</p>
+<p class="last"><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="load-additional-parameter-from-library">
+<h2>Load Additional Parameter from Library<a class="headerlink" href="#load-additional-parameter-from-library" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.parameter_from_std_type">
+<code class="descclassname">pandapower.</code><code class="descname">parameter_from_std_type</code><span class="sig-paren">(</span><em>net</em>, <em>parameter</em>, <em>element='line'</em>, <em>fill=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.parameter_from_std_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds additional parameters, which are not included in the original pandapower datastructure
+but are available in the standard type database to the panadpower net.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - pandapower network</p>
+<p><strong>parameter</strong> - name of parameter as string</p>
+<p><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+<dl class="last docutils">
+<dt><strong>fill</strong> - fill-value that is assigned to all lines/trafos without</dt>
+<dd>a value for the parameter, either because the line/trafo has no type or because the
+type does not have a value for the parameter</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="find-standard-type">
+<h2>Find Standard Type<a class="headerlink" href="#find-standard-type" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.find_std_type_by_parameter">
+<code class="descclassname">pandapower.</code><code class="descname">find_std_type_by_parameter</code><span class="sig-paren">(</span><em>net</em>, <em>data</em>, <em>element='line'</em>, <em>epsilon=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.find_std_type_by_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for a std_type that fits all values given in the data dictionary with the margin of
+epsilon.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - pandapower network</p>
+<p><strong>data</strong> - dictionary of standard type parameters</p>
+<p><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+<p class="last"><strong>epsilon</strong> - tolerance margin for parameter comparison</p>
+</dd>
+</dl>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>fitting_types</strong> - list of fitting types or empty list</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="delete-standard-type">
+<h2>Delete Standard Type<a class="headerlink" href="#delete-standard-type" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.delete_std_type">
+<code class="descclassname">pandapower.</code><code class="descname">delete_std_type</code><span class="sig-paren">(</span><em>net</em>, <em>name</em>, <em>element='line'</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.delete_std_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes standard type parameters from database.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - Pandapower Network</p>
+<p><strong>name</strong> - name of the standard type as string</p>
+<p class="last"><strong>element</strong> - type of element (&#8220;line&#8221; or &#8220;trafo&#8221;)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Standard Type Libraries</a><ul>
+<li><a class="reference internal" href="#show-all-available-standard-types">Show all Available Standard Types</a></li>
+<li><a class="reference internal" href="#create-standard-type">Create Standard Type</a></li>
+<li><a class="reference internal" href="#copy-standard-types">Copy Standard Types</a></li>
+<li><a class="reference internal" href="#load-standard-types">Load Standard Types</a></li>
+<li><a class="reference internal" href="#check-if-standard-type-exists">Check if Standard Type Exists</a></li>
+<li><a class="reference internal" href="#change-standard-type">Change Standard Type</a></li>
+<li><a class="reference internal" href="#load-additional-parameter-from-library">Load Additional Parameter from Library</a></li>
+<li><a class="reference internal" href="#find-standard-type">Find Standard Type</a></li>
+<li><a class="reference internal" href="#delete-standard-type">Delete Standard Type</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="api_create.html"
+                        title="previous chapter">Create Functions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api_file_io.html"
+                        title="next chapter">Save and Load Networks</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pandapower/api_std_types.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="api_file_io.html" title="Save and Load Networks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="api_create.html" title="Create Functions"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pandapower 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" >pandapower API</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Alexander Scheidler, Leon Thurner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

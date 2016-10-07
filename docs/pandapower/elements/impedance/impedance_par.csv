@@ -1,0 +1,9 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the impedance
+from_bus*;integer;;index of bus where the impedance starts
+to_bus*;integer;;index of bus where the impedance ends
+r_pu*;float;:math:`>` 0;resistance of the impedance [p.u]
+x_pu*;float;:math:`>` 0;reactance of the impedance [p.u]
+sn_kva*;float;:math:`>` 0;reference apparent power for the impedance per unit values [kVA]
+in_service*;boolean;"| *""True""* - in service
+| *""False""* - out of service";specifies if the imepdance is in service. Only in service elements are considered during loadflow calculation
