@@ -223,7 +223,7 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = pp.file_io.from_pickle("testgrid.p")
+    net = pp.file_io.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
 
     return net
 
@@ -245,4 +245,4 @@ def create_test_line(net, b1, b2, in_service=True):
                                           in_service=in_service,index=pp.get_free_id(net.line) + 1)
 
 if __name__ == "__main__":
-    run_all_tests()
+    create_test_network2()
