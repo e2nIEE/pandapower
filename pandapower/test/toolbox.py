@@ -224,6 +224,7 @@ def create_test_network2():
     """Creates a simple pandapower test network
     """
     net = pp.file_io.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
+    net.trafo.shift_degree=150
 
     return net
 
@@ -245,4 +246,4 @@ def create_test_line(net, b1, b2, in_service=True):
                                           in_service=in_service,index=pp.get_free_id(net.line) + 1)
 
 if __name__ == "__main__":
-    create_test_network2()
+    run_all_tests()

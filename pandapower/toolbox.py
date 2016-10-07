@@ -167,21 +167,27 @@ def convert_format(net):
         import json
         path, file = os.path.split(os.path.realpath(__file__))
 
-        with open(os.path.join(path, "linetypes.json"), 'r') as f:
-            lt = json.load(f)
-        for std_type in net.line.std_type.unique():
-            if std_type in lt:
-                if "shift_degree" not in lt[std_type]:
-                    lt[std_type]["shift_degree"] = 0
-                pp.create_std_type(net, lt[std_type], std_type, element="line")
-
-        with open(os.path.join(path, "trafotypes.json"), 'r') as f:
-            tt = json.load(f)
-        for std_type in net.trafo.std_type.unique():
-            if std_type in tt:
-                pp.create_std_type(
-                    net, tt[std_type], std_type, element="trafo")
-    
+        try:        
+            with open(os.path.join(path, "linetypes.json"), 'r') as f:
+                lt = json.load(f)
+            for std_type in net.line.std_type.unique():
+                if std_type in lt:
+                    if "shift_degree" not in lt[std_type]:
+                        lt[std_type]["shift_degree"] = 0
+                    pp.create_std_type(net, lt[std_type], std_type, element="line")
+        except: 
+            logger.info("Old standard line type library could not be loaded")
+            
+        try:
+            with open(os.path.join(path, "trafotypes.json"), 'r') as f:
+                tt = json.load(f)
+            for std_type in net.trafo.std_type.unique():
+                if std_type in tt:
+                    pp.create_std_type(
+                        net, tt[std_type], std_type, element="trafo")
+        except:
+            logger.info("Old standard trafo type library could not be loaded")   
+            
     net.trafo.tp_side.replace(1, "hv", inplace=True)
     net.trafo.tp_side.replace(2, "lv", inplace=True)
     net.trafo.tp_side = net.trafo.tp_side.where(pd.notnull(net.trafo.tp_side), None)
