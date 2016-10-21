@@ -183,7 +183,6 @@ def convert_format(net):
             if std_type in tt:
                 create_std_type(
                     net, tt[std_type], std_type, element="trafo")
-    
     net.trafo.tp_side.replace(1, "hv", inplace=True)
     net.trafo.tp_side.replace(2, "lv", inplace=True)
     net.trafo.tp_side = net.trafo.tp_side.where(pd.notnull(net.trafo.tp_side), None)

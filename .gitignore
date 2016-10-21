@@ -3,6 +3,6 @@
 *~
 build/
 dist/
-PYPOWER.egg-info/
+pandapower.egg-info/
 doc/api/
 doc/.build/*

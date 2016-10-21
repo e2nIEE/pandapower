@@ -6,3 +6,4 @@ include *.ini
 include *.rst
 global-include *.p
 recursive-include doc *
+

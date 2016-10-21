@@ -225,8 +225,13 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
+<<<<<<< HEAD
     net = pp.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
 #    net = pp.file_io.from_pickle("testgrid.p")
+=======
+    net = pp.file_io.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
+    net.trafo.shift_degree=150
+>>>>>>> a333cd05b098144b1696f8e76bde5d2b9b0bfa7c
 
     return net
 
