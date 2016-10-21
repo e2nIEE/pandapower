@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jul  1 16:08:40 2016
 
-@author: JKupka
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
 
@@ -177,7 +176,7 @@ def create_cigre_network_mv(with_der=False):
 
     # Ext-Grid
     pp.create_ext_grid(net_cigre_mv, bus0, vm_pu=1.03, va_degree=0.,
-                       svsc_max_mva=5000, svsc_min_mva=5000, rx_max=0.1, rx_min=0.1)
+                       s_sc_max_mva=5000, s_sc_min_mva=5000, rx_max=0.1, rx_min=0.1)
 
     # Trafos
     trafo0 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, bus1, sn_kva=25000,
@@ -425,8 +424,8 @@ def create_cigre_network_lv():
                                           tp_pos=0.0, name='Trafo C0-C1')
 
     # External grid
-    pp.create_ext_grid(net_cigre_lv, bus0, vm_pu=1.0, va_degree=0.0, svsc_max_mva=100.0,
-                       svsc_min_mva=100.0, rx_max=1.0, rx_min=1.0)
+    pp.create_ext_grid(net_cigre_lv, bus0, vm_pu=1.0, va_degree=0.0, s_sc_max_mva=100.0,
+                       s_sc_min_mva=100.0, rx_max=1.0, rx_min=1.0)
 
     # Loads
     pp.create_load(net_cigre_lv, busR1, p_kw=190.0, q_kvar=62.449980, name='Load R1')

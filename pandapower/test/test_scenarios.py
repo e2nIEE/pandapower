@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-__author__ = 'fmeier'
-"""Run a series of tests.
-"""
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pytest
 import pandapower as pp
 import pandas as pd
 import pandapower.test as pst
-import pandas.util.testing as pdt
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.result_test_network_generator import add_test_bus_bus_switch
+import pandas.util.testing as pdt
 
 
 # 2 gen 2 ext_grid missing
@@ -77,7 +78,6 @@ def test_0gen_2ext_grid():
     for element in ['ext_grid', 'bus']:
         net['res_' + element].sort_index(axis=1, inplace=True)
         eval('ref_' + element + '.sort_index(axis=1, inplace=True)')
-
         eval('pdt.assert_frame_equal(net.res_' + element + ', ref_' + element + ')')
 
 
@@ -115,7 +115,6 @@ def test_0gen_2ext_grid_decoupled():
     for element in ['ext_grid', 'bus']:
         net['res_' + element].sort_index(axis=1, inplace=True)
         eval('ref_' + element + '.sort_index(axis=1, inplace=True)')
-
         eval('pdt.assert_frame_equal(net.res_' + element + ', ref_' + element + ')')
 
 
@@ -124,9 +123,9 @@ def test_0gen_2ext_grid_decoupled():
 
 def test_bus_bus_switch_at_eg():
     net = pp.create_empty_network()
-    b1 = pp.create_bus(net, name="bus1")
-    b2 = pp.create_bus(net, name="bus2")
-    b3 = pp.create_bus(net, name="bus3")
+    b1 = pp.create_bus(net, name="bus1", vn_kv=.4)
+    b2 = pp.create_bus(net, name="bus2", vn_kv=.4)
+    b3 = pp.create_bus(net, name="bus3", vn_kv=.4)
 
     pp.create_ext_grid(net, b1)
 

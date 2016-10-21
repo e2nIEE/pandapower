@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from builtins import map
-__author__ = 'tdess, lthurner, scheidler, lloewer'
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import copy
 import numpy as np
 import pandas as pd
 import math
-
 from functools import partial
-from pandapower.auxiliary import get_indices, get_values
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS
+
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, QT
 from pypower.idx_bus import BASE_KV
 
-def _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model):
+from pandapower.auxiliary import get_indices, get_values
+
+def _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
     """
     Takes the empty mpc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -40,15 +41,24 @@ def _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_mode
     impedance_end = trafo3w_end + len(net["impedance"])
     xward_end = impedance_end + len(net["xward"])
     
-    mpc["branch"] = np.zeros(shape=(xward_end, 13), dtype=np.complex128)
-    mpc["branch"][:] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    mpc["branch"] = np.zeros(shape=(xward_end, QT + 1), dtype=np.complex128)
+    mpc["branch"][:,:13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
     if line_end > 0:
         mpc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS]] = \
             _calc_line_parameter(net, mpc, bus_lookup)
+        if set_opf_constraints:
+            mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
+                                  net.line.imax_ka * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
     if trafo_end > line_end:
         mpc["branch"][line_end:trafo_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model)
+            
+        if set_opf_constraints:
+            # at 1.0 p.u. the maximum apparent power [MVA] equals the maximum current [MA]
+            mpc["branch"][len(net["line"]):(len(net["line"]) + len(net["trafo"])), RATE_A] = \
+                net.trafo.max_loading_percent  / 100 * net.trafo.sn_kva / 1000
+                
     if trafo3w_end > trafo_end:
         mpc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles,  trafo_model)
@@ -57,8 +67,11 @@ def _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_mode
             _calc_impedance_parameter(net, bus_lookup)
     if xward_end > impedance_end:
         mpc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
-                _calc_xward_parameter(net, mpc, bus_lookup)
-               
+                _calc_xward_parameter(net, mpc, bus_lookup)        
+                
+    if set_opf_constraints:
+          mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
+                                  net.line.imax_ka * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
 def _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model):
     trafo_df = _trafo_df_from_trafo3w(net)
 
@@ -174,7 +187,7 @@ def _calc_branch_values_from_trafo_df(net, mpc, bus_lookup, trafo_model, trafo_d
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 4), dtype=np.complex128)
-    unh, unl = _calc_un_from_dataframe(trafo_df)
+    unh, unl = _calc_vn_from_dataframe(trafo_df)
     r, x, y = _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model)    
     temp_para[:, 0] = r
     temp_para[:, 1] = x
@@ -237,11 +250,11 @@ def _calc_y_from_dataframe(trafo_df, baseR):
     return -b_real*1j - b_img
 
 
-def _calc_un_from_dataframe(trafo_df):
+def _calc_vn_from_dataframe(trafo_df):
     """
-    Adjust the nominal voltage unh and unl to the active tab position "tp_pos".
-    If "side" is 1 (high-voltage side) the high voltage unh is adjusted.
-    If "side" is 2 (low-voltage side) the low voltage unl is adjusted
+    Adjust the nominal voltage vnh and vnl to the active tab position "tp_pos".
+    If "side" is 1 (high-voltage side) the high voltage vnh is adjusted.
+    If "side" is 2 (low-voltage side) the low voltage vnl is adjusted
 
     INPUT:
 
@@ -328,7 +341,7 @@ def _trafo_df_from_trafo3w(net):
         sn = np.array([ttab.sn_hv_kva, ttab.sn_mv_kva, ttab.sn_lv_kva])
         uk_2w = z_br_to_bus(uk, sn)
         ur_2w = z_br_to_bus(ur, sn)
-        taps = [{tv: np.nan for tv in tap_variables} for i in range(3)]
+        taps = [{tv: np.nan for tv in tap_variables} for _ in range(3)]
         for k in range(3):
             taps[k]["tp_side"] = None
     
@@ -405,7 +418,7 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
         is_to_bus = int(branch_bus == bus)
         return is_to_bus, bus, net["trafo"].index.get_loc(branch_id)
 
-def _switch_branches(n, mpc, bus_lookup):
+def _switch_branches(n, mpc, is_elems, bus_lookup):
     """
     Updates the mpc["branch"] matrix with the changed from or to values
     according of the status of switches
@@ -416,14 +429,14 @@ def _switch_branches(n, mpc, bus_lookup):
         **mpc** - The PYPOWER format network to fill in values
     """
 
-    # ensure that the line is in service
-    lines_in_service = n["line"].index[n["line"]["in_service"].values.astype(bool)]
-    busses_in_service = n["bus"].index[n["bus"]["in_service"].values.astype(bool)]
+    # get in service elements
+    lines_is = is_elems['line']
+    bus_is = is_elems['bus']
 
     slidx = (n["switch"]["closed"].values == 0) \
             & (n["switch"]["et"].values == "l") \
-            & (np.in1d(n["switch"]["element"].values, lines_in_service)) \
-            & (np.in1d(n["switch"]["bus"].values, busses_in_service))
+            & (np.in1d(n["switch"]["element"].values, lines_is.index)) \
+            & (np.in1d(n["switch"]["bus"].values, bus_is.index))
     nlo = np.count_nonzero(slidx)
 
     stidx = (n.switch["closed"].values == 0) & (n.switch["et"].values == "t")
@@ -433,7 +446,7 @@ def _switch_branches(n, mpc, bus_lookup):
         n_bus = len(mpc["bus"])
 
         if nlo:
-            future_busses = [mpc["bus"]]
+            future_buses = [mpc["bus"]]
             line_switches = n["switch"].loc[slidx]
 
             # determine on which side the switch is located
@@ -447,27 +460,27 @@ def _switch_branches(n, mpc, bus_lookup):
             # 2: position of the line a switch is connected to
             ls_info = np.array(ls_info, dtype=int)
 
-            # build new busses
-            new_ls_busses = np.zeros(shape=(nlo, 13), dtype=float)
+            # build new buses
+            new_ls_buses = np.zeros(shape=(nlo, 13), dtype=float)
             new_indices = np.arange(n_bus, n_bus+nlo)
             # the newly created buses
-            new_ls_busses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
-            new_ls_busses[:, 0] = new_indices
-            new_ls_busses[:, 9] = get_values(mpc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
+            new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
+            new_ls_buses[:, 0] = new_indices
+            new_ls_buses[:, 9] = get_values(mpc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
             # set voltage of new buses to voltage on other branch end
-            to_buses = mpc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1].real.astype(int)
-            from_buses = mpc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0].real\
-                .astype(int)
+#            to_buses = mpc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1].real.astype(int)
+#            from_buses = mpc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0].real\
+#                .astype(int)
 #            if len(to_buses):
 #                ix = ls_info[:, 0] == 1
-#                new_ls_busses[ix, 7] = mpc["bus"][to_buses, 7]
-#                new_ls_busses[ix, 8] = mpc["bus"][to_buses, 8]
+#                new_ls_buses[ix, 7] = mpc["bus"][to_buses, 7]
+#                new_ls_buses[ix, 8] = mpc["bus"][to_buses, 8]
 #            if len(from_buses):
 #                ix = ls_info[:, 0] == 0
-#                new_ls_busses[ix, 7] = mpc["bus"][from_buses, 7]
-#                new_ls_busses[ix, 8] = mpc["bus"][from_buses, 8]
+#                new_ls_buses[ix, 7] = mpc["bus"][from_buses, 7]
+#                new_ls_buses[ix, 8] = mpc["bus"][from_buses, 8]
 
-            future_busses.append(new_ls_busses)
+            future_buses.append(new_ls_buses)
 
             # re-route the end of lines to a new bus
             mpc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \
@@ -475,10 +488,10 @@ def _switch_branches(n, mpc, bus_lookup):
             mpc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0] = \
                 new_indices[np.logical_not(ls_info[:, 0])]
 
-            mpc["bus"] = np.vstack(future_busses)
+            mpc["bus"] = np.vstack(future_buses)
 
         if nto:
-            future_busses = [mpc["bus"]]
+            future_buses = [mpc["bus"]]
             trafo_switches = n["switch"].loc[stidx]
 
             # determine on which side the switch is located
@@ -492,12 +505,12 @@ def _switch_branches(n, mpc, bus_lookup):
             # 2: position of the trafo a switch is connected to
             ts_info = np.array(ts_info, dtype=int)
 
-            # build new busses
-            new_ts_busses = np.zeros(shape=(nto, 13), dtype=float)
+            # build new buses
+            new_ts_buses = np.zeros(shape=(nto, 13), dtype=float)
             new_indices = np.arange(n_bus+nlo, n_bus+nlo+nto)
-            new_ts_busses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
-            new_ts_busses[:, 0] = new_indices
-            new_ts_busses[:, 9] = get_values(mpc["bus"][:, BASE_KV],
+            new_ts_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
+            new_ts_buses[:, 0] = new_indices
+            new_ts_buses[:, 9] = get_values(mpc["bus"][:, BASE_KV],
                                              ts_info[:, 1], bus_lookup)
             # set voltage of new buses to voltage on other branch end
             to_buses = mpc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 1].real.astype(int)
@@ -509,16 +522,16 @@ def _switch_branches(n, mpc, bus_lookup):
                 ix = ts_info[:, 0] == 1
                 taps = mpc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 8].real
                 shift = mpc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 9].real
-                new_ts_busses[ix, 7] = mpc["bus"][to_buses, 7] * taps
-                new_ts_busses[ix, 8] = mpc["bus"][to_buses, 8] + shift
+                new_ts_buses[ix, 7] = mpc["bus"][to_buses, 7] * taps
+                new_ts_buses[ix, 8] = mpc["bus"][to_buses, 8] + shift
             if len(from_buses):
                 ix = ts_info[:, 0] == 0
                 taps = mpc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 8].real
                 shift = mpc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 9].real
-                new_ts_busses[ix, 7] = mpc["bus"][from_buses, 7] * taps
-                new_ts_busses[ix, 8] = mpc["bus"][from_buses, 8] + shift
+                new_ts_buses[ix, 7] = mpc["bus"][from_buses, 7] * taps
+                new_ts_buses[ix, 8] = mpc["bus"][from_buses, 8] + shift
 
-            future_busses.append(new_ts_busses)
+            future_buses.append(new_ts_buses)
 
             # re-route the hv/lv-side of the trafo to a new bus
             # (trafo entries follow line entries)
@@ -529,4 +542,90 @@ def _switch_branches(n, mpc, bus_lookup):
             mpc["branch"][len(n.line) + ts_info[at_hv_bus, 2], 0] = \
                 new_indices[at_hv_bus]
 
-            mpc["bus"] = np.vstack(future_busses)
+            mpc["bus"] = np.vstack(future_buses)
+
+def _branches_with_oos_buses(n, mpc, is_elems, bus_lookup):
+    """
+    Updates the mpc["branch"] matrix with the changed from or to values
+    if the branch is connected to an out of service bus
+
+    Adds auxiliary buses if branch is connected to an out of service bus
+    Sets branch out of service if connected to two out of service buses
+
+    **INPUT**:
+        **n** - The Pandapower format network
+
+        **mpc** - The PYPOWER format network to fill in values
+        **bus_is** - The in service buses
+        **bus_lookup** - Lookup table for pandapower indices -> mpc indices
+    """
+
+    # get in service elements
+    bus_is = is_elems['bus']
+    line_is = is_elems['line']
+
+    n_oos_buses = len(n['bus']) - len(bus_is)
+
+    # only filter lines at oos buses if oos buses exists
+    if n_oos_buses > 0:
+        n_bus = len(mpc["bus"])
+        future_buses = [mpc["bus"]]
+        # out of service buses
+        bus_oos = n['bus'].drop(bus_is.index).index
+        # from buses of line
+        f_bus = line_is.from_bus.values
+        t_bus = line_is.to_bus.values
+
+        # determine on which side of the line the oos bus is located
+        mask_from = np.in1d(f_bus, bus_oos)
+        mask_to = np.in1d(t_bus, bus_oos)
+
+        # determine if line is only connected to out of service buses -> set branch in mpc out of service
+        mask_and = mask_to & mask_from
+
+        if np.any(mask_and):
+            mpc["branch"][line_is[mask_and].index, BR_STATUS] = 0
+            line_is = line_is[~mask_and]
+            f_bus = f_bus[~mask_and]
+            t_bus = t_bus[~mask_and]
+            mask_from = mask_from[~mask_and]
+            mask_to = mask_to[~mask_and]
+
+        mask_or = mask_to | mask_from
+        # check whether buses are connected to line
+        oos_buses_at_lines = np.r_[f_bus[mask_from], t_bus[mask_to]]
+        n_oos_buses_at_lines = len(oos_buses_at_lines)
+
+        # only if oos_buses are at lines (they could be isolated as well)
+        if n_oos_buses_at_lines > 0:
+            ls_info = np.zeros((n_oos_buses_at_lines,3), dtype=int)
+            ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
+            ls_info[:, 1] = oos_buses_at_lines
+            ls_info[:, 2] = np.nonzero(np.in1d( n['line'].index, line_is.index[mask_or]))[0]
+
+            # ls_info = list(map(mapfunc,
+            #               line_switches["bus"].values,
+            #               line_switches["element"].values))
+            # we now have the following matrix
+            # 0: 1 if switch is at to_bus, 0 else
+            # 1: bus of the switch
+            # 2: position of the line a switch is connected to
+            # ls_info = np.array(ls_info, dtype=int)
+
+            # build new buses
+            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, 13), dtype=float)
+            new_indices = np.arange(n_bus, n_bus+n_oos_buses_at_lines)
+            # the newly created buses
+            new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
+            new_ls_buses[:, 0] = new_indices
+            new_ls_buses[:, 9] = get_values(mpc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
+
+            future_buses.append(new_ls_buses)
+
+            # re-route the end of lines to a new bus
+            mpc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \
+                new_indices[ls_info[:, 0].astype(bool)]
+            mpc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0] = \
+                new_indices[np.logical_not(ls_info[:, 0])]
+
+            mpc["bus"] = np.vstack(future_buses)

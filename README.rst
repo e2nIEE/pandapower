@@ -4,9 +4,9 @@
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org/>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program.
 pandapower is aimed at automation of power system analysis and optimization in distribution and sub-transmission networks.
 
-pandapower is based on electric elements rather than on generic loadflow attributes. For example, in PYPOWER busses have a power demand and shunt admittance, even though these are in reality the attributes of electric
-elements (such as loads, pv generators or capacitor banks) which are connected to the busses. In pandapower, we model each electric bus element instead of considering summed values for each bus.
-The same goes for branches: in reality, busses in a network are connected by electric elements like lines and transformers that can be defined by a length and cable type (lines) or short circuit 
+pandapower is based on electric elements rather than on generic loadflow attributes. For example, in PYPOWER buses have a power demand and shunt admittance, even though these are in reality the attributes of electric
+elements (such as loads, pv generators or capacitor banks) which are connected to the buses. In pandapower, we model each electric bus element instead of considering summed values for each bus.
+The same goes for branches: in reality, buses in a network are connected by electric elements like lines and transformers that can be defined by a length and cable type (lines) or short circuit 
 voltages and rated power (transformers). Since the electric models for lines and transformers are implemented in pandapower, it is possible to model the electric elements with these common nameplate
 attributes. All parameters which are necessary for the loadflow (like branch per unit impedances, shunt impedances, bus power, bus loadflow type etc.) are then calculated and handled internally by pandapower.
 
@@ -80,9 +80,9 @@ There are various reasons why using pandapower is more comfortable than using py
     - pandapower provides some search algorithms specialiced on electric power networks
 
 5. Plotting and geographical data
-    - geographical data for busses and lines can be stored in the pandapower datastructure
+    - geographical data for buses and lines can be stored in the pandapower datastructure
     - networks with geographic information can be plotted using matplotlib
-    - if no geographical information is available for the busses, artificial coordinates can be created through a `python-igraph <http://igraph.org/python/>` interface
+    - if no geographical information is available for the buses, artificial coordinates can be created through a `python-igraph <http://igraph.org/python/>` interface
       
 License
 =========

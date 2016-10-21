@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Impedance &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Datastructure and Elements" href="../../elements.html"/>
+        <link rel="next" title="Ward" href="../ward/ward.html"/>
+        <link rel="prev" title="Shunt" href="../shunt/shunt.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../load/load.html">Load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sgen/sgen.html">Static Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ext_grid/ext_grid.html">External Grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../trafo/trafo.html">Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../trafo3w/trafo3w.html">Three Winding Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gen/gen.html">Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shunt/shunt.html">Shunt</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Impedance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ward/ward.html">Ward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../elements.html">Datastructure and Elements</a> &raquo;</li>
+      
+    <li>Impedance</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/pandapower/elements/impedance/impedance.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="impedance">
+<h1>Impedance<a class="headerlink" href="#impedance" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-impedance"><span class="std std-ref">Create Impedance</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.impedance</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="13%" />
+<col width="20%" />
+<col width="53%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the impedance</td>
+</tr>
+<tr class="row-odd"><td>from_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of bus where the impedance starts</td>
+</tr>
+<tr class="row-even"><td>to_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of bus where the impedance ends</td>
+</tr>
+<tr class="row-odd"><td>r_pu*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>resistance of the impedance [p.u]</td>
+</tr>
+<tr class="row-even"><td>x_pu*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>reactance of the impedance [p.u]</td>
+</tr>
+<tr class="row-odd"><td>sn_kva*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>reference apparent power for the impedance per unit values [kVA]</td>
+</tr>
+<tr class="row-even"><td>in_service*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;True&#8221;</em> - in service</div>
+<div class="line"><em>&#8220;False&#8221;</em> - out of service</div>
+</div>
+</td>
+<td>specifies if the imepdance is in service. Only in service elements are considered during loadflow calculation</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+<p><strong>Loadflow Model</strong></p>
+<p>The impedance is modelled as a simple longitudinal per unit impedance:</p>
+<a class="reference internal image-reference" href="../../../_images/impedance.png"><img alt="alternate Text" class="align-center" src="../../../_images/impedance.png" style="width: 25em;" /></a>
+<p>The per unit values given in the parameter table are assumed to be relative to the rated voltage of from and to bus as well as to the apparent power given in the table.
+The per unit values are therefore transformed into the network per unit system:</p>
+<div class="math">
+\begin{align*}
+ \underline{z}_{impedance} &amp;= r\_pu + j \cdot x_{pu} \\
+ \underline{z} &amp;= \underline{z}_{impedance} \frac{S_{N}}{sn\_kva}
+ \end{align*}</div><p>with <span class="math">\(S_{N} = 1 \ MVA\)</span> (see <a class="reference internal" href="../../about_units.html#conventions"><span class="std std-ref">per unit system</span></a>).</p>
+<p><strong>Results</strong></p>
+<p><em>net.res_impedance</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="13%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>p_from_kw</td>
+<td>float</td>
+<td>active power flow into the impedance at &#8220;from&#8221; bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_from_kvar</td>
+<td>float</td>
+<td>reactive power flow into the impedance at &#8220;from&#8221; bus [kVAr]</td>
+</tr>
+<tr class="row-even"><td>p_to_kw</td>
+<td>float</td>
+<td>active power flow into the impedance at &#8220;to&#8221; bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_to_kvar</td>
+<td>float</td>
+<td>reactive power flow into the impedance at &#8220;to&#8221; bus [kVAr]</td>
+</tr>
+<tr class="row-even"><td>pl_kw</td>
+<td>float</td>
+<td>active power losses of the impedance [kW]</td>
+</tr>
+<tr class="row-odd"><td>ql_kvar</td>
+<td>float</td>
+<td>reactive power consumption of the impedance [kVar]</td>
+</tr>
+<tr class="row-even"><td>i_from_ka</td>
+<td>float</td>
+<td>current at from bus [kA]</td>
+</tr>
+<tr class="row-odd"><td>i_to_ka</td>
+<td>float</td>
+<td>current at to bus [kA]</td>
+</tr>
+</tbody>
+</table>
+<div class="math">
+\begin{align*}
+ i\_from\_ka &amp;= i_{from}\\
+ i\_to\_ka &amp;= i_{to}\\
+ p\_from\_kw &amp;= Re(\underline{v}_{from} \cdot \underline{i}_{from}) \\
+ q\_from\_kvar &amp;= Im(\underline{v}_{from} \cdot \underline{i}_{from}) \\
+ p\_to\_kw &amp;= Re(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+ q\_to\_kvar &amp;= Im(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+     pl\_kw &amp;= p\_from\_kw + p\_to\_kw \\
+     ql\_kvar &amp;= q\_from\_kvar + q\_to\_kvar \\
+ \end{align*}</div></div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../ward/ward.html" class="btn btn-neutral float-right" title="Ward" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../shunt/shunt.html" class="btn btn-neutral" title="Shunt" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

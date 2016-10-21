@@ -1,0 +1,607 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Three Winding Transformer &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Datastructure and Elements" href="../../elements.html"/>
+        <link rel="next" title="Generator" href="../gen/gen.html"/>
+        <link rel="prev" title="Transformer" href="../trafo/trafo.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../load/load.html">Load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sgen/sgen.html">Static Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ext_grid/ext_grid.html">External Grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../trafo/trafo.html">Transformer</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Three Winding Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gen/gen.html">Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shunt/shunt.html">Shunt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../impedance/impedance.html">Impedance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ward/ward.html">Ward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../elements.html">Datastructure and Elements</a> &raquo;</li>
+      
+    <li>Three Winding Transformer</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/pandapower/elements/trafo3w/trafo3w.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="three-winding-transformer">
+<h1>Three Winding Transformer<a class="headerlink" href="#three-winding-transformer" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../api_create.html#create-trafo3w"><span class="std std-ref">Create Three Winding Transformer</span></a></p>
+</div>
+<p><strong>Parameters</strong></p>
+<p><em>net.trafo3w</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="11%" />
+<col width="28%" />
+<col width="44%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the transformer</td>
+</tr>
+<tr class="row-odd"><td>hv_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>high voltage bus index of the transformer</td>
+</tr>
+<tr class="row-even"><td>mv_bus</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>medium voltage bus index of the transformer</td>
+</tr>
+<tr class="row-odd"><td>lv_bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>low voltage bus index of the transformer</td>
+</tr>
+<tr class="row-even"><td>vn_hv_kv*</td>
+<td>float</td>
+<td>&nbsp;</td>
+<td>rated voltage at high voltage bus [kV]</td>
+</tr>
+<tr class="row-odd"><td>vn_mv_kv*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>rated voltage at medium voltage bus [kV]</td>
+</tr>
+<tr class="row-even"><td>vn_lv_kv*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>rated voltage at low voltage bus [kV]</td>
+</tr>
+<tr class="row-odd"><td>sn_hv_kva*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>rated apparent power on high voltage side [kVA]</td>
+</tr>
+<tr class="row-even"><td>sn_mv_kva*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>rated apparent power on medium voltage side [kVA]</td>
+</tr>
+<tr class="row-odd"><td>sn_lv_kva*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>rated apparent power on low voltage side [kVA]</td>
+</tr>
+<tr class="row-even"><td>vsc_hv_percent*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>short circuit voltage from high to medium voltage [%]</td>
+</tr>
+<tr class="row-odd"><td>vsc_mv_percent*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>short circuit voltage from medium to low voltage [%]</td>
+</tr>
+<tr class="row-even"><td>vsc_lv_percent*</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>short circuit voltage from high to low voltage [%]</td>
+</tr>
+<tr class="row-odd"><td>vscr_hv_percent*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span>  0</td>
+<td>real part of short circuit voltage from high to medium voltage [%]</td>
+</tr>
+<tr class="row-even"><td>vscr_mv_percent*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span>  0</td>
+<td>real part of short circuit voltage from medium to low voltage [%]</td>
+</tr>
+<tr class="row-odd"><td>vscr_lv_percent*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span>  0</td>
+<td>real part of short circuit voltage from high to low voltage [%]</td>
+</tr>
+<tr class="row-even"><td>pfe_kw*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>iron losses [kW]</td>
+</tr>
+<tr class="row-odd"><td>i0_percent*</td>
+<td>float</td>
+<td><span class="math">\(\geq\)</span> 0</td>
+<td>open loop losses [%]</td>
+</tr>
+<tr class="row-even"><td>tp_side</td>
+<td>string</td>
+<td>&#8220;hv&#8221;, &#8220;mv&#8221;, &#8220;lv&#8221;</td>
+<td>defines if tap changer is positioned on high- medium- or low voltage side</td>
+</tr>
+<tr class="row-odd"><td>tp_mid</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>tp_min</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>minimum tap position</td>
+</tr>
+<tr class="row-odd"><td>tp_max</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>maximum tap position</td>
+</tr>
+<tr class="row-even"><td>tp_st_percent</td>
+<td>float</td>
+<td><span class="math">\(&gt;\)</span> 0</td>
+<td>tap step size [%]</td>
+</tr>
+<tr class="row-odd"><td>tp_pos</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>current position of tap changer</td>
+</tr>
+<tr class="row-even"><td>in_service*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;True&#8221;</em> - in service</div>
+<div class="line"><em>&#8220;False&#8221;</em> - out of service</div>
+</div>
+</td>
+<td>specifies if the transformer is in service. Only in service elements are considered during loadflow calculation</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+<p><strong>Loadflow Model</strong></p>
+<p>Three Winding Transformers are modelled by three two-winding transformers:</p>
+<a class="reference internal image-reference" href="../../../_images/trafo3w.png"><img alt="alternate Text" class="align-center" src="../../../_images/trafo3w.png" style="width: 25em;" /></a>
+<p>The parameters of the three transformers are defined as follows:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="27%" />
+<col width="27%" />
+<col width="27%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&nbsp;</td>
+<td><strong>T1</strong></td>
+<td><strong>T2</strong></td>
+<td><strong>T3</strong></td>
+</tr>
+<tr class="row-even"><td>hv_bus</td>
+<td>hv_bus</td>
+<td>auxiliary bus</td>
+<td>auxiliary bus</td>
+</tr>
+<tr class="row-odd"><td>lv_bus</td>
+<td>auxiliary bus</td>
+<td>mv_bus</td>
+<td>lv_bus</td>
+</tr>
+<tr class="row-even"><td>sn_kva</td>
+<td>sn_hv_kva</td>
+<td>sn_mv_kva</td>
+<td>sn_lv_kva</td>
+</tr>
+<tr class="row-odd"><td>vn_hv_kv</td>
+<td>vn_hv_kv</td>
+<td>vn_hv_kv</td>
+<td>vn_hv_kv</td>
+</tr>
+<tr class="row-even"><td>vn_lv_kv</td>
+<td>vn_hv_kv</td>
+<td>vn_mv_kv</td>
+<td>vn_lv_kv</td>
+</tr>
+<tr class="row-odd"><td>vsc_percent</td>
+<td><span class="math">\(v_{k, t1}\)</span></td>
+<td><span class="math">\(v_{k, t2}\)</span></td>
+<td><span class="math">\(v_{k, t3}\)</span></td>
+</tr>
+<tr class="row-even"><td>vscr_percent</td>
+<td><span class="math">\(v_{r, t1}\)</span></td>
+<td><span class="math">\(v_{r, t2}\)</span></td>
+<td><span class="math">\(v_{r, t3}\)</span></td>
+</tr>
+<tr class="row-odd"><td>pfe_kw</td>
+<td>pfe_kw</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="row-even"><td>i0_percent</td>
+<td>i0_percent</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>shift_degree</td>
+<td>shift_degree</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>The definition of the two winding transformer parameter can be found <a class="reference internal" href="../trafo/trafo.html#trafo"><span class="std std-ref">here</span></a>.</p>
+<p>To calculate the short-circuit voltages <span class="math">\(v_{k, t1..t3}\)</span> and <span class="math">\(v_{r, t1..t3}\)</span>, first all short-circuit voltages are converted to the high voltage level:</p>
+<div class="math">
+\begin{align*}
+ v'_{k, h} &amp;= vsc\_hv\_percent  \\
+ v'_{k, m} &amp;= vsc\_mv\_percent \cdot \frac{sn\_hv\_kva}{sn\_mv\_kva} \\
+ v'_{k, l} &amp;= vsc\_lv\_percent \cdot \frac{sn\_hv\_kva}{sn\_lv\_kva}
+ \end{align*}</div><p>The short-circuit voltages of the three transformers are then calculated as follows:</p>
+<div class="math">
+\begin{align*}
+ v'_{k, t1} &amp;= \frac{1}{2} (v'_{k, h} + v'_{k, l} - v'_{k, m}) \\
+ v'_{k, t2} &amp;= \frac{1}{2} (v'_{k, m} + v'_{k, h} - v'_{k, l}) \\
+ v'_{k, t3} &amp;= \frac{1}{2} (v'_{k, m} + v'_{k, l} - v'_{k, h})
+ \end{align*}</div><p>Since these voltages are given relative to the high voltage side, they have to be transformed back to the voltage level of each transformer:</p>
+<div class="math">
+\begin{align*}
+ v_{k, t1} &amp;= v'_{k, t1} \\
+ v_{k, t2} &amp;= v'_{k, t2} \cdot \frac{sn\_mv\_kva}{sn\_hv\_kva} \\
+ v_{k, t3} &amp;= v'_{k, t3} \cdot \frac{sn\_lv\_kva}{sn\_hv\_kva}
+ \end{align*}</div><p>The real part of the short-circuit voltage is calculated in the same way.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All short circuit voltages are given relative to the maximum apparent power
+flow. For example vsc_hv_percent is the short circuit voltage from the high to
+the medium level, it is given relative to the minimum of the rated apparent
+power in high and medium level: min(sn_hv_kva, sn_mv_kva). This is consistent
+with most commercial network calculation software (e.g. PowerFactory).
+Some tools (like PSS Sincal) however define all short circuit voltages relative
+to the overall rated apparent power of the transformer:
+max(sn_hv_kva, sn_mv_kva, sn_lv_kva). You might have to convert the
+values depending on how the short-circuit voltages are defined.</p>
+</div>
+<p>The tap changer adapts the nominal voltages of the transformer in the equivalent to the 2W-Model:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="23%" />
+<col width="23%" />
+<col width="23%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&nbsp;</td>
+<td><strong>tp_side=&#8221;hv&#8221;</strong></td>
+<td><strong>tp_side=&#8221;mv&#8221;</strong></td>
+<td><strong>tp_side=&#8221;lv&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td><span class="math">\(V_{n, HV, transformer}\)</span></td>
+<td><span class="math">\(vnh\_kv  \cdot n_{tap}\)</span></td>
+<td><span class="math">\(vnh\_kv\)</span></td>
+<td><span class="math">\(vnh\_kv\)</span></td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(V_{n, MV, transformer}\)</span></td>
+<td><span class="math">\(vnm\_kv\)</span></td>
+<td><span class="math">\(vnm\_kv  \cdot n_{tap}\)</span></td>
+<td><span class="math">\(vnm\_kv\)</span></td>
+</tr>
+<tr class="row-even"><td><span class="math">\(V_{n, LV, transformer}\)</span></td>
+<td><span class="math">\(vnl\_kv\)</span></td>
+<td><span class="math">\(vnl\_kv\)</span></td>
+<td><span class="math">\(vnl\_kv  \cdot n_{tap}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>with</p>
+<div class="math">
+\begin{align*}
+ n_{tap} = 1 + (tp\_pos - tp\_mid) \cdot \frac{tp\_st\_percent}{100}
+ \end{align*}</div><div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="https://pangonilo.com/index.php?sdmon=files/MVA_Method_3-Winding_Transformer.pdf">MVA METHOD FOR 3-WINDING TRANSFORMER</a></p>
+</div>
+<p><strong>Results</strong></p>
+<p><strong>net.res_trafo3w</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="12%" />
+<col width="71%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>p_hv_kw</td>
+<td>float</td>
+<td>active power flow at the high voltage transformer bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_hv_kvar</td>
+<td>float</td>
+<td>reactive power flow at the high voltage transformer bus [kVar]</td>
+</tr>
+<tr class="row-even"><td>p_mv_kw</td>
+<td>float</td>
+<td>active power flow at the medium voltage transformer bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_mv_kvar</td>
+<td>float</td>
+<td>reactive power flow at the medium voltage transformer bus [kVar]</td>
+</tr>
+<tr class="row-even"><td>p_lv_kw</td>
+<td>float</td>
+<td>active power flow at the low voltage transformer bus [kW]</td>
+</tr>
+<tr class="row-odd"><td>q_lv_kvar</td>
+<td>float</td>
+<td>reactive power flow at the low voltage transformer bus [kVar]</td>
+</tr>
+<tr class="row-even"><td>pl_kw</td>
+<td>float</td>
+<td>active power losses of the transformer [kW]</td>
+</tr>
+<tr class="row-odd"><td>ql_kvar</td>
+<td>float</td>
+<td>reactive power consumption of the transformer [kvar]</td>
+</tr>
+<tr class="row-even"><td>i_hv_ka</td>
+<td>float</td>
+<td>current at the high voltage side of the transformer [kA]</td>
+</tr>
+<tr class="row-odd"><td>i_mv_ka</td>
+<td>float</td>
+<td>current at the medium voltage side of the transformer [kA]</td>
+</tr>
+<tr class="row-even"><td>i_lv_ka</td>
+<td>float</td>
+<td>current at the low voltage side of the transformer [kA]</td>
+</tr>
+<tr class="row-odd"><td>loading_percent</td>
+<td>float</td>
+<td>transformer utilization [%]</td>
+</tr>
+</tbody>
+</table>
+<div class="math">
+\begin{align*}
+ p\_hv\_kw &amp;= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\
+ q\_hv\_kvar &amp;= Im(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\
+ p\_mv\_kw &amp;= Re(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\
+ q\_mv\_kvar &amp;= Im(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\
+ p\_lv\_kw &amp;= Re(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
+ q\_lv\_kvar &amp;= Im(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
+     pl\_kw &amp;= p\_hv\_kw + p\_lv\_kw \\
+     ql\_kvar &amp;= q\_hv\_kvar + q\_lv\_kvar \\
+ i\_hv\_ka &amp;= i_{hv} \\
+ i\_mv\_ka &amp;= i_{mv} \\
+ i\_lv\_ka &amp;= i_{lv}
+ \end{align*}</div><p>The definition of the transformer loading depends on the trafo_loading parameter of the loadflow.</p>
+<p>For trafo_loading=&#8221;current&#8221;, the loading is calculated as:</p>
+<div class="math">
+\begin{align*}
+ loading\_percent &amp;= max(\frac{i_{hv} \cdot vn\_hv\_kv}{sn\_hv\_kva}, \frac{i_{mv} \cdot vn\_mv\_kv}{sn\_mv\_kva}, \frac{i_{lv} \cdot vn\_lv\_kv}{sn\_lv\_kva})  \cdot 100
+\end{align*}</div><p>For trafo_loading=&#8221;power&#8221;, the loading is defined as:</p>
+<div class="math">
+\begin{align*}
+ loading\_percent &amp;= max( \frac{i_{hv} \cdot v_{hv}}{sn\_hv\_kva}, \frac{i_{mv} \cdot v_{mv}}{sn\_mv\_kva}, \frac{i_{lv} \cdot v_{lv}}{sn\_lv\_kva}) \cdot 100
+ \end{align*}</div></div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../gen/gen.html" class="btn btn-neutral float-right" title="Generator" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../trafo/trafo.html" class="btn btn-neutral" title="Transformer" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

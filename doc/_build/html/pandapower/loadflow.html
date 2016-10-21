@@ -1,0 +1,242 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Power Flow &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../index.html"/>
+        <link rel="next" title="Run a Power Flow" href="loadflow_run.html"/>
+        <link rel="prev" title="pandapower Toolbox" href="api_toolbox.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Power Flow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_run.html">Run a Power Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_caveats.html">Known Problems and Caveats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_diagnostic.html">Diagnostic Function</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Power Flow</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/pandapower/loadflow.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="power-flow">
+<h1>Power Flow<a class="headerlink" href="#power-flow" title="Permalink to this headline">¶</a></h1>
+<p id="pploadflow">The power flow is the most import static network calculation operation. This section shows you how to run different power flows (AC, DC, OPF) in pandapower,
+what known problems and caveats there are and how you can identify problems using the pandapower diagnostic function.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="loadflow_run.html">Run a Power Flow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_run.html#ac-power-flow">AC Power Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_run.html#dc-power-flow">DC Power flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_run.html#optimal-power-flow">Optimal Power Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="loadflow_caveats.html">Known Problems and Caveats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_caveats.html#disconnected-buses">Disconnected Buses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_caveats.html#voltage-controlling-elements">Voltage Controlling Elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_caveats.html#zero-impedance-branches">Zero Impedance Branches</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="loadflow_diagnostic.html">Diagnostic Function</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_diagnostic.html#check-functions">Check functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_diagnostic.html#logging-output">Logging Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="loadflow_diagnostic.html#result-dictionary">Result Dictionary</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="loadflow_run.html" class="btn btn-neutral float-right" title="Run a Power Flow" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="api_toolbox.html" class="btn btn-neutral" title="pandapower Toolbox" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

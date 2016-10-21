@@ -1,6 +1,2 @@
-from __future__ import absolute_import
-
-from .generic_geodata import *
-from .collections import *
-from .draw import *
-from .gis import *
+from pandapower.plotting.generic_geodata import *
+from pandapower.plotting.collections import *

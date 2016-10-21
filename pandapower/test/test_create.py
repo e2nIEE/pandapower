@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Sep 16 14:04:18 2016
 
-@author: JKupka
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
-import inspect
 import pandas
 import numpy as np
 
@@ -33,7 +31,7 @@ def get_initialized_args(fct, args):
 
     # Set nan for unavailiable datatypes
     nans = ["min_vm_pu", "max_vm_pu", "min_p_kw", "max_p_kw", "cost_per_kw", "cost_per_kvar",
-            "max_loading_percent", "nr_busses", "svsc_max_mva", "svsc_min_mva", "rx_min", "rx_max"]
+            "max_loading_percent", "nr_buses", "s_sc_max_mva", "s_sc_min_mva", "rx_min", "rx_max"]
     for ia in init_args:
         if ia in nans:
             init_args[ia] = np.nan
@@ -103,25 +101,28 @@ def check_datatypes(net):
 # Get list of createfunctions
 net = pp.create_empty_network()
 
-# Create default busses
-pp.create_busses(net, 20)
+# Create default buses
+pp.create_buses(net, 20)
 
 forbidden_fcts = ["create_empty_network"]
 fcts = get_allowed_functions(pp.create, forbidden_fcts)
 print(fcts)
 
-for fc in fcts:
-    fc_callable = getattr(pp.create, fc)
-    args = inspect.signature(fc_callable).parameters
-    initialized_args = get_initialized_args(fc, args)
-    print("%s %s" % (fc, initialized_args))
-    print("")
-    print(fc)
-    ret = fc_callable(**initialized_args)
-    assert net
-    print("Return: %s" % ret)
-    print("################################")
-    
-check_datatypes(net)
-    
+# TODO:
+# Not py23 compatible test routine - needs to be refactored!
+#
+#for fc in fcts:
+#    fc_callable = getattr(pp.create, fc)
+#    args = inspect.signature(fc_callable).parameters
+#    initialized_args = get_initialized_args(fc, args)
+#    print("%s %s" % (fc, initialized_args))
+#    print("")
+#    print(fc)
+#    ret = fc_callable(**initialized_args)
+#    assert net
+#    print("Return: %s" % ret)
+#    print("################################")
+#    
+#check_datatypes(net)
+#    
 

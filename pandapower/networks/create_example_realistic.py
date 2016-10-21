@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul  5 16:32:40 2016
 
-@author: JKupka
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
 import pandas as pd
@@ -231,7 +230,7 @@ def create_example_realistic():
 
     # ExtGrids
     pp.create_ext_grid(net, pp.get_element_index(net, "bus", 'Double Busbar 1'), vm_pu=1.03,
-                       va_degree=0, name='External grid', svsc_max_mva=10000, rx_max=0.1,
+                       va_degree=0, name='External grid', s_sc_max_mva=10000, rx_max=0.1,
                        rx_min=0.1)
     # Gen
     pp.create_gen(net, pp.get_element_index(net, "bus", 'Bus HV4'), vm_pu=1.03, p_kw=-1e5,
@@ -285,8 +284,8 @@ def create_example_realistic():
                          closed=switch.closed, type=switch.type, name=switch.bus_name)
 
     # Bus-Line switches
-    hv_busses = net.bus[(net.bus.vn_kv == 380) | (net.bus.vn_kv == 110)].index
-    hv_ls = net.line[(net.line.from_bus.isin(hv_busses)) & (net.line.to_bus.isin(hv_busses))]
+    hv_buses = net.bus[(net.bus.vn_kv == 380) | (net.bus.vn_kv == 110)].index
+    hv_ls = net.line[(net.line.from_bus.isin(hv_buses)) & (net.line.to_bus.isin(hv_buses))]
     for _, line in hv_ls.iterrows():
             pp.create_switch(net, line.from_bus, line.name, et='l', closed=True, type='LBS',
                              name='Switch %s - %s' % (net.bus.name.at[line.from_bus], line['name']))
@@ -295,8 +294,8 @@ def create_example_realistic():
 
     # MV
     # Bus-line switches
-    mv_busses = net.bus[(net.bus.vn_kv == 10) | (net.bus.vn_kv == 20)].index
-    mv_ls = net.line[(net.line.from_bus.isin(mv_busses)) & (net.line.to_bus.isin(mv_busses))]
+    mv_buses = net.bus[(net.bus.vn_kv == 10) | (net.bus.vn_kv == 20)].index
+    mv_ls = net.line[(net.line.from_bus.isin(mv_buses)) & (net.line.to_bus.isin(mv_buses))]
     for _, line in mv_ls.iterrows():
             pp.create_switch(net, line.from_bus, line.name, et='l', closed=True, type='LBS',
                              name='Switch %s - %s' % (net.bus.name.at[line.from_bus], line['name']))
@@ -308,8 +307,8 @@ def create_example_realistic():
 
     # LV
     # Bus-line switches
-    lv_busses = net.bus[net.bus.vn_kv == 0.4].index
-    lv_ls = net.line[(net.line.from_bus.isin(lv_busses)) & (net.line.to_bus.isin(lv_busses))]
+    lv_buses = net.bus[net.bus.vn_kv == 0.4].index
+    lv_ls = net.line[(net.line.from_bus.isin(lv_buses)) & (net.line.to_bus.isin(lv_buses))]
     for _, line in lv_ls.iterrows():
             pp.create_switch(net, line.from_bus, line.name, et='l', closed=True, type='LBS',
                              name='Switch %s - %s' % (net.bus.name.at[line.from_bus], line['name']))
@@ -338,6 +337,6 @@ def create_example_realistic():
     ###########################################################################
 
     # run power flow and generate result tables
-    pp.runpp(net, init='dc', calculate_voltage_angles=True)
+    pp.runpp(net, init='dc', calculate_voltage_angles=True, Numba=False)
 
     return net

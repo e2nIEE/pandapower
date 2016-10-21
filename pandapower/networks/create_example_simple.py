@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 29 16:34:19 2015
 
-@author: lthurner
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import pandapower as pp
 
 
@@ -13,7 +13,7 @@ def create_example_simple():
     """
     net = pp.create_empty_network()
 
-    # create busses
+    # create buses
     bus1 = pp.create_bus(net, name="HV Busbar", vn_kv=110, type="b")
     bus2 = pp.create_bus(net, name="HV Busbar 2", vn_kv=110, type="b")
     bus3 = pp.create_bus(net, name="HV Transformer Bus", vn_kv=110, type="n")

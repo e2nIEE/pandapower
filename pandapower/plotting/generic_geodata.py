@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-__author__ = "Jan-Hendrik Menke"
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
 import networkx as nx
@@ -42,15 +44,23 @@ def build_igraph_from_pp(net, respect_switches=False):
         g.add_edge(pp_bus_mapping[t.hv_bus], pp_bus_mapping[t.lv_bus], weight=0.01)
 
     # add switches
-    bs = net.switch[(net.switch.et == "b") & (net.switch.closed == 1)]
+    bs = net.switch[(net.switch.et == "b") & (net.switch.closed == 1)] if respect_switches else \
+                    net.switch[(net.switch.et == "b")]
     for fb, tb in zip(bs.bus, bs.element):
         g.add_edge(pp_bus_mapping[fb], pp_bus_mapping[tb], weight=0.001)
 
-    return g, (not g.is_dag())
+    meshed = False
+    for i in range(1, net.bus.shape[0]):
+        if len(g.get_all_shortest_paths(0, i, mode="ALL")) > 1:
+            meshed = True
+            break
+
+    roots = [pp_bus_mapping[s] for s in net.ext_grid.bus.values]
+    return g, meshed, roots  # g, (not g.is_dag())
 
                             
                             
-def create_generic_coordinates(net, mg=None, preferNx=False, respect_switches=False):
+def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=False):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches and rings.
     It will remove out of service buses/lines from the net. The coordinates will be created either by igraph or by
@@ -64,7 +74,7 @@ def create_generic_coordinates(net, mg=None, preferNx=False, respect_switches=Fa
 
         **mg** - Existing networkx multigraph, if available. Convenience to save computation time.
 
-        **preferNx** - Use networkx for coordinates even when igraph is installed and available
+        **library** - "igraph" to use igraph package or "networkx" to use networkx package
 
     Output:
 
@@ -82,19 +92,15 @@ def create_generic_coordinates(net, mg=None, preferNx=False, respect_switches=Fa
         net.bus_geodata = pd.DataFrame(columns=["x","y"])
     gnet = copy.deepcopy(net)
     gnet.bus = gnet.bus[gnet.bus.in_service == True]
-    if not preferNx:
-        try:
-            import igraph as ig
-            graph, meshed = build_igraph_from_pp(gnet, respect_switches)
-            if meshed:
-                layout = graph.layout("kk")
-            else:
-                graph.to_undirected(mode="each", combine_edges="first")
-                layout = graph.layout("rt")
-            coords = list(zip(*layout.coords))
-        except ImportError:
-            preferNx = True
-    if preferNx:
+    if library=="igraph":
+        graph, meshed, roots = build_igraph_from_pp(gnet, respect_switches)
+        if meshed:
+            layout = graph.layout("kk")
+        else:
+            graph.to_undirected(mode="each", combine_edges="first")
+            layout = graph.layout("rt", root=roots)
+        coords = list(zip(*layout.coords))
+    elif library == "networkx":
         if mg is None:
             nxg = top.create_nxgraph(gnet, respect_switches)
         else:
@@ -106,8 +112,11 @@ def create_generic_coordinates(net, mg=None, preferNx=False, respect_switches=Fa
             if 'key' in nxg[int(u)][int(v)][0]:
                 del nxg[int(u)][int(v)][0]['key']
         coords = list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(nxg, prog='neato').values()))))
+    else:
+        raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'"%library)
     net.bus_geodata.x = coords[0]
     net.bus_geodata.y = coords[1]
+    net.bus_geodata.index = net.bus.index
     return net
 
 

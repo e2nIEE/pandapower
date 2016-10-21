@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun  7 09:45:42 2016
 
-@author: thurner
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 from numpy import allclose
 import pandas as pd
@@ -31,7 +30,7 @@ def indices_consistent(net):
 
 def branch_loss_consistent_with_bus_feed_in(net):
     """
-    The surpluss of bus feed summed over all busses always has to be equal to the sum of losses in
+    The surpluss of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
     """
     # Active Power

@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 04 16:08:24 2014
 
-@author: TDess
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import os
 import pickle
-import pandapower as pp
 import pandas as pd
+
+from pandapower.toolbox import convert_format
+from pandapower.create import create_empty_network
+from pandapower.auxiliary import PandapowerNet
 
 def to_hdf5(net, filename, complevel=1, complib="zlib", save_res=False):
     raise  Exception('to_hdf5 is deprecated. Use to_pickle instead')
@@ -98,9 +101,9 @@ def from_pickle(filename):
         try:
             net = pickle.load(f)
         except:
-            net = pickle.load(f,encoding='latin1')
-    net = pp.PandapowerNet(net)
-    return pp.convert_format(net)
+            net = pickle.load(f, encoding='latin1')
+    net = PandapowerNet(net)
+    return convert_format(net)
 
 def from_excel(filename):
     """
@@ -122,7 +125,7 @@ def from_excel(filename):
     xls = pd.ExcelFile(filename).parse(sheetname=None)
     par = xls["parameters"]["parameters"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
-    net = pp.create_empty_network(name=name, f_hz=par.at["f_hz"])
+    net = create_empty_network(name=name, f_hz=par.at["f_hz"])
     
     for item, table in xls.items():
         if item == "parameter":
@@ -133,12 +136,4 @@ def from_excel(filename):
                 net.std_types[item][std_type] = dict(tab)
         else:
             net[item] = table
-    return pp.convert_format(net)
-    
-if __name__ == '__main__':
-    import pandapower.networks as nw
-    net = nw.create_kerber_dorfnetz()
-    filename = 'pp_test.xlsx'
-    pp.runpp(net)
-    to_excel(net, filename, include_empty_tables=True, include_results=False)
-    net2 = from_excel(filename)
+    return convert_format(net)

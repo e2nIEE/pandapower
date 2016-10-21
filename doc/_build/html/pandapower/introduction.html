@@ -1,0 +1,358 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>A Short Introduction &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../index.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loadflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>A Short Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/pandapower/introduction.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="a-short-introduction">
+<h1>A Short Introduction<a class="headerlink" href="#a-short-introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="datastructure">
+<h2>Datastructure<a class="headerlink" href="#datastructure" title="Permalink to this headline">¶</a></h2>
+<p>pandapower combines the data analysis library <a class="reference external" href="http://pandas.pydata.org/">pandas</a> and the power flow solver <a class="reference external" href="https://pypi.python.org/pypi/PYPOWER">PYPOWER</a> to create an easy to use network calculation program.
+pandapower is aimed at automation of power system analysis and optimization in distribution and sub-transmission networks.</p>
+<p>pandapower is based on electric elements rather than on generic loadflow attributes. For example, in PYPOWER buses have a power demand and shunt admittance, even though these are in reality the attributes of electric
+elements (such as loads, pv generators or capacitor banks) which are connected to the buses. In pandapower, we model each electric bus element instead of considering summed values for each bus.
+The same goes for branches: in reality, buses in a network are connected by electric elements like lines and transformers that can be defined by a length and cable type (lines) or short circuit
+voltages and rated power (transformers). Since the electric models for lines and transformers are implemented in pandapower, it is possible to model the electric elements with these common nameplate
+attributes. All parameters which are necessary for the loadflow (like branch per unit impedances, shunt impedances, bus power, bus loadflow type etc.) are then calculated and handled internally by pandapower.</p>
+<p>A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
+Each dataframe in a pandapowerNet contains the information about one pandapower element, such as line, load transformer etc.</p>
+<p>For the following simple 2-bus example network:</p>
+<a class="reference internal image-reference" href="../_images/2bus-system.png"><img alt="alternate Text" class="align-center" src="../_images/2bus-system.png" style="width: 20em;" /></a>
+<p>the pandapower representation looks like this:</p>
+<a class="reference internal image-reference" href="../_images/pandapower_datastructure.png"><img alt="alternate Text" class="align-center" src="../_images/pandapower_datastructure.png" style="width: 40em;" /></a>
+<p>The network can be created with the <a class="reference internal" href="api_create.html#create-functions"><span class="std std-ref">pandapower create functions</span></a>, but it also possible to directly manipulate data in the pandapower dataframes.</p>
+</div>
+<div class="section" id="loadflow">
+<h2>Loadflow<a class="headerlink" href="#loadflow" title="Permalink to this headline">¶</a></h2>
+<p>When a loadflow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the loadflow. The results are then processed and written back into pandapower:</p>
+<a class="reference internal image-reference" href="../_images/pandapower_loadflow.png"><img alt="alternate Text" class="align-center" src="../_images/pandapower_loadflow.png" style="width: 40em;" /></a>
+<p>For the 2-bus example network, the result tables look like this:</p>
+<a class="reference internal image-reference" href="../_images/pandapower_results.png"><img alt="alternate Text" class="align-center" src="../_images/pandapower_results.png" style="width: 40em;" /></a>
+<p>You can download the python script that creates this 2-bus system <code class="xref download docutils literal"><span class="pre">here</span></code>. For more complicated pandapower example, see the <a class="reference internal" href="example.html#example-networks"><span class="std std-ref">pandapower example networks</span></a>.</p>
+</div>
+<div class="section" id="advantages">
+<h2>Advantages<a class="headerlink" href="#advantages" title="Permalink to this headline">¶</a></h2>
+<p>There are various reasons why using pandapower is more comfortable than using pypower directly:</p>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>Electric Models</dt>
+<dd><ul class="first last simple">
+<li>pandapower comes with static equivalent circuit models for lines, 2-Winding transformers, 3-Winding transformers, ward-equivalents etc. (see <a class="reference internal" href="elements.html#elements"><span class="std std-ref">element documentation</span></a> for a complete list).</li>
+<li>Input parameters are intuitive and commonly used model plate parameters (such as line length and resistance per kilometer) instead of parameters like total branch resistance in per unit</li>
+<li>the pandapower <a class="reference internal" href="elements/switch/switch.html#switch-model"><span class="std std-ref">switch model</span></a> allows modelling of ideal bus-bus switches as well as bus-line / bus-trafo switches</li>
+<li>the loadflow results are processed to include not only the classic loadflow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>pandapower API</dt>
+<dd><ul class="first last simple">
+<li>the pandapower API provides <a class="reference internal" href="api_create.html#create-functions"><span class="std std-ref">create functions</span></a> for each element to allow automized step-by-step construction of networks</li>
+<li>the <a class="reference internal" href="api_std_types.html#std-types"><span class="std std-ref">standard type library</span></a> allows simplified creation of lines, 2-Winding transformers and 3-Winding transformers</li>
+<li>networks can be saved and loaded to the hard drive with the pickle library</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>pandapower Datastructure</dt>
+<dd><ul class="first last">
+<li><p class="first">since variables of any datatype can be stored in the pandas dataframes, electric parameters (integer / float) can be stored together with names (strings), status variables (boolean) etc.</p>
+</li>
+<li><p class="first">variables can be accessed by name instead of by column number of a matrix</p>
+</li>
+<li><p class="first">since all information is stored in pandas tables, all inherent pandas methods can be used to</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/indexing.html">access</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/indexing.html#boolean-indexing">query</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/version/0.17.1/api.html#api-dataframe-stats">statistically evaluate</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/basics.html#iteration">iterate over</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/visualization.html">visualize</a>,</li>
+<li>etc.</li>
+</ul>
+</div></blockquote>
+<p>any information that is stored in the pandapower dataframes - be it element parameters, loadflow results or a combination of both.</p>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Topological Searches</dt>
+<dd><ul class="first last simple">
+<li>pandapower networks can be translated into <a class="reference external" href="https://networkx.github.io/">networkx</a> multigraphs for fast topological searches</li>
+<li>all native <a class="reference external" href="https://networkx.readthedocs.io/en/stable/reference/algorithms.html">networkx algorithms</a> can be used to perform graph searches on pandapower networks</li>
+<li>pandapower provides some search algorithms specialiced on electric power networks</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Plotting and geographical data</dt>
+<dd><ul class="first last simple">
+<li>geographical data for buses and lines can be stored in the pandapower datastructure</li>
+<li>networks with geographic information can be plotted using matplotlib</li>
+<li>if no geographical information is available for the buses, generic coordinates can be created through a <a class="reference external" href="http://igraph.org/python/">python-igraph</a> interface</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+<div class="section" id="unit-system-and-conventions">
+<span id="conventions"></span><h2>Unit System and Conventions<a class="headerlink" href="#unit-system-and-conventions" title="Permalink to this headline">¶</a></h2>
+<p>The unit is always given in the variable name, so that for example &#8216;loading_percent&#8217; can be read as &#8216;loading [%]&#8217;.</p>
+<p><strong>Three Phase System</strong></p>
+<p>For the three phase system, the following conventions apply:</p>
+<blockquote>
+<div><ul class="simple">
+<li>voltage values are given as phase-to-phase voltages</li>
+<li>current values are given as phase currents</li>
+<li>power values are given as three-phase power flows</li>
+</ul>
+</div></blockquote>
+<p>The power equation in the three phase system is therefore given as <span class="math">\(S = \sqrt3 \cdot V \cdot I\)</span>.</p>
+<p>Since pandapower was developed for distribution systems, all power values are given in kW or kVar.</p>
+<p><strong>per Unit System</strong></p>
+<p>Bus voltages are given in the per unit system. The per unit values are relative to the phase-to-phase voltages defined in net.bus.vn_kv for each bus.</p>
+<p>Internally, pandapower calculates with a nominal apparent power of <span class="math">\(S_{N} = 1 MVA\)</span> for the per unit system, which however should not be relevant for the user since all power values are given in physical units.</p>
+<p><strong>Signing System</strong></p>
+<p>For all bus-based power values, the signing is based on the consumer viewpoint:</p>
+<blockquote>
+<div><ul class="simple">
+<li>positive active power is power consumption, negative active power is power generation</li>
+<li>positive reactive power is inductive consumption, negative reactive power is capacitive consumption</li>
+</ul>
+</div></blockquote>
+<p>The power flow values for branch elements (lines &amp; transformer) are always defined as the power flow into the branch element.</p>
+<p><strong>Frequency</strong></p>
+<p>The frequency can be defined when creating an empty network. The frequency is only used to calculate the shunt admittance of lines, since the line reactance is given directly in ohm per kilometer.</p>
+<p>The standard frequency in pandapower is 50 Hz, and the pandapower standard types are also chosen for 50 Hz systems. If you use a different frequency, please be aware that the line reactance values might not be realistic.</p>
+</div>
+<div class="section" id="id1">
+<span id="id2"></span><h2>Unit System and Conventions<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>The unit is always given in the variable name, so that for example &#8216;loading_percent&#8217; can be read as &#8216;loading [%]&#8217;.</p>
+<p><strong>Three Phase System</strong></p>
+<p>For the three phase system, the following conventions apply:</p>
+<blockquote>
+<div><ul class="simple">
+<li>voltage values are given as phase-to-phase voltages</li>
+<li>current values are given as phase currents</li>
+<li>power values are given as three-phase power flows</li>
+</ul>
+</div></blockquote>
+<p>The power equation in the three phase system is therefore given as <span class="math">\(S = \sqrt3 \cdot V \cdot I\)</span>.</p>
+<p>Since pandapower was developed for distribution systems, all power values are given in kW or kVar.</p>
+<p><strong>per Unit System</strong></p>
+<p>Bus voltages are given in the per unit system. The per unit values are relative to the phase-to-phase voltages defined in net.bus.vn_kv for each bus.</p>
+<p>Internally, pandapower calculates with a nominal apparent power of <span class="math">\(S_{N} = 1 MVA\)</span> for the per unit system, which however should not be relevant for the user since all power values are given in physical units.</p>
+<p><strong>Signing System</strong></p>
+<p>For all bus-based power values, the signing is based on the consumer viewpoint:</p>
+<blockquote>
+<div><ul class="simple">
+<li>positive active power is power consumption, negative active power is power generation</li>
+<li>positive reactive power is inductive consumption, negative reactive power is capacitive consumption</li>
+</ul>
+</div></blockquote>
+<p>The power flow values for branch elements (lines &amp; transformer) are always defined as the power flow into the branch element.</p>
+<p><strong>Frequency</strong></p>
+<p>The frequency can be defined when creating an empty network. The frequency is only used to calculate the shunt admittance of lines, since the line reactance is given directly in ohm per kilometer.</p>
+<p>The standard frequency in pandapower is 50 Hz, and the pandapower standard types are also chosen for 50 Hz systems. If you use a different frequency, please be aware that the line reactance values might not be realistic.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

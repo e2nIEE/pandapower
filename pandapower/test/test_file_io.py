@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import pandapower as pp
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 import os
 import pytest
-__author__ = 'fmeier'
-"""Run a series of tests.
-"""
-
 
 def test_file_io():
     net_in = create_test_network()
@@ -17,5 +18,5 @@ def test_file_io():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_file_io.py"])
+    pytest.main(["test_file_io.py", "-xs"])
 

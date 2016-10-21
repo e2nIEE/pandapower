@@ -4,26 +4,15 @@
 
 from setuptools import setup, find_packages
 
-
 setup(
     name='pandapower',
     version='1.0.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
-#    long_description='\n\n'.join(
-#        open(f, 'rb').read().decode('utf-8')
-#        for f in ['README.rst']),
-    url='https://github.com/IWESUniKS/pandapower',
+    url='www.uni-kassel.de/go/pandapower',
     license='BSD',
-    install_requires=[
-        # Deactivated to avoid problems with system packages.
-        # Manual installation of the following packages required:
-        # - numpy
-        # - scipy
-        # - pandas
-        # - pypower
-    ],
+    install_requires=[], #dependencies are in seperate requirements.txt file
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
@@ -40,7 +29,6 @@ setup(
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Topic :: Scientific/Engineering',

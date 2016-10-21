@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-__author__ = 'jdollichon, tdess, lthurner, ascheidler'
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 import pandas as pd
@@ -255,7 +258,7 @@ def create_empty_network(name=None, f_hz=50.):
     return net
 
 
-def create_bus(net, name=None, index=None, vn_kv=0.4, geodata=None, type="b",
+def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
                zone=None, in_service=True, max_vm_pu=np.nan,
                min_vm_pu=np.nan, **kwargs):
     """
@@ -326,10 +329,10 @@ def create_bus(net, name=None, index=None, vn_kv=0.4, geodata=None, type="b",
     return index
 
 
-def create_busses(net, nr_busses, index=None, name=None, vn_kv=0.4, type="b", geodata=None,
+def create_buses(net, nr_buses, vn_kv=0.4, index=None, name=None, type="b", geodata=None,
                   zone=None, in_service=True):
     """
-    Adds several busses in table net["bus"] at once.
+    Adds several buses in table net["bus"] at once.
 
     Busses are the nodal points of the network that all other elements connect to.
 
@@ -337,7 +340,7 @@ def create_busses(net, nr_busses, index=None, name=None, vn_kv=0.4, type="b", ge
 
         **net** (PandapowerNet) - The pandapower network in which the element is created
 
-        **nr_busses** (int) - The number of busses that is created
+        **nr_buses** (int) - The number of buses that is created
 
     OPTIONAL:
 
@@ -370,7 +373,7 @@ def create_busses(net, nr_busses, index=None, name=None, vn_kv=0.4, type="b", ge
                 raise UserWarning("A bus with index %s already exists" % index)
     else:
         bid = get_free_id(net["bus"])
-        index = np.arange(bid, bid + nr_busses, 1)
+        index = np.arange(bid, bid + nr_buses, 1)
 
     # TODO: not needed when concating anyways?
     # store dtypes
@@ -395,7 +398,7 @@ def create_busses(net, nr_busses, index=None, name=None, vn_kv=0.4, type="b", ge
     return index
 
 
-def create_load(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., index=None,
+def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., index=None,
                 in_service=True, type=None):
     """
     Adds one load in table net["load"].
@@ -423,13 +426,16 @@ def create_load(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, scaling=1.
 
         **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
 
-        **index** (int) - Force a specified ID if it is available
+        **type** (string, None) -  type variable to classify the load
 
+        **index** (int, None) - Force the specified index. If None, the next highest available index
+                                is used
+                                
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
 
-        **eid** (int) - The index of the created element
+        **index** (int) - The index of the created element
 
     EXAMPLE:
 
@@ -439,25 +445,26 @@ def create_load(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, scaling=1.
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    lid = index or get_free_id(net["load"])
-    if lid in net["load"].index:
+    if index is None:
+        index = get_free_id(net["load"])
+    if index in net["load"].index:
         raise UserWarning("A load with the id %s already exists" % id)
 
     # store dtypes
     dtypes = net.load.dtypes
 
-    net.load.loc[lid, ["name", "bus", "p_kw", "scaling",
+    net.load.loc[index, ["name", "bus", "p_kw", "scaling",
                        "q_kvar", "sn_kva", "in_service", "type"]] = \
         [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.load, dtypes)
 
-    return lid
+    return index
 
 
-def create_sgen(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, index=None,
-                scaling=1., type="PV", in_service=True, max_p_kw=np.nan, min_p_kw=np.nan,
+def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
+                scaling=1., type=None, in_service=True, max_p_kw=np.nan, min_p_kw=np.nan,
                 max_q_kvar=np.nan, min_q_kvar=np.nan, cost_per_kw=np.nan, cost_per_kvar=np.nan,
                 controllable=False):
     """
@@ -487,17 +494,18 @@ def create_sgen(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, index=None
 
         **name** (string, default None) - The name for this sgen
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force the specified index. If None, the next highest available index
+                                is used
+                                
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
-
-        **type** (string, default "PV") -  type variable to classify the static generator
+        **type** (string, None) -  type variable to classify the static generator
 
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
 
-        **sgid** - The unique id of the created sgen
+        **index** - The unique id of the created sgen
 
     EXAMPLE:
 
@@ -507,14 +515,16 @@ def create_sgen(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, index=None
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    sgid = index or get_free_id(net["sgen"])
-    if sgid in net["sgen"].index:
-        raise UserWarning("A static generator with the id %s already exists" % sgid)
+    if index is None:
+        index = get_free_id(net["sgen"])
+
+    if index in net["sgen"].index:
+        raise UserWarning("A static generator with the id %s already exists" % index)
 
     # store dtypes
     dtypes = net.sgen.dtypes
 
-    net.sgen.loc[sgid, ["name", "bus", "p_kw", "scaling",
+    net.sgen.loc[index, ["name", "bus", "p_kw", "scaling",
                         "q_kvar", "sn_kva", "in_service", "type"]] = \
         [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type]
 
@@ -525,49 +535,49 @@ def create_sgen(net, bus, p_kw=0, q_kvar=0, sn_kva=np.nan, name=None, index=None
         if "min_p_kw" not in net.sgen.columns:
             net.sgen.loc[:, "min_p_kw"] = pd.Series()
 
-        net.sgen.loc[sgid, "min_p_kw"] = float(min_p_kw)
+        net.sgen.loc[index, "min_p_kw"] = float(min_p_kw)
 
     if not np.isnan(max_p_kw):
         if "max_p_kw" not in net.sgen.columns:
             net.sgen.loc[:, "max_p_kw"] = pd.Series()
 
-        net.sgen.loc[sgid, "max_p_kw"] = float(max_p_kw)
+        net.sgen.loc[index, "max_p_kw"] = float(max_p_kw)
 
     if not np.isnan(min_q_kvar):
         if "min_q_kvar" not in net.sgen.columns:
             net.sgen.loc[:, "min_q_kvar"] = pd.Series()
 
-        net.sgen.loc[sgid, "min_q_kvar"] = float(min_q_kvar)
+        net.sgen.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
     if not np.isnan(max_q_kvar):
         if "max_q_kvar" not in net.sgen.columns:
             net.sgen.loc[:, "max_q_kvar"] = pd.Series()
 
-        net.sgen.loc[sgid, "max_q_kvar"] = float(max_q_kvar)
+        net.sgen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
     if not np.isnan(cost_per_kw):
         if "cost_per_kw" not in net.sgen.columns:
             net.sgen.loc[:, "cost_per_kw"] = pd.Series()
 
-        net.sgen.loc[sgid, "cost_per_kw"] = float(cost_per_kw)
+        net.sgen.loc[index, "cost_per_kw"] = float(cost_per_kw)
 
     if not np.isnan(cost_per_kvar):
         if "cost_per_kvar" not in net.sgen.columns:
             net.sgen.loc[:, "cost_per_kvar"] = pd.Series()
 
-        net.sgen.loc[sgid, "cost_per_kvar"] = float(cost_per_kvar)
+        net.sgen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
     if controllable:
         if "controllable" not in net.sgen.columns:
             net.sgen.loc[:, "controllable"] = pd.Series()
 
-    net.sgen.loc[sgid, "controllable"] = bool(controllable)
+    net.sgen.loc[index, "controllable"] = bool(controllable)
 
-    return sgid
+    return index
 
 
-def create_gen(net, bus, p_kw=0, vm_pu=1., sn_kva=np.nan, name=None, index=None, max_q_kvar=np.nan,
-               min_q_kvar=np.nan, min_p_kw=np.nan, max_p_kw=np.nan, scaling=1., type="sync",
+def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, max_q_kvar=np.nan,
+               min_q_kvar=np.nan, min_p_kw=np.nan, max_p_kw=np.nan, scaling=1., type=None,
                in_service=True, cost_per_kw=np.nan, cost_per_kvar=np.nan, controllable=False):
     """
     Adds a generator to the network.
@@ -587,21 +597,22 @@ def create_gen(net, bus, p_kw=0, vm_pu=1., sn_kva=np.nan, name=None, index=None,
 
         **vm_pu** (float, default 0) - The voltage set point of the generator.
 
-        **sn_kva** (float, default None) - Nominal power of the generator
+        **sn_kva** (float, None) - Nominal power of the generator
 
-        **name** (string, default None) - The name for this generator
+        **name** (string, None) - The name for this generator
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force the specified index. If None, the next highest available index
+                                is used
 
-        **scaling** (float, default 1.) - scaling factor which for the active power of the generator
+        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
 
-        **type** (string, default "sync") - type variable to classify generators
+        **type** (string, None) - type variable to classify generators
 
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
 
-        **gid** - The unique id of the created generator
+        **index** - The unique id of the created generator
 
     EXAMPLE:
 
@@ -619,14 +630,16 @@ def create_gen(net, bus, p_kw=0, vm_pu=1., sn_kva=np.nan, name=None, index=None,
         raise UserWarning(
             "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
 
-    gid = index or get_free_id(net["gen"])
-    if gid in net["gen"].index:
-        raise UserWarning("A generator with the id %s already exists" % gid)
+    if index is None:
+        index = get_free_id(net["gen"])
+        
+    if index in net["gen"].index:
+        raise UserWarning("A generator with the id %s already exists" % index)
 
     # store dtypes
     dtypes = net.gen.dtypes
 
-    net.gen.loc[gid, ["name", "bus", "p_kw", "vm_pu", "sn_kva",  "type", "in_service", "scaling"]]\
+    net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva",  "type", "in_service", "scaling"]]\
                    = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service), scaling]
 
     # and preserve dtypes
@@ -636,49 +649,49 @@ def create_gen(net, bus, p_kw=0, vm_pu=1., sn_kva=np.nan, name=None, index=None,
         if "min_p_kw" not in net.gen.columns:
             net.gen.loc[:, "min_p_kw"] = pd.Series()
 
-        net.gen.loc[gid, "min_p_kw"] = float(min_p_kw)
+        net.gen.loc[index, "min_p_kw"] = float(min_p_kw)
 
     if not np.isnan(max_p_kw):
         if "max_p_kw" not in net.gen.columns:
             net.gen.loc[:, "max_p_kw"] = pd.Series()
 
-        net.gen.loc[gid, "max_p_kw"] = float(max_p_kw)
+        net.gen.loc[index, "max_p_kw"] = float(max_p_kw)
 
     if not np.isnan(min_q_kvar):
         if "min_q_kvar" not in net.gen.columns:
             net.gen.loc[:, "min_q_kvar"] = pd.Series()
 
-        net.gen.loc[gid, "min_q_kvar"] = float(min_q_kvar)
+        net.gen.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
     if not np.isnan(max_q_kvar):
         if "max_q_kvar" not in net.gen.columns:
             net.gen.loc[:, "max_q_kvar"] = pd.Series()
 
-        net.gen.loc[gid, "max_q_kvar"] = float(max_q_kvar)
+        net.gen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
     if not np.isnan(cost_per_kw):
         if "cost_per_kw" not in net.gen.columns:
             net.gen.loc[:, "cost_per_kw"] = pd.Series()
 
-        net.gen.loc[gid, "cost_per_kw"] = float(cost_per_kw)
+        net.gen.loc[index, "cost_per_kw"] = float(cost_per_kw)
 
     if not np.isnan(cost_per_kvar):
         if "cost_per_kvar" not in net.gen.columns:
             net.gen.loc[:, "cost_per_kvar"] = pd.Series()
 
-        net.gen.loc[gid, "cost_per_kvar"] = float(cost_per_kvar)
+        net.gen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
     if controllable:
         if "controllable" not in net.gen.columns:
             net.gen.loc[:, "controllable"] = pd.Series()
 
-        net.gen.loc[gid, "controllable"] = bool(controllable)
+        net.gen.loc[index, "controllable"] = bool(controllable)
 
-    return gid
+    return index
 
 
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
-                    svsc_max_mva=np.nan, svsc_min_mva=np.nan, rx_max=np.nan, rx_min=np.nan,
+                    s_sc_max_mva=np.nan, s_sc_min_mva=np.nan, rx_max=np.nan, rx_min=np.nan,
                     index=None):
     """
     Creates an external grid connection.
@@ -719,7 +732,9 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     """
     if index and index in net["ext_grid"].index:
         raise UserWarning("An external grid with with index %s already exists" % index)
-    gid = index or get_free_id(net["ext_grid"])
+        
+    if index is None:
+        index = get_free_id(net["ext_grid"])
 
     if bus in net.ext_grid.bus.values:
         raise UserWarning(
@@ -732,36 +747,36 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         # store dtypes
     dtypes = net.ext_grid.dtypes
 
-    net.ext_grid.loc[gid, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \
+    net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \
         [bus, name, vm_pu, va_degree, bool(in_service)]
 
-    if not np.isnan(svsc_max_mva):
-        if "svsc_max_mva" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "svsc_max_mva"] = pd.Series()
+    if not np.isnan(s_sc_max_mva):
+        if "s_sc_max_mva" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "s_sc_max_mva"] = pd.Series()
 
-        net.ext_grid.at[:, "svsc_max_mva"] = float(svsc_max_mva)
+        net.ext_grid.at[:, "s_sc_max_mva"] = float(s_sc_max_mva)
 
-    if not np.isnan(svsc_min_mva):
-        if "svsc_min_mva" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "svsc_min_mva"] = pd.Series()
+    if not np.isnan(s_sc_min_mva):
+        if "s_sc_min_mva" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "s_sc_min_mva"] = pd.Series()
 
-        net.ext_grid.at[gid, "svsc_min_mva"] = float(svsc_min_mva)
+        net.ext_grid.at[index, "s_sc_min_mva"] = float(s_sc_min_mva)
 
     if not np.isnan(rx_min):
         if "rx_min" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "rx_min"] = pd.Series()
 
-        net.ext_grid.at[gid, "rx_min"] = float(rx_min)
+        net.ext_grid.at[index, "rx_min"] = float(rx_min)
 
     if not np.isnan(rx_max):
         if "rx_max" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "rx_max"] = pd.Series()
 
-        net.ext_grid.at[gid, "rx_max"] = float(rx_max)
+        net.ext_grid.at[index, "rx_max"] = float(rx_max)
 
         # and preserve dtypes
     _preserve_dtypes(net.ext_grid, dtypes)
-    return gid
+    return index
 
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
@@ -815,7 +830,11 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         if b not in net["bus"].index.values:
             raise UserWarning("Line %s tries to attach to non-existing bus %s"
                               % (name, b))
-    if index and index in net["line"].index:
+            
+    if index is None:
+        index = get_free_id(net["line"])
+
+    if index in net["line"].index:
         raise UserWarning("A line with index %s already exists" % index)
 
     v = {
@@ -834,26 +853,25 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "type" in lineparam:
         v.update({"type": lineparam["type"]})
 
-    lid = index or get_free_id(net["line"])
 
     # store dtypes
     dtypes = net.line.dtypes
 
-    net.line.loc[lid, v.keys()] = v.values()
+    net.line.loc[index, list(v.keys())] = list(v.values())
 
     # and preserve dtypes
     _preserve_dtypes(net.line, dtypes)
 
     if geodata is not None:
-        net["line_geodata"].loc[lid, "coords"] = geodata
+        net["line_geodata"].loc[index, "coords"] = geodata
 
     if not np.isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
-        net.line.loc[lid, "max_loading_percent"] = float(max_loading_percent)
+        net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
-    return lid
+    return index
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
@@ -920,9 +938,12 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         if b not in net["bus"].index.values:
             raise UserWarning("Line %s tries to attach to non-existing bus %s"
                               % (name, b))
-    if index and index in net["line"].index:
+
+    if index is None:
+        index = get_free_id(net["line"])
+
+    if index in net["line"].index:
         raise UserWarning("A line with index %s already exists" % index)
-    lid = index or get_free_id(net["line"])
 
     v = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
@@ -934,21 +955,21 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     # store dtypes
     dtypes = net.line.dtypes
 
-    net.line.loc[lid, v.keys()] = v.values()
+    net.line.loc[index, list(v.keys())] = list(v.values())
 
     # and preserve dtypes
     _preserve_dtypes(net.line, dtypes)
 
     if geodata is not None:
-        net["line_geodata"].loc[lid, "coords"] = geodata
+        net["line_geodata"].loc[index, "coords"] = geodata
 
     if not np.isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
-        net.line.loc[lid, "max_loading_percent"] = float(max_loading_percent)
+        net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
-    return lid
+    return index
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True, index=None,
@@ -994,9 +1015,11 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True
     }
     ti = load_std_type(net, std_type, "trafo")
 
-    if index and index in net["trafo"].index:
+    if index is None:
+        index = get_free_id(net["trafo"])
+
+    if index in net["trafo"].index:
         raise UserWarning("A transformer with index %s already exists" % index)
-    tid = index or get_free_id(net["trafo"])
 
     v.update({
         "sn_kva": ti["sn_kva"],
@@ -1018,18 +1041,18 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True
     # store dtypes
     dtypes = net.trafo.dtypes
 
-    net.trafo.loc[tid, v.keys()] = v.values()
+    net.trafo.loc[index, list(v.keys())] = list(v.values())
 
     if not np.isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo.columns:
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
-        net.trafo.loc[tid, "max_loading_percent"] = float(max_loading_percent)
+        net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
 
-    return tid
+    return index
 
 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, vscr_percent,
@@ -1101,9 +1124,12 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
-    if index and index in net["trafo"].index:
+    if index is None:
+        index = get_free_id(net["trafo"])
+
+    if index in net["trafo"].index:
         raise UserWarning("A transformer with index %s already exists" % index)
-    tid = index or get_free_id(net["trafo"])
+
 
     tp_pos = tp_pos or tp_mid
     v = {
@@ -1118,7 +1144,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     # store dtypes
     dtypes = net.trafo.dtypes
 
-    net.trafo.loc[tid, v.keys()] = v.values()
+    net.trafo.loc[index, list(v.keys())] = list(v.values())
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
@@ -1127,9 +1153,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         if "max_loading_percent" not in net.trafo.columns:
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
-        net.trafo.loc[tid, "max_loading_percent"] = float(max_loading_percent)
+        net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
-    return tid
+    return index
 
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, in_service=True,
@@ -1177,9 +1203,11 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, in_se
     }
     ti = load_std_type(net, std_type, "trafo3w")
 
-    if index and index in net["trafo3w"].index:
+    if index is None:
+        index = get_free_id(net["trafo3w"])
+
+    if index in net["trafo3w"].index:
         raise UserWarning("A three winding transformer with index %s already exists" % index)
-    tid = index or get_free_id(net["trafo3w"])
 
     v.update({
         "sn_hv_kva": ti["sn_hv_kva"],
@@ -1205,10 +1233,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, in_se
 
     if ("tp_mid" in v) and ("tp_pos" not in v):
         v["tp_pos"] = v["tp_mid"]
-    dd = pd.DataFrame(v, index=[tid])
+    dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
-    return tid
+    return index
 
 
 def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
@@ -1301,14 +1329,16 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to non-existent bus %s" % b)
 
-    if index and index in net["trafo3w"].index:
+    if index is None:
+        index = get_free_id(net["trafo3w"])
+
+    if index in net["trafo3w"].index:
         raise UserWarning("A three winding transformer with index %s already exists" % index)
-    tid = index or get_free_id(net["trafo3w"])
 
     # store dtypes
     dtypes = net.trafo3w.dtypes
 
-    net.trafo3w.loc[tid, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
+    net.trafo3w.loc[index, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
                           "sn_hv_kva", "sn_mv_kva", "sn_lv_kva", "vsc_hv_percent", "vsc_mv_percent",
                           "vsc_lv_percent", "vscr_hv_percent", "vscr_mv_percent", "vscr_lv_percent",
                           "pfe_kw", "i0_percent", "shift_mv_degree", "shift_lv_degree",
@@ -1324,17 +1354,17 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
 
-    return tid
+    return index
 
 
-def create_switch(net, bus, element, et, closed=True, type="LS", name=None, index=None):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None):
     """
     Adds a switch in the net["switch"] table.
 
-    Switches can be either between to busses (bus-bus switch) or at the end of a line or transformer
+    Switches can be either between to buses (bus-bus switch) or at the end of a line or transformer
     element (bus-elememnt switch).
 
-    Two busses that are connected through a closed bus-bus switches are fused in the power flow if 
+    Two buses that are connected through a closed bus-bus switches are fused in the power flow if 
     the switch es closed or separated if the switch is open.
 
     An element that is connected to a bus through a bus-element switch is connected to the bus
@@ -1353,7 +1383,7 @@ def create_switch(net, bus, element, et, closed=True, type="LS", name=None, inde
 
         **closed** (boolean, True) - switch position: False = open, True = closed
 
-        **type** (int, "LS") - indicates the type of switch: "LS" = Load Switch, "CB" = Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
+        **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
     OPTIONAL:
 
@@ -1400,23 +1430,24 @@ def create_switch(net, bus, element, et, closed=True, type="LS", name=None, inde
     else:
         raise UserWarning("Unknown element type")
 
-    if index and index in net["switch"].index:
+    if index is None:
+        index = get_free_id(net["switch"])
+    if index in net["switch"].index:
         raise UserWarning("A switch with index %s already exists" % index)
-    sid = index or get_free_id(net["switch"])
 
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net.switch.loc[sid, ["bus", "element", "et", "closed", "type", "name"]] = \
+    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name"]] = \
         [bus, element, et, closed, type, name]
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)
 
-    return sid
+    return index
 
 
-def create_shunt(net, bus, p_kw, q_kvar, name=None, in_service=True, index=None):
+def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=None):
     """
     Creates a shunt element
 
@@ -1446,20 +1477,22 @@ def create_shunt(net, bus, p_kw, q_kvar, name=None, in_service=True, index=None)
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if index and index in net["switch"].index:
+    if index is None:
+        index = get_free_id(net["shunt"])
+        
+    if index in net["shunt"].index:
         raise UserWarning("A shunt with index %s already exists" % index)
-    sid = index or get_free_id(net["shunt"])
 
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[sid, ["bus", "name", "p_kw", "q_kvar", "in_service"]] = \
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "in_service"]] = \
         [bus, name, p_kw, q_kvar, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)
 
-    return sid
+    return index
 
 
 def create_impedance(net, from_bus, to_bus, r_pu, x_pu, sn_kva, name=None, in_service=True,
@@ -1485,20 +1518,23 @@ def create_impedance(net, from_bus, to_bus, r_pu, x_pu, sn_kva, name=None, in_se
         impedance id
     """
 
-    if index and index in net["impedance"].index:
+    if index is None:
+        index = get_free_id(net.impedance)
+    
+    if index in net["impedance"].index:
         raise UserWarning("An impedance with index %s already exists" % index)
-    iid = index or get_free_id(net.impedance)
-    # store dtypes
+
+        # store dtypes
     dtypes = net.impedance.dtypes
 
-    net.impedance.loc[iid, ["from_bus", "to_bus", "r_pu", "x_pu", "name",
+    net.impedance.loc[index, ["from_bus", "to_bus", "r_pu", "x_pu", "name",
                             "sn_kva", "in_service"]] = \
         [from_bus, to_bus, r_pu, x_pu, name, sn_kva, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.impedance, dtypes)
 
-    return iid
+    return index
 
 
 def create_ward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, name=None, in_service=True, index=None):
@@ -1527,20 +1563,22 @@ def create_ward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, name=None, in_service=
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if index and index in net["ward"].index:
+    if index is None:
+        index = get_free_id(net.ward)
+
+    if index in net["ward"].index:
         raise UserWarning("A ward equivalent with index %s already exists" % index)
-    wid = index or get_free_id(net.ward)
 
     # store dtypes
     dtypes = net.ward.dtypes
 
-    net.ward.loc[wid, ["bus", "ps_kw", "qs_kvar", "pz_kw", "qz_kvar", "name", "in_service"]] = \
+    net.ward.loc[index, ["bus", "ps_kw", "qs_kvar", "pz_kw", "qz_kvar", "name", "in_service"]] = \
         [bus, ps_kw, qs_kvar, pz_kw, qz_kvar, name, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.ward, dtypes)
 
-    return wid
+    return index
 
 
 def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, in_service=True,
@@ -1573,21 +1611,23 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if index and index in net["xward"].index:
+    if index is None:
+        index = get_free_id(net.xward)
+        
+    if index in net["xward"].index:
         raise UserWarning("An extended ward equivalent with index %s already exists" % index)
-    xwid = index or get_free_id(net.xward)
 
     # store dtypes
     dtypes = net.xward.dtypes
 
-    net.xward.loc[xwid, ["bus", "ps_kw", "qs_kvar", "pz_kw", "qz_kvar", "r_ohm", "x_ohm", "vm_pu",
+    net.xward.loc[index, ["bus", "ps_kw", "qs_kvar", "pz_kw", "qz_kvar", "r_ohm", "x_ohm", "vm_pu",
                          "name", "in_service"]] = \
         [bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, name, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.xward, dtypes)
 
-    return xwid
+    return index
 
 
 if __name__ == "__main__":

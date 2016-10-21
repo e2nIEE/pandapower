@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-from builtins import range
-__author__ = "Leon Thurner, Alexander Scheidler"
 
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 import pandapower as pp
 import random
 
 
-def random_empty_grid(num_busses, p):
+def random_empty_grid(num_buses, p):
     """
     Creates a random line network with one line to every bus (tree structure). The probability whether
     the next created bus is connected to the last created bus (1-p) or randomly to any of the already
-    created busses (p) is given by p.
+    created buses (p) is given by p.
 
     INPUT:
-        **num_busses** (int) - number of busses
+        **num_buses** (int) - number of buses
 
         **p** (float) - probability that the currently created bus is connected to any of the already created \
-             busses and not to the last created bus
+             buses and not to the last created bus
 
     RETURN:
 
@@ -33,7 +33,7 @@ def random_empty_grid(num_busses, p):
     net = pp.create_empty_network()
     cb = pp.create_bus(net, name="slack", vn_kv=20.)
     pp.create_ext_grid(net, cb)
-    for i in range(num_busses):
+    for i in list(range(num_buses)):
         bidx = pp.create_bus(net, name="bus %s" % (i+1), vn_kv=20)
         pp.create_line(net, cb, bidx, random.uniform(0.1, 2.),
                        name="line %s" % i, std_type=random.choice(linetypes))
@@ -41,7 +41,7 @@ def random_empty_grid(num_busses, p):
     return net
 
 
-def setup_grid(num_busses, seed=None, p=0, num_loads=None, deviation=None, **kwargs):
+def setup_grid(num_buses, seed=None, p=0, num_loads=None, deviation=None, **kwargs):
     """
     Creates a random network by using function random_empty_grid and fills it with loads. The loads
     are randomly assigned to the nodes and always have an active power of 200 kW. The number of
@@ -49,13 +49,13 @@ def setup_grid(num_busses, seed=None, p=0, num_loads=None, deviation=None, **kwa
     voltage drop.
 
     INPUT:
-        **num_busses** (int) - number of busses
+        **num_buses** (int) - number of buses
 
     Optional:
         **seed** (int) - initialization of the random
 
         **p** (float) - probability that the currently created bus is connected to any of the \
-            already created busses and not to the last created bus (consider random_empty_grid)
+            already created buses and not to the last created bus (consider random_empty_grid)
 
         **num_loads** - number of loads to fill the random network
 
@@ -72,15 +72,15 @@ def setup_grid(num_busses, seed=None, p=0, num_loads=None, deviation=None, **kwa
     if not num_loads and not deviation:
         raise UserWarning("specify either num_loads or deviation!")
     random.seed(seed)
-    net = random_empty_grid(num_busses, p)
+    net = random_empty_grid(num_buses, p)
     if num_loads:
         for _ in range(num_loads):
-            pp.create_load(net, random.randrange(1, num_busses), p_kw=200)
+            pp.create_load(net, random.randrange(1, num_buses), p_kw=200)
         return net
     else:
         pp.runpp(net)
         while net.res_bus.vm_pu.min() > 0.985 - deviation:
-            pp.create_load(net, random.randrange(1, num_busses), p_kw=200)
+            pp.create_load(net, random.randrange(1, num_buses), p_kw=200)
             pp.runpp(net)
         return net
 
@@ -89,7 +89,7 @@ def _chose_from_range(minmax_list):
     return minmax_list[0] + (minmax_list[1] - minmax_list[0])*random.random()
 
 
-def random_line_network(voltage_level=20., nr_busses_main=5, p_pv=0.5, p_wp=0.5,
+def random_line_network(voltage_level=20., nr_buses_main=5, p_pv=0.5, p_wp=0.5,
                         p_pv_range=[0, 0], q_pv_range=[0, 0], p_wp_range=[0, 0],
                         q_wp_range=[0, 0], p_load_range=[200, 1600], q_load_range=[0, 0],
                         line_length_range=[0.1, 1.4], linetypes=[], branches=[]):
@@ -101,7 +101,7 @@ def random_line_network(voltage_level=20., nr_busses_main=5, p_pv=0.5, p_wp=0.5,
     INPUT:
         **voltage_level** (float, default 20.0) - network voltage level
 
-        **nr_busses_main** (int, default 5) - number of main busses to create
+        **nr_buses_main** (int, default 5) - number of main buses to create
 
         **p_pv** (float, default 0.5) - probability of PV generator creation
 
@@ -125,7 +125,7 @@ def random_line_network(voltage_level=20., nr_busses_main=5, p_pv=0.5, p_wp=0.5,
                     randomly chosen. If empty, one of the overall available types is chosen.
 
         **branches** (list, default []) - list of tuples to add additional branches to the network. Each tuple has to be \
-                    in the form of (start_bus, nr_busses), so branches=[(2,5), (4,3)] adds one \
+                    in the form of (start_bus, nr_buses), so branches=[(2,5), (4,3)] adds one \
                     branch that is 5 lines long and starts at bus 2 and one branch that is 3 lines \
                     long and starts at bus 4. If branches is an empty list, the network is a simple \
                     one line network.
@@ -156,9 +156,9 @@ def random_line_network(voltage_level=20., nr_busses_main=5, p_pv=0.5, p_wp=0.5,
 
     cb = pp.create_bus(net, name="slack", vn_kv=voltage_level)
     pp.create_ext_grid(net, cb)
-    for cb, nr_busses in [(0, nr_busses_main)] + branches:
+    for cb, nr_buses in [(0, nr_buses_main)] + branches:
         start_bus = cb
-        for i in range(nr_busses):
+        for i in range(nr_buses):
             ind_str = "%s" % (i + 1) if start_bus == 0 else "%s.%s" % (start_bus, i + 1)
             bidx = pp.create_bus(net, name="Bus " + ind_str, vn_kv=voltage_level)
             pp.create_load(net, bidx, p_kw=_chose_from_range(p_load_range),

@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jul 30 07:49:11 2015
 
-@author: mdipp, smeinecke
-"""
-from __future__ import absolute_import
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
-# import random as rd
-# import pandapower as pp
 from pandapower.networks.kerber_networks import _create_empty_network_with_transformer, \
     _add_lines_and_loads, _add_lines_with_branched_loads
 

@@ -1,42 +1,50 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-from builtins import zip
-__author__ = "Alexander Scheidler"
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Rectangle, RegularPolygon
+import matplotlib.pyplot as plt
 import copy
-from .gis import find_gis_components, direct_connections
-import matplotlib as mpl
 
-def create_bus_collection(net, busses, size=5, marker="o", patch_type="circle", colors=None,
+def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           infofunc=None, cmap=None, picker=False, **kwargs):
     """
-    Creates a matplotlib patch collection
-
-    Busses are the nodal points of the network that all other elements connect to.
-
+    Creates a matplotlib patch collection of pandapower buses.
+    
     Input:
 
         **net** (PandapowerNet) - The pandapower network
-        
-        **busses** (list) - The busses for which the collections are created
-        
+               
     Optional:
     
+        **buses** (list, None) - The buses for which the collections are created. If None, all buses in the network are considered.
+
         **size** (int, 5) - patch size
 
-        **marker** (str, "o") - patch 
+        **marker** (str, "o") - patch marker
 
-        **patch_type** (str, "circle") - patch 
+        **patch_type** (str, "circle") - patch type, can be
         
-        *colors** (list, None) - 
+                - "circle" for a circle
+                - "rect" for a rectanlge
+                - "poly<n>" for a polygon with n edges 
+        
+        **infofunc** (function, None) - infofunction for the patch element
+        
+        **colors** (list, None) - list of colors for every element
+        
+        **cmap** - colormap for the patch colors
+        
+        **picker** - picker argument passed to the patch collection
+        
+        **kwargs - key word arguments are passed to the patch function
         
     """
-    if len(busses) == 0:
-        return PatchCollection([])
-    busses = list(busses)
+    buses = net.bus.index.tolist() if buses is None else list(buses)
     patches = []
     infos = []
     def figmaker(x, y, i):
@@ -58,23 +66,42 @@ def create_bus_collection(net, busses, size=5, marker="o", patch_type="circle", 
             else:
                 fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
         if infofunc:
-            infos.append(infofunc(busses[i]))
+            infos.append(infofunc(buses[i]))
         return fig
     patches = [figmaker(x, y, i)
-               for i, (x, y) in enumerate(zip(net.bus_geodata.loc[busses].x.values,
-                                              net.bus_geodata.loc[busses].y.values))
+               for i, (x, y) in enumerate(zip(net.bus_geodata.loc[buses].x.values,
+                                              net.bus_geodata.loc[buses].y.values))
                if x != -1 and x != np.nan]
     pc = PatchCollection(patches, match_original=True, cmap=cmap, picker=picker)
+    pc.patch_type = patch_type
+    pc.size = size
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
     return pc
 
-def create_line_collection(net, lines, use_line_geodata=True, infofunc=None, **kwargs):
-    """
-    
-    """
 
+def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower lines.
+    
+    Input:
+
+        **net** (PandapowerNet) - The pandapower network
+               
+    Optional:
+
+        **lines** (list, None) - The lines for which the collections are created. If None, all lines in the network are considered.
+
+        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
+        
+         **infofunc** (function, None) - infofunction for the patch element
+
+        **kwargs - key word arguments are passed to the patch function
+        
+    """
+    if lines is None:
+        lines = net.line.index
     if use_line_geodata:
         data = [(net.line_geodata.coords.loc[line],
                  infofunc(line) if infofunc else [])
@@ -93,50 +120,22 @@ def create_line_collection(net, lines, use_line_geodata=True, infofunc=None, **k
     lc.info = info
     return lc
 
-
-def create_connection_collection(net, connections, lwd, c, z=5):
-    lines = [[(net.bus_geodata.x.at[a], net.bus_geodata.y.at[a]),
-              (net.bus_geodata.x.at[b], net.bus_geodata.y.at[b])]
-              for a, b in connections
-              if a in net.bus_geodata.index and b in net.bus_geodata.index]
-    return LineCollection(lines, alpha=1, color=c, linewidth=lwd, zorder = z)
-
-def create_direct_line_collection(net, lines=None, gis_components=None, linewidth=1., alpha=.75,
-                                  zorder=1, color=(.4,.4,.4), linestyles="solid"):
+def create_trafo_collection(net, trafos=None, **kwargs):
     """
-    """
-    ll = copy.deepcopy(gis_components) or list(find_gis_components(net))
-    if lines is not None:
-        ll = [l for l in ll if len(set(l[2]) & set(lines)) > 0]
-    return LineCollection(direct_connections(net, ll), color=color, linewidth=linewidth,
-                          alpha=alpha, zorder=zorder, linestyles=linestyles)
+    Creates a matplotlib line collection of pandapower transformers.
+    
+    Input:
 
+        **net** (PandapowerNet) - The pandapower network
+               
+    Optional:
 
-def create_trennstellen_collection(net, switches=None, scale=10, **kwargs):
-    """
-    """   
-    lc = []
-    if switches is None:
-        switches = net.switch.query("closed==0 and et=='l'").index
-    for bus, element in net.switch.loc[switches][["bus", "element"]].values:
-        direction = 1 if net.line.from_bus.at[element] == bus else -1
-        if not element in net.line_geodata.index:
-            continue
-        b1, b2 = np.array(net.line_geodata.coords.loc[element][::direction][:2])
-        d = b1 - (b1 - b2) * 0.5
-        b = (b1 - b2) / np.linalg.norm(b1 - b2)
-        dv = np.array([-b[1], b[0]])
-        lc.append([d + dv * scale, d - dv * scale])
-    return LineCollection(lc, **kwargs)
+        **trafos** (list, None) - The transformers for which the collections are created. If None, all transformers in the network are considered.
 
-def create_trafo_collection(net, tid, **kwargs):
+        **kwargs - key word arguments are passed to the patch function
+        
     """
-    Returns a Collection of lines from the
-    lv-bus to the hv-bus. Note: its recommended to
-    make them somewhat thicker using linewidths,
-    in order to make them visible
-    """
-    trafos = net.trafo.loc[tid]
+    trafos = net.trafo if trafos is None else net.trafo.loc[trafos]
 
     hv_geo = list(zip(net.bus_geodata.loc[trafos["hv_bus"], "x"].values,
                  net.bus_geodata.loc[trafos["hv_bus"], "y"].values))
@@ -147,4 +146,35 @@ def create_trafo_collection(net, tid, **kwargs):
 
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
 
-                            
+def draw_collections(collections, figsize=(10, 8), ax=None):
+    """
+    Draws matplotlib collections which can be created with the create collection functions.
+
+    Input:
+
+        **collections** (list) - iterable of collection objects
+               
+    Optional:
+
+        **figsize** (tuple, (10,8)) - figsize of the matplotlib figure
+
+        **ax** (axis, None) - matplotlib axis object to plot into, new axis is created if None
+    """
+
+    if not ax:
+        plt.figure(facecolor="white", figsize=figsize)
+        plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.05,
+                            wspace=0.02, hspace=0.04)
+    ax = ax or plt.gca()
+
+    for c in collections:
+        if c:
+            cc = copy.copy(c)
+            ax.add_collection(cc)
+    ax.set_axis_bgcolor("white")
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax.set_aspect('equal', 'datalim')
+    ax.autoscale_view(True, True, True)
+    ax.margins(.02)
+    plt.tight_layout()
