@@ -13,6 +13,9 @@ Create Standard Type
 
 .. autofunction:: pandapower.create_std_type
 
+.. autofunction:: pandapower.create_std_types
+
+
 Copy Standard Types
 ---------------------
 
