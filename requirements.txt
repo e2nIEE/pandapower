@@ -5,4 +5,3 @@ pypower>5.0.0
 attrdict
 networkx
 numba>0.2.8.0
-seaborn

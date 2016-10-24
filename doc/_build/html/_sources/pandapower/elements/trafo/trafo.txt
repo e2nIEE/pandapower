@@ -4,10 +4,27 @@
 Transformer
 =============
 
-.. seealso::
-    :ref:`Create Trafo<create_trafo>`
+.. |br| raw:: html
 
-**Parameters**
+    <br>
+    
+.. seealso::
+
+    :ref:`Unit Systems and Conventions <conventions>` |br|
+    :ref:`Standard Type Libraries <std_types>`
+
+Create Function
+=====================
+
+Transformers can be either created from the standard type library (create_transformer) or with custom values (create_transformer_from_parameters).
+
+.. autofunction:: pandapower.create_transformer
+
+.. autofunction:: pandapower.create_transformer_from_parameters
+
+
+Parameters
+=============
 
 *net.trafo*
 
@@ -19,7 +36,9 @@ Transformer
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 The equivalent circuit used for the transformer can be set in the loadflow with the parameter "trafo_model".
    
@@ -124,7 +143,7 @@ The magnetising admittance is calculated as:
    y_m &= \frac{i0\_percent}{100} \\
    g_m &= \frac{pfe\_kw}{sn\_kva \cdot 1000} \cdot \frac{1000}{sn\_kva} \\
    b_m &= \sqrt{y_m^2 - g_m^2} \\
-   \underline{y_m} &= g_m + j \cdot b_m
+   \underline{y_m} &= g_m - j \cdot b_m
    \end{align*}    
 
 The values calculated in that way are relative to the rated values of the transformer. To transform them into the per unit system, they have to be converted to the rated values of the network:
@@ -139,11 +158,11 @@ The values calculated in that way are relative to the rated values of the transf
     \underline{y} &= \underline{y}_m \cdot \frac{Z_{N}}{Z_{ref, trafo}} \\
     \end{align*}
 
-Where :math:`S_{N} = 1 \ MVA` (see :ref:`per unit system<conventions>`) and :math:`V_{N}` is the nominal bus voltage at the low voltage side of the transformer. 
+Where :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`) and :math:`V_{N}` is the nominal bus voltage at the low voltage side of the transformer. 
 
   
-**Results**
-
+Result Parameters
+==================
 *net.res_trafo*
 
 .. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|

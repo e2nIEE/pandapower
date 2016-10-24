@@ -5,9 +5,15 @@ Switch
 =============
 
 .. seealso::
-    :ref:`Create Switch<create_switch>`
-    
-**Parameters**
+    :ref:`Unit Systems and Conventions <conventions>`
+
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_switch
+
+Parameters
+=============
 
 *net.switch*
 
@@ -19,7 +25,9 @@ Switch
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 *Bus-Bus-Switches:*
 

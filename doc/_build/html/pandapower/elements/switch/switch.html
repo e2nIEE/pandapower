@@ -89,9 +89,15 @@
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Switch</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Switch</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../load/load.html">Load</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../sgen/sgen.html">Static Generator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ext_grid/ext_grid.html">External Grid</a></li>
@@ -104,8 +110,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
@@ -159,9 +163,48 @@
 <span id="switch-model"></span><h1>Switch<a class="headerlink" href="#switch" title="Permalink to this headline">¶</a></h1>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="../../api_create.html#create-switch"><span class="std std-ref">Create Switch</span></a></p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a></p>
 </div>
-<p><strong>Parameters</strong></p>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.create_switch">
+<code class="descclassname">pandapower.</code><code class="descname">create_switch</code><span class="sig-paren">(</span><em>net</em>, <em>bus</em>, <em>element</em>, <em>et</em>, <em>closed=True</em>, <em>type=None</em>, <em>name=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_switch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a switch in the net[&#8220;switch&#8221;] table.</p>
+<p>Switches can be either between to buses (bus-bus switch) or at the end of a line or transformer
+element (bus-elememnt switch).</p>
+<p>Two buses that are connected through a closed bus-bus switches are fused in the power flow if 
+the switch es closed or separated if the switch is open.</p>
+<p>An element that is connected to a bus through a bus-element switch is connected to the bus
+if the switch is closed or disconnected if the switch is open.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> (PandapowerNet) - The net within this transformer should be created</p>
+<p><strong>bus</strong> - The bus that the switch is connected to</p>
+<p><strong>element</strong> - index of the element: bus id if et == &#8220;b&#8221;, line id if et == &#8220;l&#8221;</p>
+<p><strong>et</strong> - (string) element type: &#8220;l&#8221; = switch between bus and line, &#8220;t&#8221; = switch between
+bus and transformer, &#8220;t3&#8221; = switch between bus and 3-winding transformer, &#8220;b&#8221; = switch
+between two buses</p>
+<p><strong>closed</strong> (boolean, True) - switch position: False = open, True = closed</p>
+<p class="last"><strong>type</strong> (int, None) - indicates the type of switch: &#8220;LS&#8221; = Load Switch, &#8220;CB&#8221; = Circuit Breaker, &#8220;LBS&#8221; = Load Break Switch or &#8220;DS&#8221; = Disconnecting Switch</p>
+</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><strong>name</strong> (string, default None) - The name for this switch</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>sid</strong> - The unique switch_id of the created switch</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>create_switch(net, bus =  0, element = 1, et = &#8216;b&#8217;, type =&#8221;LS&#8221;)</p>
+<p>create_switch(net, bus = 0, element = 1, et = &#8216;l&#8217;)</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.switch</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -233,7 +276,9 @@
 </tbody>
 </table>
 <p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
-<p><strong>Loadflow Model</strong></p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
 <p><em>Bus-Bus-Switches:</em></p>
 <p>Two buses that are connected with a closed bus-bus switches are fused internally for the loadflow, open bus-bus switches are ignored:</p>
 <a class="reference internal image-reference" href="../../../_images/bus-bus-switches.png"><img alt="alternate Text" class="align-center" src="../../../_images/bus-bus-switches.png" style="width: 18em;" /></a>
@@ -256,6 +301,7 @@
 </div></blockquote>
 <p>Closed bus-element switches are ignored:</p>
 <a class="reference internal image-reference" href="../../../_images/bus-element-switches.png"><img alt="alternate Text" class="align-center" src="../../../_images/bus-element-switches.png" style="width: 30em;" /></a>
+</div>
 </div>
 
 

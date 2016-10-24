@@ -1,10 +1,39 @@
 ﻿===========================
 Three Winding Transformer
 ===========================
-.. seealso::
-    :ref:`Create Three Winding Transformer<create_trafo3w>`
+
+.. |br| raw:: html
+
+    <br>
     
-**Parameters**
+.. seealso::
+
+    :ref:`Unit Systems and Conventions <conventions>` |br|
+    :ref:`Standard Type Libraries <std_types>`
+
+Create Function
+=====================
+
+.. _create_trafo3w:
+
+
+.. autofunction:: pandapower.create_transformer3w
+
+.. autofunction:: pandapower.create_transformer3w_from_parameters
+
+.. note::
+    All short circuit voltages are given relative to the maximum apparent power
+    flow. For example vsc_hv_percent is the short circuit voltage from the high to
+    the medium level, it is given relative to the minimum of the rated apparent
+    power in high and medium level: min(sn_hv_kva, sn_mv_kva). This is consistent
+    with most commercial network calculation software (e.g. PowerFactory).
+    Some tools (like PSS Sincal) however define all short ciruit voltages relative
+    to the overall rated apparent power of the transformer:
+    max(sn_hv_kva, sn_mv_kva, sn_lv_kva). You might have to convert the
+    values depending on how the short-circuit voltages are defined.
+
+Input Parameters
+=================
 
 *net.trafo3w*
 
@@ -16,7 +45,9 @@ Three Winding Transformer
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 Three Winding Transformers are modelled by three two-winding transformers:
 
@@ -107,8 +138,8 @@ with
 
     
 
-**Results**
-
+Result Parameters
+==================
 **net.res_trafo3w**
 
 .. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.60\linewidth}|

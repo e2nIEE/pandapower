@@ -41,7 +41,7 @@ def _pd2mpc_opf(net, is_elems, sg_is):
 
     bus_lookup = _build_bus_mpc(net, mpc, is_elems, set_opf_constraints=True)
     _build_gen_opf(net, mpc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
-    _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=True)
+    _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=True)
     _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
     _calc_loads_and_add_opf(net, mpc, bus_lookup)
     _switch_branches(net, mpc, is_elems, bus_lookup)
@@ -147,6 +147,14 @@ def _make_objective(mpc, ppopt, objectivetype="maxp"):
         mpc["l"] = l
         mpc["u"] = u
         mpc["fparm"] = np.hstack((d, r, k, m))
+        
+        print("Ybus\n%s" % Ybus)
+        print("H\n%s" % H)
+        print("Cw\n%s" % Cw)
+        print("N\n%s" % N)
+        print("A\n%s" % A)
+        print("l\n%s" % l)
+        print("u\n%s" % u)
 
     return mpc, ppopt
 
@@ -219,6 +227,10 @@ def _build_gen_opf(net, mpc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         mpc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     mpc["bus"][eg_buses, BUS_TYPE] = REF
 
+    # REF busses don't have flexible voltages by definition:
+    mpc["bus"][eg_buses, VMAX] = mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VM]
+    mpc["bus"][eg_buses, VMIN] = mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VM]
+    
     # add generator / pv data
     if gen_end > eg_end:
         mpc["gen"][eg_end:gen_end, GEN_BUS] = pp.get_indices(gen_is["bus"].values, bus_lookup)

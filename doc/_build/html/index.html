@@ -87,12 +87,13 @@
 <li class="toctree-l1"><a class="reference internal" href="pandapower/about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/elements.html">Datastructure and Elements</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/loadflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/std_types.html">Standard Type Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/powerflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/plotting.html">Plotting Networks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/file_io.html">Save and Load Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/toolbox.html">Toolbox</a></li>
 </ul>
 
             
@@ -142,14 +143,21 @@
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/about.html">About pandapower</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/about_what.html">What is pandapower?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/about_advantages.html">Advantages and Contributions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/about_units.html">Unit System and Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/about_license.html">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/about/what.html">What is pandapower?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/about/introduction.html">A short Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/about/contributions.html">Advantages and Contributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/about/units.html">Unit System and Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/about/license.html">License</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/getting_started/download.html">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/getting_started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/getting_started/tutorials.html">Tutorials</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/elements.html">Datastructure and Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/elements/empty_network/empty_network.html">Empty Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pandapower/elements/bus/bus.html">Bus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pandapower/elements/line/line.html">Line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pandapower/elements/switch/switch.html">Switch</a></li>
@@ -165,44 +173,49 @@
 <li class="toctree-l2"><a class="reference internal" href="pandapower/elements/xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/api.html">API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/api_create.html">Create Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/api_std_types.html">Standard Type Libraries</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/api_file_io.html">Save and Load Networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/api_toolbox.html">pandapower Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/std_types.html">Standard Type Libraries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/std_types/basic.html">Basic Standard Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/std_types/manage.html">Manage Standard Types</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/loadflow.html">Power Flow</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/loadflow_run.html">Run a Power Flow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/loadflow_caveats.html">Known Problems and Caveats</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/loadflow_diagnostic.html">Diagnostic Function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/powerflow.html">Power Flow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/powerflow/run.html">Run a Power Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/powerflow/caveats.html">Known Problems and Caveats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/powerflow/diagnostic.html">Diagnostic Function</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/topology.html">Topological Searches</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/topology_graph.html">Create networkx graph</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/topology_searches.html">Topological Searches</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/topology_examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/topology/create_graph.html">Create networkx graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/topology/searches.html">Topological Searches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/topology/examples.html">Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/networks.html">Generic Networks</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_test.html">Simple pandapower test networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_random.html">Random pandapower networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_cigre.html">CIGRE Networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_mv_oberrhein.html">MV Oberrhein</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_ieee.html">IEEE cases</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_kerber.html">Kerber networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/networks_kerber.html#extreme-kerber-networks">Extreme Kerber networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/example.html">Example Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/test.html">Simple pandapower test networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/cigre.html">CIGRE Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/mv_oberrhein.html">MV Oberrhein</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/ieee.html">IEEE cases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/kerber.html">Kerber networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/networks/random.html">Random pandapower networks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pandapower/plotting.html">Plotting Networks</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/plotting_collections.html">Create Matplotlib Collections</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/plotting_draw.html">Draw Collections</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/plotting_generic.html">Generic Coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/plotting/collections.html">Create Matplotlib Collections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/plotting/draw.html">Draw Collections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/plotting/generic.html">Generic Coordinates</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="pandapower/example.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/example_simple.html">Simple Example Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pandapower/example_realistic.html">Multi-Voltage Level Example Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/file_io.html">Save and Load Networks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/file_io.html#pickle">pickle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/file_io.html#excel">Excel</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pandapower/toolbox.html">Toolbox</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/toolbox.html#result-information">Result Information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/toolbox.html#simulation-setup-and-preparation">Simulation Setup and Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/toolbox.html#topology-modification">Topology Modification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pandapower/toolbox.html#item-element-selection">Item/Element Selection</a></li>
 </ul>
 </li>
 </ul>

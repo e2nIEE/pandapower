@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
@@ -100,12 +101,16 @@
 <li class="toctree-l2"><a class="reference internal" href="../gen/gen.html">Generator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../shunt/shunt.html">Shunt</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../impedance/impedance.html">Impedance</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Ward</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Ward</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#input-parameters">Input Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-parameters">Result Parameters</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
@@ -159,9 +164,33 @@
 <span id="id1"></span><h1>Ward<a class="headerlink" href="#ward" title="Permalink to this headline">¶</a></h1>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="../../api_create.html#create-ward"><span class="std std-ref">Create Ward</span></a></p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a></p>
 </div>
-<p><strong>Parameters</strong></p>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.create_ward">
+<code class="descclassname">pandapower.</code><code class="descname">create_ward</code><span class="sig-paren">(</span><em>net</em>, <em>bus</em>, <em>ps_kw</em>, <em>qs_kvar</em>, <em>pz_kw</em>, <em>qz_kvar</em>, <em>name=None</em>, <em>in_service=True</em>, <em>index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_ward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a ward equivalent.</p>
+<p>A ward equivalent is a combination of an impedance load and a PQ load.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> (Pandapowernet) - The pandapower net within the element should be created</p>
+<p><strong>bus</strong> (int) -  bus of the ward equivalent</p>
+<p><strong>ps_kw</strong> (float) - active power of the PQ load</p>
+<p><strong>qs_kvar</strong> (float) - reactive power of the PQ load</p>
+<p><strong>pz_kw</strong> (float) - active power of the impedance load in kW at 1.pu voltage</p>
+<p class="last"><strong>qz_kvar</strong> (float) - reactive power of the impedance load in kVar at 1.pu voltage</p>
+</dd>
+</dl>
+<p>OUTPUT:</p>
+<blockquote>
+<div>ward id</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="input-parameters">
+<h2>Input Parameters<a class="headerlink" href="#input-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.ward</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -218,7 +247,9 @@
 </tbody>
 </table>
 <p><a href="#id2"><span class="problematic" id="id3">*</span></a>necessary for executing a loadflow calculation.</p>
-<p><strong>Loadflow Model</strong></p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
 <a class="reference internal image-reference" href="../../../_images/ward.png"><img alt="../../../_images/ward.png" class="align-center" src="../../../_images/ward.png" style="width: 15em;" /></a>
 <p>The ward equivalent is a combination of a constant apparent power consumption and a constant impedance load. The constant apparent power is given by:</p>
 <div class="math">
@@ -229,7 +260,9 @@ Q_{const} &amp;= qs\_kvar\\
 <div class="math">
 \begin{align*}
 \underline{y}_{shunt} &amp;= \frac{pz\_kw + j \cdot qz\_kvar}{S_{N}}
-\end{align*}</div><p><strong>Results</strong></p>
+\end{align*}</div></div>
+<div class="section" id="result-parameters">
+<h2>Result Parameters<a class="headerlink" href="#result-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.res_ward</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -262,6 +295,7 @@ vm\_pu &amp;= v_{bus} \\
 p\_kw &amp;= P_{const} + Re(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}}) \\
 q\_kvar &amp;= Q_{const} + Im(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}})
 \end{align*}</div></div>
+</div>
 
 
            </div>

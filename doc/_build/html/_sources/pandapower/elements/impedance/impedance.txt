@@ -3,9 +3,15 @@ Impedance
 =============
 
 .. seealso::
-    :ref:`Create Impedance<create_impedance>`
-    
-**Parameters**
+    :ref:`Unit Systems and Conventions <conventions>`
+
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_impedance
+
+Parameters
+=============
 
 *net.impedance*
 
@@ -17,7 +23,9 @@ Impedance
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 The impedance is modelled as a simple longitudinal per unit impedance:
 
@@ -37,11 +45,11 @@ The per unit values are therefore transformed into the network per unit system:
     \underline{z} &= \underline{z}_{impedance} \frac{S_{N}}{sn\_kva}
     \end{align*}
 
-with :math:`S_{N} = 1 \ MVA` (see :ref:`per unit system<conventions>`). 
+with :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`). 
 
 
-**Results**
-
+Result Parameters
+==================
 *net.res_impedance*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.55\linewidth}|

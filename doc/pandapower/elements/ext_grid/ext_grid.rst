@@ -3,9 +3,16 @@ External Grid
 =============
 
 .. seealso::
-    :ref:`Create External Grid<create_ext_grid>`
+    :ref:`Unit Systems and Conventions <conventions>`
     
-**Parameters**
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_ext_grid
+
+
+Parameters
+=====================
 
 *net.ext_grid*
 
@@ -17,7 +24,17 @@ External Grid
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+*Optional Parameters*:
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: ext_grid_opt.csv
+   :delim: ;
+   :widths: 15, 10, 15, 40
+
+   
+Loadflow Model
+=================
 
 The external grid is modelled as a voltage source in the loadflow calculation, which means the node the grid is connected to is treated as a slack node:
 
@@ -36,8 +53,8 @@ with:
    \theta &= shift\_degree \cdot \frac{\pi}{180}
    \end{align*}
 
-**Results**
-    
+Result Parameters
+==================    
 *net.res_ext_grid*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|

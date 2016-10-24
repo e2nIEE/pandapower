@@ -1,10 +1,19 @@
 ﻿=============
 Bus
 =============
-.. seealso::
-    :ref:`Create Bus<create_bus>`
 
-**Parameters**
+.. seealso::
+    :ref:`Unit Systems and Conventions <conventions>`
+
+Create Function
+=====================
+
+.. _create_bus:
+
+.. autofunction:: pandapower.create_bus
+
+Input Parameters
+=================
 
 *net.bus*
 
@@ -25,7 +34,8 @@ Bus
    :widths: 10, 10, 30
  
    
-**Loadflow Model**
+Loadflow Model
+=================
 
 .. image:: /pandapower/elements/bus/bus.png
     :width: 10em
@@ -33,7 +43,8 @@ Bus
     :align: center
     
 
-**Results**
+Result Parameters
+=================
 
 *net.res_bus*
 

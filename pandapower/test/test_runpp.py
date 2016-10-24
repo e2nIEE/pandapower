@@ -58,8 +58,6 @@ def test_result_iter():
 #            pytest.fail(["Error after adding_", net.last_added_case])
 #            raise UserWarning(")
 
-
-
 def test_bus_bus_switches():
     net = pp.create_empty_network()
     add_grid_connection(net)
@@ -76,10 +74,8 @@ def test_bus_bus_switches():
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
             net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
-    
-    
-    net.bus.in_service.at[5] = False
-    
+
+    net.bus.in_service.at[5] = False   
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]

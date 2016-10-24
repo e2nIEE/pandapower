@@ -392,10 +392,10 @@ def add_test_oos_bus_with_is_element(net):
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
     pp.create_gen(net, b4, p_kw=ps, vm_pu=u_set)
     pp.create_sgen(net, b5, p_kw=ps, q_kvar=ql)
-    # pp.create_ward(net, b3, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs)
-    # pp.create_xward(net, b4, pz_kw=0.5*pz, qz_kvar=0.5*qz, ps_kw=0.5*ps, qs_kvar=0.5*qs,
-    #                vm_pu=vm_pu, x_ohm=x_ohm, r_ohm=r_ohm)
-    # pp.create_shunt(net, b5, q_kvar=-800, p_kw=0)
+    pp.create_ward(net, b3, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs)
+    pp.create_xward(net, b4, pz_kw=0.5*pz, qz_kvar=0.5*qz, ps_kw=0.5*ps, qs_kvar=0.5*qs,
+                   vm_pu=vm_pu, x_ohm=x_ohm, r_ohm=r_ohm)
+    pp.create_shunt(net, b5, q_kvar=-800, p_kw=0)
 
     net.last_added_case = "test_oos_bus_with_is_element"
     return net

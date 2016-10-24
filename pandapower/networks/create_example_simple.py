@@ -24,7 +24,7 @@ def create_example_simple():
     bus8 = pp.create_bus(net, name="MV Station 4", vn_kv=20, type="b")
 
     # create external grid
-    pp.create_ext_grid(net, bus1, va_degree=20)
+    pp.create_ext_grid(net, bus1, vm_pu=1.01, va_degree=50)
 
     # create transformer
     pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer",
@@ -69,3 +69,8 @@ def create_example_simple():
     pp.runpp(net)
 
     return net
+
+if __name__ == '__main__':
+    net = create_example_simple()
+    
+    pp.runpp(net, "dc", True)

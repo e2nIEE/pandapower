@@ -5,9 +5,15 @@ Generator
 =============
 
 .. seealso::
-    :ref:`Create Generator<create_gen>`
-    
-**Parameters**
+    :ref:`Unit Systems and Conventions <conventions>`
+
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_gen
+
+Parameters
+=============
 
 *net.gen*
 
@@ -23,7 +29,9 @@ Generator
     Active power should normally be negative to model a voltage controlled generator, since all power values are given in the load reference system. A generator with positive active power represents a voltage controlled machine.
     If you want to model constant generation without voltage control, use the Static Generator element.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 Generators are modelled as PV-nodes in the loadflow:
 
@@ -42,8 +50,8 @@ Voltage magnitude and active power are defined by the input parameters in the ge
     v_{bus} &= vm\_pu
    \end{align*}
     
-**Results**
-
+Result Parameters
+==================
 *net.res_gen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|

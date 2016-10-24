@@ -1,11 +1,17 @@
-﻿=============
+﻿==================
 Static Generator
-=============
+==================
 
 .. seealso::
-    :ref:`Create Static Generator<create_sgen>`
+    :ref:`Unit Systems and Conventions <conventions>`
 
-**Parameters**
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_sgen
+
+Parameters
+=============
 
 *net.sgen*
 
@@ -17,7 +23,9 @@ Static Generator
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 Static Generators are modelled as PQ-buses in the loadflow calculation:
 
@@ -45,8 +53,8 @@ The PQ-Values are calculated from the parameter table values as:
     
     The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the loadflow!
 
-**Results**
-
+Result Parameters
+==================
 *net.res_sgen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|

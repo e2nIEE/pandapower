@@ -18,7 +18,7 @@ from pypower.idx_cost import MODEL, PW_LINEAR, NCOST
 from pypower.makeYbus import makeYbus
 from pypower.opf_costfcn import opf_costfcn
 from pypower.opf_consfcn import opf_consfcn
-from .opf_hessfcn import opf_hessfcn #temporary changed import to match bugfix path
+from pandapower.pypower_extensions.opf_hessfcn import opf_hessfcn #temporary changed import to match bugfix path
 from pypower.pips import pips
 from pypower.util import sub2ind
 

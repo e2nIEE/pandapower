@@ -89,10 +89,17 @@
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Load</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Load</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-parameters">Result Parameters</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../sgen/sgen.html">Static Generator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ext_grid/ext_grid.html">External Grid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../trafo/trafo.html">Transformer</a></li>
@@ -104,8 +111,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
@@ -159,9 +164,51 @@
 <h1>Load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h1>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="../../api_create.html#create-load"><span class="std std-ref">Create Load</span></a></p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a></p>
 </div>
-<p><strong>Parameters</strong></p>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.create_load">
+<code class="descclassname">pandapower.</code><code class="descname">create_load</code><span class="sig-paren">(</span><em>net</em>, <em>bus</em>, <em>p_kw</em>, <em>q_kvar=0</em>, <em>sn_kva=nan</em>, <em>name=None</em>, <em>scaling=1.0</em>, <em>index=None</em>, <em>in_service=True</em>, <em>type=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds one load in table net[&#8220;load&#8221;].</p>
+<p>All loads are modelled in the consumer system, meaning load is positive and generation is
+negative active power. Please pay attention to the correct signing of the reactive power as well.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - The net within this load should be created</p>
+<p class="last"><strong>bus</strong> (int) - The bus id to which the load is connected</p>
+</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><p><strong>p_kw</strong> (float, default 0) - The real power of the load</p>
+<p><strong>q_kvar</strong> (float, default 0) - The reactive power of the load</p>
+<ul class="simple">
+<li>postive value   -&gt; load</li>
+<li>negative value  -&gt; generation</li>
+</ul>
+<p><strong>sn_kva</strong> (float, default None) - Nominal power of the load</p>
+<p><strong>name</strong> (string, default None) - The name for this load</p>
+<p><strong>scaling</strong> (float, default 1.) - An OPTIONAL scaling factor to be set customly</p>
+<p><strong>type</strong> (string, None) -  type variable to classify the load</p>
+<dl class="docutils">
+<dt><strong>index</strong> (int, None) - Force the specified index. If None, the next highest available index</dt>
+<dd>is used</dd>
+</dl>
+<p><strong>in_service</strong> (boolean) - True for in_service or False for out of service</p>
+</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>index</strong> (int) - The index of the created element</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div>create_load(net, bus=0, p_kw=10., q_kvar=2.)</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.load</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -218,7 +265,9 @@
 </tbody>
 </table>
 <p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
-<p><strong>Loadflow Model</strong></p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
 <p>Loads are modelled as PQ-buses in the loadflow calculation:</p>
 <a class="reference internal image-reference" href="../../../_images/pq.png"><img alt="alternate Text" class="align-center" src="../../../_images/pq.png" style="width: 8em;" /></a>
 <p>The PQ-Values are calculated from the parameter table values as:</p>
@@ -234,7 +283,9 @@
 <p class="first admonition-title">Note</p>
 <p class="last">The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the loadflow!</p>
 </div>
-<p><strong>Results</strong></p>
+</div>
+<div class="section" id="result-parameters">
+<h2>Result Parameters<a class="headerlink" href="#result-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.res_load</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -258,6 +309,7 @@
 </tbody>
 </table>
 <p>The power values in the net.res_load table are equivalent to <span class="math">\(P_{load}\)</span> and <span class="math">\(Q_{load}\)</span>.</p>
+</div>
 </div>
 
 

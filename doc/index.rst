@@ -9,9 +9,10 @@ pandapower
     pandapower/about
     pandapower/getting_started
     pandapower/elements
-    pandapower/api
-    pandapower/loadflow
+    pandapower/std_types
+    pandapower/powerflow
     pandapower/topology
     pandapower/networks
     pandapower/plotting
-    pandapower/example
+    pandapower/file_io
+    pandapower/toolbox

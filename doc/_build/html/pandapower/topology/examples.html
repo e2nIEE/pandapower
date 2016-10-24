@@ -1,0 +1,428 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Examples &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Topological Searches" href="../topology.html"/>
+        <link rel="next" title="Generic Networks" href="../networks.html"/>
+        <link rel="prev" title="Topological Searches" href="searches.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../topology.html">Topological Searches</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="create_graph.html">Create networkx graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="searches.html">Topological Searches</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-networkx-algorithms-shortest-path">Using NetworkX algorithms: shortest path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#find-disconnected-buses">Find disconnected buses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#calculate-distances-between-buses">Calculate distances between buses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#find-connected-buses-with-the-same-voltage-level">Find connected buses with the same voltage level</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#find-rings-and-ring-sections">Find rings and ring sections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#find-stubs">Find stubs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../topology.html">Topological Searches</a> &raquo;</li>
+      
+    <li>Examples</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/pandapower/topology/examples.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>The combination of a suitable MultiGraph and the availabe topology functions enables you to perform a wide range of topological
+searches and analyses.</p>
+<p>Here are a few examples of what you can do:</p>
+<p><strong>basic example network</strong></p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
+
+<span class="n">net</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_empty_network</span><span class="p">()</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;110 kV bar&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">110</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;20 kV bar&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 3&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 4&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 5&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 6&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">vm_pu</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 0&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 1&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 2&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 3&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 4&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 5&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_transformer_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">hv_bus</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">lv_bus</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i0_percent</span><span class="o">=</span> <span class="mf">0.038</span><span class="p">,</span> <span class="n">pfe_kw</span> <span class="o">=</span> <span class="mf">11.6</span><span class="p">,</span>
+        <span class="n">vscr_percent</span> <span class="o">=</span> <span class="mf">0.322</span><span class="p">,</span> <span class="n">sn_kva</span> <span class="o">=</span> <span class="mf">40000.0</span><span class="p">,</span> <span class="n">vn_lv_kv</span> <span class="o">=</span> <span class="mf">22.0</span><span class="p">,</span>
+        <span class="n">vn_hv_kv</span> <span class="o">=</span> <span class="mf">110.0</span><span class="p">,</span> <span class="n">vsc_percent</span> <span class="o">=</span> <span class="mf">17.8</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 0&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 1&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 2&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 3&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 4&quot;</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">,</span> <span class="n">closed</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">element</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">et</span> <span class="o">=</span> <span class="s1">&#39;l&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="using-networkx-algorithms-shortest-path">
+<h2>Using NetworkX algorithms: shortest path<a class="headerlink" href="#using-networkx-algorithms-shortest-path" title="Permalink to this headline">¶</a></h2>
+<p>For many basic network analyses the algorithms that come with the NetworkX package will work just fine and you won&#8217;t need one of the spezialised topology functions.
+Finding the shortest path between two buses is a good example for that.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+
+<span class="n">mg</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">create_nxgraph</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">shortest_path</span><span class="p">(</span><span class="n">mg</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">Out</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/nx_shortest_path.png"><img alt="alternate Text" class="align-center" src="../../_images/nx_shortest_path.png" style="width: 42em;" /></a>
+</div>
+<div class="section" id="find-disconnected-buses">
+<h2>Find disconnected buses<a class="headerlink" href="#find-disconnected-buses" title="Permalink to this headline">¶</a></h2>
+<p>With <em>unsupplied_buses</em> you can easily find buses that are not connected to an external grid.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+
+<span class="n">net</span><span class="o">.</span><span class="n">switch</span><span class="o">.</span><span class="n">closed</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">top</span><span class="o">.</span><span class="n">unsupplied_buses</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">Out</span><span class="p">:</span> <span class="p">{</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/top_disconnected_buses.png"><img alt="alternate Text" class="align-center" src="../../_images/top_disconnected_buses.png" style="width: 42em;" /></a>
+</div>
+<div class="section" id="calculate-distances-between-buses">
+<h2>Calculate distances between buses<a class="headerlink" href="#calculate-distances-between-buses" title="Permalink to this headline">¶</a></h2>
+<p><em>calc_distance_to_bus</em> allows you to calculate the distance ( = shortest network route) from one bus all other ones.
+This is possible since line lengths are being transferred into the MultiGraph as an edge attribute.
+(Note: bus-bus-switches and trafos are interpreted as edges with length = 0)</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+
+<span class="n">net</span><span class="o">.</span><span class="n">switch</span><span class="o">.</span><span class="n">closed</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">switch</span><span class="o">.</span><span class="n">closed</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">top</span><span class="o">.</span><span class="n">calc_distance_to_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">Out</span><span class="p">:</span>
+<span class="mi">0</span>    <span class="mi">0</span>
+<span class="mi">1</span>    <span class="mi">0</span>
+<span class="mi">2</span>    <span class="mi">1</span>
+<span class="mi">3</span>    <span class="mi">2</span>
+<span class="mi">4</span>    <span class="mi">3</span>
+<span class="mi">5</span>    <span class="mi">4</span>
+<span class="mi">6</span>    <span class="mi">1</span>
+</pre></div>
+</div>
+<p><strong>Interpretation:</strong> The distance between bus 1 and itself is 0 km. Bus 1 is also 0 km away from bus 0, since they are connected with a transformer.
+The shortest path between bus 1 and bus 5 is 4 km long.</p>
+<a class="reference internal image-reference" href="../../_images/top_calc_distance_to_bus.png"><img alt="alternate Text" class="align-center" src="../../_images/top_calc_distance_to_bus.png" style="width: 42em;" /></a>
+</div>
+<div class="section" id="find-connected-buses-with-the-same-voltage-level">
+<h2>Find connected buses with the same voltage level<a class="headerlink" href="#find-connected-buses-with-the-same-voltage-level" title="Permalink to this headline">¶</a></h2>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+
+<span class="n">mg_no_trafos</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">create_nxgraph</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">include_trafos</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">mg_no_trafos</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">In</span>      <span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+<span class="n">Out</span>     <span class="p">:</span> <span class="p">{</span><span class="mi">0</span><span class="p">}</span>
+<span class="n">In</span>      <span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+<span class="n">Out</span>     <span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/multigraph_example_include_trafos.png"><img alt="alternate Text" class="align-center" src="../../_images/multigraph_example_include_trafos.png" style="width: 42em;" /></a>
+</div>
+<div class="section" id="find-rings-and-ring-sections">
+<h2>Find rings and ring sections<a class="headerlink" href="#find-rings-and-ring-sections" title="Permalink to this headline">¶</a></h2>
+<p>Another example of what you can do with the right combination of input arguments when creating the MultiGraph is finding
+rings and ring sections in your network. To achieve that for our example network, the trafo buses needs to
+be set as a nogobuses. With <em>respect_switches = True</em> you get the ring sections, with <em>respect_switches = False</em> the whole ring.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+
+<span class="n">mg_ring_sections</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">create_nxgraph</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">nogobuses</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">cc_ring_sections</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">mg_ring_sections</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">In</span>      <span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="n">cc_ring_sections</span><span class="p">)</span>
+<span class="n">Out</span>     <span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">}</span>
+
+<span class="n">In</span>      <span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="n">cc_ring_sections</span><span class="p">)</span>
+<span class="n">Out</span>     <span class="p">:</span> <span class="p">{</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/top_find_ring_sections.png"><img alt="alternate Text" class="align-center" src="../../_images/top_find_ring_sections.png" style="width: 42em;" /></a>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+
+<span class="n">mg_ring</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">create_nxgraph</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">respect_switches</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">nogobuses</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">cc_ring</span> <span class="o">=</span> <span class="n">top</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">mg_ring</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">In</span>      <span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="n">cc_ring</span><span class="p">)</span>
+<span class="n">Out</span>     <span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">}</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/top_find_rings.png"><img alt="alternate Text" class="align-center" src="../../_images/top_find_rings.png" style="width: 42em;" /></a>
+</div>
+<div class="section" id="find-stubs">
+<h2>Find stubs<a class="headerlink" href="#find-stubs" title="Permalink to this headline">¶</a></h2>
+<p><em>determine_stubs</em> lets you identify buses and lines that are stubs. Open switches are being ignored. Busses that you want to exclude should be defined as roots.
+Ext_grid buses are roots by default.</p>
+<p>This is a small extension for the example network:</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 7&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;bus 8&quot;</span><span class="p">,</span> <span class="n">vn_kv</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 6&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;line 7&quot;</span><span class="p">,</span> <span class="n">from_bus</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">to_bus</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span> <span class="n">length_km</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std_type</span> <span class="o">=</span> <span class="s2">&quot;NAYY 150&quot;</span><span class="p">)</span>
+
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 5&quot;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">q_kvar</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;load 6&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower.topology</span> <span class="k">as</span> <span class="nn">top</span>
+<span class="n">top</span><span class="o">.</span><span class="n">determine_stubs</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">roots</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">bus</span>
+
+<span class="n">Out</span><span class="p">:</span>
+         <span class="n">name</span>  <span class="n">vn_kv</span>  <span class="n">min_vm_pu</span>  <span class="n">max_vm_pu</span> <span class="nb">type</span>  <span class="n">zone</span> <span class="n">in_service</span> <span class="n">auf_stich</span>
+<span class="mi">0</span>  <span class="mi">110</span> <span class="n">kV</span> <span class="n">bar</span>    <span class="mi">110</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">1</span>   <span class="mi">20</span> <span class="n">kV</span> <span class="n">bar</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">2</span>       <span class="n">bus</span> <span class="mi">2</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">3</span>       <span class="n">bus</span> <span class="mi">3</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">4</span>       <span class="n">bus</span> <span class="mi">4</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">5</span>       <span class="n">bus</span> <span class="mi">5</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">6</span>       <span class="n">bus</span> <span class="mi">6</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>     <span class="kc">False</span>
+<span class="mi">7</span>       <span class="n">bus</span> <span class="mi">7</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>      <span class="kc">True</span>
+<span class="mi">8</span>       <span class="n">bus</span> <span class="mi">8</span>     <span class="mi">20</span>      <span class="n">NaN</span>      <span class="n">NaN</span>    <span class="n">b</span>  <span class="kc">None</span>       <span class="kc">True</span>      <span class="kc">True</span>
+
+<span class="n">In</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">line</span>
+
+<span class="n">Out</span><span class="p">:</span>
+     <span class="n">name</span>  <span class="n">std_type</span>  <span class="n">from_bus</span>  <span class="n">to_bus</span>  <span class="n">length_km</span>  <span class="n">r_ohm_per_km</span>  <span class="n">x_ohm_per_km</span>  <span class="n">c_nf_per_km</span>  <span class="n">imax_ka</span>  <span class="n">df</span> <span class="nb">type</span> <span class="n">in_service</span> <span class="n">is_stich</span>
+<span class="mi">0</span>  <span class="n">line</span> <span class="mi">0</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">1</span>       <span class="mi">2</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>    <span class="kc">False</span>
+<span class="mi">1</span>  <span class="n">line</span> <span class="mi">1</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">2</span>       <span class="mi">3</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>    <span class="kc">False</span>
+<span class="mi">2</span>  <span class="n">line</span> <span class="mi">2</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">3</span>       <span class="mi">4</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>    <span class="kc">False</span>
+<span class="mi">3</span>  <span class="n">line</span> <span class="mi">3</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">4</span>       <span class="mi">5</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>    <span class="kc">False</span>
+<span class="mi">4</span>  <span class="n">line</span> <span class="mi">4</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">5</span>       <span class="mi">6</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>    <span class="kc">False</span>
+<span class="mi">5</span>  <span class="n">line</span> <span class="mi">5</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">6</span>       <span class="mi">1</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>    <span class="kc">False</span>
+<span class="mi">6</span>  <span class="n">line</span> <span class="mi">6</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">6</span>       <span class="mi">7</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>     <span class="kc">True</span>
+<span class="mi">7</span>  <span class="n">line</span> <span class="mi">7</span>  <span class="n">NAYY</span> <span class="mi">150</span>         <span class="mi">7</span>       <span class="mi">8</span>          <span class="mi">1</span>         <span class="mf">0.206</span>         <span class="mf">0.091</span>            <span class="mi">0</span>    <span class="mf">0.284</span>   <span class="mi">1</span>   <span class="n">cs</span>       <span class="kc">True</span>     <span class="kc">True</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/top_determine_stubs.png"><img alt="alternate Text" class="align-center" src="../../_images/top_determine_stubs.png" style="width: 42em;" /></a>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../networks.html" class="btn btn-neutral float-right" title="Generic Networks" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="searches.html" class="btn btn-neutral" title="Topological Searches" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

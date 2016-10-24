@@ -14,6 +14,6 @@ pandapower also provides some search algorithms specialiced for electric network
 .. toctree:: 
     :maxdepth: 1
     
-    topology_graph
-    topology_searches
-    topology_examples
+    topology/create_graph
+    topology/searches
+    topology/examples

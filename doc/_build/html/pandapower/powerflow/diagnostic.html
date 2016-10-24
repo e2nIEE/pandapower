@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Diagnostic Function &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+    <li>Diagnostic Function</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/pandapower/powerflow/diagnostic.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="diagnostic-function">
+<h1>Diagnostic Function<a class="headerlink" href="#diagnostic-function" title="Permalink to this headline">¶</a></h1>
+<p>A power flow calculation on a pandapower network can fail to converge for a vast variety of reasons, which often makes debugging difficult, annoying and time consuming.
+To help with that, the diagnostic function automatically checks pandapower networks for the most common issues leading to errors. It provides logging output and diagnoses with a controllable
+level of detail.</p>
+<dl class="function">
+<dt id="pandapower.diagnostic">
+<code class="descclassname">pandapower.</code><code class="descname">diagnostic</code><span class="sig-paren">(</span><em>net</em>, <em>report_style='detailed'</em>, <em>warnings_only=False</em>, <em>return_result_dict=True</em>, <em>overload_scaling_factor=0.001</em>, <em>lines_min_length_km=0</em>, <em>lines_min_z_ohm=0</em>, <em>nom_voltage_tolerance=0.3</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.diagnostic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><strong>net</strong> (PandapowerNet) : pandapower network</dd>
+<dt>OPTIONAL:</dt>
+<dd><ul class="first simple">
+<li><strong>report_style</strong> (string, &#8216;detailed&#8217;) : style of the report, that gets ouput in the console</li>
+</ul>
+<blockquote>
+<div><p>&#8216;detailled&#8217;: full report with high level of additional descriptions</p>
+<p>&#8216;compact&#8217;  : more compact report, containing essential information only</p>
+<p>&#8216;None&#8217;     : no report</p>
+</div></blockquote>
+<ul class="simple">
+<li><strong>warnings_only</strong> (boolean, False): Filters logging output for warnings</li>
+</ul>
+<blockquote>
+<div><p>True: logging output for errors only</p>
+<p>False: logging output for all checks, regardless if errors were found or not</p>
+</div></blockquote>
+<ul class="simple">
+<li><strong>return_result_dict</strong> (boolean, True): returns a dictionary containing all check results</li>
+</ul>
+<blockquote>
+<div><p>True: returns dict with all check results</p>
+<p>False: no result dict</p>
+</div></blockquote>
+<ul class="last simple">
+<li><strong>overload_scaling_factor</strong> (float, 0.001): downscaling factor for loads and generation      for overload check</li>
+<li><strong>lines_min_length_km</strong> (float, 0): minimum length_km allowed for lines</li>
+<li><strong>lines_min_z_ohm</strong> (float, 0): minimum z_ohm allowed for lines</li>
+<li><strong>nom_voltage_tolerance</strong> (float, 0.3): highest allowed relative deviation between nominal      voltages and bus voltages</li>
+</ul>
+</dd>
+<dt>RETURN:</dt>
+<dd><ul class="first simple">
+<li><strong>diag_results</strong> (dict): dict that contains the indeces of all elements where errors were found</li>
+</ul>
+<blockquote class="last">
+<div>Format: {&#8216;check_name&#8217;: check_results}</div></blockquote>
+</dd>
+</dl>
+<p>EXAMPLE:</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">misc</span><span class="o">.</span><span class="n">diagnostic</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">report_style</span><span class="o">=</span><span class="s1">&#39;compact&#39;</span><span class="p">,</span> <span class="n">warnings_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>Usage ist very simple: Just call the function and pass the net you want to diagnose as an argument. Optionally you can specify if you want detailed logging output or summaries only and if the diagnostic should
+log all checks performed vs. errors only.</p>
+<div class="section" id="check-functions">
+<h2>Check functions<a class="headerlink" href="#check-functions" title="Permalink to this headline">¶</a></h2>
+<p>The diagnostic function includes the following checks:</p>
+<ul class="simple">
+<li>invalid values (e.g. negative element indeces)</li>
+<li>check, if at least one external grid exists</li>
+<li>check, if there are buses with more than one gen and/or ext_grid</li>
+<li>overload: tries to run a loadflow calculation with loads scaled down to 10%</li>
+<li>switch_configuration: tries to run a loadflow calculation with all switches closed</li>
+<li>inconsistent voltages: checks, if there are lines or switches that connect different voltage levels</li>
+<li>lines with impedance zero</li>
+<li>closed switches between in_service and out_of_service buses</li>
+<li>components whose nominal voltages differ from the nominal voltages of the buses they&#8217;re connected to</li>
+<li>elements, that are disconnected from the network</li>
+<li>usage of wrong reference system for power values of loads and gens</li>
+</ul>
+</div>
+<div class="section" id="logging-output">
+<h2>Logging Output<a class="headerlink" href="#logging-output" title="Permalink to this headline">¶</a></h2>
+<p>Here are a few examples of what logging output looks like:</p>
+<p><strong>detailed_report = True/False</strong></p>
+<p>Both reports show the same result, but on the left hand picture with detailed information, on the right hand picture summary only.</p>
+<a class="reference internal image-reference" href="../../_images/diag_detailed_report.png"><img alt="alternate Text" class="align-center" src="../../_images/diag_detailed_report.png" style="width: 42em;" /></a>
+<p><em>warnings_only = True/False</em></p>
+<a class="reference internal image-reference" href="../../_images/diag_warnings_only.png"><img alt="alternate Text" class="align-center" src="../../_images/diag_warnings_only.png" style="width: 42em;" /></a>
+</div>
+<div class="section" id="result-dictionary">
+<h2>Result Dictionary<a class="headerlink" href="#result-dictionary" title="Permalink to this headline">¶</a></h2>
+<p>Aditionally all check results are returned in a dict to allow simple access to the indeces of all element where
+errors were found.</p>
+<a class="reference internal image-reference" href="../../_images/diag_results_dict.png"><img alt="alternate Text" class="align-center" src="../../_images/diag_results_dict.png" style="width: 42em;" /></a>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

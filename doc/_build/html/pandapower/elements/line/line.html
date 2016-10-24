@@ -89,8 +89,15 @@
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Line</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Line</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-parameters">Result Parameters</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../load/load.html">Load</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../sgen/sgen.html">Static Generator</a></li>
@@ -104,8 +111,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
@@ -159,9 +164,91 @@
 <h1>Line<a class="headerlink" href="#line" title="Permalink to this headline">¶</a></h1>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="../../api_create.html#create-line"><span class="std std-ref">Create Line</span></a></p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a> <br>
+<a class="reference internal" href="../../std_types.html#std-types"><span class="std std-ref">Standard Type Libraries</span></a></p>
 </div>
-<p><strong>Parameters</strong></p>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<p id="create-line">Lines can be either created from the standard type library (create_line) or with custom values (create_line_from_parameters).</p>
+<dl class="function">
+<dt id="pandapower.create_line">
+<code class="descclassname">pandapower.</code><code class="descname">create_line</code><span class="sig-paren">(</span><em>net</em>, <em>from_bus</em>, <em>to_bus</em>, <em>length_km</em>, <em>std_type</em>, <em>name=None</em>, <em>index=None</em>, <em>geodata=None</em>, <em>df=1.0</em>, <em>parallel=1</em>, <em>in_service=True</em>, <em>max_loading_percent=nan</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a line element in net[&#8220;line&#8221;]
+The line parameters are defined through the standard type library.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - The net within this line should be created</p>
+<p><strong>from_bus</strong> (int) - ID of the bus on one side which the line will be connected with</p>
+<p><strong>to_bus</strong> (int) - ID of the bus on the other side which the line will be connected with</p>
+<p><strong>length_km</strong> (float) - The line length in km</p>
+<p class="last"><strong>std_type</strong> (string) - The linetype of a standard line pre-defined in standard_linetypes.</p>
+</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><p><strong>name</strong> (string) - A custom name for this line</p>
+<p><strong>index</strong> (int) - Force a specified ID if it is available</p>
+<p><strong>geodata</strong>
+(np.array, default None, shape= (,2L)) -
+The linegeodata of the line. The first row should be the coordinates
+of bus a and the last should be the coordinates of bus b. The points
+in the middle represent the bending points of the line</p>
+<p><strong>in_service</strong> (boolean) - True for in_service or False for out of service</p>
+<p><strong>df</strong> (float) - derating factor: maximal current of line  in relation to nominal current of line (from 0 to 1)</p>
+<p><strong>parallel</strong> (integer) - number of parallel line systems</p>
+</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>line_id</strong> - The unique line_id of the created line</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div>create_line(net, &#8220;line1&#8221;, from_bus = 0, to_bus = 1, length_km=0.1,  std_type=&#8221;NAYY 4x50 SE&#8221;)</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pandapower.create_line_from_parameters">
+<code class="descclassname">pandapower.</code><code class="descname">create_line_from_parameters</code><span class="sig-paren">(</span><em>net</em>, <em>from_bus</em>, <em>to_bus</em>, <em>length_km</em>, <em>r_ohm_per_km</em>, <em>x_ohm_per_km</em>, <em>c_nf_per_km</em>, <em>imax_ka</em>, <em>name=None</em>, <em>index=None</em>, <em>type=None</em>, <em>geodata=None</em>, <em>in_service=True</em>, <em>df=1.0</em>, <em>parallel=1</em>, <em>max_loading_percent=nan</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_line_from_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a line element in net[&#8220;line&#8221;] from line parameters.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - The net within this line should be created</p>
+<p><strong>from_bus</strong> (int) - ID of the bus on one side which the line will be connected with</p>
+<p><strong>to_bus</strong> (int) - ID of the bus on the other side which the line will be connected with</p>
+<p><strong>length_km</strong> (float) - The line length in km</p>
+<p><strong>r_ohm_per_km</strong> (float) - line resistance in ohm per km</p>
+<p><strong>x_ohm_per_km</strong> (float) - line reactance in ohm per km</p>
+<p><strong>c_nf_per_km</strong> (float) - line capacitance in nF per km</p>
+<p class="last"><strong>imax_ka</strong> (float) - maximum thermal current in kA</p>
+</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><p><strong>name</strong> (string) - A custom name for this line</p>
+<p><strong>index</strong> (int) - Force a specified ID if it is available</p>
+<p><strong>in_service</strong> (boolean) - True for in_service or False for out of service</p>
+<p><strong>type</strong> (str) - type of line (&#8220;oh&#8221; for overhead line or &#8220;cs&#8221; for cable system)</p>
+<p><strong>df</strong> (float) - derating factor: maximal current of line  in relation to nominal current of line (from 0 to 1)</p>
+<p><strong>parallel</strong> (integer) - number of parallel line systems</p>
+<p><strong>geodata</strong>
+(np.array, default None, shape= (,2L)) -
+The linegeodata of the line. The first row should be the coordinates
+of bus a and the last should be the coordinates of bus b. The points
+in the middle represent the bending points of the line</p>
+<p><strong>kwargs</strong> - nothing to see here, go along</p>
+</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>line_id</strong> - The unique line_id of the created line</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div>create_line_from_parameters(net, &#8220;line1&#8221;, from_bus = 0, to_bus = 1, lenght_km=0.1,
+r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
+imax_ka = 0.4)</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.line</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -278,7 +365,9 @@ for the same reason. If you want to directly connect two buses, please use the s
 </tr>
 </tbody>
 </table>
-<p><strong>Loadflow Model</strong></p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
 <p>Lines are modelled with the <span class="math">\(\pi\)</span>-equivalent circuit:</p>
 <a class="reference internal image-reference" href="../../../_images/line.png"><img alt="alternate Text" class="align-center" src="../../../_images/line.png" style="width: 25em;" /></a>
 <p>The elements in the equivalent circuit are calculated from the parameters in the net.line dataframe as:</p>
@@ -293,13 +382,15 @@ for the same reason. If you want to directly connect two buses, please use the s
  Z_{N} &amp;= \frac{V_{N}^2}{S_{N}} \\
  \underline{z} &amp;= \frac{\underline{Z}}{Z_{N}} \\
  \underline{y} &amp;= \underline{Y} \cdot Z_{N} \\
- \end{align*}</div><p>Where <span class="math">\(S_{N} = 1 \ MVA\)</span> (see <a class="reference internal" href="../../about_units.html#conventions"><span class="std std-ref">per unit system</span></a>) and <span class="math">\(U_{N}\)</span> is the nominal voltage at the from bus.</p>
+ \end{align*}</div><p>Where <span class="math">\(S_{N} = 1 \ MVA\)</span> (see <a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a>) and <span class="math">\(U_{N}\)</span> is the nominal voltage at the from bus.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
 If you want to connect different voltage levels, either use a transformer or an impedance element.</p>
 </div>
-<p><strong>Results</strong></p>
+</div>
+<div class="section" id="result-parameters">
+<h2>Result Parameters<a class="headerlink" href="#result-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.res_line</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -358,6 +449,7 @@ If you want to connect different voltage levels, either use a transformer or an 
  i\_ka &amp;= max(i_{from}, i_{to}) \\
  loading\_percent &amp;= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100
  \end{align*}</div></div>
+</div>
 
 
            </div>

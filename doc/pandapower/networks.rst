@@ -12,12 +12,13 @@ You can find documentation for the individual modules here:
 .. toctree:: 
     :maxdepth: 2
 
-    networks_test
-    networks_random
-    networks_cigre
-    networks_mv_oberrhein
-    networks_ieee
-    networks_kerber
+    networks/example
+    networks/test
+    networks/cigre
+    networks/mv_oberrhein
+    networks/ieee
+    networks/kerber
+    networks/random
 
 	
 	

@@ -2,10 +2,29 @@
 Line
 =============
 
-.. seealso::
-    :ref:`Create Line<create_line>`
 
-**Parameters**
+.. |br| raw:: html
+
+    <br>
+    
+.. seealso::
+
+    :ref:`Unit Systems and Conventions <conventions>` |br|
+    :ref:`Standard Type Libraries <std_types>`
+    
+Create Function
+=====================
+
+.. _create_line:
+
+Lines can be either created from the standard type library (create_line) or with custom values (create_line_from_parameters).
+
+.. autofunction:: pandapower.create_line
+
+.. autofunction:: pandapower.create_line_from_parameters
+
+Parameters
+=====================
 
 *net.line*
 
@@ -30,7 +49,9 @@ Line
    :delim: ;
    :widths: 10, 10, 55
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 Lines are modelled with the :math:`\pi`-equivalent circuit:
 
@@ -64,14 +85,14 @@ The parameters are then transformed in the per unit system:
     \underline{y} &= \underline{Y} \cdot Z_{N} \\
     \end{align*}
 
-Where :math:`S_{N} = 1 \ MVA` (see :ref:`per unit system<conventions>`) and :math:`U_{N}` is the nominal voltage at the from bus.
+Where :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`) and :math:`U_{N}` is the nominal voltage at the from bus.
 
 .. note::
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
     If you want to connect different voltage levels, either use a transformer or an impedance element.
     
-**Results**
-
+Result Parameters
+==================
    
 *net.res_line*
 

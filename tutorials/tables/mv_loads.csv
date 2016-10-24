@@ -1,0 +1,9 @@
+index;load_name;bus;p;q
+0;Further MV-Rings;Bus MV0;6000;2000
+1;Industry Load;Bus MV0 20kV;18000;4000
+2;LV Net 1;Bus MV1;400;100
+3;LV Net 2;Bus MV2;400;60
+4;LV Net 3;Bus MV3;400;60
+5;LV Net 5;Bus MV5;400;60
+6;LV Net 6;Bus MV6;400;60
+7;LV Net 7;Bus MV7;400;60

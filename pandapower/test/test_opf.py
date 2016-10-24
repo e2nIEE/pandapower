@@ -8,8 +8,8 @@ import pandapower as pp
 import pytest
 
 try:
-    import log
-    logger = log.getLogger(__name__)
+    import pplog
+    logger = pplog.getLogger(__name__)
 except:
     import logging
     logger = logging.getLogger(__name__)
@@ -250,11 +250,11 @@ if __name__ == "__main__":
     """
 #    import time
 #    t = time.time()
-#    pytest.main(["test_opf.py", "-s"])
+    pytest.main(["test_opf.py", "-s"])
 #    elapsed = time.time()-t
 #    logger.setLevel("DEBUG")
-    test_simplest_voltage()
-    test_opf_gen_voltage()
-    test_opf_sgen_voltage()
-    test_opf_gen_loading()
-    test_opf_sgen_loading()
+#    test_simplest_voltage()
+#    test_opf_gen_voltage()
+#    test_opf_sgen_voltage()
+#    test_opf_gen_loading()
+#    test_opf_sgen_loading()

@@ -36,7 +36,7 @@
     <link rel="top" title="pandapower 1.0 documentation" href="../../../index.html"/>
         <link rel="up" title="Datastructure and Elements" href="../../elements.html"/>
         <link rel="next" title="Line" href="../line/line.html"/>
-        <link rel="prev" title="Datastructure and Elements" href="../../elements.html"/> 
+        <link rel="prev" title="Empty Network" href="../empty_network/empty_network.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -89,7 +89,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Bus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bus</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#input-parameters">Input Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-parameters">Result Parameters</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../load/load.html">Load</a></li>
@@ -104,8 +111,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
@@ -159,9 +164,41 @@
 <h1>Bus<a class="headerlink" href="#bus" title="Permalink to this headline">¶</a></h1>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="../../api_create.html#create-bus"><span class="std std-ref">Create Bus</span></a></p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a></p>
 </div>
-<p><strong>Parameters</strong></p>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="create-bus"></span><dl class="function">
+<dt id="pandapower.create_bus">
+<code class="descclassname">pandapower.</code><code class="descname">create_bus</code><span class="sig-paren">(</span><em>net</em>, <em>vn_kv</em>, <em>name=None</em>, <em>index=None</em>, <em>geodata=None</em>, <em>type='b'</em>, <em>zone=None</em>, <em>in_service=True</em>, <em>max_vm_pu=nan</em>, <em>min_vm_pu=nan</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_bus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds one bus in table net[&#8220;bus&#8221;].</p>
+<p>Busses are the nodes of the network that all other elements connect to.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><strong>net</strong> (PandapowerNet) - The pandapower network in which the element is created</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><p><strong>name</strong> (string, default None) - the name for this bus</p>
+<p><strong>index</strong> (int, default None) - Force a specified ID if it is available</p>
+<p><strong>vn_kv</strong> (float, default 0.4) - The grid voltage level.</p>
+<p><strong>busgeodata</strong> ((x,y)-tuple, default None) - coordinates used for plotting</p>
+<p><strong>type</strong> (string, default k) - Type of the bus. &#8220;n&#8221; - auxilary node,
+&#8220;b&#8221; - busbar, &#8220;m&#8221; - muff</p>
+<p><strong>zone</strong> (string, None) - grid region</p>
+<p><strong>in_service</strong> (boolean) - True for in_service or False for out of service</p>
+</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>eid</strong> (int) - The index of the created element</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div>create_bus(net, name = &#8220;bus1&#8221;)</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="input-parameters">
+<h2>Input Parameters<a class="headerlink" href="#input-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.bus</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -236,9 +273,13 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Loadflow Model</strong></p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
 <a class="reference internal image-reference" href="../../../_images/bus.png"><img alt="alternate Text" class="align-center" src="../../../_images/bus.png" style="width: 10em;" /></a>
-<p><strong>Results</strong></p>
+</div>
+<div class="section" id="result-parameters">
+<h2>Result Parameters<a class="headerlink" href="#result-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.res_bus</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -281,6 +322,7 @@
 <p class="last">All power values are given in the consumer system. Therefore a bus with positive p_kw value consumes power while a bus with negative active power supplies power.</p>
 </div>
 </div>
+</div>
 
 
            </div>
@@ -292,7 +334,7 @@
         <a href="../line/line.html" class="btn btn-neutral float-right" title="Line" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../../elements.html" class="btn btn-neutral" title="Datastructure and Elements" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../empty_network/empty_network.html" class="btn btn-neutral" title="Empty Network" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

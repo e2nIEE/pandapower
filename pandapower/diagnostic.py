@@ -8,11 +8,11 @@ import numpy as np
 import copy
 
 try:
-    import log
+    import pplog
 except:
     import logging as log
     
-logger = log.getLogger(__name__)
+logger = pplog.getLogger(__name__)
 
 import pandapower.topology as top
 from pandapower.run import runpp
@@ -853,9 +853,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "nom_voltage_tolerance": nom_voltage_tolerance
                    }
     if warnings_only:
-        logger.setLevel(log.WARNING)
+        logger.setLevel(pplog.WARNING)
     else:
-        logger.setLevel(log.INFO)
+        logger.setLevel(pplog.INFO)
     logger.propagate = False
 
     if report_style == 'detailed':

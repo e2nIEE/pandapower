@@ -15,6 +15,7 @@ information about the definition and interpretation of the parameters in the fol
 .. toctree:: 
     :maxdepth: 1
 
+    elements/empty_network/empty_network
     elements/bus/bus
     elements/line/line
     elements/switch/switch

@@ -8,7 +8,7 @@ import numpy.core.numeric as ncn
 import numpy as np
 
 from pypower.idx_gen import QMIN, QMAX, GEN_STATUS, GEN_BUS, PG, VG
-from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE
+from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE
 
 from pandapower.auxiliary import get_indices
 
@@ -74,14 +74,18 @@ def _build_gen_mpc(net, mpc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
     #add extended ward pv node data
     if xw_end > gen_end:
         xw = net["xward"]
+        bus_is = is_elems['bus']
+        xw_is = np.in1d(xw.bus.values, bus_is.index) \
+              & xw.in_service.values.astype(bool)
         mpc["gen"][gen_end:xw_end, GEN_BUS] = get_indices(xw["ad_bus"].values, bus_lookup)
         mpc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
-        mpc["gen"][gen_end:xw_end, GEN_STATUS] = xw["in_service"]
+        mpc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
         mpc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
         mpc["gen"][gen_end:xw_end, QMAX] = q_lim_default
         
         xward_buses = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
-        mpc["bus"][xward_buses, BUS_TYPE] = PV
+        mpc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
+        mpc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
         mpc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
           

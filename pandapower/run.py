@@ -283,7 +283,7 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
            "gen": np.array([], dtype=float)}
     bus_lookup = _build_bus_mpc(net, mpc, is_elems, init_results)
     _build_gen_mpc(net, mpc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
-    _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model)
+    _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model)
     _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
     _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
     _switch_branches(net, mpc, is_elems, bus_lookup)
@@ -315,7 +315,9 @@ def _mpc2ppc(mpc, bus_lookup):
            "version": 2,
            "bus": np.array([], dtype=float),
            "branch": np.array([], dtype=np.complex128),
-           "gen": np.array([], dtype=float)}
+           "gen": np.array([], dtype=float),
+           "branch_is": np.array([], dtype=bool),
+           "gen_is": np.array([], dtype=bool)}
 
     ## BUS Sorting and lookup
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))

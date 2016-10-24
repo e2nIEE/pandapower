@@ -11,8 +11,8 @@ from attrdict import AttrDict
 import numbers
 from collections import defaultdict
 try:
-    import log
-    logger = log.getLogger(__name__)
+    import pplog
+    logger = pplog.getLogger(__name__)
 except:
     import logging
     logger = logging.getLogger(__name__)
@@ -183,6 +183,7 @@ def convert_format(net):
             if std_type in tt:
                 create_std_type(
                     net, tt[std_type], std_type, element="trafo")
+    
     net.trafo.tp_side.replace(1, "hv", inplace=True)
     net.trafo.tp_side.replace(2, "lv", inplace=True)
     net.trafo.tp_side = net.trafo.tp_side.where(pd.notnull(net.trafo.tp_side), None)

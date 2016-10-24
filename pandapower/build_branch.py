@@ -15,7 +15,7 @@ from pypower.idx_bus import BASE_KV
 
 from pandapower.auxiliary import get_indices, get_values
 
-def _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
+def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
     """
     Takes the empty mpc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -67,7 +67,7 @@ def _build_branch_mpc(net, mpc, bus_lookup, calculate_voltage_angles, trafo_mode
             _calc_impedance_parameter(net, bus_lookup)
     if xward_end > impedance_end:
         mpc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
-                _calc_xward_parameter(net, mpc, bus_lookup)        
+                _calc_xward_parameter(net, mpc, is_elems, bus_lookup)
                 
     if set_opf_constraints:
           mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
@@ -395,14 +395,17 @@ def _calc_impedance_parameter(net, bus_lookup):
     t[:, 4] = net["impedance"]["in_service"].values
     return t
 
-def _calc_xward_parameter(net, mpc, bus_lookup):
+def _calc_xward_parameter(net, mpc, is_elems, bus_lookup):
+    bus_is = is_elems['bus']
     baseR = np.square(get_values(mpc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
+    xw_is = np.in1d(net["xward"].bus.values, bus_is.index) \
+            & net["xward"].in_service.values.astype(bool)
     t[:, 0] = get_indices(net["xward"]["bus"].values, bus_lookup)
     t[:, 1] = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
     t[:, 2] = net["xward"]["r_ohm"] / baseR
     t[:, 3] = net["xward"]["x_ohm"] / baseR
-    t[:, 4] = net["xward"]["in_service"].values
+    t[:, 4] = xw_is
     return t 
 
 def _gather_branch_switch_info(bus, branch_id, branch_type, net):

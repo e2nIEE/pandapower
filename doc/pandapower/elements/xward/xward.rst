@@ -3,9 +3,15 @@ Extended Ward
 =============
 
 .. seealso::
-    :ref:`Create Extended Ward<create_xward>`
+    :ref:`Unit Systems and Conventions <conventions>`
 
-**Parameters**
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_xward
+
+Input Parameters
+=================
 
 *net.xward*
 
@@ -17,7 +23,9 @@ Extended Ward
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 The extended ward equivalent is a :ref:`ward equivalent<ward>`: with additional PV-node with an internal resistance.
 
@@ -63,8 +71,8 @@ The internal voltage source is modelled as a PV-node (:ref:`generator<gen>`) wit
    vm\_pu &= vm\_pu
    \end{align*}
 
-**Results**
-
+Result Parameters
+==================
 *net.res_xward*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|

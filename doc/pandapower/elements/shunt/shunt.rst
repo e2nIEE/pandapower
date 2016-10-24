@@ -5,9 +5,15 @@ Shunt
 =============
 
 .. seealso::
-    :ref:`Create Shunt<create_shunt>`
-    
-**Parameters**
+    :ref:`Unit Systems and Conventions <conventions>`
+
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_shunt
+
+Parameters
+=============
 
 *net.shunt*
 
@@ -19,7 +25,9 @@ Shunt
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 
 .. image:: /pandapower/elements/shunt/shunt.png
@@ -57,12 +65,12 @@ Converting to the per unit system results in:
                          &= \frac{S_{shunt, ref}}{S_{N}}
    \end{align*}
 
-with :math:`S_{N} = 1 \ MVA` (see :ref:`per unit system<conventions>`). 
+with :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`). 
 
    
    
-**Results**
-
+Result Parameters
+==================
 *net.res_shunt*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|

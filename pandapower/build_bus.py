@@ -141,9 +141,7 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
     if set_opf_constraints:
         mpc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
         mpc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
-        # REF busses don't have flexible voltages by definition:
-        mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VMAX] = mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VM]
-        mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VMIN] = mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VM]
+
 
 
     return bus_lookup

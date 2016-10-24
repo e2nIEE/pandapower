@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Advantages and Contributions &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="About pandapower" href="../about.html"/>
+        <link rel="next" title="Unit System and Conventions" href="units.html"/>
+        <link rel="prev" title="A short Introduction" href="introduction.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../about.html">About pandapower</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="what.html">What is pandapower?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html">A short Introduction</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Advantages and Contributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="units.html">Unit System and Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotting.html">Plotting Networks</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../about.html">About pandapower</a> &raquo;</li>
+      
+    <li>Advantages and Contributions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/pandapower/about/contributions.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="advantages-and-contributions">
+<h1>Advantages and Contributions<a class="headerlink" href="#advantages-and-contributions" title="Permalink to this headline">¶</a></h1>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>Electric Models</dt>
+<dd><ul class="first last simple">
+<li>pandapower comes with static equivalent circuit models for lines, 2-Winding transformers, 3-Winding transformers, ward-equivalents etc. (see <a class="reference internal" href="../elements.html#elements"><span class="std std-ref">element documentation</span></a> for a complete list).</li>
+<li>Input parameters are intuitive and commonly used model plate parameters (such as line length and resistance per kilometer) instead of parameters like total branch resistance in per unit</li>
+<li>the pandapower <a class="reference internal" href="../elements/switch/switch.html#switch-model"><span class="std std-ref">switch model</span></a> allows modelling of ideal bus-bus switches as well as bus-line / bus-trafo switches</li>
+<li>the loadflow results are processed to include not only the classic loadflow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>pandapower API</dt>
+<dd><ul class="first last simple">
+<li>the pandapower API provides <span class="xref std std-ref">create functions</span> for each element to allow automized step-by-step construction of networks</li>
+<li>the <a class="reference internal" href="../std_types.html#std-types"><span class="std std-ref">standard type library</span></a> allows simplified creation of lines, 2-Winding transformers and 3-Winding transformers</li>
+<li>networks can be saved and loaded to the hard drive with the pickle library</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>pandapower Datastructure</dt>
+<dd><ul class="first last">
+<li><p class="first">since variables of any datatype can be stored in the pandas dataframes, electric parameters (integer / float) can be stored together with names (strings), status variables (boolean) etc.</p>
+</li>
+<li><p class="first">variables can be accessed by name instead of by column number of a matrix</p>
+</li>
+<li><p class="first">since all information is stored in pandas tables, all inherent pandas methods can be used to</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/indexing.html">access</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/indexing.html#boolean-indexing">query</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/version/0.17.1/api.html#api-dataframe-stats">statistically evaluate</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/basics.html#iteration">iterate over</a>,</li>
+<li><a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/visualization.html">visualize</a>,</li>
+<li>etc.</li>
+</ul>
+</div></blockquote>
+<p>any information that is stored in the pandapower dataframes - be it element parameters, loadflow results or a combination of both.</p>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Topological Searches</dt>
+<dd><ul class="first last simple">
+<li>pandapower networks can be translated into <a class="reference external" href="https://networkx.github.io/">networkx</a> multigraphs for fast topological searches</li>
+<li>all native <a class="reference external" href="https://networkx.readthedocs.io/en/stable/reference/algorithms.html">networkx algorithms</a> can be used to perform graph searches on pandapower networks</li>
+<li>pandapower provides some search algorithms specialiced on electric power networks</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Plotting and geographical data</dt>
+<dd><ul class="first last simple">
+<li>geographical data for buses and lines can be stored in the pandapower datastructure</li>
+<li>networks with geographic information can be plotted using matplotlib</li>
+<li>if no geographical information is available for the buses, generic coordinates can be created through a <a class="reference external" href="http://igraph.org/python/">python-igraph</a> interface</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="units.html" class="btn btn-neutral float-right" title="Unit System and Conventions" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="introduction.html" class="btn btn-neutral" title="A short Introduction" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

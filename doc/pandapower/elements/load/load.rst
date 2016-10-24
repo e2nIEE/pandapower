@@ -3,9 +3,15 @@ Load
 =============
 
 .. seealso::
-    :ref:`Create Load<create_load>`
+    :ref:`Unit Systems and Conventions <conventions>`
 
-**Parameters**
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_load
+
+Parameters
+=============
 
 *net.load*
 
@@ -18,7 +24,9 @@ Load
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 Loads are modelled as PQ-buses in the loadflow calculation:
 
@@ -45,8 +53,8 @@ The PQ-Values are calculated from the parameter table values as:
     
     The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the loadflow!  
  
-**Results**
-    
+Result Parameters
+==================    
 *net.res_load*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.45\linewidth}|

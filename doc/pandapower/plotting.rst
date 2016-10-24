@@ -10,9 +10,9 @@ can be plotted as direct connections between the buses.
 .. toctree:: 
     :maxdepth: 1
     
-    plotting_collections
-    plotting_draw
-    plotting_generic
+    plotting/collections
+    plotting/draw
+    plotting/generic
 
 
 

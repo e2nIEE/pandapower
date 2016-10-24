@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../switch/switch.html">Switch</a></li>
@@ -97,15 +98,19 @@
 <li class="toctree-l2"><a class="reference internal" href="../ext_grid/ext_grid.html">External Grid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../trafo/trafo.html">Transformer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../trafo3w/trafo3w.html">Three Winding Transformer</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Generator</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Generator</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-parameters">Result Parameters</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../shunt/shunt.html">Shunt</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../impedance/impedance.html">Impedance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ward/ward.html">Ward</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../loadflow.html">Power Flow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
@@ -159,9 +164,48 @@
 <span id="gen"></span><h1>Generator<a class="headerlink" href="#generator" title="Permalink to this headline">¶</a></h1>
 <div class="admonition seealso">
 <p class="first admonition-title">See also</p>
-<p class="last"><a class="reference internal" href="../../api_create.html#create-gen"><span class="std std-ref">Create Generator</span></a></p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a></p>
 </div>
-<p><strong>Parameters</strong></p>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.create_gen">
+<code class="descclassname">pandapower.</code><code class="descname">create_gen</code><span class="sig-paren">(</span><em>net</em>, <em>bus</em>, <em>p_kw</em>, <em>vm_pu=1.0</em>, <em>sn_kva=nan</em>, <em>name=None</em>, <em>index=None</em>, <em>max_q_kvar=nan</em>, <em>min_q_kvar=nan</em>, <em>min_p_kw=nan</em>, <em>max_p_kw=nan</em>, <em>scaling=1.0</em>, <em>type=None</em>, <em>in_service=True</em>, <em>cost_per_kw=nan</em>, <em>cost_per_kvar=nan</em>, <em>controllable=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a generator to the network.</p>
+<p>Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
+is active power and a voltage set point. If you want to model a generator as PQ load with fixed
+reactive power and variable voltage, please use a static generator instead.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> - The net within this generator should be created</p>
+<p class="last"><strong>bus</strong> (int) - The bus id to which the generator is connected</p>
+</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><p><strong>p_kw</strong> (float, default 0) - The real power of the generator (negative for generation!)</p>
+<p><strong>vm_pu</strong> (float, default 0) - The voltage set point of the generator.</p>
+<p><strong>sn_kva</strong> (float, None) - Nominal power of the generator</p>
+<p><strong>name</strong> (string, None) - The name for this generator</p>
+<dl class="docutils">
+<dt><strong>index</strong> (int, None) - Force the specified index. If None, the next highest available index</dt>
+<dd>is used</dd>
+</dl>
+<p><strong>scaling</strong> (float, 1.0) - scaling factor which for the active power of the generator</p>
+<p><strong>type</strong> (string, None) - type variable to classify generators</p>
+<p><strong>in_service</strong> (boolean) - True for in_service or False for out of service</p>
+</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>index</strong> - The unique id of the created generator</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div>create_gen(net, 1, p_kw = -120, vm_pu = 1.02)</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.gen</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -243,7 +287,9 @@
 <p class="last">Active power should normally be negative to model a voltage controlled generator, since all power values are given in the load reference system. A generator with positive active power represents a voltage controlled machine.
 If you want to model constant generation without voltage control, use the Static Generator element.</p>
 </div>
-<p><strong>Loadflow Model</strong></p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
 <p>Generators are modelled as PV-nodes in the loadflow:</p>
 <a class="reference internal image-reference" href="../../../_images/gen.png"><img alt="alternate Text" class="align-center" src="../../../_images/gen.png" style="width: 12em;" /></a>
 <p>Voltage magnitude and active power are defined by the input parameters in the generator table:</p>
@@ -251,7 +297,9 @@ If you want to model constant generation without voltage control, use the Static
 \begin{align*}
  P_{gen} &amp;= p\_kw * scaling \\
  v_{bus} &amp;= vm\_pu
-\end{align*}</div><p><strong>Results</strong></p>
+\end{align*}</div></div>
+<div class="section" id="result-parameters">
+<h2>Result Parameters<a class="headerlink" href="#result-parameters" title="Permalink to this headline">¶</a></h2>
 <p><em>net.res_gen</em></p>
 <table border="1" class="docutils">
 <colgroup>
@@ -293,6 +341,7 @@ If you want to model constant generation without voltage control, use the Static
 <p class="last">If the loadflow is run with the enforce_qlims option and the generator reactive power exceeds / underruns the maximum / minimum reactive power limit,
 the generator is converted to a static generator with the maximum / minimum reactive power as constant reactive power generation.
 The voltage at the generator bus is then no longer equal to the voltage set point defined in the parameter table.</p>
+</div>
 </div>
 </div>
 

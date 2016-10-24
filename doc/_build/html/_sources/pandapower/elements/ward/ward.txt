@@ -3,10 +3,17 @@
 =============
 Ward
 =============
+
 .. seealso::
-    :ref:`Create Ward<create_ward>`
-    
-**Parameters**
+    :ref:`Unit Systems and Conventions <conventions>`
+
+Create Function
+=====================
+
+.. autofunction:: pandapower.create_ward
+
+Input Parameters
+=================
 
 *net.ward*
 
@@ -18,7 +25,9 @@ Ward
 
 *necessary for executing a loadflow calculation.
 
-**Loadflow Model**
+   
+Loadflow Model
+=================
 
 .. image:: /pandapower/elements/ward/ward.png
 	:width: 15em
@@ -43,8 +52,8 @@ The shunt admittance part of the ward equivalent is calculated as described :ref
    \underline{y}_{shunt} &= \frac{pz\_kw + j \cdot qz\_kvar}{S_{N}}
    \end{align*}
 
-**Results**
-
+Result Parameters
+==================
 *net.res_ward*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
