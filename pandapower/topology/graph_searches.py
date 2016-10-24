@@ -1,15 +1,17 @@
-from builtins import next
 # -*- coding: utf-8 -*-
-__author__ = 'ascheidler, lthurner'
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import networkx as nx
 import pandas as pd
 from pandapower.topology.create_graph import create_nxgraph
 
-def connected_component(mg, bus, notravbusses=[]):
+def connected_component(mg, bus, notravbuses=[]):
 
     """
-     Finds all busses in a NetworkX graph that are connected to a certain bus. 
+     Finds all buses in a NetworkX graph that are connected to a certain bus. 
      
      INPUT:
      
@@ -20,12 +22,12 @@ def connected_component(mg, bus, notravbusses=[]):
          
      OPTIONAL:
      
-     **notravbusses** (list/set) - Indeces of notravbusses: lines connected to these busses are
+     **notravbuses** (list/set) - Indeces of notravbuses: lines connected to these buses are
                                      not being considered in the graph  
          
      RETURN:
      
-        **cc** (generator) - Returns a generator that yields all busses connected to the input bus
+        **cc** (generator) - Returns a generator that yields all buses connected to the input bus
         
      EXAMPLE:
         
@@ -47,16 +49,16 @@ def connected_component(mg, bus, notravbusses=[]):
             if child not in visited:
                 yield child
                 visited.add(child)
-                if not child in notravbusses:
+                if not child in notravbuses:
                     stack.append((child, iter(mg[child])))
         except StopIteration:
             stack.pop()
 
 
-def connected_components(mg, notravbusses=set()):
+def connected_components(mg, notravbuses=set()):
     
     """
-     Clusters all busses in a NetworkX graph that are connected to each other.  
+     Clusters all buses in a NetworkX graph that are connected to each other.  
      
      INPUT:
      
@@ -65,12 +67,12 @@ def connected_components(mg, notravbusses=set()):
          
      OPTIONAL:
      
-     **notravbusses** (set) - Indeces of notravbusses: lines connected to these busses are
+     **notravbuses** (set) - Indeces of notravbuses: lines connected to these buses are
                                        not being considered in the graph  
          
      RETURN:
      
-        **cc** (generator) - Returns a generator that yields all clusters of busses connected 
+        **cc** (generator) - Returns a generator that yields all clusters of buses connected 
                              to each other.
         
      EXAMPLE:
@@ -83,21 +85,21 @@ def connected_components(mg, notravbusses=set()):
          
     """ 
 
-    nodes = set(mg.nodes()) - notravbusses
+    nodes = set(mg.nodes()) - notravbuses
     while nodes:
-        cc = set(connected_component(mg, nodes.pop(), notravbusses=notravbusses))
+        cc = set(connected_component(mg, nodes.pop(), notravbuses=notravbuses))
         yield cc
         nodes -= cc
-    # the above does not work if two notravbusses are directly connected
+    # the above does not work if two notravbuses are directly connected
     for f, t in mg.edges():
-        if f in notravbusses and t in notravbusses:
+        if f in notravbuses and t in notravbuses:
             yield set([f, t])
   
     
-def calc_distance_to_bus(net, bus, respect_switches=True, nogobusses=None,
-                         notravbusses=None):      
+def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
+                         notravbuses=None):      
     """
-        Calculates the shortest distance between a source bus and all busses connected to it.  
+        Calculates the shortest distance between a source bus and all buses connected to it.  
      
      INPUT:
      
@@ -112,9 +114,9 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobusses=None,
                                                      (no edge between nodes)
                                                False: open line switches are being ignored
                                                         
-        **nogobusses** (integer/list, None) - nogobusses are not being considered
+        **nogobuses** (integer/list, None) - nogobuses are not being considered
         
-        **notravbusses** (integer/list, None) - lines connected to these busses are not being
+        **notravbuses** (integer/list, None) - lines connected to these buses are not being
                                               considered
                                                      
      RETURN:
@@ -130,14 +132,14 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobusses=None,
          
     """
     g = create_nxgraph(net, respect_switches=respect_switches,
-                       nogobusses=nogobusses, notravbusses=None)
+                       nogobuses=nogobuses, notravbuses=None)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
     
 
-def unsupplied_busses(net, mg=None, in_service_only=False, slacks=None):
+def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
     
     """
-     Finds busses, that are not connected to an external grid.  
+     Finds buses, that are not connected to an external grid.  
      
      INPUT:
      
@@ -149,13 +151,13 @@ def unsupplied_busses(net, mg=None, in_service_only=False, slacks=None):
          
      RETURN:
      
-        **ub** (set) - unsupplied busses
+        **ub** (set) - unsupplied buses
         
      EXAMPLE:
         
          import pandapower.topology as top
          
-         top.unsupplied_busses(net)
+         top.unsupplied_buses(net)
     """
      
     mg = mg or create_nxgraph(net)
@@ -194,7 +196,7 @@ def find_bridges(g, roots):
     return bridges
 
     
-def get_2connected_busses(g, roots):
+def get_2connected_buses(g, roots):
     bridges = find_bridges(g, roots)
     if not bridges:
         return set(g.nodes())
@@ -227,8 +229,8 @@ def determine_stubs(net, roots=None, mg=None):
          
      OPTIONAL:
      
-        **roots** (integer/list, None) - Indeces of busses that should be excluded (by default, the
-                                         ext_grid busses will be set as roots)
+        **roots** (integer/list, None) - Indeces of buses that should be excluded (by default, the
+                                         ext_grid buses will be set as roots)
          
      RETURN:
      
@@ -244,7 +246,7 @@ def determine_stubs(net, roots=None, mg=None):
     """
     if mg is None: 
         mg = create_nxgraph(net, respect_switches=False)
-    # remove busses with degree lower 2 until none left
+    # remove buses with degree lower 2 until none left
     roots = roots or set(net.ext_grid.bus)
 #    mg.add_edges_from((a, b) for a, b in zip(list(roots)[:-1], list(roots)[1:]))
 #    while True:
@@ -252,10 +254,10 @@ def determine_stubs(net, roots=None, mg=None):
 #        if not dgo:
 #            break
 #        mg.remove_nodes_from(dgo)
-#    n1_busses = mg.nodes()
-    n1_busses = get_2connected_busses(mg, roots)
+#    n1_buses = mg.nodes()
+    n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
-    net.bus.loc[n1_busses, "on_stub"] = False
-    net.line["is_stub"] = ~((net.line.from_bus.isin(n1_busses)) & (net.line.to_bus.isin(n1_busses)))
-    stubs = set(net.bus.index) - set(n1_busses)
+    net.bus.loc[n1_buses, "on_stub"] = False
+    net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
+    stubs = set(net.bus.index) - set(n1_buses)
     return stubs

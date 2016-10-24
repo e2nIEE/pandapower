@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 30 16: 58: 39 2015
 
-@author: e2n037
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import pytest
 import pandapower as pp
 import numpy as np
-from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.result_test_network_generator import result_test_network_generator
 
 
@@ -41,3 +40,7 @@ def result_test_network():
         pass
     pp.runpp(net, trafo_model="t", trafo_loading="current")
     return net
+
+if __name__ == '__main__':
+    net = result_test_network()
+    pp.rundcpp(net)

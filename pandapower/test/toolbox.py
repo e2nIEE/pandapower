@@ -1,8 +1,10 @@
-from __future__ import print_function
 # -*- coding: utf-8 -*-
-__author__ = 'fmeier'
-"""Contains pandapowwer testing utils
-"""
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
+
 import pandas.util.testing as pdt
 import pandapower as pp
 import pandapower.test
@@ -15,7 +17,7 @@ import os
 def run_all_tests():
     """ function exdecuting all tests
     """
-    pytest.main(["-x", os.path.abspath(os.path.dirname(pandapower.test.__file__))])
+    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)),"-s"])
 
 def assert_mpc_equal(mpc1, mpc2):
 
@@ -189,8 +191,8 @@ def create_test_network():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_ext_grid(net, b1)
-    b2 = pp.create_bus(net, name="bus2", geodata=(1, 2))
-    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3))
+    b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
+    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4)
     b4 = pp.create_bus(net, name="bus4", vn_kv=10.)
     pp.create_transformer_from_parameters(net, b4, b2, vsc_percent= 3.75,
                                           tp_max= 2, vn_lv_kv= 0.4,
@@ -223,8 +225,8 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = pp.file_io.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
-    net.trafo.shift_degree=150
+    net = pp.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
+#    net = pp.file_io.from_pickle("testgrid.p")
 
     return net
 
@@ -246,4 +248,10 @@ def create_test_line(net, b1, b2, in_service=True):
                                           in_service=in_service,index=pp.get_free_id(net.line) + 1)
 
 if __name__ == "__main__":
-    run_all_tests()
+    net_nr = create_test_network2()
+#    pp.to_pickle(net_nr, "testgrid.p")
+#    pp.rundcpp(net_nr)
+#    net_dc = create_test_network2()
+#    pp.runpp(net_dc)
+#    
+#    run_all_tests()

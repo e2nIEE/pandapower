@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 12 10:21:23 2014
 
-@author: TDess
-"""
-from builtins import range
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import random as rd
 import pandapower as pp
 
-            ##########################################################
-            ################## support functions #####################
-            ##########################################################
+##########################################################
+################## support functions #####################
+##########################################################
 
 
 def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
@@ -61,7 +59,7 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
                          l_para_per_km=None):
     '''
     Creates a single unsplitted branch on the startbus of n lines. It \
-    sequencely adds lines, busses and loads.
+    sequencely adds lines, buses and loads.
 
     Loads will only be added if p_per_load_in_kw or q_per_load_in_kvar \
     is assigned
@@ -73,10 +71,10 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
     startpoint_bus = 1
     startpoint_line = 1
     bus_before = startbusnr
-    for i in range(n_lines):
+    for i in list(range(n_lines)):
         buscounter = startpoint_bus + i
         linecounter = startpoint_line + i
-        created_bus_nr = pp.create_bus(pd_net, "bus_%d_%d" % (branchnr, buscounter))
+        created_bus_nr = pp.create_bus(pd_net, name="bus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
 
         pp.create_line(pd_net, bus_before, created_bus_nr, length_km=length_per_line,
                        name="line_%d_%d" % (branchnr, linecounter), std_type=std_type)
@@ -132,13 +130,13 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
         buscounter = startpoint_bus + i
         linecounter = startpoint_line + i
         created_bus_nr = pp.create_bus(net, name="%s_%d_%d" % (bustype, branchnr, buscounter),
-                                       type="b" if bustype == "KV" else "n")
+                                       type="b" if bustype == "KV" else "n", vn_kv=.4)
         pp.create_line(net, bus_before, created_bus_nr,
                        length_km=length_per_line,
                        name="line_%d_%d" % (branchnr, linecounter),
                        std_type=std_type)
 
-        loadbusnr = pp.create_bus(net, name="loadbus_%d_%d" % (branchnr, buscounter))
+        loadbusnr = pp.create_bus(net, name="loadbus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
 
         pp.create_line(net, created_bus_nr, loadbusnr,
                        length_km=length_branchout_line,

@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 24 13:41:33 2015
 
-@author: ulffers
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
-import pandapower.topology as top
-try:
-    import log
-    logger = log.getLogger(__name__)
-except:
-    import logging
-    logger = logging.getLogger(__name__)
-import pandapower as pp
 import numpy as np
 import copy
+
+try:
+    import pplog
+except:
+    import logging as log
+    
+logger = pplog.getLogger(__name__)
+
+import pandapower.topology as top
+from pandapower.run import runpp
+from pandapower.toolbox import get_connected_elements, get_connected_buses_at_element
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
@@ -252,7 +254,7 @@ def no_ext_grid(net):
 def multiple_voltage_controlling_elements_per_bus(net):
 
     """
-    Checks, if there are busses with more than one generator and/or more than one external grid.
+    Checks, if there are buses with more than one generator and/or more than one external grid.
 
      INPUT:
 
@@ -264,10 +266,10 @@ def multiple_voltage_controlling_elements_per_bus(net):
 
      RETURN:
 
-        **check_results** (dict)        - dict that contains all busses with multiple generator and
-                                          all busses with multiple external grids
-                                          Format: {'mult_ext_grids': [busses]
-                                                   'busses_with_mult_gens', [busses]}
+        **check_results** (dict)        - dict that contains all buses with multiple generator and
+                                          all buses with multiple external grids
+                                          Format: {'mult_ext_grids': [buses]
+                                                   'buses_with_mult_gens', [buses]}
 
      EXAMPLE:
 
@@ -276,15 +278,15 @@ def multiple_voltage_controlling_elements_per_bus(net):
 
     """
     check_results = {}
-    busses_with_mult_ext_grids = list(net.ext_grid.groupby("bus").count().query("vm_pu > 1").index)
-    if busses_with_mult_ext_grids:
-        check_results['busses_with_mult_ext_grids'] = busses_with_mult_ext_grids
-    busses_with_mult_gens = list(net.gen.groupby("bus").count().query("p_kw > 1").index)
-    if busses_with_mult_gens:
-        check_results['busses_with_mult_gens'] = busses_with_mult_gens
-    busses_with_gens_and_ext_grids = set(net.ext_grid.bus).intersection(set(net.gen.bus))
-    if busses_with_gens_and_ext_grids:
-        check_results['busses_with_gens_and_ext_grids'] = list(busses_with_gens_and_ext_grids)
+    buses_with_mult_ext_grids = list(net.ext_grid.groupby("bus").count().query("vm_pu > 1").index)
+    if buses_with_mult_ext_grids:
+        check_results['buses_with_mult_ext_grids'] = buses_with_mult_ext_grids
+    buses_with_mult_gens = list(net.gen.groupby("bus").count().query("p_kw > 1").index)
+    if buses_with_mult_gens:
+        check_results['buses_with_mult_gens'] = buses_with_mult_gens
+    buses_with_gens_and_ext_grids = set(net.ext_grid.bus).intersection(set(net.gen.bus))
+    if buses_with_gens_and_ext_grids:
+        check_results['buses_with_gens_and_ext_grids'] = list(buses_with_gens_and_ext_grids)
 
     if check_results:
         return check_results
@@ -318,12 +320,12 @@ def overload(net, overload_scaling_factor):
     gen_scaling = copy.deepcopy(net.gen.scaling)
     sgen_scaling = copy.deepcopy(net.sgen.scaling)
     try:
-        pp.runpp(net)
+        runpp(net)
 
     except:
         try:
             net.load.scaling = overload_scaling_factor
-            pp.runpp(net)
+            runpp(net)
             net.load.scaling = load_scaling
             check_result['load'] = True
 
@@ -334,7 +336,7 @@ def overload(net, overload_scaling_factor):
         try:
             net.gen.scaling = overload_scaling_factor
             net.sgen.scaling = overload_scaling_factor
-            pp.runpp(net)
+            runpp(net)
             net.gen.scaling = gen_scaling
             net.gen.scaling = sgen_scaling
             check_result['generation'] = True
@@ -370,12 +372,12 @@ def wrong_switch_configuration(net):
     """
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
-        pp.runpp(net)
+        runpp(net)
 
     except:
         try:
             net.switch.closed = 1
-            pp.runpp(net)
+            runpp(net)
             net.switch.closed = switch_configuration
             return True
         except:
@@ -408,14 +410,14 @@ def different_voltage_levels_connected(net):
     check_results = {}
     inconsistent_lines = []
     for i, line in net.line.iterrows():
-        busses = net.bus.loc[[line.from_bus, line.to_bus]]
-        if busses.vn_kv.iloc[0] != busses.vn_kv.iloc[1]:
+        buses = net.bus.loc[[line.from_bus, line.to_bus]]
+        if buses.vn_kv.iloc[0] != buses.vn_kv.iloc[1]:
             inconsistent_lines.append(i)
 
     inconsistent_switches = []
     for i, switch in net.switch[net.switch.et == "b"].iterrows():
-        busses = net.bus.loc[[switch.bus, switch.element]]
-        if busses.vn_kv.iloc[0] != busses.vn_kv.iloc[1]:
+        buses = net.bus.loc[[switch.bus, switch.element]]
+        if buses.vn_kv.iloc[0] != buses.vn_kv.iloc[1]:
             inconsistent_switches.append(i)
 
     if inconsistent_lines:
@@ -455,7 +457,7 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
         return list(implausible_lines.index)
 
 
-def closed_switches_between_oos_and_is_busses(net):
+def closed_switches_between_oos_and_is_buses(net):
 
     """
     Checks, if there are switches connecting an out-of-service and an in-service bus.
@@ -480,8 +482,8 @@ def closed_switches_between_oos_and_is_busses(net):
     problematic_switches = []
     for i, switch in net.switch.iterrows():
         if (switch.et == 'b') & (switch.closed == 1):
-            busses = net.bus.loc[[switch.bus, switch.element]]
-            if (not (all(busses.in_service.values)) and any(busses.in_service.values)):
+            buses = net.bus.loc[[switch.bus, switch.element]]
+            if (not (all(buses.in_service.values)) and any(buses.in_service.values)):
                 problematic_switches.append(i)
 
     if len(problematic_switches) > 0:
@@ -493,7 +495,7 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
 
     """
     Checks, if there are components whose nominal voltages differ from the nominal voltages of the
-    busses they're connected to. At the moment, only trafos and trafo3w are checked.
+    buses they're connected to. At the moment, only trafos and trafo3w are checked.
     Also checks for trafos with swapped hv and lv connectors.
 
      INPUT:
@@ -504,7 +506,7 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
      RETURN:
 
         **check_results** (dict)        - dict that contains all components whose nominal voltages
-                                          differ from the nominal voltages of the busses they're
+                                          differ from the nominal voltages of the buses they're
                                           connected to.
 
                                           Format:
@@ -535,13 +537,12 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     mv_bus_3w = []
     lv_bus_3w = []
     connectors_swapped_3w = []
-
+    min_v_pu = 1 - nom_voltage_tolerance
+    max_v_pu = 1 + nom_voltage_tolerance
+    
     for i, trafo in net.trafo.iterrows():
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo.hv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo.lv_bus]
-        min_v_pu = 1 - nom_voltage_tolerance
-        max_v_pu = 1 + nom_voltage_tolerance
-
         if ((trafo.vn_hv_kv > lv_bus_vn_kv * min_v_pu)
             and ((trafo.vn_hv_kv < lv_bus_vn_kv * max_v_pu))
             and ((trafo.vn_lv_kv > hv_bus_vn_kv * min_v_pu))
@@ -628,7 +629,7 @@ def disconnected_elements(net):
         **disc_elements** (dict)        - list that contains all network elements, without a
                                           connection to an ext_grid.
 
-                                          format: {'disconnected busses'   : bus_indeces,
+                                          format: {'disconnected buses'   : bus_indeces,
                                                    'disconnected switches' : switch_indeces,
                                                    'disconnected lines'    : line_indeces,
                                                    'disconnected trafos'   : trafo_indeces
@@ -651,17 +652,17 @@ def disconnected_elements(net):
         section_dict = {}
 
         if not section & set(net.ext_grid.bus) and any(net.bus.in_service.loc[section]):
-            section_busses = list(net.bus[net.bus.index.isin(section)
+            section_buses = list(net.bus[net.bus.index.isin(section)
                                   & (net.bus.in_service == True)].index)
-            section_switches = list(net.switch[net.switch.bus.isin(section_busses)].index)
-            section_lines = list(pp.get_connected_elements(net, 'line', section_busses,
+            section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
+            section_lines = list(get_connected_elements(net, 'line', section_buses,
                                                                   respect_switches=True,
                                                                   respect_in_service=True))
-            section_trafos = list(pp.get_connected_elements(net, 'trafo', section_busses,
+            section_trafos = list(get_connected_elements(net, 'trafo', section_buses,
                                                                     respect_switches=True,
                                                                     respect_in_service=True))
                                                                     
-            section_trafos3w = list(pp.get_connected_elements(net, 'trafo3w', section_busses,
+            section_trafos3w = list(get_connected_elements(net, 'trafo3w', section_buses,
                                                                     respect_switches=True,
                                                                     respect_in_service=True))
             section_gens = list(net.gen[net.gen.bus.isin(section)
@@ -671,8 +672,8 @@ def disconnected_elements(net):
             section_loads = list(net.load[net.load.bus.isin(section)
                                  & (net.load.in_service == True)].index)                
 
-            if section_busses:
-                section_dict['busses'] = section_busses
+            if section_buses:
+                section_dict['buses'] = section_buses
             if section_switches:
                 section_dict['switches'] = section_switches
             if section_lines:
@@ -817,9 +818,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     diag_results = {}
     if disconnected_elements(net):
         diag_results["disconnected_elements"] = disconnected_elements(net)
-    if closed_switches_between_oos_and_is_busses(net):
-        diag_results["closed_switches_between_oos_and_is_busses"] = \
-            closed_switches_between_oos_and_is_busses(net)
+    if closed_switches_between_oos_and_is_buses(net):
+        diag_results["closed_switches_between_oos_and_is_buses"] = \
+            closed_switches_between_oos_and_is_buses(net)
     if different_voltage_levels_connected(net):
         diag_results["different_voltage_levels_connected"] = \
             different_voltage_levels_connected(net)
@@ -852,9 +853,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "nom_voltage_tolerance": nom_voltage_tolerance
                    }
     if warnings_only:
-        logger.setLevel(log.WARNING)
+        logger.setLevel(pplog.WARNING)
     else:
-        logger.setLevel(log.INFO)
+        logger.setLevel(pplog.INFO)
     logger.propagate = False
 
     if report_style == 'detailed':
@@ -903,27 +904,27 @@ class DiagnosticReports:
         else:
             logger.info("PASSED: No problematic switches found")
 
-    def report_closed_switches_between_oos_and_is_busses(self):
+    def report_closed_switches_between_oos_and_is_buses(self):
 
-        if "closed_switches_between_oos_and_is_busses" in self.diag_results:
+        if "closed_switches_between_oos_and_is_buses" in self.diag_results:
 
         # message header
             if self.compact_report:
-                logger.warning("closed_switches_between_oos_and_is_busses:")
+                logger.warning("closed_switches_between_oos_and_is_buses:")
 
             else:
                 logger.warning("Checking for closed switches between out_of_service and "
-                               "in_service busses...")
+                               "in_service buses...")
             logger.warning("")
 
         # message body
-            diag_result = self.diag_results["closed_switches_between_oos_and_is_busses"]
+            diag_result = self.diag_results["closed_switches_between_oos_and_is_buses"]
             for switch in diag_result:
                 bus1 = self.net.switch.bus.loc[switch]
                 bus2 = self.net.switch.element.loc[switch]
 
                 if self.compact_report:
-                    logger.warning("Switch %s: busses %s and %s"
+                    logger.warning("Switch %s: buses %s and %s"
                                    %(switch, bus1, bus2))
 
                 else:
@@ -964,18 +965,18 @@ class DiagnosticReports:
                         element_type = "line"
                     elif key == "switches":
                         element_type = "switch"
-                    busses = list(pp.get_connected_busses_at_element(self.net, element,
+                    buses = list(get_connected_buses_at_element(self.net, element,
                                                                      key[0]))
                     if self.compact_report:
-                        logger.warning("%s %s: busses %s" %(element_type, element, busses))
+                        logger.warning("%s %s: buses %s" %(element_type, element, buses))
                     else:
                         logger.warning("%s %s connects bus %s: %s (vn_kv = %s) "
                                        "and bus %s: %s (vn_kv = %s)"
-                                       %(element_type, element, busses[0],
-                                         self.net.bus.name.at[busses[0]],
-                                         self.net.bus.vn_kv.at[busses[0]],
-                                         busses[1], self.net.bus.name.at[busses[1]],
-                                         self.net.bus.vn_kv.at[busses[1]]))
+                                       %(element_type, element, buses[0],
+                                         self.net.bus.name.at[buses[0]],
+                                         self.net.bus.vn_kv.at[buses[0]],
+                                         buses[1], self.net.bus.name.at[buses[1]],
+                                         self.net.bus.vn_kv.at[buses[1]]))
         # message summary
             if not self.compact_report:
                 logger.warning("")
@@ -1007,7 +1008,7 @@ class DiagnosticReports:
                 else:
                     logger.warning("Line %s: length_km: %s, r_ohm_per_km: %s, x_ohm_per_km: %s."
                                    " Impedance is close to zero. If a direct connection between"
-                                   " two busses was intended, please use a"
+                                   " two buses was intended, please use a"
                                    " bus-bus-switch instead."
                                    %(line, self.net.line.length_km.at[line],
                                      self.net.line.r_ohm_per_km.at[line],
@@ -1249,16 +1250,16 @@ class DiagnosticReports:
 
                 else:
                     for bus in diag_result[feeder_type]:
-                        if feeder_type is "busses_with_mult_ext_grids":
+                        if feeder_type is "buses_with_mult_ext_grids":
                             logger.warning("External grids %s are connected to bus %s. Only one "
                                            "external grid per bus is allowed."
                                            %(list(self.net.ext_grid[self.net.ext_grid.bus
                                                                     == bus].index), bus))
-                        elif feeder_type is "busses_with_mult_gens":
+                        elif feeder_type is "buses_with_mult_gens":
                             logger.warning("Generators %s are connected to bus %s. Only one "
                                            "generator per bus is allowed."
                                            %(list(self.net.gen[self.net.gen.bus == bus].index), bus))
-                        elif feeder_type is "busses_with_gens_and_ext_grids":
+                        elif feeder_type is "buses_with_gens_and_ext_grids":
                             logger.warning("Generator(s) %s and external grid(s) %s are connected "
                                            "to bus %s. Only one generator OR one external grids "
                                            "per bus is allowed."
@@ -1272,7 +1273,7 @@ class DiagnosticReports:
                 logger.warning("SUMMARY: %s bus(ses) with multiple gens and/or ext_grids "
                                "found." %(element_counter))
         else:
-            logger.info("PASSED: No busses with multiple gens and/or ext_grids found.")
+            logger.info("PASSED: No buses with multiple gens and/or ext_grids found.")
 
     def report_wrong_reference_system(self):
 
@@ -1318,7 +1319,7 @@ class DiagnosticReports:
                         for sgen in diag_result[element_type]:
                             logger.warning("Found sgen %s: '%s' with p_kw = %s. In load reference "
                             "system p_kw should be negative."
-                            %(gen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
+                            %(sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
 
         # message summary
             if not self.compact_report:
@@ -1348,7 +1349,7 @@ def diagnostic_report(net, diag_results, diag_params, compact_report):
 
     report_methods = {
         "disconnected_elements": diag_report.report_disconnected_elements,
-        "closed_switches_between_oos_and_is_busses": diag_report.report_closed_switches_between_oos_and_is_busses,
+        "closed_switches_between_oos_and_is_buses": diag_report.report_closed_switches_between_oos_and_is_buses,
         "different_voltage_levels_connected": diag_report.report_different_voltage_levels_connected,
         "lines_with_impedance_close_to_zero": diag_report.report_lines_with_impedance_close_to_zero,
         "nominal_voltages_dont_match": diag_report.report_nominal_voltages_dont_match,
@@ -1360,47 +1361,9 @@ def diagnostic_report(net, diag_results, diag_params, compact_report):
         "wrong_reference_system": diag_report.report_wrong_reference_system
                     }
 
-    logger.warning("\n\n_____________ HONEYPOT DIAGNOSTIC TOOL _____________ \n")
+    logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
     for key in diag_results:
         report_methods[key]()
         logger.warning(log_message_sep)
 
-    logger.warning("_____________ END OF HONEYPOT DIAGNOSTIC _____________ ")
-    
-if __name__ == "__main__":
-    import pandapower.networks as nw
-    import pandapower as pp
-    net = nw.mv_network("ring")
-    net.switch.loc[6, "closed"] = 0
-
-    net.switch.closed.at[8] = 0
-    net.switch.closed.at[5] = 0
-    net.switch.closed.at[21] = 0
-    net.switch.closed.at[19] = 0
-    net.switch.closed.at[18] = 0
-
-    net.trafo.vn_hv_kv.at[0] = 20
-    net.trafo.vn_lv_kv.at[0] = 110
-    net.trafo.vn_lv_kv.at[1] = 50
-
-    net.bus.vn_kv.at[52] = 0.4
-    net.bus.vn_kv.at[53] = 30
-
-    net.load.p_kw.at[5] = -5
-
-    net.bus.in_service.at[15] = 0
-    net.switch.closed.iloc[0] = 1.5
-    net.bus.vn_kv.at[16] = -20
-    net.line.length_km.at[0] = -10
-
-    net.line.length_km.at[8] = -10
-    net.line.length_km.at[9] = 0
-
-
-
-    import pandapower as pp
-    net = pp.from_pickle("C:\\Users\\ulffers\\Documents\\Python Scripts\\re.p")
-    net.bus.vn_kv.loc[net.trafo3w.hv_bus.at[0]] = net.trafo3w.vn_lv_kv.at[0]
-    net.bus.vn_kv.loc[net.trafo3w.mv_bus.at[0]] = net.trafo3w.vn_hv_kv.at[0]
-    net.bus.vn_kv.loc[net.trafo3w.lv_bus.at[0]] = net.trafo3w.vn_mv_kv.at[0]
-    net.trafo3w.vscr_hv_percent.loc[0] = -5
+    logger.warning("_____________ END OF PANDAPOWER DIAGNOSTIC _____________ ")

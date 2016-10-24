@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division
-from __future__ import absolute_import
-from builtins import zip
-__author__ = 'scheidler, jdollichon, lthurner, tdess'
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
-from collections import defaultdict
 
 import numpy as np
-import pandas as pd
 from itertools import chain
+from collections import defaultdict
 
-from pypower.idx_bus import BUS_I, BASE_KV, BUS_TYPE, PD, QD, GS, BS
+from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, VM, BUS_TYPE, REF
 
-from pandapower.auxiliary import get_indices
-from .auxiliary import _sum_by_group
-
+from pandapower.auxiliary import get_indices,  _sum_by_group
 
 class DisjointSet(dict):
     def add(self, item):
@@ -33,23 +29,29 @@ class DisjointSet(dict):
         p2 = self.find(item2)
         self[p1] = p2
 
-# @profile
-def _build_bus_mpc(net, mpc, calculate_voltage_angles, gen_is, eg_is, init_results=False):
+
+def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=False):
     """
     """
     if len(net["trafo3w"]) > 0:
-        _create_trafo3w_busses(net)
+        #TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
+        _create_trafo3w_buses(net, init_results) 
     if len(net["xward"]) > 0:
-        _create_xward_busses(net)  
+        #TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
+        _create_xward_buses(net, init_results)  
 
+    # get buses as set
     bus_list = set(net["bus"].index.values)
-    n_bus = len(bus_list)
+    # get in service elements
+    eg_is = is_elems['eg']
+    gen_is = is_elems['gen']
+    bus_is = is_elems['bus']
 
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (mpc-index)
     # To sort the array first, so that PV comes first, three steps are necessary:
 
     # 1. Find PV / Slack nodes and place them first (necessary for fast generation of Jacobi-Matrix)
-    # get indices of PV (and ref) busses
+    # get indices of PV (and ref) buses
     if len(net["xward"]) > 0:
         # add xwards if available
         pv_ref = set((np.r_[eg_is["bus"].values\
@@ -58,26 +60,25 @@ def _build_bus_mpc(net, mpc, calculate_voltage_angles, gen_is, eg_is, init_resul
     else:
         pv_ref = set(np.r_[eg_is["bus"].values, gen_is["bus"].values].flatten())
 
-    # 2. Add PQ busses without switches
-    in_service = net.bus[net["bus"].in_service==True].index
+    # 2. Add PQ buses without switches
     slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") &\
-            (net["switch"]["bus"].isin(in_service).values) & (net["switch"]["element"].isin(in_service).values)
+            (net["switch"]["bus"].isin(bus_is.index).values) & (net["switch"]["element"].isin(bus_is.index).values)
 
-    # get busses with switches
-    switch_busses = set((np.r_[net["switch"]["bus"].values[slidx], net["switch"]["element"].values[slidx]]).flatten())
-    pq_busses_without_switches = (bus_list - switch_busses) - pv_ref
+    # get buses with switches
+    switch_buses = set((np.r_[net["switch"]["bus"].values[slidx], net["switch"]["element"].values[slidx]]).flatten())
+    pq_buses_without_switches = (bus_list - switch_buses) - pv_ref
 
-    # consecutive values for pv, ref, and non switch pq busses
-    npArange = np.arange(len(pq_busses_without_switches) + len(pv_ref))
-    # busses in PandaPower
-    PandaBusses = sorted(pv_ref) + sorted(pq_busses_without_switches)
+    # consecutive values for pv, ref, and non switch pq buses
+    npArange = np.arange(len(pq_buses_without_switches) + len(pv_ref))
+    # buses in PandaPower
+    PandaBusses = sorted(pv_ref) + sorted(pq_buses_without_switches)
     # generate bus_lookup PandaPower -> [PV, PQ(without switches)]
     bus_lookup = dict(zip(PandaBusses, npArange))
 
-    # 3. Add PQ busses with switches and fuse them
+    # 3. Add PQ buses with switches and fuse them
     v = defaultdict(set)
 
-    # get the pp-indices of the busses for those switches
+    # get the pp-indices of the buses for those switches
     fbus = net["switch"]["bus"].values[slidx]
     tbus = net["switch"]["element"].values[slidx]
 
@@ -92,13 +93,13 @@ def _build_bus_mpc(net, mpc, calculate_voltage_angles, gen_is, eg_is, init_resul
 
     i = npArange[-1]
 
-    # check if PV busses need to be fused
-    # if yes: the sets with PV busses must be found (which is slow)
+    # check if PV buses need to be fused
+    # if yes: the sets with PV buses must be found (which is slow)
     # if no: the check can be omitted
     if any(i in fbus or i in tbus for i in pv_ref):
         for dj in disjoint_sets:
-            pv_busses_in_set = pv_ref & dj
-            nr_pv_bus = len(pv_busses_in_set)
+            pv_buses_in_set = pv_ref & dj
+            nr_pv_bus = len(pv_buses_in_set)
             if nr_pv_bus == 0:
                 i += 1
                 map_to = i
@@ -106,9 +107,9 @@ def _build_bus_mpc(net, mpc, calculate_voltage_angles, gen_is, eg_is, init_resul
                 PandaBusses.append(bus)
                 bus_lookup[bus] = map_to
             elif nr_pv_bus == 1:
-                map_to = bus_lookup[pv_busses_in_set.pop()]
+                map_to = bus_lookup[pv_buses_in_set.pop()]
             else:
-                raise UserWarning("Can't fuse two PV busses")
+                raise UserWarning("Can't fuse two PV buses")
             for bus in dj:
                 bus_lookup[bus] = map_to
     else:
@@ -129,37 +130,52 @@ def _build_bus_mpc(net, mpc, calculate_voltage_angles, gen_is, eg_is, init_resul
     mpc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
     mpc["bus"][:, BUS_I] = np.arange(i + 1)
 
-    # change the voltages of the busses to the values in net
-    mpc["bus"][:, BASE_KV] = net["bus"].vn_kv.loc[PandaBusses]
-
-    # add lookup with indices before any busses were fused
-    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values, np.arange(n_bus)))
+    # change the voltages of the buses to the values in net
+    mpc["bus"][:, BASE_KV] = net["bus"].vn_kv.ix[PandaBusses]
 
     if init_results is True and len(net["res_bus"]) > 0:
         int_index = get_indices(net["bus"].index.values, bus_lookup)
         mpc["bus"][int_index, 7] = net["res_bus"]["vm_pu"].values
         mpc["bus"][int_index, 8] = net["res_bus"].va_degree.values
 
+    if set_opf_constraints:
+        mpc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
+        mpc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
+
+
+
     return bus_lookup
 
-def _calc_loads_and_add_on_mpc(net, mpc, bus_lookup):
+def _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
+    #get in service elements
+    bus_is = is_elems['bus']
+
     l = net["load"]
-    vl = l["in_service"].values * l["scaling"].values.T / np.float64(1000.)
+    # element_is = check if element is at a bus in service & element is in service
+    load_is = np.in1d(l.bus.values, bus_is.index) \
+              & l.in_service.values.astype(bool)
+    vl = load_is * l["scaling"].values.T / np.float64(1000.)
     lp = l["p_kw"].values * vl
     lq = l["q_kvar"].values * vl
 
     s = net["sgen"]
-    vl = s["in_service"].values * s["scaling"].values.T / np.float64(1000.)
+    sgen_is = np.in1d(s.bus.values, bus_is.index) \
+              & s.in_service.values.astype(bool)
+    vl = sgen_is * s["scaling"].values.T / np.float64(1000.)
     sp = s["p_kw"].values * vl
     sq = s["q_kvar"].values * vl
 
     w = net["ward"]
-    vl = w["in_service"].values / np.float64(1000.)
+    ward_is = np.in1d(w.bus.values, bus_is.index) \
+              & w.in_service.values.astype(bool)
+    vl = ward_is / np.float64(1000.)
     wp = w["ps_kw"].values * vl
     wq = w["qs_kvar"].values * vl
 
     xw = net["xward"]
-    vl = xw["in_service"].values / np.float64(1000.)
+    xward_is = np.in1d(xw.bus.values, bus_is.index) \
+              & xw.in_service.values.astype(bool)
+    vl = xward_is / np.float64(1000.)
     xwp = xw["ps_kw"].values * vl
     xwq = xw["qs_kvar"].values * vl
 
@@ -170,19 +186,28 @@ def _calc_loads_and_add_on_mpc(net, mpc, bus_lookup):
     mpc["bus"][b, PD] = vp
     mpc["bus"][b, QD] = vq
 
-def _calc_shunts_and_add_on_mpc(net, mpc, bus_lookup):
+def _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
+    # get in service elements
+    bus_is = is_elems['bus']
+
     s = net["shunt"]
-    vl = s["in_service"].values / np.float64(1000.)
+    shunt_is = np.in1d(s.bus.values, bus_is.index) \
+              & s.in_service.values.astype(bool)
+    vl = shunt_is / np.float64(1000.)
     sp = s["p_kw"].values * vl
     sq = s["q_kvar"].values * vl    
     
     w = net["ward"]
-    vl = w["in_service"].values / np.float64(1000.)
+    ward_is = np.in1d(w.bus.values, bus_is.index) \
+              & w.in_service.values.astype(bool)
+    vl = ward_is / np.float64(1000.)
     wp = w["pz_kw"].values * vl
     wq = w["qz_kvar"].values * vl
 
     xw = net["xward"]
-    vl = xw["in_service"].values / np.float64(1000.)
+    xward_is = np.in1d(xw.bus.values, bus_is.index) \
+              & xw.in_service.values.astype(bool)
+    vl = xward_is / np.float64(1000.)
     xwp = xw["pz_kw"].values * vl
     xwq = xw["qz_kvar"].values * vl
 
@@ -192,26 +217,28 @@ def _calc_shunts_and_add_on_mpc(net, mpc, bus_lookup):
     mpc["bus"][b, GS] = vp
     mpc["bus"][b, BS] = -vq
 
-def _create_xward_busses(net):
-    from pandapower.create import create_busses
-
-    bid = create_busses(net, nr_busses=len(net["xward"]),
-                        vn_kv=net.bus.vn_kv.loc[net.xward.bus.values].values,
-                        in_service=net.xward.in_service.values)
+def _create_xward_buses(net, init_results):
+    from pandapower.create import create_buses
+    main_buses = net.bus.loc[net.xward.bus.values]
+    bid = create_buses(net, nr_buses=len(main_buses),
+                        vn_kv=main_buses.vn_kv.values,
+                        in_service=net["xward"]["in_service"].values)
     net.xward["ad_bus"] = bid
+    if init_results:
+        #TODO: this is probably slow, but the whole auxiliary bus creation should be included in 
+        #      pd2mpc anyways
+        for hv_bus, aux_bus in zip(main_buses.index, bid):
+            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
 
-def _create_trafo3w_busses(net):
-    from pandapower.create import create_busses
-
-    bid = create_busses(net, nr_busses=len(net["trafo3w"]),
-                        vn_kv=net.bus.vn_kv.loc[net.trafo3w.hv_bus.values].values,
+def _create_trafo3w_buses(net, init_results):
+    from pandapower.create import create_buses
+    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
+    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
+                        vn_kv=hv_buses.vn_kv.values,
                         in_service=net.trafo3w.in_service.values)
     net.trafo3w["ad_bus"] = bid
-        
-if __name__ == "__main__":
-    import numpy as np
-
-#    b = np.array(list(range(100, 1000)))
-#    l = np.random.choice(b, 10000)
-#    d = {k:i for i, k in enumerate(b)}
-#    v = [d[w] for w in l]
+    if init_results:
+        #TODO: this is probably slow, but the whole auxiliary bus creation should be included in 
+        #      pd2mpc anyways
+        for hv_bus, aux_bus in zip(hv_buses.index, bid):
+            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri May 09 18:26:52 2014
-Revised on Tue Jul  5 15:50:05 2016
 
-@author: TDess, smeinecke
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
-
 
 def panda_four_load_branch():
     """
@@ -27,11 +24,11 @@ def panda_four_load_branch():
     pd_net = pp.create_empty_network()
 
     busnr1 = pp.create_bus(pd_net, name="bus1", vn_kv=10.)
-    busnr2 = pp.create_bus(pd_net, name="bus2")
-    busnr3 = pp.create_bus(pd_net, name="bus3")
-    busnr4 = pp.create_bus(pd_net, name="bus4")
-    busnr5 = pp.create_bus(pd_net, name="bus5")
-    busnr6 = pp.create_bus(pd_net, name="bus6")
+    busnr2 = pp.create_bus(pd_net, name="bus2", vn_kv=.4)
+    busnr3 = pp.create_bus(pd_net, name="bus3", vn_kv=.4)
+    busnr4 = pp.create_bus(pd_net, name="bus4", vn_kv=.4)
+    busnr5 = pp.create_bus(pd_net, name="bus5", vn_kv=.4)
+    busnr6 = pp.create_bus(pd_net, name="bus6", vn_kv=.4)
 
     pp.create_ext_grid(pd_net, busnr1)
 
@@ -74,30 +71,30 @@ def four_loads_with_branches_out():
 
     busnr1 = pp.create_bus(pd_net, name="bus1ref", vn_kv=10.)
     pp.create_ext_grid(pd_net, busnr1)
-    busnr2 = pp.create_bus(pd_net, name="bus2")
+    busnr2 = pp.create_bus(pd_net, name="bus2", vn_kv=.4)
     pp.create_transformer(pd_net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
-    busnr3 = pp.create_bus(pd_net, name="bus3")
+    busnr3 = pp.create_bus(pd_net, name="bus3", vn_kv=.4)
     pp.create_line(pd_net, busnr2, busnr3, name="line1", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr4 = pp.create_bus(pd_net, name="bus4")
+    busnr4 = pp.create_bus(pd_net, name="bus4", vn_kv=.4)
     pp.create_line(pd_net, busnr3, busnr4, name="line2", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr5 = pp.create_bus(pd_net, name="bus5")
+    busnr5 = pp.create_bus(pd_net, name="bus5", vn_kv=.4)
     pp.create_line(pd_net, busnr4, busnr5, name="line3", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr6 = pp.create_bus(pd_net, name="bus6")
+    busnr6 = pp.create_bus(pd_net, name="bus6", vn_kv=.4)
     pp.create_line(pd_net, busnr5, busnr6, name="line4", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr7 = pp.create_bus(pd_net, name="bus7")
+    busnr7 = pp.create_bus(pd_net, name="bus7", vn_kv=.4)
     pp.create_line(pd_net, busnr3, busnr7, name="line5", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr8 = pp.create_bus(pd_net, name="bus8")
+    busnr8 = pp.create_bus(pd_net, name="bus8", vn_kv=.4)
     pp.create_line(pd_net, busnr4, busnr8, name="line6", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr9 = pp.create_bus(pd_net, name="bus9")
+    busnr9 = pp.create_bus(pd_net, name="bus9", vn_kv=.4)
     pp.create_line(pd_net, busnr5, busnr9, name="line7", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr10 = pp.create_bus(pd_net, name="bus10")
+    busnr10 = pp.create_bus(pd_net, name="bus10", vn_kv=.4)
     pp.create_line(pd_net, busnr6, busnr10, name="line8", length_km=0.05,
                    std_type="NAYY 4x120 SE")
 
@@ -128,11 +125,11 @@ def simple_four_bus_system():
     net = pp.create_empty_network()
     busnr1 = pp.create_bus(net, name="bus1ref", vn_kv=10)
     pp.create_ext_grid(net, busnr1)
-    busnr2 = pp.create_bus(net, name="bus2")
+    busnr2 = pp.create_bus(net, name="bus2", vn_kv=.4)
     pp.create_transformer(net, busnr1, busnr2, name="transformer", std_type="0.25 MVA 10/0.4 kV")
-    busnr3 = pp.create_bus(net, name="bus3")
+    busnr3 = pp.create_bus(net, name="bus3", vn_kv=.4)
     pp.create_line(net, busnr2, busnr3, name="line1", length_km=0.50000, std_type="NAYY 4x50 SE")
-    busnr4 = pp.create_bus(net, name="bus4")
+    busnr4 = pp.create_bus(net, name="bus4", vn_kv=.4)
     pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.50000, std_type="NAYY 4x50 SE")
     pp.create_load(net, busnr3, 30, 10, name="load1")
     pp.create_load(net, busnr4, 30, 10, name="load2")

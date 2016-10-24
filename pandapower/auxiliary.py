@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-"""
-__author__ = 'jdollichon, tdess, lthurner, ascheidler'
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
-"""
-from __future__ import division
 import pandas as pd
 from attrdict import AttrDict
 import numpy as np
@@ -38,7 +37,7 @@ class PandapowerNet(AttrDict):
         return obj
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in dtypes.items():
+    for item, dtype in list(dtypes.iteritems()):
         if df.dtypes.at[item] != dtype:
             try:
                 df[item] = df[item].astype(dtype)
@@ -52,9 +51,9 @@ def get_free_id(df):
     return np.int64(0) if len(df)==0 else df.index.values.max() + 1
         
 
-class HpException(Exception):
+class ppException(Exception):
     """
-    General honeypot-wide custom parent exception.
+    General pandapower custom parent exception.
     """
     pass
 

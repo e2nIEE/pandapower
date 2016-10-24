@@ -1,26 +1,23 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun  7 09:45:42 2016
 
-@author: thurner
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
 import pytest
 
-# Julian: now using full package (otherwise it might direct to the package test
-# in anaconda/lib for some configurations of work environments)
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.result_test_network_generator import add_test_enforce_qlims, add_test_gen
 
 def test_line(result_test_network):
     net = result_test_network
-    busses = net.bus[net.bus.zone == "test_line"]
-    lines = [x for x in net.line.index if net.line.from_bus[x] in busses.index]
+    buses = net.bus[net.bus.zone == "test_line"]
+    lines = [x for x in net.line.index if net.line.from_bus[x] in buses.index]
     l1 = lines[0]
     l2 = lines[1]
     l3 = lines[2]
-    b2 = busses.index[1]
+    b2 = buses.index[1]
 
     # result values from powerfactory
     load1 = 14.578
@@ -72,12 +69,12 @@ def test_line(result_test_network):
 
 def test_load_sgen(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_load_sgen"]
-     loads = [x for x in net.load.index if net.load.bus[x] in busses.index]
-     sgens = [x for x in net.sgen.index if net.sgen.bus[x] in busses.index]
+     buses = net.bus[net.bus.zone == "test_load_sgen"]
+     loads = [x for x in net.load.index if net.load.bus[x] in buses.index]
+     sgens = [x for x in net.sgen.index if net.sgen.bus[x] in buses.index]
      l1 = loads[0]
      sg1 = sgens[0]
-     b2 = busses.index[1]
+     b2 = buses.index[1]
      # result values from powerfactory
      pl1 = 1200.000
      ql1 = 1100.000
@@ -100,8 +97,8 @@ def test_load_sgen_split(result_test_network):
 
      # splitting up the load/sgen should not change the result
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_load_sgen_split"]
-     b2 = busses.index[1]
+     buses = net.bus[net.bus.zone == "test_load_sgen_split"]
+     b2 = buses.index[1]
 
      u = 1.00477465
 
@@ -110,13 +107,13 @@ def test_load_sgen_split(result_test_network):
 
 def test_trafo(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_trafo"]
-     trafos = [x for x in net.trafo.index if net.trafo.hv_bus[x] in busses.index]
+     buses = net.bus[net.bus.zone == "test_trafo"]
+     trafos = [x for x in net.trafo.index if net.trafo.hv_bus[x] in buses.index]
      t1 = trafos[0]
      t2 = trafos[1]
      t3 = trafos[2]
-     b2 = busses.index[1]
-     b3 = busses.index[2]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
  #     powerfactory results (to check t-equivalent circuit model)
      runpp_with_consistency_checks(net, trafo_model="t", trafo_loading="current")
 
@@ -201,9 +198,9 @@ def test_trafo_tap(result_test_network):
      net = result_test_network
      runpp_with_consistency_checks(net, trafo_model="t", trafo_loading="current")
 
-     busses = net.bus[net.bus.zone == "test_trafo_tap"]
-     b2 = busses.index[1]
-     b3 = busses.index[2]
+     buses = net.bus[net.bus.zone == "test_trafo_tap"]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
 
      assert (1.010114175 - net.res_bus.vm_pu.at[b2]) < 1e-6
      assert (0.924072090 - net.res_bus.vm_pu.at[b3]) < 1e-6
@@ -236,9 +233,9 @@ def test_trafo_tap(result_test_network):
  
 def test_ext_grid(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_ext_grid"]
+     buses = net.bus[net.bus.zone == "test_ext_grid"]
      ext_grids = [
-         x for x in net.ext_grid.index if net.ext_grid.bus[x] in busses.index]
+         x for x in net.ext_grid.index if net.ext_grid.bus[x] in buses.index]
      eg1 = ext_grids[0]
      eg2 = ext_grids[1]
      # results from powerfactory
@@ -257,9 +254,9 @@ def test_ext_grid(result_test_network):
 
 def test_ward(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_ward"]
-     wards = [x for x in net.ward.index if net.ward.bus[x] in busses.index]
-     b2 = busses.index[1]
+     buses = net.bus[net.bus.zone == "test_ward"]
+     wards = [x for x in net.ward.index if net.ward.bus[x] in buses.index]
+     b2 = buses.index[1]
      w1 = wards[0]
      # powerfactory results
      pw = -1704.6146
@@ -273,9 +270,9 @@ def test_ward(result_test_network):
 
 def test_ward_split(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_ward_split"]
-     wards = [x for x in net.ward.index if net.ward.bus[x] in busses.index]
-     b2 = busses.index[1]
+     buses = net.bus[net.bus.zone == "test_ward_split"]
+     wards = [x for x in net.ward.index if net.ward.bus[x] in buses.index]
+     b2 = buses.index[1]
      w1 = wards[0]
      w2 = wards[1]
      # powerfactory results
@@ -291,9 +288,9 @@ def test_ward_split(result_test_network):
 
 def test_xward(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_xward"]
-     xwards = [x for x in net.xward.index if net.xward.bus[x] in busses.index]
-     b2 = busses.index[1]
+     buses = net.bus[net.bus.zone == "test_xward"]
+     xwards = [x for x in net.xward.index if net.xward.bus[x] in buses.index]
+     b2 = buses.index[1]
      xw1 = xwards[0]
      xw2 = xwards[1]  # Out of servic xward
  #    powerfactory result for 1 xward
@@ -312,9 +309,9 @@ def test_xward(result_test_network):
 
 def test_xward_combination(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_xward_combination"]
-     xwards = [x for x in net.xward.index if net.xward.bus[x] in busses.index]
-     b2 = busses.index[1]
+     buses = net.bus[net.bus.zone == "test_xward_combination"]
+     xwards = [x for x in net.xward.index if net.xward.bus[x] in buses.index]
+     b2 = buses.index[1]
      xw1 = xwards[0]
      xw3 = xwards[2]
 
@@ -336,10 +333,10 @@ def test_xward_combination(result_test_network):
 
 def test_gen(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_gen"]
-     gens = [x for x in net.gen.index if net.gen.bus[x] in busses.index]
-     b2 = busses.index[1]
-     b3 = busses.index[2]
+     buses = net.bus[net.bus.zone == "test_gen"]
+     gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
      g1 = gens[0]
      # powerfactory results
      q = -260.660
@@ -353,10 +350,10 @@ def test_gen(result_test_network):
 
 def test_enforce_qlims(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_enforce_qlims"]
-     gens = [x for x in net.gen.index if net.gen.bus[x] in busses.index]
-     b2 = busses.index[1]
-     b3 = busses.index[2]
+     buses = net.bus[net.bus.zone == "test_enforce_qlims"]
+     gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
      g1 = gens[0]
 
 
@@ -376,13 +373,13 @@ def test_enforce_qlims(result_test_network):
 
 def test_trafo3w(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_trafo3w"]
+     buses = net.bus[net.bus.zone == "test_trafo3w"]
      trafos = [x for x in net.trafo3w.index if net.trafo3w.hv_bus[
-         x] in busses.index]
+         x] in buses.index]
      runpp_with_consistency_checks(net, trafo_model="t")
-     b2 = busses.index[1]
-     b3 = busses.index[2]
-     b4 = busses.index[3]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
+     b4 = buses.index[3]
      t3 = trafos[0]
 
      uhv = 1.00895246
@@ -420,12 +417,12 @@ def test_trafo3w(result_test_network):
 
 def test_impedance(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_impedance"]
+     buses = net.bus[net.bus.zone == "test_impedance"]
      impedances = [
-         x for x in net.impedance.index if net.impedance.from_bus[x] in busses.index]
+         x for x in net.impedance.index if net.impedance.from_bus[x] in buses.index]
      runpp_with_consistency_checks(net, trafo_model="t")
-     b2 = busses.index[1]
-     b3 = busses.index[2]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
      imp1 = impedances[0]
 
      # powerfactory results
@@ -454,9 +451,9 @@ def test_impedance(result_test_network):
 
 def test_bus_bus_switch(result_test_network):
      net = result_test_network
-     busses = net.bus[net.bus.zone == "test_bus_bus_switch"]
-     b2 = busses.index[1]
-     b3 = busses.index[2]
+     buses = net.bus[net.bus.zone == "test_bus_bus_switch"]
+     b2 = buses.index[1]
+     b3 = buses.index[2]
 
      # powerfactory voltage
      u = 0.982265380
@@ -476,11 +473,11 @@ def test_enforce_q_lims():
     # test_gen
     net = add_test_gen(net)
     pp.runpp(net)
-    busses = net.bus[net.bus.zone == "test_gen"]
-    gens = [x for x in net.gen.index if net.gen.bus[x] in busses.index]
-#    b1=busses.index[0]
-    b2 = busses.index[1]
-    b3 = busses.index[2]
+    buses = net.bus[net.bus.zone == "test_gen"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+#    b1=buses.index[0]
+    b2 = buses.index[1]
+    b3 = buses.index[2]
     g1 = gens[0]
     q = -260.660
     u2 = 1.00584636
@@ -493,10 +490,10 @@ def test_enforce_q_lims():
     net = add_test_enforce_qlims(net)
 
     pp.runpp(net, enforce_q_lims=True)
-    busses = net.bus[net.bus.zone == "test_enforce_qlims"]
-    gens = [x for x in net.gen.index if net.gen.bus[x] in busses.index]
-    b2 = busses.index[1]
-    b3 = busses.index[2]
+    buses = net.bus[net.bus.zone == "test_enforce_qlims"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    b2 = buses.index[1]
+    b3 = buses.index[2]
     g1 = gens[0]
     u2 = 1.00607194
     u3 = 1.00045091
@@ -508,13 +505,13 @@ def test_enforce_q_lims():
 # TODO
 
 if __name__ == "__main__":
-#    import pandapower as pp
+    import pandapower as pp
 #    net = pp.create_empty_network()
-    pytest.main(["test_results.py"])
-##
-#    ###BUS ELEMENTS###
-#    test_enforce_qlims(net) #this test only works if it is the first one, since pypower has problems
-#                            #with limiting the generator Q in networks with > 1 generator
+    pytest.main(["test_results.py", "-s"])
+#
+    ###BUS ELEMENTS###
+#    test_enforce_qlims() #this test only works if it is the first one, since pypower has problems
+                            #with limiting the generator Q in networks with > 1 generator
 #    test_load_sgen(net)
 #    test_ext_grid(net)
 #    test_shunt(net) #powerfactory results missing

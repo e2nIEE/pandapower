@@ -1,16 +1,18 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import pytest
-import numpy as np
-import pandas as pd
 import copy
 import pandapower as pp
-import pandapower.auxiliary
 import pandapower.toolbox as tb
-import pandapower.networks
-import random
+import pandapower.networks as nw
 
 def test_equal_nets():
     tb.logger.setLevel(40)
-    original = pp.networks.create_cigre_network_lv()
+    original = nw.create_cigre_network_lv()
     net = copy.deepcopy(original)
 
     # should be equal
@@ -18,7 +20,7 @@ def test_equal_nets():
     assert tb.equal_nets(net, original)
 
     # detecting additional element
-    pp.create_bus(net)
+    pp.create_bus(net, vn_kv=.4)
     assert not tb.equal_nets(original, net)
     assert not tb.equal_nets(net, original)
     net = copy.deepcopy(original)
@@ -51,23 +53,23 @@ def test_equal_nets():
 def test_continuos_bus_numbering():
     net = pp.create_empty_network()
 
-    bus0 = pp.create_bus(net, index=12)
-    pp.create_load(net, bus0)
-    pp.create_load(net, bus0)
-    pp.create_load(net, bus0)
-    pp.create_load(net, bus0)
+    bus0 = pp.create_bus(net, 0.4,  index=12)
+    pp.create_load(net, bus0, p_kw=0.)
+    pp.create_load(net, bus0, p_kw=0.)
+    pp.create_load(net, bus0, p_kw=0.)
+    pp.create_load(net, bus0, p_kw=0.)
 
-    bus0 = pp.create_bus(net, index=42)
-    pp.create_sgen(net, bus0)
-    pp.create_sgen(net, bus0)
-    pp.create_sgen(net, bus0)
+    bus0 = pp.create_bus(net, 0.4, index=42)
+    pp.create_sgen(net, bus0, p_kw=0.)
+    pp.create_sgen(net, bus0, p_kw=0.)
+    pp.create_sgen(net, bus0, p_kw=0.)
 
-    bus0 = pp.create_bus(net, index=543)
+    bus0 = pp.create_bus(net, 0.4, index=543)
     pp.create_shunt(net, bus0, 2, 1)
     pp.create_shunt(net, bus0, 2, 1)
     pp.create_shunt(net, bus0, 2, 1)
 
-    bus0 = pp.create_bus(net, index=5675)
+    bus0 = pp.create_bus(net, 0.4,  index=5675)
     pp.create_ward(net, bus0, 2, 1, 1, 2,)
     pp.create_ward(net, bus0, 2, 1, 1, 2,)
     pp.create_ward(net, bus0, 2, 1, 1, 2,)
@@ -94,15 +96,15 @@ def test_continuos_bus_numbering():
                 except:
                     continue
 
-    # assert that no busses were used except the ones in net.bus
+    # assert that no buses were used except the ones in net.bus
     assert set(list(used_buses)) - set(list(net.bus.index.values)) == set()
 
 def test_scaling_by_type():
     net = pp.create_empty_network()
 
-    bus0 = pp.create_bus(net)
-    pp.create_load(net, bus0, type="Household")
-    pp.create_sgen(net, bus0)
+    bus0 = pp.create_bus(net, 0.4)
+    pp.create_load(net, bus0, p_kw=0., type="Household")
+    pp.create_sgen(net, bus0, p_kw=0., type="PV")
 
     tb.set_scaling_by_type(net, {"Household": 42., "PV": 12})
 
@@ -114,19 +116,19 @@ def test_drop_inactive_elements():
 
     service = 0
 
-    bus0 = pp.create_bus(net, in_service=service)
+    bus0 = pp.create_bus(net, vn_kv=.4, in_service=service)
     pp.create_ext_grid(net, bus0, in_service=service)
 
-    bus1 = pp.create_bus(net, in_service=service)
+    bus1 = pp.create_bus(net, vn_kv=.4, in_service=service)
     pp.create_transformer(net, bus0, bus1, in_service=service,
                           std_type= '63 MVA 110/20 kV')
 
-    bus2 = pp.create_bus(net, in_service=service)
+    bus2 = pp.create_bus(net, vn_kv=.4, in_service=service)
     pp.create_line(net, bus1, bus2, length_km=1, in_service=service,
                    std_type='149-AL1/24-ST1A 10.0')
 
-    pp.create_load(net, bus2, in_service=service)
-    pp.create_sgen(net, bus2, in_service=service)
+    pp.create_load(net, bus2, p_kw=0., in_service=service)
+    pp.create_sgen(net, bus2, p_kw=0., in_service=service)
 
     # drop them
     tb.drop_inactive_elements(net)
@@ -149,8 +151,8 @@ def test_drop_inactive_elements():
 def test_get_connected_lines_at_bus():
     net = pp.create_empty_network()
 
-    bus0 = pp.create_bus(net)
-    bus1 = pp.create_bus(net)
+    bus0 = pp.create_bus(net, 0.4)
+    bus1 = pp.create_bus(net, 0.4)
 
     line0 = pp.create_line(net, bus0, bus1, length_km=1., std_type="NAYY 4x50 SE")
     line1 = pp.create_line(net, bus0, bus1, length_km=1., std_type="NAYY 4x50 SE")

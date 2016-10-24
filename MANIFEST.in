@@ -4,7 +4,6 @@ include README.rst
 include *.cfg
 include *.ini
 include *.rst
-recursive-include pandapower/test *
-recursive-include pandapower/networks *
-global-include *.py
-recursive-include docs *
+global-include *.p
+recursive-include doc *
+

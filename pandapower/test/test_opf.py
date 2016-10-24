@@ -1,16 +1,18 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import pandapower as pp
 import pytest
-__author__ = "fmeier"
 
 try:
-    import log
-    logger = log.getLogger(__name__)
+    import pplog
+    logger = pplog.getLogger(__name__)
 except:
     import logging
     logger = logging.getLogger(__name__)
-
-# TODO: There may be some unused imports > check
-
 
 def test_simplest_voltage():
     """ Testing a very simple network without transformer for voltage
@@ -23,7 +25,7 @@ def test_simplest_voltage():
     # create net
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-150, min_p_kw=-5, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
@@ -53,9 +55,9 @@ def test_opf_gen_voltage():
     # ceate net
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75,
                                           tp_max=2, vn_lv_kv=0.4,
                                           shift_degree=150, tp_mid=0,
@@ -98,9 +100,9 @@ def test_opf_sgen_voltage():
     # create net
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75,
                                           tp_max=2, vn_lv_kv=0.4,
                                           shift_degree=150, tp_mid=0,
@@ -143,9 +145,9 @@ def test_opf_gen_loading():
     # create net
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75,
                                           tp_max=2, vn_lv_kv=0.4,
                                           shift_degree=150, tp_mid=0,
@@ -191,9 +193,9 @@ def test_opf_sgen_loading():
     # create net
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75, tp_max=2, vn_lv_kv=0.4,
                                           shift_degree=150, tp_mid=0, vn_hv_kv=10.0,
                                           vscr_percent=2.8125, tp_pos=0, tp_side="hv", tp_min=-2,
@@ -223,7 +225,6 @@ def test_opf_sgen_loading():
     assert max(net.res_trafo.loading_percent) < max_trafo_loading
     assert net.OPF_converged
 
-#
 #def test_opf_oberrhein():
 #    """ Testing a  simple network with transformer for loading
 #    constraints with OPF using a generator """
@@ -244,19 +245,16 @@ def test_opf_sgen_loading():
 #    pp.runopp(net, verbose=False)
 ##    assert net["OPF_converged"]
 
-
-
 if __name__ == "__main__":
     """ test for optimal power flow using default cost function "maxp"
     """
 #    import time
 #    t = time.time()
-    pytest.main(["test_opf.py"])
+    pytest.main(["test_opf.py", "-s"])
 #    elapsed = time.time()-t
-    logger.setLevel("DEBUG")
+#    logger.setLevel("DEBUG")
 #    test_simplest_voltage()
 #    test_opf_gen_voltage()
 #    test_opf_sgen_voltage()
 #    test_opf_gen_loading()
 #    test_opf_sgen_loading()
-#    test_opf_oberrhein()

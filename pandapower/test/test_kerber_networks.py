@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 22 11:25:40 2013
 
-@author: TDess, smeinecke
-"""
-from __future__ import print_function
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
 
 import pytest
 import pandapower as pp
@@ -32,7 +30,7 @@ def test_create_empty_network_with_transformer():
 def test_add_lines_and_loads():
     # BUILD:
     pd_net = pp.create_empty_network()
-    busnr1 = pp.create_bus(pd_net, name="startbus")
+    busnr1 = pp.create_bus(pd_net, name="startbus", vn_kv=.4)
     n_lines_add = int(10.*rd.random() + 1)
     l_per_line = 0.10*rd.random()
     # OPERATE:
@@ -40,8 +38,6 @@ def test_add_lines_and_loads():
                          length_per_line=l_per_line, p_per_load_in_kw=2,
                          q_per_load_in_kvar=1, branchnr=2)
 
-    # CHECK:
-    print(pd_net)
     assert len(pd_net.bus.index) == n_lines_add + 1
     assert len(pd_net.line.index) == n_lines_add
     assert len(pd_net.load.index) == n_lines_add
@@ -51,7 +47,7 @@ def test_add_lines_and_loads():
 def test_add_lines_with_branched_loads():
     # BUILD:
     pd_net = pp.create_empty_network()
-    busnr1 = pp.create_bus(pd_net, name="startbus")
+    busnr1 = pp.create_bus(pd_net, name="startbus", vn_kv=.4)
     n_lines_add = int(10.*rd.random() + 1)
     l_per_line = 0.10*rd.random()
     l_branchout_line = 0.022
@@ -62,12 +58,9 @@ def test_add_lines_with_branched_loads():
                                    length_branchout_line_1=l_branchout_line,
                                    prob_branchout_line_1=0.5, branchnr=1)
 
-    # CHECK:
-    print(pd_net)
     assert len(pd_net.bus.index) == 2*n_lines_add + 1
     assert len(pd_net.line.index) == 2*n_lines_add
     assert len(pd_net.load.index) == n_lines_add
-    print(pd_net.line.length_km)
     assert abs(pd_net.line.length_km.sum() - n_lines_add*(l_per_line+l_branchout_line)) < 0.0000001
 
 

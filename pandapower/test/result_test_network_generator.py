@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 21 14:53:58 2016
 
-@author: e2n037
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import pandapower as pp
 from pandapower.test.toolbox import add_grid_connection, create_test_line
-
 
 def result_test_network_generator():
     """ This is a generator for the result_test_network
@@ -31,6 +30,7 @@ def result_test_network_generator():
     yield add_test_trafo3w(net)
     yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
+    yield add_test_oos_bus_with_is_element(net)
 
 
 def add_test_line(net):
@@ -92,9 +92,9 @@ def add_test_load_sgen_split(net):
     ql = 1100
     ps = -500
     qs = 100
-    for _ in range(nr):
-        pp.create_load(net, b2, p_kw=pl, q_kvar=ql, scaling=1 / nr)
-        pp.create_sgen(net, b2, p_kw=ps, q_kvar=qs, scaling=1 / nr)
+    for _ in list(range(nr)):
+        pp.create_load(net, b2, p_kw=pl, q_kvar=ql, scaling=1. / nr)
+        pp.create_sgen(net, b2, p_kw=ps, q_kvar=qs, scaling=1. / nr)
     net.last_added_case = "test_load_sgen_split"
     return net
 
@@ -234,7 +234,7 @@ def add_test_gen(net):
     ps = -500
     u_set = 1.0
 
-    b3 = pp.create_bus(net, zone="test_gen")
+    b3 = pp.create_bus(net, zone="test_gen", vn_kv=.4)
     pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                    c_nf_per_km=300, imax_ka=.2, df=.8)
 
@@ -255,7 +255,7 @@ def add_test_enforce_qlims(net):
     qmax = 200.
     u_set = 1.0
 
-    b3 = pp.create_bus(net, zone="test_enforce_qlims")
+    b3 = pp.create_bus(net, zone="test_enforce_qlims", vn_kv=.4)
     pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                    c_nf_per_km=300, imax_ka=.2, df=.8)
 
@@ -360,9 +360,53 @@ def add_test_trafo3w_tap(net):
     net.last_added_case = "test_trafo3w_tap"
     return net
 
+def add_test_oos_bus_with_is_element(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_oos_bus_with_is_element")
+
+    pl = 1200
+    ql = 1100
+    ps = -500
+    u_set = 1.0
+
+    pz = 1200
+    qz = 1100
+    qs = 200
+
+    vm_pu = 1.06
+    r_ohm = 50
+    x_ohm = 70
+
+    # OOS buses
+    b3 = pp.create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    b4 = pp.create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    b5 = pp.create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+
+    pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+    pp.create_line_from_parameters(net, b2, b4, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+    pp.create_line_from_parameters(net, b2, b5, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+
+    # in service elements
+    pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
+    pp.create_gen(net, b4, p_kw=ps, vm_pu=u_set)
+    pp.create_sgen(net, b5, p_kw=ps, q_kvar=ql)
+    pp.create_ward(net, b3, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs)
+    pp.create_xward(net, b4, pz_kw=0.5*pz, qz_kvar=0.5*qz, ps_kw=0.5*ps, qs_kvar=0.5*qs,
+                   vm_pu=vm_pu, x_ohm=x_ohm, r_ohm=r_ohm)
+    pp.create_shunt(net, b5, q_kvar=-800, p_kw=0)
+
+    net.last_added_case = "test_oos_bus_with_is_element"
+    return net
+
 if __name__ == '__main__':
+    net_split = pp.create_empty_network()
+    add_test_load_sgen_split(net_split)
+    
+    
     net = pp.create_empty_network()
-    add_test_bus_bus_switch(net)
+    add_test_load_sgen(net)
 #    b1, b2, ln = add_grid_connection(net, zone="test_ext_grid")
 #    b3 = pp.create_bus(net, vn_kv=20.)
 #    pp.create_switch(net, b2, b3, et="b")
@@ -371,5 +415,6 @@ if __name__ == '__main__':
 #    pp.create_shunt(net, b3, q_kvar=-800, p_kw=0)
 
     pp.runpp(net)
+    pp.runpp(net_split)
     from consistency_checks import runpp_with_consistency_checks
     runpp_with_consistency_checks(net, init="flat", trafo_model="pi", trafo_loading="current", tolerance_kva=1e-5)
