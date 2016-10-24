@@ -7,3 +7,5 @@ pandapower.egg-info/
 doc/api/
 doc/.build/*
 doc/_build/*
+.cache
+pandapower/pypower_extensions/__pycache__/*
