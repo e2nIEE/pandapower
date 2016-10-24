@@ -3,17 +3,13 @@ Run a Power Flow
 =====================
 .. _ppLoadflow:
 
-AC Power Flow
-=====================
-
-A power flow in pandapower is executed by the runpp function. Internally the pandapower power flow is executed with pypower (see :ref:`about pandapower <about>`).
-
-
 .. note::
 
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_mpc_last_cycle"].
     However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
 
+AC Power Flow
+=====================
 
 .. autofunction:: pandapower.runpp
 
@@ -26,8 +22,6 @@ A power flow in pandapower is executed by the runpp function. Internally the pan
 DC Power flow
 =====================
 .. _ppDCPF:
-
-A DC power flow in pandapower is executed by the rundcpp function. Internally the pandapower power flow is executed with pypower (see :ref:`about pandapower <about>`).
 
 .. warning::
     To run an AC power flow with DC power flow initialization, use the AC power flow with init="dc".
