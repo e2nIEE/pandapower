@@ -11,11 +11,11 @@ from attrdict import AttrDict
 import numbers
 from collections import defaultdict
 try:
-    import pplog
-    logger = pplog.getLogger(__name__)
+    import pplog as logging
 except:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 from pandapower.auxiliary import get_indices, PandapowerNet
 from pandapower.create import create_empty_network

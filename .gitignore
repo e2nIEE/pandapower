@@ -3,6 +3,7 @@
 *~
 build/
 dist/
+.cache/
 pandapower.egg-info/
 doc/api/
 doc/.build/*
