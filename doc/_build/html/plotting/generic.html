@@ -1,0 +1,259 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Generic Coordinates &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="../about.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Plotting Networks" href="../plotting.html"/>
+        <link rel="next" title="Save and Load Networks" href="../file_io.html"/>
+        <link rel="prev" title="Draw Collections" href="draw.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../std_types.html">Standard Type Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../powerflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks.html">Generic Networks</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../plotting.html">Plotting Networks</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="collections.html">Create Matplotlib Collections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="draw.html">Draw Collections</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Generic Coordinates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../file_io.html">Save and Load Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../plotting.html">Plotting Networks</a> &raquo;</li>
+      
+    <li>Generic Coordinates</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/plotting/generic.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="generic-coordinates">
+<h1>Generic Coordinates<a class="headerlink" href="#generic-coordinates" title="Permalink to this headline">¶</a></h1>
+<p>If there are no geocoordinates in a network, generic coordinates can be created. There are two possibilities:</p>
+<blockquote>
+<div><ul class="simple">
+<li>with python-igraph: <a class="reference external" href="http:/igraph.org/python/">http:/igraph.org/python/</a> (recommended)</li>
+<li>with networkx and graphviz (<a class="reference external" href="http:/www.graphviz.org">http:/www.graphviz.org</a>)</li>
+</ul>
+</div></blockquote>
+<p>Generically created geocoordinates can then be plotted in the same way as real geocoordinates.</p>
+<dl class="function">
+<dt id="pandapower.plotting.create_generic_coordinates">
+<code class="descclassname">pandapower.plotting.</code><code class="descname">create_generic_coordinates</code><span class="sig-paren">(</span><em>net</em>, <em>mg=None</em>, <em>library='igraph'</em>, <em>respect_switches=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.plotting.create_generic_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will add arbitrary geo-coordinates for all buses based on an analysis of branches and rings.
+It will remove out of service buses/lines from the net. The coordinates will be created either by igraph or by
+using networkx library.</p>
+<p>Input:</p>
+<blockquote>
+<div><strong>net</strong> - Pandapower network</div></blockquote>
+<p>Optional:</p>
+<blockquote>
+<div><p><strong>mg</strong> - Existing networkx multigraph, if available. Convenience to save computation time.</p>
+<p><strong>library</strong> - &#8220;igraph&#8221; to use igraph package or &#8220;networkx&#8221; to use networkx package</p>
+</div></blockquote>
+<p>Output:</p>
+<blockquote>
+<div><strong>net</strong> - Pandapower network with added geo coordinates for the buses</div></blockquote>
+<p>Example:</p>
+<blockquote>
+<div>net = create_generic_coordinates(net)</div></blockquote>
+</dd></dl>
+
+<p>Example plot with mv_oberrhein network from the pandapower.networks package as geographical plan (respect_switches=False):</p>
+<a class="reference internal image-reference" href="../_images/plotting_tutorial2.png"><img alt="../_images/plotting_tutorial2.png" class="align-center" src="../_images/plotting_tutorial2.png" style="width: 30em;" /></a>
+<p>and as structural plan (respect_switches=True):</p>
+<a class="reference internal image-reference" href="../_images/plotting_tutorial3.png"><img alt="../_images/plotting_tutorial3.png" class="align-center" src="../_images/plotting_tutorial3.png" style="width: 20em;" /></a>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../file_io.html" class="btn btn-neutral float-right" title="Save and Load Networks" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="draw.html" class="btn btn-neutral" title="Draw Collections" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

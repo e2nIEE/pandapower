@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Switch &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="../../about.html"/>
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Datastructure and Elements" href="../../elements.html"/>
+        <link rel="next" title="Load" href="../load/load.html"/>
+        <link rel="prev" title="Line" href="../line/line.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../elements.html">Datastructure and Elements</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../empty_network/empty_network.html">Empty Network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bus/bus.html">Bus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../line/line.html">Line</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Switch</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-function">Create Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loadflow-model">Loadflow Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../load/load.html">Load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sgen/sgen.html">Static Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ext_grid/ext_grid.html">External Grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../trafo/trafo.html">Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../trafo3w/trafo3w.html">Three Winding Transformer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gen/gen.html">Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../shunt/shunt.html">Shunt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../impedance/impedance.html">Impedance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ward/ward.html">Ward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xward/xward.html">Extended Ward</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../std_types.html">Standard Type Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../powerflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Plotting Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../file_io.html">Save and Load Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../elements.html">Datastructure and Elements</a> &raquo;</li>
+      
+    <li>Switch</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/elements/switch/switch.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="switch">
+<span id="switch-model"></span><h1>Switch<a class="headerlink" href="#switch" title="Permalink to this headline">¶</a></h1>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="../../about/units.html#conventions"><span class="std std-ref">Unit Systems and Conventions</span></a></p>
+</div>
+<div class="section" id="create-function">
+<h2>Create Function<a class="headerlink" href="#create-function" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pandapower.create_switch">
+<code class="descclassname">pandapower.</code><code class="descname">create_switch</code><span class="sig-paren">(</span><em>net</em>, <em>bus</em>, <em>element</em>, <em>et</em>, <em>closed=True</em>, <em>type=None</em>, <em>name=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pandapower.create_switch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a switch in the net[&#8220;switch&#8221;] table.</p>
+<p>Switches can be either between to buses (bus-bus switch) or at the end of a line or transformer
+element (bus-elememnt switch).</p>
+<p>Two buses that are connected through a closed bus-bus switches are fused in the power flow if 
+the switch es closed or separated if the switch is open.</p>
+<p>An element that is connected to a bus through a bus-element switch is connected to the bus
+if the switch is closed or disconnected if the switch is open.</p>
+<dl class="docutils">
+<dt>INPUT:</dt>
+<dd><p class="first"><strong>net</strong> (PandapowerNet) - The net within this transformer should be created</p>
+<p><strong>bus</strong> - The bus that the switch is connected to</p>
+<p><strong>element</strong> - index of the element: bus id if et == &#8220;b&#8221;, line id if et == &#8220;l&#8221;</p>
+<p><strong>et</strong> - (string) element type: &#8220;l&#8221; = switch between bus and line, &#8220;t&#8221; = switch between
+bus and transformer, &#8220;t3&#8221; = switch between bus and 3-winding transformer, &#8220;b&#8221; = switch
+between two buses</p>
+<p><strong>closed</strong> (boolean, True) - switch position: False = open, True = closed</p>
+<p class="last"><strong>type</strong> (int, None) - indicates the type of switch: &#8220;LS&#8221; = Load Switch, &#8220;CB&#8221; = Circuit Breaker, &#8220;LBS&#8221; = Load Break Switch or &#8220;DS&#8221; = Disconnecting Switch</p>
+</dd>
+</dl>
+<p>OPTIONAL:</p>
+<blockquote>
+<div><strong>name</strong> (string, default None) - The name for this switch</div></blockquote>
+<p>OUTPUT:</p>
+<blockquote>
+<div><strong>sid</strong> - The unique switch_id of the created switch</div></blockquote>
+<p>EXAMPLE:</p>
+<blockquote>
+<div><p>create_switch(net, bus =  0, element = 1, et = &#8216;b&#8217;, type =&#8221;LS&#8221;)</p>
+<p>create_switch(net, bus = 0, element = 1, et = &#8216;l&#8217;)</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<p><em>net.switch</em></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="12%" />
+<col width="29%" />
+<col width="47%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>Parameter</strong></td>
+<td><strong>Datatype</strong></td>
+<td><strong>Value Range</strong></td>
+<td><strong>Explanation</strong></td>
+</tr>
+<tr class="row-even"><td>bus*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td>index of connected bus</td>
+</tr>
+<tr class="row-odd"><td>name</td>
+<td>string</td>
+<td>&nbsp;</td>
+<td>name of the switch</td>
+</tr>
+<tr class="row-even"><td>element*</td>
+<td>integer</td>
+<td>&nbsp;</td>
+<td><div class="first line-block">
+<div class="line">index of the element the switch is connected to:</div>
+</div>
+<div class="last line-block">
+<div class="line">- bus index if et = <em>&#8220;b&#8221;</em></div>
+<div class="line">- line index if et = <em>&#8220;l&#8221;</em></div>
+<div class="line">- trafo index if et = <em>&#8220;t&#8221;</em></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>et*</td>
+<td>string</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;b&#8221;</em> - bus-bus switch</div>
+<div class="line"><em>&#8220;l&#8221;</em> - bus-line switch</div>
+<div class="line"><em>&#8220;t&#8221;</em> - bus-trafo switch</div>
+</div>
+</td>
+<td>element type the switch connects to</td>
+</tr>
+<tr class="row-even"><td>type</td>
+<td>string</td>
+<td><div class="first last line-block">
+<div class="line">naming conventions: </div>
+<div class="line"><em>&#8220;CB&#8221;</em> - circuit breaker</div>
+<div class="line"><em>&#8220;LS&#8221;</em> - load switch</div>
+<div class="line"><em>&#8220;LBS&#8221;</em> - load break switch</div>
+<div class="line"><em>&#8220;DS&#8221;</em> - disconnecting switch</div>
+</div>
+</td>
+<td>type of switch</td>
+</tr>
+<tr class="row-odd"><td>closed*</td>
+<td>boolean</td>
+<td><div class="first last line-block">
+<div class="line"><em>&#8220;False&#8221;</em> - open</div>
+<div class="line"><em>&#8220;True&#8221;</em> - closed</div>
+</div>
+</td>
+<td>signals the switching state of the switch</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#id1"><span class="problematic" id="id2">*</span></a>necessary for executing a loadflow calculation.</p>
+</div>
+<div class="section" id="loadflow-model">
+<h2>Loadflow Model<a class="headerlink" href="#loadflow-model" title="Permalink to this headline">¶</a></h2>
+<p><em>Bus-Bus-Switches:</em></p>
+<p>Two buses that are connected with a closed bus-bus switches are fused internally for the loadflow, open bus-bus switches are ignored:</p>
+<a class="reference internal image-reference" href="../../_images/bus-bus-switches.png"><img alt="alternate Text" class="align-center" src="../../_images/bus-bus-switches.png" style="width: 18em;" /></a>
+<p>This has the following advantages compared to modelling the switch as a small impedance:</p>
+<blockquote>
+<div><ul class="simple">
+<li>there is no voltage drop over the switch (ideal switch)</li>
+<li>no convergence problems due to small impedances / large admittances</li>
+<li>less buses in the admittance matrix</li>
+</ul>
+</div></blockquote>
+<p><em>Bus-Element-Switches:</em></p>
+<p>When the loadflow is calculated internally for every open bus-element switch an auxilary bus is created in the pypower case file. The pypower branch that corresponds to the element is then connected to this bus. This has the following advantages compared to modelling the switch by setting the element out of service:</p>
+<blockquote>
+<div><ul class="simple">
+<li>loading current is considered</li>
+<li>information about switch position is preserved</li>
+<li>difference between open switch and out of service line (e.g. faulty line) can be modelled</li>
+</ul>
+</div></blockquote>
+<p>Closed bus-element switches are ignored:</p>
+<a class="reference internal image-reference" href="../../_images/bus-element-switches.png"><img alt="alternate Text" class="align-center" src="../../_images/bus-element-switches.png" style="width: 30em;" /></a>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../load/load.html" class="btn btn-neutral float-right" title="Load" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../line/line.html" class="btn btn-neutral" title="Line" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

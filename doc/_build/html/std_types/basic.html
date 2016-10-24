@@ -1,0 +1,870 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Basic Standard Types &mdash; pandapower 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="../about.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="pandapower 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Standard Type Libraries" href="../std_types.html"/>
+        <link rel="next" title="Manage Standard Types" href="manage.html"/>
+        <link rel="prev" title="Standard Type Libraries" href="../std_types.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pandapower
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About pandapower</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../elements.html">Datastructure and Elements</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../std_types.html">Standard Type Libraries</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Basic Standard Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#lines">Lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#w-transformers">2W-Transformers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">3W-Transformers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="manage.html">Manage Standard Types</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../powerflow.html">Power Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../topology.html">Topological Searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks.html">Generic Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plotting.html">Plotting Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../file_io.html">Save and Load Networks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">pandapower</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../std_types.html">Standard Type Libraries</a> &raquo;</li>
+      
+    <li>Basic Standard Types</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/std_types/basic.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="basic-standard-types">
+<h1>Basic Standard Types<a class="headerlink" href="#basic-standard-types" title="Permalink to this headline">¶</a></h1>
+<p>Every pandapower network comes with a default set of standard types. The pandapower basic standard types can be</p>
+<div class="section" id="lines">
+<h2>Lines<a class="headerlink" href="#lines" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="40%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&nbsp;</td>
+<td>c_nf_per_km</td>
+<td>imax_ka</td>
+<td>q_mm2</td>
+<td>r_ohm_per_km</td>
+<td>type</td>
+<td>x_ohm_per_km</td>
+</tr>
+<tr class="row-even"><td>149-AL1/24-ST1A 10.0</td>
+<td>11.25</td>
+<td>0.47</td>
+<td>149</td>
+<td>0.194</td>
+<td>ol</td>
+<td>0.315</td>
+</tr>
+<tr class="row-odd"><td>149-AL1/24-ST1A 110.0</td>
+<td>8.75</td>
+<td>0.47</td>
+<td>149</td>
+<td>0.194</td>
+<td>ol</td>
+<td>0.41</td>
+</tr>
+<tr class="row-even"><td>149-AL1/24-ST1A 20.0</td>
+<td>10.5</td>
+<td>0.47</td>
+<td>149</td>
+<td>0.194</td>
+<td>ol</td>
+<td>0.337</td>
+</tr>
+<tr class="row-odd"><td>15-AL1/3-ST1A 0.4</td>
+<td>11</td>
+<td>0.105</td>
+<td>16</td>
+<td>1.8769</td>
+<td>ol</td>
+<td>0.35</td>
+</tr>
+<tr class="row-even"><td>184-AL1/30-ST1A 110.0</td>
+<td>8.8</td>
+<td>0.535</td>
+<td>184</td>
+<td>0.1571</td>
+<td>ol</td>
+<td>0.4</td>
+</tr>
+<tr class="row-odd"><td>184-AL1/30-ST1A 20.0</td>
+<td>10.75</td>
+<td>0.535</td>
+<td>184</td>
+<td>0.1571</td>
+<td>ol</td>
+<td>0.33</td>
+</tr>
+<tr class="row-even"><td>24-AL1/4-ST1A 0.4</td>
+<td>11.25</td>
+<td>0.14</td>
+<td>24</td>
+<td>1.2012</td>
+<td>ol</td>
+<td>0.335</td>
+</tr>
+<tr class="row-odd"><td>243-AL1/39-ST1A 110.0</td>
+<td>9</td>
+<td>0.645</td>
+<td>243</td>
+<td>0.1188</td>
+<td>ol</td>
+<td>0.39</td>
+</tr>
+<tr class="row-even"><td>243-AL1/39-ST1A 20.0</td>
+<td>11</td>
+<td>0.645</td>
+<td>243</td>
+<td>0.1188</td>
+<td>ol</td>
+<td>0.32</td>
+</tr>
+<tr class="row-odd"><td>305-AL1/39-ST1A 110.0</td>
+<td>9.2</td>
+<td>0.74</td>
+<td>305</td>
+<td>0.0949</td>
+<td>ol</td>
+<td>0.38</td>
+</tr>
+<tr class="row-even"><td>48-AL1/8-ST1A 0.4</td>
+<td>12.2</td>
+<td>0.21</td>
+<td>48</td>
+<td>0.5939</td>
+<td>ol</td>
+<td>0.3</td>
+</tr>
+<tr class="row-odd"><td>48-AL1/8-ST1A 10.0</td>
+<td>10.1</td>
+<td>0.21</td>
+<td>48</td>
+<td>0.5939</td>
+<td>ol</td>
+<td>0.35</td>
+</tr>
+<tr class="row-even"><td>48-AL1/8-ST1A 20.0</td>
+<td>9.5</td>
+<td>0.21</td>
+<td>48</td>
+<td>0.5939</td>
+<td>ol</td>
+<td>0.372</td>
+</tr>
+<tr class="row-odd"><td>490-AL1/64-ST1A 220.0</td>
+<td>10</td>
+<td>0.96</td>
+<td>490</td>
+<td>0.059</td>
+<td>ol</td>
+<td>0.285</td>
+</tr>
+<tr class="row-even"><td>490-AL1/64-ST1A 380.0</td>
+<td>11</td>
+<td>0.96</td>
+<td>490</td>
+<td>0.059</td>
+<td>ol</td>
+<td>0.253</td>
+</tr>
+<tr class="row-odd"><td>94-AL1/15-ST1A 0.4</td>
+<td>13.2</td>
+<td>0.35</td>
+<td>94</td>
+<td>0.306</td>
+<td>ol</td>
+<td>0.29</td>
+</tr>
+<tr class="row-even"><td>94-AL1/15-ST1A 10.0</td>
+<td>10.75</td>
+<td>0.35</td>
+<td>94</td>
+<td>0.306</td>
+<td>ol</td>
+<td>0.33</td>
+</tr>
+<tr class="row-odd"><td>94-AL1/15-ST1A 20.0</td>
+<td>10</td>
+<td>0.35</td>
+<td>94</td>
+<td>0.306</td>
+<td>ol</td>
+<td>0.35</td>
+</tr>
+<tr class="row-even"><td>N2XS(FL)2Y 1x120 RM/35 64/110 kV</td>
+<td>112</td>
+<td>0.366</td>
+<td>120</td>
+<td>0.153</td>
+<td>cs</td>
+<td>0.166</td>
+</tr>
+<tr class="row-odd"><td>N2XS(FL)2Y 1x185 RM/35 64/110 kV</td>
+<td>125</td>
+<td>0.457</td>
+<td>185</td>
+<td>0.099</td>
+<td>cs</td>
+<td>0.156</td>
+</tr>
+<tr class="row-even"><td>N2XS(FL)2Y 1x240 RM/35 64/110 kV</td>
+<td>135</td>
+<td>0.526</td>
+<td>240</td>
+<td>0.075</td>
+<td>cs</td>
+<td>0.149</td>
+</tr>
+<tr class="row-odd"><td>N2XS(FL)2Y 1x300 RM/35 64/110 kV</td>
+<td>144</td>
+<td>0.588</td>
+<td>300</td>
+<td>0.06</td>
+<td>cs</td>
+<td>0.144</td>
+</tr>
+<tr class="row-even"><td>NA2XS2Y 1x185 RM/25 12/20 kV</td>
+<td>273</td>
+<td>0.362</td>
+<td>185</td>
+<td>0.161</td>
+<td>cs</td>
+<td>0.117</td>
+</tr>
+<tr class="row-odd"><td>NA2XS2Y 1x240 RM/25 12/20 kV</td>
+<td>304</td>
+<td>0.421</td>
+<td>240</td>
+<td>0.122</td>
+<td>cs</td>
+<td>0.112</td>
+</tr>
+<tr class="row-even"><td>NA2XS2Y 1x95 RM/25 12/20 kV</td>
+<td>216</td>
+<td>0.252</td>
+<td>95</td>
+<td>0.313</td>
+<td>cs</td>
+<td>0.132</td>
+</tr>
+<tr class="row-odd"><td>NAYY 4x120 SE</td>
+<td>264</td>
+<td>0.242</td>
+<td>120</td>
+<td>0.225</td>
+<td>cs</td>
+<td>0.08</td>
+</tr>
+<tr class="row-even"><td>NAYY 4x150 SE</td>
+<td>261</td>
+<td>0.27</td>
+<td>150</td>
+<td>0.208</td>
+<td>cs</td>
+<td>0.08</td>
+</tr>
+<tr class="row-odd"><td>NAYY 4x50 SE</td>
+<td>210</td>
+<td>0.142</td>
+<td>50</td>
+<td>0.642</td>
+<td>cs</td>
+<td>0.083</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="w-transformers">
+<h2>2W-Transformers<a class="headerlink" href="#w-transformers" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&nbsp;</td>
+<td>i0_percent</td>
+<td>pfe_kw</td>
+<td>shift_degree</td>
+<td>sn_kva</td>
+<td>tp_max</td>
+<td>tp_mid</td>
+<td>tp_min</td>
+<td>tp_pos</td>
+<td>tp_side</td>
+<td>tp_st_percent</td>
+<td>vector_group</td>
+<td>vn_hv_kv</td>
+<td>vn_lv_kv</td>
+<td>vsc_percent</td>
+<td>vscr_percent</td>
+</tr>
+<tr class="row-even"><td>0.25 MVA 10/0.4 kV</td>
+<td>0.24</td>
+<td>0.6</td>
+<td>150</td>
+<td>250</td>
+<td>2</td>
+<td>0</td>
+<td>-2</td>
+<td>0</td>
+<td>hv</td>
+<td>2.5</td>
+<td>Dyn5</td>
+<td>10</td>
+<td>0.4</td>
+<td>4</td>
+<td>1.2</td>
+</tr>
+<tr class="row-odd"><td>0.25 MVA 20/0.4 kV</td>
+<td>0.32</td>
+<td>0.8</td>
+<td>150</td>
+<td>250</td>
+<td>2</td>
+<td>0</td>
+<td>-2</td>
+<td>0</td>
+<td>hv</td>
+<td>2.5</td>
+<td>Yzn5</td>
+<td>20</td>
+<td>0.4</td>
+<td>6</td>
+<td>1.44</td>
+</tr>
+<tr class="row-even"><td>0.4 MVA 10/0.4 kV</td>
+<td>0.2375</td>
+<td>0.95</td>
+<td>150</td>
+<td>400</td>
+<td>2</td>
+<td>0</td>
+<td>-2</td>
+<td>0</td>
+<td>hv</td>
+<td>2.5</td>
+<td>Dyn5</td>
+<td>10</td>
+<td>0.4</td>
+<td>4</td>
+<td>1.325</td>
+</tr>
+<tr class="row-odd"><td>0.4 MVA 20/0.4 kV</td>
+<td>0.3375</td>
+<td>1.35</td>
+<td>150</td>
+<td>400</td>
+<td>2</td>
+<td>0</td>
+<td>-2</td>
+<td>0</td>
+<td>hv</td>
+<td>2.5</td>
+<td>Dyn5</td>
+<td>20</td>
+<td>0.4</td>
+<td>6</td>
+<td>1.425</td>
+</tr>
+<tr class="row-even"><td>0.63 MVA 10/0.4 kV</td>
+<td>0.1873</td>
+<td>1.18</td>
+<td>150</td>
+<td>630</td>
+<td>2</td>
+<td>0</td>
+<td>-2</td>
+<td>0</td>
+<td>hv</td>
+<td>2.5</td>
+<td>Dyn5</td>
+<td>10</td>
+<td>0.4</td>
+<td>4</td>
+<td>1.0794</td>
+</tr>
+<tr class="row-odd"><td>0.63 MVA 20/0.4 kV</td>
+<td>0.2619</td>
+<td>1.65</td>
+<td>150</td>
+<td>630</td>
+<td>2</td>
+<td>0</td>
+<td>-2</td>
+<td>0</td>
+<td>hv</td>
+<td>2.5</td>
+<td>Dyn5</td>
+<td>20</td>
+<td>0.4</td>
+<td>6</td>
+<td>1.206</td>
+</tr>
+<tr class="row-even"><td>100 MVA 220/110 kV</td>
+<td>0.06</td>
+<td>55</td>
+<td>0</td>
+<td>100000.0</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>Yy0</td>
+<td>220.0</td>
+<td>110.0</td>
+<td>12.0</td>
+<td>0.26</td>
+</tr>
+<tr class="row-odd"><td>160 MVA 380/110 kV</td>
+<td>0.06</td>
+<td>60</td>
+<td>0</td>
+<td>160000.0</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>Yy0</td>
+<td>380.0</td>
+<td>110.0</td>
+<td>12.2</td>
+<td>0.25</td>
+</tr>
+<tr class="row-even"><td>25 MVA 110/10 kV</td>
+<td>0.073</td>
+<td>28.51</td>
+<td>150</td>
+<td>25000</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>YNd5</td>
+<td>110</td>
+<td>10</td>
+<td>10.04</td>
+<td>0.276</td>
+</tr>
+<tr class="row-odd"><td>25 MVA 110/20 kV</td>
+<td>0.071</td>
+<td>29</td>
+<td>150</td>
+<td>25000</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>YNd5</td>
+<td>110.0</td>
+<td>20.0</td>
+<td>11.2</td>
+<td>0.282</td>
+</tr>
+<tr class="row-even"><td>40 MVA 110/10 kV</td>
+<td>0.076</td>
+<td>30.45</td>
+<td>150</td>
+<td>40000</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>YNd5</td>
+<td>110</td>
+<td>10</td>
+<td>10.04</td>
+<td>0.295</td>
+</tr>
+<tr class="row-odd"><td>40 MVA 110/20 kV</td>
+<td>0.08</td>
+<td>31</td>
+<td>150</td>
+<td>40000</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>YNd5</td>
+<td>110.0</td>
+<td>20.0</td>
+<td>11.2</td>
+<td>0.302</td>
+</tr>
+<tr class="row-even"><td>63 MVA 110/10 kV</td>
+<td>0.078</td>
+<td>31.51</td>
+<td>150</td>
+<td>63000</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>YNd5</td>
+<td>110</td>
+<td>10</td>
+<td>10.04</td>
+<td>0.31</td>
+</tr>
+<tr class="row-odd"><td>63 MVA 110/20 kV</td>
+<td>0.086</td>
+<td>33</td>
+<td>150</td>
+<td>63000</td>
+<td>9</td>
+<td>0</td>
+<td>-9</td>
+<td>0</td>
+<td>hv</td>
+<td>1.5</td>
+<td>YNd5</td>
+<td>110.0</td>
+<td>20.0</td>
+<td>11.2</td>
+<td>0.322</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id1">
+<h2>3W-Transformers<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+<col width="4%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&nbsp;</td>
+<td>i0_percent</td>
+<td>pfe_kw</td>
+<td>shift_lv_degree</td>
+<td>shift_mv_degree</td>
+<td>sn_hv_kva</td>
+<td>sn_lv_kva</td>
+<td>sn_mv_kva</td>
+<td>tp_max</td>
+<td>tp_mid</td>
+<td>tp_min</td>
+<td>tp_pos</td>
+<td>tp_side</td>
+<td>tp_st_percent</td>
+<td>vector_group</td>
+<td>vn_hv_kv</td>
+<td>vn_lv_kv</td>
+<td>vn_mv_kv</td>
+<td>vsc_hv_percent</td>
+<td>vsc_lv_percent</td>
+<td>vsc_mv_percent</td>
+<td>vscr_hv_percent</td>
+<td>vscr_lv_percent</td>
+<td>vscr_mv_percent</td>
+</tr>
+<tr class="row-even"><td>63/25/38 MVA 110/10/10 kV</td>
+<td>0.89</td>
+<td>35</td>
+<td>0</td>
+<td>0</td>
+<td>63000</td>
+<td>38000</td>
+<td>25000</td>
+<td>10</td>
+<td>0</td>
+<td>-10</td>
+<td>0</td>
+<td>hv</td>
+<td>1.2</td>
+<td>YN0yn0yn0</td>
+<td>110</td>
+<td>10</td>
+<td>10</td>
+<td>10.4</td>
+<td>10.4</td>
+<td>10.4</td>
+<td>0.28</td>
+<td>0.35</td>
+<td>0.32</td>
+</tr>
+<tr class="row-odd"><td>63/25/38 MVA 110/20/10 kV</td>
+<td>0.89</td>
+<td>35</td>
+<td>0</td>
+<td>0</td>
+<td>63000</td>
+<td>38000</td>
+<td>25000</td>
+<td>10</td>
+<td>0</td>
+<td>-10</td>
+<td>0</td>
+<td>hv</td>
+<td>1.2</td>
+<td>YN0yn0yn0</td>
+<td>110</td>
+<td>10</td>
+<td>20</td>
+<td>10.4</td>
+<td>10.4</td>
+<td>10.4</td>
+<td>0.28</td>
+<td>0.35</td>
+<td>0.32</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The pandapower standard types are compatible with 50 Hz systems, please be aware that the standard type values might not be realistic for 60 Hz (or other) power systems.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="manage.html" class="btn btn-neutral float-right" title="Manage Standard Types" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../std_types.html" class="btn btn-neutral" title="Standard Type Libraries" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016 by Fraunhofer IWES and Kassel University.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
