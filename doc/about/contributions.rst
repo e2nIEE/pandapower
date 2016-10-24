@@ -9,7 +9,7 @@ Advantages and Contributions
     - the loadflow results are processed to include not only the classic loadflow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses
 
 2. pandapower API
-    - the pandapower API provides :ref:`create functions <create_functions>` for each element to allow automized step-by-step construction of networks
+    - the pandapower API provides create functions for each element to allow automized step-by-step construction of networks
     - the :ref:`standard type library <std_types>` allows simplified creation of lines, 2-Winding transformers and 3-Winding transformers
     - networks can be saved and loaded to the hard drive with the pickle library
 

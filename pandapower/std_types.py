@@ -34,7 +34,7 @@ def create_std_type(net, data, name, element="line", overwrite=True):
     EXAMPLE:
 
     >>> line_data = {"c_nf_per_km": 0, "r_ohm_per_km": 0.642, "x_ohm_per_km": 0.083, "imax_ka": 0.142, "type": "cs", "q_mm2": 50}
-    >>> pandapower.create_std_type(line_data, "NAYY 4×50 SE", element='line')
+    >>> pandapower.create_std_type(net, line_data, "NAYY 4×50 SE", element='line')
     """
 
     if type(data) != dict:
