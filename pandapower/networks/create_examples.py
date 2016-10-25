@@ -64,7 +64,8 @@ def example_simple():
     pp.create_load(net, bus8, p_kw=2000, q_kvar=4000, scaling=0.6, name="load")
 
     # create generator
-    pp.create_gen(net, bus6, p_kw=-6000, vm_pu=1.03, name="generator") 
+    pp.create_gen(net, bus6, p_kw=-6000, max_q_kvar=3000, min_q_kvar=-3000, vm_pu=1.03, 
+                  name="generator") 
 
     # create static generator
     pp.create_sgen(net, bus7, p_kw=-2000, q_kvar=500, name="static generator")

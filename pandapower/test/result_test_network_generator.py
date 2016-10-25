@@ -413,20 +413,23 @@ def test_two_open_switches(net):
     return net
 
 if __name__ == '__main__':
-    net_split = pp.create_empty_network()
-    add_test_load_sgen_split(net_split)
-    
-    
     net = pp.create_empty_network()
-    add_test_load_sgen(net)
-#    b1, b2, ln = add_grid_connection(net, zone="test_ext_grid")
-#    b3 = pp.create_bus(net, vn_kv=20.)
-#    pp.create_switch(net, b2, b3, et="b")
-#    pp.create_load(net, b2, p_kw=1200)
-#    pp.create_sgen(net, b3, p_kw=-800)
-#    pp.create_shunt(net, b3, q_kvar=-800, p_kw=0)
-
-    pp.runpp(net)
-    pp.runpp(net_split)
+#    add_test_gen(net)
+    add_test_oos_bus_with_is_element(net)
+#    add_test_load_sgen_split(net_split)
+#    
+#    
+#    net = pp.create_empty_network()
+#    add_test_load_sgen(net)
+##    b1, b2, ln = add_grid_connection(net, zone="test_ext_grid")
+##    b3 = pp.create_bus(net, vn_kv=20.)
+##    pp.create_switch(net, b2, b3, et="b")
+##    pp.create_load(net, b2, p_kw=1200)
+##    pp.create_sgen(net, b3, p_kw=-800)
+##    pp.create_shunt(net, b3, q_kvar=-800, p_kw=0)
+#
+#    pp.runpp(net)
+#    pp.runpp(net_split)
     from consistency_checks import runpp_with_consistency_checks
-    runpp_with_consistency_checks(net, init="flat", trafo_model="pi", trafo_loading="current", tolerance_kva=1e-5)
+    runpp_with_consistency_checks(net, init="flat", trafo_model="pi", trafo_loading="current", 
+                                  tolerance_kva=1e-5)
