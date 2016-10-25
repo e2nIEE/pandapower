@@ -265,6 +265,7 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     INPUT:
         **net** - The Pandapower format network
+        **is_elems** - In service elements from the network (see _select_is_elements())
 
 
     RETURN:
@@ -275,21 +276,35 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
                         "bus": np.array([], dtype=float),
                         "branch": np.array([], dtype=np.complex128),
                         "gen": np.array([], dtype=float)
+        **ppc** - The "internal" pypower format network for PF calculations
+        **bus_lookup** - Lookup Pandapower -> mpc / ppc indices
     """
+
+    # init empty mpc
     mpc = {"baseMVA": 1.,
            "version": 2,
            "bus": np.array([], dtype=float),
            "branch": np.array([], dtype=np.complex128),
            "gen": np.array([], dtype=float)}
+    # generate mpc['bus'] and the bus lookup
     bus_lookup = _build_bus_mpc(net, mpc, is_elems, init_results)
+    # generate mpc['gen'] and fills mpc['bus'] with generator values (PV, REF nodes)
     _build_gen_mpc(net, mpc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
+    # generate mpc['branch'] and directly generates branch values
     _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model)
+    # adds P and Q for loads / sgens in mpc['bus'] (PQ nodes)
     _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
+    # adds P and Q for shunts, wards and xwards (to PQ nodes)
     _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
+    # adds auxilary buses for open switches at branches
     _switch_branches(net, mpc, is_elems, bus_lookup)
+    # add auxilary buses for out of service buses at in service lines.
+    # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, mpc, is_elems, bus_lookup)
+    # sets buses out of service, which aren't connected to branches / REF buses
     _set_isolated_buses_out_of_service(net, mpc)
-
+    # generates "internal" ppc format (for powerflow calc) from "external" mpc format and updates the bus lookup
+    # Note: Also reorders buses and gens in mpc
     ppc, bus_lookup = _mpc2ppc(mpc, bus_lookup)
 
     # add lookup with indices before any busses were fused
