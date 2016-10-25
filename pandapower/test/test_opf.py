@@ -8,11 +8,11 @@ import pandapower as pp
 import pytest
 
 try:
-    import pplog
-    logger = pplog.getLogger(__name__)
+    import pplog as logging
 except:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 def test_simplest_voltage():
     """ Testing a very simple network without transformer for voltage

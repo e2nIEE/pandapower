@@ -254,4 +254,4 @@ if __name__ == "__main__":
 #    net_dc = create_test_network2()
 #    pp.runpp(net_dc)
 #    
-#    run_all_tests()
+    run_all_tests()

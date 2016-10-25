@@ -15,12 +15,14 @@ def runpp_with_consistency_checks(net, **kwargs):
     element_power_consistent_with_bus_power(net)
 
 def indices_consistent(net):
+    is_buses = net.bus[net.bus.in_service==True].index
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt", 
                     "ward", "xward", "impedance", "gen"]:
         if element == "gen":
-            e_idx = net.gen[net.gen.in_service==True].index
+            e_idx = net.gen[(net.gen.in_service==True) & (net.gen.bus.isin(is_buses))].index
         elif element == "ext_grid":
-            e_idx = net.ext_grid[net.ext_grid.in_service==True].index
+            e_idx = net.ext_grid[(net.ext_grid.in_service==True) & 
+                                 (net.ext_grid.bus.isin(is_buses))].index
         else:
             e_idx = net[element].index
         res_idx = net["res_" + element].index
@@ -54,12 +56,12 @@ def element_power_consistent_with_bus_power(net):
     bus_q = pd.Series(data=0, index=net.bus.index, dtype=float)
 
     for idx, tab in net.ext_grid.iterrows():
-        if tab.in_service:
+        if idx in net.res_ext_grid.index:
             bus_p.at[tab.bus] += net.res_ext_grid.p_kw.at[idx]
             bus_q.at[tab.bus] += net.res_ext_grid.q_kvar.at[idx]
 
     for idx, tab in net.gen.iterrows():
-        if tab.in_service:
+        if idx in net.res_gen.index:
             bus_p.at[tab.bus] += net.res_gen.p_kw.at[idx]
             bus_q.at[tab.bus] += net.res_gen.q_kvar.at[idx]
 

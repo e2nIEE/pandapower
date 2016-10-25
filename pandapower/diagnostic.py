@@ -8,19 +8,119 @@ import numpy as np
 import copy
 
 try:
-    import pplog
+    import pplog as logging
 except:
-    import logging as log
+    import logging
     
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 import pandapower.topology as top
 from pandapower.run import runpp
-from pandapower.toolbox import get_connected_elements, get_connected_buses_at_element
-
+from pandapower.diagnostic_reports import diagnostic_report
+from pandapower.toolbox import get_connected_elements
 # separator between log messages
 log_message_sep = ("\n --------\n")
 
+def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
+               overload_scaling_factor=0.001, lines_min_length_km=0, lines_min_z_ohm=0,
+               nom_voltage_tolerance=0.3):
+
+    """
+    Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
+
+    INPUT:
+     **net** (PandapowerNet) : pandapower network
+
+    OPTIONAL:
+     - **report_style** (string, 'detailed') : style of the report, that gets ouput in the console
+
+      'detailled': full report with high level of additional descriptions
+
+      'compact'  : more compact report, containing essential information only
+
+      'None'     : no report
+
+
+     - **warnings_only** (boolean, False): Filters logging output for warnings
+
+      True: logging output for errors only
+
+      False: logging output for all checks, regardless if errors were found or not
+
+
+     - **return_result_dict** (boolean, True): returns a dictionary containing all check results
+
+      True: returns dict with all check results
+
+      False: no result dict
+
+     - **overload_scaling_factor** (float, 0.001): downscaling factor for loads and generation \
+     for overload check
+
+     - **lines_min_length_km** (float, 0): minimum length_km allowed for lines
+
+     - **lines_min_z_ohm** (float, 0): minimum z_ohm allowed for lines
+
+     - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
+     voltages and bus voltages
+
+    RETURN:
+     - **diag_results** (dict): dict that contains the indeces of all elements where errors were found
+
+      Format: {'check_name': check_results}
+
+    EXAMPLE:
+
+    <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
+
+    """
+
+    diag_results = {}
+    if disconnected_elements(net):
+        diag_results["disconnected_elements"] = disconnected_elements(net)
+    if different_voltage_levels_connected(net):
+        diag_results["different_voltage_levels_connected"] = \
+            different_voltage_levels_connected(net)
+    if lines_with_impedance_close_to_zero(net, lines_min_length_km,
+                                          lines_min_z_ohm):
+        diag_results["lines_with_impedance_close_to_zero"] = \
+            lines_with_impedance_close_to_zero(net, lines_min_length_km,
+                                               lines_min_z_ohm)
+    if nominal_voltages_dont_match(net, nom_voltage_tolerance):
+        diag_results["nominal_voltages_dont_match"] = \
+            nominal_voltages_dont_match(net, nom_voltage_tolerance)
+    if invalid_values(net):
+        diag_results["invalid_values"] = invalid_values(net)
+    if overload(net, overload_scaling_factor):
+        diag_results["overload"] = overload(net, overload_scaling_factor)
+    if wrong_switch_configuration(net):
+        diag_results["wrong_switch_configuration"] = wrong_switch_configuration(net)
+    if multiple_voltage_controlling_elements_per_bus(net):
+        diag_results["multiple_voltage_controlling_elements_per_bus"] = \
+                                        multiple_voltage_controlling_elements_per_bus(net)
+    if no_ext_grid(net):
+        diag_results["no_ext_grid"] = no_ext_grid(net)
+    if wrong_reference_system(net):
+        diag_results["wrong_reference_system"] = wrong_reference_system(net)
+
+    diag_params = {
+        "overload_scaling_factor": overload_scaling_factor,
+        "lines_min_length_km": lines_min_length_km,
+        "lines_min_z_ohm": lines_min_z_ohm,
+        "nom_voltage_tolerance": nom_voltage_tolerance
+                   }
+    if warnings_only:
+        logger.setLevel(logging.WARNING)
+    else:
+        logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    if report_style == 'detailed':
+        diagnostic_report(net, diag_results, diag_params, compact_report=False)
+    elif report_style == 'compact':
+        diagnostic_report(net, diag_results, diag_params, compact_report=True)
+    if return_result_dict:
+        return diag_results
 
 def check_greater_zero(element, element_index, column):
     """
@@ -757,613 +857,3 @@ def wrong_reference_system(net):
 
     if check_results:
         return check_results
-
-
-def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
-               overload_scaling_factor=0.001, lines_min_length_km=0, lines_min_z_ohm=0,
-               nom_voltage_tolerance=0.3):
-
-    """
-    Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
-
-    INPUT:
-     **net** (PandapowerNet) : pandapower network
-
-    OPTIONAL:
-     - **report_style** (string, 'detailed') : style of the report, that gets ouput in the console
-
-      'detailled': full report with high level of additional descriptions
-
-      'compact'  : more compact report, containing essential information only
-
-      'None'     : no report
-
-
-     - **warnings_only** (boolean, False): Filters logging output for warnings
-
-      True: logging output for errors only
-
-      False: logging output for all checks, regardless if errors were found or not
-
-
-     - **return_result_dict** (boolean, True): returns a dictionary containing all check results
-
-      True: returns dict with all check results
-
-      False: no result dict
-
-     - **overload_scaling_factor** (float, 0.001): downscaling factor for loads and generation \
-     for overload check
-
-     - **lines_min_length_km** (float, 0): minimum length_km allowed for lines
-
-     - **lines_min_z_ohm** (float, 0): minimum z_ohm allowed for lines
-
-     - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
-     voltages and bus voltages
-
-    RETURN:
-     - **diag_results** (dict): dict that contains the indeces of all elements where errors were found
-
-      Format: {'check_name': check_results}
-
-    EXAMPLE:
-
-    .. code:: python
-
-     misc.diagnostic(net, report_style='compact', warnings_only=True)
-
-    """
-
-    diag_results = {}
-    if disconnected_elements(net):
-        diag_results["disconnected_elements"] = disconnected_elements(net)
-    if closed_switches_between_oos_and_is_buses(net):
-        diag_results["closed_switches_between_oos_and_is_buses"] = \
-            closed_switches_between_oos_and_is_buses(net)
-    if different_voltage_levels_connected(net):
-        diag_results["different_voltage_levels_connected"] = \
-            different_voltage_levels_connected(net)
-    if lines_with_impedance_close_to_zero(net, lines_min_length_km,
-                                          lines_min_z_ohm):
-        diag_results["lines_with_impedance_close_to_zero"] = \
-            lines_with_impedance_close_to_zero(net, lines_min_length_km,
-                                               lines_min_z_ohm)
-    if nominal_voltages_dont_match(net, nom_voltage_tolerance):
-        diag_results["nominal_voltages_dont_match"] = \
-            nominal_voltages_dont_match(net, nom_voltage_tolerance)
-    if invalid_values(net):
-        diag_results["invalid_values"] = invalid_values(net)
-    if overload(net, overload_scaling_factor):
-        diag_results["overload"] = overload(net, overload_scaling_factor)
-    if wrong_switch_configuration(net):
-        diag_results["wrong_switch_configuration"] = wrong_switch_configuration(net)
-    if multiple_voltage_controlling_elements_per_bus(net):
-        diag_results["multiple_voltage_controlling_elements_per_bus"] = \
-                                        multiple_voltage_controlling_elements_per_bus(net)
-    if no_ext_grid(net):
-        diag_results["no_ext_grid"] = no_ext_grid(net)
-    if wrong_reference_system(net):
-        diag_results["wrong_reference_system"] = wrong_reference_system(net)
-
-    diag_params = {
-        "overload_scaling_factor": overload_scaling_factor,
-        "lines_min_length_km": lines_min_length_km,
-        "lines_min_z_ohm": lines_min_z_ohm,
-        "nom_voltage_tolerance": nom_voltage_tolerance
-                   }
-    if warnings_only:
-        logger.setLevel(pplog.WARNING)
-    else:
-        logger.setLevel(pplog.INFO)
-    logger.propagate = False
-
-    if report_style == 'detailed':
-        diagnostic_report(net, diag_results, diag_params, compact_report=False)
-    elif report_style == 'compact':
-        diagnostic_report(net, diag_results, diag_params, compact_report=True)
-    if return_result_dict:
-        return diag_results
-
-
-class DiagnosticReports:
-    def __init__(self, net, diag_results, diag_params, compact_report):
-        self.net = net
-        self.diag_results = diag_results
-        self.diag_params = diag_params
-        self.compact_report = compact_report
-
-    def report_disconnected_elements(self):
-        if "disconnected_elements" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("disconnected_elements:")
-            else:
-                logger.warning("Checking for elements without a connection to an external grid...")
-            logger.warning("")       
-
-        # message body
-            diag_result = self.diag_results["disconnected_elements"]
-            element_counter = 0
-            for disc_section in diag_result:
-                if self.compact_report:
-                    logger.warning("disonnected_section: %s" %(disc_section))
-
-                else:
-                    logger.warning("Disconnected section found,"
-                                   " consisting of the following elements:")
-                    for key in disc_section:
-                        element_counter += len(disc_section[key])
-                        logger.warning("%s: %s" %(key, disc_section[key]))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s disconnected element(s) found." %(element_counter))
-        else:
-            logger.info("PASSED: No problematic switches found")
-
-    def report_closed_switches_between_oos_and_is_buses(self):
-
-        if "closed_switches_between_oos_and_is_buses" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("closed_switches_between_oos_and_is_buses:")
-
-            else:
-                logger.warning("Checking for closed switches between out_of_service and "
-                               "in_service buses...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["closed_switches_between_oos_and_is_buses"]
-            for switch in diag_result:
-                bus1 = self.net.switch.bus.loc[switch]
-                bus2 = self.net.switch.element.loc[switch]
-
-                if self.compact_report:
-                    logger.warning("Switch %s: buses %s and %s"
-                                   %(switch, bus1, bus2))
-
-                else:
-                    logger.warning("Switch %s connects bus %s: %s (in_service = %s) "
-                                   "and bus %s: %s (in_service = %s)"
-                                   %(switch, bus1, self.net.bus.name.at[bus1],
-                                     self.net.bus.in_service.at[bus1], bus2, self.net.bus.name.at[bus2],
-                                     self.net.bus.in_service.at[bus2]))
-                    
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s switch(es) found." %(len(diag_result)))
-        else:
-            logger.info("PASSED: No problematic switches found")
-
-    def report_different_voltage_levels_connected(self):
-
-        if "different_voltage_levels_connected" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("different_voltage_levels_connected:")
-
-            else:
-                logger.warning("Checking for connections of different voltage levels...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["different_voltage_levels_connected"]
-            element_counter = 0
-            for key in diag_result:
-                element_counter += len(diag_result[key])
-                if self.compact_report:
-                    logger.warning("%s:" %(key))
-                for element in diag_result[key]:
-                    if key == "lines":
-                        element_type = "line"
-                    elif key == "switches":
-                        element_type = "switch"
-                    buses = list(get_connected_buses_at_element(self.net, element,
-                                                                     key[0]))
-                    if self.compact_report:
-                        logger.warning("%s %s: buses %s" %(element_type, element, buses))
-                    else:
-                        logger.warning("%s %s connects bus %s: %s (vn_kv = %s) "
-                                       "and bus %s: %s (vn_kv = %s)"
-                                       %(element_type, element, buses[0],
-                                         self.net.bus.name.at[buses[0]],
-                                         self.net.bus.vn_kv.at[buses[0]],
-                                         buses[1], self.net.bus.name.at[buses[1]],
-                                         self.net.bus.vn_kv.at[buses[1]]))
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s element(s) that connect different voltage "
-                               "levels found." %(element_counter))
-        else:
-            logger.info("PASSED: No problematic switches found")
-
-    def report_lines_with_impedance_close_to_zero(self):
-
-        if "lines_with_impedance_close_to_zero" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("lines_with_impedance_close_to_zero:")
-
-            else:
-                logger.warning("Checking for lines with impedance close to zero...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["lines_with_impedance_close_to_zero"]
-            for line in diag_result:
-                if self.compact_report:
-                    logger.warning("line %s: length_km: %s; r_ohm_per_km: %s; x_ohm_per_km: %s"
-                                    %(line, self.net.line.length_km.at[line],
-                                      self.net.line.r_ohm_per_km.at[line],
-                                      self.net.line.x_ohm_per_km.at[line]))
-                else:
-                    logger.warning("Line %s: length_km: %s, r_ohm_per_km: %s, x_ohm_per_km: %s."
-                                   " Impedance is close to zero. If a direct connection between"
-                                   " two buses was intended, please use a"
-                                   " bus-bus-switch instead."
-                                   %(line, self.net.line.length_km.at[line],
-                                     self.net.line.r_ohm_per_km.at[line],
-                                     self.net.line.x_ohm_per_km.at[line]))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s line(s) with impedance close to zero found."
-                               %(len(diag_result)))
-        else:
-            logger.info("PASSED: No lines with impedance close to zero...")
-
-    def report_nominal_voltages_dont_match(self):
-
-        if "nominal_voltages_dont_match" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("nominal_voltages_dont_match:")
-
-            else:
-                logger.warning("Checking for components with deviating nominal voltages...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["nominal_voltages_dont_match"]
-            nom_voltage_tolerance = self.diag_params["nom_voltage_tolerance"]
-            element_counter = 0
-            for element in diag_result:
-                if self.compact_report:
-                    logger.warning("%s:" %(element))
-                for key in diag_result[element]:
-                    element_counter += len(diag_result[element][key])
-                    if element == "trafo":
-                        if self.compact_report:
-                            logger.warning("%s: %s" %(key, diag_result[element][key]))
-                        else:
-                            if key == "hv_lv_swapped":
-                                logger.warning("Trafo(s) %s: hv and lv connectors seem to "
-                                               "be swapped" %(diag_result[element][key]))
-                            elif key == "hv_bus":
-                                for trafo in diag_result[element][key]:
-                                    logger.warning("Trafo %s: Nominal voltage on hv_side "
-                                                   "(%s kV) and voltage_level of hv_bus "
-                                                   "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent." 
-                                                    %(trafo, self.net.trafo.vn_hv_kv.at[trafo],
-                                                      self.net.trafo.hv_bus.at[trafo],
-                                                      self.net.bus.vn_kv.at[self.net.trafo.hv_bus.at[trafo]],
-                                                      nom_voltage_tolerance * 100))
-                            elif key == "lv_bus":
-                                for trafo in diag_result[element][key]:
-                                    logger.warning("Trafo %s: Nominal voltage on lv_side "
-                                                   "(%s kV) and voltage_level of lv_bus "
-                                                   "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent."
-                                                    %(trafo, self.net.trafo.vn_lv_kv.at[trafo],
-                                                      self.net.trafo.lv_bus.at[trafo],
-                                                      self.net.bus.vn_kv.at[self.net.trafo.lv_bus.at[trafo]],
-                                                      nom_voltage_tolerance * 100))
-                    if element == "trafo3w":
-                        if self.compact_report:
-                            logger.warning("%s: %s" %(key, diag_result[element][key]))
-                        else:
-                            if key == "connectors_swapped_3w":
-                                logger.warning("Trafo3w %s: connectors seem to "
-                                               "be swapped" %(diag_result[element][key]))
-                            elif key == "hv_bus":
-                                for trafo3w in diag_result[element][key]:
-                                    logger.warning("Trafo3w %s: Nominal voltage on hv_side "
-                                                   "(%s kV) and voltage_level of hv_bus "
-                                                   "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent." 
-                                                    %(trafo3w, self.net.trafo3w.vn_hv_kv.at[trafo3w],
-                                                      self.net.trafo3w.hv_bus.at[trafo3w],
-                                                      self.net.bus.vn_kv.at[self.net.trafo3w.hv_bus.at[trafo3w]],
-                                                      nom_voltage_tolerance * 100))
-                            elif key == "mv_bus":
-                                for trafo3w in diag_result[element][key]:
-                                    logger.warning("Trafo3w %s: Nominal voltage on mv_side "
-                                                   "(%s kV) and voltage_level of mv_bus "
-                                                   "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent." 
-                                                    %(trafo3w, self.net.trafo3w.vn_mv_kv.at[trafo3w],
-                                                      self.net.trafo3w.mv_bus.at[trafo3w],
-                                                      self.net.bus.vn_kv.at[self.net.trafo3w.mv_bus.at[trafo3w]],
-                                                      nom_voltage_tolerance * 100))
-                            elif key == "lv_bus":
-                                for trafo3w in diag_result[element][key]:
-                                    logger.warning("Trafo3w %s: Nominal voltage on lv_side "
-                                                   "(%s kV) and voltage_level of lv_bus "
-                                                   "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent."
-                                                    %(trafo3w, self.net.trafo3w.vn_lv_kv.at[trafo3w],
-                                                      self.net.trafo3w.lv_bus.at[trafo3w],
-                                                      self.net.bus.vn_kv.at[self.net.trafo3w.lv_bus.at[trafo3w]],
-                                                      nom_voltage_tolerance * 100))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s components(s) with deviating nominal voltages found"
-                               %(element_counter))
-        else:
-            logger.info("PASSED: No components with deviating nominal voltages found")
-
-    def report_invalid_values(self):
-
-        if "invalid_values" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("invalid_values:")
-            else:
-                logger.warning("Checking for invalid_values...")
-            logger.warning("")
-
-        # message body
-        if "invalid_values" in self.diag_results:
-            diag_result = self.diag_results["invalid_values"]
-            element_counter = 0
-            for element_type in diag_result:
-                element_counter += len(diag_result[element_type])
-                logger.warning("%s:" %(element_type))
-                for inv_value in diag_result[element_type]:
-                    if self.compact_report:
-                        logger.warning("%s %s: '%s' = %s (restriction: %s)"
-                                       %(element_type, inv_value[0], inv_value[1], inv_value[2],
-                                         inv_value[3]))
-                    else:
-                        logger.warning("Invalid value found: '%s %s' with attribute '%s' = %s "
-                                       "(data type: %s). Valid input needs to be %s."
-                                       %(element_type, inv_value[0], inv_value[1], inv_value[2],
-                                         type(inv_value[2]), inv_value[3]))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s invalid values found." %element_counter)
-
-        else:
-            logger.info("PASSED: No invalid values found")
-
-    def report_overload(self):
-
-        if "overload" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("overload:")
-            else:
-                logger.warning("Checking for overload...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["overload"]
-            overload_scaling_factor = self.diag_params["overload_scaling_factor"]
-            for overload_type in diag_result:
-                if diag_result[overload_type] is True:
-                    if self.compact_report:
-                        logger.warning("%s overload: loadflow converges after load "
-                                       "downscaling." %overload_type)
-                    else:
-                        logger.warning("Possibly overload found: Loadflow converges with "
-                                       "%s scaled down to %s percent."
-                                       %(overload_type, overload_scaling_factor*100))
-                elif diag_result[overload_type] is 'uncertain':
-                    if self.compact_report:
-                        logger.warning("loadflow still does not converge after %s "
-                                       "downscaling." %overload_type)
-                    else:
-                        logger.warning("Overload check failed: Loadflow still does not "
-                                       "converge with %s scaled down to %s percent."
-                                       %(overload_type, overload_scaling_factor*100))
-        # message summary
-        else:
-            logger.info("PASSED: Loadflow converges. No overload found.")
-
-    def report_wrong_switch_configuration(self):
-
-        if "wrong_switch_configuration" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("wrong_switch_configuration:")
-            else:
-                logger.warning("Checking switch configuration...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["wrong_switch_configuration"]
-            if diag_result is True:
-                logger.warning("Possibly wrong switch configuration found: Loadflow "
-                               "converges with all switches closed.")
-            elif diag_result is 'uncertain':
-                logger.warning("Loadflow still does not converge with all switches closed.")
-
-        # message summary
-        else:
-            logger.info("PASSED: Loadflow converges. Switch configuration seems ok.")
-
-    def report_no_ext_grid(self):
-
-        if "no_external_grid" in self.diag_results:
-        # message header
-            if self.compact_report:
-                logger.warning("no_external_grid:")
-            else:
-                logger.warning("Checking if there is at least one external grid...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["no_external_grid"]
-            if diag_result is True:
-                logger.warning("No ext_grid found. There has to be at least one ext_grid!")
-
-        # message summary
-        else:
-            logger.info("PASSED: External grid found.")
-
-    def report_multiple_voltage_controlling_elements_per_bus(self):
-
-        if "multiple_voltage_controlling_elements_per_bus" in self.diag_results:
-        # message header
-            if self.compact_report:              
-                logger.warning("multiple_voltage_controlling_elements_per_bus:")
-            else:
-                logger.warning("Checking for multiple gens and/or external grids per bus...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["multiple_voltage_controlling_elements_per_bus"]
-            element_counter = 0
-            for feeder_type in diag_result:
-                element_counter += len(diag_result[feeder_type])
-                if self.compact_report:
-                    logger.warning("%s: %s" %(feeder_type, diag_result[feeder_type]))
-
-                else:
-                    for bus in diag_result[feeder_type]:
-                        if feeder_type is "buses_with_mult_ext_grids":
-                            logger.warning("External grids %s are connected to bus %s. Only one "
-                                           "external grid per bus is allowed."
-                                           %(list(self.net.ext_grid[self.net.ext_grid.bus
-                                                                    == bus].index), bus))
-                        elif feeder_type is "buses_with_mult_gens":
-                            logger.warning("Generators %s are connected to bus %s. Only one "
-                                           "generator per bus is allowed."
-                                           %(list(self.net.gen[self.net.gen.bus == bus].index), bus))
-                        elif feeder_type is "buses_with_gens_and_ext_grids":
-                            logger.warning("Generator(s) %s and external grid(s) %s are connected "
-                                           "to bus %s. Only one generator OR one external grids "
-                                           "per bus is allowed."
-                                           %(list(self.net.gen[self.net.gen.bus == bus].index),
-                                             list(self.net.ext_grid[self.net.ext_grid.bus
-                                                                    == bus].index), bus))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                logger.warning("SUMMARY: %s bus(ses) with multiple gens and/or ext_grids "
-                               "found." %(element_counter))
-        else:
-            logger.info("PASSED: No buses with multiple gens and/or ext_grids found.")
-
-    def report_wrong_reference_system(self):
-
-        if "wrong_reference_system" in self.diag_results:
-
-        # message header
-            if self.compact_report:
-                logger.warning("wrong_reference_system:")
-            else:
-                logger.warning("Checking for usage of wrong reference system...")
-            logger.warning("")
-
-        # message body
-            diag_result = self.diag_results["wrong_reference_system"]
-
-            for element_type in diag_result:
-                if element_type is "loads":
-                    if self.compact_report:
-                        logger.warning("loads %s: wrong reference system."
-                                       %(diag_result[element_type]))
-                    else:
-                        for load in diag_result[element_type]:
-                            logger.warning("Found load %s: '%s' with p_kw = %s. In load reference "
-                                           "system p_kw should be positive." 
-                                           %(load, self.net.load.name.at[load], 
-                                             self.net.load.p_kw.at[load]))
-
-                elif element_type is "gens":
-                    if self.compact_report:
-                        logger.warning("gens %s: wrong reference system."
-                                       %(diag_result[element_type]))
-                    else:
-                        for gen in diag_result[element_type]:
-                            logger.warning("Found gen %s: '%s' with p_kw = %s. In load reference "
-                            "system p_kw should be negative."
-                            %(gen, self.net.gen.name.at[gen], self.net.gen.p_kw.at[gen]))
-
-                elif element_type is "sgens":
-                    if self.compact_report:
-                        logger.warning("sgens %s: wrong reference system."
-                                       %(diag_result[element_type]))
-                    else:
-                        for sgen in diag_result[element_type]:
-                            logger.warning("Found sgen %s: '%s' with p_kw = %s. In load reference "
-                            "system p_kw should be negative."
-                            %(sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                if 'loads' in diag_result:
-                    logger.warning("SUMMARY: Found %s load(s) with negative p_kw. In load "
-                                   "reference system, p_kw should be positive. If the intention "
-                                   "was to model a constant generation, please use an sgen instead."
-                                   %(len(diag_result['loads'])))
-                if 'gens' in diag_result:
-                    logger.warning("SUMMARY: Found %s gen(s) with positive p_kw. In load "
-                                   "reference system, p_kw should be negative. If the intention "
-                                   "was to model a load, please use a load instead."
-                                   %(len(diag_result['gens'])))
-                if 'sgens' in diag_result:
-                    logger.warning("SUMMARY: Found %s sgen(s) with positive p_kw. In load "
-                                   "reference system, p_kw should be negative. If the intention "
-                                   "was to model a load, please use a load instead."
-                                   %(len(diag_result['sgens'])))
-
-        else:
-            logger.info("PASSED: Loadflow converges. No overload found.")
-
-
-def diagnostic_report(net, diag_results, diag_params, compact_report):
-    diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report)
-
-    report_methods = {
-        "disconnected_elements": diag_report.report_disconnected_elements,
-        "closed_switches_between_oos_and_is_buses": diag_report.report_closed_switches_between_oos_and_is_buses,
-        "different_voltage_levels_connected": diag_report.report_different_voltage_levels_connected,
-        "lines_with_impedance_close_to_zero": diag_report.report_lines_with_impedance_close_to_zero,
-        "nominal_voltages_dont_match": diag_report.report_nominal_voltages_dont_match,
-        "invalid_values": diag_report.report_invalid_values,
-        "overload": diag_report.report_overload,
-        "wrong_switch_configuration": diag_report.report_wrong_switch_configuration,
-        "multiple_voltage_controlling_elements_per_bus": diag_report.report_multiple_voltage_controlling_elements_per_bus,
-        "no_ext_grid": diag_report.report_no_ext_grid,
-        "wrong_reference_system": diag_report.report_wrong_reference_system
-                    }
-
-    logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
-    for key in diag_results:
-        report_methods[key]()
-        logger.warning(log_message_sep)
-
-    logger.warning("_____________ END OF PANDAPOWER DIAGNOSTIC _____________ ")

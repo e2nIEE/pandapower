@@ -439,6 +439,15 @@ def test_bus_bus_switch(result_test_network):
 #    runpp_with_consistency_checks(net)
 
 
+def test_two_open_switches(result_test_network):
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_two_open_switches"]
+    lines = [x for x in net.line.index if net.line.from_bus[x] in buses.index]
+    l2 = lines[1]
+
+    assert net.res_line.i_ka.at[l2] == 0.
+
+
 def test_enforce_q_lims():
     """ Test for enforce_q_lims loadflow option
     """

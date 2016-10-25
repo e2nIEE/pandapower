@@ -19,4 +19,4 @@ tp_max;integer;;maximum tap position
 tp_st_percent;float;:math:`>` 0;tap step size [%]
 tp_pos;integer;;current position of tap changer
 in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the transformer is in service. Only in service elements are considered during loadflow calculation
+| *""False""* - out of service";specifies if the transformer is in service.

@@ -10,4 +10,4 @@ q_kvar*;float;;reactive power of the static generator [kVar]
 sn_kva;float;:math:`>` 0;rated power ot the static generator [kVA]
 scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
 in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the generator is in service. Only in service elements are considered during loadflow calculation
+| *""False""* - out of service";specifies if the generator is in service.

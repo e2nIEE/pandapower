@@ -265,6 +265,7 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     INPUT:
         **net** - The Pandapower format network
+        **is_elems** - In service elements from the network (see _select_is_elements())
 
 
     RETURN:
@@ -275,21 +276,35 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
                         "bus": np.array([], dtype=float),
                         "branch": np.array([], dtype=np.complex128),
                         "gen": np.array([], dtype=float)
+        **ppc** - The "internal" pypower format network for PF calculations
+        **bus_lookup** - Lookup Pandapower -> mpc / ppc indices
     """
+
+    # init empty mpc
     mpc = {"baseMVA": 1.,
            "version": 2,
            "bus": np.array([], dtype=float),
            "branch": np.array([], dtype=np.complex128),
            "gen": np.array([], dtype=float)}
+    # generate mpc['bus'] and the bus lookup
     bus_lookup = _build_bus_mpc(net, mpc, is_elems, init_results)
+    # generate mpc['gen'] and fills mpc['bus'] with generator values (PV, REF nodes)
     _build_gen_mpc(net, mpc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
+    # generate mpc['branch'] and directly generates branch values
     _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model)
+    # adds P and Q for loads / sgens in mpc['bus'] (PQ nodes)
     _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
+    # adds P and Q for shunts, wards and xwards (to PQ nodes)
     _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
+    # adds auxilary buses for open switches at branches
     _switch_branches(net, mpc, is_elems, bus_lookup)
+    # add auxilary buses for out of service buses at in service lines.
+    # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, mpc, is_elems, bus_lookup)
+    # sets buses out of service, which aren't connected to branches / REF buses
     _set_isolated_buses_out_of_service(net, mpc)
-
+    # generates "internal" ppc format (for powerflow calc) from "external" mpc format and updates the bus lookup
+    # Note: Also reorders buses and gens in mpc
     ppc, bus_lookup = _mpc2ppc(mpc, bus_lookup)
 
     # add lookup with indices before any busses were fused
@@ -297,7 +312,7 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     return mpc, ppc, bus_lookup
 
-# @profile
+
 def _mpc2ppc(mpc, bus_lookup):
     from numpy import array, zeros
 
@@ -321,8 +336,8 @@ def _mpc2ppc(mpc, bus_lookup):
 
     ## BUS Sorting and lookup
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
-    mpcBusses = mpc["bus"]
-    mpc['bus'] = mpcBusses[mpcBusses[:, BUS_TYPE].argsort(axis=0)[::-1][:],]
+    mpcBuses = mpc["bus"]
+    mpc['bus'] = mpcBuses[mpcBuses[:, BUS_TYPE].argsort(axis=0)[::-1][:],]
     # get OOS busses and place them at the end of the bus array (so that: 3 (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = mpc['bus'][:, BUS_TYPE] == NONE
     # there are no OOS busses in the ppc
@@ -331,14 +346,18 @@ def _mpc2ppc(mpc, bus_lookup):
     mpc['bus'] = np.r_[mpc['bus'][~oos_busses], mpc['bus'][oos_busses]]
     # generate bus_lookup_mpc_ppc (mpc -> ppc lookup)
     mpc_former_order = (mpc['bus'][:, BUS_I]).astype(int)
-    arangedBuses = np.arange(len(mpcBusses))
-    bus_lookup_mpc_ppc = dict(zip(mpc_former_order, arangedBuses))
+    arangedBuses = np.arange(len(mpcBuses))
+
+    # lookup mpc former order -> consecutive order
+    e2i = zeros( len(mpcBuses) )
+    e2i[mpc_former_order] = arangedBuses
+
     # save consecutive indices in mpc and ppc
     mpc['bus'][:, BUS_I] = arangedBuses
     ppc['bus'][:, BUS_I] = mpc['bus'][:len(ppc['bus']), BUS_I]
 
     # update bus_lookup (pandapower -> ppc internal)
-    bus_lookup = {key: bus_lookup_mpc_ppc[val] for (key, val) in bus_lookup.items()}
+    bus_lookup = {key: e2i[val] for (key, val) in bus_lookup.items()}
 
     ## sizes
     nb = mpc["bus"].shape[0]
@@ -352,10 +371,6 @@ def _mpc2ppc(mpc, bus_lookup):
     bt = mpc["bus"][:, BUS_TYPE]
 
     ## update branch, gen and areas bus numbering
-    maxBus = mpc["bus"][-1, BUS_I].astype(int)
-    e2i = zeros( maxBus + 1)
-    e2i[mpc_former_order] = arangedBuses
-
     mpc['gen'][:, GEN_BUS] = \
         e2i[np.real(mpc["gen"][:, GEN_BUS]).astype(int)].copy()
     mpc["branch"][:, F_BUS] = \

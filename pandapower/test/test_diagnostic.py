@@ -12,7 +12,7 @@ import numpy as np
 
 @pytest.fixture(scope='module')
 def test_net():
-    net = nw.create_example_realistic()
+    net = nw.example_multivoltage()
     return net
 
 
