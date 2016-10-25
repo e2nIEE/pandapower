@@ -433,8 +433,6 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
     
     if not ac:
         q = np.zeros(len(p))
-    p[np.isnan(p)] = 0
-    q[np.isnan(q)] = 0
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
     b_mpc = get_indices(b_pp, bus_lookup, fused_indices=False)
 

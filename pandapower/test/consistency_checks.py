@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
 # BSD-style license that can be found in the LICENSE file.
 
-from numpy import allclose, nan
+from numpy import allclose
 import pandas as pd
 import pandapower as pp
 
@@ -15,14 +15,12 @@ def runpp_with_consistency_checks(net, **kwargs):
     element_power_consistent_with_bus_power(net)
 
 def indices_consistent(net):
-    is_buses = net.bus[net.bus.in_service==True].index
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt", 
                     "ward", "xward", "impedance", "gen"]:
         if element == "gen":
-            e_idx = net.gen[(net.gen.in_service==True) & (net.gen.bus.isin(is_buses))].index
+            e_idx = net.gen[net.gen.in_service==True].index
         elif element == "ext_grid":
-            e_idx = net.ext_grid[(net.ext_grid.in_service==True) & 
-                                 (net.ext_grid.bus.isin(is_buses))].index
+            e_idx = net.ext_grid[net.ext_grid.in_service==True].index
         else:
             e_idx = net[element].index
         res_idx = net["res_" + element].index
@@ -40,11 +38,9 @@ def branch_loss_consistent_with_bus_feed_in(net):
     bus_surplus_q = -net.res_bus.q_kvar.sum()
 
     branch_loss_p = net.res_line.pl_kw.sum() + net.res_trafo.pl_kw.sum() + \
-                    net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum() + 0\
-#                    net.res_shunt.p_kw.sum()
+                    net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum()
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
-                    net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() +0 \
-#                     net.res_shunt.q_kvar.sum()
+                    net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum()
 
     assert allclose(bus_surplus_p, branch_loss_p)
     assert allclose(bus_surplus_q, branch_loss_q)
@@ -58,12 +54,12 @@ def element_power_consistent_with_bus_power(net):
     bus_q = pd.Series(data=0, index=net.bus.index, dtype=float)
 
     for idx, tab in net.ext_grid.iterrows():
-        if idx in net.res_ext_grid.index:
+        if tab.in_service:
             bus_p.at[tab.bus] += net.res_ext_grid.p_kw.at[idx]
             bus_q.at[tab.bus] += net.res_ext_grid.q_kvar.at[idx]
 
     for idx, tab in net.gen.iterrows():
-        if idx in net.res_gen.index:
+        if tab.in_service:
             bus_p.at[tab.bus] += net.res_gen.p_kw.at[idx]
             bus_q.at[tab.bus] += net.res_gen.q_kvar.at[idx]
 
@@ -86,9 +82,6 @@ def element_power_consistent_with_bus_power(net):
     for idx, tab in net.xward.iterrows():
         bus_p.at[tab.bus] += net.res_xward.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_kvar.at[idx]
-
-    net.res_bus.p_kw[net.bus.in_service==False]=nan
-    net.res_bus.q_kvar[net.bus.in_service==False]=nan
 
     assert allclose(net.res_bus.p_kw.values, bus_p.values, equal_nan=True)
     assert allclose(net.res_bus.q_kvar.values, bus_q.values, equal_nan=True)
