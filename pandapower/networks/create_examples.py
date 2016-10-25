@@ -33,49 +33,44 @@ def example_simple():
     bus8 = pp.create_bus(net, name="MV Station 4", vn_kv=20, type="b")
 
     # create external grid
-    pp.create_ext_grid(net, bus1, vm_pu=1.01, va_degree=50)
+    pp.create_ext_grid(net, bus1, vm_pu=1.02, va_degree=50)
 
     # create transformer
-    pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer",
-                          std_type="25 MVA 110/20 kV")
-
+    trafo1 = pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer", 
+                                   std_type="25 MVA 110/20 kV")
     # create lines
-    line1 = pp.create_line(net, bus1, bus2, 0.225, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                           name="Line 1")
-    line2 = pp.create_line(net, bus5, bus6, 0.075, std_type="NA2XS2Y 1x240 RM/25 12/20 kV",
-                           name="Line 2")
-    line3 = pp.create_line(net, bus5, bus7, 0.125, std_type="NA2XS2Y 1x240 RM/25 12/20 kV",
-                           name="Line 3")
-    line4 = pp.create_line(net, bus5, bus8, 0.175, std_type="NA2XS2Y 1x240 RM/25 12/20 kV",
-                           name="Line 4")
+    line1=pp.create_line(net, bus1, bus2, length_km=10,
+                         std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",  name="Line 1")
+    line2=pp.create_line(net, bus5, bus6, length_km=2, std_type="NA2XS2Y 1x240 RM/25 12/20 kV", 
+                         name="Line 2")
+    line3=pp.create_line(net, bus5, bus7, length_km=3.5, std_type="48-AL1/8-ST1A 20.0", 
+                         name="Line 3")
+    line4=pp.create_line(net, bus5, bus8, length_km=2.5, std_type="NA2XS2Y 1x240 RM/25 12/20 kV", 
+                         name="Line 4")
 
-    # create switches
-    # (Circuit breaker)
-    pp.create_switch(net, bus2, bus3, et="b", type="CB")
-    pp.create_switch(net, bus4, bus5, et="b", type="CB")
-    # (Load break switches)
-    pp.create_switch(net, bus5, line2, et="l", type="LBS")
-    pp.create_switch(net, bus6, line2, et="l", type="LBS")
-    pp.create_switch(net, bus5, line3, et="l", type="LBS")
-    pp.create_switch(net, bus7, line3, et="l", type="LBS")
-    pp.create_switch(net, bus5, line4, et="l", type="LBS")
-    pp.create_switch(net, bus8, line4, et="l", type="LBS")
+    # create bus-bus switches
+    sw1 = pp.create_switch(net, bus2, bus3, et="b", type="CB")
+    sw2 = pp.create_switch(net, bus4, bus5, et="b", type="CB")
+    
+    # create bus-line switches
+    sw3 = pp.create_switch(net, bus5, line2, et="l", type="LBS")
+    sw4 = pp.create_switch(net, bus6, line2, et="l", type="LBS")
+    sw5 = pp.create_switch(net, bus5, line3, et="l", type="LBS")
+    sw6 = pp.create_switch(net, bus7, line3, et="l", type="LBS")
+    sw7 = pp.create_switch(net, bus5, line4, et="l", type="LBS")
+    sw8 = pp.create_switch(net, bus8, line4, et="l", type="LBS")
+
+    #create load
+    pp.create_load(net, bus8, p_kw=2000, q_kvar=4000, scaling=0.6, name="load")
 
     # create generator
-    pp.create_gen(net, bus6, p_kw=-6000, vm_pu=1.05)
+    pp.create_gen(net, bus6, p_kw=-6000, vm_pu=1.03, name="generator") 
 
     # create static generator
-    pp.create_sgen(net, bus7, p_kw=-2000)
-
-    # Last mit 20MV bei scaling 0.6 ~ 12MV -> Industrie / Verbaucher am MS Netz
-    # create load
-    pp.create_load(net, bus8, p_kw=20000, q_kvar=4000, scaling=0.6)
+    pp.create_sgen(net, bus7, p_kw=-2000, q_kvar=500, name="static generator")
 
     # create shunt
-    pp.create_shunt(net, bus3, p_kw=0, q_kvar=-960, name='Shunt')
-
-    # run power flow and generate result tables
-    pp.runpp(net)
+    pp.create_shunt(net, bus3, q_kvar=-960, p_kw=0, name='Shunt')
 
     return net
     

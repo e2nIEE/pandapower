@@ -414,7 +414,7 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 def close_switch_at_line_with_two_open_switches(net):
     """
     Finds lines that have opened switches at both ends and closes one of them.
-    Function is usually used when optimizing section points (Trennstellen) to
+    Function is usually used when optimizing section points to
     prevent the algorithm from ignoring isolated lines.
     """
     nl = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
