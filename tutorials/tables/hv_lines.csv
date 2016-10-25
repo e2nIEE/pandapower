@@ -1,7 +1,0 @@
-index;line_name;from_bus;to_bus;std_type;length;parallel
-0;HV Line1;Bus SB 2;Bus HV1;184-AL1/30-ST1A 110.0;30;1
-1;HV Line2;Bus HV1;Bus HV2;184-AL1/30-ST1A 110.0;20;1
-2;HV Line3;Bus HV2;Bus HV4;184-AL1/30-ST1A 110.0;30;1
-3;HV Line4;Bus HV1;Bus HV4;184-AL1/30-ST1A 110.0;15;1
-4;HV Line5;Bus HV3;Bus HV4;184-AL1/30-ST1A 110.0;25;1
-5;HV Line6;Bus SB 3;Bus HV3;184-AL1/30-ST1A 110.0;30;2

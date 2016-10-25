@@ -571,7 +571,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
         if "controllable" not in net.sgen.columns:
             net.sgen.loc[:, "controllable"] = pd.Series()
 
-    net.sgen.loc[index, "controllable"] = bool(controllable)
+        net.sgen.loc[index, "controllable"] = bool(controllable)
 
     return index
 
