@@ -31,6 +31,7 @@ def result_test_network_generator():
     yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
     yield add_test_oos_bus_with_is_element(net)
+    yield test_two_open_switches(net)
 
 
 def add_test_line(net):
@@ -398,6 +399,17 @@ def add_test_oos_bus_with_is_element(net):
     pp.create_shunt(net, b5, q_kvar=-800, p_kw=0)
 
     net.last_added_case = "test_oos_bus_with_is_element"
+    return net
+
+def test_two_open_switches(net):
+    b1, b2, l1 = add_grid_connection(net, zone="test_two_open_switches")
+    b3 = pp.create_bus(net, vn_kv=20.)
+    l2 = create_test_line(net, b2, b3)
+    create_test_line(net, b3, b1)
+    pp.create_switch(net, b2, l2, et="l", closed=False)
+    pp.create_switch(net, b3, l2, et="l", closed=False)
+
+    net.last_added_case = "test_two_open_switches"
     return net
 
 if __name__ == '__main__':

@@ -312,7 +312,7 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     return mpc, ppc, bus_lookup
 
-# @profile
+
 def _mpc2ppc(mpc, bus_lookup):
     from numpy import array, zeros
 
@@ -336,8 +336,8 @@ def _mpc2ppc(mpc, bus_lookup):
 
     ## BUS Sorting and lookup
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
-    mpcBusses = mpc["bus"]
-    mpc['bus'] = mpcBusses[mpcBusses[:, BUS_TYPE].argsort(axis=0)[::-1][:],]
+    mpcBuses = mpc["bus"]
+    mpc['bus'] = mpcBuses[mpcBuses[:, BUS_TYPE].argsort(axis=0)[::-1][:],]
     # get OOS busses and place them at the end of the bus array (so that: 3 (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = mpc['bus'][:, BUS_TYPE] == NONE
     # there are no OOS busses in the ppc
@@ -346,14 +346,18 @@ def _mpc2ppc(mpc, bus_lookup):
     mpc['bus'] = np.r_[mpc['bus'][~oos_busses], mpc['bus'][oos_busses]]
     # generate bus_lookup_mpc_ppc (mpc -> ppc lookup)
     mpc_former_order = (mpc['bus'][:, BUS_I]).astype(int)
-    arangedBuses = np.arange(len(mpcBusses))
-    bus_lookup_mpc_ppc = dict(zip(mpc_former_order, arangedBuses))
+    arangedBuses = np.arange(len(mpcBuses))
+
+    # lookup mpc former order -> consecutive order
+    e2i = zeros( len(mpcBuses) )
+    e2i[mpc_former_order] = arangedBuses
+
     # save consecutive indices in mpc and ppc
     mpc['bus'][:, BUS_I] = arangedBuses
     ppc['bus'][:, BUS_I] = mpc['bus'][:len(ppc['bus']), BUS_I]
 
     # update bus_lookup (pandapower -> ppc internal)
-    bus_lookup = {key: bus_lookup_mpc_ppc[val] for (key, val) in bus_lookup.items()}
+    bus_lookup = {key: e2i[val] for (key, val) in bus_lookup.items()}
 
     ## sizes
     nb = mpc["bus"].shape[0]
@@ -367,10 +371,6 @@ def _mpc2ppc(mpc, bus_lookup):
     bt = mpc["bus"][:, BUS_TYPE]
 
     ## update branch, gen and areas bus numbering
-    maxBus = mpc["bus"][-1, BUS_I].astype(int)
-    e2i = zeros( maxBus + 1)
-    e2i[mpc_former_order] = arangedBuses
-
     mpc['gen'][:, GEN_BUS] = \
         e2i[np.real(mpc["gen"][:, GEN_BUS]).astype(int)].copy()
     mpc["branch"][:, F_BUS] = \

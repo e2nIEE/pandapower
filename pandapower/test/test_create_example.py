@@ -11,7 +11,7 @@ import pandas as pd
 
 
 def test_create_simple():
-    net = pn.create_example_simple()
+    net = pn.example_simple()
     pp.runpp(net)
 
     assert len(net.bus) >= 1
@@ -28,7 +28,7 @@ def test_create_simple():
 
 
 def test_create_realistic():
-    net = pn.create_example_realistic()
+    net = pn.example_multivoltage()
     pp.runpp(net)
 
     all_vn_kv = pd.Series([380, 110, 20, 10, 0.4])

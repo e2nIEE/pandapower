@@ -436,8 +436,30 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
     lines_is = is_elems['line']
     bus_is = is_elems['bus']
 
+    # opened bus line switches
     slidx = (n["switch"]["closed"].values == 0) \
-            & (n["switch"]["et"].values == "l") \
+            & (n["switch"]["et"].values == "l")
+
+    # check if there are multiple opened switches at a line (-> set line out of service)
+    sw_elem = n['switch'].ix[slidx].element
+    m = np.zeros_like(sw_elem, dtype=bool)
+    m[np.unique(sw_elem, return_index=True)[1]] = True
+
+    # if non unique elements are in sw_elem (= multiple opened bus line switches)
+    if np.count_nonzero(m) < len(sw_elem):
+        # set branch in mpc out of service
+        # get from and to buses of these branches
+        mpc_from = get_indices(lines_is.ix[sw_elem[~m]].from_bus, bus_lookup)
+        mpc_to = get_indices(lines_is.ix[sw_elem[~m]].to_bus, bus_lookup)
+        mpc_idx = np.in1d(mpc['branch'][:,0], mpc_from)\
+                & np.in1d(mpc['branch'][:,1], mpc_to)
+        mpc["branch"][mpc_idx, BR_STATUS] = 0
+
+        # drop from in service lines as well
+        lines_is = lines_is.drop(sw_elem[~m])
+
+    # opened switches at in service lines
+    slidx = slidx\
             & (np.in1d(n["switch"]["element"].values, lines_is.index)) \
             & (np.in1d(n["switch"]["bus"].values, bus_is.index))
     nlo = np.count_nonzero(slidx)
