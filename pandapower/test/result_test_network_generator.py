@@ -24,14 +24,15 @@ def result_test_network_generator():
     yield add_test_ward_split(net)
     yield add_test_xward(net)
     yield add_test_xward_combination(net)
-    yield add_test_gen(net)
-    yield add_test_ext_grid_gen_switch(net)
-    yield add_test_enforce_qlims(net)
+#    yield add_test_gen(net)
+#    yield add_test_ext_grid_gen_switch(net)
+#    yield add_test_enforce_qlims(net)
     yield add_test_trafo3w(net)
     yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
     yield add_test_oos_bus_with_is_element(net)
     yield add_test_shunt(net)
+    yield add_test_shunt_split(net)
     yield test_two_open_switches(net)
 
 
@@ -408,6 +409,18 @@ def add_test_shunt(net):
     qz = -1200
 #    # one shunt at a bus
     s1 = pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz)
+        # add out of service shunt shuold not change the result
+    pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
+    return net
+    
+    
+def add_test_shunt_split(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_shunt_split")
+    pz = 120
+    qz = -1200
+#    # one shunt at a bus
+    s1 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
+    s2 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
     return net
 
 def test_two_open_switches(net):

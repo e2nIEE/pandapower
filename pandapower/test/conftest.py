@@ -39,8 +39,7 @@ def simple_network():
 def result_test_network():
     for net in result_test_network_generator():
         pass
-#    pp.runpp(net, trafo_model="t", trafo_loading="current")
-#    runpp_with_consistency_checks(net, trafo_model="t", trafo_loading="current")
+    pp.runpp(net, trafo_model="t", trafo_loading="current")
     return net
 
 if __name__ == '__main__':

@@ -496,47 +496,32 @@ def test_enforce_q_lims():
 #    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
 #    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
 #
-#def test_shunt_single():
-#    net = pp.create_empty_network()
-#    b1, b2, ln = add_grid_connection(net, zone="test_shunt")
-#    pz = 120
-#    qz = -1200
-#    # one shunt at a bus
-#    s1 = pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz)
-#    runpp_with_consistency_checks(net)
-# 
-#    u =  1.0150071482724876
-#    p = 123.62874132530973
-#    q = -1236.2874132530972
-#    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
-#    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
-#    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
+def test_shunt(result_test_network):
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_shunt"]
+    shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
+    s1 = shunts[0]
+    b2 = buses.index[1]
+    u =  1.0150071482724876
+    p = 123.62874132530973
+    q = -1236.2874132530972
+    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
+    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
+    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
  
-    # add out of service shunt shuold not change the result
-#    pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
-#    runpp_with_consistency_checks(net, trafo_model="t")
-# 
-#    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
-#    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
-#    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
+def test_shunt_split(result_test_network):
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_shunt_split"]
+    shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
+    s1 = shunts[0]
+    b2 = buses.index[1]
+    u =  1.0150071482724876
+    p = 123.62874132530973
+    q = -1236.2874132530972
 
-#def test_shunt_split(result_test_network):
-#    net = result_test_network
-#     # splitting up the shunts should not change results
-#    pz = 120
-#    qz = -1200
-#    
-#    u =  1.0150071482724876
-#    p = 123.62874132530973
-#    q = -1236.2874132530972
-#    
-#    b1, b2, ln = add_grid_connection(net, zone="test_shunt_split")
-#    s1 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
-#    s2 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
-#    runpp_with_consistency_checks(net, trafo_model="t")
-#    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
-#    assert abs(net.res_shunt.p_kw.loc[s1] - p/2) < 1e-6
-#    assert abs(net.res_shunt.q_kvar.loc[s1] - q/2) < 1e-6
+    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
+    assert abs(net.res_shunt.p_kw.loc[s1] - p/2) < 1e-6
+    assert abs(net.res_shunt.q_kvar.loc[s1] - q/2) < 1e-6
 
 # def test_trafo3w_tap(net):
 # TODO
@@ -554,11 +539,12 @@ def test_enforce_q_lims():
 #    runpp_with_consistency_checks(net)
 ##    
 def test_the_test_network(result_test_network):
-#    net = result_test_network
     runpp_with_consistency_checks(result_test_network)
 
 
 
 if __name__ == "__main__":
-    pytest.main(["test_results.py::test_the_test_network", "-s"])
+    pytest.main(["test_results.py", "-s"])
+    
+#    pytest.main(["test_results.py::test_the_test_network", "-s"])
 

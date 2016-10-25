@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
 # BSD-style license that can be found in the LICENSE file.
 
-from numpy import allclose
+from numpy import allclose, nan
 import pandas as pd
 import pandapower as pp
 
@@ -40,9 +40,11 @@ def branch_loss_consistent_with_bus_feed_in(net):
     bus_surplus_q = -net.res_bus.q_kvar.sum()
 
     branch_loss_p = net.res_line.pl_kw.sum() + net.res_trafo.pl_kw.sum() + \
-                    net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum()
+                    net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum() + 0\
+#                    net.res_shunt.p_kw.sum()
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
-                    net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum()
+                    net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() +0 \
+#                     net.res_shunt.q_kvar.sum()
 
     assert allclose(bus_surplus_p, branch_loss_p)
     assert allclose(bus_surplus_q, branch_loss_q)
@@ -84,6 +86,9 @@ def element_power_consistent_with_bus_power(net):
     for idx, tab in net.xward.iterrows():
         bus_p.at[tab.bus] += net.res_xward.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_kvar.at[idx]
+
+    net.res_bus.p_kw[net.bus.in_service==False]=nan
+    net.res_bus.q_kvar[net.bus.in_service==False]=nan
 
     assert allclose(net.res_bus.p_kw.values, bus_p.values, equal_nan=True)
     assert allclose(net.res_bus.q_kvar.values, bus_q.values, equal_nan=True)
