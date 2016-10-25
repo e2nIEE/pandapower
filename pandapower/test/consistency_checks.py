@@ -18,13 +18,8 @@ def indices_consistent(net):
     is_buses = net.bus[net.bus.in_service==True].index
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt", 
                     "ward", "xward", "impedance", "gen"]:
-        if element == "gen":
-            e_idx = net.gen[(net.gen.in_service==True) & (net.gen.bus.isin(is_buses))].index
-        elif element == "ext_grid":
-            e_idx = net.ext_grid[(net.ext_grid.in_service==True) & 
-                                 (net.ext_grid.bus.isin(is_buses))].index
-        else:
-            e_idx = net[element].index
+
+        e_idx = net[element].index
         res_idx = net["res_" + element].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
         assert all(e_idx == res_idx), "%s bus and res_%s indices do not match"%(element, element)

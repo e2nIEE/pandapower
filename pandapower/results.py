@@ -93,15 +93,38 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
 
-    # get results for external grids
+    # get results for external grids (new, should work?)
+
+    # bus index of in service egs
+    # gidx = eg_is.bus.values
+    # n_res_eg = len(net['ext_grid'])
+    # # indices of in service gens in the mpc
+    # gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(eg_is["bus"], bus_lookup))
+    # # mask for indices of in service gens in net['res_gen']
+    # idx_gen = np.in1d(net['ext_grid'].bus, gidx)
+    # # read results from mpc for these buses
+    # p = np.zeros(n_res_eg)
+    # p[idx_gen] = -mpc["gen"][gidx_mpc, PG] * 1e3
+    # # store result in net['res']
+    # net["res_ext_grid"]["p_kw"] = p
+    #
+    # # if ac PF q results are also available
+    # if ac:
+    #     q = np.zeros(n_res_eg)
+    #     q[idx_gen] = -mpc["gen"][gidx_mpc, QG] * 1e3
+    #     net["res_ext_grid"]["q_kvar"] = q
+    #
+    # b = net['ext_grid'].bus.values
+    # net["res_ext_grid"].index = net['ext_grid'].index
+
+    #old (Works):
     # mpc indices of external grids
     gidx = get_indices(eg_is["bus"], bus_lookup)
     # get results from mpc
     p = -mpc["gen"][gidx, PG] * 1e3
     # store result in net['res']
     net["res_ext_grid"]["p_kw"] = p
-
-    # if ac PF q results are also available
+        # if ac PF q results are also available
     if ac:
         q = -mpc["gen"][gidx, QG] * 1e3
         net["res_ext_grid"]["q_kvar"] = q
@@ -112,53 +135,32 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     # get results for gens
     if gen_end > eg_end:
 
-        # if "in_service" gens are at out of service buses no results are available for these gens
-        # results must be initialized with zeros first
-        if np.count_nonzero(net['gen'].in_service) > len(gen_is):
-            ## get "in service gens" from net['gen']
-            gen_is_res = net['gen'][net['gen'].in_service]
-            # gens for which results are expected
-            gidx = gen_is_res.bus.values
-            n_res_gen = len(gidx)
-            b = np.hstack([b, gidx])
+        # bus index of in service gens
+        gidx = gen_is.bus.values
+        n_res_gen = len(net['gen'])
 
-            # indices of in service gens at in service buses in the mpc
-            gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(gen_is["bus"], bus_lookup))
-            # mask for indices of in service gens at in service buses in net['res_gen']
-            idx_gen = np.in1d(gidx, gen_is['bus'])
-            # read results from mpc for these buses
-            p_gen = np.zeros(n_res_gen)
-            p_gen[idx_gen] = -mpc["gen"][gidx_mpc, PG] * 1e3
-            if ac:
-                q_gen = np.zeros(n_res_gen)
-                q_gen[idx_gen] = -mpc["gen"][gidx_mpc, QG] * 1e3
+        b = np.hstack([b, net['gen'].bus.values])
 
-            v_pu = np.zeros(n_res_gen)
-            v_pu[idx_gen] = mpc["bus"][gidx_mpc][:, VM]
-            net["res_gen"]["vm_pu"] = v_pu
-            if return_voltage_angles:
-                v_a = np.zeros(n_res_gen)
-                v_a[idx_gen] = mpc["bus"][gidx_mpc][:, VA]
-                net["res_gen"]["va_degree"] = v_a
-            net["res_gen"].index = gen_is_res.index
+        # indices of in service gens in the mpc
+        gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(gen_is["bus"], bus_lookup))
+        # mask for indices of in service gens in net['res_gen']
+        idx_gen = np.in1d(net['gen'].bus, gidx)
 
-        else:
-            ## in service gens are at in service buses
-            # bus index of in service gens
-            gidx = gen_is.bus.values
-            b = np.hstack([b, gidx])
+        # read results from mpc for these buses
+        p_gen = np.zeros(n_res_gen)
+        p_gen[idx_gen] = -mpc["gen"][gidx_mpc, PG] * 1e3
+        if ac:
+            q_gen = np.zeros(n_res_gen)
+            q_gen[idx_gen] = -mpc["gen"][gidx_mpc, QG] * 1e3
 
-            # indices of in service gens in the mpc
-            gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(gen_is["bus"], bus_lookup))
-            # read results from mpc
-            p_gen = -mpc["gen"][gidx_mpc, PG] * 1e3
-            if ac:
-                q_gen = -mpc["gen"][gidx_mpc, QG] * 1e3
-
-            net["res_gen"]["vm_pu"] = mpc["bus"][gidx_mpc][:, VM]
-            if return_voltage_angles:
-                net["res_gen"]["va_degree"] = mpc["bus"][gidx_mpc][:, VA]
-            net["res_gen"].index = gen_is.index
+        v_pu = np.zeros(n_res_gen)
+        v_pu[idx_gen] = mpc["bus"][gidx_mpc][:, VM]
+        net["res_gen"]["vm_pu"] = v_pu
+        if return_voltage_angles:
+            v_a = np.zeros(n_res_gen)
+            v_a[idx_gen] = mpc["bus"][gidx_mpc][:, VA]
+            net["res_gen"]["va_degree"] = v_a
+        net["res_gen"].index = net['gen'].index
 
         # store result in net['res']
         p = np.hstack([p, p_gen])
@@ -168,7 +170,7 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
             net["res_gen"]["q_kvar"] = q_gen
 
     if not ac:
-        q = np.array([np.nan] * len(p))
+        q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
     b = get_indices(b_sum, bus_lookup, fused_indices=False)
     pq_bus[b, 0] += p_sum
