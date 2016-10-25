@@ -15,4 +15,4 @@ type;string;"| Naming conventions:
 | *""ol""* - overhead line 
 | *""cs""* - underground cable system";type of line
 in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the line is in service. Only in service elements are considered during loadflow calculation
+| *""False""* - out of service";specifies if the line is in service.

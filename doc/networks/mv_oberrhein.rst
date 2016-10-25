@@ -5,21 +5,20 @@ MV Oberrhein
 
 .. autofunction:: pandapower.networks.mv_oberrhein()
 
-
-The Oberrhein network is a 20 kV medium voltage network serviced by two 25 MVA HV/MV transformer stations. It supplies 141 HV/MV stations and 6 MV loads.
-
-.. image:: /pics/plotting_tutorial1.png
-	:width: 30em
-	:align: center
-
-The ring network is operated radially of the network is ensured
+The geographical representation of the network looks like this:
 
 .. image:: /pics/plotting_tutorial1.png
 	:width: 30em
 	:align: center
-    
-The loadflow results of the network in the different worst case scenarios can be seen here:
+
+The different colors of the MV/LV stations indicate the feeders which are galvanically seperated by open switches.
+If you are interested in how to make plots such as these, check out the pandapower tutorial on plotting.
+
+The loadflow results of the network in the different worst case scenarios look like this:
 
 .. image:: /pics/oberrhein_loadcases.png
 	:width: 40em
 	:align: center
+    
+As you can see, the network is designed to comply with a voltage band of 0.975 < u < 1.03 and line loading of <60 % in the high
+load case (for n-1 security) and <100% in the low load case.

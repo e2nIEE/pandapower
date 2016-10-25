@@ -37,11 +37,11 @@ Input Parameters
 
 *net.trafo3w*
 
-.. tabularcolumns:: |p{0.16\linewidth}|p{0.08\linewidth}|p{0.25\linewidth}|p{0.39\linewidth}|
+.. tabularcolumns:: |p{0.16\linewidth}|p{0.05\linewidth}|p{0.25\linewidth}|p{0.3\linewidth}|
 .. csv-table:: 
    :file: trafo3w_par.csv
    :delim: ;
-   :widths: 15, 10, 25, 40
+   :widths: 15, 10, 10, 30
 
 *necessary for executing a loadflow calculation.
 

@@ -6,4 +6,4 @@ qs_kvar*;float;;constant reactive power demand [kVar]
 pz_kw*;float;;constant impedance active power demand at 1.0 pu [kW]
 qz_kvar*;float;;constant impedance reactive power demand at 1.0 pu [kVar]
 in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the ward equivalent is in service. Only in service elements are considered during loadflow calculation
+| *""False""* - out of service";specifies if the ward equivalent is in service.

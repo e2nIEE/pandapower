@@ -4,4 +4,4 @@ bus*;integer;;index of connected bus
 vm_pu*;float;:math:`>` 0;voltage set point [p.u]
 va_degree*;float;;angle set point [degree]
 in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the external grid is in service. Only in service elements are considered during loadflow calculation
+| *""False""* - out of service";specifies if the external grid is in service.

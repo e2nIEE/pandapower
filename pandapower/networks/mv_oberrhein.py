@@ -14,14 +14,32 @@ def _get_networks_path():
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False):
     """
-    Loads the 20 kV Oberrhein network.
+    Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer 
+    stations. The network supplies 141 HV/MV substations and 6 MV loads through four MV feeders.
+    The network layout is meshed, but the network is operated as a radial network with 6 open 
+    sectioning points.
+    
+    The network can be loaded with two different worst case scenarios for load and generation, 
+    which are defined by scaling factors for loads / generators as well as tap positions of the 
+    HV/MV transformers. These worst case scenarios are a good starting point for working with this
+    network, but you are of course free to parametrize the network for your use case.
+    
+    The network also includes geographical information of lines and buses for plotting.
     
     OPTIONAL:
         
         **scenario** - (str, "load"): defines the scaling for load and generation
                 
-                - "load": high load scenario, load = 0.6 / sgen = 0, trafo taps [-2, -2]
-                - "generation": high feed-in scenario: load = 0.1, generation = 0.8, trafo taps [-1, 0]
+                - "load": high load scenario, load = 0.6 / sgen = 0, trafo taps [-1, -1]
+                - "generation": high feed-in scenario: load = 0.1, generation = 0.8, trafo taps [0, 0]
+                
+        **cosphi_load** - (str, 0.98): cosine(phi) of the loads
+
+        **cosphi_sgen** - (str, 1.0): cosine(phi) of the static generators
+
+        **include_substations** - (bool, False): if True, the transformers of the MV/LV level are 
+        modelled, otherwise the loads representing the LV networks are connected directly to the
+        MV node
                 
     RETURN:
 
@@ -29,9 +47,8 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
     EXAMPLE:
 
-         import pandapower.networks as pn
-
-         net = pn.mv_oberrhein("generation")
+    >>> import pandapower.networks
+    >>> net = pandapower.networks.mv_oberrhein("generation")
     """
     if include_substations:
         net = pp.from_pickle(os.path.join(_get_networks_path(), "mv_oberrhein_substations.p"))
@@ -44,11 +61,11 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     if scenario == "load":
         net.load.scaling = 0.6
         net.sgen.scaling = 0
-        net.trafo.tp_pos.loc[hv_trafos] = [-2, -2]
+        net.trafo.tp_pos.loc[hv_trafos] = [-1, -1]
     elif scenario == "generation":
         net.load.scaling = 0.1
         net.sgen.scaling = 0.8
-        net.trafo.tp_pos.loc[hv_trafos] = [-1, 0]
+        net.trafo.tp_pos.loc[hv_trafos] = [0, 0]
     else:
         raise ValueError("Unknown scenario %s - chose 'load' or 'generation'"%scenario)
     pp.runpp(net)
