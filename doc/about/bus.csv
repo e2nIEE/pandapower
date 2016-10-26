@@ -1,0 +1,6 @@
+**Parameter**;**Datatype**
+name;string
+vn_kv*;float
+type;string
+zone;string
+in_service*;boolean

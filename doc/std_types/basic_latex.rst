@@ -29,9 +29,15 @@ Lines
 3W-Transformers
 ----------------
 
-.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|
+.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|
 .. csv-table:: 
-   :file: trafo3wtypes.csv
+   :file: trafo3wtypes1.csv
    :delim: ;
-   :widths: 60, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15
-   
+   :widths: 60, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15
+
+
+.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|
+.. csv-table:: 
+   :file: trafo3wtypes2.csv
+   :delim: ;
+   :widths: 60, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15

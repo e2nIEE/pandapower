@@ -9,7 +9,7 @@ pandapower
     about
     getting_started
     elements
-    std_types
+    std_types_latex
     powerflow
     topology
     networks
