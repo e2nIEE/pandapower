@@ -11,25 +11,25 @@ from pandapower.topology.create_graph import create_nxgraph
 def connected_component(mg, bus, notravbuses=[]):
 
     """
-     Finds all buses in a NetworkX graph that are connected to a certain bus. 
+    Finds all buses in a NetworkX graph that are connected to a certain bus. 
      
-     INPUT:
+    INPUT:
      
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
         
         **bus** (integer) - Index of the bus at which the search for connected components originates
          
          
-     OPTIONAL:
+    OPTIONAL:
      
      **notravbuses** (list/set) - Indeces of notravbuses: lines connected to these buses are
                                      not being considered in the graph  
          
-     RETURN:
+    RETURN:
      
         **cc** (generator) - Returns a generator that yields all buses connected to the input bus
         
-     EXAMPLE:
+    EXAMPLE:
         
          import pandapower.topology as top
          
