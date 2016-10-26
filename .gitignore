@@ -8,3 +8,4 @@ pandapower.egg-info/
 doc/api/
 doc/.build/*
 doc/_build/*
+*__pycache__*
