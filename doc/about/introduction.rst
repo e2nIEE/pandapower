@@ -38,5 +38,5 @@ For the 2-bus example network, the result tables look like this:
         
 The same workflow applies to running a DC or an optimal power flow.
 
-You can download the python script that creates this 2-bus system :download:`here  <pandapower_2bus_system.py>`. For more extensive examples, refer to the 
+You can download the python script that creates this 2-bus system :download:`here  <pandapower_2bus_system.py>`. For more extensive examples, refer to the :ref:`pandapower tutorials<tutorial>`.
 

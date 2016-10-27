@@ -1,5 +1,0 @@
-**index**;**sgen_name**;**bus**;**p**;**q**;**sn**;**type**
-0;Biogas plant;Bus MV6;-500;0;750;SGEN
-1;Further MV Generator;Bus MV0;-500;-50;1000;SGEN
-2;Industry Generator;Bus MV0 20kV;-15000;-3000;20000;SGEN
-3;PV Park;Bus MV5;-2000;-100;5000;PV

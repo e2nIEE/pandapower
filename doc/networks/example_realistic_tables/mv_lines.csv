@@ -1,9 +1,0 @@
-**index**;**line_name**;**from_bus**;**to_bus**;**length**;**std_type**
-0;MV Line1;Bus MV0;Bus MV1;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-1;MV Line2;Bus MV1;Bus MV2;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-2;MV Line3;Bus MV2;Bus MV3;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-3;MV Line4;Bus MV3;Bus MV4;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-4;MV Line5;Bus MV4;Bus MV5;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-5;MV Line6;Bus MV5;Bus MV6;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-6;MV Line7;Bus MV6;Bus MV7;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
-7;MV Line8;Bus MV0;Bus MV7;1,5;NA2XS2Y 1x185 RM/25 12/20 kV
