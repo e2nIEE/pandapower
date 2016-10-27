@@ -12,8 +12,8 @@ Create Function
 
 .. autofunction:: pandapower.create_gen
 
-Parameters
-=============
+Input Parameters
+=====================
 
 *net.gen*
 
@@ -23,7 +23,7 @@ Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
 .. note::
     Active power should normally be negative to model a voltage controlled generator, since all power values are given in the load reference system. A generator with positive active power represents a voltage controlled machine.
@@ -33,7 +33,7 @@ Parameters
 Loadflow Model
 =================
 
-Generators are modelled as PV-nodes in the loadflow:
+Generators are modelled as PV-nodes in the power flow:
 
 .. image:: /elements/gen/gen.png
 	:width: 12em
@@ -51,7 +51,7 @@ Voltage magnitude and active power are defined by the input parameters in the ge
    \end{align*}
     
 Result Parameters
-==================
+==========================
 *net.res_gen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
@@ -60,7 +60,7 @@ Result Parameters
    :delim: ;
    :widths: 10, 10, 50
 
-The loadflow returns reactive generator power and generator voltage angle:
+The power flow returns reactive generator power and generator voltage angle:
 
 .. math::
    :nowrap:
@@ -73,6 +73,6 @@ The loadflow returns reactive generator power and generator voltage angle:
 
    
 .. note::
-    If the loadflow is run with the enforce_qlims option and the generator reactive power exceeds / underruns the maximum / minimum reactive power limit,
+    If the power flow is run with the enforce_qlims option and the generator reactive power exceeds / underruns the maximum / minimum reactive power limit,
     the generator is converted to a static generator with the maximum / minimum reactive power as constant reactive power generation.
     The voltage at the generator bus is then no longer equal to the voltage set point defined in the parameter table.

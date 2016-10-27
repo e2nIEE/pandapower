@@ -972,8 +972,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     return index
 
 
-def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True, index=None,
-                       max_loading_percent=np.nan):
+def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, in_service=True,
+                       index=None, max_loading_percent=np.nan):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -989,9 +989,11 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True
 
     OPTIONAL:
 
-        **name** (string) - A custom name for this transformer
+        **name** (string, None) - A custom name for this transformer
+        
+        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (boolean, True) - True for in_service or False for out of service
 
         **index** (int) - Force a specified ID if it is available
 
@@ -1031,11 +1033,11 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True
         "i0_percent": ti["i0_percent"],
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     })
-    for tp in ("tp_pos", "tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and ("tp_pos" not in v):
+    if ("tp_mid" in v) and ("tp_pos" is np.nan):
         v["tp_pos"] = v["tp_mid"]
 
     # store dtypes
@@ -1058,7 +1060,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, in_service=True
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, vscr_percent,
                                        vsc_percent, pfe_kw, i0_percent, shift_degree=0,
                                        tp_side=None, tp_mid=np.nan, tp_max=np.nan,
-                                       tp_min=np.nan, tp_st_percent=np.nan, tp_pos=np.nan,
+                                       tp_min=np.nan, tp_st_percent=np.nan, tp_pos=None,
                                        in_service=True, name=None, index=None,
                                        max_loading_percent=np.nan, **kwargs):
     """
@@ -1096,13 +1098,15 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **tp_side** (string) - position of tap changer ("hv", "lv")
 
-        **tp_mid** (integer) - tap position where the transformer ratio is equal to the ration of the rated voltages
+        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
+        
+        **tp_mid** (int, nan) - tap position where the transformer ratio is equal to the ration of the rated voltages
 
-        **tp_max** (integer) - maximal allowed tap position
+        **tp_max** (int, nan) - maximal allowed tap position
 
-        **tp_min** (intger):  minimal allowed tap position
+        **tp_min** (int, nan):  minimal allowed tap position
 
-        **tp_st_percent** (integer) - tap step in percent
+        **tp_st_percent** (int) - tap step in percent
 
         **index** (int) - Force a specified ID if it is available
 
@@ -1131,7 +1135,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         raise UserWarning("A transformer with index %s already exists" % index)
 
 
-    tp_pos = tp_pos or tp_mid
+    if tp_pos is None:
+        tp_pos = tp_mid
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": None, "sn_kva": sn_kva, "vn_hv_kv": vn_hv_kv,
@@ -1158,8 +1163,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     return index
 
 
-def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, in_service=True,
-                         index=None):
+def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=np.nan,
+                         in_service=True, index=None):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -1178,6 +1183,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, in_se
     OPTIONAL:
 
         **name** (string) - A custom name for this transformer
+
+        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -1227,11 +1234,11 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, in_se
         "shift_mv_degree": ti["shift_mv_degree"] if "shift_mv_degree" in ti else 0,
         "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0
     })
-    for tp in ("tp_pos", "tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and ("tp_pos" not in v):
+    if ("tp_mid" in v) and ("tp_pos" is np.nan):
         v["tp_pos"] = v["tp_mid"]
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
@@ -1295,13 +1302,15 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **tp_st_percent** (float) - Tap step in percent
 
-        **tp_side** (string) - "hv", "mv", "lv"
+        **tp_side** (string, None) - "hv", "mv", "lv"
 
-        **tp_mid** (float) - default tap position
+        **tp_mid** (int, nan) - default tap position
 
-        **tp_min** (float) - Minimum tap position
+        **tp_min** (int, nan) - Minimum tap position
 
-        **tp_max** (float) - Maximum tap position
+        **tp_max** (int, nan) - Maximum tap position
+
+        **tp_pos** (int, np.nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
 
         **name** (string, None) - Name of the 3-winding transformer
 

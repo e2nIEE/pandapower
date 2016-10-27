@@ -12,8 +12,8 @@ Create Function
 
 .. autofunction:: pandapower.create_shunt
 
-Parameters
-=============
+Input Parameters
+=====================
 
 *net.shunt*
 
@@ -23,7 +23,7 @@ Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
@@ -70,7 +70,7 @@ with :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions
    
    
 Result Parameters
-==================
+==========================
 *net.res_shunt*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|

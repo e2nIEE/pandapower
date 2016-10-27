@@ -33,7 +33,7 @@ Create Function
     values depending on how the short-circuit voltages are defined.
 
 Input Parameters
-=================
+=========================
 
 *net.trafo3w*
 
@@ -43,7 +43,7 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 10, 30
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
@@ -139,7 +139,7 @@ with
     
 
 Result Parameters
-==================
+==========================
 **net.res_trafo3w**
 
 .. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.60\linewidth}|
@@ -165,7 +165,7 @@ Result Parameters
     i\_lv\_ka &= i_{lv}
     \end{align*}
     
-The definition of the transformer loading depends on the trafo_loading parameter of the loadflow.
+The definition of the transformer loading depends on the trafo_loading parameter of the power flow.
 
 For trafo_loading="current", the loading is calculated as:
 

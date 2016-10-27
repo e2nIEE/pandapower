@@ -66,7 +66,7 @@ def postprocess_latex():
         # set tabulary to longtable and change pagestyle
         elif line.find('\\renewenvironment') != -1:
             bufferlines.append(line)
-            bufferlines.append('\\renewenvironment{tabulary}{\\begin{longtable}}{\\end{longtable}}\n')
+            bufferlines.append('\\renewenvironment{tabulary}{\\begin{longtable}[l]}{\\end{longtable}}\n')
             bufferlines.append('\n\\pagestyle{headings}\n\n')
         #set tocdepth
         elif line.find('\setcounter{tocdepth}') != -1:
@@ -90,9 +90,9 @@ def postprocess_latex():
             bufferlines.append(replace(line))
         elif line.find("{Manage Standard Types}") != -1:
             bufferlines.append("\\end{landscape} \n")
-            bufferlines.append("\\restoregeometry \n")
+#            bufferlines.append("\\restoregeometry \n")
             bufferlines.append("\\pagestyle{headings} \n")
-            bufferlines.append("\\normal \n")
+#            bufferlines.append("\\normal \n")
             bufferlines.append(replace(line))
 
             #        elif parameters:

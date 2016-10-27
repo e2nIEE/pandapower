@@ -4,11 +4,11 @@
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org/>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program.
 pandapower is aimed at automation of power system analysis and optimization in distribution and sub-transmission networks.
 
-pandapower is based on electric elements rather than on generic loadflow attributes. For example, in PYPOWER buses have a power demand and shunt admittance, even though these are in reality the attributes of electric
+pandapower is based on electric elements rather than on generic power flow attributes. For example, in PYPOWER buses have a power demand and shunt admittance, even though these are in reality the attributes of electric
 elements (such as loads, pv generators or capacitor banks) which are connected to the buses. In pandapower, we model each electric bus element instead of considering summed values for each bus.
 The same goes for branches: in reality, buses in a network are connected by electric elements like lines and transformers that can be defined by a length and cable type (lines) or short circuit 
 voltages and rated power (transformers). Since the electric models for lines and transformers are implemented in pandapower, it is possible to model the electric elements with these common nameplate
-attributes. All parameters which are necessary for the loadflow (like branch per unit impedances, shunt impedances, bus power, bus loadflow type etc.) are then calculated and handled internally by pandapower.
+attributes. All parameters which are necessary for the power flow (like branch per unit impedances, shunt impedances, bus power, bus power flow type etc.) are then calculated and handled internally by pandapower.
 
 A network in pandapower is represented in a PandapowerNet object, which is a collection of pandas Dataframes.
 Each dataframe in a PandapowerNet contains the information about one pandapower element, such as line, load transformer etc.
@@ -29,9 +29,9 @@ the pandapower representation looks like this:
 
 The network can be created with the pandapower create functions, but it also possible to directly manipulate data in the pandapower dataframes.
 
-When a loadflow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the loadflow. The results are then processed and written back into pandapower:
+When a power flow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow. The results are then processed and written back into pandapower:
         
-.. image:: /docs/pandapower/pics/pandapower_loadflow.png
+.. image:: /docs/pandapower/pics/pandapower_power flow.png
 		:width: 40em
 		:alt: alternate Text
 		:align: center
@@ -53,7 +53,7 @@ There are various reasons why using pandapower is more comfortable than using py
     - pandapower comes with static equivalent circuit models for lines, 2-Winding transformers, 3-Winding transformers, ward-equivalents etc.
     - Input parameters are intuitive and commonly used model plate parameters (such as line length and resistance per kilometer) instead of parameters like total branch resistance in per unit
     - the pandapower switch model allows modelling of ideal bus-bus switches as well as bus-line / bus-trafo switches
-    - the loadflow results are processed to include not only the classic loadflow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses
+    - the power flow results are processed to include not only the classic power flow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses
 
 2. pandapower API
     - the pandapower API provides create functions for each element to allow automized step-by-step construction of networks
@@ -72,7 +72,7 @@ There are various reasons why using pandapower is more comfortable than using py
         - `visualize <http://pandas.pydata.org/pandas-docs/stable/visualization.html>`_,
         -  etc.
         
-      any information that is stored in the pandapower dataframes - be it element parameters, loadflow results or a combination of both.
+      any information that is stored in the pandapower dataframes - be it element parameters, power flow results or a combination of both.
 
 4. Topological Searches
     - pandapower networks can be translated into `networkx <https://networkx.github.io/>` multigraphs for fast topological searches

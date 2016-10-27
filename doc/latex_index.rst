@@ -6,8 +6,7 @@ pandapower
 .. toctree:: 
     :maxdepth: 2
     
-    about
-    getting_started
+    about_latex
     elements
     std_types_latex
     powerflow

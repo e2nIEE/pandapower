@@ -14,5 +14,4 @@ type;string;"| Naming conventions:
 
 | *""ol""* - overhead line 
 | *""cs""* - underground cable system";type of line
-in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the line is in service.
+in_service*;boolean;True / False;specifies if the line is in service.

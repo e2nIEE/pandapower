@@ -13,7 +13,7 @@ Create Function
 .. autofunction:: pandapower.create_bus
 
 Input Parameters
-=================
+=========================
 
 *net.bus*
 
@@ -23,7 +23,7 @@ Input Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
 *net.bus_geodata*
 
@@ -44,7 +44,7 @@ Loadflow Model
     
 
 Result Parameters
-=================
+=========================
 
 *net.res_bus*
 
@@ -54,7 +54,7 @@ Result Parameters
    :delim: ;
    :widths: 10, 10, 40
     
-The loadflow bus results are defined as:
+The power flow bus results are defined as:
 
 .. math::
    :nowrap:

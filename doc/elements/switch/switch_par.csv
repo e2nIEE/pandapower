@@ -14,5 +14,4 @@ type;string;"| naming conventions:
 | *""LS""* - load switch
 | *""LBS""* - load break switch
 | *""DS""* - disconnecting switch";type of switch
-closed*;boolean;"| *""False""* - open
-| *""True""* - closed";signals the switching state of the switch
+closed*;boolean;True / False;signals the switching state of the switch

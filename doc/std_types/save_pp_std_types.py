@@ -22,5 +22,5 @@ trafo3wtypes = trafo3wtypes.reindex_axis([c for c in net.trafo3w.columns if c in
 trafo3wtypes.to_csv("trafo3wtypes.csv", sep=";")
 
 cols = trafo3wtypes.columns
-trafo3wtypes[cols[:len(cols)/2]].to_csv("trafo3wtypes1.csv", sep=";")
-trafo3wtypes[cols[len(cols)/2:]].to_csv("trafo3wtypes2.csv", sep=";")
+trafo3wtypes[cols[:10]].to_csv("trafo3wtypes1.csv", sep=";")
+trafo3wtypes[cols[10:]].to_csv("trafo3wtypes2.csv", sep=";", index=True)

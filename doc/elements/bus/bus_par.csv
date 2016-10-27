@@ -6,5 +6,4 @@ type;string;"| naming conventions:
 | *""b""* - busbar
 | *""m""* - muff";type variable to classify buses
 zone;string;;can be used to group buses, for example network groups / regions
-in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the bus is in service.
+in_service*;boolean;True / False;specifies if the bus is in service.

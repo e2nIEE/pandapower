@@ -307,23 +307,23 @@ class DiagnosticReports:
             for overload_type in diag_result:
                 if diag_result[overload_type] is True:
                     if self.compact_report:
-                        logger.warning("%s overload: loadflow converges after load "
+                        logger.warning("%s overload: power flow converges after load "
                                        "downscaling." %overload_type)
                     else:
-                        logger.warning("Possibly overload found: Loadflow converges with "
+                        logger.warning("Possibly overload found: power flow converges with "
                                        "%s scaled down to %s percent."
                                        %(overload_type, overload_scaling_factor*100))
                 elif diag_result[overload_type] is 'uncertain':
                     if self.compact_report:
-                        logger.warning("loadflow still does not converge after %s "
+                        logger.warning("power flow still does not converge after %s "
                                        "downscaling." %overload_type)
                     else:
-                        logger.warning("Overload check failed: Loadflow still does not "
+                        logger.warning("Overload check failed: Power flow still does not "
                                        "converge with %s scaled down to %s percent."
                                        %(overload_type, overload_scaling_factor*100))
         # message summary
         else:
-            logger.info("PASSED: Loadflow converges. No overload found.")
+            logger.info("PASSED: Power flow converges. No overload found.")
 
     def report_wrong_switch_configuration(self):
 
@@ -339,14 +339,14 @@ class DiagnosticReports:
         # message body
             diag_result = self.diag_results["wrong_switch_configuration"]
             if diag_result is True:
-                logger.warning("Possibly wrong switch configuration found: Loadflow "
+                logger.warning("Possibly wrong switch configuration found: power flow "
                                "converges with all switches closed.")
             elif diag_result is 'uncertain':
-                logger.warning("Loadflow still does not converge with all switches closed.")
+                logger.warning("Power flow still does not converge with all switches closed.")
 
         # message summary
         else:
-            logger.info("PASSED: Loadflow converges. Switch configuration seems ok.")
+            logger.info("PASSED: Power flow converges. Switch configuration seems ok.")
 
     def report_no_ext_grid(self):
 
@@ -478,4 +478,4 @@ class DiagnosticReports:
                                    %(len(diag_result['sgens'])))
 
         else:
-            logger.info("PASSED: Loadflow converges. No overload found.")
+            logger.info("PASSED: power flow converges. No overload found.")
