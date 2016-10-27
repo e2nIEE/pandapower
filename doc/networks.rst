@@ -18,7 +18,5 @@ You can find documentation for the individual modules here:
     networks/mv_oberrhein
     networks/ieee
     networks/kerber
-    networks/random
-
 	
 	

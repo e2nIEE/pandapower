@@ -9,4 +9,5 @@ doc/api/
 doc/.build/*
 doc/_build/*
 .cache
-pandapower/pypower_extensions/__pycache__/*
+*__pycache__*
+

@@ -11,6 +11,7 @@ except:
     import logging
     
 logger = logging.getLogger(__name__)
+from pandapower.toolbox import get_connected_buses_at_element
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
@@ -478,27 +479,3 @@ class DiagnosticReports:
 
         else:
             logger.info("PASSED: Loadflow converges. No overload found.")
-
-
-def diagnostic_report(net, diag_results, diag_params, compact_report):
-    diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report)
-
-    report_methods = {
-        "disconnected_elements": diag_report.report_disconnected_elements,
-        "different_voltage_levels_connected": diag_report.report_different_voltage_levels_connected,
-        "lines_with_impedance_close_to_zero": diag_report.report_lines_with_impedance_close_to_zero,
-        "nominal_voltages_dont_match": diag_report.report_nominal_voltages_dont_match,
-        "invalid_values": diag_report.report_invalid_values,
-        "overload": diag_report.report_overload,
-        "wrong_switch_configuration": diag_report.report_wrong_switch_configuration,
-        "multiple_voltage_controlling_elements_per_bus": diag_report.report_multiple_voltage_controlling_elements_per_bus,
-        "no_ext_grid": diag_report.report_no_ext_grid,
-        "wrong_reference_system": diag_report.report_wrong_reference_system
-                    }
-
-    logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
-    for key in diag_results:
-        report_methods[key]()
-        logger.warning(log_message_sep)
-
-    logger.warning("_____________ END OF PANDAPOWER DIAGNOSTIC _____________ ")

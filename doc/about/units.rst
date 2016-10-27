@@ -8,15 +8,19 @@ Unit System and Conventions
 
 Parameters are always named in the form of <parameter>_<unit>, such as:
 
+.. tabularcolumns:: |l|l|
 .. csv-table:: 
    :file: nameing1.csv
    :delim: ;
+   :widths: 30, 30
 
 Constraint parameters are always named with max or min as the prefix to the variable which is constrained, for example:
 
+.. tabularcolumns:: |l|l|
 .. csv-table:: 
    :file: nameing2.csv
    :delim: ;
+   :widths: 30, 30
 
 It is advised to keep consistent with these naming conventions when extending the framework and introducing new parameters.
    

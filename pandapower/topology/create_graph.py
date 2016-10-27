@@ -50,7 +50,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
          mg = top.create_nx_graph(net, respect_switches = False)
          # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored. 
          
-     """
+    """
      
     if multi:
         mg = nx.MultiGraph()

@@ -1,0 +1,35 @@
+bus_name;from_bus;to_bus;type;et;closed
+DB DS0;Double Busbar 2;Bus DB T0;DS;b;True
+DB DS1;Double Busbar 1;Bus DB T1;DS;b;True
+DB DS2;Double Busbar 2;Bus DB T3;DS;b;True
+DB DS3;Double Busbar 1;Bus DB T3;DS;b;False
+DB DS4;Double Busbar 2;Bus DB T5;DS;b;True
+DB DS5;Double Busbar 1;Bus DB T5;DS;b;False
+DB DS6;Double Busbar 2;Bus DB T7;DS;b;True
+DB DS7;Double Busbar 1;Bus DB T7;DS;b;False
+DB DS8;Double Busbar 2;Bus DB T9;DS;b;True
+DB DS9;Double Busbar 1;Bus DB T9;DS;b;False
+DB DS10;Bus DB T2;Bus DB 1;DS;b;True
+DB DS11;Bus DB T4;Bus DB 2;DS;b;True
+DB DS12;Bus DB T6;Bus DB 3;DS;b;True
+DB DS13;Bus DB T8;Bus DB 4;DS;b;True
+DB CB0;Bus DB T0;Bus DB T1;CB;b;True
+DB CB1;Bus DB T3;Bus DB T2;CB;b;True
+DB CB2;Bus DB T5;Bus DB T4;CB;b;True
+DB CB3;Bus DB T7;Bus DB T6;CB;b;True
+DB CB4;Bus DB T9;Bus DB T8;CB;b;True
+SB DS1.1;Bus SB T1.1;Bus SB 1;DS;b;True
+SB DS1.2;Single Busbar;Bus SB T1.2;DS;b;True
+SB DS2.1;Bus SB T2.1;Bus SB 2;DS;b;True
+SB DS2.2;Single Busbar;Bus SB T2.2;DS;b;True
+SB DS3.1;Bus SB T3.1;Bus SB 3;DS;b;True
+SB DS3.2;Single Busbar;Bus SB T3.2;DS;b;True
+SB DS4.1;Bus SB T4.1;Bus SB 4;DS;b;True
+SB DS4.2;Single Busbar;Bus SB T4.2;DS;b;True
+SB DS5.1;Bus SB T5.1;Bus SB 5;DS;b;True
+SB DS5.2;Single Busbar;Bus SB T5.2;DS;b;True
+SB CB1;Bus SB T1.2;Bus SB T1.1;CB;b;True
+SB CB2;Bus SB T2.2;Bus SB T2.1;CB;b;True
+SB CB3;Bus SB T3.2;Bus SB T3.1;CB;b;True
+SB CB4;Bus SB T4.2;Bus SB T4.1;CB;b;True
+SB CB5;Bus SB T5.2;Bus SB T5.1;CB;b;True

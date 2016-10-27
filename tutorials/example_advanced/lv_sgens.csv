@@ -1,0 +1,7 @@
+sgen_name;bus;p;q;sn;type
+PV;Bus LV1.1;-6;0;12;PV
+PV(1);Bus LV1.3;-5;0;10;PV
+PV(2);Bus LV2.3;-5;0;10;PV
+PV(3);Bus LV2.4;-5;0;10;PV
+PV(4);Bus LV2.2.1;-5;0;10;PV
+PV(5);Bus LV2.2.2;-5;0;10;PV

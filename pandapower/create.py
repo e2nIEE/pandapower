@@ -130,12 +130,12 @@ def create_empty_network(name=None, f_hz=50.):
                     ("hv_bus", "u4"),
                     ("mv_bus", "u4"),
                     ("lv_bus", "u4"),
-                    ("vn_hv_kv", "f8"),
-                    ("vn_mv_kv", "f8"),
-                    ("vn_lv_kv", "f8"),
                     ("sn_hv_kva", "u8"),
                     ("sn_mv_kva", "u8"),
                     ("sn_lv_kva", "u8"),
+                    ("vn_hv_kv", "f8"),
+                    ("vn_mv_kv", "f8"),
+                    ("vn_lv_kv", "f8"),
                     ("vsc_hv_percent", "f8"),
                     ("vsc_mv_percent", "f8"),
                     ("vsc_lv_percent", "f8"),
@@ -571,7 +571,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
         if "controllable" not in net.sgen.columns:
             net.sgen.loc[:, "controllable"] = pd.Series()
 
-    net.sgen.loc[index, "controllable"] = bool(controllable)
+        net.sgen.loc[index, "controllable"] = bool(controllable)
 
     return index
 
