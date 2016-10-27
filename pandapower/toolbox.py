@@ -739,7 +739,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
 
         **cl** (set) - Returns connected lines.
 
-     """
+    """
      
     if not hasattr(buses, "__iter__"):
         buses = [buses]
@@ -829,7 +829,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
 
         **cl** (set) - Returns connected buses.
 
-     """
+    """
     if not hasattr(buses, "__iter__"):
         buses = [buses]
 
@@ -881,7 +881,7 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
 
         **cl** (set) - Returns connected switches.
 
-     """
+    """
 
     cb = set()
     if et == 'l':
@@ -904,31 +904,34 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
 
 def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     """
-        Returns switches connected to given buses.
+    Returns switches connected to given buses.
+    
+    INPUT:
 
-        INPUT:
+        **net** (PandapowerNet)
 
-            **net** (PandapowerNet)
+        **buses** (single integer or iterable of ints)
 
-            **buses** (single integer or iterable of ints)
+    OPTIONAL:
 
-        OPTIONAL:
+        **respect_switches** (boolean, True)        - True: open switches will be respected
+                                                     False: open switches will be ignored
+                                                     
+        **respect_in_service** (boolean, False)     - True: in_service status of connected
+                                                            buses will be respected
+                                                            
+                                                      False: in_service status will be ignored
+        **consider** (iterable, ("l", "s", "t"))    - Determines, which types of connections
+                                                      will be will be considered.
+                                                      l: lines
+                                                      s: switches
+                                                      t: trafos
+                                                      
+        **status** (string, ("all", "closed", "open"))    - Determines, which switches will
+                                                            be considered
+    RETURN:
 
-            **respect_switches** (boolean, True)        - True: open switches will be respected
-                                                         False: open switches will be ignored
-            **respect_in_service** (boolean, False)     - True: in_service status of connected
-                                                                buses will be respected
-                                                          False: in_service status will be ignored
-            **consider** (iterable, ("l", "s", "t"))    - Determines, which types of connections
-                                                          will be will be considered.
-                                                          l: lines
-                                                          s: switches
-                                                          t: trafos
-            **status** (string, ("all", "closed", "open"))    - Determines, which switches will
-                                                                be considered
-        RETURN:
-
-           **cl** (set) - Returns connected buses.
+       **cl** (set) - Returns connected buses.
 
     """
 

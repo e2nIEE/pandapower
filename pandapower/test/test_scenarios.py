@@ -59,8 +59,8 @@ def test_0gen_2ext_grid():
     assert np.allclose(net.res_bus.vm_pu.values,  [1.000000, 0.932225, 
                                                    0.976965, 1.000000])
     
-    assert np.allclose(net.res_ext_grid.p_kw.values, [-0.000000, -132.993015])
-    assert np.allclose(net.res_ext_grid.q_kvar, [4.08411026001, 27.437210083])
+    assert np.allclose(net.res_ext_grid.p_kw.values, [-0.000000, 0.000000, -132.993015])
+    assert np.allclose(net.res_ext_grid.q_kvar, [4.08411026001, 0.000000, 27.437210083])
 
 
 def test_0gen_2ext_grid_decoupled():
@@ -93,8 +93,8 @@ def test_0gen_2ext_grid_decoupled():
     assert np.allclose(net.res_bus.vm_pu.values,  [1.000000, 0.930961, 
                                                    0.975764, 0.998865, 1.0])
     
-    assert np.allclose(net.res_ext_grid.p_kw.values, [-133.158732, -0.000000])
-    assert np.allclose(net.res_ext_grid.q_kvar, [39.5843982697, -0.000000])
+    assert np.allclose(net.res_ext_grid.p_kw.values, [-133.158732, 0.000000, 0.000000, -0.000000])
+    assert np.allclose(net.res_ext_grid.q_kvar, [39.5843982697, 0.000000, 0.000000, -0.000000])
 
 
 def test_bus_bus_switch_at_eg():

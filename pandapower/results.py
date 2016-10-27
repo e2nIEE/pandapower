@@ -93,44 +93,30 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
 
-    # get results for external grids (new, should work?)
-
+    # get results for external grids
     # bus index of in service egs
-    # gidx = eg_is.bus.values
-    # n_res_eg = len(net['ext_grid'])
-    # # indices of in service gens in the mpc
-    # gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(eg_is["bus"], bus_lookup))
-    # # mask for indices of in service gens in net['res_gen']
-    # idx_gen = np.in1d(net['ext_grid'].bus, gidx)
-    # # read results from mpc for these buses
-    # p = np.zeros(n_res_eg)
-    # p[idx_gen] = -mpc["gen"][gidx_mpc, PG] * 1e3
-    # # store result in net['res']
-    # net["res_ext_grid"]["p_kw"] = p
-    #
-    # # if ac PF q results are also available
-    # if ac:
-    #     q = np.zeros(n_res_eg)
-    #     q[idx_gen] = -mpc["gen"][gidx_mpc, QG] * 1e3
-    #     net["res_ext_grid"]["q_kvar"] = q
-    #
-    # b = net['ext_grid'].bus.values
-    # net["res_ext_grid"].index = net['ext_grid'].index
-
-    #old (Works):
-    # mpc indices of external grids
-    gidx = get_indices(eg_is["bus"], bus_lookup)
-    # get results from mpc
-    p = -mpc["gen"][gidx, PG] * 1e3
+    gidx = eg_is.bus.values
+    n_res_eg = len(net['ext_grid'])
+    # indices of in service gens in the mpc
+    gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(eg_is["bus"], bus_lookup))
+    # mask for indices of in service gens in net['res_gen']
+    idx_eg = np.in1d(net['ext_grid'].bus, gidx)
+    # read results from mpc for these buses
+    p = np.zeros(n_res_eg)
+    p[idx_eg] = -mpc["gen"][gidx_mpc, PG] * 1e3
     # store result in net['res']
     net["res_ext_grid"]["p_kw"] = p
-        # if ac PF q results are also available
+
+    # if ac PF q results are also available
     if ac:
-        q = -mpc["gen"][gidx, QG] * 1e3
+        q = np.zeros(n_res_eg)
+        q[idx_eg] = -mpc["gen"][gidx_mpc, QG] * 1e3
         net["res_ext_grid"]["q_kvar"] = q
-    net["res_ext_grid"].index = eg_is.index
-    # buses of external grids
-    b = eg_is["bus"].values
+
+    # get bus values for pq_bus
+    b = net['ext_grid'].bus.values
+    # copy index for results
+    net["res_ext_grid"].index = net['ext_grid'].index
 
     # get results for gens
     if gen_end > eg_end:

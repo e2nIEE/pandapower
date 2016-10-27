@@ -37,7 +37,7 @@ Input Parameters
 
 *net.trafo3w*
 
-.. tabularcolumns:: |p{0.16\linewidth}|p{0.05\linewidth}|p{0.25\linewidth}|p{0.3\linewidth}|
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
 .. csv-table:: 
    :file: trafo3w_par.csv
    :delim: ;

@@ -21,7 +21,7 @@ def postprocess_latex():
     document_end = False
     tab_begin = False
     module_index = False
-    parameters = False
+#    parameters = False
 #    parameters_next = False
 
     for i, line in enumerate(lines):
@@ -60,6 +60,8 @@ def postprocess_latex():
             bufferlines.append('\\documentclass[a4paper, 10pt, titlepage]{article}\n')
             bufferlines.append('\\usepackage{xcolor}\n')
             bufferlines.append('\\usepackage{import}\n')
+            bufferlines.append('\\usepackage{pdflscape}\n')
+            bufferlines.append('\\usepackage{afterpage}\n')
 #            bufferlines.append('\\usepackage{hyphenat}\n')
         # set tabulary to longtable and change pagestyle
         elif line.find('\\renewenvironment') != -1:
@@ -80,7 +82,20 @@ def postprocess_latex():
             bufferlines.append(line[0:startindex-1] + line[endindex+1:len(line)])
         elif line.find('\\date{') != -1:
             bufferlines.append('\\date{\\today \\\\[.5em] Version %s}\n'%version)
-#        elif parameters:
+        elif line.find("subsection{Lines}") != -1:
+            bufferlines.append("\\thispagestyle{empty} \n")
+            bufferlines.append("\\pagestyle{empty} \n")
+            bufferlines.append("\\begin{landscape} \n")
+            bufferlines.append("\\footnotesize \n")
+            bufferlines.append(replace(line))
+        elif line.find("{Manage Standard Types}") != -1:
+            bufferlines.append("\\end{landscape} \n")
+            bufferlines.append("\\restoregeometry \n")
+            bufferlines.append("\\pagestyle{headings} \n")
+            bufferlines.append("\\normal \n")
+            bufferlines.append(replace(line))
+
+            #        elif parameters:
 #            parameters = False
 #            parameters_next = True
 #            bufferlines.append(line)
@@ -96,13 +111,7 @@ def postprocess_latex():
             continue
         # change chapter to section etc, replace unnecessary commands
         else:
-            line = line.replace('\\subsection', '\\subsubsection')
-            line = line.replace('\\section', '\\subsection')
-            line = line.replace('\\chapter', '\\clearpage\\section')
-            line = line.replace('{\\linewidth}', '')
-            line = line.replace('\\bigskip\\hrule{}\\bigskip', '\\bigskip')
-            line = line.replace('{\\color{red}\\bfseries{}*}', '*')
-            bufferlines.append(line)
+            bufferlines.append(replace(line))
 
     # write changes to file
     latex_file.seek(0)
@@ -112,4 +121,13 @@ def postprocess_latex():
 
     latex_file.close()
 
+def replace(line):
+    line = line.replace('\\subsection', '\\subsubsection')
+    line = line.replace('\\section', '\\subsection')
+    line = line.replace('\\chapter', '\\clearpage\\section')
+    line = line.replace('{\\linewidth}', '')
+    line = line.replace('\\bigskip\\hrule{}\\bigskip', '\\bigskip')
+    line = line.replace('{\\color{red}\\bfseries{}*}', '*')
+    return line
+    
 postprocess_latex()
