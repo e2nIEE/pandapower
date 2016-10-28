@@ -4,9 +4,6 @@
 Switch
 =============
 
-.. seealso::
-    :ref:`Unit Systems and Conventions <conventions>`
-
 Create Function
 =====================
 
