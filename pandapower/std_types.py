@@ -504,8 +504,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
-         "tp_st_percent": 1.5,
-         "tp_pos": 0},
+         "tp_st_percent": 1.5},
 
     "100 MVA 220/110 kV":
         {"i0_percent": 0.06,
@@ -521,8 +520,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
-         "tp_st_percent": 1.5,
-         "tp_pos": 0},
+         "tp_st_percent": 1.5},
 
     # compare to IFT Ingenieurbüro data and Schlabbach book
     "63 MVA 110/20 kV":
@@ -539,8 +537,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
-         "tp_st_percent": 1.5,
-         "tp_pos": 0},
+         "tp_st_percent": 1.5},
 
 	"40 MVA 110/20 kV":
         {"i0_percent": 0.08,
@@ -556,8 +553,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
-         "tp_st_percent": 1.5,
-         "tp_pos": 0},
+         "tp_st_percent": 1.5},
 
 	"25 MVA 110/20 kV":
         {"i0_percent": 0.071,
@@ -573,8 +569,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
-         "tp_st_percent": 1.5,
-         "tp_pos": 0},
+         "tp_st_percent": 1.5},
 
 	"63 MVA 110/10 kV":
         {"sn_kva": 63000,
@@ -590,8 +585,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -9,
         "tp_max": 9,
-        "tp_st_percent": 1.5,
-        "tp_pos": 0},
+        "tp_st_percent": 1.5},
 
 	"40 MVA 110/10 kV":
         {"sn_kva": 40000,
@@ -607,8 +601,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -9,
         "tp_max": 9,
-        "tp_st_percent": 1.5,
-        "tp_pos": 0},
+        "tp_st_percent": 1.5},
 
 	"25 MVA 110/10 kV":
         {"sn_kva": 25000,
@@ -624,8 +617,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -9,
         "tp_max": 9,
-        "tp_st_percent": 1.5,
-        "tp_pos": 0},
+        "tp_st_percent": 1.5},
 
     #Tafo20/0.4
     #0.25 MVA 20/0.4 kV 0.45 Trafo Union
@@ -643,8 +635,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -2,
         "tp_max": 2,
-        "tp_st_percent": 2.5,
-        "tp_pos": 0},
+        "tp_st_percent": 2.5},
 
     #0.4 MVA 20/0.4 kV Trafo Union
     "0.4 MVA 20/0.4 kV":
@@ -659,8 +650,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -2,
         "tp_max": 2,
-        "tp_st_percent": 2.5,
-        "tp_pos": 0},
+        "tp_st_percent": 2.5},
 
     #0.63 MVA 20/0.4 kV Trafo Union
     "0.63 MVA 20/0.4 kV":
@@ -677,8 +667,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -2,
         "tp_max": 2,
-        "tp_st_percent": 2.5,
-        "tp_pos": 0},
+        "tp_st_percent": 2.5},
 
     #Tafo10/0.4:
     #0.25 MVA 10/0.4 kV 0.4 Trafo Union wnr
@@ -696,8 +685,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -2,
         "tp_max": 2,
-        "tp_st_percent": 2.5,
-        "tp_pos": 0},
+        "tp_st_percent": 2.5},
 
     #0.4 MVA 10/0.4 kV Trafo Union wnr
     "0.4 MVA 10/0.4 kV":
@@ -714,8 +702,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -2,
         "tp_max": 2,
-        "tp_st_percent": 2.5,
-        "tp_pos": 0},
+        "tp_st_percent": 2.5},
 
     #0.63 MVA 10/0.4 kV Trafo Union wnr
     "0.63 MVA 10/0.4 kV":
@@ -732,8 +719,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -2,
         "tp_max": 2,
-        "tp_st_percent": 2.5,
-        "tp_pos": 0},
+        "tp_st_percent": 2.5},
     }
     create_std_types(net, data=trafotypes, element="trafo")
 
@@ -761,8 +747,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -10,
         "tp_max": 10,
-        "tp_st_percent": 1.2,
-        "tp_pos": 0},
+        "tp_st_percent": 1.2},
 
 	"63/25/38 MVA 110/10/10 kV":
         {"sn_hv_kva": 63000,
@@ -786,8 +771,7 @@ def add_basic_std_types(net):
         "tp_mid": 0,
         "tp_min": -10,
         "tp_max": 10,
-        "tp_st_percent": 1.2,
-        "tp_pos": 0}
+        "tp_st_percent": 1.2}
     }
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
     return linetypes, trafotypes, trafo3wtypes

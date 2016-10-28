@@ -23,8 +23,8 @@ Transformers can be either created from the standard type library (create_transf
 .. autofunction:: pandapower.create_transformer_from_parameters
 
 
-Parameters
-=============
+Input Parameters
+=====================
 
 *net.trafo*
 
@@ -34,13 +34,13 @@ Parameters
    :delim: ;
    :widths: 15, 10, 25, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
 =================
 
-The equivalent circuit used for the transformer can be set in the loadflow with the parameter "trafo_model".
+The equivalent circuit used for the transformer can be set in the power flow with the parameter "trafo_model".
    
 *trafo_model='t':*
 
@@ -97,11 +97,11 @@ On which side the reference voltage is adapted depends on the :math:`tp\_side` v
    :widths: 20, 15, 15
 
 .. note::
-    The variables tp_min and tp_max are not considered in the loadflow. The user is responsible to ensure that tp_min < tp_mid < tp_max!
+    The variables tp_min and tp_max are not considered in the power flow. The user is responsible to ensure that tp_min < tp_mid < tp_max!
    
 *Phase Shift:*
 
-If the loadflow is run with voltage_angles=True, the complex ratio is given as:
+If the power flow is run with voltage_angles=True, the complex ratio is given as:
 
 .. math::
    :nowrap:
@@ -162,7 +162,7 @@ Where :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<convention
 
   
 Result Parameters
-==================
+==========================
 *net.res_trafo*
 
 .. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
@@ -186,7 +186,7 @@ Result Parameters
     i\_lv\_ka &= i_{lv}
     \end{align*}
     
-The definition of the transformer loading depends on the trafo_loading parameter of the loadflow.
+The definition of the transformer loading depends on the trafo_loading parameter of the power flow.
 
 For trafo_loading="current", the loading is calculated as:
 

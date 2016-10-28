@@ -12,8 +12,8 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 		:width: 18em
 		:align: left 
         
-.. image:: /pics/e2n.jpg
-		:width: 21em
+.. image:: /pics/e2n.png
+		:width: 22em
 		:align: right 
         
 .. |br| raw:: html

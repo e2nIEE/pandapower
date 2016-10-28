@@ -6,7 +6,7 @@ Advantages and Contributions
     - pandapower comes with static equivalent circuit models for lines, 2-Winding transformers, 3-Winding transformers, ward-equivalents etc. (see :ref:`element documentation <elements>` for a complete list).
     - Input parameters are intuitive and commonly used model plate parameters (such as line length and resistance per kilometer) instead of parameters like total branch resistance in per unit
     - the pandapower :ref:`switch model <switch_model>` allows modelling of ideal bus-bus switches as well as bus-line / bus-trafo switches
-    - the loadflow results are processed to include not only the classic loadflow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses
+    - the power flow results are processed to include not only the classic power flow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses
 
 2. pandapower API
     - the pandapower API provides create functions for each element to allow automized step-by-step construction of networks
@@ -25,7 +25,7 @@ Advantages and Contributions
         - `visualize <http:/pandas.pydata.org/pandas-docs/stable/visualization.html>`_,
         -  etc.
         
-      any information that is stored in the pandapower dataframes - be it element parameters, loadflow results or a combination of both.
+      any information that is stored in the pandapower dataframes - be it element parameters, power flow results or a combination of both.
 
 4. Topological Searches
     - pandapower networks can be translated into `networkx <https:/networkx.github.io/>`_ multigraphs for fast topological searches

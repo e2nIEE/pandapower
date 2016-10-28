@@ -10,8 +10,8 @@ Create Function
 
 .. autofunction:: pandapower.create_impedance
 
-Parameters
-=============
+Input Parameters
+=====================
 
 *net.impedance*
 
@@ -21,7 +21,7 @@ Parameters
    :delim: ;
    :widths: 10, 10, 15, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
@@ -49,7 +49,7 @@ with :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions
 
 
 Result Parameters
-==================
+==========================
 *net.res_impedance*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.55\linewidth}|

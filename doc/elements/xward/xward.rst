@@ -10,8 +10,8 @@ Create Function
 
 .. autofunction:: pandapower.create_xward
 
-Input Parameters
-=================
+Result Parameters
+=========================
 
 *net.xward*
 
@@ -21,7 +21,7 @@ Input Parameters
    :delim: ;
    :widths: 10, 10, 15, 55
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
@@ -72,7 +72,7 @@ The internal voltage source is modelled as a PV-node (:ref:`generator<gen>`) wit
    \end{align*}
 
 Result Parameters
-==================
+==========================
 *net.res_xward*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|

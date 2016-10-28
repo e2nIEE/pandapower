@@ -11,14 +11,14 @@ It is possible to have multiple galvanically seperated network in one pandapower
 	:alt: alternate Text
 	:align: center
 
-However, if there are in service buses that are not connected to any slack bus, the loadflow will not converge:
+However, if there are in service buses that are not connected to any slack bus, the power flow will not converge:
     
 .. image:: /pics/caveats/disconnected.png
 	:width: 20em
 	:alt: alternate Text
 	:align: center
 
-The only exception are buses which are not connected to any branch. These buses are ignored in the loadflow and therefore do not cause convergence problems:
+The only exception are buses which are not connected to any branch. These buses are ignored in the power flow and therefore do not cause convergence problems:
     
 .. image:: /pics/caveats/disconnected_yes2.png
 	:width: 20em
@@ -26,7 +26,7 @@ The only exception are buses which are not connected to any branch. These buses 
 	:align: center
 
 The reason is that buses which are not connected to any branch can be easily identified, while buses which form an isolated group can only be found with a topology search.
-The pandapower topology package includes a function to find disconnected buses. For the loadflow to converge, they have to be set out of service: ::
+The pandapower topology package includes a function to find disconnected buses. For the power flow to converge, they have to be set out of service: ::
 
     import pandapower.topology as topology
     unsupplied_buses = top.unsupplied_buses(net)
@@ -66,14 +66,14 @@ It is also not allowed to add two voltage controlled elements to buses which are
 Zero Impedance Branches
 -------------------------------
 
-Branches with zero impedance will lead to a non-converging loadflow:
+Branches with zero impedance will lead to a non-converging power flow:
 
 .. image:: /pics/caveats/zero_branch.png
 	:width: 20em
 	:alt: alternate Text
 	:align: center
     
-This is due to the fact that the loadflow is based on admittances, which would be infinite for an impedance of zero. The same problem might occur with impedances very close to zero.
+This is due to the fact that the power flow is based on admittances, which would be infinite for an impedance of zero. The same problem might occur with impedances very close to zero.
 
 Zero impedance branches occur for:
 

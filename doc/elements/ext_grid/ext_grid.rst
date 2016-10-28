@@ -11,8 +11,8 @@ Create Function
 .. autofunction:: pandapower.create_ext_grid
 
 
-Parameters
-=====================
+Input Parameters
+=============================
 
 *net.ext_grid*
 
@@ -22,7 +22,7 @@ Parameters
    :delim: ;
    :widths: 15, 10, 15, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
 *Optional Parameters*:
 
@@ -36,7 +36,7 @@ Parameters
 Loadflow Model
 =================
 
-The external grid is modelled as a voltage source in the loadflow calculation, which means the node the grid is connected to is treated as a slack node:
+The external grid is modelled as a voltage source in the power flow calculation, which means the node the grid is connected to is treated as a slack node:
 
 .. image:: /elements/ext_grid/ext_grid.png
 	:width: 12em
@@ -54,7 +54,7 @@ with:
    \end{align*}
 
 Result Parameters
-==================    
+==========================    
 *net.res_ext_grid*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|
@@ -63,7 +63,7 @@ Result Parameters
    :delim: ;
    :widths: 10, 10, 50
 
-Active and reactive power feed-in / consumption at the slack node is a result of the loadflow:
+Active and reactive power feed-in / consumption at the slack node is a result of the power flow:
    
 .. math::
    :nowrap:

@@ -14,7 +14,7 @@ The geographical representation of the network looks like this:
 The different colors of the MV/LV stations indicate the feeders which are galvanically seperated by open switches.
 If you are interested in how to make plots such as these, check out the pandapower tutorial on plotting.
 
-The loadflow results of the network in the different worst case scenarios look like this:
+The power flow results of the network in the different worst case scenarios look like this:
 
 .. image:: /pics/oberrhein_loadcases.png
 	:width: 40em

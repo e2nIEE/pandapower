@@ -13,7 +13,7 @@ Create Function
 .. autofunction:: pandapower.create_ward
 
 Input Parameters
-=================
+=========================
 
 *net.ward*
 
@@ -23,7 +23,7 @@ Input Parameters
    :delim: ;
    :widths: 10, 10, 15, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
@@ -53,7 +53,7 @@ The shunt admittance part of the ward equivalent is calculated as described :ref
    \end{align*}
 
 Result Parameters
-==================
+==========================
 *net.res_ward*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|

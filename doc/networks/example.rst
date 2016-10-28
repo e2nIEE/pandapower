@@ -16,11 +16,11 @@ basic principles of creating a pandapower network.
 
 .. autofunction:: pandapower.networks.example_simple
 
-.. image:: example_network_simple.png
+.. image:: ../../tutorials/example_simple/example_network_simple.png
 	:alt: alternate Text
 	:align: center  
     
-The stepwise creation of this network is shown in the pandapower tutorials.
+The stepwise creation of this network is shown in the :ref:`pandapower tutorials<tutorial>`.
 
     
 Multi-Voltage Level Example Network
@@ -36,9 +36,9 @@ equivalent loads. As an example one double busbar and one single busbar are cons
 
 .. autofunction:: pandapower.networks.example_multivoltage
  
-.. image:: example_network.png
+.. image:: ../../tutorials/example_advanced/example_network.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
 
-The stepwise creation of this network is shown in the pandapower tutorials.
+The stepwise creation of this network is shown in the :ref:`pandapower tutorials<tutorial>`. 

@@ -4,9 +4,9 @@ Power Flow
 
 .. _ppLoadflow:
 
-The power flow is the most import static network calculation operation. pandapower uses PYPOWER to solve the loadflow problem:
+The power flow is the most import static network calculation operation. pandapower uses PYPOWER to solve the power flow problem:
 
-.. image:: /pics/pandapower_loadflow.png
+.. image:: /pics/pandapower_power flow.png
 		:width: 40em
 		:alt: alternate Text
 		:align: center

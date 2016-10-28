@@ -11,5 +11,4 @@ sn_kva;float;:math:`>` 0;nominal power of the generator [kVA]
 min_q_kvar;float;;minimal reactive power of the generator [kVar]
 max_q_kvar;float;;maximal reactive power of the generator [kVar]
 scaling*;float;:math:`\leq` 0;scaling factor for the active power
-in_service*;boolean;"| *""True""* - in service
-| *""False""* - out of service";specifies if the generator is in service.
+in_service*;boolean;True / False;specifies if the generator is in service.

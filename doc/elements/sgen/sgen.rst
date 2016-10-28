@@ -10,8 +10,8 @@ Create Function
 
 .. autofunction:: pandapower.create_sgen
 
-Parameters
-=============
+Input Parameters
+=====================
 
 *net.sgen*
 
@@ -21,13 +21,13 @@ Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-*necessary for executing a loadflow calculation.
+\*necessary for executing a power flow calculation.
 
    
 Loadflow Model
 =================
 
-Static Generators are modelled as PQ-buses in the loadflow calculation:
+Static Generators are modelled as PQ-buses in the power flow calculation:
 
 .. image:: /elements/load/pq.png
 	:width: 8em
@@ -51,10 +51,10 @@ The PQ-Values are calculated from the parameter table values as:
 
 .. note::
     
-    The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the loadflow!
+    The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!
 
 Result Parameters
-==================
+==========================
 *net.res_sgen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
