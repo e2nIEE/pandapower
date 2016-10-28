@@ -331,7 +331,7 @@ def _get_p_q_results(net, mpc, bus_lookup, bus_is, ac=True):
             q = np.hstack([q, qsg])
         b = np.hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
-        
+
     w = net["ward"]
     if len(w) > 0:
         ward_is = np.in1d(w.bus.values, bus_is.index) \
@@ -373,6 +373,7 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
         shunt_is = np.in1d(s.bus.values, bus_is.index) \
                   & s.in_service.values.astype(bool)
         u_shunt = mpc["bus"][sidx, VM]
+        u_shunt = np.nan_to_num(u_shunt)
         p_shunt = u_shunt**2 * net["shunt"]["p_kw"].values * shunt_is
         net["res_shunt"]["p_kw"] = p_shunt
         p = np.hstack([p, p_shunt])
@@ -391,6 +392,7 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
         ward_is = np.in1d(w.bus.values, bus_is.index) \
                   & w.in_service.values.astype(bool)
         u_ward = mpc["bus"][widx, VM]
+        u_ward = np.nan_to_num(u_ward)
         p_ward = u_ward**2 * net["ward"]["pz_kw"].values * ward_is
         net["res_ward"]["p_kw"] += p_ward
         p = np.hstack([p, p_ward])
@@ -408,6 +410,7 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
         xward_is = np.in1d(xw.bus.values, bus_is.index) \
                    & xw.in_service.values.astype(bool)
         u_xward = mpc["bus"][widx, VM]
+        u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward**2 * net["xward"]["pz_kw"].values * xward_is
         net["res_xward"]["p_kw"] += p_xward
         p = np.hstack([p, p_xward])

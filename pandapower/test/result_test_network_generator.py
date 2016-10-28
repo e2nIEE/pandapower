@@ -31,6 +31,9 @@ def result_test_network_generator():
     yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
     yield add_test_oos_bus_with_is_element(net)
+#    yield add_test_shunt(net)
+#    yield add_test_shunt_split(net)
+    
 
 
 def add_test_line(net):
@@ -398,6 +401,25 @@ def add_test_oos_bus_with_is_element(net):
     pp.create_shunt(net, b5, q_kvar=-800, p_kw=0)
 
     net.last_added_case = "test_oos_bus_with_is_element"
+    return net
+    
+def add_test_shunt(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_shunt")
+    pz = 120
+    qz = -1200
+# one shunt at a bus
+    s1 = pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz)
+# add out of service shunt shuold not change the result
+    pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
+    return net
+    
+def add_test_shunt_split(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_shunt_split")
+    pz = 120
+    qz = -1200
+# one shunt at a bus
+    s1 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
+    s2 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
     return net
 
 if __name__ == '__main__':

@@ -33,10 +33,9 @@ def branch_loss_consistent_with_bus_feed_in(net):
     bus_surplus_q = -net.res_bus.q_kvar.sum()
 
     branch_loss_p = net.res_line.pl_kw.sum() + net.res_trafo.pl_kw.sum() + \
-                    net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum()
+                    net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum() 
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
-                    net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum()
-
+                    net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum()                     
     assert allclose(bus_surplus_p, branch_loss_p)
     assert allclose(bus_surplus_q, branch_loss_q)
 
