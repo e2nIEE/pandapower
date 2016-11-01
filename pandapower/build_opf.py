@@ -117,12 +117,9 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 100, 100, 0])
 
-<<<<<<< Updated upstream
-=======
         # Set gencosts for sgens
         #mpc["gencost"][nref:ng, 5] = net.sgen.cost_per_kw
 
->>>>>>> Stashed changes
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
 
