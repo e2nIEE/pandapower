@@ -76,3 +76,8 @@ Active and reactive power feed-in / consumption at the slack node is a result of
 .. note::
 
    All power values are given in the consumer system, therefore p_kw is positive if the external grid is absorbing power and negative if it is supplying power.
+   
+Optimal Power Flow Parameters
+=============================
+
+An external grid is not considered as a flexibility for the optimal power flow. The voltage setpoint can not be changed by the optimal power flow.

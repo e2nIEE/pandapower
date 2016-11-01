@@ -1,0 +1,8 @@
+**Parameter**;**Datatype**;**Explanation**
+max_p_kw;float;Maximum active ower
+min_p_kw;float;Minimum active power
+max_q_kvar;float;Maximum reactive ower
+min_q_kvar;float;Minimum reactive power
+controllable;bool;States if a gen is controllable or not. Currently gens must be controllable, because there is no method to respect uncontrollable gens yet.
+cost_per_kw;float;currently not used
+cost_per_kvar;float;currently not used
