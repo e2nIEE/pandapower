@@ -53,16 +53,46 @@ def _pd2mpc_opf(net, is_elems, sg_is):
 
 
 def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
-    """ Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
-        C{H} and C{Cw}
+    """ 
+    Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
+    C{H} and C{Cw}
 
-    * mpc . Matpower case of the net
-    * objectivetype - string with name of objective function
+    INPUT:
+        **mpc** - Matpower case of the net
 
+        **ppopt** -
+        
+    OPTIONAL:
 
-    ** "maxp" - linear costs of the form  I*p. p represents the active power values of the
-                    generators. This then basically is this:
-                    max p subject to {vm_min<u<vm_max,min_p_kw<p<pmax,qmin<q<qmax,i<imax
+        **objectivetype** (string, "maxp") - string with name of objective function
+
+            - **"maxp"** - Linear costs of the form  :math:`I\\cdot P_G`. :math:`P_G` represents the
+              active power values of the generators. Target of this objectivefunction is to maximize
+              the generator output.
+              This then basically is this:
+
+                  .. math::
+                      max\{P_G\}
+
+            - **"minlossmaxp"** - Quadratic costs of the form  :math:`I\\cdot P_G - dV_m^T Y_L dV_m`.
+              :math:`P_G` represents the active power values of the generators,
+              :math:`dV_m` the voltage drop for each line and :math:`Y_L` the line admittance matrix.
+              Target of this objectivefunction is to maximize the generator output but minimize the 
+              linelosses.
+              This then basically is this:
+
+                  .. math::
+                      max\{P_G - dVm^TY_{L}dVm\}
+
+            .. note:: Both objective functions have the following constraints:
+
+                .. math::
+                    V_{m,min} < &V_m < V_{m,max}\\\\
+                    P_{G,min} < &P_G < P_{G,max}\\\\
+                    Q_{G,min} < &Q_G < Q_{G,max}\\\\
+                    I < &I_{max}
+
+        **net** (attrdict, None) - Pandapower network
 
     """
     ng = len(mpc["gen"])  # -
@@ -87,6 +117,12 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 100, 100, 0])
 
+<<<<<<< Updated upstream
+=======
+        # Set gencosts for sgens
+        #mpc["gencost"][nref:ng, 5] = net.sgen.cost_per_kw
+
+>>>>>>> Stashed changes
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
 

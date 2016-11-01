@@ -22,7 +22,7 @@ from pypower.makeAvl import makeAvl
 from pypower.makeApq import makeApq
 from pypower.makeAang import makeAang
 from pypower.makeAy import makeAy
-from pypower.opf_model import opf_model
+from pandapower.pypower_extensions.opf_model import opf_model # temporary changed import to match bugfix path
 from pypower.run_userfcn import run_userfcn
 
 from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
