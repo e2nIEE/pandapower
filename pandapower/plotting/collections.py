@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import copy
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          infofunc=None, cmap=None, picker=False, **kwargs):
+                          infofunc=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
     
@@ -72,7 +72,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                for i, (x, y) in enumerate(zip(net.bus_geodata.loc[buses].x.values,
                                               net.bus_geodata.loc[buses].y.values))
                if x != -1 and x != np.nan]
-    pc = PatchCollection(patches, match_original=True, cmap=cmap, picker=picker)
+    pc = PatchCollection(patches, match_original=True)
     pc.patch_type = patch_type
     pc.size = size
     if "zorder" in kwargs:
@@ -171,6 +171,10 @@ def draw_collections(collections, figsize=(10, 8), ax=None):
         if c:
             cc = copy.copy(c)
             ax.add_collection(cc)
+            if hasattr(c, "has_colormap"):
+                cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")                
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
     ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)

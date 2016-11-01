@@ -30,7 +30,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         
         **scenario** - (str, "load"): defines the scaling for load and generation
                 
-                - "load": high load scenario, load = 0.6 / sgen = 0, trafo taps [-1, -1]
+                - "load": high load scenario, load = 0.6 / sgen = 0, trafo taps [-2, -3]
                 - "generation": high feed-in scenario: load = 0.1, generation = 0.8, trafo taps [0, 0]
                 
         **cosphi_load** - (str, 0.98): cosine(phi) of the loads
@@ -61,7 +61,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     if scenario == "load":
         net.load.scaling = 0.6
         net.sgen.scaling = 0
-        net.trafo.tp_pos.loc[hv_trafos] = [-1, -1]
+        net.trafo.tp_pos.loc[hv_trafos] = [-2, -3]
     elif scenario == "generation":
         net.load.scaling = 0.1
         net.sgen.scaling = 0.8
@@ -72,4 +72,5 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     return net
 
 if __name__ == "__main__":
-    net = mv_oberrhein("load", include_substations=True)
+    net = mv_oberrhein()
+    pp.runpp(net)
