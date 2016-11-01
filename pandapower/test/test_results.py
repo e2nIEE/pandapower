@@ -537,24 +537,5 @@ def test_shunt_split(result_test_network):
 # TODO
 
 if __name__ == "__main__":
-    import pandapower as pp
-#    net = pp.create_empty_network()
     pytest.main(["test_results.py", "-s"])
-#
-    ###BUS ELEMENTS###
-#    test_enforce_qlims() #this test only works if it is the first one, since pypower has problems
-                            #with limiting the generator Q in networks with > 1 generator
-#    test_load_sgen(net)
-#    test_ext_grid(net)
-#    test_shunt(net) #powerfactory results missing
-#    test_gen(net)
-#    test_ward(net)
-#    test_xward(net)
-#
-#    ###BRANCH ELEMENTS###
-#    test_line(net)
-#    test_trafo(net)
-#    test_trafo3w(net)
-#    test_trafo3w_tap(net) #powerfactory results missing
-#    test_bus_bus_switch(net)
-#    test_impedance(net)
+
