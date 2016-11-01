@@ -31,8 +31,8 @@ def result_test_network_generator():
     yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
     yield add_test_oos_bus_with_is_element(net)
-#    yield add_test_shunt(net)
-#    yield add_test_shunt_split(net)
+    yield add_test_shunt(net)
+    yield add_test_shunt_split(net)
     
 
 

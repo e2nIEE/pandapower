@@ -37,47 +37,40 @@ Optimal Power Flow
 **pandapower optimal power flow**
 
 The pandapower optimal power flow is the tool for optimizing your grid state. It is reading constraints and costs from the pandapower tables and is processing it into the pypower case file that is handed over to the pypower OPF.
-Hitherto we only have a limited set of constraints and cost function options, that is fitting our special use cases. In the future, this module will be developed further in order to allow opf calculations with more felxible cost functions. 
+Hitherto we have two cost function options, that are fitting our special use cases. In the future, this module will be developed further in order to allow opf calculations with more flexible cost functions. 
 
 You can find the documentation of the pypower OPF under http:/www.pserc.cornell.edu/matpower/manual.pdf
 In theory, the pandapower OPF can do exactly the same, it just requires an extension of the pandapower <-> pypower interface
 
-
-.. note::
-
-
-    The pandapower OPF is a recent development that is still growing. If you have further requirements you are very welcome to design your own cost functions or use your own solvers. 
-    For coordination, please contact friederike.meier@uni-kassel.de
-    Also we like to discuss future use cases in our weekly meeting.
-
-
-**Input constraints**
-
-.. tabularcolumns:: |p{0.12\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.30\linewidth}|
-.. csv-table:: 
-   :file: opf_constraints.csv
-   :delim: ;
-   :widths: 10, 10, 25
-
-**Input Costs**
-
-The costs for power can be written into the pandapower tables. They will be used to create the pypower gencost array in the future.
-
-.. tabularcolumns:: |p{0.12\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.30\linewidth}|
-.. csv-table:: 
-   :file: opf_cost.csv
-   :delim: ;
-   :widths: 10, 10, 25
-
 **Available cost functions**
 
-At the moment we only have the following cost function:
+*Linear costs*
 
 .. math::
-		max\{P_G\} \hspace{1cm}\text{subject to:}\hspace{1cm} U_{min} <\ U_B\ &< U_{max}\\
-		P_{min} <\ P_G\ &< P_{max}\\
-		Q_{min} <\ Q_G\ &< Q_{max}\\
-		I_{Branch} &<\ I_{max}
+		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} \\ 
+        & subject   \ to \\
+        & P_{max,i} <= P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
+        & U_{min,j} <= Q_{g,i} < Q_{min,i}, j  \ \epsilon \ bus   \\
+        & Q_{max,i} <= Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
+        & S_{k} < S_{max,k}, k \ \epsilon \ trafo  \\
+        & I_{l} < I_{max,l}, l \ \epsilon \ line
+        
+        
+        
+Where :math:`gen` contains all generators and controllable static generators. The weighted costs :math:`w_{g,i}` can be defined in the pandapower Generator and Static generator tables, see :ref:`elements`. 
+
+
+*Linear costs with loss minimization"
+
+
+.. math::
+		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} + \sum_{l  \ \epsilon \ line }{P_{loss,l}} \\ 
+        & subject   \ to \\
+        & P_{max,i} <= P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
+        & U_{min,j} <= Q_{g,i} < Q_{min,i}, j  \ \epsilon \ bus   \\
+        & Q_{max,i} <= Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
+        & S_{k} < S_{max,k}, k \ \epsilon \ trafo  \\
+        & I_{l} < I_{max,l}, l \ \epsilon \ line
    
 **OPF Output**
 
@@ -88,3 +81,7 @@ Also you can see the resulting voltage and loading values in res_line, res_trafo
 
 
 
+**OPF caveats**
+
+The costs are not respected for uncontrollable Static Generators. 
+If a Generator should not be respected as a flexibility, the Power limits can be set to the actual power value (+/- a certain inaccuracy) to take away the flexibility for the OPF.

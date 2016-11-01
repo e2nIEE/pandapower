@@ -69,3 +69,19 @@ The power flow bus results are defined as:
 .. note::
 
    All power values are given in the consumer system. Therefore a bus with positive p_kw value consumes power while a bus with negative active power supplies power.
+   
+   
+Optimal Power Flow Parameters
+=============================
+
+The voltage limits for the optimal power flow can be set bus wise in the bus tables:
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: bus_opf.csv
+   :delim: ;
+   :widths: 10, 10, 40
+   
+.. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
+
+.. note:: :math:`max_{vm,pu}>min_{vm,pu}` is a necessary condition   

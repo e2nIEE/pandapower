@@ -500,56 +500,42 @@ def test_enforce_q_lims():
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < 1e-2
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1e-2
     assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < 1e-2
-#
-#def test_shunt(result_test_network):
-#    net = result_test_network
-#    buses = net.bus[net.bus.zone == "test_shunt"]
-#    b2 = buses.index[1]
-#    shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
-#    s1 = shunts.index[0]
-#
-#    pz = 1200
-#    qz = 1100
-#    u =  0.99061732759039389
-#    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
-#    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
-#    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
-#
-#def test_shunt_split(result_test_network):
-#    net = result_test_network
-#    buses = net.bus[net.bus.zone == "test_shunt_split"]
-#    b2 = buses.index[1]
-#    shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
-#    s1 = shunts.index[0]
-#
-#    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
-#    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
-#    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
-# #
+
+def test_shunt(result_test_network):
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_shunt"]
+    b2 = buses.index[1]
+    shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
+    s1 = shunts[0]
+
+    u =  1.015007
+    p = 123.628741 
+    q = -1236.287413
+    
+    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
+    assert abs(net.res_shunt.p_kw.loc[s1] - p) < 1e-6
+    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < 1e-6
+
+def test_shunt_split(result_test_network):
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_shunt_split"]
+    b2 = buses.index[1]
+    shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
+    s1 = shunts[0]
+
+    u =  1.015007
+    p = 123.628741 
+    q = -1236.287413
+
+    assert abs(net.res_bus.vm_pu.loc[b2] - u) < 1e-6
+    assert abs(net.res_shunt.p_kw.loc[s1] - p/2) < 1e-6
+    assert abs(net.res_shunt.q_kvar.loc[s1] - q/2) < 1e-6
+
  
 
 # def test_trafo3w_tap(net):
 # TODO
 
 if __name__ == "__main__":
-    import pandapower as pp
-#    net = pp.create_empty_network()
     pytest.main(["test_results.py", "-s"])
-#
-    ###BUS ELEMENTS###
-#    test_enforce_qlims() #this test only works if it is the first one, since pypower has problems
-                            #with limiting the generator Q in networks with > 1 generator
-#    test_load_sgen(net)
-#    test_ext_grid(net)
-#    test_shunt(net) #powerfactory results missing
-#    test_gen(net)
-#    test_ward(net)
-#    test_xward(net)
-#
-#    ###BRANCH ELEMENTS###
-#    test_line(net)
-#    test_trafo(net)
-#    test_trafo3w(net)
-#    test_trafo3w_tap(net) #powerfactory results missing
-#    test_bus_bus_switch(net)
-#    test_impedance(net)
+
