@@ -51,7 +51,7 @@ def runopp(net, objectivetype="maxp", verbose=False, suppress_warnings=True):
         sg_is = {}
 
     mpc, bus_lookup = _pd2mpc_opf(net, is_elems, sg_is)
-    mpc, ppopt = _make_objective(mpc, ppopt, objectivetype)
+    mpc, ppopt = _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype)
 
     if suppress_warnings:
         with warnings.catch_warnings():

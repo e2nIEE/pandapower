@@ -52,7 +52,7 @@ def _pd2mpc_opf(net, is_elems, sg_is):
     return mpc, bus_lookup
 
 
-def _make_objective(mpc, ppopt, objectivetype="maxp"):
+def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     """ Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
         C{H} and C{Cw}
 
@@ -67,12 +67,16 @@ def _make_objective(mpc, ppopt, objectivetype="maxp"):
     """
     ng = len(mpc["gen"])  # -
     nref = sum(mpc["bus"][:, BUS_TYPE] == REF)
+    gen_is = is_elems['gen']
+    gen_cost_per_kw = gen_is.cost_per_kw
+    sgen_cost_per_kw = sg_is.cost_per_kw
 
     if objectivetype == "maxp":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
-        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])
-        mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 100, 100, 0])
+        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # no costs for ext_grid
+        mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # initializing gencost array
+        mpc["gencost"][nref:ng, 7] = np.hstack(gen_cost_per_kw,sgen_cost_per_kw)
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
