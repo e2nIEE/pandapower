@@ -90,8 +90,8 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     gen_is = is_elems['gen']
     eg_is = is_elems['eg']
 
-    eg_end = len(eg_is)
-    gen_end = eg_end + len(gen_is)
+    eg_end = len(net['ext_grid'])
+    gen_end = eg_end + len(net['gen'])
 
     # get results for external grids
     # bus index of in service egs
