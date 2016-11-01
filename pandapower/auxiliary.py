@@ -5,12 +5,20 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
-from attrdict import AttrDict
 import numpy as np
+from collections import MutableMapping
+import re
 
-class PandapowerNet(AttrDict):
+import six
+
+
+class PandapowerNet(dict, MutableMapping):
     def __init__(self, *args, **kwargs):
         super(PandapowerNet, self).__init__(*args, **kwargs)
+
+        # to prevent overwrite of internal attributes by new keys
+        # see _valid_name()
+        self._setattr('_allow_invalid_attributes', False)
 
     def __repr__(self):
         r = "This pandapower network includes the following parameter tables:"
@@ -36,6 +44,120 @@ class PandapowerNet(AttrDict):
         """
         return obj
 
+    # --- taken from AttrDict
+
+    def __getstate__(self):
+        return self.copy(), self._allow_invalid_attributes
+
+    def __setstate__(self, state):
+        mapping, sequence_type, allow_invalid_attributes = state
+        self.update(mapping)
+        self._setattr('_allow_invalid_attributes', allow_invalid_attributes)
+
+    @classmethod
+    def _constructor(cls, mapping):
+        return cls(mapping)
+
+    # --- taken from MutableAttr
+
+    def _setattr(self, key, value):
+        """
+        Add an attribute to the object, without attempting to add it as
+        a key to the mapping (i.e. internals)
+        """
+        super(MutableMapping, self).__setattr__(key, value)
+
+    def __setattr__(self, key, value):
+        """
+        Add an attribute.
+
+        key: The name of the attribute
+        value: The attributes contents
+        """
+        if self._valid_name(key):
+            self[key] = value
+        elif getattr(self, '_allow_invalid_attributes', True):
+            super(MutableMapping, self).__setattr__(key, value)
+        else:
+            raise TypeError(
+                "'{cls}' does not allow attribute creation.".format(
+                    cls=self.__class__.__name__
+                )
+            )
+
+    def _delattr(self, key):
+        """
+        Delete an attribute from the object, without attempting to
+        remove it from the mapping (i.e. internals)
+        """
+        super(MutableMapping, self).__delattr__(key)
+
+    def __delattr__(self, key, force=False):
+        """
+        Delete an attribute.
+
+        key: The name of the attribute
+        """
+        if self._valid_name(key):
+            del self[key]
+        elif getattr(self, '_allow_invalid_attributes', True):
+            super(MutableMapping, self).__delattr__(key)
+        else:
+            raise TypeError(
+                "'{cls}' does not allow attribute deletion.".format(
+                    cls=self.__class__.__name__
+                )
+            )
+
+    def __call__(self, key):
+        """
+        Dynamically access a key-value pair.
+
+        key: A key associated with a value in the mapping.
+
+        This differs from __getitem__, because it returns a new instance
+        of an Attr (if the value is a Mapping object).
+        """
+        if key not in self:
+            raise AttributeError(
+                "'{cls} instance has no attribute '{name}'".format(
+                    cls=self.__class__.__name__, name=key
+                )
+            )
+
+        return self._build(self[key])
+
+    def __getattr__(self, key):
+        """
+        Access an item as an attribute.
+        """
+        if key not in self or not self._valid_name(key):
+            raise AttributeError(
+                "'{cls}' instance has no attribute '{name}'".format(
+                    cls=self.__class__.__name__, name=key
+                )
+            )
+
+        return self._build(self[key])
+
+    @classmethod
+    def _valid_name(cls, key):
+        """
+        Check whether a key is a valid attribute name.
+
+        A key may be used as an attribute if:
+         * It is a string
+         * It matches /^[A-Za-z][A-Za-z0-9_]*$/ (i.e., a public attribute)
+         * The key doesn't overlap with any class attributes (for Attr,
+            those would be 'get', 'items', 'keys', 'values', 'mro', and
+            'register').
+        """
+        return (
+            isinstance(key, six.string_types) and
+            re.match('^[A-Za-z][A-Za-z0-9_]*$', key) and
+            not hasattr(cls, key)
+        )
+
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.iteritems()):
         if df.dtypes.at[item] != dtype:
@@ -43,7 +165,8 @@ def _preserve_dtypes(df, dtypes):
                 df[item] = df[item].astype(dtype)
             except ValueError:
                 df[item] = df[item].astype(float)
-                
+
+
 def get_free_id(df):
     """
     Returns next free ID in a dataframe
