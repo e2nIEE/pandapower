@@ -16,7 +16,7 @@ basic principles of creating a pandapower network.
 
 .. autofunction:: pandapower.networks.example_simple
 
-.. image:: ../../tutorials/example_simple/example_network_simple.png
+.. image:: ../../tutorials/pics/example_network_simple.png
 	:alt: alternate Text
 	:align: center  
     
@@ -36,7 +36,7 @@ equivalent loads. As an example one double busbar and one single busbar are cons
 
 .. autofunction:: pandapower.networks.example_multivoltage
  
-.. image:: ../../tutorials/example_advanced/example_network.png
+.. image:: ../../tutorials/pics/example_network.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center

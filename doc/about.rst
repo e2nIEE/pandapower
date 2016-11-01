@@ -32,6 +32,7 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
     about/introduction
     about/contributions
     about/units
+    about/authors
     about/license
 
 

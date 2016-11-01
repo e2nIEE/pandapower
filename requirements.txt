@@ -1,7 +1,6 @@
+pypower>5.0.0
 numpy>1.8
 scipy
 pandas
-pypower>5.0.0
-attrdict
 networkx
 numba>0.2.8.0
