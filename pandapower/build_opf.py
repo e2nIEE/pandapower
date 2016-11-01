@@ -68,15 +68,22 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     ng = len(mpc["gen"])  # -
     nref = sum(mpc["bus"][:, BUS_TYPE] == REF)
     gen_is = is_elems['gen']
-    gen_cost_per_kw = gen_is.cost_per_kw
-    sgen_cost_per_kw = sg_is.cost_per_kw
+    if not gen_is.empty:
+        gen_cost_per_kw = gen_is.cost_per_kw
+    else:
+        gen_cost_per_kw = np.array([])
+        
+    if  not sg_is.empty:
+        sgen_cost_per_kw = sg_is.cost_per_kw
+    else:
+        sgen_cost_per_kw = np.array([])
 
     if objectivetype == "maxp":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
         mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # no costs for ext_grid
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # initializing gencost array
-        mpc["gencost"][nref:ng, 7] = np.hstack(gen_cost_per_kw,sgen_cost_per_kw)
+        mpc["gencost"][nref:ng, 7] = np.hstack([gen_cost_per_kw,sgen_cost_per_kw])
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)

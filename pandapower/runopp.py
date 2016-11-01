@@ -10,7 +10,7 @@ from .opf import opf
 from pypower.ppoption import ppoption
 from pandapower.run import _select_is_elements
 import warnings
-
+import pandas as pd
 # TODO: Maybe rename "simple" to "maxfeedin"
 
 
@@ -48,7 +48,7 @@ def runopp(net, objectivetype="maxp", verbose=False, suppress_warnings=True):
     if "controllable" in net.sgen.columns:
         sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable)==True]
     else:
-        sg_is = {}
+        sg_is = pd.DataFrame()
 
     mpc, bus_lookup = _pd2mpc_opf(net, is_elems, sg_is)
     mpc, ppopt = _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype)
