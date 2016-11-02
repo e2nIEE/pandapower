@@ -7,7 +7,6 @@
 import numpy as np
 import pandas as pd
 import copy
-from attrdict import AttrDict
 import numbers
 from collections import defaultdict
 try:
@@ -96,8 +95,8 @@ def equal_nets(x, y, check_only_results=False, tol=1.e-14):
     """
     eq = True
 
-    if isinstance(x, dict) or isinstance(x, AttrDict) and \
-            isinstance(y, dict) or isinstance(y, AttrDict):
+    if isinstance(x, dict) or isinstance(x, PandapowerNet) and \
+            isinstance(y, dict) or isinstance(y, PandapowerNet):
         # for two networks make sure both have the same keys ...
         if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
             logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
