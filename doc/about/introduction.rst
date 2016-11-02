@@ -1,5 +1,5 @@
 ﻿=====================
-A short Introduction
+A Short Introduction
 =====================
 
 A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
@@ -12,16 +12,28 @@ For the following simple 2-bus example network:
 		:alt: alternate Text
 		:align: center 
 
-the pandapower representation looks like this:
+The network can be created with the pandapower create functions: ::
+    
+    import pandapower as pp
+    net = pp.create_empty_network()
+    pp.create_bus(net, vn_kv=0.4, name="Bus 1")
+    pp.create_ext_grid(net, bus=b1, vm_pu=1.02, name="Grid Connection")
+    pp.create_bus(net, vn_kv=0.4, name="Bus 2")
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.1, std_type="NAYY 4x50 SE", name="Line")     
+    pp.create_load(net, bus=b2, p_kw=100, q_kvar=50, name="Load")
+
+the pandapower representation then looks like this:
 
 .. image:: /pics/pandapower_datastructure.png
 		:width: 40em
 		:alt: alternate Text
 		:align: center
 
-The network can be created with the pandapower create functions, but it also possible to directly manipulate data in the pandapower dataframes.
-
-When a power flow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow.
+When a power flow is run: ::
+    
+    pp.runpp(net)
+    
+pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow.
 The results are then processed and written back into pandapower:
         
 .. image:: /pics/pandapower_power flow.png
@@ -36,7 +48,7 @@ For the 2-bus example network, the result tables look like this:
 		:alt: alternate Text
 		:align: center
         
-The same workflow applies to running a DC or an optimal power flow.
+You can download the python script that creates this 2-bus system :download:`here  <pandapower_2bus_system.py>`.
 
-You can download the python script that creates this 2-bus system :download:`here  <pandapower_2bus_system.py>`. For more extensive examples, refer to the :ref:`pandapower tutorials<tutorial>`.
-
+For a more in depth introduction into pandapower modeling and analysis functionality, see the :ref:`pandapower tutorials<tutorial>`
+about network creation, standard type libraries, power flow, topological searches, plotting and more.

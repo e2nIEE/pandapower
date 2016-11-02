@@ -8,6 +8,7 @@ pandapower.egg-info/
 doc/api/
 doc/.build/*
 doc/_build/*
+tutorials/.ipynb_checkpoints
 .cache
 *__pycache__*
 

@@ -97,7 +97,7 @@ On which side the reference voltage is adapted depends on the :math:`tp\_side` v
    :widths: 20, 15, 15
 
 .. note::
-    The variables tp_min and tp_max are not considered in the power flow. The user is responsible to ensure that tp_min < tp_mid < tp_max!
+    The variables tp_min and tp_max are not considered in the power flow. The user is responsible to ensure that tp_min < tp_pos < tp_max!
    
 *Phase Shift:*
 

@@ -1,8 +1,8 @@
 ﻿.. _license:
 
 =========
-License
+Authors
 =========
 
-.. include:: ../../LICENSE
+.. include:: ../../AUTHORS
 

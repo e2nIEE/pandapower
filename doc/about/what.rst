@@ -27,6 +27,7 @@ pandapower provides
     
 pandapower allows
     - automized the creation of complex power system models
+    - explicit modeling of switches
     - solving three phase AC, DC and optimal power flow problems
     - topological searches in electric networks
     - plotting of structural and/or geographical network plans

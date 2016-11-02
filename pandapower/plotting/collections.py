@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import copy
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          infofunc=None, cmap=None, picker=False, **kwargs):
+                          cmap=None, norm=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
     
@@ -72,7 +72,14 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                for i, (x, y) in enumerate(zip(net.bus_geodata.loc[buses].x.values,
                                               net.bus_geodata.loc[buses].y.values))
                if x != -1 and x != np.nan]
-    pc = PatchCollection(patches, match_original=True, cmap=cmap, picker=picker)
+    pc = PatchCollection(patches, match_original=True)
+    if cmap:
+        pc.set_cmap(cmap)
+        pc.set_norm(norm)
+        pc.set_array(net.res_bus.vm_pu.loc[buses])
+        pc.has_colormap = True
+        pc.cbar_title = "Bus Voltage [pu]"
+
     pc.patch_type = patch_type
     pc.size = size
     if "zorder" in kwargs:
@@ -81,7 +88,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     return pc
 
 
-def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, **kwargs):
+def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, cmap=None,
+                           norm=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
     
@@ -117,6 +125,12 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(data, **kwargs)
+    if cmap:
+        lc.set_cmap(cmap)
+        lc.set_norm(norm)
+        lc.set_array(net.res_line.loading_percent.loc[lines])
+        lc.has_colormap = True
+        lc.cbar_title = "Line Loading [%]"
     lc.info = info
     return lc
 
@@ -146,7 +160,7 @@ def create_trafo_collection(net, trafos=None, **kwargs):
 
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
 
-def draw_collections(collections, figsize=(10, 8), ax=None):
+def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -171,6 +185,10 @@ def draw_collections(collections, figsize=(10, 8), ax=None):
         if c:
             cc = copy.copy(c)
             ax.add_collection(cc)
+            if plot_colorbars and hasattr(c, "has_colormap"):
+                cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")                
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
     ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)

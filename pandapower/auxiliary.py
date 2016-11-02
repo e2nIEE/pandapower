@@ -8,35 +8,17 @@ import pandas as pd
 import numpy as np
 from collections import MutableMapping
 import re
-
 import six
 
 
-class PandapowerNet(dict, MutableMapping):
+class ADict(dict, MutableMapping):
+
     def __init__(self, *args, **kwargs):
-        super(PandapowerNet, self).__init__(*args, **kwargs)
+        super(ADict, self).__init__(*args, **kwargs)
 
         # to prevent overwrite of internal attributes by new keys
         # see _valid_name()
         self._setattr('_allow_invalid_attributes', False)
-
-    def __repr__(self):
-        r = "This pandapower network includes the following parameter tables:"
-        par = []
-        res = []
-        for tb in list(self.keys()):
-            if isinstance(self[tb], pd.DataFrame) and len(self[tb])>0:
-                if 'res_' in tb:
-                    res.append(tb)
-                else:
-                    par.append(tb)
-        for tb in par:
-            r += "\n   - %s (%s elements)" % (tb,len(self[tb]))
-        if res:
-            r += "\n and the following results tables:"
-            for tb in res:
-                r += "\n   - %s (%s elements)" % (tb,len(self[tb]))
-        return r
 
     def _build(self, obj, **kwargs):
         """
@@ -50,7 +32,7 @@ class PandapowerNet(dict, MutableMapping):
         return self.copy(), self._allow_invalid_attributes
 
     def __setstate__(self, state):
-        mapping, sequence_type, allow_invalid_attributes = state
+        mapping, allow_invalid_attributes = state
         self.update(mapping)
         self._setattr('_allow_invalid_attributes', allow_invalid_attributes)
 
@@ -147,16 +129,37 @@ class PandapowerNet(dict, MutableMapping):
 
         A key may be used as an attribute if:
          * It is a string
-         * It matches /^[A-Za-z][A-Za-z0-9_]*$/ (i.e., a public attribute)
          * The key doesn't overlap with any class attributes (for Attr,
             those would be 'get', 'items', 'keys', 'values', 'mro', and
             'register').
         """
         return (
             isinstance(key, six.string_types) and
-            re.match('^[A-Za-z][A-Za-z0-9_]*$', key) and
             not hasattr(cls, key)
         )
+
+class PandapowerNet(ADict):
+    def __init__(self, *args, **kwargs):
+        super(PandapowerNet, self).__init__(*args, **kwargs)
+
+    def __repr__(self):
+        r = "This pandapower network includes the following parameter tables:"
+        par = []
+        res = []
+        for tb in list(self.keys()):
+            if isinstance(self[tb], pd.DataFrame) and len(self[tb])>0:
+                if 'res_' in tb:
+                    res.append(tb)
+                else:
+                    par.append(tb)
+        for tb in par:
+            r += "\n   - %s (%s elements)" % (tb,len(self[tb]))
+        if res:
+            r += "\n and the following results tables:"
+            for tb in res:
+                r += "\n   - %s (%s elements)" % (tb,len(self[tb]))
+        return r
+
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.iteritems()):
