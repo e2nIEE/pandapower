@@ -5,6 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import os
+from ast import literal_eval
 import pickle
 import pandas as pd
 
@@ -66,7 +67,14 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
             continue
         elif item.startswith("res"):
             if include_results and len(table) > 0:
-                table.to_excel(writer, sheet_name=item)            
+                table.to_excel(writer, sheet_name=item)
+        elif item == "line_geodata":
+            geo = pd.DataFrame(index=table.index)
+            for i, coord in table.iterrows():
+                for nr, (x, y) in enumerate(coord.coords):
+                    geo.loc[i, "x%u"%nr] = x
+                    geo.loc[i, "y%u"%nr] = y
+            geo.to_excel(writer, sheet_name=item)
         elif len(table) > 0 or include_empty_tables:
             table.to_excel(writer, sheet_name=item)
     parameters = pd.DataFrame(index=["name", "f_hz", "version"], columns=["parameters"],
@@ -136,9 +144,15 @@ def from_excel(filename, convert=True):
             item = item.split("_")[0]
             for std_type, tab in table.iterrows():
                 net.std_types[item][std_type] = dict(tab)
+        elif item == "line_geodata":
+            points = int(len(table.columns) / 2)
+            for i, coords in table.iterrows():
+                coord = [(coords["x%u"%nr], coords["y%u"%nr]) for nr in range(points) 
+                        if pd.notnull(coords["x%u"%nr])]
+                net.line_geodata.loc[i, "coords"] = coord
         else:
             net[item] = table
-    net.line_geodata.coords.str.replace("\n", ",")
+#    net.line.geodata.coords.
     if convert:
         convert_format(net)
     return net

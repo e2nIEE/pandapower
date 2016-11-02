@@ -18,7 +18,8 @@ def test_pickle():
 
 def test_excel():
     net_in = create_test_network()
-    net_in.line_geodata.drop(net_in.line_geodata.index, inplace=True) #TODO: line geodata does not work! 
+    net_in.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
+    net_in.line_geodata.loc[1, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
     pp.to_excel(net_in, "testfile.xlsx")
     net_out = pp.from_excel("testfile.xlsx")
     assert_net_equal(net_in, net_out)
