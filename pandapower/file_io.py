@@ -77,7 +77,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     parameters.to_excel(writer, sheet_name="parameters")
     writer.save()    
 
-def from_pickle(filename):
+def from_pickle(filename, convert=True):
     """
     Load a Pandapower format Network from pickle file
 
@@ -103,9 +103,11 @@ def from_pickle(filename):
         except:
             net = pickle.load(f, encoding='latin1')
     net = PandapowerNet(net)
-    return convert_format(net)
+    if convert:
+        convert_format(net)
+    return net
 
-def from_excel(filename):
+def from_excel(filename, convert=True):
     """
     Load a Pandapower network from an excel file
 
@@ -128,12 +130,15 @@ def from_excel(filename):
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
     
     for item, table in xls.items():
-        if item == "parameter":
-            continue    
+        if item == "parameters":
+            continue
         elif item.endswith("std_types"):
             item = item.split("_")[0]
             for std_type, tab in table.iterrows():
                 net.std_types[item][std_type] = dict(tab)
         else:
             net[item] = table
-    return convert_format(net)
+    net.line_geodata.coords.str.replace("\n", ",")
+    if convert:
+        convert_format(net)
+    return net
