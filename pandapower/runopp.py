@@ -14,7 +14,7 @@ import pandas as pd
 # TODO: Maybe rename "simple" to "maxfeedin"
 
 
-def runopp(net, objectivetype="maxp", verbose=False, suppress_warnings=True):
+def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True):
     """ This is the first Pandapower Optimal Power Flow
     It is basically an interface to the Pypower Optimal Power Flow and can be used only with certain
     limitations. Every objective function needs to be implemented seperately. 

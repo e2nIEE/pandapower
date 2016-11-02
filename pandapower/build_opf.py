@@ -78,7 +78,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     else:
         sgen_cost_per_kw = np.array([])
 
-    if objectivetype == "maxp":
+    if objectivetype == "linear":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
         mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # no costs for ext_grid
@@ -88,7 +88,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
 
-    if objectivetype == "minlossmaxp":
+    if objectivetype == "linear_minloss":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
         mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])

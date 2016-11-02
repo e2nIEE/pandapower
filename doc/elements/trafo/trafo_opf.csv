@@ -1,0 +1,10 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+max_loading_percent;float;Maximum loading of the transformer with respect to sn_kva and its corresponding current at 1.0 p.u.;
+;;;
+;;;
+;;;
+;;;
+;;;
+;;;
+;;;
+;;;
