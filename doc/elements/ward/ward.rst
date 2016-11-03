@@ -71,3 +71,8 @@ Result Parameters
    p\_kw &= P_{const} + Re(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}}) \\
    q\_kvar &= Q_{const} + Im(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}})
    \end{align*}
+   
+Optimal Power Flow Parameters
+=============================
+
+Ward equivalents are not yet respected by the optimal power flow.

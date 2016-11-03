@@ -185,3 +185,9 @@ For trafo_loading="power", the loading is defined as:
    \begin{align*}  
     loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_hv\_kva}, \frac{i_{mv} \cdot v_{mv}}{sn\_mv\_kva}, \frac{i_{lv} \cdot v_{lv}}{sn\_lv\_kva}) \cdot 100
     \end{align*}
+
+    
+Optimal Power Flow Parameters
+=============================
+
+Three Winding Transformer loading can not yet be constrained with the optimal power flow.

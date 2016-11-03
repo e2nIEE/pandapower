@@ -65,3 +65,14 @@ Result Parameters
 
 The power values in the net.res_sgen table are equivalent to :math:`P_{load}` and :math:`Q_{load}`.
 
+   
+Optimal Power Flow Parameters
+=============================
+
+The cost and constraints of a generator can be definded using the following parameters:
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: sgen_opf.csv
+   :delim: ;
+   :widths: 10, 10, 40

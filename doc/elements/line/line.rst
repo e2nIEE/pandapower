@@ -117,3 +117,15 @@ The power flow results in the net.res_line table are defined as:
     i\_ka &= max(i_{from}, i_{to}) \\
     loading\_percent &= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100 
     \end{align*}
+    
+   
+Optimal Power Flow Parameters
+=============================
+
+The line loading constraint is formualted relative to i_max_ka_
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: line_opf.csv
+   :delim: ;
+   :widths: 10, 10, 40

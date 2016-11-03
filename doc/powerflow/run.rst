@@ -33,18 +33,18 @@ Optimal Power Flow
 =====================
 .. _ppOPF:
 
-
 **pandapower optimal power flow**
 
-The pandapower optimal power flow is the tool for optimizing your grid state. It is reading constraints and costs from the pandapower tables and is processing it into the pypower case file that is handed over to the pypower OPF.
-Hitherto we have two cost function options, that are fitting our special use cases. In the future, this module will be developed further in order to allow opf calculations with more flexible cost functions. 
+The pandapower optimal power flow is a tool for optimizing your grid state. 
+Hitherto it offers two cost function options, that are fitting special use cases. 
+In addition to the equality constraints in the problem formulations below, the full set of nonlinear real and reactive power balance equations is always considered in the pandapower optimal power flow.
+To understand the usage, the OPF tutorial is recommended (See :ref:`tutorial`).
 
-You can find the documentation of the pypower OPF under http:/www.pserc.cornell.edu/matpower/manual.pdf
-In theory, the pandapower OPF can do exactly the same, it just requires an extension of the pandapower <-> pypower interface
+..note: All power constraints for generators and static generators are negative, so p_max < p < p_min!
 
-**Available cost functions**
+.. autofunction:: pandapower.runopp
 
-*Linear costs*
+**Linear costs**
 
 .. math::
 		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} \\ 
@@ -58,10 +58,9 @@ In theory, the pandapower OPF can do exactly the same, it just requires an exten
         
         
 Where :math:`gen` contains all generators and controllable static generators. The weighted costs :math:`w_{g,i}` can be defined in the pandapower Generator and Static generator tables, see :ref:`elements`. 
+You can choose this cost function by calling runopp(net, objectivetype="linear"). This is also the default value for the objective function.
 
-
-*Linear costs with loss minimization"
-
+**Linear costs with loss minimization**
 
 .. math::
 		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} + \sum_{l  \ \epsilon \ line }{P_{loss,l}} \\ 
@@ -74,14 +73,13 @@ Where :math:`gen` contains all generators and controllable static generators. Th
    
 **OPF Output**
 
-The result of the OPF are written to the "official" pandapower result tables such as res_bus, res_sgen, res_gen etc. 
-So you find the optimal setting values of the generator in their respective result tables.
+The result of the OPF are written to the pandapower result tables such as res_bus, res_sgen, res_gen etc. 
+So you find the optimal setting values of the generators in the respective result tables.
 Also you can see the resulting voltage and loading values in res_line, res_trafo and res_bus.
-
-
-
 
 **OPF caveats**
 
 The costs are not respected for uncontrollable Static Generators. 
-If a Generator should not be respected as a flexibility, the Power limits can be set to the actual power value (+/- a certain inaccuracy) to take away the flexibility for the OPF.
+If a Generator should not be respected as a flexibility, the Power limits can be set to the actual power value (+/- a certain inaccuracy), so that p_max < p < p_min is still satisfied.
+
+..note: The pandapower optimal power flow is a recent development. In the future, this module will be developed further in order to allow more flexible opf calculations.

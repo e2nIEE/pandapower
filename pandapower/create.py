@@ -692,7 +692,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=np.nan, s_sc_min_mva=np.nan, rx_max=np.nan, rx_min=np.nan,
-                    index=None):
+                    index=None, cost_per_kw=np.nan, cost_per_kvar=np.nan):
     """
     Creates an external grid connection.
 
@@ -773,6 +773,18 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             net.ext_grid.loc[:, "rx_max"] = pd.Series()
 
         net.ext_grid.at[index, "rx_max"] = float(rx_max)
+        
+    if not np.isnan(cost_per_kw):
+        if "cost_per_kw" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "cost_per_kw"] = pd.Series()
+
+        net.ext_grid.loc[index, "cost_per_kw"] = float(cost_per_kw)
+
+    if not np.isnan(cost_per_kvar):
+        if "cost_per_kvar" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "cost_per_kvar"] = pd.Series()
+
+        net.ext_grid.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
         # and preserve dtypes
     _preserve_dtypes(net.ext_grid, dtypes)

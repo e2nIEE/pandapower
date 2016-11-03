@@ -21,8 +21,8 @@ from pypower import makeYbus
 import warnings
 
 def _pd2mpc_opf(net, is_elems, sg_is):
-    """ we need to put the sgens into the gen table instead of the bsu table so we need to change 
-    _pd2mpc a little to get the mpc we need for the OPF
+    """ we need to put the sgens into the gen table instead of the bsu table 
+    so we need to change _pd2mpc a little to get the mpc we need for the OPF
     """
 
     mpc = {"baseMVA": 1.,
@@ -41,13 +41,15 @@ def _pd2mpc_opf(net, is_elems, sg_is):
 
     bus_lookup = _build_bus_mpc(net, mpc, is_elems, set_opf_constraints=True)
     _build_gen_opf(net, mpc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
-    _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=True)
+    _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, \
+                      set_opf_constraints=True)
     _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup)
     _calc_loads_and_add_opf(net, mpc, bus_lookup)
     _switch_branches(net, mpc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, mpc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, mpc)
-    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values, np.arange(len(net["bus"].index.values))))
+    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values, \
+                                    np.arange(len(net["bus"].index.values))))
 
     return mpc, bus_lookup
 
@@ -98,6 +100,8 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     ng = len(mpc["gen"])  # -
     nref = sum(mpc["bus"][:, BUS_TYPE] == REF)
     gen_is = is_elems['gen']
+    eg_is = is_elems['eg']
+
     if not gen_is.empty:
         gen_cost_per_kw = gen_is.cost_per_kw
     else:
@@ -111,9 +115,13 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     if objectivetype == "linear":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
-        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # no costs for ext_grid
+        if hasattr(net.ext_grid, "cost_per_kw"):
+            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
+            
+        else:
+            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])# no costs for ext_grid
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # initializing gencost array
-        mpc["gencost"][nref:ng, 7] = np.hstack([gen_cost_per_kw,sgen_cost_per_kw])
+        mpc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw, gen_cost_per_kw]))
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
@@ -121,7 +129,10 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     if objectivetype == "linear_minloss":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
-        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])
+        if hasattr(net.ext_grid, "cost_per_kw"):
+            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
+        else:
+            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])# no costs for ext_grid
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 100, 100, 0])
 
         # Set gencosts for sgens

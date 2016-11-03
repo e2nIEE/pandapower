@@ -1,0 +1,3 @@
+**Parameter**;**Datatype**;**Explanation**
+cost_per_kw;float;Cost per kW
+cost_per_kvar;float;Cost per kvar

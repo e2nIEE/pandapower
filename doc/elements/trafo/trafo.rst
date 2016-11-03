@@ -206,3 +206,15 @@ For trafo_loading="power", the loading is defined as:
    \begin{align*}  
     loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_kva}, \frac{i_{lv} \cdot v_{lv}}{sn\_kva}) \cdot 100
     \end{align*}
+    
+Optimal Power Flow Parameters
+=============================
+
+The transformer loading constraint for the optimal power flow is formulated in relation to the current corresponding to sn_kva at a voltage of 1.0 p.u. :
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: trafo_opf.csv
+   :delim: ;
+   :widths: 10, 10, 40
+   

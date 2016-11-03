@@ -87,3 +87,8 @@ Result Parameters
     q\_kvar &= Im(\underline{v}_{bus} \cdot \underline{i}_{shunt}) \\    
     vm\_pu &= v_{bus}
     \end{align*}
+    
+Optimal Power Flow Parameters
+=============================
+
+Shunts are not yet respected by the optimal power flow as a flexibility.

@@ -76,3 +76,15 @@ The power flow returns reactive generator power and generator voltage angle:
     If the power flow is run with the enforce_qlims option and the generator reactive power exceeds / underruns the maximum / minimum reactive power limit,
     the generator is converted to a static generator with the maximum / minimum reactive power as constant reactive power generation.
     The voltage at the generator bus is then no longer equal to the voltage set point defined in the parameter table.
+    
+   
+Optimal Power Flow Parameters
+=============================
+
+The cost and constraints of a generator can be definded using the following parameters:
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: gen_opf.csv
+   :delim: ;
+   :widths: 10, 10, 40
