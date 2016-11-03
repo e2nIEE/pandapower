@@ -11751,30 +11751,20 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Using-the-Optimal-Power-Flow">Using the Optimal Power Flow<a class="anchor-link" href="#Using-the-Optimal-Power-Flow">&#182;</a></h1>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>This is an introduction into the usage of the pandapower optimal power flow. It shows how to set the constraints and the cost factors into the pandapower element tables.</p>
-<p>We don't want to deal with loading constraints in this first example, so we set them very high:</p>
+<h1 id="Using-the-Optimal-Power-Flow">Using the Optimal Power Flow<a class="anchor-link" href="#Using-the-Optimal-Power-Flow">&#182;</a></h1><p>This is an introduction into the usage of the pandapower optimal power flow. It shows how to set the constraints and the cost factors into the pandapower element tables. These will be our constraints:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">vm_max</span> <span class="o">=</span> <span class="mf">1.05</span>
 <span class="n">vm_min</span> <span class="o">=</span> <span class="mf">0.95</span>
-<span class="n">max_line</span> <span class="o">=</span> <span class="mi">1000</span>
-<span class="n">max_trafo</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">max_line</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">max_trafo</span> <span class="o">=</span> <span class="mi">100</span>
 </pre></div>
 
 </div>
@@ -11787,14 +11777,14 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Let's create our basic example network:</p>
+<h2 id="Basic-optimization-example">Basic optimization example<a class="anchor-link" href="#Basic-optimization-example">&#182;</a></h2><p>Let's create our basic example network:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
@@ -11819,7 +11809,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[2]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -11844,7 +11834,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">10</span><span class="p">,</span> <span class="n">controllable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_p_kw</span><span class="o">=-</span><span class="mi">25</span><span class="p">,</span> <span class="n">min_p_kw</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">max_q_kvar</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">min_q_kvar</span><span class="o">=-</span><span class="mi">50</span><span class="p">,</span> <span class="n">cost_per_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span>
@@ -11858,7 +11848,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -11883,7 +11873,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -11922,7 +11912,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -11936,7 +11926,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[5]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[6]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11971,7 +11961,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -11985,7 +11975,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[6]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12016,7 +12006,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -12030,7 +12020,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12090,7 +12080,7 @@ Converged!
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>As you can see, the generator is set to it's maximum value where the voltage constraint can still be met.</p>
-<p>Another application of the OPF is to minimze the generator output while minimizing the power supply from the external grid. 
+<h2 id="Optimizing-generator-dispatch">Optimizing generator dispatch<a class="anchor-link" href="#Optimizing-generator-dispatch">&#182;</a></h2><p>Another application of the OPF is to minimze the generator output while minimizing the power supply from the external grid. 
  Let's create a load first, so we have something we need to supply</p>
 
 </div>
@@ -12098,7 +12088,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
@@ -12112,7 +12102,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12137,7 +12127,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">cost_per_kw</span><span class="o">=</span><span class="mi">100</span>
@@ -12161,7 +12151,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -12200,7 +12190,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -12214,7 +12204,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[11]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12249,7 +12239,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -12263,7 +12253,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12294,7 +12284,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -12308,7 +12298,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12368,14 +12358,14 @@ Converged!
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>So we see, that the most part of the load is supplied by the generator, but in order to keep the voltage limits, the generator can not feed in 100%.</p>
-<p>Let's now deal with loading constraints, too. Let's first check the loading of the previous calculation:</p>
+<h2 id="Reducing-line-loading">Reducing line loading<a class="anchor-link" href="#Reducing-line-loading">&#182;</a></h2><p>Let's now deal with loading constraints, too. Let's first check the loading of the previous calculation:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span><span class="o">.</span><span class="n">loading_percent</span>
@@ -12389,7 +12379,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12405,7 +12395,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span><span class="o">.</span><span class="n">loading_percent</span>
@@ -12419,7 +12409,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12446,7 +12436,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">max_loading_percent</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="mi">19</span>
@@ -12487,7 +12477,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -12501,7 +12491,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[18]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12536,7 +12526,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -12550,7 +12540,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[18]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[19]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12581,7 +12571,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="prompt input_prompt">In&nbsp;[20]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -12595,7 +12585,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[19]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[20]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12651,7 +12641,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span><span class="o">.</span><span class="n">loading_percent</span>
@@ -12665,7 +12655,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[20]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[21]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12681,7 +12671,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[22]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span><span class="o">.</span><span class="n">loading_percent</span>
@@ -12695,7 +12685,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[21]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[22]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12723,7 +12713,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="prompt input_prompt">In&nbsp;[23]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">max_vm_pu</span><span class="o">=</span><span class="n">vm_max</span><span class="p">,</span> <span class="n">min_vm_pu</span><span class="o">=</span><span class="n">vm_min</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
@@ -12749,7 +12739,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="prompt input_prompt">In&nbsp;[24]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -12763,7 +12753,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[23]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[24]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12805,7 +12795,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="prompt input_prompt">In&nbsp;[25]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -12819,7 +12809,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[24]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[25]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12850,7 +12840,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -12864,7 +12854,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[25]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[26]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12927,7 +12917,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="prompt input_prompt">In&nbsp;[27]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span><span class="o">.</span><span class="n">loading_percent</span>
@@ -12941,7 +12931,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[26]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[27]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12957,7 +12947,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="prompt input_prompt">In&nbsp;[28]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span><span class="o">.</span><span class="n">loading_percent</span>
@@ -12971,7 +12961,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[27]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[28]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12996,32 +12986,6 @@ Name: loading_percent, dtype: float64</pre>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
 </div>
     </div>
   </div>

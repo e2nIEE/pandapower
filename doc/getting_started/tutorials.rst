@@ -11,10 +11,9 @@ There are jupyter notebook tutorials on how to:
     - find modeling errors in pandapower networks: `diagnostic <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/diagnostic.html>`_
     - work with the pandapower standard type library: `std_types <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/std_types.html>`_ 
     - use pandas for data analysis in pandapower: `data_analysis <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/data_analysis.html>`_
-    - run topological searces in pandapower: `topology <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/data_analysis.html>`_
+    - run topological searces in pandapower: `topology <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/topology.html>`_
     - plot pandapower networks: `plotting <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting.html>`_
     - optimal power flow: `opf <http:/www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf.html>`_
-    
     
 To run the tutorials interactively (jupyter module is needed):
 

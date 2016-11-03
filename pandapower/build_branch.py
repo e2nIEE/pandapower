@@ -45,20 +45,13 @@ def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, 
     mpc["branch"][:,:13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
     if line_end > 0:
-        mpc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS]] = \
-            _calc_line_parameter(net, mpc, bus_lookup)
-        if set_opf_constraints:
-            mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
-                                  net.line.imax_ka * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
+        mpc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, RATE_A]] = \
+            _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints)
     if trafo_end > line_end:
-        mpc["branch"][line_end:trafo_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
-            _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model)
-            
-        if set_opf_constraints:
-            # at 1.0 p.u. the maximum apparent power [MVA] equals the maximum current [MA]
-            mpc["branch"][len(net["line"]):(len(net["line"]) + len(net["trafo"])), RATE_A] = \
-                net.trafo.max_loading_percent  / 100 * net.trafo.sn_kva / 1000
-                
+        mpc["branch"][line_end:trafo_end,
+                     [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
+                     _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles,
+                                              trafo_model, set_opf_constraints)
     if trafo3w_end > trafo_end:
         mpc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles,  trafo_model)
@@ -68,10 +61,7 @@ def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, 
     if xward_end > impedance_end:
         mpc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
                 _calc_xward_parameter(net, mpc, is_elems, bus_lookup)
-                
-    if set_opf_constraints:
-          mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
-                                  net.line.imax_ka * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
+                                                 
 def _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model):
     trafo_df = _trafo_df_from_trafo3w(net)
 
@@ -86,13 +76,13 @@ def _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles, traf
     temp_para[:, 7] = trafo_df["in_service"].values
     return temp_para    
 
-def _calc_line_parameter(net, mpc, bus_lookup):
+def _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints=False):
     """
     calculates the line parameter in per unit.
 
     **INPUT**:
         **net** -The Pandapower format network
-
+ 
     **RETURN**:
         **t** - Temporary line parameter. Which is a complex128
                 Nunmpy array. with the following order:
@@ -108,7 +98,7 @@ def _calc_line_parameter(net, mpc, bus_lookup):
     length = line["length_km"].values
     parallel = line["parallel"]
     baseR = np.square(mpc["bus"][fb, BASE_KV])
-    t = np.zeros(shape=(len(line.index), 6), dtype=np.complex128)
+    t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
     t[:, 0] = fb
     t[:, 1] = tb
@@ -117,10 +107,15 @@ def _calc_line_parameter(net, mpc, bus_lookup):
     t[:, 3] = line["x_ohm_per_km"] * length / baseR / parallel
     t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
     t[:, 5] = line["in_service"]
+    if set_opf_constraints:
+        max_load = line.max_loading_percent if "max_loading_percent" in line else 1000
+        vr = net.bus.vn_kv[fb].values * np.sqrt(3)
+        t[:, 6] = max_load  / 100 * line.imax_ka * line.df * parallel * vr
     return t
 
 
-def _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model):
+def _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model,
+                          set_constraints=False):
     '''
     Calculates the transformer parameter in per unit.
 
@@ -133,17 +128,19 @@ def _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_
         Numpy array. with the following order:
         0:hv_bus; 1:lv_bus; 2:r_pu; 3:x_pu; 4:b_pu; 5:tab, 6:shift
     '''
-    temp_para = np.zeros(shape=(len(net["trafo"].index), 8), dtype=np.complex128)
-
-    temp_para[:, 0] = get_indices(net["trafo"]["hv_bus"].values, bus_lookup)
-    temp_para[:, 1] = get_indices(net["trafo"]["lv_bus"].values, bus_lookup)
+    temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
+    trafo = net["trafo"]
+    temp_para[:, 0] = get_indices(trafo["hv_bus"].values, bus_lookup)
+    temp_para[:, 1] = get_indices(trafo["lv_bus"].values, bus_lookup)
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, mpc, bus_lookup, trafo_model)
     if calculate_voltage_angles:
-        temp_para[:, 6] = net["trafo"]["shift_degree"].values
+        temp_para[:, 6] = trafo["shift_degree"].values
     else:
-        temp_para[:, 6] = np.zeros(shape=(len(net["trafo"].index),), dtype=np.complex128)
-    temp_para[:, 7] = net["trafo"]["in_service"].values
-        
+        temp_para[:, 6] = np.zeros(shape=(len(trafo.index),), dtype=np.complex128)
+    temp_para[:, 7] = trafo["in_service"].values
+    if set_constraints:
+        max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
+        temp_para[:, 8] = max_load / 100 * trafo.sn_kva / 1000
     return temp_para
 
 def _calc_branch_values_from_trafo_df(net, mpc, bus_lookup, trafo_model, trafo_df=None):

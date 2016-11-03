@@ -43,7 +43,7 @@ Input Parameters
 
 *net.line_geodata*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
+.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.55\linewidth}|
 .. csv-table:: 
    :file: line_geo.csv
    :delim: ;
@@ -122,7 +122,7 @@ The power flow results in the net.res_line table are defined as:
 Optimal Power Flow Parameters
 =============================
 
-The line loading constraint is formualted relative to i_max_ka_
+The line loading constraint is an upper constraint for loading_percent.
 
 .. tabularcolumns:: |l|l|l|
 .. csv-table:: 

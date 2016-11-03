@@ -139,8 +139,15 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
         mpc["bus"][int_index, 8] = net["res_bus"].va_degree.values
 
     if set_opf_constraints:
-        mpc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
-        mpc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
+        if "max_vm_pu" in net.bus:
+            mpc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
+        else:
+            mpc["bus"][:, VMAX] = 10
+        if "min_vm_pu" in net.bus:
+            mpc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
+        else:
+            mpc["bus"][:, VMIN] = 0
+            
 
 
 
