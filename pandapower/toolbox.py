@@ -95,7 +95,7 @@ def equal_nets(x, y, check_only_results=False, tol=1.e-14):
     runtime conditions and entries stating with '_'
     """
     eq = True
-
+    eq_count = 0
     if isinstance(x, dict) or isinstance(x, AttrDict) and \
             isinstance(y, dict) or isinstance(y, AttrDict):
         # for two networks make sure both have the same keys ...
@@ -108,11 +108,19 @@ def equal_nets(x, y, check_only_results=False, tol=1.e-14):
             if check_only_results and not k.startswith("res_"):
                 continue  # skip anything thats not a result table
 
-            eq &= equal_nets(x[k], y[k], check_only_results, tol)
+            eq = equal_nets(x[k], y[k], check_only_results, tol)
 
+            # counts the mismatches and creates a list to print
             if not eq:
-                logger.info("Mismatch at table: %s" % k)
-                return False
+                if eq_count == 0:
+                    logger_str = "Mismatch(es) at table(s): %s" % k
+                else:
+                    logger_str = logger_str + ", %s" % k
+                eq_count += 1
+
+        if eq_count:
+            logger.info(logger_str)
+            return False
     else:
         if isinstance(x, pd.DataFrame) and isinstance(y, pd.DataFrame):
             # for two DataFrames eval if all entries are equal

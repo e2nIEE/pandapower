@@ -108,7 +108,6 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
 
         ## check if numba is available and the corresponding flag
         try:
-            from numba import jit
             from numba import _version as nb_version
 
             # get Numba Version (in order to use it it must be > 0.25)
