@@ -5,6 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import os
+from ast import literal_eval
 import pickle
 import pandas as pd
 
@@ -66,7 +67,14 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
             continue
         elif item.startswith("res"):
             if include_results and len(table) > 0:
-                table.to_excel(writer, sheet_name=item)            
+                table.to_excel(writer, sheet_name=item)
+        elif item == "line_geodata":
+            geo = pd.DataFrame(index=table.index)
+            for i, coord in table.iterrows():
+                for nr, (x, y) in enumerate(coord.coords):
+                    geo.loc[i, "x%u"%nr] = x
+                    geo.loc[i, "y%u"%nr] = y
+            geo.to_excel(writer, sheet_name=item)
         elif len(table) > 0 or include_empty_tables:
             table.to_excel(writer, sheet_name=item)
     parameters = pd.DataFrame(index=["name", "f_hz", "version"], columns=["parameters"],
@@ -77,7 +85,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     parameters.to_excel(writer, sheet_name="parameters")
     writer.save()    
 
-def from_pickle(filename):
+def from_pickle(filename, convert=True):
     """
     Load a Pandapower format Network from pickle file
 
@@ -103,16 +111,21 @@ def from_pickle(filename):
         except:
             net = pickle.load(f, encoding='latin1')
     net = PandapowerNet(net)
-    return convert_format(net)
+    if convert:
+        convert_format(net)
+    return net
 
-def from_excel(filename):
+def from_excel(filename, convert=True):
     """
     Load a Pandapower network from an excel file
 
     INPUT:
+        
         **filename** (string) - The absolute or relative path to the input file.
 
     RETURN:
+        
+        **convert** (bool) - use the convert format function to 
 
         **net** (dict) - The pandapower format network
         
@@ -128,12 +141,21 @@ def from_excel(filename):
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
     
     for item, table in xls.items():
-        if item == "parameter":
-            continue    
+        if item == "parameters":
+            continue
         elif item.endswith("std_types"):
             item = item.split("_")[0]
             for std_type, tab in table.iterrows():
                 net.std_types[item][std_type] = dict(tab)
+        elif item == "line_geodata":
+            points = int(len(table.columns) / 2)
+            for i, coords in table.iterrows():
+                coord = [(coords["x%u"%nr], coords["y%u"%nr]) for nr in range(points) 
+                        if pd.notnull(coords["x%u"%nr])]
+                net.line_geodata.loc[i, "coords"] = coord
         else:
             net[item] = table
-    return convert_format(net)
+#    net.line.geodata.coords.
+    if convert:
+        convert_format(net)
+    return net
