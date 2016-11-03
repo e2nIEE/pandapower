@@ -120,9 +120,12 @@ def from_excel(filename, convert=True):
     Load a Pandapower network from an excel file
 
     INPUT:
+        
         **filename** (string) - The absolute or relative path to the input file.
 
     RETURN:
+        
+        **convert** (bool) - use the convert format function to 
 
         **net** (dict) - The pandapower format network
         
