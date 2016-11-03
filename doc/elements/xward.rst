@@ -24,12 +24,12 @@ Result Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 The extended ward equivalent is a :ref:`ward equivalent<ward>`: with additional PV-node with an internal resistance.
 
-.. image:: /elements/xward/xward.png
+.. image:: xward.png
 	:width: 25em
 	:align: center
 

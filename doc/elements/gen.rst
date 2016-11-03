@@ -30,12 +30,12 @@ Input Parameters
     If you want to model constant generation without voltage control, use the Static Generator element.
 
    
-Loadflow Model
+Electric Model
 =================
 
 Generators are modelled as PV-nodes in the power flow:
 
-.. image:: /elements/gen/gen.png
+.. image:: gen.png
 	:width: 12em
 	:alt: alternate Text
 	:align: center

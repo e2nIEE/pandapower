@@ -23,14 +23,14 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 *Bus-Bus-Switches:*
 
 Two buses that are connected with a closed bus-bus switches are fused internally for the power flow, open bus-bus switches are ignored:
 
-.. image:: /elements/switch/bus-bus-switches.png
+.. image:: switches_bus.png
 	:width: 18em
 	:alt: alternate Text
 	:align: center
@@ -51,7 +51,7 @@ When the power flow is calculated internally for every open bus-element switch a
 
 Closed bus-element switches are ignored:
 
-.. image:: /elements/switch/bus-element-switches.png
+.. image:: switches_element.png
 	:width: 30em
 	:alt: alternate Text
 	:align: center

@@ -50,12 +50,12 @@ Input Parameters
    :widths: 10, 10, 55
 
    
-Loadflow Model
+Electric Model
 =================
 
 Lines are modelled with the :math:`\pi`-equivalent circuit:
 
-.. image:: /elements/line/line.png
+.. image:: line.png
 	:width: 25em
 	:alt: alternate Text
 	:align: center

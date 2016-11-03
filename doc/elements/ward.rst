@@ -26,10 +26,10 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
-.. image:: /elements/ward/ward.png
+.. image:: ward.png
 	:width: 15em
 	:align: center
 
