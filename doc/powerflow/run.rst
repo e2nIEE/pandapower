@@ -46,6 +46,8 @@ To understand the usage, the OPF tutorial is recommended (See :ref:`tutorial`).
 
 **Linear costs**
 
+This is a simple summation of the weighted generator costs.
+
 .. math::
 		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} \\ 
         & subject   \ to \\
@@ -62,14 +64,18 @@ You can choose this cost function by calling runopp(net, objectivetype="linear")
 
 **Linear costs with loss minimization**
 
+This contains a simple summation of the weighted generator costs like above and adds the sum of the line losses to the cost function.
+
 .. math::
-		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} + \sum_{l  \ \epsilon \ line }{P_{loss,l}} \\ 
+		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} + \lambda \sum_{l  \ \epsilon \ line }{P_{loss,l}} \\ 
         & subject   \ to \\
         & P_{max,i} <= P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
         & U_{min,j} <= Q_{g,i} < Q_{min,i}, j  \ \epsilon \ bus   \\
         & Q_{max,i} <= Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
         & S_{k} < S_{max,k}, k \ \epsilon \ trafo  \\
         & I_{l} < I_{max,l}, l \ \epsilon \ line
+        
+The weighting factor :math:`\lambda` can be specified as a keyword argument for runopp().
    
 **OPF Output**
 
