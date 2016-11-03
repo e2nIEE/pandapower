@@ -19,6 +19,7 @@ def example_simple():
     
     >>> import pandapower.networks
     >>> net = pandapower.networks.example_simple()
+
     """
     net = pp.create_empty_network()
 
@@ -80,12 +81,14 @@ def example_multivoltage():
     Returns the multivoltage example network from the pandapower tutorials.
     
     RETURN:
-        
+
         net - multivoltage example network
+
     EXAMPLE:
     
     >>> import pandapower.networks
     >>> net = pandapower.networks.example_multivoltage()
+
     """
     
     net = pp.create_empty_network()

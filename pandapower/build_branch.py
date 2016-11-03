@@ -49,7 +49,7 @@ def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, 
             _calc_line_parameter(net, mpc, bus_lookup)
         if set_opf_constraints:
             mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
-                                  net.line.imax_ka * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
+                                  net.line.imax_ka  *net.line.df * net.line.parallel * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
     if trafo_end > line_end:
         mpc["branch"][line_end:trafo_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model)
@@ -68,10 +68,7 @@ def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, 
     if xward_end > impedance_end:
         mpc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
                 _calc_xward_parameter(net, mpc, is_elems, bus_lookup)
-                
-    if set_opf_constraints:
-          mpc["branch"][:len(net["line"]), RATE_A] = net.line.max_loading_percent  / 100 * \
-                                  net.line.imax_ka * net.bus.vn_kv[net.line.from_bus].values * np.sqrt(3)
+                                                 
 def _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model):
     trafo_df = _trafo_df_from_trafo3w(net)
 

@@ -210,9 +210,9 @@ For trafo_loading="power", the loading is defined as:
 Optimal Power Flow Parameters
 =============================
 
-The transformer loading constraint for the optimal power flow is formulated in relation to the current corresponding to sn_kva at a voltage of 1.0 p.u. :
+The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current"(see above):
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.40\linewidth}|
 .. csv-table:: 
    :file: trafo_opf.csv
    :delim: ;

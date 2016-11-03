@@ -115,11 +115,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     if objectivetype == "linear":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
-        if hasattr(net.ext_grid, "cost_per_kw"):
-            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
-            
-        else:
-            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])# no costs for ext_grid
+        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # initializing gencost array
         mpc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw, gen_cost_per_kw]))
 
@@ -129,10 +125,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     if objectivetype == "linear_minloss":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
-        if hasattr(net.ext_grid, "cost_per_kw"):
-            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
-        else:
-            mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0])# no costs for ext_grid
+        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 100, 100, 0])
 
         # Set gencosts for sgens
