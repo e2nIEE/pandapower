@@ -46,12 +46,12 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 Three Winding Transformers are modelled by three two-winding transformers:
 
-.. image:: /elements/trafo3w/trafo3w.png
+.. image:: trafo3w.png
 	:width: 25em
 	:alt: alternate Text
 	:align: center

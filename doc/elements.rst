@@ -15,18 +15,18 @@ information about the definition and interpretation of the parameters in the fol
 .. toctree:: 
     :maxdepth: 1
 
-    elements/empty_network/empty_network
-    elements/bus/bus
-    elements/line/line
-    elements/switch/switch
-    elements/load/load	
-    elements/sgen/sgen	
-    elements/ext_grid/ext_grid	
-    elements/trafo/trafo
-    elements/trafo3w/trafo3w	
-    elements/gen/gen
-    elements/shunt/shunt
-    elements/impedance/impedance
-    elements/ward/ward	
-    elements/xward/xward	
+    elements/empty_network
+    elements/bus
+    elements/line
+    elements/switch
+    elements/load	
+    elements/sgen	
+    elements/ext_grid	
+    elements/trafo
+    elements/trafo3w	
+    elements/gen
+    elements/shunt
+    elements/impedance
+    elements/ward	
+    elements/xward	
 

@@ -34,10 +34,10 @@ Input Parameters
    :widths: 10, 10, 30
  
    
-Loadflow Model
+Electric Model
 =================
 
-.. image:: /elements/bus/bus.png
+.. image:: bus.png
     :width: 10em
     :alt: alternate Text
     :align: center

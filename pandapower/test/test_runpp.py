@@ -82,6 +82,17 @@ def test_bus_bus_switches():
     assert pd.isnull(net.res_bus.vm_pu.at[5])
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
 
+def test_two_open_switches():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b3 = pp.create_bus(net, vn_kv=20.)
+    l2 = create_test_line(net, b2, b3)
+    create_test_line(net, b3, b1)    
+    pp.create_switch(net, b2, l2, et="l", closed=False)
+    pp.create_switch(net, b3, l2, et="l", closed=False)
+    pp.runpp(net)
+    assert net.res_line.i_ka.at[l2] == 0.
+
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])
 

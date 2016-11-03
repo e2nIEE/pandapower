@@ -5,7 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 
-latex_file_path = "..\\_build\\latex\\pandapower.tex"
+latex_file_path = "..\\doc\\_build\\latex\\pandapower.tex"
 version = "1.0"
 
 class AlreadyProcessedException(Exception):
@@ -47,7 +47,7 @@ def postprocess_latex():
         # maketitle
         if line.find('\\maketitle') != -1:
             bufferlines.append('{\\let\\newpage\\relax\\maketitle}\n')
-            bufferlines.append('\\subimport{../../report/}{author_page}')
+            bufferlines.append('\\subimport{../../../report/}{author_page}')
             bufferlines.append('\\newpage')
 
 #        #set title

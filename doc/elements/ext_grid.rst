@@ -33,12 +33,12 @@ Input Parameters
    :widths: 15, 10, 15, 40
 
    
-Loadflow Model
+Electric Model
 =================
 
 The external grid is modelled as a voltage source in the power flow calculation, which means the node the grid is connected to is treated as a slack node:
 
-.. image:: /elements/ext_grid/ext_grid.png
+.. image:: ext_grid.png
 	:width: 12em
 	:alt: alternate Text
 	:align: center

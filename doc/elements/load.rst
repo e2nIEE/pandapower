@@ -25,12 +25,12 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 Loads are modelled as PQ-buses in the power flow calculation:
 
-.. image:: /elements/load/pq.png
+.. image:: pq.png
 	:width: 8em
 	:alt: alternate Text
 	:align: center

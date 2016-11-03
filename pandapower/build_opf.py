@@ -129,7 +129,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 100, 100, 0])
 
         # Set gencosts for sgens
-        #mpc["gencost"][nref:ng, 5] = net.sgen.cost_per_kw
+        mpc["gencost"][nref:ng, 5] = net.sgen.cost_per_kw
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
@@ -166,7 +166,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
             for i in range(nl):
                 bus_f = int(mpc["branch"][i, F_BUS].real)
                 bus_t = int(mpc["branch"][i, T_BUS].real)
-                H[dim-nl+i, dim-nl+i] = np.abs(Ybus[bus_f, bus_t])
+                H[dim-nl+i, dim-nl+i] = np.abs(Ybus[bus_f, bus_t]) * 1000 # weigthing of minloss
                 A[i, nb+bus_f] = 1
                 A[i, nb+bus_t] = -1
                 A[i, dim-nl+i] = 1
@@ -195,14 +195,6 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         mpc["l"] = l
         mpc["u"] = u
         mpc["fparm"] = np.hstack((d, r, k, m))
-        
-        print("Ybus\n%s" % Ybus)
-        print("H\n%s" % H)
-        print("Cw\n%s" % Cw)
-        print("N\n%s" % N)
-        print("A\n%s" % A)
-        print("l\n%s" % l)
-        print("u\n%s" % u)
 
     return mpc, ppopt
 

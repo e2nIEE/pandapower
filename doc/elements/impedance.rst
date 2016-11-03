@@ -24,12 +24,12 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 The impedance is modelled as a simple longitudinal per unit impedance:
 
-.. image:: /elements/impedance/impedance.png
+.. image:: impedance.png
 	:width: 25em
 	:alt: alternate Text
 	:align: center

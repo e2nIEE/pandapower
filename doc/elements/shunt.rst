@@ -26,11 +26,11 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 
-.. image:: /elements/shunt/shunt.png
+.. image:: shunt.png
 	:width: 12em
 	:alt: alternate Text
 	:align: center

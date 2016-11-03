@@ -37,20 +37,20 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
    
-Loadflow Model
+Electric Model
 =================
 
 The equivalent circuit used for the transformer can be set in the power flow with the parameter "trafo_model".
    
 *trafo_model='t':*
 
-.. image:: /elements/trafo/t.png
+.. image:: trafo_t.png
 	:width: 30em
 	:align: center
 
 *trafo_model='pi':*
 
-.. image:: /elements/trafo/pi.png
+.. image:: trafo_pi.png
 	:width: 30em
 	:align: center
 
