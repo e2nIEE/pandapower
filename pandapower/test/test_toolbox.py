@@ -142,7 +142,7 @@ def test_drop_inactive_elements():
         try:
             sum_of_elements += len(net[element])
         except TypeError:
-            # _mpc_last_cycle is initialized with None and clashes when checking
+            # _ppc is initialized with None and clashes when checking
             continue
 
     assert sum_of_elements == 0

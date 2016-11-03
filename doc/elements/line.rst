@@ -124,7 +124,7 @@ Optimal Power Flow Parameters
 
 The line loading constraint is formualted relative to i_max_ka_
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. tabularcolumns:: |l|l|l|
 .. csv-table:: 
    :file: line_opf.csv
    :delim: ;

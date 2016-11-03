@@ -5,7 +5,7 @@ Run a Power Flow
 
 .. note::
 
-    If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_mpc_last_cycle"].
+    If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc"].
     However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
 
 AC Power Flow

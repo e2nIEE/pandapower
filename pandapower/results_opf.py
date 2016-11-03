@@ -23,7 +23,7 @@ def _extract_results_opf(net, mpc, is_elems, bus_lookup, trafo_loading, return_v
     _get_gen_results(net, mpc, is_elems, bus_lookup, bus_pq, return_voltage_angles)
     _get_bus_results(net, mpc, bus_lookup, bus_pq, return_voltage_angles)
     net["OPF_converged"] = mpc["success"]
-    net["_mpc_last_cycle_opf"] = mpc
+    net["_ppc_opf"] = mpc
 
 
 def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):

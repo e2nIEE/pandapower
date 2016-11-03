@@ -153,7 +153,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     # convert pandapower net to mpc
     mpc, ppc, bus_lookup = _pd2mpc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
                                    trafo_model, init_results=(init == "results"))
-    net["_mpc_last_cycle"] = mpc
+    net["_ppc"] = mpc
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
@@ -175,7 +175,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     if result["success"] != 1:
         raise LoadflowNotConverged("Loadflow did not converge!")
     else:
-        net["_mpc_last_cycle"] = result
+        net["_ppc"] = result
         net["converged"] = True
 
     _extract_results(net, result, is_elems, bus_lookup, trafo_loading, ac)

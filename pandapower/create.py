@@ -244,7 +244,7 @@ def create_empty_network(name=None, f_hz=50.):
                              ("vm_pu", "f8")],
 
         # internal
-        "_mpc_last_cycle": None,
+        "_ppc": None,
         "version": 1.0,
         "converged": False,
         "name": name,
