@@ -25,7 +25,7 @@ class LoadflowNotConverged(ppException):
     pass
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
-          trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, **kwargs):
+          trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, Numba=True, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -91,7 +91,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
     ac = True
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)
+             trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, **kwargs):
@@ -132,12 +132,13 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
     enforce_q_lims = False
     init = ''
     tolerance_kva = 1e-5
+    Numba = True
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)
+             trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-          trafo_loading, enforce_q_lims, suppress_warnings, **kwargs):
+          trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -160,11 +161,11 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = _runpf(ppc, init, ac, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+            result = _runpf(ppc, init, ac, Numba, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                      PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     else:
-        result = _runpf(ppc, init, ac, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+        result = _runpf(ppc, init, ac, Numba, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                  PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppc doesn't contain out of service elements, but mpc does -> copy results accordingly
