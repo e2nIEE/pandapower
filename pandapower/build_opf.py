@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
@@ -20,7 +20,8 @@ from scipy import sparse
 from pypower import makeYbus
 import warnings
 
-def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf = 1000):
+
+def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
     """ we need to put the sgens into the gen table instead of the bsu table 
     so we need to change _pd2ppc a little to get the ppc we need for the OPF
     """
@@ -41,15 +42,15 @@ def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf = 1000):
 
     bus_lookup = _build_bus_mpc(net, ppc, is_elems, set_opf_constraints=True)
     _build_gen_opf(net, ppc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
-    _build_branch_mpc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, \
+    _build_branch_mpc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
                       set_opf_constraints=True)
     _calc_shunts_and_add_on_mpc(net, ppc, is_elems, bus_lookup)
     _calc_loads_and_add_opf(net, ppc, bus_lookup)
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, ppc)
-    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values, \
-                                    np.arange(len(net["bus"].index.values))))
+    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values,
+                                         np.arange(len(net["bus"].index.values))))
 
     return ppc, bus_lookup
 
@@ -63,7 +64,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         **ppc** - Matpower case of the net
 
         **ppopt** -
-        
+
     OPTIONAL:
 
         **objectivetype** (string, "maxp") - string with name of objective function
@@ -108,14 +109,14 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         gen_cost_per_kw = gen_is.cost_per_kw
     else:
         gen_cost_per_kw = np.ones(len(gen_is))
-        
+
     if sg_is.empty:
         sgen_cost_per_kw = np.array([])
     elif "cost_per_kw" in gen_is.columns:
         sgen_cost_per_kw = sg_is.cost_per_kw
     else:
         sgen_cost_per_kw = np.ones(len(sg_is))
-        
+
     if "cost_per_kw" not in eg_is.columns:
         eg_cost_per_kw = np.ones(len(eg_is))
     else:
@@ -125,7 +126,8 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
 
         ppc["gencost"] = np.zeros((ng, 8), dtype=float)
         ppc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, eg_cost_per_kw])
-        ppc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 1]) # initializing gencost array
+        ppc["gencost"][nref:ng, :] = np.array(
+            [1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
         ppc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw, gen_cost_per_kw]))
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
@@ -146,7 +148,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
         # Get additional counts
         nb = len(ppc["bus"])
         nl = len(ppc["branch"])
-        dim = 2*nb+2*ng+nl
+        dim = 2 * nb + 2 * ng + nl
 
         # Get branch admitance matrices
         with warnings.catch_warnings():
@@ -175,14 +177,15 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
             for i in range(nl):
                 bus_f = int(ppc["branch"][i, F_BUS].real)
                 bus_t = int(ppc["branch"][i, T_BUS].real)
-                H[dim-nl+i, dim-nl+i] = np.abs(Ybus[bus_f, bus_t]) * lambda_opf # weigthing of minloss
-                A[i, nb+bus_f] = 1
-                A[i, nb+bus_t] = -1
-                A[i, dim-nl+i] = 1
+                # weigthing of minloss
+                H[dim - nl + i, dim - nl + i] = np.abs(Ybus[bus_f, bus_t]) * lambda_opf
+                A[i, nb + bus_f] = 1
+                A[i, nb + bus_t] = -1
+                A[i, dim - nl + i] = 1
 
         # Linear transformation for new omega-vector
         N = sparse.csr_matrix((dim, dim), dtype=float)
-        for i in range(dim-nl, dim):
+        for i in range(dim - nl, dim):
             N[i, i] = 1.0
 
         # Cw = 0, no linear costs in additional costfunction
@@ -280,7 +283,7 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
     # REF busses don't have flexible voltages by definition:
     ppc["bus"][eg_buses, VMAX] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
     ppc["bus"][eg_buses, VMIN] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
-    
+
     # add generator / pv data
     if gen_end > eg_end:
         ppc["gen"][eg_end:gen_end, GEN_BUS] = pp.get_indices(gen_is["bus"].values, bus_lookup)

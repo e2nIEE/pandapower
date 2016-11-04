@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
@@ -138,7 +138,9 @@ class ADict(dict, MutableMapping):
             not hasattr(cls, key)
         )
 
+
 class PandapowerNet(ADict):
+
     def __init__(self, *args, **kwargs):
         super(PandapowerNet, self).__init__(*args, **kwargs)
 
@@ -147,17 +149,17 @@ class PandapowerNet(ADict):
         par = []
         res = []
         for tb in list(self.keys()):
-            if isinstance(self[tb], pd.DataFrame) and len(self[tb])>0:
+            if isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
                 if 'res_' in tb:
                     res.append(tb)
                 else:
                     par.append(tb)
         for tb in par:
-            r += "\n   - %s (%s elements)" % (tb,len(self[tb]))
+            r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
         if res:
             r += "\n and the following results tables:"
             for tb in res:
-                r += "\n   - %s (%s elements)" % (tb,len(self[tb]))
+                r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
         return r
 
 
@@ -174,8 +176,8 @@ def get_free_id(df):
     """
     Returns next free ID in a dataframe
     """
-    return np.int64(0) if len(df)==0 else df.index.values.max() + 1
-        
+    return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
+
 
 class ppException(Exception):
     """

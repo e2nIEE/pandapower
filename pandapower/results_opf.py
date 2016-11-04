@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, _get_gen_results, _get_bus_results
@@ -22,6 +22,7 @@ def _extract_results_opf(net, mpc, is_elems, bus_lookup, trafo_loading, return_v
     _get_branch_results(net, mpc, bus_lookup, bus_pq, trafo_loading)
     _get_gen_results(net, mpc, is_elems, bus_lookup, bus_pq, return_voltage_angles)
     _get_bus_results(net, mpc, bus_lookup, bus_pq, return_voltage_angles)
+
 
 def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
@@ -62,4 +63,3 @@ def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):
     bus_pq[b_mpc, 0] = vp
     bus_pq[b_mpc, 1] = vq
     return bus_pq
-    

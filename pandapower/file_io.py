@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import os
@@ -13,14 +13,16 @@ from pandapower.toolbox import convert_format
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import PandapowerNet
 
+
 def to_hdf5(net, filename, complevel=1, complib="zlib", save_res=False):
-    raise  Exception('to_hdf5 is deprecated. Use to_pickle instead')
+    raise Exception('to_hdf5 is deprecated. Use to_pickle instead')
 
 
 def from_hdf5(filename):
     # Load HDF5 File
-    raise  Exception('from_hdf5 is deprecated. If you need to open a hdf5 File you may go back in GIT. However, to save and load files, to_pickle and from_pickle should be used.')
-    
+    raise Exception('from_hdf5 is deprecated. If you need to open a hdf5 File you may go back in GIT. However, to save and load files, to_pickle and from_pickle should be used.')
+
+
 def to_pickle(net, filename):
     """
     Saves a Pandapower Network with the pickle library.
@@ -31,7 +33,7 @@ def to_pickle(net, filename):
         **filename** (string) - The absolute or relative path to the input file.
 
     EXAMPLE:
-    
+
         >>> pp.to_pickle(net, os.path.join("C:", "example_folder", "example1.p"))  # absolute path
         >>> pp.to_pickle(net, "example2.p")  # relative path
 
@@ -40,6 +42,7 @@ def to_pickle(net, filename):
         raise Exception("Please use .p to save pandapower networks!")
     with open(filename, "wb") as f:
         pickle.dump(dict(net), f, protocol=2)
+
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
@@ -52,11 +55,11 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     OPTIONAL:
         **include_empty_tables** (bool, False) - empty element tables are saved as excel sheet
-        
+
         **include_results** (bool, True) - results are included in the excel sheet
 
     EXAMPLE:
-    
+
         >>> pp.to_excel(net, os.path.join("C:", "example_folder", "example1.xlsx"))  # absolute path
         >>> pp.to_excel(net, "example2.xlsx")  # relative path
 
@@ -72,8 +75,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
             geo = pd.DataFrame(index=table.index)
             for i, coord in table.iterrows():
                 for nr, (x, y) in enumerate(coord.coords):
-                    geo.loc[i, "x%u"%nr] = x
-                    geo.loc[i, "y%u"%nr] = y
+                    geo.loc[i, "x%u" % nr] = x
+                    geo.loc[i, "y%u" % nr] = y
             geo.to_excel(writer, sheet_name=item)
         elif len(table) > 0 or include_empty_tables:
             table.to_excel(writer, sheet_name=item)
@@ -83,7 +86,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     pd.DataFrame(net.std_types["trafo"]).T.to_excel(writer, sheet_name="trafo_std_types")
     pd.DataFrame(net.std_types["trafo3w"]).T.to_excel(writer, sheet_name="trafo3w_std_types")
     parameters.to_excel(writer, sheet_name="parameters")
-    writer.save()    
+    writer.save()
+
 
 def from_pickle(filename, convert=True):
     """
@@ -95,14 +99,14 @@ def from_pickle(filename, convert=True):
     RETURN:
 
         **net** (dict) - The pandapower format network
-        
+
     EXAMPLE:
-    
+
         >>> net1 = pp.from_pickle(os.path.join("C:", "example_folder", "example1.p")) #absolute path
         >>> net2 = pp.from_pickle("example2.p") #relative path
 
     """
-    
+
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     with open(filename, "rb") as f:
@@ -115,22 +119,23 @@ def from_pickle(filename, convert=True):
         convert_format(net)
     return net
 
+
 def from_excel(filename, convert=True):
     """
     Load a Pandapower network from an excel file
 
     INPUT:
-        
+
         **filename** (string) - The absolute or relative path to the input file.
 
     RETURN:
-        
+
         **convert** (bool) - use the convert format function to 
 
         **net** (dict) - The pandapower format network
-        
+
     EXAMPLE:
-    
+
         >>> net1 = pp.from_excel(os.path.join("C:", "example_folder", "example1.xlsx")) #absolute path
         >>> net2 = pp.from_excel("example2.xlsx") #relative path
 
@@ -139,7 +144,7 @@ def from_excel(filename, convert=True):
     par = xls["parameters"]["parameters"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
-    
+
     for item, table in xls.items():
         if item == "parameters":
             continue
@@ -150,8 +155,8 @@ def from_excel(filename, convert=True):
         elif item == "line_geodata":
             points = int(len(table.columns) / 2)
             for i, coords in table.iterrows():
-                coord = [(coords["x%u"%nr], coords["y%u"%nr]) for nr in range(points) 
-                        if pd.notnull(coords["x%u"%nr])]
+                coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(points)
+                         if pd.notnull(coords["x%u" % nr])]
                 net.line_geodata.loc[i, "coords"] = coord
         else:
             net[item] = table

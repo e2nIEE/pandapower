@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
@@ -11,7 +11,7 @@ try:
     import pplog as logging
 except:
     import logging
-    
+
 logger = logging.getLogger(__name__)
 
 import pandapower.topology as top
@@ -21,10 +21,10 @@ from pandapower.toolbox import get_connected_elements
 # separator between log messages
 log_message_sep = ("\n --------\n")
 
+
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
                overload_scaling_factor=0.001, lines_min_length_km=0, lines_min_z_ohm=0,
                nom_voltage_tolerance=0.3):
-
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -97,7 +97,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         diag_results["wrong_switch_configuration"] = wrong_switch_configuration(net)
     if multiple_voltage_controlling_elements_per_bus(net):
         diag_results["multiple_voltage_controlling_elements_per_bus"] = \
-                                        multiple_voltage_controlling_elements_per_bus(net)
+            multiple_voltage_controlling_elements_per_bus(net)
     if no_ext_grid(net):
         diag_results["no_ext_grid"] = no_ext_grid(net)
     if wrong_reference_system(net):
@@ -108,7 +108,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "lines_min_length_km": lines_min_length_km,
         "lines_min_z_ohm": lines_min_z_ohm,
         "nom_voltage_tolerance": nom_voltage_tolerance
-                   }
+    }
     if warnings_only:
         logger.setLevel(logging.WARNING)
     else:
@@ -121,6 +121,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         diagnostic_report(net, diag_results, diag_params, compact_report=True)
     if return_result_dict:
         return diag_results
+
 
 def check_greater_zero(element, element_index, column):
     """
@@ -229,6 +230,7 @@ def check_switch_type(element, element_index, column):
     if element[column] not in valid_values:
         return element_index
 
+
 def invalid_values(net):
     """
     Applies type check functions to find violations of input type restrictions.
@@ -261,50 +263,49 @@ def invalid_values(net):
     # for each attribute according to pandapower data structure documantation
     # (see also type_checks function)
 
-    important_values = {'bus'       : [('vn_kv','>0'), ('in_service','boolean')],
-                        'line'      : [('from_bus','positive_integer'), 
-                                       ('to_bus','positive_integer'), 
-                                       ('length_km','>0'), ('r_ohm_per_km','>=0'), 
-                                       ('x_ohm_per_km','>=0'), ('c_nf_per_km','>=0'), 
-                                       ('imax_ka','>0'),('df','0to1'), ('in_service','boolean')],
-                        'trafo'     : [('hv_bus','positive_integer'), ('lv_bus','positive_integer'), 
-                                       ('sn_kva','>0'), ('vn_hv_kv','>0'), ('vn_lv_kv','>0'), 
-                                       ('vscr_percent','>=0'),
-                                       ('vsc_percent','>0'), ('pfe_kw','>=0'), ('i0_percent','>=0'), 
-                                       ('in_service','boolean')],
-                        'trafo3w'   : [('hv_bus','positive_integer'), ('mv_bus','positive_integer'),
-                                       ('lv_bus','positive_integer'),
-                                       ('sn_hv_kva','>0'), ('sn_mv_kva','>0'), ('sn_lv_kva','>0'),
-                                       ('vn_hv_kv','>0'), ('vn_mv_kv','>0'), ('vn_lv_kv','>0'),
-                                       ('vscr_hv_percent','>=0'), ('vscr_mv_percent','>=0'),
-                                       ('vscr_lv_percent','>=0'), ('vsc_hv_percent','>0'),
-                                       ('vsc_mv_percent','>0'), ('vsc_lv_percent','>0'),
-                                       ('pfe_kw','>=0'), ('i0_percent','>=0'), 
-                                       ('in_service','boolean')],
-                        'load'      : [('bus','positive_integer'), ('p_kw','number'),
-                                       ('q_kvar','number'),
-                                       ('scaling','0to1'), ('in_service','boolean')],
-                        'sgen'      : [('bus','positive_integer'), ('p_kw','number'),
-                                       ('q_kvar','number'),
-                                       ('scaling','0to1'), ('in_service','boolean')],
-                        'gen'       : [('bus','positive_integer'), ('p_kw','number'),
-                                       ('scaling','0to1'), ('in_service','boolean')],
-                        'ext_grid'  : [('bus','positive_integer'), ('vm_pu','>0'), 
-                                       ('va_degree','number')],
-                        'switch'    : [('bus','positive_integer'), ('element','positive_integer'),
-                                       ('et','switch_type'), ('closed','boolean')]}
- 
+    important_values = {'bus': [('vn_kv', '>0'), ('in_service', 'boolean')],
+                        'line': [('from_bus', 'positive_integer'),
+                                 ('to_bus', 'positive_integer'),
+                                 ('length_km', '>0'), ('r_ohm_per_km', '>=0'),
+                                 ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
+                                 ('imax_ka', '>0'), ('df', '0to1'), ('in_service', 'boolean')],
+                        'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
+                                  ('sn_kva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
+                                  ('vscr_percent', '>=0'),
+                                  ('vsc_percent', '>0'), ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
+                                  ('in_service', 'boolean')],
+                        'trafo3w': [('hv_bus', 'positive_integer'), ('mv_bus', 'positive_integer'),
+                                    ('lv_bus', 'positive_integer'),
+                                    ('sn_hv_kva', '>0'), ('sn_mv_kva', '>0'), ('sn_lv_kva', '>0'),
+                                    ('vn_hv_kv', '>0'), ('vn_mv_kv', '>0'), ('vn_lv_kv', '>0'),
+                                    ('vscr_hv_percent', '>=0'), ('vscr_mv_percent', '>=0'),
+                                    ('vscr_lv_percent', '>=0'), ('vsc_hv_percent', '>0'),
+                                    ('vsc_mv_percent', '>0'), ('vsc_lv_percent', '>0'),
+                                    ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
+                                    ('in_service', 'boolean')],
+                        'load': [('bus', 'positive_integer'), ('p_kw', 'number'),
+                                 ('q_kvar', 'number'),
+                                 ('scaling', '0to1'), ('in_service', 'boolean')],
+                        'sgen': [('bus', 'positive_integer'), ('p_kw', 'number'),
+                                 ('q_kvar', 'number'),
+                                 ('scaling', '0to1'), ('in_service', 'boolean')],
+                        'gen': [('bus', 'positive_integer'), ('p_kw', 'number'),
+                                ('scaling', '0to1'), ('in_service', 'boolean')],
+                        'ext_grid': [('bus', 'positive_integer'), ('vm_pu', '>0'),
+                                     ('va_degree', 'number')],
+                        'switch': [('bus', 'positive_integer'), ('element', 'positive_integer'),
+                                   ('et', 'switch_type'), ('closed', 'boolean')]}
 
-    # matches a check function to each single input type restriction    
-    type_checks = {'>0'                 : check_greater_zero,
-                   '>=0'                : check_greater_equal_zero,
-                   '<0'                 : check_smaller_zero,
-                   '<=0'                : check_smaller_equal_zero,
-                   'boolean'            : check_boolean,
-                   'positive_integer'   : check_pos_int,
-                   'number'             : check_number,
-                   '0to1'               : check_between_zero_and_one,
-                   'switch_type'        : check_switch_type
+    # matches a check function to each single input type restriction
+    type_checks = {'>0': check_greater_zero,
+                   '>=0': check_greater_equal_zero,
+                   '<0': check_smaller_zero,
+                   '<=0': check_smaller_equal_zero,
+                   'boolean': check_boolean,
+                   'positive_integer': check_pos_int,
+                   'number': check_number,
+                   '0to1': check_between_zero_and_one,
+                   'switch_type': check_switch_type
                    }
 
     for key in important_values:
@@ -332,7 +333,6 @@ def invalid_values(net):
 
 
 def no_ext_grid(net):
-
     """
     Checks, if at least one external grid exists.
 
@@ -352,7 +352,6 @@ def no_ext_grid(net):
 
 
 def multiple_voltage_controlling_elements_per_bus(net):
-
     """
     Checks, if there are buses with more than one generator and/or more than one external grid.
 
@@ -393,7 +392,6 @@ def multiple_voltage_controlling_elements_per_bus(net):
 
 
 def overload(net, overload_scaling_factor):
-
     """
     Checks, if a loadflow calculation converges. If not, checks, if an overload is the reason for
     that by scaling down the loads, gens and sgens to 0.1%.
@@ -450,7 +448,6 @@ def overload(net, overload_scaling_factor):
 
 
 def wrong_switch_configuration(net):
-
     """
     Checks, if a loadflow calculation converges. If not, checks, if the switch configuration is
     the reason for that by closing all switches
@@ -486,7 +483,6 @@ def wrong_switch_configuration(net):
 
 
 def different_voltage_levels_connected(net):
-
     """
     Checks, if there are lines or switches that connect different voltage levels.
 
@@ -529,7 +525,6 @@ def different_voltage_levels_connected(net):
 
 
 def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm):
-
     """
     Checks, if there are lines with an impedance value of zero
 
@@ -558,7 +553,6 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
 
 
 def closed_switches_between_oos_and_is_buses(net):
-
     """
     Checks, if there are switches connecting an out-of-service and an in-service bus.
 
@@ -592,7 +586,6 @@ def closed_switches_between_oos_and_is_buses(net):
 
 
 def nominal_voltages_dont_match(net, nom_voltage_tolerance):
-
     """
     Checks, if there are components whose nominal voltages differ from the nominal voltages of the
     buses they're connected to. At the moment, only trafos and trafo3w are checked.
@@ -639,23 +632,23 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     connectors_swapped_3w = []
     min_v_pu = 1 - nom_voltage_tolerance
     max_v_pu = 1 + nom_voltage_tolerance
-    
+
     for i, trafo in net.trafo.iterrows():
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo.hv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo.lv_bus]
         if ((trafo.vn_hv_kv > lv_bus_vn_kv * min_v_pu)
             and ((trafo.vn_hv_kv < lv_bus_vn_kv * max_v_pu))
             and ((trafo.vn_lv_kv > hv_bus_vn_kv * min_v_pu))
-            and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
+                and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
 
             hv_lv_swapped.append(i)
 
         if (((trafo.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-            and (i not in hv_lv_swapped)):
+                and (i not in hv_lv_swapped)):
             hv_bus.append(i)
 
-        if (((trafo.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo.vn_lv_kv < lv_bus_vn_kv * min_v_pu)) 
-            and (i not in hv_lv_swapped)):
+        if (((trafo.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
+                and (i not in hv_lv_swapped)):
             lv_bus.append(i)
 
     if hv_bus:
@@ -667,33 +660,32 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     if trafo_results:
         results['trafo'] = trafo_results
 
-
     for i, trafo3w in net.trafo3w.iterrows():
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.hv_bus]
         mv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.mv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.lv_bus]
 
         if ((((trafo3w.vn_hv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < mv_bus_vn_kv * max_v_pu))
-            or ((trafo3w.vn_hv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < lv_bus_vn_kv * max_v_pu)))
+             or ((trafo3w.vn_hv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < lv_bus_vn_kv * max_v_pu)))
             and
             (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
-            or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
+             or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
             and
             (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
-            or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
+             or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
 
-                connectors_swapped_3w.append(i)
+            connectors_swapped_3w.append(i)
 
         if (((trafo3w.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo3w.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-            and (i not in connectors_swapped_3w)):
+                and (i not in connectors_swapped_3w)):
             hv_bus_3w.append(i)
 
         if (((trafo3w.vn_mv_kv > mv_bus_vn_kv * max_v_pu) or (trafo3w.vn_mv_kv < mv_bus_vn_kv * min_v_pu))
-            and (i not in connectors_swapped_3w)):
+                and (i not in connectors_swapped_3w)):
             mv_bus_3w.append(i)
 
         if (((trafo3w.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo3w.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-            and (i not in connectors_swapped_3w)):
+                and (i not in connectors_swapped_3w)):
             lv_bus_3w.append(i)
 
     if hv_bus_3w:
@@ -711,7 +703,6 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
 
 
 def disconnected_elements(net):
-
     """
     Checks, if there are network sections without a connection to an ext_grid. Returns all network
     elements in these sections, that are in service. Elements belonging to the same disconnected
@@ -753,24 +744,24 @@ def disconnected_elements(net):
 
         if not section & set(net.ext_grid.bus) and any(net.bus.in_service.loc[section]):
             section_buses = list(net.bus[net.bus.index.isin(section)
-                                  & (net.bus.in_service == True)].index)
+                                         & (net.bus.in_service == True)].index)
             section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
             section_lines = list(get_connected_elements(net, 'line', section_buses,
-                                                                  respect_switches=True,
-                                                                  respect_in_service=True))
+                                                        respect_switches=True,
+                                                        respect_in_service=True))
             section_trafos = list(get_connected_elements(net, 'trafo', section_buses,
-                                                                    respect_switches=True,
-                                                                    respect_in_service=True))
-                                                                    
+                                                         respect_switches=True,
+                                                         respect_in_service=True))
+
             section_trafos3w = list(get_connected_elements(net, 'trafo3w', section_buses,
-                                                                    respect_switches=True,
-                                                                    respect_in_service=True))
+                                                           respect_switches=True,
+                                                           respect_in_service=True))
             section_gens = list(net.gen[net.gen.bus.isin(section)
-                                & (net.gen.in_service == True)].index)
+                                        & (net.gen.in_service == True)].index)
             section_sgens = list(net.sgen[net.sgen.bus.isin(section)
-                                 & (net.sgen.in_service == True)].index)                              
+                                          & (net.sgen.in_service == True)].index)
             section_loads = list(net.load[net.load.bus.isin(section)
-                                 & (net.load.in_service == True)].index)                
+                                          & (net.load.in_service == True)].index)
 
             if section_buses:
                 section_dict['buses'] = section_buses
@@ -794,24 +785,24 @@ def disconnected_elements(net):
 
     open_line_switches = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
     isolated_lines = set(
-                    (open_line_switches.groupby("element").count().query("bus > 1").index))
+        (open_line_switches.groupby("element").count().query("bus > 1").index))
     isolated_lines_is = isolated_lines.intersection((set(net.line[net.line.in_service == True]
-                                                    .index)))
+                                                         .index)))
     if isolated_lines_is:
         disc_elements.append({'isolated_lines': list(isolated_lines_is)})
 
     open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
     isolated_trafos = set(
-                   (open_trafo_switches.groupby("element").count().query("bus > 1").index))
+        (open_trafo_switches.groupby("element").count().query("bus > 1").index))
     isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service == True]
-                                                      .index)))
+                                                           .index)))
     if isolated_trafos_is:
         disc_elements.append({'isolated_trafos': list(isolated_trafos_is)})
-        
+
     isolated_trafos3w = set(
-                   (open_trafo_switches.groupby("element").count().query("bus > 2").index))
+        (open_trafo_switches.groupby("element").count().query("bus > 2").index))
     isolated_trafos3w_is = isolated_trafos3w.intersection((
-                                                set(net.trafo[net.trafo.in_service == True].index)))
+        set(net.trafo[net.trafo.in_service == True].index)))
     if isolated_trafos3w_is:
         disc_elements.append({'isolated_trafos3w': list(isolated_trafos3w_is)})
 
@@ -820,7 +811,6 @@ def disconnected_elements(net):
 
 
 def wrong_reference_system(net):
-
     """
     Checks usage of wrong reference system for loads, sgens and gens.
 
