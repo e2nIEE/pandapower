@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
@@ -17,7 +17,7 @@ def create_empty_network(name=None, f_hz=50.):
     This function initializes the pandapower datastructure.
 
     OPTIONAL:
-    
+
         **f_hz** (float, 50.) - power system frequency in hertz
 
         **name** (string, None) - name for the network
@@ -58,7 +58,7 @@ def create_empty_network(name=None, f_hz=50.):
                  ("sn_kva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
-                 ("type", np.dtype(object) )],
+                 ("type", np.dtype(object))],
         "sgen": [("name", np.dtype(object)),
                  ("bus", "i8"),
                  ("p_kw", "f8"),
@@ -330,7 +330,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 
 def create_buses(net, nr_buses, vn_kv=0.4, index=None, name=None, type="b", geodata=None,
-                  zone=None, in_service=True):
+                 zone=None, in_service=True):
     """
     Adds several buses in table net["bus"] at once.
 
@@ -430,7 +430,7 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 
         **index** (int, None) - Force the specified index. If None, the next highest available index
                                 is used
-                                
+
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
@@ -454,7 +454,7 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
     dtypes = net.load.dtypes
 
     net.load.loc[index, ["name", "bus", "p_kw", "scaling",
-                       "q_kvar", "sn_kva", "in_service", "type"]] = \
+                         "q_kvar", "sn_kva", "in_service", "type"]] = \
         [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type]
 
     # and preserve dtypes
@@ -496,7 +496,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
 
         **index** (int, None) - Force the specified index. If None, the next highest available index
                                 is used
-                                
+
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
         **type** (string, None) -  type variable to classify the static generator
@@ -525,7 +525,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
     dtypes = net.sgen.dtypes
 
     net.sgen.loc[index, ["name", "bus", "p_kw", "scaling",
-                        "q_kvar", "sn_kva", "in_service", "type"]] = \
+                         "q_kvar", "sn_kva", "in_service", "type"]] = \
         [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type]
 
     # and preserve dtypes
@@ -632,7 +632,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
     if index is None:
         index = get_free_id(net["gen"])
-        
+
     if index in net["gen"].index:
         raise UserWarning("A generator with the id %s already exists" % index)
 
@@ -640,7 +640,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
     dtypes = net.gen.dtypes
 
     net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva",  "type", "in_service", "scaling"]]\
-                   = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service), scaling]
+        = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service), scaling]
 
     # and preserve dtypes
     _preserve_dtypes(net.gen, dtypes)
@@ -732,7 +732,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     """
     if index and index in net["ext_grid"].index:
         raise UserWarning("An external grid with with index %s already exists" % index)
-        
+
     if index is None:
         index = get_free_id(net["ext_grid"])
 
@@ -773,7 +773,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             net.ext_grid.loc[:, "rx_max"] = pd.Series()
 
         net.ext_grid.at[index, "rx_max"] = float(rx_max)
-        
+
     if not np.isnan(cost_per_kw):
         if "cost_per_kw" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "cost_per_kw"] = pd.Series()
@@ -842,7 +842,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         if b not in net["bus"].index.values:
             raise UserWarning("Line %s tries to attach to non-existing bus %s"
                               % (name, b))
-            
+
     if index is None:
         index = get_free_id(net["line"])
 
@@ -864,7 +864,6 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     })
     if "type" in lineparam:
         v.update({"type": lineparam["type"]})
-
 
     # store dtypes
     dtypes = net.line.dtypes
@@ -922,7 +921,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **type** (str) - type of line ("oh" for overhead line or "cs" for cable system)
 
         **df** (float) - derating factor: maximal current of line  in relation to nominal current of line (from 0 to 1)
-        
+
         **parallel** (integer) - number of parallel line systems
 
         **geodata**
@@ -1002,7 +1001,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
     OPTIONAL:
 
         **name** (string, None) - A custom name for this transformer
-        
+
         **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -1111,7 +1110,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         **tp_side** (string) - position of tap changer ("hv", "lv")
 
         **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
-        
+
         **tp_mid** (int, nan) - tap position where the transformer ratio is equal to the ration of the rated voltages
 
         **tp_max** (int, nan) - maximal allowed tap position
@@ -1145,7 +1144,6 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
     if index in net["trafo"].index:
         raise UserWarning("A transformer with index %s already exists" % index)
-
 
     if tp_pos is None:
         tp_pos = tp_mid
@@ -1360,11 +1358,11 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     dtypes = net.trafo3w.dtypes
 
     net.trafo3w.loc[index, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                          "sn_hv_kva", "sn_mv_kva", "sn_lv_kva", "vsc_hv_percent", "vsc_mv_percent",
-                          "vsc_lv_percent", "vscr_hv_percent", "vscr_mv_percent", "vscr_lv_percent",
-                          "pfe_kw", "i0_percent", "shift_mv_degree", "shift_lv_degree",
-                          "tp_side", "tp_st_percent", "tp_pos", "tp_mid", "tp_max",
-                          "tp_min", "in_service", "name"]] = \
+                            "sn_hv_kva", "sn_mv_kva", "sn_lv_kva", "vsc_hv_percent", "vsc_mv_percent",
+                            "vsc_lv_percent", "vscr_hv_percent", "vscr_mv_percent", "vscr_lv_percent",
+                            "pfe_kw", "i0_percent", "shift_mv_degree", "shift_lv_degree",
+                            "tp_side", "tp_st_percent", "tp_pos", "tp_mid", "tp_max",
+                            "tp_min", "in_service", "name"]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
@@ -1385,7 +1383,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     Switches can be either between to buses (bus-bus switch) or at the end of a line or transformer
     element (bus-elememnt switch).
 
-    Two buses that are connected through a closed bus-bus switches are fused in the power flow if 
+    Two buses that are connected through a closed bus-bus switches are fused in the power flow if
     the switch es closed or separated if the switch is open.
 
     An element that is connected to a bus through a bus-element switch is connected to the bus
@@ -1500,7 +1498,7 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
 
     if index is None:
         index = get_free_id(net["shunt"])
-        
+
     if index in net["shunt"].index:
         raise UserWarning("A shunt with index %s already exists" % index)
 
@@ -1541,7 +1539,7 @@ def create_impedance(net, from_bus, to_bus, r_pu, x_pu, sn_kva, name=None, in_se
 
     if index is None:
         index = get_free_id(net.impedance)
-    
+
     if index in net["impedance"].index:
         raise UserWarning("An impedance with index %s already exists" % index)
 
@@ -1549,7 +1547,7 @@ def create_impedance(net, from_bus, to_bus, r_pu, x_pu, sn_kva, name=None, in_se
     dtypes = net.impedance.dtypes
 
     net.impedance.loc[index, ["from_bus", "to_bus", "r_pu", "x_pu", "name",
-                            "sn_kva", "in_service"]] = \
+                              "sn_kva", "in_service"]] = \
         [from_bus, to_bus, r_pu, x_pu, name, sn_kva, in_service]
 
     # and preserve dtypes
@@ -1634,7 +1632,7 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     if index is None:
         index = get_free_id(net.xward)
-        
+
     if index in net["xward"].index:
         raise UserWarning("An extended ward equivalent with index %s already exists" % index)
 
@@ -1642,7 +1640,7 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
     dtypes = net.xward.dtypes
 
     net.xward.loc[index, ["bus", "ps_kw", "qs_kvar", "pz_kw", "qz_kvar", "r_ohm", "x_ohm", "vm_pu",
-                         "name", "in_service"]] = \
+                          "name", "in_service"]] = \
         [bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, name, in_service]
 
     # and preserve dtypes

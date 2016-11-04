@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
@@ -15,14 +15,16 @@ from pandapower.auxiliary import ppException
 from pandapower.results import _extract_results
 from pandapower.build_branch import _build_branch_mpc, _switch_branches, _branches_with_oos_buses
 from pandapower.build_bus import _build_bus_mpc, _calc_loads_and_add_on_mpc, \
-                                 _calc_shunts_and_add_on_mpc
+    _calc_shunts_and_add_on_mpc
 from pandapower.build_gen import _build_gen_mpc
+
 
 class LoadflowNotConverged(ppException):
     """
     Exception being raised in case loadflow did not converge.
     """
     pass
+
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, Numba=True, **kwargs):
@@ -35,7 +37,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         **net** - The Pandapower format network
 
     Optional:
-    
+
         **init** (str, "flat") - initialization method of the loadflow
         Pandapower supports three methods for initializing the loadflow:
 
@@ -44,7 +46,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             - "results" - voltage vector of last loadflow from net.res_bus is used as initial solution. This can be useful to accelerate convergence in iterative loadflows like time series calculations.
 
         **calculate_voltage_angles** (bool, False) - consider voltage angles in loadflow calculation
-        
+
             If True, voltage angles are considered in the  loadflow calculation. In some cases with
             large differences in voltage angles (for example in case of transformers with high
             voltage shift), the difference between starting and end angle value is very large.
@@ -53,13 +55,13 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             provided to allow and/or accelarate convergence for networks where calculation of 
             voltage angles is not necessary. Note that if calculate_voltage_angles is True the
             loadflow is initialized with a DC power flow (init = "dc")
-            
+
             The default value is False because pandapower was developed for distribution networks.
             Please be aware that this parameter has to be set to True in meshed network for correct
             results!
 
         **tolerance_kva** (float, 1e-5) - loadflow termination condition referring to P / Q mismatch of node power in kva
-        
+
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         Pandapower provides two equivalent circuit models for the transformer:
 
@@ -67,25 +69,25 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model. 
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
-        
+
             Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
 
             - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
             - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer. 
 
         **enforce_q_lims** (bool, False) - respect generator reactive power limits
-        
+
             If True, the reactive power limits in net.gen.max_q_kvar/min_q_kvar are respected in the
             loadflow. This is done by running a second loadflow if reactive power limits are
             violated at any generator, so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
-        
+
             If set to True, warnings are disabled during the loadflow. Because of the way data is
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
-        
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = True
@@ -104,7 +106,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
         **net** - The Pandapower format network
 
     Optional:
-           
+
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         Pandapower provides two equivalent circuit models for the transformer:
 
@@ -112,18 +114,18 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model. 
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
-        
+
             Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
 
             - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
             - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer. 
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
-        
+
             If set to True, warnings are disabled during the loadflow. Because of the way data is
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
-        
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
@@ -137,8 +139,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
              trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
 
+
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-          trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs):
+             trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -157,16 +160,17 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
-    # run the powerflow with or without warnings. If init='dc', AC PF will be initialized with DC voltages
+    # run the powerflow with or without warnings. If init='dc', AC PF will be
+    # initialized with DC voltages
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             result = _runpf(ppc, init, ac, Numba, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                                     PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
+                                                                       PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     else:
         result = _runpf(ppc, init, ac, Numba, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                                 PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
+                                                                   PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppc doesn't contain out of service elements, but mpc does -> copy results accordingly
     result = _copy_results_ppc_to_mpc(result, mpc)
@@ -180,6 +184,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 
     _extract_results(net, result, is_elems, bus_lookup, trafo_loading, ac)
     _clean_up(net)
+
 
 def reset_results(net):
     net["res_bus"] = copy.copy(net["_empty_res_bus"])
@@ -195,6 +200,7 @@ def reset_results(net):
     net["res_ward"] = copy.copy(net["_empty_res_ward"])
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
 
+
 def _select_is_elements(net):
     """
     Selects certain "in_service" elements from net.
@@ -205,18 +211,16 @@ def _select_is_elements(net):
     @return: is_elems Certain in service elements
     """
     is_elems = {
-        'gen' : net["gen"][net["gen"]["in_service"].values.astype(bool)]
-        ,'eg' : net["ext_grid"][net["ext_grid"]["in_service"].values.astype(bool)]
-        ,'bus' : net["bus"][net["bus"]["in_service"].values.astype(bool)]
-        ,'line' : net["line"][net["line"]["in_service"].values.astype(bool)]
+        'gen': net["gen"][net["gen"]["in_service"].values.astype(bool)], 'eg': net["ext_grid"][net["ext_grid"]["in_service"].values.astype(bool)], 'bus': net["bus"][net["bus"]["in_service"].values.astype(bool)], 'line': net["line"][net["line"]["in_service"].values.astype(bool)]
     }
 
     # check if gen is also at an in service bus
     gen_is = np.in1d(net["gen"].bus.values, is_elems['bus'].index) \
-              & net["gen"]["in_service"].values.astype(bool)
+        & net["gen"]["in_service"].values.astype(bool)
     is_elems['gen'] = net['gen'][gen_is]
 
     return is_elems
+
 
 def _copy_results_ppc_to_mpc(result, mpc):
     '''
@@ -309,7 +313,8 @@ def _pd2mpc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     ppc, bus_lookup = _mpc2ppc(mpc, bus_lookup)
 
     # add lookup with indices before any busses were fused
-    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values, np.arange(len(net["bus"].index.values))))
+    bus_lookup["before_fuse"] = dict(
+        zip(net["bus"].index.values, np.arange(len(net["bus"].index.values))))
 
     return mpc, ppc, bus_lookup
 
@@ -335,11 +340,12 @@ def _mpc2ppc(mpc, bus_lookup):
            "branch_is": np.array([], dtype=bool),
            "gen_is": np.array([], dtype=bool)}
 
-    ## BUS Sorting and lookup
+    # BUS Sorting and lookup
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
     mpcBuses = mpc["bus"]
-    mpc['bus'] = mpcBuses[mpcBuses[:, BUS_TYPE].argsort(axis=0)[::-1][:],]
-    # get OOS busses and place them at the end of the bus array (so that: 3 (REF), 2 (PV), 1 (PQ), 4 (OOS))
+    mpc['bus'] = mpcBuses[mpcBuses[:, BUS_TYPE].argsort(axis=0)[::-1][:], ]
+    # get OOS busses and place them at the end of the bus array (so that: 3
+    # (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = mpc['bus'][:, BUS_TYPE] == NONE
     # there are no OOS busses in the ppc
     ppc['bus'] = mpc['bus'][~oos_busses]
@@ -350,7 +356,7 @@ def _mpc2ppc(mpc, bus_lookup):
     arangedBuses = np.arange(len(mpcBuses))
 
     # lookup mpc former order -> consecutive order
-    e2i = zeros( len(mpcBuses) )
+    e2i = zeros(len(mpcBuses))
     e2i[mpc_former_order] = arangedBuses
 
     # save consecutive indices in mpc and ppc
@@ -360,18 +366,18 @@ def _mpc2ppc(mpc, bus_lookup):
     # update bus_lookup (pandapower -> ppc internal)
     bus_lookup = {key: e2i[val] for (key, val) in bus_lookup.items()}
 
-    ## sizes
+    # sizes
     nb = mpc["bus"].shape[0]
     ng = mpc["gen"].shape[0]
 
     if 'areas' in mpc:
-        if len(mpc["areas"]) == 0:  ## if areas field is empty
-            del mpc['areas']  ## delete it (so it's ignored)
+        if len(mpc["areas"]) == 0:  # if areas field is empty
+            del mpc['areas']  # delete it (so it's ignored)
 
     # bus types
     bt = mpc["bus"][:, BUS_TYPE]
 
-    ## update branch, gen and areas bus numbering
+    # update branch, gen and areas bus numbering
     mpc['gen'][:, GEN_BUS] = \
         e2i[np.real(mpc["gen"][:, GEN_BUS]).astype(int)].copy()
     mpc["branch"][:, F_BUS] = \
@@ -379,7 +385,7 @@ def _mpc2ppc(mpc, bus_lookup):
     mpc["branch"][:, T_BUS] = \
         e2i[np.real(mpc["branch"][:, T_BUS]).astype(int)].copy()
 
-    #Note: The "update branch, gen and areas bus numbering" does the same as this:
+    # Note: The "update branch, gen and areas bus numbering" does the same as this:
     # mpc['gen'][:, GEN_BUS] = get_indices(mpc['gen'][:, GEN_BUS], bus_lookup_mpc_ppc)
     # mpc["branch"][:, F_BUS] = get_indices(mpc["branch"][:, F_BUS], bus_lookup_mpc_ppc)
     # mpc["branch"][:, T_BUS] = get_indices( mpc["branch"][:, T_BUS], bus_lookup_mpc_ppc)
@@ -389,22 +395,22 @@ def _mpc2ppc(mpc, bus_lookup):
         mpc["areas"][:, PRICE_REF_BUS] = \
             e2i[np.real(mpc["areas"][:, PRICE_REF_BUS]).astype(int)].copy()
 
-    ## reorder gens in order of increasing bus number
-    mpc['gen'] = mpc['gen'][mpc['gen'][:, GEN_BUS].argsort(),]
+    # reorder gens in order of increasing bus number
+    mpc['gen'] = mpc['gen'][mpc['gen'][:, GEN_BUS].argsort(), ]
 
-    ## determine which buses, branches, gens are connected and
-    ## in-service
+    # determine which buses, branches, gens are connected and
+    # in-service
     # n2i = sparse((range(nb), (mpc["bus"][:, BUS_I], zeros(nb))),
     #              shape=(maxBus + 1, 1))
     # n2i = array(n2i.todense().flatten())[0, :]  # as 1D array
     n2i = mpc["bus"][:, BUS_I].astype(int)
-    bs = (bt != NONE)  ## bus status
+    bs = (bt != NONE)  # bus status
 
-    gs = ((mpc["gen"][:, GEN_STATUS] > 0) &  ## gen status
+    gs = ((mpc["gen"][:, GEN_STATUS] > 0) &  # gen status
           bs[n2i[np.real(mpc["gen"][:, GEN_BUS]).astype(int)]])
     ppc["gen_is"] = gs
 
-    brs = (np.real(mpc["branch"][:, BR_STATUS]).astype(int) &  ## branch status
+    brs = (np.real(mpc["branch"][:, BR_STATUS]).astype(int) &  # branch status
            bs[n2i[np.real(mpc["branch"][:, F_BUS]).astype(int)]] &
            bs[n2i[np.real(mpc["branch"][:, T_BUS]).astype(int)]]).astype(bool)
     ppc["branch_is"] = brs
@@ -414,11 +420,11 @@ def _mpc2ppc(mpc, bus_lookup):
         # delete out of service areas
         ppc["areas"] = mpc["areas"][ar]
 
-    ## select in service elements from mpc and put them in ppc
+    # select in service elements from mpc and put them in ppc
     ppc["branch"] = mpc["branch"][brs]
     ppc["gen"] = mpc["gen"][gs]
 
-    ## execute userfcn callbacks for 'ext2int' stage
+    # execute userfcn callbacks for 'ext2int' stage
     if 'userfcn' in ppc:
         ppc = run_userfcn(ppc['userfcn'], 'ext2int', ppc)
 
@@ -432,7 +438,7 @@ def _set_isolated_buses_out_of_service(net, mpc):
                         mpc["branch"][mpc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    disco = np.setdiff1d(disco, mpc['bus'][mpc['bus'][:,1] == 3, :1].real.astype(int))
+    disco = np.setdiff1d(disco, mpc['bus'][mpc['bus'][:, 1] == 3, :1].real.astype(int))
     mpc["bus"][disco, 1] = 4
 
 
@@ -442,7 +448,7 @@ def _clean_up(net):
         net["res_bus"].drop(buses_3w, inplace=True)
         net["bus"].drop(buses_3w, inplace=True)
         net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-        
+
     if len(net["xward"]) > 0:
         xward_buses = net["xward"]["ad_bus"].values
         net["bus"].drop(xward_buses, inplace=True)
