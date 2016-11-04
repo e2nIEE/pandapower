@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
 # BSD-style license that can be found in the LICENSE file.
 
-from .build_opf import _pd2mpc_opf, _make_objective
+from .build_opf import _pd2ppc_opf, _make_objective
 from .results_opf import _extract_results_opf
 from .opf import opf
 from pypower.ppoption import ppoption
@@ -83,18 +83,22 @@ def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True, *
         sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable)==True]
     else:
         sg_is = pd.DataFrame()
-      
-    mpc, bus_lookup = _pd2mpc_opf(net, is_elems, sg_is)
-    mpc, ppopt = _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype, *kwargs)
+
+    ppc, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is)
+    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype, *kwargs)
+    net["_ppc_opf"] = ppc
 
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = opf(mpc, ppopt)
-
+            result = opf(ppc, ppopt)
+            if not result["success"]:
+                raise OPFNotConverged("Optimal Power Flow did not converge!")
+                
+    net["_ppc_opf"] = result
+    net["OPF_converged"] = True
     _extract_results_opf(net, result, is_elems, bus_lookup,  "current", True)
-    if not net["OPF_converged"]:
-        raise OPFNotConverged("Optimal Power Flow did not converge!")
-        
-        
+
+    
+    
 

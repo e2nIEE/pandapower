@@ -22,9 +22,6 @@ def _extract_results_opf(net, mpc, is_elems, bus_lookup, trafo_loading, return_v
     _get_branch_results(net, mpc, bus_lookup, bus_pq, trafo_loading)
     _get_gen_results(net, mpc, is_elems, bus_lookup, bus_pq, return_voltage_angles)
     _get_bus_results(net, mpc, bus_lookup, bus_pq, return_voltage_angles)
-    net["OPF_converged"] = mpc["success"]
-    net["_ppc_opf"] = mpc
-
 
 def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)

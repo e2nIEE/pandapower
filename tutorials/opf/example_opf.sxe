@@ -4,10 +4,10 @@
 <PrintReportSettings PaperSize="9" FormName="???" SheetSizeX="0" SheetSizeY="0"/>
 <PrinterSettings PaperSizeX="2098" PaperSizeY="2970" PhysicalOffestTenthMm_X="0" PhysicalOffestTenthMm_Y="0"/>
 <tb use="1" name="C:\Users\Public\Documents\ProfiCAD Library\_TB\standard7.ptb"/>
-<PageSettings bgColor="FFFFFF" pgsHor="1" pgsVer="1" pgsMrgn="0, 0, 0, 0" pageMargins="10, 10, 10, 10" zoom="150" frame="NO" rastr="20" showT="YES" showV="YES" includeMargins="YES"/>
+<PageSettings bgColor="FFFFFF" pgsHor="1" pgsVer="1" pgsMrgn="0, 0, 0, 0" pageMargins="10, 10, 10, 10" zoom="1000" frame="NO" rastr="20" showT="YES" showV="YES" includeMargins="YES"/>
 <RefGridSettings FieldSize="50"/>
 <NumberingWire Digits="3" TypeRenumbering="0" ShowWireName="1" WireLabelDist_a="6" WireLabelDist_b="7" WireLabelDist_c="7"/>
-<summary rev="" Titel="" Spr="" Genehmigt="" DokArt="" Abteilung="" _po="" author="" Sachnummer="" date="22.07.2016" techRef="" TitelZusatz="" DocStatus=""/>
+<summary rev="" DokArt="" Genehmigt="" Spr="" Titel="" Abteilung="" _po="" Sachnummer="" author="" date="22.07.2016" DocStatus="" TitelZusatz="" techRef=""/>
 <BillColumns/>
 <repo id="26962">
 <ppd name="elektrische Netze (statisch)\.\Trennschalter_geschlossen.ppd" t="" v="" n="EN 60617: 07-13-06" m="" fG="4d72e74f-7c60-4a93-8d87-09a9c726e42f" lG="0dcd9bce-6c82-4af8-9017-980bae054ec3">
@@ -324,11 +324,8 @@
 </elem>
 <text x="1276" y="499" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">60 MW</text>
 <text x="1910" y="120" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">10 MW</text>
-<text x="1610" y="100" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">0...100 MW</text>
-<text x="1632" y="742" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">0...80 MW</text>
-<text x="1629" y="782" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">12 ct/kW</text>
-<text x="1608" y="149" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">15 ct/kW</text>
-<text x="809" y="562" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">10 ct/kW</text>
+<text x="1610" y="99" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">0...100 MW</text>
+<text x="1632" y="763" f="90,0,0,0,Lucida Sans Unicode,000000" l="1" al="9">0...80 MW</text>
 </layer>
 </layers>
 </page>
