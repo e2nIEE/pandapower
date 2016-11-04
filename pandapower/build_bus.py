@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 
@@ -13,7 +13,9 @@ from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, VM, BUS_
 
 from pandapower.auxiliary import get_indices,  _sum_by_group
 
+
 class DisjointSet(dict):
+
     def add(self, item):
         self[item] = item
 
@@ -34,11 +36,11 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
     """
     """
     if len(net["trafo3w"]) > 0:
-        #TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
-        _create_trafo3w_buses(net, init_results) 
+        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
+        _create_trafo3w_buses(net, init_results)
     if len(net["xward"]) > 0:
-        #TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
-        _create_xward_buses(net, init_results)  
+        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
+        _create_xward_buses(net, init_results)
 
     # get buses as set
     bus_list = set(net["bus"].index.values)
@@ -54,18 +56,19 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
     # get indices of PV (and ref) buses
     if len(net["xward"]) > 0:
         # add xwards if available
-        pv_ref = set((np.r_[eg_is["bus"].values\
-                     , gen_is["bus"].values\
-                     , net["xward"][net["xward"].in_service == 1]["ad_bus"].values]).flatten())
+        pv_ref = set((np.r_[eg_is["bus"].values, gen_is["bus"].values, net["xward"][
+                     net["xward"].in_service == 1]["ad_bus"].values]).flatten())
     else:
         pv_ref = set(np.r_[eg_is["bus"].values, gen_is["bus"].values].flatten())
 
     # 2. Add PQ buses without switches
     slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") &\
-            (net["switch"]["bus"].isin(bus_is.index).values) & (net["switch"]["element"].isin(bus_is.index).values)
+            (net["switch"]["bus"].isin(bus_is.index).values) & (
+                net["switch"]["element"].isin(bus_is.index).values)
 
     # get buses with switches
-    switch_buses = set((np.r_[net["switch"]["bus"].values[slidx], net["switch"]["element"].values[slidx]]).flatten())
+    switch_buses = set((np.r_[net["switch"]["bus"].values[slidx], net[
+                       "switch"]["element"].values[slidx]]).flatten())
     pq_buses_without_switches = (bus_list - switch_buses) - pv_ref
 
     # consecutive values for pv, ref, and non switch pq buses
@@ -147,51 +150,50 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
             mpc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
         else:
             mpc["bus"][:, VMIN] = 0
-            
-
-
 
     return bus_lookup
 
+
 def _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
-    #get in service elements
+    # get in service elements
     bus_is = is_elems['bus']
 
     l = net["load"]
     # element_is = check if element is at a bus in service & element is in service
     load_is = np.in1d(l.bus.values, bus_is.index) \
-              & l.in_service.values.astype(bool)
+        & l.in_service.values.astype(bool)
     vl = load_is * l["scaling"].values.T / np.float64(1000.)
     lp = l["p_kw"].values * vl
     lq = l["q_kvar"].values * vl
 
     s = net["sgen"]
     sgen_is = np.in1d(s.bus.values, bus_is.index) \
-              & s.in_service.values.astype(bool)
+        & s.in_service.values.astype(bool)
     vl = sgen_is * s["scaling"].values.T / np.float64(1000.)
     sp = s["p_kw"].values * vl
     sq = s["q_kvar"].values * vl
 
     w = net["ward"]
     ward_is = np.in1d(w.bus.values, bus_is.index) \
-              & w.in_service.values.astype(bool)
+        & w.in_service.values.astype(bool)
     vl = ward_is / np.float64(1000.)
     wp = w["ps_kw"].values * vl
     wq = w["qs_kvar"].values * vl
 
     xw = net["xward"]
     xward_is = np.in1d(xw.bus.values, bus_is.index) \
-              & xw.in_service.values.astype(bool)
+        & xw.in_service.values.astype(bool)
     vl = xward_is / np.float64(1000.)
     xwp = xw["ps_kw"].values * vl
     xwq = xw["qs_kvar"].values * vl
 
-    b = get_indices(np.hstack([l["bus"].values, s["bus"].values, w["bus"].values, xw["bus"].values]\
+    b = get_indices(np.hstack([l["bus"].values, s["bus"].values, w["bus"].values, xw["bus"].values]
                               ), bus_lookup)
     b, vp, vq = _sum_by_group(b, np.hstack([lp, sp, wp, xwp]), np.hstack([lq, sq, wq, xwq]))
 
     mpc["bus"][b, PD] = vp
     mpc["bus"][b, QD] = vq
+
 
 def _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
     # get in service elements
@@ -199,21 +201,21 @@ def _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
 
     s = net["shunt"]
     shunt_is = np.in1d(s.bus.values, bus_is.index) \
-              & s.in_service.values.astype(bool)
+        & s.in_service.values.astype(bool)
     vl = shunt_is / np.float64(1000.)
     sp = s["p_kw"].values * vl
-    sq = s["q_kvar"].values * vl    
-    
+    sq = s["q_kvar"].values * vl
+
     w = net["ward"]
     ward_is = np.in1d(w.bus.values, bus_is.index) \
-              & w.in_service.values.astype(bool)
+        & w.in_service.values.astype(bool)
     vl = ward_is / np.float64(1000.)
     wp = w["pz_kw"].values * vl
     wq = w["qz_kvar"].values * vl
 
     xw = net["xward"]
     xward_is = np.in1d(xw.bus.values, bus_is.index) \
-              & xw.in_service.values.astype(bool)
+        & xw.in_service.values.astype(bool)
     vl = xward_is / np.float64(1000.)
     xwp = xw["pz_kw"].values * vl
     xwq = xw["qz_kvar"].values * vl
@@ -224,28 +226,30 @@ def _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
     mpc["bus"][b, GS] = vp
     mpc["bus"][b, BS] = -vq
 
+
 def _create_xward_buses(net, init_results):
     from pandapower.create import create_buses
     main_buses = net.bus.loc[net.xward.bus.values]
     bid = create_buses(net, nr_buses=len(main_buses),
-                        vn_kv=main_buses.vn_kv.values,
-                        in_service=net["xward"]["in_service"].values)
+                       vn_kv=main_buses.vn_kv.values,
+                       in_service=net["xward"]["in_service"].values)
     net.xward["ad_bus"] = bid
     if init_results:
-        #TODO: this is probably slow, but the whole auxiliary bus creation should be included in 
+        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2mpc anyways
         for hv_bus, aux_bus in zip(main_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+
 
 def _create_trafo3w_buses(net, init_results):
     from pandapower.create import create_buses
     hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
     bid = create_buses(net, nr_buses=len(net["trafo3w"]),
-                        vn_kv=hv_buses.vn_kv.values,
-                        in_service=net.trafo3w.in_service.values)
+                       vn_kv=hv_buses.vn_kv.values,
+                       in_service=net.trafo3w.in_service.values)
     net.trafo3w["ad_bus"] = bid
     if init_results:
-        #TODO: this is probably slow, but the whole auxiliary bus creation should be included in 
+        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2mpc anyways
         for hv_bus, aux_bus in zip(hv_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values

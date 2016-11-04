@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import copy
@@ -14,6 +14,7 @@ from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STAT
 from pypower.idx_bus import BASE_KV
 
 from pandapower.auxiliary import get_indices, get_values
+
 
 def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
     """
@@ -36,22 +37,22 @@ def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, 
 #    if len(net["trafo3w"]) > 0:
 #        _one_3w_to_three_2w(net)
     line_end = len(net["line"])
-    trafo_end =  line_end + len(net["trafo"])
+    trafo_end = line_end + len(net["trafo"])
     trafo3w_end = trafo_end + len(net["trafo3w"]) * 3
     impedance_end = trafo3w_end + len(net["impedance"])
     xward_end = impedance_end + len(net["xward"])
-    
+
     mpc["branch"] = np.zeros(shape=(xward_end, QT + 1), dtype=np.complex128)
-    mpc["branch"][:,:13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    mpc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
     if line_end > 0:
         mpc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, RATE_A]] = \
             _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints)
     if trafo_end > line_end:
         mpc["branch"][line_end:trafo_end,
-                     [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
-                     _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles,
-                                              trafo_model, set_opf_constraints)
+                      [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
+            _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles,
+                                  trafo_model, set_opf_constraints)
     if trafo3w_end > trafo_end:
         mpc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles,  trafo_model)
@@ -60,21 +61,24 @@ def _build_branch_mpc(net, mpc, is_elems, bus_lookup, calculate_voltage_angles, 
             _calc_impedance_parameter(net, bus_lookup)
     if xward_end > impedance_end:
         mpc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
-                _calc_xward_parameter(net, mpc, is_elems, bus_lookup)
-                                                 
+            _calc_xward_parameter(net, mpc, is_elems, bus_lookup)
+
+
 def _calc_trafo3w_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model):
     trafo_df = _trafo_df_from_trafo3w(net)
 
     temp_para = np.zeros(shape=(len(trafo_df), 8), dtype=np.complex128)
     temp_para[:, 0] = get_indices(trafo_df["hv_bus"].values, bus_lookup)
     temp_para[:, 1] = get_indices(trafo_df["lv_bus"].values, bus_lookup)
-    temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, mpc, bus_lookup, trafo_model, trafo_df)
+    temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(
+        net, mpc, bus_lookup, trafo_model, trafo_df)
     if calculate_voltage_angles:
         temp_para[:, 6] = trafo_df["shift_degree"].values
     else:
         temp_para[:, 6] = np.zeros(shape=(len(trafo_df.index),), dtype=np.complex128)
     temp_para[:, 7] = trafo_df["in_service"].values
-    return temp_para    
+    return temp_para
+
 
 def _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints=False):
     """
@@ -82,7 +86,7 @@ def _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints=False):
 
     **INPUT**:
         **net** -The Pandapower format network
- 
+
     **RETURN**:
         **t** - Temporary line parameter. Which is a complex128
                 Nunmpy array. with the following order:
@@ -110,7 +114,7 @@ def _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints=False):
     if set_opf_constraints:
         max_load = line.max_loading_percent if "max_loading_percent" in line else 1000
         vr = net.bus.vn_kv[fb].values * np.sqrt(3)
-        t[:, 6] = max_load  / 100 * line.imax_ka * line.df * parallel * vr
+        t[:, 6] = max_load / 100 * line.imax_ka * line.df * parallel * vr
     return t
 
 
@@ -142,6 +146,7 @@ def _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
         temp_para[:, 8] = max_load / 100 * trafo.sn_kva / 1000
     return temp_para
+
 
 def _calc_branch_values_from_trafo_df(net, mpc, bus_lookup, trafo_model, trafo_df=None):
     """
@@ -179,46 +184,49 @@ def _calc_branch_values_from_trafo_df(net, mpc, bus_lookup, trafo_model, trafo_d
     if trafo_df is None:
         trafo_df = net["trafo"]
     baseR = np.square(get_values(mpc["bus"][:, BASE_KV], trafo_df["lv_bus"].values,
-                                     bus_lookup))
+                                 bus_lookup))
 
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 4), dtype=np.complex128)
     unh, unl = _calc_vn_from_dataframe(trafo_df)
-    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model)    
+    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model)
     temp_para[:, 0] = r
     temp_para[:, 1] = x
     temp_para[:, 2] = y
     temp_para[:, 3] = _calc_tap_from_dataframe(mpc, trafo_df, unh, unl, bus_lookup)
     return temp_para
 
+
 def _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model):
     y = _calc_y_from_dataframe(trafo_df, baseR)
-    r, x   = _calc_r_x_from_dataframe(trafo_df)
+    r, x = _calc_r_x_from_dataframe(trafo_df)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
         return _wye_delta(r, x, y)
     else:
-        raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'"%trafo_model)
+        raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
+
 
 def _wye_delta(r, x, y):
     """
     20.05.2016 added by Lothar Löwer                        
-    
+
     Calculate transformer Pi-Data based on T-Data
 
     """
-    tidx = np.where(y!=0)
-    za_star = (r[tidx] +x[tidx]*1j) / 2
+    tidx = np.where(y != 0)
+    za_star = (r[tidx] + x[tidx] * 1j) / 2
     zc_star = -1j / y[tidx]
-    zSum_triangle = za_star*za_star + 2*za_star*zc_star
-    zab_triangle  = zSum_triangle/zc_star
-    zbc_triangle  = zSum_triangle/za_star
+    zSum_triangle = za_star * za_star + 2 * za_star * zc_star
+    zab_triangle = zSum_triangle / zc_star
+    zbc_triangle = zSum_triangle / za_star
     r[tidx] = zab_triangle.real
     x[tidx] = zab_triangle.imag
     y[tidx] = -2j / zbc_triangle
-    return r, x, y  
+    return r, x, y
+
 
 def _calc_y_from_dataframe(trafo_df, baseR):
     """
@@ -236,15 +244,15 @@ def _calc_y_from_dataframe(trafo_df, baseR):
     """
     ### Calculate subsceptance ###
     unl_squared = trafo_df["vn_lv_kv"].values**2
-    b_real = trafo_df["pfe_kw"].values / (1000.*unl_squared) * baseR
-    
-    b_img = (trafo_df["i0_percent"].values/100.*trafo_df["sn_kva"].values/1000.)**2 \
-            - (trafo_df["pfe_kw"].values / 1000.)**2
+    b_real = trafo_df["pfe_kw"].values / (1000. * unl_squared) * baseR
+
+    b_img = (trafo_df["i0_percent"].values / 100. * trafo_df["sn_kva"].values / 1000.)**2 \
+        - (trafo_df["pfe_kw"].values / 1000.)**2
 
     b_img[b_img < 0] = 0
-    b_img = np.sqrt(b_img)*baseR / unl_squared
+    b_img = np.sqrt(b_img) * baseR / unl_squared
 
-    return -b_real*1j - b_img
+    return -b_real * 1j - b_img
 
 
 def _calc_vn_from_dataframe(trafo_df):
@@ -271,19 +279,20 @@ def _calc_vn_from_dataframe(trafo_df):
     tap_os = np.isfinite(trafo_df["tp_pos"].values) & m
     if any(tap_os):
         unh[tap_os] *= np.ones((tap_os.sum()), dtype=np.float) + \
-                    (trafo_df["tp_pos"].values[tap_os] - trafo_df["tp_mid"].values[tap_os]) * \
-                     trafo_df["tp_st_percent"].values[tap_os] / 100.
+            (trafo_df["tp_pos"].values[tap_os] - trafo_df["tp_mid"].values[tap_os]) * \
+            trafo_df["tp_st_percent"].values[tap_os] / 100.
 
     # Changing Voltage on high-voltage side
     unl = copy.copy(trafo_df["vn_lv_kv"].values)
     tap_us = np.logical_and(np.isfinite(trafo_df["tp_pos"].values),
-                            (trafo_df["tp_side"]=="lv").values)
+                            (trafo_df["tp_side"] == "lv").values)
     if any(tap_us):
         unl[tap_us] *= np.ones((tap_us.sum()), dtype=np.float) \
-                        + (trafo_df["tp_pos"].values[tap_us] - trafo_df["tp_mid"].values[tap_us]) \
-                           * trafo_df["tp_st_percent"].values[tap_us] / 100.
+            + (trafo_df["tp_pos"].values[tap_us] - trafo_df["tp_mid"].values[tap_us]) \
+            * trafo_df["tp_st_percent"].values[tap_us] / 100.
 
     return unh, unl
+
 
 def _calc_r_x_from_dataframe(trafo_df):
     """
@@ -295,6 +304,7 @@ def _calc_r_x_from_dataframe(trafo_df):
     r_sc = trafo_df["vscr_percent"].values / 100. / trafo_df.sn_kva.values * 1000.
     x_sc = np.sqrt(z_sc**2 - r_sc**2)
     return r_sc, x_sc
+
 
 def _calc_tap_from_dataframe(mpc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
     """
@@ -317,15 +327,18 @@ def _calc_tap_from_dataframe(mpc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
     # Calculating tab (trasformer off nominal turns ratio)
     tap_rat = vn_hv_kv / vn_lv_kv
     nom_rat = get_values(mpc["bus"][:, BASE_KV], trafo_df["hv_bus"].values, bus_lookup) / \
-                 get_values(mpc["bus"][:, BASE_KV], trafo_df["lv_bus"].values, bus_lookup)
+        get_values(mpc["bus"][:, BASE_KV], trafo_df["lv_bus"].values, bus_lookup)
     return tap_rat / nom_rat
 
+
 def z_br_to_bus(z, s):
-    zbr_n = s[0]*np.array([z[0] / min(s[0], s[1]), z[1] / min(s[1], s[2]), z[2] / min(s[0], s[2])])
-    
+    zbr_n = s[0] * np.array([z[0] / min(s[0], s[1]), z[1] /
+                             min(s[1], s[2]), z[2] / min(s[0], s[2])])
+
     return .5 * s / s[0] * np.array([(zbr_n[0] + zbr_n[2] - zbr_n[1]),
                                      (zbr_n[1] + zbr_n[0] - zbr_n[2]),
                                      (zbr_n[2] + zbr_n[1] - zbr_n[0])])
+
 
 def _trafo_df_from_trafo3w(net):
     trafos2w = {}
@@ -341,47 +354,48 @@ def _trafo_df_from_trafo3w(net):
         taps = [{tv: np.nan for tv in tap_variables} for _ in range(3)]
         for k in range(3):
             taps[k]["tp_side"] = None
-    
+
         if pd.notnull(ttab.tp_side):
             if ttab.tp_side == "hv":
                 tp_trafo = 0
             elif ttab.tp_side == "mv":
                 tp_trafo = 1
-            elif ttab.tp_side == "lv" :
+            elif ttab.tp_side == "lv":
                 tp_trafo = 3
             for tv in tap_variables:
                 taps[tp_trafo][tv] = ttab[tv]
             taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
-        trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus":ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
-                             "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv, "vscr_percent": ur_2w[0],
-                             "vsc_percent": uk_2w[0], "pfe_kw": ttab.pfe_kw,
-                             "i0_percent": ttab.i0_percent, "tp_side": taps[0]["tp_side"],
-                             "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
-                             "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
-                             "tp_st_percent": taps[0]["tp_st_percent"],
-                             "in_service": ttab.in_service, "shift_degree": 0}
+        trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
+                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv, "vscr_percent": ur_2w[0],
+                       "vsc_percent": uk_2w[0], "pfe_kw": ttab.pfe_kw,
+                       "i0_percent": ttab.i0_percent, "tp_side": taps[0]["tp_side"],
+                       "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
+                       "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
+                       "tp_st_percent": taps[0]["tp_st_percent"],
+                       "in_service": ttab.in_service, "shift_degree": 0}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
-                              "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
-                              "vscr_percent": ur_2w[1], "vsc_percent": uk_2w[1], "pfe_kw": 0,
-                              "i0_percent": 0, "tp_side": taps[1]["tp_side"],
-                              "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
-                              "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
-                              "tp_st_percent": taps[1]["tp_st_percent"],
-                              "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree}
-        trafos2w[i + 2*nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
-                          "sn_kva": ttab.sn_lv_kva,
-                          "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": ur_2w[2],
-                          "vsc_percent": uk_2w[2], "pfe_kw": 0, "i0_percent": 0,
-                          "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
-                          "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
-                          "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],
-                          "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree}
+                                   "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
+                                   "vscr_percent": ur_2w[1], "vsc_percent": uk_2w[1], "pfe_kw": 0,
+                                   "i0_percent": 0, "tp_side": taps[1]["tp_side"],
+                                   "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
+                                   "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
+                                   "tp_st_percent": taps[1]["tp_st_percent"],
+                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree}
+        trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
+                                       "sn_kva": ttab.sn_lv_kva,
+                                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": ur_2w[2],
+                                       "vsc_percent": uk_2w[2], "pfe_kw": 0, "i0_percent": 0,
+                                       "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
+                                       "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
+                                       "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],
+                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree}
         i += 1
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
-                            "vn_hv_kv", "vn_lv_kv", "pfe_kw"]:
+                                      "vn_hv_kv", "vn_lv_kv", "pfe_kw"]:
         trafo_df[var] = pd.to_numeric(trafo_df[var])
     return trafo_df
+
 
 def _calc_impedance_parameter(net, bus_lookup):
     t = np.zeros(shape=(len(net["impedance"].index), 5), dtype=np.complex128)
@@ -392,18 +406,20 @@ def _calc_impedance_parameter(net, bus_lookup):
     t[:, 4] = net["impedance"]["in_service"].values
     return t
 
+
 def _calc_xward_parameter(net, mpc, is_elems, bus_lookup):
     bus_is = is_elems['bus']
     baseR = np.square(get_values(mpc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = np.in1d(net["xward"].bus.values, bus_is.index) \
-            & net["xward"].in_service.values.astype(bool)
+        & net["xward"].in_service.values.astype(bool)
     t[:, 0] = get_indices(net["xward"]["bus"].values, bus_lookup)
     t[:, 1] = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
     t[:, 2] = net["xward"]["r_ohm"] / baseR
     t[:, 3] = net["xward"]["x_ohm"] / baseR
     t[:, 4] = xw_is
-    return t 
+    return t
+
 
 def _gather_branch_switch_info(bus, branch_id, branch_type, net):
     # determine at which end the switch is located
@@ -417,6 +433,7 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
         branch_bus = net["trafo"]["lv_bus"].at[branch_id]
         is_to_bus = int(branch_bus == bus)
         return is_to_bus, bus, net["trafo"].index.get_loc(branch_id)
+
 
 def _switch_branches(n, mpc, is_elems, bus_lookup):
     """
@@ -435,7 +452,7 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
 
     # opened bus line switches
     slidx = (n["switch"]["closed"].values == 0) \
-            & (n["switch"]["et"].values == "l")
+        & (n["switch"]["et"].values == "l")
 
     # check if there are multiple opened switches at a line (-> set line out of service)
     sw_elem = n['switch'].ix[slidx].element
@@ -448,8 +465,8 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
         # get from and to buses of these branches
         mpc_from = get_indices(lines_is.ix[sw_elem[~m]].from_bus, bus_lookup)
         mpc_to = get_indices(lines_is.ix[sw_elem[~m]].to_bus, bus_lookup)
-        mpc_idx = np.in1d(mpc['branch'][:,0], mpc_from)\
-                & np.in1d(mpc['branch'][:,1], mpc_to)
+        mpc_idx = np.in1d(mpc['branch'][:, 0], mpc_from)\
+            & np.in1d(mpc['branch'][:, 1], mpc_to)
         mpc["branch"][mpc_idx, BR_STATUS] = 0
 
         # drop from in service lines as well
@@ -457,8 +474,8 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
 
     # opened switches at in service lines
     slidx = slidx\
-            & (np.in1d(n["switch"]["element"].values, lines_is.index)) \
-            & (np.in1d(n["switch"]["bus"].values, bus_is.index))
+        & (np.in1d(n["switch"]["element"].values, lines_is.index)) \
+        & (np.in1d(n["switch"]["bus"].values, bus_is.index))
     nlo = np.count_nonzero(slidx)
 
     stidx = (n.switch["closed"].values == 0) & (n.switch["et"].values == "t")
@@ -474,8 +491,8 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
             # determine on which side the switch is located
             mapfunc = partial(_gather_branch_switch_info, branch_type="l", net=n)
             ls_info = list(map(mapfunc,
-                          line_switches["bus"].values,
-                          line_switches["element"].values))
+                               line_switches["bus"].values,
+                               line_switches["element"].values))
             # we now have the following matrix
             # 0: 1 if switch is at to_bus, 0 else
             # 1: bus of the switch
@@ -484,7 +501,7 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
 
             # build new buses
             new_ls_buses = np.zeros(shape=(nlo, 13), dtype=float)
-            new_indices = np.arange(n_bus, n_bus+nlo)
+            new_indices = np.arange(n_bus, n_bus + nlo)
             # the newly created buses
             new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
             new_ls_buses[:, 0] = new_indices
@@ -519,8 +536,8 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
             # determine on which side the switch is located
             mapfunc = partial(_gather_branch_switch_info, branch_type="t", net=n)
             ts_info = list(map(mapfunc,
-                          trafo_switches["bus"].values,
-                          trafo_switches["element"].values))
+                               trafo_switches["bus"].values,
+                               trafo_switches["element"].values))
             # we now have the following matrix
             # 0: 1 if switch is at lv_bus, 0 else
             # 1: bus of the switch
@@ -529,11 +546,11 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
 
             # build new buses
             new_ts_buses = np.zeros(shape=(nto, 13), dtype=float)
-            new_indices = np.arange(n_bus+nlo, n_bus+nlo+nto)
+            new_indices = np.arange(n_bus + nlo, n_bus + nlo + nto)
             new_ts_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
             new_ts_buses[:, 0] = new_indices
             new_ts_buses[:, 9] = get_values(mpc["bus"][:, BASE_KV],
-                                             ts_info[:, 1], bus_lookup)
+                                            ts_info[:, 1], bus_lookup)
             # set voltage of new buses to voltage on other branch end
             to_buses = mpc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 1].real.astype(int)
             from_buses = mpc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 0].real\
@@ -565,6 +582,7 @@ def _switch_branches(n, mpc, is_elems, bus_lookup):
                 new_indices[at_hv_bus]
 
             mpc["bus"] = np.vstack(future_buses)
+
 
 def _branches_with_oos_buses(n, mpc, is_elems, bus_lookup):
     """
@@ -602,7 +620,8 @@ def _branches_with_oos_buses(n, mpc, is_elems, bus_lookup):
         mask_from = np.in1d(f_bus, bus_oos)
         mask_to = np.in1d(t_bus, bus_oos)
 
-        # determine if line is only connected to out of service buses -> set branch in mpc out of service
+        # determine if line is only connected to out of service buses -> set
+        # branch in mpc out of service
         mask_and = mask_to & mask_from
 
         if np.any(mask_and):
@@ -620,10 +639,10 @@ def _branches_with_oos_buses(n, mpc, is_elems, bus_lookup):
 
         # only if oos_buses are at lines (they could be isolated as well)
         if n_oos_buses_at_lines > 0:
-            ls_info = np.zeros((n_oos_buses_at_lines,3), dtype=int)
+            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
-            ls_info[:, 2] = np.nonzero(np.in1d( n['line'].index, line_is.index[mask_or]))[0]
+            ls_info[:, 2] = np.nonzero(np.in1d(n['line'].index, line_is.index[mask_or]))[0]
 
             # ls_info = list(map(mapfunc,
             #               line_switches["bus"].values,
@@ -636,7 +655,7 @@ def _branches_with_oos_buses(n, mpc, is_elems, bus_lookup):
 
             # build new buses
             new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, 13), dtype=float)
-            new_indices = np.arange(n_bus, n_bus+n_oos_buses_at_lines)
+            new_indices = np.arange(n_bus, n_bus + n_oos_buses_at_lines)
             # the newly created buses
             new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
             new_ls_buses[:, 0] = new_indices
