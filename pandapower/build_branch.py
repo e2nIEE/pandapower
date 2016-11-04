@@ -115,7 +115,7 @@ def _calc_line_parameter(net, mpc, bus_lookup, set_opf_constraints=False):
 
 
 def _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_model,
-                          set_constraints=False):
+                          set_opf_constraints=False):
     '''
     Calculates the transformer parameter in per unit.
 
@@ -138,7 +138,7 @@ def _calc_trafo_parameter(net, mpc, bus_lookup, calculate_voltage_angles, trafo_
     else:
         temp_para[:, 6] = np.zeros(shape=(len(trafo.index),), dtype=np.complex128)
     temp_para[:, 7] = trafo["in_service"].values
-    if set_constraints:
+    if set_opf_constraints:
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
         temp_para[:, 8] = max_load / 100 * trafo.sn_kva / 1000
     return temp_para
