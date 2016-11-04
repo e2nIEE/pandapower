@@ -21,66 +21,6 @@ class OPFNotConverged(ppException):
     """
     pass
 
-def define_defaults(net):
-    """Sets the default values for columns that are not specified
-    """
-    
-    # Bus
-    if not "max_vm_pu" in net.bus.columns:
-        net.bus["max_vm_pu"] = 2
-                         
-    if not "min_vm_pu" in net.bus.columns:
-        net.bus["min_vm_pu"] = 0
-                         
-    #Sgen
-    if not "max_p_kw" in net.sgen.columns:  
-        net.sgen["max_p_kw"] = net.sgen["sn_kva"]
-
-    if not "min_p_kw" in net.sgen.columns:  
-        net.sgen["max_p_kw"] = 0
-
-    if not "min_q_kvar" in net.sgen.columns:  
-        net.sgen["max_q_kvar"] = net.sgen["sn_kva"]
-
-    if not "max_q_kvar" in net.sgen.columns:  
-        net.sgen["min_q_kvar"] = -net.sgen["sn_kva"]
-
-    if not "cost_per_kw" in net.sgen.columns:  
-        net.sgen["cost_per_kw"] = 1
-
-    if not "cost_per_kvar" in net.sgen.columns:  
-        net.sgen["cost_per_kvar"] = 0
-
-    #Gen
-    if not "max_p_kw" in net.gen.columns:  
-        net.gen["max_p_kw"] = net.gen["sn_kva"]
-
-    if not "min_p_kw" in net.gen.columns:  
-        net.gen["max_p_kw"] = 0
-
-    if not "min_q_kvar" in net.gen.columns:  
-        net.gen["max_q_kvar"] = net.gen["sn_kva"]
-
-    if not "max_q_kvar" in net.gen.columns:  
-        net.gen["min_q_kvar"] = -net.gen["sn_kva"]
-
-    #External Grid
-    if not "cost_per_kw" in net.ext_grid.columns:  
-        net.ext_grid["cost_per_kw"] = 0
-
-    if not "cost_per_kvar" in net.ext_grid.columns:  
-        net.ext_grid["cost_per_kvar"] = 0
-
-    #Line
-    if not "max_loading_percent" in net.line.columns:
-        net.line.max_loading_percent = 1000
-    
-    #Trafo
-    if not "max_loading_percent" in net.trafo.columns:
-        net.trafo.max_loading_percent = 1000
-        
-    return net
-
 def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True):
     """ Runs the  Pandapower Optimal Power Flow.
     
@@ -144,19 +84,19 @@ def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True):
     else:
         sg_is = pd.DataFrame()
       
-#    net = define_defaults(net)
-
-    mpc, bus_lookup = _pd2mpc_opf(net, is_elems, sg_is)
-    mpc, ppopt = _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype)
-
+    ppc, bus_lookup = _pd2mpc_opf(net, is_elems, sg_is)
+    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype)
+    net["_ppc_opf"] = ppc
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = opf(mpc, ppopt)
-
+            result = opf(ppc, ppopt)
+            if not result["success"]:
+                raise OPFNotConverged("Optimal Power Flow did not converge!")
+    net["_ppc_opf"] = result
+    net["OPF_converged"] = True
     _extract_results_opf(net, result, is_elems, bus_lookup,  "current", True)
-    if not net["OPF_converged"]:
-        raise OPFNotConverged("Optimal Power Flow did not converge!")
-        
-        
+
+    
+    
 
