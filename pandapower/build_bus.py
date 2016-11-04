@@ -9,7 +9,7 @@ import numpy as np
 from itertools import chain
 from collections import defaultdict
 
-from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, VM, BUS_TYPE, REF
+from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN
 
 from pandapower.auxiliary import get_indices,  _sum_by_group
 
@@ -36,10 +36,10 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
     """
     """
     if len(net["trafo3w"]) > 0:
-        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
+        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower. LT
         _create_trafo3w_buses(net, init_results)
     if len(net["xward"]) > 0:
-        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower
+        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower. LT
         _create_xward_buses(net, init_results)
 
     # get buses as set
@@ -236,7 +236,7 @@ def _create_xward_buses(net, init_results):
     net.xward["ad_bus"] = bid
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2mpc anyways
+        #      pd2mpc anyways. LT
         for hv_bus, aux_bus in zip(main_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
 
@@ -250,6 +250,6 @@ def _create_trafo3w_buses(net, init_results):
     net.trafo3w["ad_bus"] = bid
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2mpc anyways
+        #      pd2mpc anyways. LT
         for hv_bus, aux_bus in zip(hv_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values

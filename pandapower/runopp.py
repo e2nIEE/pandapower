@@ -35,14 +35,13 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
-
-
-    Constraints can be defined for buses, lines and transformers the elements in the following columns:
+        
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to (static) generators in the following columns:
+        
+    Costs can be assigned to generatorion units in the following columns:
         - net.gen.cost_per_kw
         - net.sgen.cost_per_kw
         - net.ext_grid.cost_per_kw
