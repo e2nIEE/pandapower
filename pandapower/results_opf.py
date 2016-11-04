@@ -4,7 +4,8 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, _get_gen_results, _get_bus_results
+from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, \
+                                                                _get_gen_results, _get_bus_results
 from numpy import zeros, array, float, hstack
 from pandapower.build_bus import _sum_by_group
 import pandapower as pp
