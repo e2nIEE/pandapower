@@ -51,13 +51,11 @@ This is a simple summation of the weighted generator costs.
 .. math::
 		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} \\ 
         & subject   \ to \\
-        & P_{max,i} <= P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
-        & U_{min,j} <= Q_{g,i} < Q_{min,i}, j  \ \epsilon \ bus   \\
-        & Q_{max,i} <= Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
-        & S_{k} < S_{max,k}, k \ \epsilon \ trafo  \\
-        & I_{l} < I_{max,l}, l \ \epsilon \ line
-        
-        
+        & P_{max,i} \leq P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
+        & V_{min,j} \leq V_{g,i} < V_{min,i}, j  \ \epsilon \ bus   \\
+        & Q_{max,i} \leq Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
+        & L_{k} \leq L_{max,k}, k \ \epsilon \ trafo  \\
+        & L_{l} \leq L_{max,l}, l \ \epsilon \ line
         
 Where :math:`gen` contains all generators and controllable static generators. The weighted costs :math:`w_{g,i}` can be defined in the pandapower Generator and Static generator tables, see :ref:`elements`. 
 You can choose this cost function by calling runopp(net, objectivetype="linear"). This is also the default value for the objective function.
@@ -69,13 +67,13 @@ This contains a simple summation of the weighted generator costs like above and 
 .. math::
 		min & \sum_{i  \ \epsilon \ gen }{P_{g,i} * w_{g,i }} + \lambda \sum_{l  \ \epsilon \ line }{P_{loss,l}} \\ 
         & subject   \ to \\
-        & P_{max,i} <= P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
-        & U_{min,j} <= Q_{g,i} < Q_{min,i}, j  \ \epsilon \ bus   \\
-        & Q_{max,i} <= Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
-        & S_{k} < S_{max,k}, k \ \epsilon \ trafo  \\
-        & I_{l} < I_{max,l}, l \ \epsilon \ line
+        & P_{max,i} \leq P_{g,i} < P_{min,i}, i  \ \epsilon \ gen   \\
+        & V_{min,j} \leq V_{g,i} < V_{min,i}, j  \ \epsilon \ bus   \\
+        & Q_{max,i} \leq Q_{g,i} < Q_{min,i}, i  \ \epsilon \ gen   \\
+        & L_{k} \leq L_{max,k}, k \ \epsilon \ trafo  \\
+        & L_{l} \leq L_{max,l}, l \ \epsilon \ line
         
-The weighting factor :math:`\lambda` can be specified as a keyword argument for runopp().
+The weighting factor :math:`\lambda` can be specified as the keyword argument lambda_opf for runopp().
    
 **OPF Output**
 

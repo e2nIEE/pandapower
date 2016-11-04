@@ -20,7 +20,7 @@ from scipy import sparse
 from pypower import makeYbus
 import warnings
 
-def _pd2mpc_opf(net, is_elems, sg_is):
+def _pd2mpc_opf(net, is_elems, sg_is, lambda_opf = 1000):
     """ we need to put the sgens into the gen table instead of the bsu table 
     so we need to change _pd2mpc a little to get the mpc we need for the OPF
     """
@@ -102,21 +102,30 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
     gen_is = is_elems['gen']
     eg_is = is_elems['eg']
 
-    if not gen_is.empty:
+    if gen_is.empty:
+        gen_cost_per_kw = np.array([])
+    elif "cost_per_kw" in gen_is.columns:
         gen_cost_per_kw = gen_is.cost_per_kw
     else:
-        gen_cost_per_kw = np.array([])
+        gen_cost_per_kw = np.ones(len(gen_is))
         
-    if  not sg_is.empty:
+    if sg_is.empty:
+        sgen_cost_per_kw = np.array([])
+    elif "cost_per_kw" in gen_is.columns:
         sgen_cost_per_kw = sg_is.cost_per_kw
     else:
-        sgen_cost_per_kw = np.array([])
+        sgen_cost_per_kw = np.ones(len(sg_is))
+        
+    if "cost_per_kw" not in eg_is.columns:
+        eg_cost_per_kw = np.ones(len(eg_is))
+    else:
+        eg_cost_per_kw = eg_is.cost_per_kw
 
     if objectivetype == "linear":
 
         mpc["gencost"] = np.zeros((ng, 8), dtype=float)
-        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
-        mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 0]) # initializing gencost array
+        mpc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 100, eg_cost_per_kw])
+        mpc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 100, 1]) # initializing gencost array
         mpc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw, gen_cost_per_kw]))
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
@@ -166,7 +175,7 @@ def _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
             for i in range(nl):
                 bus_f = int(mpc["branch"][i, F_BUS].real)
                 bus_t = int(mpc["branch"][i, T_BUS].real)
-                H[dim-nl+i, dim-nl+i] = np.abs(Ybus[bus_f, bus_t]) * 1000 # weigthing of minloss
+                H[dim-nl+i, dim-nl+i] = np.abs(Ybus[bus_f, bus_t]) * lambda_opf # weigthing of minloss
                 A[i, nb+bus_f] = 1
                 A[i, nb+bus_t] = -1
                 A[i, dim-nl+i] = 1
@@ -266,6 +275,7 @@ def _build_gen_opf(net, mpc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
     if calculate_voltage_angles:
         mpc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     mpc["bus"][eg_buses, BUS_TYPE] = REF
+    mpc["bus"][eg_buses, VM] = eg_is["vm_pu"].values
 
     # REF busses don't have flexible voltages by definition:
     mpc["bus"][eg_buses, VMAX] = mpc["bus"][mpc["bus"][:, BUS_TYPE] == REF, VM]

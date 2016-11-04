@@ -21,7 +21,7 @@ class OPFNotConverged(ppException):
     """
     pass
 
-def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True):
+def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True, *kwargs):
     """ Runs the  Pandapower Optimal Power Flow.
     
     INPUT:
@@ -85,7 +85,7 @@ def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True):
         sg_is = pd.DataFrame()
       
     mpc, bus_lookup = _pd2mpc_opf(net, is_elems, sg_is)
-    mpc, ppopt = _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype)
+    mpc, ppopt = _make_objective(mpc, net, is_elems, sg_is, ppopt, objectivetype, *kwargs)
 
     if suppress_warnings:
         with warnings.catch_warnings():

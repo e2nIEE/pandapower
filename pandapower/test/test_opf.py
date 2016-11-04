@@ -45,6 +45,40 @@ def test_simplest_voltage():
     assert max(net.res_bus.vm_pu) < vm_max
     assert net.OPF_converged
     
+    
+
+def test_eg_voltage():
+    """ Testing a very simple network without transformer for voltage
+    constraints with OPF """
+
+    # boundaries:
+    vm_max = 1.05
+    vm_min = 0.95
+
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-150, min_p_kw=-5, max_q_kvar=50,
+                  min_q_kvar=-50, cost_per_kw=100)
+    pp.create_ext_grid(net, 0, vm_pu=1.01)
+    pp.create_load(net, 1, p_kw=20)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100*690)
+    # run OPF
+    pp.runopp(net, verbose=False)
+    assert net["OPF_converged"]
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert net.res_bus.vm_pu.at[0] == net.ext_grid.vm_pu.values
+    assert net.OPF_converged
+    
+    
 def test_simplest_dispatch():
     """ Testing a very simple network without transformer for voltage
     constraints with OPF """
@@ -293,3 +327,4 @@ if __name__ == "__main__":
 #    test_opf_sgen_voltage()
 #    test_opf_gen_loading()
 #    test_opf_sgen_loading()
+#    test_eg_voltage()
