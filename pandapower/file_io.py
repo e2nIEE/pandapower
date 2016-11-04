@@ -5,7 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import os
-from ast import literal_eval
 import pickle
 import pandas as pd
 
