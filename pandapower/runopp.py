@@ -21,15 +21,40 @@ class OPFNotConverged(ppException):
     """
     pass
 
-def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True, *kwargs):
-    """ Runs the  Pandapower Optimal Power Flow.
+def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *kwargs):
+    """
+    Runs the  Pandapower Optimal Power Flow.
+    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+    
+    Flexibilities for generators can be defined in net.sgen / net.gen. 
+    net.sgen.controllable / net.gen.controllable signals if a generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If yes, the following
+    flexibilities apply:
+        - net.sgen.min_p_kw / net.sgen.max_p_kw
+        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
+        - net.gen.min_p_kw / net.gen.max_p_kw
+        - net.gen.min_q_kvar / net.gen.max_q_kvar
+
+        
+    Constraints can be defined for buses, lines and transformers the elements in the following columns:
+        - net.bus.min_vm_pu / net.bus.max_vm_pu
+        - net.line.max_loading_percent
+        - net.trafo.max_loading_percent
+        
+    Costs can be assigned to (static) generators in the following columns:
+        - net.gen.cost_per_kw
+        - net.sgen.cost_per_kw
+        - net.ext_grid.cost_per_kw
+    
+    How these costs are combined into a cost function depends on the cost_function parameter.
     
     INPUT:
         **net** - The Pandapower format network
         
     OPTIONAL:
-        **objectivetype** (str,"linear")- either "linear" or "linear_minloss", 
-        see description below
+        **cost_function** (str,"linear")- cost function
+            - "linear" - minimizes weighted generator costs 
+            - "linear_minloss" - minimizes weighted generator cost and line losses
         
         **verbose** (bool, False) - If True, some basic information is printed
         
@@ -38,38 +63,7 @@ def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True, *
             If set to True, warnings are disabled during the loadflow. Because of the way data is
             processed in pypower, ComplexWarnings are raised during the loadflow. 
             These warnings are suppressed by this option, however keep in mind all other pypower 
-            warnings are suppressed, too. 
-    
-    AVAILABLE COST FUNCTIONS:
-          **linear**  
-                - Minimizing the linear costs with subject to voltage and loading limits
-                - Takes the constraints from the PP tables, such as min_vm_pu, max_vm_pu, min_p_kw, 
-                max_p_kw,max_q_kvar, min_q_kvar and max_loading_percent(limits for branch currents). 
-                - Supported elements are buses, lines, trafos, sgen and gen. The controllable elements can be sgen and gen
-                - If a sgen is controllable, set the controllable flag for it to True
-                - Uncontrollable gens need to be constrained with max_p_kw < p_kw < min_p_kw with a 
-                very small range. e.g. p_kw is 10, so you set pmax to 10.01 kW and pmin to 9.99 kW
-                
-                - The cost for generation can be specified in the cost_per_kw in the respective 
-                columns for gen and sgen, reactive power costs are currently not used
-      
-          **linear_minloss**  
-                - Minimizing the linear costs and the line losses of the whole net with subject to 
-                voltage and loading limits
-                
-                - Takes the constraints from the PP tables, such as min_vm_pu, max_vm_pu, min_p_kw, 
-                max_p_kw,max_q_kvar, min_q_kvar and max_loading_percent(limits for branch currents). 
-                    
-                - Supported elements are buses, lines, trafos, sgen and gen. 
-                The controllable elements can be sgen and gen
-                    
-                - If a sgen is controllable, set the controllable flag for it to True
-                
-                - Uncontrollable gens should to be constrained with max_p_kw > p_kw > min_p_kw with a 
-                very small range. e.g. p_kw is 10, so you set pmax to 10.01 kW and pmin to 9.99 kW
-                    
-                - The cost for generation can be specified in the cost_per_kw in the respective 
-                columns for gen and sgen, reactive power costs are currently not used
+            warnings are suppressed, too.
     """
     ppopt = ppoption(OPF_VIOLATION=1e-1, PDIPM_GRADTOL=1e-1, PDIPM_COMPTOL=1e-1,
                      PDIPM_COSTTOL=1e-1, OUT_ALL=0, VERBOSE=verbose, OPF_ALG=560)
@@ -85,7 +79,7 @@ def runopp(net, objectivetype="linear", verbose=False, suppress_warnings=True, *
         sg_is = pd.DataFrame()
 
     ppc, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is)
-    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype, *kwargs)
+    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, cost_function, *kwargs)
     net["_ppc_opf"] = ppc
 
     if suppress_warnings:
