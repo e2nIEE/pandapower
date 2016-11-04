@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN
 
-from pandapower.auxiliary import get_indices,  _sum_by_group
+from pandapower.auxiliary import get_indices, _sum_by_group
 
 
 class DisjointSet(dict):

@@ -12,7 +12,7 @@ from pandapower.run import _set_isolated_buses_out_of_service
 from pypower.idx_bus import BUS_TYPE, PD, QD
 from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pypower.idx_bus import PV, REF, VA, VM, PQ, VMAX, VMIN
-from pypower.idx_brch import RATE_A, T_BUS, F_BUS
+from pypower.idx_brch import T_BUS, F_BUS
 import pypower.ppoption as ppoption
 import numpy.core.numeric as ncn
 from pandapower.auxiliary import _sum_by_group
