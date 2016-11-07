@@ -28,7 +28,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities for generators can be defined in net.sgen / net.gen. 
+    Flexibilities for generators can be defined in net.sgen / net.gen.
     net.sgen.controllable / net.gen.controllable signals if a generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If yes, the following
     flexibilities apply:
@@ -36,13 +36,13 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
-        
+
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-        
-    Costs can be assigned to generatorion units in the following columns:
+
+    Costs can be assigned to generation units in the following columns:
         - net.gen.cost_per_kw
         - net.sgen.cost_per_kw
         - net.ext_grid.cost_per_kw
@@ -54,7 +54,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
 
     OPTIONAL:
         **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs 
+            - "linear" - minimizes weighted generator costs
             - "linear_minloss" - minimizes weighted generator cost and line losses
 
         **verbose** (bool, False) - If True, some basic information is printed
@@ -62,8 +62,8 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         **suppress_warnings** (bool, True) - suppress warnings in pypower
 
             If set to True, warnings are disabled during the loadflow. Because of the way data is
-            processed in pypower, ComplexWarnings are raised during the loadflow. 
-            These warnings are suppressed by this option, however keep in mind all other pypower 
+            processed in pypower, ComplexWarnings are raised during the loadflow.
+            These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
     ppopt = ppoption(OPF_VIOLATION=1e-1, PDIPM_GRADTOL=1e-1, PDIPM_COMPTOL=1e-1,

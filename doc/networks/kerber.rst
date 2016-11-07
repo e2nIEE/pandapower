@@ -48,8 +48,8 @@ Average Kerber networks
   
 .. seealso::
 
-	- Kerber dissertation: http:/mediatum.ub.tum.de/doc/998003/998003.pdf
-	- Kerber article: http:/mediatum.ub.tum.de/doc/681082/681082.pdf
+	- Georg Kerber, `Aufnahmefähigkeit von Niederspannungsverteilnetzen für die Einspeisung aus Photovoltaikkleinanlagen <http:/mediatum.ub.tum.de/doc/998003/998003.pdf>`_, Dissertation
+	- Georg Kerber, `Statistische Analyse von NS-Verteilungsnetzen und Modellierung von Referenznetzen <http:/mediatum.ub.tum.de/doc/681082/681082.pdf>`_
 
 .. tabularcolumns:: |l|l|l|l|l|
 .. csv-table:: 
@@ -260,9 +260,10 @@ Since more rare network combination exist, the total number of extreme grids is 
 
 
 
-.. seealso:: 
+.. seealso::
 
-	- Kerber dissertation: http:/mediatum.ub.tum.de/doc/998003/998003.pdf
+	- Georg Kerber, `Aufnahmefähigkeit von Niederspannungsverteilnetzen für die Einspeisung aus Photovoltaikkleinanlagen <http:/mediatum.ub.tum.de/doc/998003/998003.pdf>`_, Dissertation
+	- Georg Kerber, `Statistische Analyse von NS-Verteilungsnetzen und Modellierung von Referenznetzen <http:/mediatum.ub.tum.de/doc/681082/681082.pdf>`_
 
 .. tabularcolumns:: |l|l|l|l|l|
 .. csv-table:: 

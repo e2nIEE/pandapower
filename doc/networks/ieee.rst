@@ -2,6 +2,11 @@
 IEEE cases
 ==========
 
+.. note::
+
+    All IEEE case files were converted from PYPOWER
+
+
 Case 4gs
 ------------
 

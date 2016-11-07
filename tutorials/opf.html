@@ -11751,7 +11751,58 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Using-the-Optimal-Power-Flow">Using the Optimal Power Flow<a class="anchor-link" href="#Using-the-Optimal-Power-Flow">&#182;</a></h1><p>This is an introduction into the usage of the pandapower optimal power flow. It shows how to set the constraints and the cost factors into the pandapower element tables. These will be our constraints:</p>
+<h1 id="pandapower-Optimal-Power-Flow">pandapower Optimal Power Flow<a class="anchor-link" href="#pandapower-Optimal-Power-Flow">&#182;</a></h1><p>This is an introduction into the usage of the pandapower optimal power flow. It shows how to set the constraints and the cost factors into the pandapower element tables.</p>
+<h2 id="Example-Network">Example Network<a class="anchor-link" href="#Example-Network">&#182;</a></h2><p>We use the following four bus example network for this tutorial:</p>
+<p><img src="pics/example_opf.png" width="50%"></p>
+<p>We first create this network in pandapower:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_empty_network</span><span class="p">()</span>
+
+<span class="c1">#create buses</span>
+<span class="n">bus1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">220.</span><span class="p">)</span>
+<span class="n">bus2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">110.</span><span class="p">)</span>
+<span class="n">bus3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">110.</span><span class="p">)</span>
+<span class="n">bus4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">110.</span><span class="p">)</span>
+
+<span class="c1">#create 220/110 kV transformer</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_transformer</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;100 MVA 220/110 kV&quot;</span><span class="p">)</span>
+
+<span class="c1">#create 110 kV lines</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">70.</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s1">&#39;149-AL1/24-ST1A 110.0&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">50.</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s1">&#39;149-AL1/24-ST1A 110.0&#39;</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">40.</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s1">&#39;149-AL1/24-ST1A 110.0&#39;</span><span class="p">)</span>
+
+<span class="c1">#create loads</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">60</span><span class="n">e3</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">70</span><span class="n">e3</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">10</span><span class="n">e3</span><span class="p">)</span>
+
+<span class="c1">#create generators</span>
+<span class="n">eg</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">)</span>
+<span class="n">g0</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">80</span><span class="o">*</span><span class="mi">1</span><span class="n">e3</span><span class="p">,</span> <span class="n">min_p_kw</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_p_kw</span><span class="o">=-</span><span class="mi">80</span><span class="n">e3</span><span class="p">,</span><span class="n">vm_pu</span><span class="o">=</span><span class="mf">1.01</span><span class="p">,</span> <span class="n">controllable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">g1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">100</span><span class="o">*</span><span class="mi">1</span><span class="n">e3</span><span class="p">,</span> <span class="n">min_p_kw</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_p_kw</span><span class="o">=-</span><span class="mi">100</span><span class="n">e3</span><span class="p">,</span> <span class="n">vm_pu</span><span class="o">=</span><span class="mf">1.01</span><span class="p">,</span> <span class="n">controllable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Loss-Minimization">Loss Minimization<a class="anchor-link" href="#Loss-Minimization">&#182;</a></h2><p>We run an OPF:</p>
 
 </div>
 </div>
@@ -11759,121 +11810,6 @@ div#notebook {
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">vm_max</span> <span class="o">=</span> <span class="mf">1.05</span>
-<span class="n">vm_min</span> <span class="o">=</span> <span class="mf">0.95</span>
-<span class="n">max_line</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="n">max_trafo</span> <span class="o">=</span> <span class="mi">100</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Basic-optimization-example">Basic optimization example<a class="anchor-link" href="#Basic-optimization-example">&#182;</a></h2><p>Let's create our basic example network:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
-<span class="n">net</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_empty_network</span><span class="p">()</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">max_vm_pu</span><span class="o">=</span><span class="n">vm_max</span><span class="p">,</span> <span class="n">min_vm_pu</span><span class="o">=</span><span class="n">vm_min</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">10.</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">max_vm_pu</span><span class="o">=</span><span class="n">vm_max</span><span class="p">,</span> <span class="n">min_vm_pu</span><span class="o">=</span><span class="n">vm_min</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">max_vm_pu</span><span class="o">=</span><span class="n">vm_max</span><span class="p">,</span> <span class="n">min_vm_pu</span><span class="o">=</span><span class="n">vm_min</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">max_vm_pu</span><span class="o">=</span><span class="n">vm_max</span><span class="p">,</span> <span class="n">min_vm_pu</span><span class="o">=</span><span class="n">vm_min</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_transformer_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">vsc_percent</span><span class="o">=</span><span class="mf">3.75</span><span class="p">,</span><span class="n">tp_max</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">vn_lv_kv</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span><span class="n">shift_degree</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> 
-<span class="n">tp_mid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">vn_hv_kv</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">vscr_percent</span><span class="o">=</span><span class="mf">2.8125</span><span class="p">,</span><span class="n">tp_pos</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">tp_side</span><span class="o">=</span><span class="s1">&#39;hv&#39;</span><span class="p">,</span> <span class="n">tp_min</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span><span class="n">tp_st_percent</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
-<span class="n">i0_percent</span><span class="o">=</span><span class="mf">0.68751</span><span class="p">,</span><span class="n">sn_kva</span><span class="o">=</span><span class="mf">16.0</span><span class="p">,</span> <span class="n">pfe_kw</span><span class="o">=</span><span class="mf">0.11</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">in_service</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_loading_percent</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;line1&#39;</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=</span><span class="mf">0.876</span><span class="p">,</span><span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">260.0</span><span class="p">,</span> <span class="n">imax_ka</span><span class="o">=</span><span class="mf">0.123</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=</span><span class="mf">0.1159876</span><span class="p">,</span><span class="n">max_loading_percent</span><span class="o">=</span><span class="mi">100000</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;line2&#39;</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=</span><span class="mf">0.876</span><span class="p">,</span><span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">260.0</span><span class="p">,</span> <span class="n">imax_ka</span><span class="o">=</span><span class="mf">0.123</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=</span><span class="mf">0.1159876</span><span class="p">,</span><span class="n">max_loading_percent</span><span class="o">=</span><span class="mi">100000</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>1</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>We add a generator, which should be curtailed as less as possible. To model its cost function, we add a negative cost_per_kwh</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">10</span><span class="p">,</span> <span class="n">controllable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_p_kw</span><span class="o">=-</span><span class="mi">25</span><span class="p">,</span> <span class="n">min_p_kw</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">max_q_kvar</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">min_q_kvar</span><span class="o">=-</span><span class="mi">50</span><span class="p">,</span> <span class="n">cost_per_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Now we can run our first optimal power flow:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -11912,56 +11848,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[6]:</div>
-
-<div class="output_html rendered_html output_subarea output_execute_result">
-<div>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>p_kw</th>
-      <th>q_kvar</th>
-      <th>va_degree</th>
-      <th>vm_pu</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>-17.665049</td>
-      <td>28.611111</td>
-      <td>23.359797</td>
-      <td>1.05</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -11975,7 +11862,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11990,8 +11877,8 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>4.539156</td>
-      <td>-31.657916</td>
+      <td>-56530.141272</td>
+      <td>-1974.46685</td>
     </tr>
   </tbody>
 </table>
@@ -12006,10 +11893,10 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
 </pre></div>
 
 </div>
@@ -12020,7 +11907,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12028,40 +11915,26 @@ Converged!
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>vm_pu</th>
-      <th>va_degree</th>
       <th>p_kw</th>
       <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>1.000000</td>
-      <td>0.000000</td>
-      <td>4.539156</td>
-      <td>-31.657916</td>
+      <td>-71313.708686</td>
+      <td>1969.652197</td>
+      <td>-3.712798</td>
+      <td>1.000009</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.961046</td>
-      <td>3.744988</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>0.990862</td>
-      <td>13.988427</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>1.050000</td>
-      <td>23.359797</td>
-      <td>-17.665049</td>
-      <td>28.611111</td>
+      <td>-12299.439808</td>
+      <td>1451.156929</td>
+      <td>-3.712787</td>
+      <td>1.000010</td>
     </tr>
   </tbody>
 </table>
@@ -12079,59 +11952,30 @@ Converged!
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>As you can see, the generator is set to it's maximum value where the voltage constraint can still be met.</p>
-<h2 id="Optimizing-generator-dispatch">Optimizing generator dispatch<a class="anchor-link" href="#Optimizing-generator-dispatch">&#182;</a></h2><p>Another application of the OPF is to minimze the generator output while minimizing the power supply from the external grid. 
- Let's create a load first, so we have something we need to supply</p>
+<p>Since no individiual generation costs were specified, the OPF minimizes overall power generation, which is equal to a loss minimization in the network. The loads at buses 3 and 4 are supplied by generators at the same bus, the load at Bus 2 is provided by a combination of the other generators so that the power transmission leads to minimal losses.</p>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">p_kw</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Modify the cost function by setting new cost_per_kw values. We assume, that it is more important to minimize the power supply from the external grid, thats why we simply double the costs.</p>
+<h2 id="Individual-Generator-Costs">Individual Generator Costs<a class="anchor-link" href="#Individual-Generator-Costs">&#182;</a></h2><p>Let's now assign individual costs to each generator.</p>
+<p>We assign a cost of 10 ct/kW for the external grid, 15 ct/kw for the generator g0 and 12 ct/kw for generator g1:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">cost_per_kw</span><span class="o">=</span><span class="mi">100</span>
-<span class="n">net</span><span class="o">.</span><span class="n">ext_grid</span><span class="o">.</span><span class="n">cost_per_kw</span><span class="o">=</span><span class="mi">200</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">ext_grid</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eg</span><span class="p">,</span> <span class="s2">&quot;cost_per_kw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.10</span>
+<span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">g0</span><span class="p">,</span> <span class="s2">&quot;cost_per_kw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.15</span>
+<span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">g1</span><span class="p">,</span> <span class="s2">&quot;cost_per_kw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.12</span>
 </pre></div>
 
 </div>
@@ -12144,14 +11988,14 @@ Converged!
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Run optimal power flow:</p>
+<p>And now run an OPF:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -12183,7 +12027,189 @@ Converged!
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Check the results:</p>
+<p>We can see that all active power is provided by the external grid. This makes sense, because the external grid has the lowest cost of all generators and we did not define any constraints.</p>
+<p>We define a simple function that calculates the summed costs:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+    <span class="n">cost_gen</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span><span class="o">.</span><span class="n">p_kw</span> <span class="o">*</span> <span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">cost_per_kw</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">cost_eg</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span><span class="o">.</span><span class="n">p_kw</span> <span class="o">*</span> <span class="n">net</span><span class="o">.</span><span class="n">ext_grid</span><span class="o">.</span><span class="n">cost_per_kw</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">cost_gen</span> <span class="o">+</span> <span class="n">cost_eg</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">3</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And calculate the dispatch costs:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>14.45595158623663</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Transformer-Constraint">Transformer Constraint<a class="anchor-link" href="#Transformer-Constraint">&#182;</a></h3><p>Since all active power comes from the external grid and subsequently flows through the transformer, the transformer is overloaded with a loading of about 145%:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_hv_kw</th>
+      <th>q_hv_kvar</th>
+      <th>p_lv_kw</th>
+      <th>q_lv_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_hv_ka</th>
+      <th>i_lv_ka</th>
+      <th>loading_percent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>144559.376399</td>
+      <td>9192.999921</td>
+      <td>-143959.448402</td>
+      <td>15993.78371</td>
+      <td>599.927997</td>
+      <td>25186.783631</td>
+      <td>0.380136</td>
+      <td>0.759988</td>
+      <td>144.851388</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We now limit the transformer loading to 50%:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">trafo</span><span class="p">[</span><span class="s2">&quot;max_loading_percent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>(the max_loading_percent parameter can also be specified directly when creating the transformer)
+and run the OPF:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We can see that the transformer complies with the maximum loading:</p>
 
 </div>
 </div>
@@ -12193,7 +12219,7 @@ Converged!
 <div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
 </pre></div>
 
 </div>
@@ -12212,19 +12238,29 @@ Converged!
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>p_kw</th>
-      <th>q_kvar</th>
-      <th>va_degree</th>
-      <th>vm_pu</th>
+      <th>p_hv_kw</th>
+      <th>q_hv_kvar</th>
+      <th>p_lv_kw</th>
+      <th>q_lv_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_hv_ka</th>
+      <th>i_lv_ka</th>
+      <th>loading_percent</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-18.006618</td>
-      <td>4.6618</td>
-      <td>3.784146</td>
-      <td>1.05</td>
+      <td>49953.527334</td>
+      <td>-2147.249369</td>
+      <td>-49833.477544</td>
+      <td>5167.348248</td>
+      <td>120.049789</td>
+      <td>3020.098879</td>
+      <td>0.131215</td>
+      <td>0.262151</td>
+      <td>49.999656</td>
     </tr>
   </tbody>
 </table>
@@ -12236,6 +12272,16 @@ Converged!
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And power generation is now split between the external grid and generator 1 (which is the second cheapest generation unit):</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -12268,8 +12314,8 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-4.114377</td>
-      <td>-4.957371</td>
+      <td>-49953.527352</td>
+      <td>2147.24937</td>
     </tr>
   </tbody>
 </table>
@@ -12287,7 +12333,7 @@ Converged!
 <div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
 </pre></div>
 
 </div>
@@ -12306,40 +12352,26 @@ Converged!
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>vm_pu</th>
-      <th>va_degree</th>
       <th>p_kw</th>
       <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>1.000000</td>
-      <td>0.000000</td>
-      <td>-4.114377</td>
-      <td>-4.957371</td>
+      <td>-0.280311</td>
+      <td>-2993.094181</td>
+      <td>-6.232780</td>
+      <td>0.985230</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.985182</td>
-      <td>0.140745</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>0.960023</td>
-      <td>1.593164</td>
-      <td>20.000000</td>
-      <td>0.000000</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>1.050000</td>
-      <td>3.784146</td>
-      <td>-18.006618</td>
-      <td>4.661800</td>
+      <td>-93304.128507</td>
+      <td>-3453.267596</td>
+      <td>-1.237846</td>
+      <td>1.025709</td>
     </tr>
   </tbody>
 </table>
@@ -12357,8 +12389,7 @@ Converged!
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>So we see, that the most part of the load is supplied by the generator, but in order to keep the voltage limits, the generator can not feed in 100%.</p>
-<h2 id="Reducing-line-loading">Reducing line loading<a class="anchor-link" href="#Reducing-line-loading">&#182;</a></h2><p>Let's now deal with loading constraints, too. Let's first check the loading of the previous calculation:</p>
+<p>This comes of course with an increase in dispatch costs:</p>
 
 </div>
 </div>
@@ -12368,7 +12399,7 @@ Converged!
 <div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span><span class="o">.</span><span class="n">loading_percent</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12383,39 +12414,7 @@ Converged!
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0    40.264569
-Name: loading_percent, dtype: float64</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span><span class="o">.</span><span class="n">loading_percent</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0     7.490074
-1    20.787619
-Name: loading_percent, dtype: float64</pre>
+<pre>16.191890202723577</pre>
 </div>
 
 </div>
@@ -12429,7 +12428,105 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>So the line between the load and the generator has a loading of 20%, which should be okay. But let's still use this one as an example on how to reduce line loading. Let's set the maximum loading to 19% and see, what happens:</p>
+<h3 id="Line-Loading-Constraints">Line Loading Constraints<a class="anchor-link" href="#Line-Loading-Constraints">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Wen now look at the line loadings:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_from_kw</th>
+      <th>q_from_kvar</th>
+      <th>p_to_kw</th>
+      <th>q_to_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_ka</th>
+      <th>loading_percent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>19779.834885</td>
+      <td>-2479.406830</td>
+      <td>-19341.528367</td>
+      <td>1104.348550</td>
+      <td>438.306518</td>
+      <td>-1375.058280</td>
+      <td>0.104308</td>
+      <td>22.193125</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-50658.191411</td>
+      <td>1888.745716</td>
+      <td>52783.580480</td>
+      <td>921.051915</td>
+      <td>2125.389070</td>
+      <td>2809.797631</td>
+      <td>0.270139</td>
+      <td>57.476425</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>30520.548121</td>
+      <td>2532.215803</td>
+      <td>-29946.357283</td>
+      <td>-2687.941435</td>
+      <td>574.190839</td>
+      <td>-155.725632</td>
+      <td>0.157324</td>
+      <td>33.473168</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>and run the OPF with a 50% loading constraint:</p>
 
 </div>
 </div>
@@ -12439,8 +12536,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">max_loading_percent</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="mi">19</span>
-
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">line</span><span class="p">[</span><span class="s2">&quot;max_loading_percent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
@@ -12470,7 +12566,7 @@ Converged!
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Check the results:</p>
+<p>Now the line loading constraint is complied with:</p>
 
 </div>
 </div>
@@ -12480,7 +12576,7 @@ Converged!
 <div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
 </pre></div>
 
 </div>
@@ -12499,19 +12595,49 @@ Converged!
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>p_kw</th>
-      <th>q_kvar</th>
-      <th>va_degree</th>
-      <th>vm_pu</th>
+      <th>p_from_kw</th>
+      <th>q_from_kvar</th>
+      <th>p_to_kw</th>
+      <th>q_to_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_ka</th>
+      <th>loading_percent</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-16.94977</td>
-      <td>1.31579</td>
-      <td>1.129683</td>
-      <td>1.05</td>
+      <td>16727.370958</td>
+      <td>-3203.510785</td>
+      <td>-16412.543224</td>
+      <td>1542.694314</td>
+      <td>314.827734</td>
+      <td>-1660.816471</td>
+      <td>0.088856</td>
+      <td>18.905569</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-44451.003651</td>
+      <td>888.003392</td>
+      <td>46059.718758</td>
+      <td>811.619557</td>
+      <td>1608.715107</td>
+      <td>1699.622949</td>
+      <td>0.235000</td>
+      <td>49.999981</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>27532.897210</td>
+      <td>4042.154936</td>
+      <td>-27060.003950</td>
+      <td>-4420.233591</td>
+      <td>472.893260</td>
+      <td>-378.078655</td>
+      <td>0.143049</td>
+      <td>30.435913</td>
     </tr>
   </tbody>
 </table>
@@ -12523,6 +12649,16 @@ Converged!
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And all generators are involved in supplying the loads:</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -12555,8 +12691,8 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-4.769387</td>
-      <td>-1.53628</td>
+      <td>-49787.580003</td>
+      <td>4603.457521</td>
     </tr>
   </tbody>
 </table>
@@ -12574,7 +12710,7 @@ Converged!
 <div class="prompt input_prompt">In&nbsp;[20]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
 </pre></div>
 
 </div>
@@ -12593,40 +12729,26 @@ Converged!
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>vm_pu</th>
-      <th>va_degree</th>
       <th>p_kw</th>
       <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>1.000000</td>
-      <td>0.000000</td>
-      <td>-4.769387</td>
-      <td>-1.53628</td>
+      <td>-9136.450967</td>
+      <td>-2430.689358</td>
+      <td>-5.815435</td>
+      <td>0.993014</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.989342</td>
-      <td>-0.266932</td>
-      <td>0.000000</td>
-      <td>0.00000</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>0.962701</td>
-      <td>0.027057</td>
-      <td>20.000000</td>
-      <td>0.00000</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>1.050000</td>
-      <td>1.129683</td>
-      <td>-16.949770</td>
-      <td>1.31579</td>
+      <td>-83592.613615</td>
+      <td>-4853.769506</td>
+      <td>-1.511329</td>
+      <td>1.028887</td>
     </tr>
   </tbody>
 </table>
@@ -12639,12 +12761,22 @@ Converged!
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This of course comes with a once again rising dispatch cost:</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[21]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span><span class="o">.</span><span class="n">loading_percent</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12659,8 +12791,7 @@ Converged!
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0    31.316935
-Name: loading_percent, dtype: float64</pre>
+<pre>16.38033927907391</pre>
 </div>
 
 </div>
@@ -12668,13 +12799,23 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Voltage-Constraints">Voltage Constraints<a class="anchor-link" href="#Voltage-Constraints">&#182;</a></h3><p>Finally, we have a look at the bus voltage:</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[22]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span><span class="o">.</span><span class="n">loading_percent</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
 </pre></div>
 
 </div>
@@ -12687,11 +12828,50 @@ Name: loading_percent, dtype: float64</pre>
 
 <div class="output_area"><div class="prompt output_prompt">Out[22]:</div>
 
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0     5.762240
-1    18.999994
-Name: loading_percent, dtype: float64</pre>
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>vm_pu</th>
+      <th>va_degree</th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>-49787.580003</td>
+      <td>4603.457521</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.006024</td>
+      <td>-3.408832</td>
+      <td>60000.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.993014</td>
+      <td>-5.815435</td>
+      <td>60863.549033</td>
+      <td>-2430.689358</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1.028887</td>
+      <td>-1.511329</td>
+      <td>-73592.613615</td>
+      <td>-4853.769506</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 </div>
 
 </div>
@@ -12705,8 +12885,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>We see, that the loading constraint was met by further reducing the generator output.</p>
-<p>If we want to add a generator, that won't be considered as a flexibility, we can tighten it's power boundaries like this:</p>
+<p>and constrain it:</p>
 
 </div>
 </div>
@@ -12716,10 +12895,9 @@ Name: loading_percent, dtype: float64</pre>
 <div class="prompt input_prompt">In&nbsp;[23]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">max_vm_pu</span><span class="o">=</span><span class="n">vm_max</span><span class="p">,</span> <span class="n">min_vm_pu</span><span class="o">=</span><span class="n">vm_min</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=.</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;line3&#39;</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=</span><span class="mf">0.876</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">260.0</span><span class="p">,</span> <span class="n">imax_ka</span><span class="o">=</span><span class="mf">0.123</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=</span><span class="mf">0.1159876</span><span class="p">,</span> <span class="n">max_loading_percent</span><span class="o">=</span><span class="mi">100000</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">controllable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_p_kw</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_p_kw</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">max_q_kvar</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">min_q_kvar</span><span class="o">=-</span><span class="mi">500</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">bus</span><span class="p">[</span><span class="s2">&quot;min_vm_pu&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">net</span><span class="o">.</span><span class="n">bus</span><span class="p">[</span><span class="s2">&quot;max_vm_pu&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.02</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12732,7 +12910,7 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Check the results:</p>
+<p>We can see that all voltages are within the voltage band:</p>
 
 </div>
 </div>
@@ -12742,7 +12920,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="prompt input_prompt">In&nbsp;[24]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
 </pre></div>
 
 </div>
@@ -12761,26 +12939,40 @@ Name: loading_percent, dtype: float64</pre>
   <thead>
     <tr style="text-align: right;">
       <th></th>
+      <th>vm_pu</th>
+      <th>va_degree</th>
       <th>p_kw</th>
       <th>q_kvar</th>
-      <th>va_degree</th>
-      <th>vm_pu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-14.85765</td>
-      <td>-2.607067</td>
-      <td>1.983693</td>
-      <td>1.043463</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>-49906.817982</td>
+      <td>3050.590592</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-2.00000</td>
-      <td>5.101424</td>
-      <td>3.518236</td>
-      <td>1.050000</td>
+      <td>1.004168</td>
+      <td>-3.421013</td>
+      <td>60000.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.000000</td>
+      <td>-5.976090</td>
+      <td>59278.074279</td>
+      <td>-14859.213746</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1.020000</td>
+      <td>-1.366887</td>
+      <td>-71863.385929</td>
+      <td>9173.011326</td>
     </tr>
   </tbody>
 </table>
@@ -12792,6 +12984,16 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And all generators are once again involved in supplying the loads:</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -12824,8 +13026,8 @@ Name: loading_percent, dtype: float64</pre>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-5.067983</td>
-      <td>-2.738742</td>
+      <td>-49906.817982</td>
+      <td>3050.590592</td>
     </tr>
   </tbody>
 </table>
@@ -12843,7 +13045,7 @@ Name: loading_percent, dtype: float64</pre>
 <div class="prompt input_prompt">In&nbsp;[26]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
 </pre></div>
 
 </div>
@@ -12862,47 +13064,26 @@ Name: loading_percent, dtype: float64</pre>
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>vm_pu</th>
-      <th>va_degree</th>
       <th>p_kw</th>
       <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>1.000000</td>
-      <td>0.000000</td>
-      <td>-5.067983</td>
-      <td>-2.738742</td>
+      <td>-10721.925721</td>
+      <td>-14859.213746</td>
+      <td>-5.976090</td>
+      <td>1.00</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.986947</td>
-      <td>-0.171745</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>0.957842</td>
-      <td>0.506825</td>
-      <td>20.000000</td>
-      <td>0.000000</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>1.043463</td>
-      <td>1.983693</td>
-      <td>-14.857650</td>
-      <td>-2.607067</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>1.050000</td>
-      <td>3.518236</td>
-      <td>-2.000000</td>
-      <td>5.101424</td>
+      <td>-81863.385929</td>
+      <td>9173.011326</td>
+      <td>-1.366887</td>
+      <td>1.02</td>
     </tr>
   </tbody>
 </table>
@@ -12915,12 +13096,22 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This of course comes once again with rising dispatch costs:</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[27]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span><span class="o">.</span><span class="n">loading_percent</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12935,40 +13126,7 @@ Name: loading_percent, dtype: float64</pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0    36.0041
-Name: loading_percent, dtype: float64</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[28]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span><span class="o">.</span><span class="n">loading_percent</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[28]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0     6.654287
-1    18.999935
-2     6.123830
-Name: loading_percent, dtype: float64</pre>
+<pre>16.422576967990047</pre>
 </div>
 
 </div>
@@ -12982,10 +13140,521 @@ Name: loading_percent, dtype: float64</pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>The OPF resepcted the boundaries of the second generator and set it to the exact value. However, in some cases, this may lead to convergence problems and the boundaries should be opened up a little bit.</p>
+<h2 id="Minimizing-Active-Power-Curtailment">Minimizing Active Power Curtailment<a class="anchor-link" href="#Minimizing-Active-Power-Curtailment">&#182;</a></h2><p>Now we assume that the generators are renewable energy sources, and we want to feed in as much of the energy they can provide as possible without violating any constraints.</p>
+<p>We assign negative costs to the generators and costs of zero for the external grid.</p>
 
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">ext_grid</span><span class="o">.</span><span class="n">cost_per_kw</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">cost_per_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>PYPOWER Version 5.0.0, 29-May-2015 -- AC Optimal Power Flow
+Python Interior Point Solver - PIPS, Version 1.0, 07-Feb-2011
+Converged!
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Because of the negative costs, the OPF now maximizes power generation at the generators:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[31]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-46052.644816</td>
+      <td>-18912.998087</td>
+      <td>-0.485062</td>
+      <td>1.02</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-85097.782114</td>
+      <td>19478.228436</td>
+      <td>2.869966</td>
+      <td>1.02</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[32]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[32]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-11071.74798</td>
+      <td>153.958385</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[33]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>vm_pu</th>
+      <th>va_degree</th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.00</td>
+      <td>0.000000</td>
+      <td>-11071.747980</td>
+      <td>153.958385</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.00</td>
+      <td>-0.759444</td>
+      <td>60000.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.02</td>
+      <td>-0.485062</td>
+      <td>23947.355184</td>
+      <td>-18912.998087</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1.02</td>
+      <td>2.869966</td>
+      <td>-75097.782114</td>
+      <td>19478.228436</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[34]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_hv_kw</th>
+      <th>q_hv_kvar</th>
+      <th>p_lv_kw</th>
+      <th>q_lv_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_hv_ka</th>
+      <th>i_lv_ka</th>
+      <th>loading_percent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>11071.74798</td>
+      <td>-153.958385</td>
+      <td>-11013.579078</td>
+      <td>324.308603</td>
+      <td>58.168902</td>
+      <td>170.350217</td>
+      <td>0.029059</td>
+      <td>0.057831</td>
+      <td>11.072818</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[35]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_from_kw</th>
+      <th>q_from_kvar</th>
+      <th>p_to_kw</th>
+      <th>q_to_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_ka</th>
+      <th>loading_percent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-4940.672063</td>
+      <td>-7253.499354</td>
+      <td>5009.683533</td>
+      <td>5024.003563</td>
+      <td>69.011470</td>
+      <td>-2229.495791</td>
+      <td>0.046064</td>
+      <td>9.800775</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-28957.038717</td>
+      <td>13888.994524</td>
+      <td>29770.861583</td>
+      <td>-13899.328668</td>
+      <td>813.822866</td>
+      <td>-10.334143</td>
+      <td>0.169066</td>
+      <td>35.971544</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>45326.920531</td>
+      <td>-5578.899768</td>
+      <td>-44045.748858</td>
+      <td>6929.190751</td>
+      <td>1281.171673</td>
+      <td>1350.290984</td>
+      <td>0.235000</td>
+      <td>49.999973</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Obviously the voltage profile was the limiting factor for the generator feed-in. If we relax this constraint a little bit:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">bus</span><span class="o">.</span><span class="n">max_vm_pu</span> <span class="o">=</span> <span class="mf">1.05</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We see an increased feed-in of the generators:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[37]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-79999.991970</td>
+      <td>-17252.186816</td>
+      <td>2.328271</td>
+      <td>1.050000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-66517.876366</td>
+      <td>10225.945538</td>
+      <td>3.665995</td>
+      <td>1.040019</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[38]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[38]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>vm_pu</th>
+      <th>va_degree</th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>4542.414746</td>
+      <td>8523.970418</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.010373</td>
+      <td>0.298333</td>
+      <td>60000.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.050000</td>
+      <td>2.328271</td>
+      <td>-9999.991970</td>
+      <td>-17252.186816</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1.040019</td>
+      <td>3.665995</td>
+      <td>-56517.876366</td>
+      <td>10225.945538</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
 </div>
     </div>
   </div>
