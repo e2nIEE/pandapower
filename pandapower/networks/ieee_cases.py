@@ -14,7 +14,7 @@ def _get_networks_path():
 
 def case4gs(generator_nodes_as_pv=False):
     """
-    Calls the pickle file case4gs.p which data origin is pypower.
+    Calls the pickle file case4gs.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
     RETURN:
 
@@ -32,7 +32,7 @@ def case4gs(generator_nodes_as_pv=False):
 
 def case6ww(generator_nodes_as_pv=False):
     """
-    Calls the pickle file case6ww.p which data origin is pypower.
+    Calls the pickle file case6ww.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
     RETURN:
 
@@ -50,7 +50,8 @@ def case6ww(generator_nodes_as_pv=False):
 
 def case9(generator_nodes_as_pv=False):
     """
-    Calls the pickle file case9.p which data origin is pypower.
+    Calls the pickle file case9.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network was published in Anderson and Fouad's book 'Power System Control and Stability' for the first time in 1980.
 
     RETURN:
 
@@ -68,7 +69,8 @@ def case9(generator_nodes_as_pv=False):
 
 def case9Q():
     """
-    Calls the pickle file case9Q.p which data origin is pypower.
+    Calls the pickle file case9Q.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network is highly correlated to case9.
 
     RETURN:
 
@@ -86,7 +88,8 @@ def case9Q():
 
 def case30():
     """
-    Calls the pickle file case30.p which data origin is pypower.
+    Calls the pickle file case30.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Washington <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_ and `Illinois University <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
 
     RETURN:
 
@@ -104,7 +107,8 @@ def case30():
 
 def case30pwl():
     """
-    Calls the pickle file case30pwl.p which data origin is pypower.
+    Calls the pickle file case30pwl.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network is highly correlated to case30.
 
     RETURN:
 
@@ -123,7 +127,8 @@ def case30pwl():
 
 def case30Q():
     """
-    Calls the pickle file case30Q.p which data origin is pypower.
+    Calls the pickle file case30Q.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network is highly correlated to case30.
 
     RETURN:
 

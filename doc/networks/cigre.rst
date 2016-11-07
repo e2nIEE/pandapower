@@ -8,7 +8,7 @@ environmentally responsible integration of DER" (Distributed Energy Resources).
 CIGRE-Networks are a set of comprehensive reference systems to allow the "analysis of DER 
 integration at high voltage, medium voltage and low voltage and at the desired degree of detail".
 
-[Source: Task Force C6.04.02, *Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources*]
+[Source: Strunz, Hatziargyriou, Andrieu, *Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources*, Task Force C6.04.02, 2009]
 
 High voltage transmission network
 ---------------------------------
