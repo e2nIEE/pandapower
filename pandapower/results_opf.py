@@ -4,8 +4,9 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, _get_gen_results, _get_bus_results
-import numpy as np
+from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, \
+                                                                _get_gen_results, _get_bus_results
+from numpy import zeros, array, float, hstack
 from pandapower.build_bus import _sum_by_group
 import pandapower as pp
 from pypower.idx_gen import PG, QG
@@ -25,8 +26,8 @@ def _extract_results_opf(net, mpc, is_elems, bus_lookup, trafo_loading, return_v
 
 
 def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
-    b, p, q = np.array([]), np.array([]), np.array([])
+    bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
+    b, p, q = array([]), array([]), array([])
 
     l = net["load"]
     if len(l) > 0:
@@ -36,9 +37,9 @@ def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):
         ql = l["q_kvar"].values * scaling * load_is
         net["res_load"]["p_kw"] = pl
         net["res_load"]["q_kvar"] = ql
-        b = np.hstack([b, l["bus"].values])
-        p = np.hstack([p, pl])
-        q = np.hstack([q, ql])
+        b = hstack([b, l["bus"].values])
+        p = hstack([p, pl])
+        q = hstack([q, ql])
         net["res_load"].index = net["load"].index
 
     sg = net["sgen"]
@@ -49,9 +50,9 @@ def _get_p_q_results_opf(net, mpc, bus_lookup, gen_end):
         qsg = sg["q_kvar"].values * scaling * sgen_is
         net["res_sgen"]["p_kw"] = psg
         net["res_sgen"]["q_kvar"] = qsg
-        b = np.hstack([b, sg["bus"].values])
-        p = np.hstack([p, psg])
-        q = np.hstack([q, qsg])
+        b = hstack([b, sg["bus"].values])
+        p = hstack([p, psg])
+        q = hstack([q, qsg])
         net["res_sgen"].index = net["sgen"].index
 
         if net.sgen.controllable.any():

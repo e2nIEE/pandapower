@@ -10,9 +10,7 @@ from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV, VM, VA, PD, QD
 from pypower.idx_gen import PG, QG, GEN_BUS
 
-from pandapower.auxiliary import get_indices
-from pandapower.build_bus import _sum_by_group
-
+from pandapower.auxiliary import get_indices, _sum_by_group
 
 def _extract_results(net, mpc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
                      ac=True):

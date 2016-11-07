@@ -14,7 +14,7 @@ pandapower itself can be installed with the following steps:
 
 1. Download and unzip the pandapower source distribution to your local hard drive.
 
-2. Open a python shell and navigate to the folder that contains the setup.py file
+2. Open a python shell (e.g. Anaconda prompt) and navigate to the folder that contains the setup.py file
 
 3. Install pandapower by running ::
 

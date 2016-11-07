@@ -1,9 +1,14 @@
 include LICENSE
 include AUTHORS
 include README.rst
+include requirements.txt
 include *.cfg
 include *.ini
 include *.rst
 global-include *.p
-recursive-include doc *
+global-include *.rst
+global-include *.png
+global-include *.jpg
+global-include *.csv
+global-include *.pdf
 
