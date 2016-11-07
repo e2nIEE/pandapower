@@ -42,7 +42,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         
-    Costs can be assigned to generatorion units in the following columns:
+    Costs can be assigned to generation units in the following columns:
         - net.gen.cost_per_kw
         - net.sgen.cost_per_kw
         - net.ext_grid.cost_per_kw
