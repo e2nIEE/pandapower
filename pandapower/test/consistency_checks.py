@@ -13,7 +13,8 @@ def runpp_with_consistency_checks(net, **kwargs):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net)
     element_power_consistent_with_bus_power(net)
-
+    return True
+    
 def indices_consistent(net):
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt", 
                     "ward", "xward", "impedance", "gen"]:
