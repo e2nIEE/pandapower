@@ -47,11 +47,11 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
     verbose = ppopt["VERBOSE"]
 
     ## read data
-    ppc = loadcase(casedata)
+    ppci = loadcase(casedata)
 
     # get data for calc
     baseMVA, bus, gen, branch = \
-        ppc["baseMVA"], ppc["bus"], ppc["gen"], ppc["branch"]
+        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
@@ -100,7 +100,7 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
 
         if ac and init=='dc':
             # get results from DC powerflow for AC powerflow
-            ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
+            ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
 
     if ac:  ## AC formulation
         # options
@@ -261,12 +261,12 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
                 #                bus[:, VA] = bus[:, VA] - bus[ref0, VA] + Varef0
 
 
-    ppc["et"] = time() - t0
-    ppc["success"] = success
+    ppci["et"] = time() - t0
+    ppci["success"] = success
 
     ##-----  output results  -----
-    ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
-    results = ppc
+    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    results = ppci
 
     return results, success
 

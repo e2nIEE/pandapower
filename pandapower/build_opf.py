@@ -6,8 +6,8 @@
 
 from numpy import array, ones, arange, zeros, complex128, nan_to_num, hstack, abs, isnan, float64
 import pandapower as pp
-from pandapower.build_branch import _build_branch_mpc, _switch_branches, _branches_with_oos_buses
-from pandapower.build_bus import _build_bus_mpc, _calc_shunts_and_add_on_mpc
+from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
+from pandapower.build_bus import _build_bus_ppc, _calc_shunts_and_add_on_ppc
 from pandapower.run import _set_isolated_buses_out_of_service
 from pypower.idx_bus import BUS_TYPE, PD, QD
 from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
@@ -40,11 +40,11 @@ def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
     eg_is = is_elems['eg']
     gen_is = is_elems['gen']
 
-    bus_lookup = _build_bus_mpc(net, ppc, is_elems, set_opf_constraints=True)
+    bus_lookup = _build_bus_ppc(net, ppc, is_elems, set_opf_constraints=True)
     _build_gen_opf(net, ppc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
-    _build_branch_mpc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
+    _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
                       set_opf_constraints=True)
-    _calc_shunts_and_add_on_mpc(net, ppc, is_elems, bus_lookup)
+    _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
     _calc_loads_and_add_opf(net, ppc, bus_lookup)
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)

@@ -12,28 +12,28 @@ from pypower.idx_gen import PG, QG, GEN_BUS
 
 from pandapower.auxiliary import get_indices, _sum_by_group
 
-def _extract_results(net, mpc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
+def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
                      ac=True):
     # get in service elements
     bus_is = is_elems['bus']
 
-    _set_buses_out_of_service(mpc)
-    bus_pq = _get_p_q_results(net, mpc, bus_lookup, bus_is, ac)
-    _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac)
-    _get_branch_results(net, mpc, bus_lookup, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, mpc, is_elems, bus_lookup, bus_pq, return_voltage_angles, ac)
-    _get_bus_results(net, mpc, bus_lookup, bus_pq, return_voltage_angles, ac)
+    _set_buses_out_of_service(ppc)
+    bus_pq = _get_p_q_results(net, ppc, bus_lookup, bus_is, ac)
+    _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is, ac)
+    _get_branch_results(net, ppc, bus_lookup, bus_pq, trafo_loading, ac)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_pq, return_voltage_angles, ac)
+    _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
 
-def _set_buses_out_of_service(mpc):
-    disco = np.where(mpc["bus"][:, 1] == 4)[0]
-    mpc["bus"][disco, VM] = np.nan
-    mpc["bus"][disco, VA] = np.nan
-    mpc["bus"][disco, PD] = 0
-    mpc["bus"][disco, QD] = 0
+def _set_buses_out_of_service(ppc):
+    disco = np.where(ppc["bus"][:, 1] == 4)[0]
+    ppc["bus"][disco, VM] = np.nan
+    ppc["bus"][disco, VA] = np.nan
+    ppc["bus"][disco, PD] = 0
+    ppc["bus"][disco, QD] = 0
 
 
-def _get_bus_results(net, mpc, bus_lookup, bus_pq, return_voltage_angles, ac=True):
+def _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac=True):
     net["res_bus"]["p_kw"] = bus_pq[:, 0]
     if ac:
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
@@ -41,13 +41,13 @@ def _get_bus_results(net, mpc, bus_lookup, bus_pq, return_voltage_angles, ac=Tru
     ppi = net["bus"].index.values
     bus_idx = get_indices(ppi, bus_lookup)
     if ac:
-        net["res_bus"]["vm_pu"] = mpc["bus"][bus_idx][:, VM]
+        net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     net["res_bus"].index = net["bus"].index
     if return_voltage_angles or not ac:
-        net["res_bus"]["va_degree"] = mpc["bus"][bus_idx][:, VA]
+        net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
-def _get_branch_results(net, mpc, bus_lookup, pq_buses, trafo_loading, ac=True):
+def _get_branch_results(net, ppc, bus_lookup, pq_buses, trafo_loading, ac=True):
     """
     Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
 
@@ -64,28 +64,28 @@ def _get_branch_results(net, mpc, bus_lookup, pq_buses, trafo_loading, ac=True):
     impedance_end = trafo3w_end + len(net["impedance"])
     xward_end = impedance_end + len(net["xward"])
 
-    i_ft, s_ft = _get_branch_flows(net, mpc)
+    i_ft, s_ft = _get_branch_flows(net, ppc)
     if line_end > 0:
-        _get_line_results(net, mpc, i_ft, 0, line_end, ac)
+        _get_line_results(net, ppc, i_ft, 0, line_end, ac)
         net["res_line"].index = net["line"].index
 
     if trafo_end > line_end:
-        _get_trafo_results(net, mpc, trafo_loading, s_ft, i_ft, line_end, trafo_end, ac)
+        _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, line_end, trafo_end, ac)
         net["res_trafo"].index = net["trafo"].index
 
     if trafo3w_end > trafo_end:
-        _get_trafo3w_results(net, mpc, trafo_loading, s_ft, i_ft, trafo_end, trafo3w_end, ac)
+        _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, trafo_end, trafo3w_end, ac)
         net["res_trafo3w"].index = net["trafo3w"].index
 
     if impedance_end > trafo3w_end:
-        _get_impedance_results(net, mpc, i_ft, trafo3w_end, impedance_end, ac)
+        _get_impedance_results(net, ppc, i_ft, trafo3w_end, impedance_end, ac)
         net["res_impedance"].index = net["impedance"].index
 
     if xward_end > impedance_end:
-        _get_xward_branch_results(net, mpc, bus_lookup, pq_buses, impedance_end, xward_end, ac)
+        _get_xward_branch_results(net, ppc, bus_lookup, pq_buses, impedance_end, xward_end, ac)
 
 
-def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angles, ac=True):
+def _get_gen_results(net, ppc, is_elems, bus_lookup, pq_bus, return_voltage_angles, ac=True):
     # get in service elements
     gen_is = is_elems['gen']
     eg_is = is_elems['eg']
@@ -97,20 +97,20 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     # bus index of in service egs
     gidx = eg_is.bus.values
     n_res_eg = len(net['ext_grid'])
-    # indices of in service gens in the mpc
-    gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(eg_is["bus"], bus_lookup))
+    # indices of in service gens in the ppc
+    gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], get_indices(eg_is["bus"], bus_lookup))
     # mask for indices of in service gens in net['res_gen']
     idx_eg = np.in1d(net['ext_grid'].bus, gidx)
-    # read results from mpc for these buses
+    # read results from ppc for these buses
     p = np.zeros(n_res_eg)
-    p[idx_eg] = -mpc["gen"][gidx_mpc, PG] * 1e3
+    p[idx_eg] = -ppc["gen"][gidx_ppc, PG] * 1e3
     # store result in net['res']
     net["res_ext_grid"]["p_kw"] = p
 
     # if ac PF q results are also available
     if ac:
         q = np.zeros(n_res_eg)
-        q[idx_eg] = -mpc["gen"][gidx_mpc, QG] * 1e3
+        q[idx_eg] = -ppc["gen"][gidx_ppc, QG] * 1e3
         net["res_ext_grid"]["q_kvar"] = q
 
     # get bus values for pq_bus
@@ -127,24 +127,24 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
 
         b = np.hstack([b, net['gen'].bus.values])
 
-        # indices of in service gens in the mpc
-        gidx_mpc = np.searchsorted(mpc['gen'][:, GEN_BUS], get_indices(gen_is["bus"], bus_lookup))
+        # indices of in service gens in the ppc
+        gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], get_indices(gen_is["bus"], bus_lookup))
         # mask for indices of in service gens in net['res_gen']
         idx_gen = np.in1d(net['gen'].bus, gidx)
 
-        # read results from mpc for these buses
+        # read results from ppc for these buses
         p_gen = np.zeros(n_res_gen)
-        p_gen[idx_gen] = -mpc["gen"][gidx_mpc, PG] * 1e3
+        p_gen[idx_gen] = -ppc["gen"][gidx_ppc, PG] * 1e3
         if ac:
             q_gen = np.zeros(n_res_gen)
-            q_gen[idx_gen] = -mpc["gen"][gidx_mpc, QG] * 1e3
+            q_gen[idx_gen] = -ppc["gen"][gidx_ppc, QG] * 1e3
 
         v_pu = np.zeros(n_res_gen)
-        v_pu[idx_gen] = mpc["bus"][gidx_mpc][:, VM]
+        v_pu[idx_gen] = ppc["bus"][gidx_ppc][:, VM]
         net["res_gen"]["vm_pu"] = v_pu
         if return_voltage_angles:
             v_a = np.zeros(n_res_gen)
-            v_a[idx_gen] = mpc["bus"][gidx_mpc][:, VA]
+            v_a[idx_gen] = ppc["bus"][gidx_ppc][:, VA]
             net["res_gen"]["va_degree"] = v_a
         net["res_gen"].index = net['gen'].index
 
@@ -163,39 +163,39 @@ def _get_gen_results(net, mpc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     pq_bus[b, 1] += q_sum
 
 
-def _get_xward_branch_results(net, mpc, bus_lookup, pq_buses, f, t, ac=True):
-    p_branch_xward = mpc["branch"][f:t, PF].real * 1e3
+def _get_xward_branch_results(net, ppc, bus_lookup, pq_buses, f, t, ac=True):
+    p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
     net["res_xward"]["p_kw"] += p_branch_xward
     if ac:
-        q_branch_xward = mpc["branch"][f:t, QF].real * 1e3
+        q_branch_xward = ppc["branch"][f:t, QF].real * 1e3
         net["res_xward"]["q_kvar"] += q_branch_xward
     else:
         q_branch_xward = np.zeros(len(p_branch_xward))
     b_pp, p, q = _sum_by_group(net["xward"]["bus"].values, p_branch_xward, q_branch_xward)
-    b_mpc = get_indices(b_pp, bus_lookup, fused_indices=False)
+    b_ppc = get_indices(b_pp, bus_lookup, fused_indices=False)
 
-    pq_buses[b_mpc, 0] += p
-    pq_buses[b_mpc, 1] += q
+    pq_buses[b_ppc, 0] += p
+    pq_buses[b_ppc, 1] += q
 
 
-def _get_branch_flows(net, mpc):
-    br_idx = mpc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
-    u_ft = mpc["bus"][br_idx, 7] * mpc["bus"][br_idx, BASE_KV]
-    s_ft = (np.sqrt(mpc["branch"][:, (PF, PT)].real**2 +
-                    mpc["branch"][:, (QF, QT)].real**2) * 1e3)
+def _get_branch_flows(net, ppc):
+    br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
+    u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
+    s_ft = (np.sqrt(ppc["branch"][:, (PF, PT)].real**2 +
+                    ppc["branch"][:, (QF, QT)].real**2) * 1e3)
     i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
     return i_ft, s_ft
 
 
-def _get_line_results(net, mpc, i_ft, f, t, ac=True):
-    pf_kw = mpc["branch"][f:t, PF].real * 1e3
-    qf_kvar = mpc["branch"][f:t, QF].real * 1e3
+def _get_line_results(net, ppc, i_ft, f, t, ac=True):
+    pf_kw = ppc["branch"][f:t, PF].real * 1e3
+    qf_kvar = ppc["branch"][f:t, QF].real * 1e3
     net["res_line"]["p_from_kw"] = pf_kw
     if ac:
         net["res_line"]["q_from_kvar"] = qf_kvar
 
-    pt_kw = mpc["branch"][f:t, PT].real * 1e3
-    qt_kvar = mpc["branch"][f:t, QT].real * 1e3
+    pt_kw = ppc["branch"][f:t, PT].real * 1e3
+    qt_kvar = ppc["branch"][f:t, QT].real * 1e3
     net["res_line"]["p_to_kw"] = pt_kw
     if ac:
         net["res_line"]["q_to_kvar"] = qt_kvar
@@ -212,15 +212,15 @@ def _get_line_results(net, mpc, i_ft, f, t, ac=True):
     net["res_line"]["loading_percent"] = i_ka / i_max * 100
 
 
-def _get_trafo_results(net, mpc, trafo_loading, s_ft, i_ft, f, t, ac=True):
-    phv_kw = mpc["branch"][f:t, PF].real * 1e3
-    plv_kw = mpc["branch"][f:t, PT].real * 1e3
+def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
+    phv_kw = ppc["branch"][f:t, PF].real * 1e3
+    plv_kw = ppc["branch"][f:t, PT].real * 1e3
     net["res_trafo"]["p_hv_kw"] = phv_kw
     net["res_trafo"]["p_lv_kw"] = plv_kw
 
     if ac:
-        qhv_kvar = mpc["branch"][f:t, QF].real * 1e3
-        qlv_kvar = mpc["branch"][f:t, QT].real * 1e3
+        qhv_kvar = ppc["branch"][f:t, QF].real * 1e3
+        qlv_kvar = ppc["branch"][f:t, QT].real * 1e3
         net["res_trafo"]["q_hv_kvar"] = qhv_kvar
         net["res_trafo"]["q_lv_kvar"] = qlv_kvar
         net["res_trafo"]["pl_kw"] = phv_kw + plv_kw
@@ -240,23 +240,23 @@ def _get_trafo_results(net, mpc, trafo_loading, s_ft, i_ft, f, t, ac=True):
     net["res_trafo"]["loading_percent"] = ld_trafo
 
 
-def _get_trafo3w_results(net, mpc, trafo_loading, s_ft, i_ft, f, t, ac=True):
+def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
     hv = int(f + (t - f) / 3)
     mv = int(f + 2 * (t - f) / 3)
     lv = t
 
-    phv_kw = mpc["branch"][f:hv, PF].real * 1e3
-    pmv_kw = mpc["branch"][hv:mv, PT].real * 1e3
-    plv_kw = mpc["branch"][mv:lv, PT].real * 1e3
+    phv_kw = ppc["branch"][f:hv, PF].real * 1e3
+    pmv_kw = ppc["branch"][hv:mv, PT].real * 1e3
+    plv_kw = ppc["branch"][mv:lv, PT].real * 1e3
 
     net["res_trafo3w"]["p_hv_kw"] = phv_kw
     net["res_trafo3w"]["p_mv_kw"] = pmv_kw
     net["res_trafo3w"]["p_lv_kw"] = plv_kw
 
     if ac:
-        qhv_kvar = mpc["branch"][f:hv, QF].real * 1e3
-        qmv_kvar = mpc["branch"][hv:mv, QT].real * 1e3
-        qlv_kvar = mpc["branch"][mv:lv, QT].real * 1e3
+        qhv_kvar = ppc["branch"][f:hv, QF].real * 1e3
+        qmv_kvar = ppc["branch"][hv:mv, QT].real * 1e3
+        qlv_kvar = ppc["branch"][mv:lv, QT].real * 1e3
         net["res_trafo3w"]["q_hv_kvar"] = qhv_kvar
         net["res_trafo3w"]["q_mv_kvar"] = qmv_kvar
         net["res_trafo3w"]["q_lv_kvar"] = qlv_kvar
@@ -287,15 +287,15 @@ def _get_trafo3w_results(net, mpc, trafo_loading, s_ft, i_ft, f, t, ac=True):
     net["res_trafo3w"]["loading_percent"] = ld_trafo
 
 
-def _get_impedance_results(net, mpc, i_ft, f, t, ac=True):
-    pf_kw = mpc["branch"][f:t, (PF)].real * 1e3
-    pt_kw = mpc["branch"][f:t, (PT)].real * 1e3
+def _get_impedance_results(net, ppc, i_ft, f, t, ac=True):
+    pf_kw = ppc["branch"][f:t, (PF)].real * 1e3
+    pt_kw = ppc["branch"][f:t, (PT)].real * 1e3
     net["res_impedance"]["p_from_kw"] = pf_kw
     net["res_impedance"]["p_to_kw"] = pt_kw
 
     if ac:
-        qf_kvar = mpc["branch"][f:t, (QF)].real * 1e3
-        qt_kvar = mpc["branch"][f:t, (QT)].real * 1e3
+        qf_kvar = ppc["branch"][f:t, (QF)].real * 1e3
+        qt_kvar = ppc["branch"][f:t, (QT)].real * 1e3
         net["res_impedance"]["q_from_kvar"] = qf_kvar
         net["res_impedance"]["q_to_kvar"] = qt_kvar
         net["res_impedance"]["ql_kvar"] = qf_kvar + qt_kvar
@@ -305,7 +305,7 @@ def _get_impedance_results(net, mpc, i_ft, f, t, ac=True):
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
 
 
-def _get_p_q_results(net, mpc, bus_lookup, bus_is, ac=True):
+def _get_p_q_results(net, ppc, bus_lookup, bus_is, ac=True):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 
@@ -367,20 +367,20 @@ def _get_p_q_results(net, mpc, bus_lookup, bus_is, ac=True):
     if not ac:
         q = np.zeros(len(p))
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-    b_mpc = get_indices(b_pp, bus_lookup, fused_indices=False)
-    bus_pq[b_mpc, 0] = vp
-    bus_pq[b_mpc, 1] = vq
+    b_ppc = get_indices(b_pp, bus_lookup, fused_indices=False)
+    bus_pq[b_ppc, 0] = vp
+    bus_pq[b_ppc, 1] = vq
     return bus_pq
 
 
-def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
+def _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is, ac=True):
     b, p, q = np.array([]), np.array([]), np.array([])
     s = net["shunt"]
     if len(s) > 0:
         sidx = get_indices(s["bus"], bus_lookup)
         shunt_is = np.in1d(s.bus.values, bus_is.index) \
             & s.in_service.values.astype(bool)
-        u_shunt = mpc["bus"][sidx, VM]
+        u_shunt = ppc["bus"][sidx, VM]
         u_shunt = np.nan_to_num(u_shunt)
         p_shunt = u_shunt**2 * net["shunt"]["p_kw"].values * shunt_is
         net["res_shunt"]["p_kw"] = p_shunt
@@ -398,7 +398,7 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
         widx = get_indices(w["bus"], bus_lookup)
         ward_is = np.in1d(w.bus.values, bus_is.index) \
             & w.in_service.values.astype(bool)
-        u_ward = mpc["bus"][widx, VM]
+        u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
         p_ward = u_ward**2 * net["ward"]["pz_kw"].values * ward_is
         net["res_ward"]["p_kw"] += p_ward
@@ -416,7 +416,7 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
         widx = get_indices(xw["bus"], bus_lookup)
         xward_is = np.in1d(xw.bus.values, bus_is.index) \
             & xw.in_service.values.astype(bool)
-        u_xward = mpc["bus"][widx, VM]
+        u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward**2 * net["xward"]["pz_kw"].values * xward_is
         net["res_xward"]["p_kw"] += p_xward
@@ -432,8 +432,8 @@ def _get_shunt_results(net, mpc, bus_lookup, bus_pq, bus_is, ac=True):
     if not ac:
         q = np.zeros(len(p))
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-    b_mpc = get_indices(b_pp, bus_lookup, fused_indices=False)
+    b_ppc = get_indices(b_pp, bus_lookup, fused_indices=False)
 
-    bus_pq[b_mpc, 0] += vp
+    bus_pq[b_ppc, 0] += vp
     if ac:
-        bus_pq[b_mpc, 1] += vq
+        bus_pq[b_ppc, 1] += vq

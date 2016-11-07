@@ -32,14 +32,14 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=False):
+def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=False):
     """
     """
     if len(net["trafo3w"]) > 0:
-        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower. LT
+        # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
         _create_trafo3w_buses(net, init_results)
     if len(net["xward"]) > 0:
-        # TODO: include directly in pd2mpc so that buses are only in ppc, not in pandapower. LT
+        # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
         _create_xward_buses(net, init_results)
 
     # get buses as set
@@ -49,7 +49,7 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
 
-    # create a mapping from arbitrary pp-index to a consecutive index starting at zero (mpc-index)
+    # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     # To sort the array first, so that PV comes first, three steps are necessary:
 
     # 1. Find PV / Slack nodes and place them first (necessary for fast generation of Jacobi-Matrix)
@@ -127,34 +127,34 @@ def _build_bus_mpc(net, mpc, is_elems, init_results=False, set_opf_constraints=F
             for bus in dj:
                 bus_lookup[bus] = map_to
 
-    # init mpc with zeros
-    mpc["bus"] = np.zeros(shape=(i + 1, 13), dtype=float)
-    # fill mpc with init values
-    mpc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
-    mpc["bus"][:, BUS_I] = np.arange(i + 1)
+    # init ppc with zeros
+    ppc["bus"] = np.zeros(shape=(i + 1, 13), dtype=float)
+    # fill ppc with init values
+    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
+    ppc["bus"][:, BUS_I] = np.arange(i + 1)
 
     # change the voltages of the buses to the values in net
-    mpc["bus"][:, BASE_KV] = net["bus"].vn_kv.ix[PandaBusses]
+    ppc["bus"][:, BASE_KV] = net["bus"].vn_kv.ix[PandaBusses]
 
     if init_results is True and len(net["res_bus"]) > 0:
         int_index = get_indices(net["bus"].index.values, bus_lookup)
-        mpc["bus"][int_index, 7] = net["res_bus"]["vm_pu"].values
-        mpc["bus"][int_index, 8] = net["res_bus"].va_degree.values
+        ppc["bus"][int_index, 7] = net["res_bus"]["vm_pu"].values
+        ppc["bus"][int_index, 8] = net["res_bus"].va_degree.values
 
     if set_opf_constraints:
         if "max_vm_pu" in net.bus:
-            mpc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
+            ppc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
         else:
-            mpc["bus"][:, VMAX] = 10
+            ppc["bus"][:, VMAX] = 10
         if "min_vm_pu" in net.bus:
-            mpc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
+            ppc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
         else:
-            mpc["bus"][:, VMIN] = 0
+            ppc["bus"][:, VMIN] = 0
 
     return bus_lookup
 
 
-def _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
+def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # get in service elements
     bus_is = is_elems['bus']
 
@@ -191,11 +191,11 @@ def _calc_loads_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
                               ), bus_lookup)
     b, vp, vq = _sum_by_group(b, np.hstack([lp, sp, wp, xwp]), np.hstack([lq, sq, wq, xwq]))
 
-    mpc["bus"][b, PD] = vp
-    mpc["bus"][b, QD] = vq
+    ppc["bus"][b, PD] = vp
+    ppc["bus"][b, QD] = vq
 
 
-def _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
+def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # get in service elements
     bus_is = is_elems['bus']
 
@@ -223,8 +223,8 @@ def _calc_shunts_and_add_on_mpc(net, mpc, is_elems, bus_lookup):
     b = get_indices(np.hstack([s["bus"].values, w["bus"].values, xw["bus"].values]), bus_lookup)
     b, vp, vq = _sum_by_group(b, np.hstack([sp, wp, xwp]), np.hstack([sq, wq, xwq]))
 
-    mpc["bus"][b, GS] = vp
-    mpc["bus"][b, BS] = -vq
+    ppc["bus"][b, GS] = vp
+    ppc["bus"][b, BS] = -vq
 
 
 def _create_xward_buses(net, init_results):
@@ -236,7 +236,7 @@ def _create_xward_buses(net, init_results):
     net.xward["ad_bus"] = bid
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2mpc anyways. LT
+        #      pd2ppc anyways. LT
         for hv_bus, aux_bus in zip(main_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
 
@@ -250,6 +250,6 @@ def _create_trafo3w_buses(net, init_results):
     net.trafo3w["ad_bus"] = bid
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2mpc anyways. LT
+        #      pd2ppc anyways. LT
         for hv_bus, aux_bus in zip(hv_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
