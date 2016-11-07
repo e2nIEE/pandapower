@@ -12188,7 +12188,7 @@ div#notebook {
       <td>-9</td>
       <td>9</td>
       <td>1.5</td>
-      <td>0</td>
+      <td>NaN</td>
       <td>True</td>
     </tr>
   </tbody>
@@ -12419,7 +12419,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sw3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
@@ -12447,7 +12447,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">switch</span> <span class="c1"># show switch table</span>
@@ -12461,7 +12461,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12550,60 +12550,6 @@ div#notebook {
       <td>True</td>
       <td>None</td>
     </tr>
-    <tr>
-      <th>8</th>
-      <td>4</td>
-      <td>1</td>
-      <td>l</td>
-      <td>LBS</td>
-      <td>True</td>
-      <td>None</td>
-    </tr>
-    <tr>
-      <th>9</th>
-      <td>5</td>
-      <td>1</td>
-      <td>l</td>
-      <td>LBS</td>
-      <td>True</td>
-      <td>None</td>
-    </tr>
-    <tr>
-      <th>10</th>
-      <td>4</td>
-      <td>2</td>
-      <td>l</td>
-      <td>LBS</td>
-      <td>True</td>
-      <td>None</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>6</td>
-      <td>2</td>
-      <td>l</td>
-      <td>LBS</td>
-      <td>True</td>
-      <td>None</td>
-    </tr>
-    <tr>
-      <th>12</th>
-      <td>4</td>
-      <td>3</td>
-      <td>l</td>
-      <td>LBS</td>
-      <td>True</td>
-      <td>None</td>
-    </tr>
-    <tr>
-      <th>13</th>
-      <td>7</td>
-      <td>3</td>
-      <td>l</td>
-      <td>LBS</td>
-      <td>True</td>
-      <td>None</td>
-    </tr>
   </tbody>
 </table>
 </div>
@@ -12637,7 +12583,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">scaling</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;load&quot;</span><span class="p">)</span>
@@ -12653,7 +12599,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12716,7 +12662,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_sgen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">2000</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;static generator&quot;</span><span class="p">)</span>
@@ -12732,7 +12678,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12795,7 +12741,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">6000</span><span class="p">,</span> <span class="n">max_q_kvar</span><span class="o">=</span><span class="mi">3000</span><span class="p">,</span> <span class="n">min_q_kvar</span><span class="o">=-</span><span class="mi">3000</span><span class="p">,</span> <span class="n">vm_pu</span><span class="o">=</span><span class="mf">1.03</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;generator&quot;</span><span class="p">)</span> 
@@ -12811,7 +12757,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12887,7 +12833,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_shunt</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=-</span><span class="mi">960</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Shunt&#39;</span><span class="p">)</span>
@@ -12903,7 +12849,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>

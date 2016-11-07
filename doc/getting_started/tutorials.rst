@@ -13,7 +13,7 @@ There are jupyter notebook tutorials on how to:
     - use pandas for data analysis in pandapower: `data_analysis <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/data_analysis.html>`_
     - run topological searces in pandapower: `topology <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/topology.html>`_
     - plot pandapower networks: `plotting <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting.html>`_
-    - optimal power flow: `opf <http:/www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf.html>`_
+    - optimal power flow: `opf <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf.html>`_
     
 To run the tutorials interactively (jupyter module is needed):
 

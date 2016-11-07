@@ -2,6 +2,9 @@
 MV Oberrhein
 ==============
 
+.. note::
+
+    The MV Oberrhein network is a generic network assembled from openly available data supplemented with parameters based on experience.
 
 .. autofunction:: pandapower.networks.mv_oberrhein()
 

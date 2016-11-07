@@ -44,7 +44,7 @@ def cmap_discrete(cmap_list):
     norm = Normalize(min_loading, max_loading)
     return cmap, norm
 
-def cmap_continous():
+def cmap_continous(cmap_list):
     """
     Can be used to create a continous colormap.
     

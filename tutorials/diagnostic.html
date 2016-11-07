@@ -11876,19 +11876,19 @@ div#notebook {
 <span class="ansi-green-intense-fg ansi-bold">      2</span> faulty_net <span class="ansi-yellow-intense-fg ansi-bold">=</span> faulty_example_network<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
 <span class="ansi-green-fg">----&gt; 3</span><span class="ansi-red-fg"> </span>pp<span class="ansi-yellow-intense-fg ansi-bold">.</span>runpp<span class="ansi-yellow-intense-fg ansi-bold">(</span>faulty_net<span class="ansi-yellow-intense-fg ansi-bold">)</span>
 
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">runpp</span><span class="ansi-blue-fg">(net, init, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">     92</span> 
-<span class="ansi-green-intense-fg ansi-bold">     93</span>     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-<span class="ansi-green-fg">---&gt; 94</span><span class="ansi-red-fg">              trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)
-</span><span class="ansi-green-intense-fg ansi-bold">     95</span> 
-<span class="ansi-green-intense-fg ansi-bold">     96</span> 
+<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">runpp</span><span class="ansi-blue-fg">(net, init, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">     94</span> 
+<span class="ansi-green-intense-fg ansi-bold">     95</span>     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
+<span class="ansi-green-fg">---&gt; 96</span><span class="ansi-red-fg">              trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
+</span><span class="ansi-green-intense-fg ansi-bold">     97</span> 
+<span class="ansi-green-intense-fg ansi-bold">     98</span> 
 
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">_runpppf</span><span class="ansi-blue-fg">(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">    173</span>     <span class="ansi-red-intense-fg ansi-bold"># raise if PF was not successful. If DC -&gt; success is always 1</span>
-<span class="ansi-green-intense-fg ansi-bold">    174</span>     <span class="ansi-green-intense-fg ansi-bold">if</span> result<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;success&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">!=</span> <span class="ansi-cyan-intense-fg ansi-bold">1</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-fg">--&gt; 175</span><span class="ansi-red-fg">         </span><span class="ansi-green-intense-fg ansi-bold">raise</span> LoadflowNotConverged<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Loadflow did not converge!&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    176</span>     <span class="ansi-green-intense-fg ansi-bold">else</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">    177</span>         net<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;_mpc_last_cycle&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">=</span> result
+<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">_runpppf</span><span class="ansi-blue-fg">(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    178</span>     <span class="ansi-red-intense-fg ansi-bold"># raise if PF was not successful. If DC -&gt; success is always 1</span>
+<span class="ansi-green-intense-fg ansi-bold">    179</span>     <span class="ansi-green-intense-fg ansi-bold">if</span> result<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;success&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">!=</span> <span class="ansi-cyan-intense-fg ansi-bold">1</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-fg">--&gt; 180</span><span class="ansi-red-fg">         </span><span class="ansi-green-intense-fg ansi-bold">raise</span> LoadflowNotConverged<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Loadflow did not converge!&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    181</span>     <span class="ansi-green-intense-fg ansi-bold">else</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    182</span>         net<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;_ppc&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">=</span> result
 
 <span class="ansi-red-fg">LoadflowNotConverged</span>: Loadflow did not converge!</pre>
 </div>
@@ -11936,84 +11936,84 @@ div#notebook {
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>hp.pandapower.diagnostic_reports - WARNING: 
+<pre>
 
 _____________ PANDAPOWER DIAGNOSTIC TOOL _____________ 
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for lines with impedance close to zero...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Line 0: length_km: 0.0, r_ohm_per_km: 0.208, x_ohm_per_km: 0.08. Impedance is close to zero. If a direct connection between two buses was intended, please use a bus-bus-switch instead.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 1 line(s) with impedance close to zero found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for invalid_values...
+
+bus:
+Invalid value found: &#39;bus 5&#39; with attribute &#39;vn_kv&#39; = -20.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
+line:
+Invalid value found: &#39;line 0&#39; with attribute &#39;length_km&#39; = 0.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
+
+SUMMARY: 2 invalid values found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for components with deviating nominal voltages...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Trafo(s) [0]: hv and lv connectors seem to be swapped
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 1 components(s) with deviating nominal voltages found
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking switch configuration...
+
+Power flow still does not converge with all switches closed.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for usage of wrong reference system...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Found load 0: &#39;load 0&#39; with p_kw = -1000.0. In load reference system p_kw should be positive.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: Found 1 load(s) with negative p_kw. In load reference system, p_kw should be positive. If the intention was to model a constant generation, please use an sgen instead.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for lines with impedance close to zero...
+
+Line 0: length_km: 0.0, r_ohm_per_km: 0.208, x_ohm_per_km: 0.08. Impedance is close to zero. If a direct connection between two buses was intended, please use a bus-bus-switch instead.
+
+SUMMARY: 1 line(s) with impedance close to zero found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for connections of different voltage levels...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line 0 connects bus 1: 20 kV bar (vn_kv = 20.0) and bus 2: bus 2 (vn_kv = 30.0)
-hp.pandapower.diagnostic_reports - WARNING: line 1 connects bus 2: bus 2 (vn_kv = 30.0) and bus 3: bus 3 (vn_kv = 20.0)
-hp.pandapower.diagnostic_reports - WARNING: line 3 connects bus 4: bus 4 (vn_kv = 20.0) and bus 5: bus 5 (vn_kv = -20.0)
-hp.pandapower.diagnostic_reports - WARNING: line 4 connects bus 5: bus 5 (vn_kv = -20.0) and bus 6: bus 6 (vn_kv = 20.0)
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 4 element(s) that connect different voltage levels found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for components with deviating nominal voltages...
+
+Trafo(s) [0]: hv and lv connectors seem to be swapped
+
+SUMMARY: 1 components(s) with deviating nominal voltages found
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for overload...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with generation scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with load scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for elements without a connection to an external grid...
+
+Disconnected section found, consisting of the following elements:
+switches: [7, 8]
+buses: [5]
+lines: [3]
+loads: [3]
+Disconnected section found, consisting of the following elements:
+isolated_lines: [4]
+
+SUMMARY: 6 disconnected element(s) found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for invalid_values...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line:
-hp.pandapower.diagnostic_reports - WARNING: Invalid value found: &#39;line 0&#39; with attribute &#39;length_km&#39; = 0.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
-hp.pandapower.diagnostic_reports - WARNING: bus:
-hp.pandapower.diagnostic_reports - WARNING: Invalid value found: &#39;bus 5&#39; with attribute &#39;vn_kv&#39; = -20.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 2 invalid values found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for usage of wrong reference system...
+
+Found load 0: &#39;load 0&#39; with p_kw = -1000.0. In load reference system p_kw should be positive.
+
+SUMMARY: Found 1 load(s) with negative p_kw. In load reference system, p_kw should be positive. If the intention was to model a constant generation, please use an sgen instead.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking switch configuration...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Loadflow still does not converge with all switches closed.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for overload...
+
+Overload check failed: Power flow still does not converge with load scaled down to 0.1 percent.
+Overload check failed: Power flow still does not converge with generation scaled down to 0.1 percent.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for elements without a connection to an external grid...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Disconnected section found, consisting of the following elements:
-hp.pandapower.diagnostic_reports - WARNING: buses: [5]
-hp.pandapower.diagnostic_reports - WARNING: lines: [3]
-hp.pandapower.diagnostic_reports - WARNING: switches: [7, 8]
-hp.pandapower.diagnostic_reports - WARNING: loads: [3]
-hp.pandapower.diagnostic_reports - WARNING: Disconnected section found, consisting of the following elements:
-hp.pandapower.diagnostic_reports - WARNING: isolated_lines: [4]
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 6 disconnected element(s) found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for connections of different voltage levels...
+
+line 0 connects bus 1: 20 kV bar (vn_kv = 20.0) and bus 2: bus 2 (vn_kv = 30.0)
+line 1 connects bus 2: bus 2 (vn_kv = 30.0) and bus 3: bus 3 (vn_kv = 20.0)
+line 3 connects bus 4: bus 4 (vn_kv = 20.0) and bus 5: bus 5 (vn_kv = -20.0)
+line 4 connects bus 5: bus 5 (vn_kv = -20.0) and bus 6: bus 6 (vn_kv = 20.0)
+
+SUMMARY: 4 element(s) that connect different voltage levels found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
+_____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
 </pre>
 </div>
 </div>
@@ -12103,84 +12103,84 @@ The function also return a dict that contains the indices of all elements where 
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>hp.pandapower.diagnostic_reports - WARNING: 
+<pre>
 
 _____________ PANDAPOWER DIAGNOSTIC TOOL _____________ 
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for lines with impedance close to zero...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Line 0: length_km: 0.0, r_ohm_per_km: 0.208, x_ohm_per_km: 0.08. Impedance is close to zero. If a direct connection between two buses was intended, please use a bus-bus-switch instead.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 1 line(s) with impedance close to zero found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for invalid_values...
+
+bus:
+Invalid value found: &#39;bus 5&#39; with attribute &#39;vn_kv&#39; = -20.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
+line:
+Invalid value found: &#39;line 0&#39; with attribute &#39;length_km&#39; = 0.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
+
+SUMMARY: 2 invalid values found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for components with deviating nominal voltages...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Trafo(s) [0]: hv and lv connectors seem to be swapped
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 1 components(s) with deviating nominal voltages found
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking switch configuration...
+
+Power flow still does not converge with all switches closed.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for usage of wrong reference system...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Found load 0: &#39;load 0&#39; with p_kw = -1000.0. In load reference system p_kw should be positive.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: Found 1 load(s) with negative p_kw. In load reference system, p_kw should be positive. If the intention was to model a constant generation, please use an sgen instead.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for lines with impedance close to zero...
+
+Line 0: length_km: 0.0, r_ohm_per_km: 0.208, x_ohm_per_km: 0.08. Impedance is close to zero. If a direct connection between two buses was intended, please use a bus-bus-switch instead.
+
+SUMMARY: 1 line(s) with impedance close to zero found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for connections of different voltage levels...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line 0 connects bus 1: 20 kV bar (vn_kv = 20.0) and bus 2: bus 2 (vn_kv = 30.0)
-hp.pandapower.diagnostic_reports - WARNING: line 1 connects bus 2: bus 2 (vn_kv = 30.0) and bus 3: bus 3 (vn_kv = 20.0)
-hp.pandapower.diagnostic_reports - WARNING: line 3 connects bus 4: bus 4 (vn_kv = 20.0) and bus 5: bus 5 (vn_kv = -20.0)
-hp.pandapower.diagnostic_reports - WARNING: line 4 connects bus 5: bus 5 (vn_kv = -20.0) and bus 6: bus 6 (vn_kv = 20.0)
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 4 element(s) that connect different voltage levels found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for components with deviating nominal voltages...
+
+Trafo(s) [0]: hv and lv connectors seem to be swapped
+
+SUMMARY: 1 components(s) with deviating nominal voltages found
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for overload...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with generation scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with load scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for elements without a connection to an external grid...
+
+Disconnected section found, consisting of the following elements:
+switches: [7, 8]
+buses: [5]
+lines: [3]
+loads: [3]
+Disconnected section found, consisting of the following elements:
+isolated_lines: [4]
+
+SUMMARY: 6 disconnected element(s) found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for invalid_values...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line:
-hp.pandapower.diagnostic_reports - WARNING: Invalid value found: &#39;line 0&#39; with attribute &#39;length_km&#39; = 0.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
-hp.pandapower.diagnostic_reports - WARNING: bus:
-hp.pandapower.diagnostic_reports - WARNING: Invalid value found: &#39;bus 5&#39; with attribute &#39;vn_kv&#39; = -20.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 2 invalid values found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for usage of wrong reference system...
+
+Found load 0: &#39;load 0&#39; with p_kw = -1000.0. In load reference system p_kw should be positive.
+
+SUMMARY: Found 1 load(s) with negative p_kw. In load reference system, p_kw should be positive. If the intention was to model a constant generation, please use an sgen instead.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking switch configuration...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Loadflow still does not converge with all switches closed.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for overload...
+
+Overload check failed: Power flow still does not converge with load scaled down to 0.1 percent.
+Overload check failed: Power flow still does not converge with generation scaled down to 0.1 percent.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for elements without a connection to an external grid...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Disconnected section found, consisting of the following elements:
-hp.pandapower.diagnostic_reports - WARNING: buses: [5]
-hp.pandapower.diagnostic_reports - WARNING: lines: [3]
-hp.pandapower.diagnostic_reports - WARNING: switches: [7, 8]
-hp.pandapower.diagnostic_reports - WARNING: loads: [3]
-hp.pandapower.diagnostic_reports - WARNING: Disconnected section found, consisting of the following elements:
-hp.pandapower.diagnostic_reports - WARNING: isolated_lines: [4]
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 6 disconnected element(s) found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for connections of different voltage levels...
+
+line 0 connects bus 1: 20 kV bar (vn_kv = 20.0) and bus 2: bus 2 (vn_kv = 30.0)
+line 1 connects bus 2: bus 2 (vn_kv = 30.0) and bus 3: bus 3 (vn_kv = 20.0)
+line 3 connects bus 4: bus 4 (vn_kv = 20.0) and bus 5: bus 5 (vn_kv = -20.0)
+line 4 connects bus 5: bus 5 (vn_kv = -20.0) and bus 6: bus 6 (vn_kv = 20.0)
+
+SUMMARY: 4 element(s) that connect different voltage levels found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
+_____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
 </pre>
 </div>
 </div>
@@ -12229,69 +12229,69 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>hp.pandapower.diagnostic_reports - WARNING: 
+<pre>
 
 _____________ PANDAPOWER DIAGNOSTIC TOOL _____________ 
 
-hp.pandapower.diagnostic_reports - WARNING: lines_with_impedance_close_to_zero:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line 0: length_km: 0.0; r_ohm_per_km: 0.208; x_ohm_per_km: 0.08
-hp.pandapower.diagnostic_reports - WARNING: 
+invalid_values:
+
+bus:
+bus 5: &#39;vn_kv&#39; = -20.0 (restriction: &gt;0)
+line:
+line 0: &#39;length_km&#39; = 0.0 (restriction: &gt;0)
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: nominal_voltages_dont_match:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: trafo:
-hp.pandapower.diagnostic_reports - WARNING: hv_lv_swapped: [0]
-hp.pandapower.diagnostic_reports - WARNING: 
+wrong_switch_configuration:
+
+Power flow still does not converge with all switches closed.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: wrong_reference_system:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: loads [0]: wrong reference system.
-hp.pandapower.diagnostic_reports - WARNING: 
+lines_with_impedance_close_to_zero:
+
+line 0: length_km: 0.0; r_ohm_per_km: 0.208; x_ohm_per_km: 0.08
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: different_voltage_levels_connected:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: lines:
-hp.pandapower.diagnostic_reports - WARNING: line 0: buses [1, 2]
-hp.pandapower.diagnostic_reports - WARNING: line 1: buses [2, 3]
-hp.pandapower.diagnostic_reports - WARNING: line 3: buses [4, 5]
-hp.pandapower.diagnostic_reports - WARNING: line 4: buses [5, 6]
-hp.pandapower.diagnostic_reports - WARNING: 
+nominal_voltages_dont_match:
+
+trafo:
+hv_lv_swapped: [0]
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: overload:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: loadflow still does not converge after generation downscaling.
-hp.pandapower.diagnostic_reports - WARNING: loadflow still does not converge after load downscaling.
-hp.pandapower.diagnostic_reports - WARNING: 
+disconnected_elements:
+
+disonnected_section: {&#39;switches&#39;: [7, 8], &#39;buses&#39;: [5], &#39;lines&#39;: [3], &#39;loads&#39;: [3]}
+disonnected_section: {&#39;isolated_lines&#39;: [4]}
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: invalid_values:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line:
-hp.pandapower.diagnostic_reports - WARNING: line 0: &#39;length_km&#39; = 0.0 (restriction: &gt;0)
-hp.pandapower.diagnostic_reports - WARNING: bus:
-hp.pandapower.diagnostic_reports - WARNING: bus 5: &#39;vn_kv&#39; = -20.0 (restriction: &gt;0)
-hp.pandapower.diagnostic_reports - WARNING: 
+wrong_reference_system:
+
+loads [0]: wrong reference system.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: wrong_switch_configuration:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Loadflow still does not converge with all switches closed.
-hp.pandapower.diagnostic_reports - WARNING: 
+overload:
+
+power flow still does not converge after load downscaling.
+power flow still does not converge after generation downscaling.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: disconnected_elements:
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: disonnected_section: {&#39;buses&#39;: [5], &#39;lines&#39;: [3], &#39;switches&#39;: [7, 8], &#39;loads&#39;: [3]}
-hp.pandapower.diagnostic_reports - WARNING: disonnected_section: {&#39;isolated_lines&#39;: [4]}
-hp.pandapower.diagnostic_reports - WARNING: 
+different_voltage_levels_connected:
+
+lines:
+line 0: buses [1, 2]
+line 1: buses [2, 3]
+line 3: buses [4, 5]
+line 4: buses [5, 6]
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
+_____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
 </pre>
 </div>
 </div>
@@ -12349,84 +12349,84 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>hp.pandapower.diagnostic_reports - WARNING: 
+<pre>
 
 _____________ PANDAPOWER DIAGNOSTIC TOOL _____________ 
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for lines with impedance close to zero...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Line 0: length_km: 0.0, r_ohm_per_km: 0.208, x_ohm_per_km: 0.08. Impedance is close to zero. If a direct connection between two buses was intended, please use a bus-bus-switch instead.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 1 line(s) with impedance close to zero found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for invalid_values...
+
+bus:
+Invalid value found: &#39;bus 5&#39; with attribute &#39;vn_kv&#39; = -20.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
+line:
+Invalid value found: &#39;line 0&#39; with attribute &#39;length_km&#39; = 0.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
+
+SUMMARY: 2 invalid values found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for components with deviating nominal voltages...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Trafo(s) [0]: hv and lv connectors seem to be swapped
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 1 components(s) with deviating nominal voltages found
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking switch configuration...
+
+Power flow still does not converge with all switches closed.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for usage of wrong reference system...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Found load 0: &#39;load 0&#39; with p_kw = -1000.0. In load reference system p_kw should be positive.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: Found 1 load(s) with negative p_kw. In load reference system, p_kw should be positive. If the intention was to model a constant generation, please use an sgen instead.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for lines with impedance close to zero...
+
+Line 0: length_km: 0.0, r_ohm_per_km: 0.208, x_ohm_per_km: 0.08. Impedance is close to zero. If a direct connection between two buses was intended, please use a bus-bus-switch instead.
+
+SUMMARY: 1 line(s) with impedance close to zero found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for connections of different voltage levels...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line 0 connects bus 1: 20 kV bar (vn_kv = 20.0) and bus 2: bus 2 (vn_kv = 30.0)
-hp.pandapower.diagnostic_reports - WARNING: line 1 connects bus 2: bus 2 (vn_kv = 30.0) and bus 3: bus 3 (vn_kv = 20.0)
-hp.pandapower.diagnostic_reports - WARNING: line 3 connects bus 4: bus 4 (vn_kv = 20.0) and bus 5: bus 5 (vn_kv = -20.0)
-hp.pandapower.diagnostic_reports - WARNING: line 4 connects bus 5: bus 5 (vn_kv = -20.0) and bus 6: bus 6 (vn_kv = 20.0)
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 4 element(s) that connect different voltage levels found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for components with deviating nominal voltages...
+
+Trafo(s) [0]: hv and lv connectors seem to be swapped
+
+SUMMARY: 1 components(s) with deviating nominal voltages found
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for overload...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with generation scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with load scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for elements without a connection to an external grid...
+
+Disconnected section found, consisting of the following elements:
+switches: [7, 8]
+buses: [5]
+lines: [3]
+loads: [3]
+Disconnected section found, consisting of the following elements:
+isolated_lines: [4]
+
+SUMMARY: 6 disconnected element(s) found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for invalid_values...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: line:
-hp.pandapower.diagnostic_reports - WARNING: Invalid value found: &#39;line 0&#39; with attribute &#39;length_km&#39; = 0.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
-hp.pandapower.diagnostic_reports - WARNING: bus:
-hp.pandapower.diagnostic_reports - WARNING: Invalid value found: &#39;bus 5&#39; with attribute &#39;vn_kv&#39; = -20.0 (data type: &lt;class &#39;numpy.float64&#39;&gt;). Valid input needs to be &gt;0.
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 2 invalid values found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for usage of wrong reference system...
+
+Found load 0: &#39;load 0&#39; with p_kw = -1000.0. In load reference system p_kw should be positive.
+
+SUMMARY: Found 1 load(s) with negative p_kw. In load reference system, p_kw should be positive. If the intention was to model a constant generation, please use an sgen instead.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking switch configuration...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Loadflow still does not converge with all switches closed.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for overload...
+
+Overload check failed: Power flow still does not converge with load scaled down to 0.1 percent.
+Overload check failed: Power flow still does not converge with generation scaled down to 0.1 percent.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for elements without a connection to an external grid...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Disconnected section found, consisting of the following elements:
-hp.pandapower.diagnostic_reports - WARNING: buses: [5]
-hp.pandapower.diagnostic_reports - WARNING: lines: [3]
-hp.pandapower.diagnostic_reports - WARNING: switches: [7, 8]
-hp.pandapower.diagnostic_reports - WARNING: loads: [3]
-hp.pandapower.diagnostic_reports - WARNING: Disconnected section found, consisting of the following elements:
-hp.pandapower.diagnostic_reports - WARNING: isolated_lines: [4]
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: SUMMARY: 6 disconnected element(s) found.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for connections of different voltage levels...
+
+line 0 connects bus 1: 20 kV bar (vn_kv = 20.0) and bus 2: bus 2 (vn_kv = 30.0)
+line 1 connects bus 2: bus 2 (vn_kv = 30.0) and bus 3: bus 3 (vn_kv = 20.0)
+line 3 connects bus 4: bus 4 (vn_kv = 20.0) and bus 5: bus 5 (vn_kv = -20.0)
+line 4 connects bus 5: bus 5 (vn_kv = -20.0) and bus 6: bus 6 (vn_kv = 20.0)
+
+SUMMARY: 4 element(s) that connect different voltage levels found.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
+_____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
 </pre>
 </div>
 </div>
@@ -12684,7 +12684,7 @@ SUMMARY: Found 1 loads with negative p_kw. Load reference system is, used theref
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># new diagnosis to check, whether we fixed all errors</span>
@@ -12701,16 +12701,16 @@ SUMMARY: Found 1 loads with negative p_kw. Load reference system is, used theref
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>hp.pandapower.diagnostic_reports - WARNING: 
+<pre>
 
 _____________ PANDAPOWER DIAGNOSTIC TOOL _____________ 
 
-hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
+_____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
 </pre>
 </div>
 </div>
 
-<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12735,7 +12735,7 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runpp</span><span class="p">(</span><span class="n">faulty_net</span><span class="p">)</span>
@@ -12750,23 +12750,23 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
 <pre>This pandapower network includes the following parameter tables:
-   - line (6 elements)
+   - bus (7 elements)
    - load (5 elements)
    - ext_grid (1 elements)
    - switch (12 elements)
    - trafo (1 elements)
-   - bus (7 elements)
+   - line (6 elements)
  and the following results tables:
    - res_bus (7 elements)
+   - res_trafo (1 elements)
    - res_load (5 elements)
-   - res_line (6 elements)
    - res_ext_grid (1 elements)
-   - res_trafo (1 elements)</pre>
+   - res_line (6 elements)</pre>
 </div>
 
 </div>
@@ -12815,7 +12815,7 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># imports the pandapower module</span>
@@ -12878,7 +12878,7 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">overload_net</span> <span class="o">=</span> <span class="n">overload_example_network</span><span class="p">()</span>
@@ -12898,23 +12898,23 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 <pre>
 <span class="ansi-red-fg">---------------------------------------------------------------------------</span>
 <span class="ansi-red-fg">LoadflowNotConverged</span>                      Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-20-82b187456412&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">&lt;ipython-input-16-82b187456412&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
 <span class="ansi-green-intense-fg ansi-bold">      1</span> overload_net <span class="ansi-yellow-intense-fg ansi-bold">=</span> overload_example_network<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
 <span class="ansi-green-fg">----&gt; 2</span><span class="ansi-red-fg"> </span>pp<span class="ansi-yellow-intense-fg ansi-bold">.</span>runpp<span class="ansi-yellow-intense-fg ansi-bold">(</span>overload_net<span class="ansi-yellow-intense-fg ansi-bold">)</span>
 
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">runpp</span><span class="ansi-blue-fg">(net, init, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">     92</span> 
-<span class="ansi-green-intense-fg ansi-bold">     93</span>     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-<span class="ansi-green-fg">---&gt; 94</span><span class="ansi-red-fg">              trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)
-</span><span class="ansi-green-intense-fg ansi-bold">     95</span> 
-<span class="ansi-green-intense-fg ansi-bold">     96</span> 
+<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">runpp</span><span class="ansi-blue-fg">(net, init, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">     94</span> 
+<span class="ansi-green-intense-fg ansi-bold">     95</span>     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
+<span class="ansi-green-fg">---&gt; 96</span><span class="ansi-red-fg">              trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
+</span><span class="ansi-green-intense-fg ansi-bold">     97</span> 
+<span class="ansi-green-intense-fg ansi-bold">     98</span> 
 
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">_runpppf</span><span class="ansi-blue-fg">(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">    173</span>     <span class="ansi-red-intense-fg ansi-bold"># raise if PF was not successful. If DC -&gt; success is always 1</span>
-<span class="ansi-green-intense-fg ansi-bold">    174</span>     <span class="ansi-green-intense-fg ansi-bold">if</span> result<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;success&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">!=</span> <span class="ansi-cyan-intense-fg ansi-bold">1</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-fg">--&gt; 175</span><span class="ansi-red-fg">         </span><span class="ansi-green-intense-fg ansi-bold">raise</span> LoadflowNotConverged<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Loadflow did not converge!&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    176</span>     <span class="ansi-green-intense-fg ansi-bold">else</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">    177</span>         net<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;_mpc_last_cycle&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">=</span> result
+<span class="ansi-green-fg">D:\Python\pandapower\pandapower\run.py</span> in <span class="ansi-cyan-fg">_runpppf</span><span class="ansi-blue-fg">(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model, trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    178</span>     <span class="ansi-red-intense-fg ansi-bold"># raise if PF was not successful. If DC -&gt; success is always 1</span>
+<span class="ansi-green-intense-fg ansi-bold">    179</span>     <span class="ansi-green-intense-fg ansi-bold">if</span> result<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;success&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">!=</span> <span class="ansi-cyan-intense-fg ansi-bold">1</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-fg">--&gt; 180</span><span class="ansi-red-fg">         </span><span class="ansi-green-intense-fg ansi-bold">raise</span> LoadflowNotConverged<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Loadflow did not converge!&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    181</span>     <span class="ansi-green-intense-fg ansi-bold">else</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    182</span>         net<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;_ppc&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">=</span> result
 
 <span class="ansi-red-fg">LoadflowNotConverged</span>: Loadflow did not converge!</pre>
 </div>
@@ -12926,7 +12926,7 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">diagnostic</span><span class="p">(</span><span class="n">overload_net</span><span class="p">,</span> <span class="n">warnings_only</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
@@ -12942,29 +12942,29 @@ hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAG
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>hp.pandapower.diagnostic_reports - WARNING: 
+<pre>
 
 _____________ PANDAPOWER DIAGNOSTIC TOOL _____________ 
 
-hp.pandapower.diagnostic_reports - WARNING: Checking for overload...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Overload check failed: Loadflow still does not converge with generation scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: Possibly overload found: Loadflow converges with load scaled down to 0.1 percent.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking for overload...
+
+Possibly overload found: power flow converges with load scaled down to 0.1 percent.
+Overload check failed: Power flow still does not converge with generation scaled down to 0.1 percent.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: Checking switch configuration...
-hp.pandapower.diagnostic_reports - WARNING: 
-hp.pandapower.diagnostic_reports - WARNING: Loadflow still does not converge with all switches closed.
-hp.pandapower.diagnostic_reports - WARNING: 
+Checking switch configuration...
+
+Power flow still does not converge with all switches closed.
+
  --------
 
-hp.pandapower.diagnostic_reports - WARNING: _____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
+_____________ END OF PANDAPOWER DIAGNOSTIC _____________ 
 </pre>
 </div>
 </div>
 
-<div class="output_area"><div class="prompt output_prompt">Out[21]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
