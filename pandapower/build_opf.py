@@ -55,7 +55,7 @@ def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
     return ppc, bus_lookup
 
 
-def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp"):
+def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kwargs):
     """ 
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}

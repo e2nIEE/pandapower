@@ -23,7 +23,7 @@ class OPFNotConverged(ppException):
     pass
 
 
-def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *kwargs):
+def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -80,7 +80,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         sg_is = DataFrame()
 
     ppc, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is)
-    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, cost_function, *kwargs)
+    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, cost_function, **kwargs)
     net["_ppc_opf"] = ppc
 
     if suppress_warnings:
