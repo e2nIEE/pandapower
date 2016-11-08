@@ -1048,7 +1048,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and ("tp_pos" is np.nan):
+    if ("tp_mid" in v) and (tp_pos is np.nan):
         v["tp_pos"] = v["tp_mid"]
 
     # store dtypes
@@ -1248,7 +1248,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and ("tp_pos" is np.nan):
+    if ("tp_mid" in v) and (tp_pos is np.nan):
         v["tp_pos"] = v["tp_mid"]
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
