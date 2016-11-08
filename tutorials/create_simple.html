@@ -11788,7 +11788,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span> <span class="c1">#import pandapower</span>
@@ -11823,17 +11823,16 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">bus1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;HV Busbar&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">110</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
 <span class="n">bus2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;HV Busbar 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">110</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
 <span class="n">bus3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;HV Transformer Bus&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">110</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;n&quot;</span><span class="p">)</span>
 <span class="n">bus4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Transformer Bus&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;n&quot;</span><span class="p">)</span>
-<span class="n">bus5</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Station 1&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
-<span class="n">bus6</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Station 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
-<span class="n">bus7</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Station 3&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
-<span class="n">bus8</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Station 4&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus5</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Main Bus&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus6</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Bus 1&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+<span class="n">bus7</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MV Bus 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11853,7 +11852,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">bus</span> <span class="c1"># show bus table</span>
@@ -11867,7 +11866,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11917,7 +11916,7 @@ div#notebook {
     </tr>
     <tr>
       <th>4</th>
-      <td>MV Station 1</td>
+      <td>MV Main Bus</td>
       <td>20.0</td>
       <td>b</td>
       <td>None</td>
@@ -11925,7 +11924,7 @@ div#notebook {
     </tr>
     <tr>
       <th>5</th>
-      <td>MV Station 2</td>
+      <td>MV Bus 1</td>
       <td>20.0</td>
       <td>b</td>
       <td>None</td>
@@ -11933,15 +11932,7 @@ div#notebook {
     </tr>
     <tr>
       <th>6</th>
-      <td>MV Station 3</td>
-      <td>20.0</td>
-      <td>b</td>
-      <td>None</td>
-      <td>True</td>
-    </tr>
-    <tr>
-      <th>7</th>
-      <td>MV Station 4</td>
+      <td>MV Bus 2</td>
       <td>20.0</td>
       <td>b</td>
       <td>None</td>
@@ -11970,7 +11961,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">bus6</span>
@@ -11984,7 +11975,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[5]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
@@ -12029,7 +12020,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">,</span> <span class="n">vm_pu</span><span class="o">=</span><span class="mf">1.02</span><span class="p">,</span> <span class="n">va_degree</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span> <span class="c1"># Create an external grid connection</span>
@@ -12045,7 +12036,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[5]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[6]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12102,7 +12093,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">trafo1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_transformer</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;110kV/20kV transformer&quot;</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;25 MVA 110/20 kV&quot;</span><span class="p">)</span>
@@ -12125,7 +12116,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">trafo</span> <span class="c1">#show transformer table</span>
@@ -12139,7 +12130,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12188,7 +12179,7 @@ div#notebook {
       <td>-9</td>
       <td>9</td>
       <td>1.5</td>
-      <td>NaN</td>
+      <td>0</td>
       <td>True</td>
     </tr>
   </tbody>
@@ -12234,13 +12225,13 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">line1</span><span class="o">=</span><span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;N2XS(FL)2Y 1x300 RM/35 64/110 kV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 1&quot;</span><span class="p">)</span>
-<span class="n">line2</span><span class="o">=</span><span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;NA2XS2Y 1x240 RM/25 12/20 kV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 2&quot;</span><span class="p">)</span>
-<span class="n">line3</span><span class="o">=</span><span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;48-AL1/8-ST1A 20.0&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 3&quot;</span><span class="p">)</span>
-<span class="n">line4</span><span class="o">=</span><span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;NA2XS2Y 1x240 RM/25 12/20 kV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 4&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">line1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus1</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;N2XS(FL)2Y 1x300 RM/35 64/110 kV&quot;</span><span class="p">,</span>  <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 1&quot;</span><span class="p">)</span>
+<span class="n">line2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;NA2XS2Y 1x240 RM/25 12/20 kV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 2&quot;</span><span class="p">)</span>
+<span class="n">line3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;48-AL1/8-ST1A 20.0&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 3&quot;</span><span class="p">)</span>
+<span class="n">line4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_line</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">length_km</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">std_type</span><span class="o">=</span><span class="s2">&quot;NA2XS2Y 1x240 RM/25 12/20 kV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Line 4&quot;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12260,7 +12251,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">line</span> <span class="c1"># show line table</span>
@@ -12274,7 +12265,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[10]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12334,7 +12325,7 @@ div#notebook {
       <th>2</th>
       <td>Line 3</td>
       <td>48-AL1/8-ST1A 20.0</td>
-      <td>4</td>
+      <td>5</td>
       <td>6</td>
       <td>3.5</td>
       <td>0.5939</td>
@@ -12350,8 +12341,8 @@ div#notebook {
       <th>3</th>
       <td>Line 4</td>
       <td>NA2XS2Y 1x240 RM/25 12/20 kV</td>
+      <td>6</td>
       <td>4</td>
-      <td>7</td>
       <td>2.5</td>
       <td>0.1220</td>
       <td>0.112</td>
@@ -12395,11 +12386,11 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sw1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;CB&quot;</span><span class="p">)</span>
-<span class="n">sw2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;CB&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sw1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus2</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;CB&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sw2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus4</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;CB&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12419,15 +12410,15 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sw3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
-<span class="n">sw4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
-<span class="n">sw5</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line3</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
-<span class="n">sw6</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">line3</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
-<span class="n">sw7</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line4</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
-<span class="n">sw8</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="n">line4</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sw3</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sw4</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sw5</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">line3</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sw6</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">line3</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sw7</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">line4</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sw8</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_switch</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus5</span><span class="p">,</span> <span class="n">line4</span><span class="p">,</span> <span class="n">et</span><span class="o">=</span><span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;LBS&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12447,7 +12438,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">switch</span> <span class="c1"># show switch table</span>
@@ -12461,7 +12452,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12516,7 +12507,7 @@ div#notebook {
     </tr>
     <tr>
       <th>4</th>
-      <td>4</td>
+      <td>5</td>
       <td>2</td>
       <td>l</td>
       <td>LBS</td>
@@ -12529,12 +12520,12 @@ div#notebook {
       <td>2</td>
       <td>l</td>
       <td>LBS</td>
-      <td>True</td>
+      <td>False</td>
       <td>None</td>
     </tr>
     <tr>
       <th>6</th>
-      <td>4</td>
+      <td>6</td>
       <td>3</td>
       <td>l</td>
       <td>LBS</td>
@@ -12543,7 +12534,7 @@ div#notebook {
     </tr>
     <tr>
       <th>7</th>
-      <td>7</td>
+      <td>4</td>
       <td>3</td>
       <td>l</td>
       <td>LBS</td>
@@ -12583,10 +12574,10 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus8</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">scaling</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;load&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_load</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span> <span class="n">scaling</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;load&quot;</span><span class="p">)</span>
 
 <span class="n">net</span><span class="o">.</span><span class="n">load</span>
 </pre></div>
@@ -12599,7 +12590,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12621,7 +12612,7 @@ div#notebook {
     <tr>
       <th>0</th>
       <td>load</td>
-      <td>7</td>
+      <td>6</td>
       <td>2000.0</td>
       <td>4000.0</td>
       <td>NaN</td>
@@ -12662,7 +12653,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_sgen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus7</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">2000</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;static generator&quot;</span><span class="p">)</span>
@@ -12678,7 +12669,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12741,7 +12732,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_gen</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus6</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=-</span><span class="mi">6000</span><span class="p">,</span> <span class="n">max_q_kvar</span><span class="o">=</span><span class="mi">3000</span><span class="p">,</span> <span class="n">min_q_kvar</span><span class="o">=-</span><span class="mi">3000</span><span class="p">,</span> <span class="n">vm_pu</span><span class="o">=</span><span class="mf">1.03</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;generator&quot;</span><span class="p">)</span> 
@@ -12757,7 +12748,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12833,7 +12824,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_shunt</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">bus3</span><span class="p">,</span> <span class="n">q_kvar</span><span class="o">=-</span><span class="mi">960</span><span class="p">,</span> <span class="n">p_kw</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Shunt&#39;</span><span class="p">)</span>
@@ -12849,7 +12840,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>

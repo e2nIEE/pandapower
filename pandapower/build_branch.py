@@ -506,18 +506,18 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
             new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
             new_ls_buses[:, 0] = new_indices
             new_ls_buses[:, 9] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
-            # set voltage of new buses to voltage on other branch end
-#            to_buses = ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1].real.astype(int)
-#            from_buses = ppc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0].real\
-#                .astype(int)
-#            if len(to_buses):
-#                ix = ls_info[:, 0] == 1
-#                new_ls_buses[ix, 7] = ppc["bus"][to_buses, 7]
-#                new_ls_buses[ix, 8] = ppc["bus"][to_buses, 8]
-#            if len(from_buses):
-#                ix = ls_info[:, 0] == 0
-#                new_ls_buses[ix, 7] = ppc["bus"][from_buses, 7]
-#                new_ls_buses[ix, 8] = ppc["bus"][from_buses, 8]
+#             set voltage of new buses to voltage on other branch end
+            to_buses = ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1].real.astype(int)
+            from_buses = ppc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0].real\
+                .astype(int)
+            if len(to_buses):
+                ix = ls_info[:, 0] == 1
+                new_ls_buses[ix, 7] = ppc["bus"][to_buses, 7]
+                new_ls_buses[ix, 8] = ppc["bus"][to_buses, 8]
+            if len(from_buses):
+                ix = ls_info[:, 0] == 0
+                new_ls_buses[ix, 7] = ppc["bus"][from_buses, 7]
+                new_ls_buses[ix, 8] = ppc["bus"][from_buses, 8]
 
             future_buses.append(new_ls_buses)
 

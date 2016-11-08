@@ -8,7 +8,6 @@ import pytest
 import pandapower as pp
 import numpy as np
 from pandapower.test.result_test_network_generator import result_test_network_generator
-from pandapower.test.consistency_checks import runpp_with_consistency_checks
 
 
 @pytest.fixture(scope="session")
