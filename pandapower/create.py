@@ -1071,7 +1071,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, vscr_percent,
                                        vsc_percent, pfe_kw, i0_percent, shift_degree=0,
                                        tp_side=None, tp_mid=np.nan, tp_max=np.nan,
-                                       tp_min=np.nan, tp_st_percent=np.nan, tp_pos=None,
+                                       tp_min=np.nan, tp_st_percent=np.nan, tp_pos=np.nan,
                                        in_service=True, name=None, index=None,
                                        max_loading_percent=np.nan, **kwargs):
     """
@@ -1145,7 +1145,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     if index in net["trafo"].index:
         raise UserWarning("A transformer with index %s already exists" % index)
 
-    if tp_pos is None:
+    if tp_pos is np.nan:
         tp_pos = tp_mid
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
@@ -1353,7 +1353,10 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
     if index in net["trafo3w"].index:
         raise UserWarning("A three winding transformer with index %s already exists" % index)
-
+        
+    if tp_pos is np.nan:
+        tp_pos = tp_mid
+    
     # store dtypes
     dtypes = net.trafo3w.dtypes
 
