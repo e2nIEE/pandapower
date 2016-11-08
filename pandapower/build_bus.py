@@ -153,75 +153,77 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
 
     return bus_lookup
 
-
 def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
+    # init values
+    b, p, q = np.array([]), np.array([]), np.array([])
     # get in service elements
-    bus_is = is_elems['bus']
+    bus_is = is_elems["bus"]
 
     l = net["load"]
     # element_is = check if element is at a bus in service & element is in service
-    load_is = np.in1d(l.bus.values, bus_is.index) \
-        & l.in_service.values.astype(bool)
-    vl = load_is * l["scaling"].values.T / np.float64(1000.)
-    lp = l["p_kw"].values * vl
-    lq = l["q_kvar"].values * vl
+    if len(l) > 0:
+        vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, l["q_kvar"].values * vl])
+        p = np.hstack([p, l["p_kw"].values * vl])
+        b = np.hstack([b, l["bus"].values])
 
     s = net["sgen"]
-    sgen_is = np.in1d(s.bus.values, bus_is.index) \
-        & s.in_service.values.astype(bool)
-    vl = sgen_is * s["scaling"].values.T / np.float64(1000.)
-    sp = s["p_kw"].values * vl
-    sq = s["q_kvar"].values * vl
+    if len(s) > 0:
+        vl = is_elems["sgen"] * s["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, s["q_kvar"].values * vl])
+        p = np.hstack([p, s["p_kw"].values * vl])
+        b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
-    ward_is = np.in1d(w.bus.values, bus_is.index) \
-        & w.in_service.values.astype(bool)
-    vl = ward_is / np.float64(1000.)
-    wp = w["ps_kw"].values * vl
-    wq = w["qs_kvar"].values * vl
+    if len(w) > 0:
+        vl = is_elems["ward"] / np.float64(1000.)
+        q = np.hstack([q, w["qs_kvar"].values * vl])
+        p = np.hstack([p, w["ps_kw"].values * vl])
+        b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
-    xward_is = np.in1d(xw.bus.values, bus_is.index) \
-        & xw.in_service.values.astype(bool)
-    vl = xward_is / np.float64(1000.)
-    xwp = xw["ps_kw"].values * vl
-    xwq = xw["qs_kvar"].values * vl
+    if len(w) > 0:
+        vl = is_elems["xward"] / np.float64(1000.)
+        q = np.hstack([q, xw["qs_kvar"].values * vl])
+        p = np.hstack([p, xw["ps_kw"].values * vl])
+        b = np.hstack([b, xw["bus"].values])
 
-    b = get_indices(np.hstack([l["bus"].values, s["bus"].values, w["bus"].values, xw["bus"].values]
-                              ), bus_lookup)
-    b, vp, vq = _sum_by_group(b, np.hstack([lp, sp, wp, xwp]), np.hstack([lq, sq, wq, xwq]))
+    b = get_indices(b, bus_lookup)
+    b, vp, vq = _sum_by_group(b, p, q)
 
     ppc["bus"][b, PD] = vp
     ppc["bus"][b, QD] = vq
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
+    # init values
+    b, p, q = np.array([]), np.array([]), np.array([])
     # get in service elements
     bus_is = is_elems['bus']
 
     s = net["shunt"]
-    shunt_is = np.in1d(s.bus.values, bus_is.index) \
-        & s.in_service.values.astype(bool)
-    vl = shunt_is / np.float64(1000.)
-    sp = s["p_kw"].values * vl
-    sq = s["q_kvar"].values * vl
+    if len(s) > 0:
+        vl = is_elems["shunt"] / np.float64(1000.)
+        q = np.hstack([q, s["q_kvar"].values * vl])
+        p = np.hstack([p, s["p_kw"].values * vl])
+        b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
-    ward_is = np.in1d(w.bus.values, bus_is.index) \
-        & w.in_service.values.astype(bool)
-    vl = ward_is / np.float64(1000.)
-    wp = w["pz_kw"].values * vl
-    wq = w["qz_kvar"].values * vl
+    if len(w) > 0:
+        vl = is_elems["ward"] / np.float64(1000.)
+        q = np.hstack([q, w["qz_kvar"].values * vl])
+        p = np.hstack([p, w["pz_kw"].values * vl])
+        b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
-    xward_is = np.in1d(xw.bus.values, bus_is.index) \
-        & xw.in_service.values.astype(bool)
-    vl = xward_is / np.float64(1000.)
-    xwp = xw["pz_kw"].values * vl
-    xwq = xw["qz_kvar"].values * vl
+    if len(xw) > 0:
+        vl = is_elems["xward"] / np.float64(1000.)
+        q = np.hstack([q, xw["qz_kvar"].values * vl])
+        p = np.hstack([p, xw["pz_kw"].values * vl])
+        b = np.hstack([b, xw["bus"].values])
 
-    b = get_indices(np.hstack([s["bus"].values, w["bus"].values, xw["bus"].values]), bus_lookup)
-    b, vp, vq = _sum_by_group(b, np.hstack([sp, wp, xwp]), np.hstack([sq, wq, xwq]))
+    b = get_indices(b, bus_lookup)
+    b, vp, vq = _sum_by_group(b, p, q)
 
     ppc["bus"][b, GS] = vp
     ppc["bus"][b, BS] = -vq

@@ -411,8 +411,7 @@ def _calc_xward_parameter(net, ppc, is_elems, bus_lookup):
     bus_is = is_elems['bus']
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
-    xw_is = np.in1d(net["xward"].bus.values, bus_is.index) \
-        & net["xward"].in_service.values.astype(bool)
+    xw_is = is_elems["xward"]
     t[:, 0] = get_indices(net["xward"]["bus"].values, bus_lookup)
     t[:, 1] = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
     t[:, 2] = net["xward"]["r_ohm"] / baseR
