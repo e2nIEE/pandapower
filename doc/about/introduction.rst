@@ -7,12 +7,14 @@ aimed at automation of analysis and optimization in power systems.
 
 **Electric Network Representation**
 
-Most open source power system software model electric networks with a bus/branch model, which consists of nodes that are connected by branches. Loads or shunts are then modelled as an attribute or admittances of a 
-certain bus. In reality however, the power demand is not an attribute of the bus, but of seperate electric elements (such as loads, pv generators or capacitor banks), which are connected to the 
+A common representation for electric models in open source power system software is the bus/branch model, which models the network as a bunch of nodes that are connected by branches.
+Loads or shunts are then modelled as an attribute or admittances of a certain bus. In reality however, the power demand is not an attribute of the bus, but of seperate electric elements (such as loads, pv generators or capacitor banks), which are connected to the 
 buses. In pandapower, we model each electric bus element instead of considering summed values of power demand and shunt admittance for each bus.
 
 Branch/bus models also make no distinction between modeling different kind of branches, even though the electric models and behaviour for lines and transformers are very different. 
-pandapower includes seperate electric models for lines, transformers and three winding transformers, that allow a defintion of each element with common nameplate parameters.
+pandapower includes seperate electric models for lines, transformers and three winding transformers that allow a defintion of each element with common nameplate parameters.
+
+Finally, pandapower includes a comprehensive switch model, which allows explicit modeling of bus/bus and bus/line or bus/transformer switches.
 
 **Datastructure**
 
@@ -46,15 +48,15 @@ We now create the branch elements. First, we create the transformer from the typ
                                                 vn_hv_kv=20., vn_lv_kv=0.4,
                                                 vsc_percent=6., vscr_percent=1.425,
                                                 i0_percent=0.3375, pfe_kw=1.35,
-                                                name="Transformer")
+                                                name="Trafo")
 
-Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower.
+Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/elements/trafo.html#electric-model>`_.
 
-The standard type library allows even easier creation of the transformer. The parameters given above are the parameters of the transformer "0.4 MVA 20/0.4 kV" from the pandapower basic standard types. 
-The transformer can be created from the standard type library like this: ::
+The `standard type library <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types.html>`_ allows even easier creation of the transformer. 
+The parameters given above are the parameters of the transformer "0.4 MVA 20/0.4 kV" from the pandapower `basic standard types <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types/basic.html>`_. The transformer can be created from the standard type library like this: ::
 
     tid = pp.create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="0.4 MVA 20/0.4 kV",
-                                name="Transformer")
+                                name="Trafo")
 
 The same applies to the line, which can either be created by parameters: ::
 
@@ -67,22 +69,23 @@ or from the standard type library: ::
     pp.create_line(net, from_bus=b2, to_bus=b3, length_km=0.1, name="Line",
                    std_type="NAYY 4x50 SE")     
 
-the pandapower representation then looks like this:
+the pandapower representation now looks like this:
 
 .. image:: /pics/pandapower_datastructure.png
 		:width: 40em
 		:alt: alternate Text
 		:align: center
 
-The transformer table holds some tap changer variables, that are also defined in the standard type library. For more information on the tap changer model, see the documentation of the transformer element.
+This is the version where transformer and line have been created through the standard type libraries, which is why the line has a specified type (cs for cable system) and the transformer has a tap changer, both of
+which are defined in the `type data <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types/basic.html>`_.
 
 **Running a Power Flow**  
 
-When a power flow is run: ::
-    
+A powerflow can be carried out with the `runpp function <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/powerflow/ac.html>`_: ::
+     
     pp.runpp(net)
     
-pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow.
+When a power flow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow.
 The results are then processed and written back into pandapower:
         
 .. image:: /pics/pandapower_power flow.png
@@ -99,5 +102,5 @@ For the 3-bus example network, the result tables look like this:
         
 You can download the python script that creates this 3-bus system :download:`here  <pandapower_3bus_system.py>`.
 
-For a more in depth introduction into pandapower modeling and analysis functionality, see the :ref:`pandapower tutorials<tutorial>`
+For a more in depth introduction into pandapower modeling and analysis functionality, see the `pandapower tutorials <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/tutorials.html>`_
 about network creation, standard type libraries, power flow, topological searches, plotting and more.
