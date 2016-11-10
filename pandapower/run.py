@@ -35,7 +35,7 @@ class LoadflowNotConverged(ppException):
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
           , trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, Numba=True
-          , recycle=False, **kwargs):
+          , recycle=None, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -96,15 +96,36 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
+        **Numba** (bool, True) - Usage Numba JIT compiler
+
+            If set to True, the Numba JIT compiler is used to generate matrices for the powerflow. Massive
+            speed improvements are likely.
+
+        **recycle** (dict, none) - Reuse of internal powerflow variables
+
+            Contains a dict with the following parameters:
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
+            bus_lookup: If True the bus_lookup variable (Indices Pandapower -> ppc) is taken from net["_bus_lookup"]
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = True
+    # recycle parameters
+    if recycle == None:
+        recycle = {
+            "is_elems" : False
+            , "ppc" : False
+            , "bus_lookup" : False
+            , "Ybus" : False
+        }
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
              trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=False, **kwargs):
+def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -134,6 +155,19 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
+        **Numba** (bool, True) - Usage Numba JIT compiler
+
+            If set to True, the Numba JIT compiler is used to generate matrices for the powerflow. Massive
+            speed improvements are likely.
+
+        **recycle** (dict, none) - Reuse of internal powerflow variables
+
+            Contains a dict with the following parameters:
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
+            bus_lookup: If True the bus_lookup variable (Indices Pandapower -> ppc) is taken from net["_bus_lookup"]
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
@@ -143,6 +177,13 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
     init = ''
     tolerance_kva = 1e-5
     Numba = True
+    if recycle == None:
+        recycle = {
+            "is_elems" : False
+            , "ppc" : False
+            , "bus_lookup" : False
+            , "Ybus" : False
+        }
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
              trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs)
@@ -159,22 +200,25 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    if recycle:
+    if recycle["is_elems"] and net["_is_elems"] is not None:
         is_elems = net["_is_elems"]
     else:
         is_elems = _select_is_elements(net)
 
-    if not recycle:
+    if recycle["ppc"] and net["_ppc"] is not None:
+        # update the ppc from last cycle
+        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims)
+    else:
         # convert pandapower net to ppc
         ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
                                        trafo_model, init_results=(init == "results"))
-    else:
-        # just update the ppc from last cycle
-        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims)
 
+    # store variables
     net["_ppc"] = ppc
-    net["_bus_lookup"] = bus_lookup
-    net["_is_elems"] = is_elems
+    if recycle["bus_lookup"]:
+        net["_bus_lookup"] = bus_lookup
+    if recycle["is_elems"]:
+        net["_is_elems"] = is_elems
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 

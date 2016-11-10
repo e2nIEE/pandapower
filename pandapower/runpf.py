@@ -28,7 +28,7 @@ from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
 
-def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=False, ppopt=None):
+def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=None):
     """Runs a power flow.
 
     Similar to runpf() from pypower. See Pypower documentation for more information.
@@ -154,12 +154,13 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=False, ppopt
 
         repeat = True
         while repeat:
-            if recycle:
+            if recycle["Ybus"] and ppci["internal"]["Ybus"].size:
                 Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
             else:
                 ## build admittance matrices
                 Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-                ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
+                if recycle["Ybus"]:
+                    ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
 
             ## compute complex bus power injections [generation - load]
             Sbus = makeSbus(baseMVA, bus, gen)

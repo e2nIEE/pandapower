@@ -245,6 +245,8 @@ def create_empty_network(name=None, f_hz=50.):
 
         # internal
         "_ppc": None,
+        "_is_elems": None,
+        "_bus_lookup": None,
         "version": 1.0,
         "converged": False,
         "name": name,
