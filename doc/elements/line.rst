@@ -43,7 +43,7 @@ Input Parameters
 
 *net.line_geodata*
 
-.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.55\linewidth}|
+.. tabularcolumns:: |l|l|l|
 .. csv-table:: 
    :file: line_geo.csv
    :delim: ;

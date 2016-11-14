@@ -76,7 +76,7 @@ Optimal Power Flow Parameters
 
 The voltage limits for the optimal power flow can be set bus wise in the bus tables:
 
-.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.40\linewidth}|
+.. tabularcolumns:: |l|l|l|
 .. csv-table:: 
    :file: bus_opf.csv
    :delim: ;

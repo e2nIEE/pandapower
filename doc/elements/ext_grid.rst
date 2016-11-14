@@ -82,7 +82,7 @@ Optimal Power Flow Parameters
 
 An external grid is not considered as a flexibility for the optimal power flow. The voltage setpoint can not be changed by the optimal power flow. Still, costs can be defined for an external grid:
 
-.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.40\linewidth}|
+.. tabularcolumns:: |l|l|l|
 .. csv-table:: 
     :file: ext_grid_opf.csv
     :delim: ;

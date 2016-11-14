@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## unreleased
+### Changed
+- changed in_service dtype from f8 to bool for shunt, ward, xward
+
+## [1.0.1] - 2016-11-09
 ### Changed
 - update short introduction example to include transformer
 - included pypower in setup.py requirements (only pypower, not numpy, scipy etc.)

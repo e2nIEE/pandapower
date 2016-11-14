@@ -71,7 +71,7 @@ Optimal Power Flow Parameters
 
 The cost and constraints of a generator can be definded using the following parameters:
 
-.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.40\linewidth}|
+.. tabularcolumns:: |l|l|l|
 .. csv-table:: 
    :file: sgen_opf.csv
    :delim: ;
