@@ -271,13 +271,13 @@ def _select_is_elements(net):
     @param net: Pandapower Network
     @return: is_elems Certain in service elements
     """
-
+    # select in service buses. needed for the other elements to be selected
     bus_is = net["bus"]["in_service"].values.astype(bool)
     bus_is_ind = net["bus"][bus_is].index
     # check if in service elements are at in service buses
     is_elems = {
-        "gen" : np.in1d(net["gen"].bus.values, bus_is_ind) \
-                & net["gen"]["in_service"].values.astype(bool)
+        "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                & net["gen"]["in_service"].values.astype(bool)]
         , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
                 & net["load"].in_service.values.astype(bool)
         , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
@@ -288,10 +288,10 @@ def _select_is_elements(net):
                 & net["xward"].in_service.values.astype(bool)
         , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
                 & net["shunt"].in_service.values.astype(bool)
-        , "eg" : np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                & net["ext_grid"]["in_service"].values.astype(bool)
-        , 'bus': bus_is
-        , 'line': net["line"]["in_service"].values.astype(bool)
+        , "eg" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                & net["ext_grid"]["in_service"].values.astype(bool)]
+        , 'bus': net["bus"][bus_is]
+        , 'line': net["line"][net["line"]["in_service"].values.astype(bool)]
     }
 
     return is_elems
@@ -541,7 +541,6 @@ def _set_isolated_buses_out_of_service(net, ppc):
     # but also check if they may be the only connection to an ext_grid
     disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
     ppc["bus"][disco, 1] = 4
-
 
 def _clean_up(net):
     if len(net["trafo3w"]) > 0:

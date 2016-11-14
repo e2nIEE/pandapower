@@ -24,8 +24,8 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
         **ppc** - The PYPOWER format network to fill in values
     '''
     # get in service elements
-    eg_is = net["ext_grid"][is_elems['eg']]
-    gen_is = net["gen"][is_elems['gen']]
+    eg_is = is_elems['eg']
+    gen_is = is_elems['gen']
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -76,8 +76,7 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
     if xw_end > gen_end:
         xw = net["xward"]
         bus_is = is_elems['bus']
-        xw_is = np.in1d(xw.bus.values, bus_is.index) \
-            & xw.in_service.values.astype(bool)
+        xw_is = is_elems['xward']
         ppc["gen"][gen_end:xw_end, GEN_BUS] = get_indices(xw["ad_bus"].values, bus_lookup)
         ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
         ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
@@ -100,8 +99,8 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
         **ppc** - The PYPOWER format network to fill in values
     '''
     # get in service elements
-    eg_is = net["ext_grid"][is_elems['eg']]
-    gen_is = net["gen"][is_elems['gen']]
+    eg_is = is_elems['eg']
+    gen_is = is_elems['gen']
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -143,8 +142,7 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
     if xw_end > gen_end:
         xw = net["xward"]
         bus_is = is_elems['bus']
-        xw_is = np.in1d(xw.bus.values, bus_is.index) \
-            & xw.in_service.values.astype(bool)
+        xw_is = is_elems["xward"]
         ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
         ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
         ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default

@@ -35,6 +35,7 @@ class DisjointSet(dict):
 def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=False):
     """
     """
+    # add additional xward and trafo3w buses
     if len(net["trafo3w"]) > 0:
         # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
         _create_trafo3w_buses(net, init_results)
@@ -45,9 +46,9 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
     # get buses as set
     bus_list = set(net["bus"].index.values)
     # get in service elements
-    eg_is = net["ext_grid"][is_elems['eg']]
-    gen_is = net["gen"][is_elems['gen']]
-    bus_is = net["bus"][is_elems['bus']]
+    eg_is = is_elems['eg']
+    gen_is = is_elems['gen']
+    bus_is = is_elems['bus']
 
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     # To sort the array first, so that PV comes first, three steps are necessary:

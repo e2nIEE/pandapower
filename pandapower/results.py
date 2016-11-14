@@ -85,8 +85,8 @@ def _get_branch_results(net, ppc, bus_lookup, pq_buses, trafo_loading, ac=True):
 
 def _get_gen_results(net, ppc, is_elems, bus_lookup, pq_bus, return_voltage_angles, ac=True):
     # get in service elements
-    gen_is = net["gen"][is_elems['gen']]
-    eg_is = net["ext_grid"][is_elems['eg']]
+    gen_is = is_elems['gen']
+    eg_is = is_elems['eg']
 
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])

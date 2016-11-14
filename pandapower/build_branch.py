@@ -446,8 +446,8 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
     """
 
     # get in service elements
-    lines_is = n["line"][is_elems['line']]
-    bus_is = n["bus"][is_elems['bus']]
+    lines_is = is_elems['line']
+    bus_is = is_elems['bus']
 
     # opened bus line switches
     slidx = (n["switch"]["closed"].values == 0) \
