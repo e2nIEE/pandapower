@@ -195,6 +195,8 @@ def create_empty_network(name=None, f_hz=50.):
                             ("q_to_kvar", "f8"),
                             ("pl_kw", "f8"),
                             ("ql_kvar", "f8"),
+                            ("i_from_ka", "f8"),
+                            ("i_to_ka", "f8"),
                             ("i_ka", "f8"),
                             ("loading_percent", "f8")],
         "_empty_res_trafo": [("p_hv_kw", "f8"),

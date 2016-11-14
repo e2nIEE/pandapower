@@ -114,6 +114,8 @@ The power flow results in the net.res_line table are defined as:
     q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}_{to}) \\
 	pl\_kw &= p\_from\_kw + p\_to\_kw \\
 	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
+    i\_from\_ka &= i_{from} \\
+    i\_to\_ka &= i_{to} \\
     i\_ka &= max(i_{from}, i_{to}) \\
     loading\_percent &= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100 
     \end{align*}
