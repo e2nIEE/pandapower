@@ -24,8 +24,8 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
         **ppc** - The PYPOWER format network to fill in values
     '''
     # get in service elements
-    eg_is = is_elems['eg']
-    gen_is = is_elems['gen']
+    eg_is = net["ext_grid"][is_elems['eg']]
+    gen_is = net["gen"][is_elems['gen']]
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -100,8 +100,8 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
         **ppc** - The PYPOWER format network to fill in values
     '''
     # get in service elements
-    eg_is = is_elems['eg']
-    gen_is = is_elems['gen']
+    eg_is = net["ext_grid"][is_elems['eg']]
+    gen_is = net["gen"][is_elems['gen']]
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
