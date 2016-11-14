@@ -4,11 +4,11 @@
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org/>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program.
 pandapower is aimed at automation of power system analysis and optimization in distribution and sub-transmission networks.
 
-pandapower is based on electric elements rather than on generic power flow attributes. For example, in PYPOWER buses have a power demand and shunt admittance, even though these are in reality the attributes of electric
-elements (such as loads, pv generators or capacitor banks) which are connected to the buses. In pandapower, we model each electric bus element instead of considering summed values for each bus.
-The same goes for branches: in reality, buses in a network are connected by electric elements like lines and transformers that can be defined by a length and cable type (lines) or short circuit 
-voltages and rated power (transformers). Since the electric models for lines and transformers are implemented in pandapower, it is possible to model the electric elements with these common nameplate
-attributes. All parameters which are necessary for the power flow (like branch per unit impedances, shunt impedances, bus power, bus power flow type etc.) are then calculated and handled internally by pandapower.
+pandapower is based on electric elements rather than on generic power flow attributes. For example, in branch/bus models the power demand and shunt admittances are assigend to the buses,
+even though these are in reality the attributes of electric elements (such as loads, pv generators or capacitor banks) which are connected to the buses. In pandapower, we model each electric bus element instead of considering 
+summed values for each bus. Branch/bus models also make no distinction between modeling differnt kind of branches, even though the electric models for lines and transformers is very different. In pandapower, lines can be defined 
+by a length and cable type and transformers can be defined by short circuit voltages and rated power. All parameters which are necessary for the power flow (like branch per unit impedances, shunt impedances, bus power, bus power 
+flow type etc.) are then calculated and handled internally by pandapower.
 
 A network in pandapower is represented in a PandapowerNet object, which is a collection of pandas Dataframes.
 Each dataframe in a PandapowerNet contains the information about one pandapower element, such as line, load transformer etc.

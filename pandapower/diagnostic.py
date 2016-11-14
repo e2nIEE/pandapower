@@ -102,6 +102,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         diag_results["no_ext_grid"] = no_ext_grid(net)
     if wrong_reference_system(net):
         diag_results["wrong_reference_system"] = wrong_reference_system(net)
+    if deviation_from_std_type(net):
+        diag_results["deviation_from_std_type"] = deviation_from_std_type(net)
+
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
@@ -237,7 +240,7 @@ def invalid_values(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
         **detailed_report** (boolean)   - True: detailed report of input type restriction violations
                                           False: summary only
@@ -338,7 +341,7 @@ def no_ext_grid(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
      EXAMPLE:
 
@@ -357,7 +360,7 @@ def multiple_voltage_controlling_elements_per_bus(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
 
         **detailed_report** (boolean)   - True: detailed report of errors found
@@ -398,7 +401,7 @@ def overload(net, overload_scaling_factor):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
 
      RETURN:
@@ -454,7 +457,7 @@ def wrong_switch_configuration(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
      RETURN:
 
@@ -488,7 +491,7 @@ def different_voltage_levels_connected(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
 
      RETURN:
@@ -530,7 +533,7 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
 
      RETURN:
@@ -558,7 +561,7 @@ def closed_switches_between_oos_and_is_buses(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
      RETURN:
 
@@ -593,7 +596,7 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
 
      RETURN:
@@ -712,7 +715,7 @@ def disconnected_elements(net):
 
      INPUT:
 
-        **net** (PandapowerNet)         - variable that contains a pandapower network
+        **net** (PandapowerNet)         - pandapower network
 
 
      RETURN:
@@ -816,7 +819,7 @@ def wrong_reference_system(net):
 
      INPUT:
 
-        **net** (PandapowerNet)    - variable that contains a pandapower network
+        **net** (PandapowerNet)    - pandapower network
 
 
 
@@ -844,6 +847,52 @@ def wrong_reference_system(net):
         check_results['gens'] = pos_gens
     if pos_sgens:
         check_results['sgens'] = pos_sgens
+
+    if check_results:
+        return check_results
+
+
+def deviation_from_std_type(net):
+    """
+        Checks, if element parameters match the values in the standard type library.
+
+         INPUT:
+
+            **net** (PandapowerNet)    - pandapower network
+
+
+         RETURN:
+
+            **check_results** (dict)   - All elements, that don't match the values in the
+                                         standard type library
+
+                                              Format: (element_type, element_index, parameter)
+
+         EXAMPLE:
+
+             import misc
+             misc.check_std_types(net)
+
+        """
+    check_results = {}
+    for key in net.std_types.keys():
+        for i, element in net[key].iterrows():
+            if element.std_type in net.std_types[key].keys():
+                std_type_values = net.std_types[key][element.std_type]
+                for param in std_type_values.keys():
+                    if param == "tp_pos":
+                        continue
+                    if param in net[key].columns:
+                        if not element[param] == std_type_values[param]:
+                            if not key in check_results.keys():
+                                check_results[key] = {}
+                            check_results[key][i] = {'param': param, 'e_value': element[param],
+                                                     'std_type_value': std_type_values[param],
+                                                     'std_type_in_lib': True}
+            else:
+                if not key in check_results.keys():
+                                check_results[key] = {}
+                check_results[key][i] = {'std_type_in_lib': False}
 
     if check_results:
         return check_results

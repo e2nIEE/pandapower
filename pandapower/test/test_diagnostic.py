@@ -16,8 +16,9 @@ def test_net():
     return net
 
 
-def test_no_issues(test_net):
-    net = copy.deepcopy(test_net)
+def test_no_issues():
+    net = nw.example_simple()
+
     assert pp.diagnostic(net, report_style=None) == {}
 
 
@@ -367,6 +368,29 @@ def test_disconnected_elements(test_net):
       'switches': [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
                    82, 83]}]
 
+
+def test_deviation_from_std_type(test_net):
+    net = copy.deepcopy(test_net)
+    net.line.r_ohm_per_km.loc[0] += 1
+    net.line.x_ohm_per_km.loc[6] -= 1
+    net.line.c_nf_per_km.loc[14] *= -1
+    net.line.imax_ka.loc[21] = '5'
+    pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
+    net.trafo.vsc_percent.loc[0] *= 2
+
+    assert pp.deviation_from_std_type(net) == \
+    {'line': {0: {'e_value': 1.1571, 'param': 'r_ohm_per_km', 'std_type_in_lib': True,
+                  'std_type_value': 0.1571},
+              6: {'e_value': -0.883, 'param': 'x_ohm_per_km', 'std_type_in_lib': True,
+                  'std_type_value': 0.117},
+              14: {'e_value': -264.0, 'param': 'c_nf_per_km', 'std_type_in_lib': True,
+                   'std_type_value': 264},
+              21: {'e_value': '5', 'param': 'imax_ka', 'std_type_in_lib': True,
+                   'std_type_value': 0.105}},
+    'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
+                  'std_type_value': 12.2},
+              1: {'std_type_in_lib': False}},
+    'trafo3w': {0: {'std_type_in_lib': False}}}
 
 #def test_mixed():
 #    net = networks.mv_network("ring")
