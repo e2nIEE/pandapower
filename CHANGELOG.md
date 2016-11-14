@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## unreleased
 ### Changed
 - changed in_service dtype from f8 to bool for shunt, ward, xward
+- included i_from_ka and i_to_ka in net.res_line
 
 ## [1.0.1] - 2016-11-09
 ### Changed
