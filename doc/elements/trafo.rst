@@ -212,7 +212,7 @@ Optimal Power Flow Parameters
 
 The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current"(see above):
 
-.. tabularcolumns:: |l{0.10\linewidth}|l{0.10\linewidth}|l{0.40\linewidth}|
+.. tabularcolumns:: |l|l|l|
 .. csv-table:: 
    :file: trafo_opf.csv
    :delim: ;
