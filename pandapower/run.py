@@ -117,7 +117,6 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         recycle = {
             "is_elems" : False
             , "ppc" : False
-            , "bus_lookup" : False
             , "Ybus" : False
         }
 
@@ -181,7 +180,6 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
         recycle = {
             "is_elems" : False
             , "ppc" : False
-            , "bus_lookup" : False
             , "Ybus" : False
         }
 
@@ -200,12 +198,12 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    if recycle["is_elems"] and net["_is_elems"] is not None:
+    if recycle["is_elems"] and "_is_elems" in net and net["_is_elems"] is not None:
         is_elems = net["_is_elems"]
     else:
         is_elems = _select_is_elements(net)
 
-    if recycle["ppc"] and net["_ppc"] is not None:
+    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None:
         # update the ppc from last cycle
         ppc, ppci, bus_lookup = _update_ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims)
     else:
@@ -215,7 +213,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 
     # store variables
     net["_ppc"] = ppc
-    if recycle["bus_lookup"]:
+    if recycle["ppc"]:
         net["_bus_lookup"] = bus_lookup
     if recycle["is_elems"]:
         net["_is_elems"] = is_elems
@@ -421,7 +419,7 @@ def _update_ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=Fa
 
     # get the old ppc and lookup
     ppc = net["_ppc"]
-    ppci = ppc
+    ppci = copy.deepcopy(ppc)
     bus_lookup = net["_bus_lookup"]
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup)

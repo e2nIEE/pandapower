@@ -12,7 +12,6 @@ from time import time
 from numpy import r_, zeros, pi, ones, exp, argmax
 from numpy import flatnonzero as find
 
-from pypower.loadcase import loadcase
 from pypower.ppoption import ppoption
 from pypower.makeBdc import makeBdc
 from pypower.makeSbus import makeSbus
@@ -24,6 +23,7 @@ from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pypower.idx_brch import PF, PT, QF, QT
 from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 
+from pandapower.pypower_extensions.loadcase import loadcase
 from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
@@ -40,7 +40,7 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=
 
     ## default arguments
     if casedata is None:
-        casedata = join(dirname(__file__), 'case9') 
+        ValueError('ppc is empty')
     ppopt = ppoption(ppopt)
 
     ## options
