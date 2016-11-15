@@ -24,8 +24,8 @@ from pandapower.create import create_empty_network
 
 def lf_info(net, numv=1, numi=2):
     """
-    Prints some basic information of the results in a net.
-    (max/min voltage, max trafo load, max line load)
+    Prints some basic information of the results in a net
+    (max/min voltage, max trafo load, max line load).
     """
     logger.info("Max voltage")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
@@ -78,14 +78,14 @@ def overloaded_lines(net, max_load=100):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def violated_buses(net, u_min, u_max):
+def violated_buses(net, min_vm_pu, max_vm_pu):
     """
-    Returns the results for all buses with if vm_pu is not within u_max and u_min or None, if
-    there are none.
+    Returns all bus indices where vm_pu is not within min_vm_pu and max_vm_pu or returns None, if
+    there are none of those buses.
     """
     if net.converged:
-        return net["bus"].index[(net["res_bus"]["vm_pu"] < u_min) |
-                                (net["res_bus"]["vm_pu"] > u_max)]
+        return net["bus"].index[(net["res_bus"]["vm_pu"] < min_vm_pu) |
+                                (net["res_bus"]["vm_pu"] > max_vm_pu)]
     else:
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
@@ -95,7 +95,7 @@ def equal_nets(x, y, check_only_results=False, tol=1.e-14):
     Compares two networks. The networks are considered equal
     if they share the same keys and values, except of the
     'et' (elapsed time) entry which differs depending on
-    runtime conditions and entries stating with '_'
+    runtime conditions and entries stating with '_'.
     """
     eq = True
     eq_count = 0
@@ -163,7 +163,7 @@ def equal_nets(x, y, check_only_results=False, tol=1.e-14):
 
 def convert_format(net):
     """
-    Converts old nets to new format to ensure consistency. Converted net is returned
+    Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
     from pandapower.run import reset_results
@@ -403,8 +403,8 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     :param net:
     :param scaling: A dictionary containing a mapping from element type to
-    scaling factor.
-    :return:
+    :param scale_load:
+	:param scale_sgen:
     """
     if not isinstance(scalings, dict):
         raise UserWarning("The parameter scaling has to be a dictionary, "
