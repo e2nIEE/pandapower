@@ -28,7 +28,7 @@ from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
 
-def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
+def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=None):
     """Runs a power flow.
 
     Similar to runpf() from pypower. See Pypower documentation for more information.
@@ -107,20 +107,20 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
         qlim = ppopt["ENFORCE_Q_LIMS"]  ## enforce Q limits on gens?
 
         ## check if numba is available and the corresponding flag
-        try:
-            from numba import _version as nb_version
+        if Numba:
+            try:
+                from numba import _version as nb_version
+                # get Numba Version (in order to use it it must be > 0.25)
+                nbVersion = float(nb_version.version_version[:4])
 
-            # get Numba Version (in order to use it it must be > 0.25)
-            nbVersion = float(nb_version.version_version[:4])
+                if nbVersion < 0.25:
+                    print('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
+                    Numba = False
 
-            if nbVersion < 0.25:
-                print('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
+            except ImportError:
+                # raise UserWarning('Numba cannot be imported. Call runpp() with Numba=False!')
+                print('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
                 Numba = False
-
-        except ImportError:
-            # raise UserWarning('Numba cannot be imported. Call runpp() with Numba=False!')
-            print('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
-            Numba = False
 
         if Numba:
             from pandapower.pypower_extensions.makeYbus import makeYbus
@@ -154,8 +154,13 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, ppopt=None):
 
         repeat = True
         while repeat:
-            ## build admittance matrices
-            Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+            if recycle["Ybus"] and ppci["internal"]["Ybus"].size:
+                Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
+            else:
+                ## build admittance matrices
+                Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+                if recycle["Ybus"]:
+                    ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
 
             ## compute complex bus power injections [generation - load]
             Sbus = makeSbus(baseMVA, bus, gen)
