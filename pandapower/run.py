@@ -8,7 +8,14 @@ import numpy as np
 import warnings
 import copy
 
+from scipy.sparse import csr_matrix as sparse
+
 import pypower.ppoption as ppopt
+from pypower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, QT
+from pypower.idx_area import PRICE_REF_BUS
+from pypower.run_userfcn import run_userfcn
 
 from pandapower.runpf import _runpf
 from pandapower.auxiliary import ppException
@@ -16,7 +23,7 @@ from pandapower.results import _extract_results
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc
-from pandapower.build_gen import _build_gen_ppc
+from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
 
 
 class LoadflowNotConverged(ppException):
@@ -26,8 +33,9 @@ class LoadflowNotConverged(ppException):
     pass
 
 
-def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
-          trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, Numba=True, **kwargs):
+def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
+          , trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, Numba=True
+          , recycle=None, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -88,15 +96,35 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
+        **Numba** (bool, True) - Usage Numba JIT compiler
+
+            If set to True, the Numba JIT compiler is used to generate matrices for the powerflow. Massive
+            speed improvements are likely.
+
+        **recycle** (dict, none) - Reuse of internal powerflow variables
+
+            Contains a dict with the following parameters:
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
+            bus_lookup: If True the bus_lookup variable (Indices Pandapower -> ppc) is taken from net["_bus_lookup"]
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = True
+    # recycle parameters
+    if recycle == None:
+        recycle = {
+            "is_elems" : False
+            , "ppc" : False
+            , "Ybus" : False
+        }
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
+             trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, **kwargs):
+def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -126,6 +154,19 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
+        **Numba** (bool, True) - Usage Numba JIT compiler
+
+            If set to True, the Numba JIT compiler is used to generate matrices for the powerflow. Massive
+            speed improvements are likely.
+
+        **recycle** (dict, none) - Reuse of internal powerflow variables
+
+            Contains a dict with the following parameters:
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
+            bus_lookup: If True the bus_lookup variable (Indices Pandapower -> ppc) is taken from net["_bus_lookup"]
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
@@ -135,13 +176,19 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
     init = ''
     tolerance_kva = 1e-5
     Numba = True
+    if recycle == None:
+        recycle = {
+            "is_elems" : False
+            , "ppc" : False
+            , "Ybus" : False
+        }
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs)
+             trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs)
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, Numba, **kwargs):
+             trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -151,12 +198,25 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    is_elems = _select_is_elements(net)
+    if recycle["is_elems"] and "_is_elems" in net and net["_is_elems"] is not None:
+        is_elems = net["_is_elems"]
+    else:
+        is_elems = _select_is_elements(net)
 
-    # convert pandapower net to ppc
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
-                                   trafo_model, init_results=(init == "results"))
+    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None:
+        # update the ppc from last cycle
+        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims)
+    else:
+        # convert pandapower net to ppc
+        ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
+                                       trafo_model, init_results=(init == "results"))
+
+    # store variables
     net["_ppc"] = ppc
+    if recycle["ppc"]:
+        net["_bus_lookup"] = bus_lookup
+    if recycle["is_elems"]:
+        net["_is_elems"] = is_elems
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
@@ -165,15 +225,14 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = _runpf(ppci, init, ac, Numba, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+            result = _runpf(ppci, init, ac, Numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                        PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
-
     else:
-        result = _runpf(ppci, init, ac, Numba, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+        result = _runpf(ppci, init, ac, Numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    result = _copy_results_ppci_to_ppc(result, ppc)
+    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
@@ -210,19 +269,33 @@ def _select_is_elements(net):
     @param net: Pandapower Network
     @return: is_elems Certain in service elements
     """
+    # select in service buses. needed for the other elements to be selected
+    bus_is = net["bus"]["in_service"].values.astype(bool)
+    bus_is_ind = net["bus"][bus_is].index
+    # check if in service elements are at in service buses
     is_elems = {
-        'gen': net["gen"][net["gen"]["in_service"].values.astype(bool)], 'eg': net["ext_grid"][net["ext_grid"]["in_service"].values.astype(bool)], 'bus': net["bus"][net["bus"]["in_service"].values.astype(bool)], 'line': net["line"][net["line"]["in_service"].values.astype(bool)]
+        "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                & net["gen"]["in_service"].values.astype(bool)]
+        , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
+                & net["load"].in_service.values.astype(bool)
+        , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                & net["sgen"].in_service.values.astype(bool)
+        , "ward" : np.in1d(net["ward"].bus.values, bus_is_ind) \
+                & net["ward"].in_service.values.astype(bool)
+        , "xward" : np.in1d(net["xward"].bus.values, bus_is_ind) \
+                & net["xward"].in_service.values.astype(bool)
+        , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                & net["shunt"].in_service.values.astype(bool)
+        , "eg" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                & net["ext_grid"]["in_service"].values.astype(bool)]
+        , 'bus': net["bus"][bus_is]
+        , 'line': net["line"][net["line"]["in_service"].values.astype(bool)]
     }
-
-    # check if gen is also at an in service bus
-    gen_is = np.in1d(net["gen"].bus.values, is_elems['bus'].index) \
-        & net["gen"]["in_service"].values.astype(bool)
-    is_elems['gen'] = net['gen'][gen_is]
 
     return is_elems
 
 
-def _copy_results_ppci_to_ppc(result, ppc):
+def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):
     '''
     result contains results for all in service elements
     ppc shall get the results for in- and out of service elements
@@ -245,9 +318,10 @@ def _copy_results_ppci_to_ppc(result, ppc):
     # copy the results for bus, gen and branch
     # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
     ppc['bus'][:len(result['bus'])] = result['bus']
-    # in service branches and gens are taken from 'order'
-    ppc['branch'][result['branch_is']] = result['branch']
-    ppc['gen'][result['gen_is']] = result['gen']
+    # in service branches and gens are taken from 'internal'
+    ppc['branch'][result["internal"]['branch_is']] = result['branch']
+    ppc['gen'][result["internal"]['gen_is']] = result['gen']
+    ppc['internal'] = result['internal']
 
     ppc['success'] = result['success']
     ppc['et'] = result['et']
@@ -280,17 +354,34 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
                         "version": 2,  *int*
                         "bus": np.array([], dtype=float),
                         "branch": np.array([], dtype=np.complex128),
-                        "gen": np.array([], dtype=float)
+                        "gen": np.array([], dtype=float),
+                        "internal": {
+                              "Ybus": np.array([], dtype=np.complex128)
+                              , "Yf": np.array([], dtype=np.complex128)
+                              , "Yt": np.array([], dtype=np.complex128)
+                              , "branch_is": np.array([], dtype=bool)
+                              , "gen_is": np.array([], dtype=bool)
+                              }
         **ppci** - The "internal" pypower format network for PF calculations
         **bus_lookup** - Lookup Pandapower -> ppc / ppci indices
     """
 
     # init empty ppc
-    ppc = {"baseMVA": 1.,
-           "version": 2,
-           "bus": np.array([], dtype=float),
-           "branch": np.array([], dtype=np.complex128),
-           "gen": np.array([], dtype=float)}
+    ppc = {"baseMVA": 1.
+           , "version": 2
+           , "bus": np.array([], dtype=float)
+           , "branch": np.array([], dtype=np.complex128)
+           , "gen": np.array([], dtype=float)
+           , "internal": {
+                  "Ybus": np.array([], dtype=np.complex128)
+                  , "Yf": np.array([], dtype=np.complex128)
+                  , "Yt": np.array([], dtype=np.complex128)
+                  , "branch_is": np.array([], dtype=bool)
+                  , "gen_is": np.array([], dtype=bool)
+                  }
+           }
+    # init empty ppci
+    ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
     bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results)
     # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
@@ -310,7 +401,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     _set_isolated_buses_out_of_service(net, ppc)
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
-    ppci, bus_lookup = _ppc2ppci(ppc, bus_lookup)
+    ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
     # add lookup with indices before any busses were fused
     bus_lookup["before_fuse"] = dict(
@@ -318,28 +409,39 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     return ppc, ppci, bus_lookup
 
+def _update_ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False):
+    """
+    Updates P, Q values of the ppc with changed values from net
 
-def _ppc2ppci(ppc, bus_lookup):
-    from numpy import array, zeros
+    @param is_elems:
+    @return:
+    """
 
-    from scipy.sparse import csr_matrix as sparse
+    # get the old ppc and lookup
+    ppc = net["_ppc"]
+    ppci = copy.deepcopy(ppc)
+    bus_lookup = net["_bus_lookup"]
+    # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
+    _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
+    # adds P and Q for shunts, wards and xwards (to PQ nodes)
+    _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
+    # updates values for gen
+    _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
 
-    from pypower.idx_bus import NONE, BUS_I, BUS_TYPE
-    from pypower.idx_gen import GEN_BUS, GEN_STATUS
-    from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, QT
-    from pypower.idx_area import PRICE_REF_BUS
+    # get OOS busses and place them at the end of the bus array (so that: 3
+    # (REF), 2 (PV), 1 (PQ), 4 (OOS))
+    oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
+    # there are no OOS busses in the ppci
+    ppci['bus'] = ppc['bus'][~oos_busses]
+    # select in service elements from ppc and put them in ppci
+    brs = ppc["internal"]["branch_is"]
+    gs = ppc["internal"]["gen_is"]
+    ppci["branch"] = ppc["branch"][brs]
+    ppci["gen"] = ppc["gen"][gs]
 
-    from pypower.run_userfcn import run_userfcn
+    return ppc, ppci, bus_lookup
 
-    # init ppci
-    ppci = {"baseMVA": 1.,
-           "version": 2,
-           "bus": np.array([], dtype=float),
-           "branch": np.array([], dtype=np.complex128),
-           "gen": np.array([], dtype=float),
-           "branch_is": np.array([], dtype=bool),
-           "gen_is": np.array([], dtype=bool)}
-
+def _ppc2ppci(ppc, ppci, bus_lookup):
     # BUS Sorting and lookup
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
     ppcBuses = ppc["bus"]
@@ -356,7 +458,7 @@ def _ppc2ppci(ppc, bus_lookup):
     arangedBuses = np.arange(len(ppcBuses))
 
     # lookup ppc former order -> consecutive order
-    e2i = zeros(len(ppcBuses))
+    e2i = np.zeros(len(ppcBuses), dtype=int)
     e2i[ppc_former_order] = arangedBuses
 
     # save consecutive indices in ppc and ppci
@@ -400,20 +502,17 @@ def _ppc2ppci(ppc, bus_lookup):
 
     # determine which buses, branches, gens are connected and
     # in-service
-    # n2i = sparse((range(nb), (ppc["bus"][:, BUS_I], zeros(nb))),
-    #              shape=(maxBus + 1, 1))
-    # n2i = array(n2i.todense().flatten())[0, :]  # as 1D array
     n2i = ppc["bus"][:, BUS_I].astype(int)
     bs = (bt != NONE)  # bus status
 
     gs = ((ppc["gen"][:, GEN_STATUS] > 0) &  # gen status
           bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)]])
-    ppci["gen_is"] = gs
+    ppci["internal"]["gen_is"] = gs
 
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(int) &  # branch status
            bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(int)]] &
            bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(int)]]).astype(bool)
-    ppci["branch_is"] = brs
+    ppci["internal"]["branch_is"] = brs
 
     if 'areas' in ppc:
         ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(int)]]
@@ -440,7 +539,6 @@ def _set_isolated_buses_out_of_service(net, ppc):
     # but also check if they may be the only connection to an ext_grid
     disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
     ppc["bus"][disco, 1] = 4
-
 
 def _clean_up(net):
     if len(net["trafo3w"]) > 0:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 
@@ -9,7 +9,7 @@ try:
     import pplog as logging
 except:
     import logging
-    
+
 logger = logging.getLogger(__name__)
 from pandapower.toolbox import get_connected_buses_at_element
 
@@ -29,7 +29,8 @@ def diagnostic_report(net, diag_results, diag_params, compact_report):
         "wrong_switch_configuration": diag_report.report_wrong_switch_configuration,
         "multiple_voltage_controlling_elements_per_bus": diag_report.report_multiple_voltage_controlling_elements_per_bus,
         "no_ext_grid": diag_report.report_no_ext_grid,
-        "wrong_reference_system": diag_report.report_wrong_reference_system
+        "wrong_reference_system": diag_report.report_wrong_reference_system,
+        "deviation_from_std_type": diag_report.report_deviation_from_std_type
                     }
 
     logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
@@ -39,7 +40,7 @@ def diagnostic_report(net, diag_results, diag_params, compact_report):
 
     logger.warning("_____________ END OF PANDAPOWER DIAGNOSTIC _____________ ")
 
-    
+
 class DiagnosticReports:
     def __init__(self, net, diag_results, diag_params, compact_report):
         self.net = net
@@ -55,7 +56,7 @@ class DiagnosticReports:
                 logger.warning("disconnected_elements:")
             else:
                 logger.warning("Checking for elements without a connection to an external grid...")
-            logger.warning("")       
+            logger.warning("")
 
         # message body
             diag_result = self.diag_results["disconnected_elements"]
@@ -192,7 +193,7 @@ class DiagnosticReports:
                                     logger.warning("Trafo %s: Nominal voltage on hv_side "
                                                    "(%s kV) and voltage_level of hv_bus "
                                                    "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent." 
+                                                   "deviate more than +/- %s percent."
                                                     %(trafo, self.net.trafo.vn_hv_kv.at[trafo],
                                                       self.net.trafo.hv_bus.at[trafo],
                                                       self.net.bus.vn_kv.at[self.net.trafo.hv_bus.at[trafo]],
@@ -219,7 +220,7 @@ class DiagnosticReports:
                                     logger.warning("Trafo3w %s: Nominal voltage on hv_side "
                                                    "(%s kV) and voltage_level of hv_bus "
                                                    "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent." 
+                                                   "deviate more than +/- %s percent."
                                                     %(trafo3w, self.net.trafo3w.vn_hv_kv.at[trafo3w],
                                                       self.net.trafo3w.hv_bus.at[trafo3w],
                                                       self.net.bus.vn_kv.at[self.net.trafo3w.hv_bus.at[trafo3w]],
@@ -229,7 +230,7 @@ class DiagnosticReports:
                                     logger.warning("Trafo3w %s: Nominal voltage on mv_side "
                                                    "(%s kV) and voltage_level of mv_bus "
                                                    "(bus %s with voltage_level %s kV) "
-                                                   "deviate more than +/- %s percent." 
+                                                   "deviate more than +/- %s percent."
                                                     %(trafo3w, self.net.trafo3w.vn_mv_kv.at[trafo3w],
                                                       self.net.trafo3w.mv_bus.at[trafo3w],
                                                       self.net.bus.vn_kv.at[self.net.trafo3w.mv_bus.at[trafo3w]],
@@ -371,7 +372,7 @@ class DiagnosticReports:
 
         if "multiple_voltage_controlling_elements_per_bus" in self.diag_results:
         # message header
-            if self.compact_report:              
+            if self.compact_report:
                 logger.warning("multiple_voltage_controlling_elements_per_bus:")
             else:
                 logger.warning("Checking for multiple gens and/or external grids per bus...")
@@ -434,8 +435,8 @@ class DiagnosticReports:
                     else:
                         for load in diag_result[element_type]:
                             logger.warning("Found load %s: '%s' with p_kw = %s. In load reference "
-                                           "system p_kw should be positive." 
-                                           %(load, self.net.load.name.at[load], 
+                                           "system p_kw should be positive."
+                                           %(load, self.net.load.name.at[load],
                                              self.net.load.p_kw.at[load]))
 
                 elif element_type is "gens":
@@ -479,3 +480,37 @@ class DiagnosticReports:
 
         else:
             logger.info("PASSED: power flow converges. No overload found.")
+
+
+    def report_deviation_from_std_type(self):
+
+        if "deviation_from_std_type" in self.diag_results:
+        # message header
+            if self.compact_report:
+                logger.warning("deviation_from_std_type:")
+            else:
+                logger.warning("Checking for deviation from std type...")
+            logger.warning("")
+
+        # message body
+            diag_result = self.diag_results["deviation_from_std_type"]
+            element_counter = 0
+            for et in diag_result:
+                for eid in diag_result[et]:
+                    element_counter += 1
+                    values = diag_result[et][eid]
+                    if values['std_type_in_lib']:
+                        logger.warning("%s %s: %s = %s, std_type_value = %s"
+                                       %(et, eid, values['param'], values['e_value'],
+                                         values['std_type_value']))
+                    else:
+                        logger.warning("%s %s: No valid std_type or std_type not in net.std_types"
+                                       %(et, eid))
+
+        # message summary
+            if not self.compact_report:
+                logger.warning("")
+                logger.warning("SUMMARY: %s elements with deviations from std_type found."
+                               %(element_counter))
+        else:
+            logger.info("PASSED: No elements with deviations from std_type found.")

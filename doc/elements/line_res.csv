@@ -5,5 +5,7 @@ p_to_kw;float;"active power flow into the line at ""to"" bus [kW]"
 q_to_kvar;float;"reactive power flow into the line at ""to"" bus [kVar]"
 pl_kw;float;active power losses of the line [kW]
 ql_kvar;float;reactive power consumption of the line [kVar]
-i_ka;float;"Maximum current at ""to"" bus or ""from"" bus [kA]"
-loading_percent;float;line loading of Imax_ka [%]
+i_from_ka;float;Current at to bus [kA]
+i_to_ka;float;Current at from bus [kA]
+i_ka;float;Maximum of i_from_ka and i_to_ka [kA]
+loading_percent;float;line loading [%]

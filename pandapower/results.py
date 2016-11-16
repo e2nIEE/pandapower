@@ -14,12 +14,10 @@ from pandapower.auxiliary import get_indices, _sum_by_group
 
 def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
                      ac=True):
-    # get in service elements
-    bus_is = is_elems['bus']
 
     _set_buses_out_of_service(ppc)
-    bus_pq = _get_p_q_results(net, ppc, bus_lookup, bus_is, ac)
-    _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is, ac)
+    bus_pq = _get_p_q_results(net, ppc, bus_lookup, is_elems, ac)
+    _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac)
     _get_branch_results(net, ppc, bus_lookup, bus_pq, trafo_loading, ac)
     _get_gen_results(net, ppc, is_elems, bus_lookup, bus_pq, return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
@@ -205,6 +203,8 @@ def _get_line_results(net, ppc, i_ft, f, t, ac=True):
         net["res_line"]["ql_kvar"] = qf_kvar + qt_kvar
 
     i_ka = np.max(i_ft[f:t], axis=1)
+    net["res_line"]["i_from_ka"] = i_ft[f:t][:,0]
+    net["res_line"]["i_to_ka"] = i_ft[f:t][:,1]
     i_max = net["line"]["imax_ka"].values * net["line"]["df"].values * \
         net["line"]["parallel"].values
 
@@ -305,14 +305,13 @@ def _get_impedance_results(net, ppc, i_ft, f, t, ac=True):
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
 
 
-def _get_p_q_results(net, ppc, bus_lookup, bus_is, ac=True):
+def _get_p_q_results(net, ppc, bus_lookup, is_elems, ac=True):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 
     l = net["load"]
     if len(l) > 0:
-        load_is = np.in1d(l.bus.values, bus_is.index) \
-            & l.in_service.values.astype(bool)
+        load_is = is_elems["load"]
         scaling = l["scaling"].values
         pl = l["p_kw"].values * scaling * load_is
         net["res_load"]["p_kw"] = pl
@@ -326,8 +325,7 @@ def _get_p_q_results(net, ppc, bus_lookup, bus_is, ac=True):
 
     sg = net["sgen"]
     if len(sg) > 0:
-        sgen_is = np.in1d(sg.bus.values, bus_is.index) \
-            & sg.in_service.values.astype(bool)
+        sgen_is =is_elems["sgen"]
         scaling = sg["scaling"].values
         psg = sg["p_kw"].values * scaling * sgen_is
         net["res_sgen"]["p_kw"] = psg
@@ -341,8 +339,7 @@ def _get_p_q_results(net, ppc, bus_lookup, bus_is, ac=True):
 
     w = net["ward"]
     if len(w) > 0:
-        ward_is = np.in1d(w.bus.values, bus_is.index) \
-            & w.in_service.values.astype(bool)
+        ward_is = is_elems["ward"]
         pw = w["ps_kw"].values * ward_is
         net["res_ward"]["p_kw"] = pw
         p = np.hstack([p, pw])
@@ -354,8 +351,7 @@ def _get_p_q_results(net, ppc, bus_lookup, bus_is, ac=True):
 
     xw = net["xward"]
     if len(xw) > 0:
-        xward_is = np.in1d(xw.bus.values, bus_is.index) \
-            & xw.in_service.values.astype(bool)
+        xward_is = is_elems["xward"]
         pxw = xw["ps_kw"].values * xward_is
         p = np.hstack([p, pxw])
         net["res_xward"]["p_kw"] = pxw
@@ -373,13 +369,12 @@ def _get_p_q_results(net, ppc, bus_lookup, bus_is, ac=True):
     return bus_pq
 
 
-def _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is, ac=True):
+def _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac=True):
     b, p, q = np.array([]), np.array([]), np.array([])
     s = net["shunt"]
     if len(s) > 0:
         sidx = get_indices(s["bus"], bus_lookup)
-        shunt_is = np.in1d(s.bus.values, bus_is.index) \
-            & s.in_service.values.astype(bool)
+        shunt_is = is_elems["shunt"]
         u_shunt = ppc["bus"][sidx, VM]
         u_shunt = np.nan_to_num(u_shunt)
         p_shunt = u_shunt**2 * net["shunt"]["p_kw"].values * shunt_is
@@ -396,8 +391,7 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is, ac=True):
     w = net["ward"]
     if len(w) > 0:
         widx = get_indices(w["bus"], bus_lookup)
-        ward_is = np.in1d(w.bus.values, bus_is.index) \
-            & w.in_service.values.astype(bool)
+        ward_is = is_elems["ward"]
         u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
         p_ward = u_ward**2 * net["ward"]["pz_kw"].values * ward_is
@@ -414,8 +408,7 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is, ac=True):
     xw = net["xward"]
     if len(xw) > 0:
         widx = get_indices(xw["bus"], bus_lookup)
-        xward_is = np.in1d(xw.bus.values, bus_is.index) \
-            & xw.in_service.values.astype(bool)
+        xward_is = is_elems["xward"]
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward**2 * net["xward"]["pz_kw"].values * xward_is

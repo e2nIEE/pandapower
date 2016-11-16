@@ -1,4 +1,6 @@
-include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.md doc/Makefile
+include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst
 global-include *.p 
+include doc/Makefile
 recursive-include doc *.rst *.png *.jpg *.csv *.pdf *.bat *.py *.PNG *.zip
 recursive-include tutorials *.ipynb *.csv *.png *.zip
+prune doc/_build
