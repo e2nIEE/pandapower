@@ -56,8 +56,8 @@ def _get_p_q_results_opf(net, ppc, bus_lookup, gen_end):
         net["res_sgen"].index = net["sgen"].index
 
         if net.sgen.controllable.any():
-            net.res_sgen.p_kw[net.sgen.controllable] = - ppc["gen"][gen_end:, PG] * 1000
-            net.res_sgen.q_kvar[net.sgen.controllable] = - ppc["gen"][gen_end:, QG] * 1000
+            net.res_sgen.p_kw[net.sgen.controllable & net.sgen.in_service] = - ppc["gen"][gen_end:, PG] * 1000
+            net.res_sgen.q_kvar[net.sgen.controllable & net.sgen.in_service] = - ppc["gen"][gen_end:, QG] * 1000
 
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
     b_ppc = pp.get_indices(b_pp, bus_lookup, fused_indices=False)
