@@ -470,7 +470,7 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=np.nan, min_p_kw=np.nan,
                 max_q_kvar=np.nan, min_q_kvar=np.nan, cost_per_kw=np.nan, cost_per_kvar=np.nan,
-                controllable=False):
+                controllable=np.nan):
     """
     Adds one static generator in table net["sgen"].
 
@@ -490,7 +490,8 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
 
     OPTIONAL:
 
-        **p_kw** (float, default 0) - The real power of the static generator (negative for generation!)
+        **p_kw** (float, default 0) - The real power of the static generator
+        (negative for generation!)
 
         **q_kvar** (float, default 0) - The reactive power of the sgen
 
@@ -506,6 +507,15 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
         **type** (string, None) -  type variable to classify the static generator
 
         **in_service** (boolean) - True for in_service or False for out of service
+
+        **cost_per_kw** (float, NaN) - Defines operation cost of the static generator for active
+        power. Is only considered, if you run a optimal powerflow
+
+        **cost_per_kvar** (float, NaN) - Defines operation cost of the static generator for reactive
+        power. Is only considered, if you run a optimal powerflow
+
+        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
+        powerflow
 
     OUTPUT:
 
@@ -571,18 +581,21 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
 
         net.sgen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
-    if controllable:
+    if not np.isnan(controllable):
         if "controllable" not in net.sgen.columns:
             net.sgen.loc[:, "controllable"] = pd.Series()
 
         net.sgen.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.sgen.columns:
+            net.sgen.loc[index, "controllable"] = False
 
     return index
 
 
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, max_q_kvar=np.nan,
                min_q_kvar=np.nan, min_p_kw=np.nan, max_p_kw=np.nan, scaling=1., type=None,
-               in_service=True, cost_per_kw=np.nan, cost_per_kvar=np.nan, controllable=False):
+               in_service=True, cost_per_kw=np.nan, cost_per_kvar=np.nan, controllable=np.nan):
     """
     Adds a generator to the network.
 
@@ -612,7 +625,16 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
         **type** (string, None) - type variable to classify generators
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **cost_per_kw** (float, NaN) - Defines operation cost of the generator for active power.
+        Is only considered, if you run a optimal powerflow
+
+        **cost_per_kvar** (float, NaN) - Defines operation cost of the generator for reactive power.
+        Is only considered, if you run a optimal powerflow
+
+        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
+        powerflow
 
     OUTPUT:
 
@@ -685,11 +707,14 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
         net.gen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
-    if controllable:
+    if not np.isnan(controllable):
         if "controllable" not in net.gen.columns:
-            net.gen.loc[:, "controllable"] = pd.Series()
+            net.gen.loc[:, "controllable"] = pd.Series(False)
 
         net.gen.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.gen.columns:
+            net.gen.loc[index, "controllable"] = False
 
     return index
 
