@@ -198,10 +198,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    if recycle["is_elems"] and "_is_elems" in net and net["_is_elems"] is not None:
-        is_elems = net["_is_elems"]
-    else:
-        is_elems = _select_is_elements(net)
+    is_elems = _select_is_elements(net, recycle)
 
     if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None:
         # update the ppc from last cycle
@@ -259,8 +256,7 @@ def reset_results(net):
     net["res_ward"] = copy.copy(net["_empty_res_ward"])
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
 
-
-def _select_is_elements(net):
+def _select_is_elements(net, recycle=None):
     """
     Selects certain "in_service" elements from net.
     This is quite time consuming so it is done once at the beginning
@@ -269,28 +265,72 @@ def _select_is_elements(net):
     @param net: Pandapower Network
     @return: is_elems Certain in service elements
     """
-    # select in service buses. needed for the other elements to be selected
-    bus_is = net["bus"]["in_service"].values.astype(bool)
-    bus_is_ind = net["bus"][bus_is].index
-    # check if in service elements are at in service buses
-    is_elems = {
-        "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                & net["gen"]["in_service"].values.astype(bool)]
-        , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
-                & net["load"].in_service.values.astype(bool)
-        , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
-                & net["sgen"].in_service.values.astype(bool)
-        , "ward" : np.in1d(net["ward"].bus.values, bus_is_ind) \
-                & net["ward"].in_service.values.astype(bool)
-        , "xward" : np.in1d(net["xward"].bus.values, bus_is_ind) \
-                & net["xward"].in_service.values.astype(bool)
-        , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
-                & net["shunt"].in_service.values.astype(bool)
-        , "eg" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                & net["ext_grid"]["in_service"].values.astype(bool)]
-        , 'bus': net["bus"][bus_is]
-        , 'line': net["line"][net["line"]["in_service"].values.astype(bool)]
-    }
+
+    if recycle is not None and recycle["is_elems"]:
+        if net["_is_elems"] is None:
+            # sort elements according to their in service status
+            elems = ['bus', 'line']
+            for elm in elems:
+                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
+
+            # select in service buses. needed for the other elements to be selected
+            bus_is = net["bus"]["in_service"].values.astype(bool)
+            line_is = net["line"]["in_service"].values.astype(bool)
+            bus_is_ind = net["bus"][bus_is].index
+            # check if in service elements are at in service buses
+            is_elems = {
+                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                                  & net["gen"]["in_service"].values.astype(bool)]
+                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
+                          & net["load"].in_service.values.astype(bool)
+                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                          & net["sgen"].in_service.values.astype(bool)
+                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
+                          & net["ward"].in_service.values.astype(bool)
+                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
+                           & net["xward"].in_service.values.astype(bool)
+                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                           & net["shunt"].in_service.values.astype(bool)
+                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                                        & net["ext_grid"]["in_service"].values.astype(bool)]
+                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
+                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
+            }
+        else:
+            # just update the elements
+            is_elems = net['_is_elems']
+
+            bus_is_ind = is_elems['bus'].index
+            #update elements
+            elems = ['gen', 'ext_grid']
+            for elm in elems:
+                is_elems[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
+                                     & net[elm]["in_service"].values.astype(bool)]
+
+    else:
+        # select in service buses. needed for the other elements to be selected
+        bus_is = net["bus"]["in_service"].values.astype(bool)
+        line_is = net["line"]["in_service"].values.astype(bool)
+        bus_is_ind = net["bus"][bus_is].index
+        # check if in service elements are at in service buses
+        is_elems = {
+            "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                    & net["gen"]["in_service"].values.astype(bool)]
+            , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
+                    & net["load"].in_service.values.astype(bool)
+            , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                    & net["sgen"].in_service.values.astype(bool)
+            , "ward" : np.in1d(net["ward"].bus.values, bus_is_ind) \
+                    & net["ward"].in_service.values.astype(bool)
+            , "xward" : np.in1d(net["xward"].bus.values, bus_is_ind) \
+                    & net["xward"].in_service.values.astype(bool)
+            , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                    & net["shunt"].in_service.values.astype(bool)
+            , "ext_grid" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                    & net["ext_grid"]["in_service"].values.astype(bool)]
+            , 'bus': net['bus'][bus_is]
+            , 'line': net['line'][line_is]
+        }
 
     return is_elems
 

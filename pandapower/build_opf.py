@@ -37,7 +37,7 @@ def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
     trafo_model = "t"
 
     # get in service elements
-    eg_is = is_elems['eg']
+    eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
 
     bus_lookup = _build_bus_ppc(net, ppc, is_elems, set_opf_constraints=True)
@@ -101,7 +101,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
     ng = len(ppc["gen"])  # -
     nref = sum(ppc["bus"][:, BUS_TYPE] == REF)
     gen_is = is_elems['gen']
-    eg_is = is_elems['eg']
+    eg_is = is_elems['ext_grid']
 
     if gen_is.empty:
         gen_cost_per_kw = array([])

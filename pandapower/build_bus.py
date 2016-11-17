@@ -46,7 +46,7 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
     # get buses as set
     bus_list = set(net["bus"].index.values)
     # get in service elements
-    eg_is = is_elems['eg']
+    eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
 

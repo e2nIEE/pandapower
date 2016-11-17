@@ -13,7 +13,7 @@ from pypower.idx_gen import PG, QG
 
 
 def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles):
-    eg_is = is_elems['eg']
+    eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
 
