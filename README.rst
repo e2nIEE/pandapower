@@ -1,126 +1,62 @@
-﻿What is pandapower?
+﻿Minimal Example
 =====================
 
-pandapower combines the data analysis library `pandas <http://pandas.pydata.org/>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program.
-pandapower is aimed at automation of power system analysis and optimization in distribution and sub-transmission networks.
+A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
+Each dataframe in a pandapowerNet contains the information about one pandapower element, such as line, load transformer etc.
 
-pandapower is based on electric elements rather than on generic power flow attributes. For example, in branch/bus models the power demand and shunt admittances are assigend to the buses,
-even though these are in reality the attributes of electric elements (such as loads, pv generators or capacitor banks) which are connected to the buses. In pandapower, we model each electric bus element instead of considering 
-summed values for each bus. Branch/bus models also make no distinction between modeling differnt kind of branches, even though the electric models for lines and transformers is very different. In pandapower, lines can be defined 
-by a length and cable type and transformers can be defined by short circuit voltages and rated power. All parameters which are necessary for the power flow (like branch per unit impedances, shunt impedances, bus power, bus power 
-flow type etc.) are then calculated and handled internally by pandapower.
+We consider the following simple 3-bus example network as a minimal example:
 
-A network in pandapower is represented in a PandapowerNet object, which is a collection of pandas Dataframes.
-Each dataframe in a PandapowerNet contains the information about one pandapower element, such as line, load transformer etc.
-
-For the following simple 2-bus example network:
-
-.. image:: /docs/pandapower/pics/2bus-system.png
+.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/3bus-system.png
 		:width: 20em
-		:alt: alternate Text
 		:align: center 
 
-the pandapower representation looks like this:
-
-.. image:: /docs/pandapower/pics/pandapower_datastructure.png
-		:width: 40em
-		:alt: alternate Text
-		:align: center
-
-The network can be created with the pandapower create functions, but it also possible to directly manipulate data in the pandapower dataframes.
-
-When a power flow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow. The results are then processed and written back into pandapower:
-        
-.. image:: /docs/pandapower/pics/pandapower_power flow.png
-		:width: 40em
-		:alt: alternate Text
-		:align: center
-
-For the 2-bus example network, the result tables look like this:
-
-.. image:: /docs/pandapower/pics/pandapower_results.png
-		:width: 40em
-		:alt: alternate Text
-		:align: center
-
-       
-Why pandapower?
-=====================
-
-There are various reasons why using pandapower is more comfortable than using pypower directly:
-   
-1. Electric Models
-    - pandapower comes with static equivalent circuit models for lines, 2-Winding transformers, 3-Winding transformers, ward-equivalents etc.
-    - Input parameters are intuitive and commonly used model plate parameters (such as line length and resistance per kilometer) instead of parameters like total branch resistance in per unit
-    - the pandapower switch model allows modelling of ideal bus-bus switches as well as bus-line / bus-trafo switches
-    - the power flow results are processed to include not only the classic power flow results (such as bus voltages and apparent power branch flows), but also line loading or transformer losses
-
-2. pandapower API
-    - the pandapower API provides create functions for each element to allow automized step-by-step construction of networks
-    - the standard type library allows simplified creation of lines, 2-Winding transformers and 3-Winding transformers
-    - networks can be saved and loaded to the hard drive with the pickle library
-
-3. pandapower Datastructure
-    - since variables of any datatype can be stored in the pandas dataframes, electric parameters (integer / float) can be stored together with names (strings), status variables (boolean) etc.
-    - variables can be accessed by name instead of by column number of a matrix
-    - since all information is stored in pandas tables, all inherent pandas methods can be used to
+This network can be created in pandapower as follows: ::
     
-        - `access <http://pandas.pydata.org/pandas-docs/stable/indexing.html>`_,
-        - `query <http://pandas.pydata.org/pandas-docs/stable/indexing.html#boolean-indexing>`_,
-        - `statistically evaluate <http://pandas.pydata.org/pandas-docs/version/0.17.1/api.html#api-dataframe-stats>`_,
-        - `iterate over <http://pandas.pydata.org/pandas-docs/stable/basics.html#iteration>`_,
-        - `visualize <http://pandas.pydata.org/pandas-docs/stable/visualization.html>`_,
-        -  etc.
+    import pandapower as pp
+    #create empty net
+    net = pp.create_empty_network() 
+    
+    #create buses
+    b1 = pp.create_bus(net, vn_kv=20., name="Bus 1")
+    b2 = pp.create_bus(net, vn_kv=0.4, name="Bus 2")
+    b3 = pp.create_bus(net, vn_kv=0.4, name="Bus 3")
+
+    #create bus elements
+    pp.create_ext_grid(net, bus=b1, vm_pu=1.02, name="Grid Connection")
+    pp.create_load(net, bus=b3, p_kw=100, q_kvar=50, name="Load")
+  
+    #create branch elements
+    tid = pp.create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="0.4 MVA 20/0.4 kV",
+                                name="Trafo")
+    pp.create_line(net, from_bus=b2, to_bus=b3, length_km=0.1, name="Line",
+                   std_type="NAYY 4x50 SE")   
+                   
+Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/elements/trafo.html#electric-model>`_.
+The `standard type library <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types.html>`_ allows comfortable creation of line and transformer elements. 
+
+The pandapower representation now looks like this:
+
+.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_datastructure.png
+		:width: 40em
+
+**Running a Power Flow**  
+
+A powerflow can be carried out with the `runpp function <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/powerflow/ac.html>`_: ::
+     
+    pp.runpp(net)
+    
+When a power flow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow.
+The results are then processed and written back into pandapower:
         
-      any information that is stored in the pandapower dataframes - be it element parameters, power flow results or a combination of both.
+.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_powerflow.png
+		:width: 40em
 
-4. Topological Searches
-    - pandapower networks can be translated into `networkx <https://networkx.github.io/>` multigraphs for fast topological searches
-    - all native `networkx algorithms <https://networkx.readthedocs.io/en/stable/reference/algorithms.html>`can be used to perform graph searches on pandapower networks
-    - pandapower provides some search algorithms specialiced on electric power networks
+For the 3-bus example network, the result tables look like this:
 
-5. Plotting and geographical data
-    - geographical data for buses and lines can be stored in the pandapower datastructure
-    - networks with geographic information can be plotted using matplotlib
-    - if no geographical information is available for the buses, artificial coordinates can be created through a `python-igraph <http://igraph.org/python/>` interface
-      
+.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_results.png
+		:width: 30em      
+
 License
 =========
 
-.. highlight:: none
-
-pandapower is licensed under the following 3-clause BSD-License: ::
-    
-    Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for
-    Wind Energy and Power Systems Technology (IWES) Kassel and individual
-    contributors (see AUTHORS file for details).
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
-
-    1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
-    3. Neither the name of the copyright holder nor the names of its
-    contributors may be used to endorse or promote products derived from
-    this software without specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-    IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-    TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-    PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-    TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-    
-.. highlight:: python
+pandapower is licensed under a 3-clause BSD-License that can be found in the LICENSE file.

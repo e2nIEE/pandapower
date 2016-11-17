@@ -125,9 +125,9 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
     if objectivetype == "linear":
 
         ppc["gencost"] = zeros((ng, 8), dtype=float)
-        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 100, eg_cost_per_kw])
-        ppc["gencost"][nref:ng, :] = array(
-            [1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
+        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 100, 1]) # initializing gencost array for eg
+        ppc["gencost"][:nref, 7] = nan_to_num(eg_cost_per_kw)
+        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
         ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
