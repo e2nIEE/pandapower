@@ -18,7 +18,7 @@ from pandapower.auxiliary import ppException
 
 class OPFNotConverged(ppException):
     """
-    Exception being raised in case loadflow did not converge.
+    Exception being raised in case optimal powerflow did not converge.
     """
     pass
 
