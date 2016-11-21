@@ -6,7 +6,7 @@
 
 from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, \
                                                                 _get_gen_results, _get_bus_results
-from numpy import zeros, array, float, hstack
+from numpy import zeros, array, float, hstack, invert
 from pandapower.build_bus import _sum_by_group
 import pandapower as pp
 from pypower.idx_gen import PG, QG
@@ -45,19 +45,18 @@ def _get_p_q_results_opf(net, ppc, bus_lookup, gen_end):
     sg = net["sgen"]
     if len(sg) > 0:
         sgen_is = sg["in_service"].values
+        sgen_ctrl = sg["controllable"].values
         scaling = sg["scaling"].values
-        psg = sg["p_kw"].values * scaling * sgen_is
-        qsg = sg["q_kvar"].values * scaling * sgen_is
+        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
+        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
+        psg[sgen_is & sgen_ctrl] = - ppc["gen"][gen_end:, PG] * 1000
+        qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gen_end:, QG] * 1000
         net["res_sgen"]["p_kw"] = psg
         net["res_sgen"]["q_kvar"] = qsg
         b = hstack([b, sg["bus"].values])
         p = hstack([p, psg])
         q = hstack([q, qsg])
         net["res_sgen"].index = net["sgen"].index
-
-        if net.sgen.controllable.any():
-            net.res_sgen.p_kw[net.sgen.controllable & net.sgen.in_service] = - ppc["gen"][gen_end:, PG] * 1000
-            net.res_sgen.q_kvar[net.sgen.controllable & net.sgen.in_service] = - ppc["gen"][gen_end:, QG] * 1000
 
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
     b_ppc = pp.get_indices(b_pp, bus_lookup, fused_indices=False)
