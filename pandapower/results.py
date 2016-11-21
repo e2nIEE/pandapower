@@ -184,7 +184,6 @@ def _get_branch_flows(net, ppc):
     i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
     return i_ft, s_ft
 
-
 def _get_line_results(net, ppc, i_ft, f, t, ac=True):
     pf_kw = ppc["branch"][f:t, PF].real * 1e3
     qf_kvar = ppc["branch"][f:t, QF].real * 1e3
@@ -210,7 +209,6 @@ def _get_line_results(net, ppc, i_ft, f, t, ac=True):
 
     net["res_line"]["i_ka"] = i_ka
     net["res_line"]["loading_percent"] = i_ka / i_max * 100
-
 
 def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
     phv_kw = ppc["branch"][f:t, PF].real * 1e3

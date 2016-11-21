@@ -20,7 +20,8 @@ from pypower.run_userfcn import run_userfcn
 from pandapower.runpf import _runpf
 from pandapower.auxiliary import ppException
 from pandapower.results import _extract_results
-from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
+from pandapower.build_branch import _build_branch_ppc, _switch_branches\
+    , _branches_with_oos_buses, _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
@@ -34,7 +35,7 @@ class LoadflowNotConverged(ppException):
 
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
-          , trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, Numba=True
+          , trafo_loading="current", enforce_q_lims=False, suppress_warnings=False, numba=True
           , recycle=None, **kwargs):
     """
     Runs PANDAPOWER AC Flow
@@ -96,9 +97,9 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
-        **Numba** (bool, True) - Usage Numba JIT compiler
+        **numba** (bool, True) - Usage numba JIT compiler
 
-            If set to True, the Numba JIT compiler is used to generate matrices for the powerflow. Massive
+            If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
             speed improvements are likely.
 
         **recycle** (dict, none) - Reuse of internal powerflow variables
@@ -114,17 +115,13 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
     ac = True
     # recycle parameters
     if recycle == None:
-        recycle = {
-            "is_elems" : False
-            , "ppc" : False
-            , "Ybus" : False
-        }
+        recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, **kwargs):
+def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=False, recycle=None, **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -154,9 +151,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
-        **Numba** (bool, True) - Usage Numba JIT compiler
+        **numba** (bool, True) - Usage numba JIT compiler
 
-            If set to True, the Numba JIT compiler is used to generate matrices for the powerflow. Massive
+            If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
             speed improvements are likely.
 
         **recycle** (dict, none) - Reuse of internal powerflow variables
@@ -175,20 +172,16 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
     enforce_q_lims = False
     init = ''
     tolerance_kva = 1e-5
-    Numba = True
+    numba = True
     if recycle == None:
-        recycle = {
-            "is_elems" : False
-            , "ppc" : False
-            , "Ybus" : False
-        }
+        recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs)
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, Numba, recycle, **kwargs):
+             trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -200,9 +193,10 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net, recycle)
 
-    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None:
+    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_bus_lookup" in net:
         # update the ppc from last cycle
-        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims)
+        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
+                                            trafo_model)
     else:
         # convert pandapower net to ppc
         ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
@@ -210,10 +204,9 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 
     # store variables
     net["_ppc"] = ppc
-    if recycle["ppc"]:
-        net["_bus_lookup"] = bus_lookup
-    if recycle["is_elems"]:
-        net["_is_elems"] = is_elems
+    net["_bus_lookup"] = bus_lookup
+    net["_is_elems"] = is_elems
+
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
@@ -222,10 +215,10 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = _runpf(ppci, init, ac, Numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+            result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                        PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
     else:
-        result = _runpf(ppci, init, ac, Numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+        result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
@@ -267,7 +260,7 @@ def _select_is_elements(net, recycle=None):
     """
 
     if recycle is not None and recycle["is_elems"]:
-        if net["_is_elems"] is None:
+        if "_is_elems" not in net or net["_is_elems"] is None:
             # sort elements according to their in service status
             elems = ['bus', 'line']
             for elm in elems:
@@ -449,7 +442,8 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     return ppc, ppci, bus_lookup
 
-def _update_ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False):
+
+def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_q_lims=False, trafo_model="pi"):
     """
     Updates P, Q values of the ppc with changed values from net
 
@@ -467,6 +461,9 @@ def _update_ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=Fa
     _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
     # updates values for gen
     _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
+    if not recycle["Ybus"]:
+        # updates trafo and trafo3w values
+        _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model)
 
     # get OOS busses and place them at the end of the bus array (so that: 3
     # (REF), 2 (PV), 1 (PQ), 4 (OOS))
@@ -481,11 +478,12 @@ def _update_ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=Fa
 
     return ppc, ppci, bus_lookup
 
+
 def _ppc2ppci(ppc, ppci, bus_lookup):
     # BUS Sorting and lookup
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
-    ppcBuses = ppc["bus"]
-    ppc['bus'] = ppcBuses[ppcBuses[:, BUS_TYPE].argsort(axis=0)[::-1][:], ]
+    ppc_buses = ppc["bus"]
+    ppc['bus'] = ppc_buses[ppc_buses[:, BUS_TYPE].argsort(axis=0)[::-1][:], ]
     # get OOS busses and place them at the end of the bus array (so that: 3
     # (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
@@ -495,22 +493,18 @@ def _ppc2ppci(ppc, ppci, bus_lookup):
     ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
-    arangedBuses = np.arange(len(ppcBuses))
+    aranged_buses = np.arange(len(ppc_buses))
 
     # lookup ppc former order -> consecutive order
-    e2i = np.zeros(len(ppcBuses), dtype=int)
-    e2i[ppc_former_order] = arangedBuses
+    e2i = np.zeros(len(ppc_buses), dtype=int)
+    e2i[ppc_former_order] = aranged_buses
 
     # save consecutive indices in ppc and ppci
-    ppc['bus'][:, BUS_I] = arangedBuses
+    ppc['bus'][:, BUS_I] = aranged_buses
     ppci['bus'][:, BUS_I] = ppc['bus'][:len(ppci['bus']), BUS_I]
 
     # update bus_lookup (pandapower -> ppci internal)
     bus_lookup = {key: e2i[val] for (key, val) in bus_lookup.items()}
-
-    # sizes
-    nb = ppc["bus"].shape[0]
-    ng = ppc["gen"].shape[0]
 
     if 'areas' in ppc:
         if len(ppc["areas"]) == 0:  # if areas field is empty

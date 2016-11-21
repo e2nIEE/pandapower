@@ -18,23 +18,24 @@ from pypower.makeSbus import makeSbus
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
 from pypower.makeB import makeB
-from pypower.pfsoln import pfsoln
 from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pypower.idx_brch import PF, PT, QF, QT
 from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 
+from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.loadcase import loadcase
 from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
 
-def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=None):
+
+def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None):
     """Runs a power flow.
 
     Similar to runpf() from pypower. See Pypower documentation for more information.
 
     Changes by University of Kassel (Florian Schaefer):
-        Numba can be used for pf calculations.
+        numba can be used for pf calculations.
         Changes in structure (AC as well as DC PF can be calculated)
     """
 
@@ -107,22 +108,22 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=
         qlim = ppopt["ENFORCE_Q_LIMS"]  ## enforce Q limits on gens?
 
         ## check if numba is available and the corresponding flag
-        if Numba:
+        if numba:
             try:
                 from numba import _version as nb_version
-                # get Numba Version (in order to use it it must be > 0.25)
-                nbVersion = float(nb_version.version_version[:4])
+                # get numba Version (in order to use it it must be > 0.25)
+                nb_version = float(nb_version.version_version[:4])
 
-                if nbVersion < 0.25:
+                if nb_version < 0.25:
                     print('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
-                    Numba = False
+                    numba = False
 
             except ImportError:
-                # raise UserWarning('Numba cannot be imported. Call runpp() with Numba=False!')
+                # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
                 print('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
-                Numba = False
+                numba = False
 
-        if Numba:
+        if numba:
             from pandapower.pypower_extensions.makeYbus import makeYbus
         else:
             from pypower.makeYbus import makeYbus
@@ -148,7 +149,7 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=
 
         if qlim:
             ref0 = ref  ## save index and angle of
-            Varef0 = bus[ref0, VA]  ##   original reference bus(es)
+            # Varef0 = bus[ref0, VA]  ##   original reference bus(es)
             limited = []  ## list of indices of gens @ Q lims
             fixedQg = zeros(gen.shape[0])  ## Qg of gens at Q limits
 
@@ -168,7 +169,7 @@ def _runpf(casedata=None, init='flat', ac=True, Numba=True, recycle=None, ppopt=
             ## run the power flow
             alg = ppopt["PF_ALG"]
             if alg == 1:
-                V, success, _ = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt, Numba)
+                V, success, _ = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt, numba)
             elif alg == 2 or alg == 3:
                 Bp, Bpp = makeB(baseMVA, bus, branch, alg)
                 V, success, _ = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
