@@ -5,7 +5,7 @@
 """Solves a DC power flow.
 """
 
-from numpy import copy, r_, matrix, transpose
+from numpy import copy, r_, matrix, transpose, real
 from scipy.sparse.linalg import spsolve
 
 
@@ -32,6 +32,6 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
     Va = copy(Va0)
 
     ## update angles for non-reference buses
-    Va[pvpq] = spsolve(B[pvpq.T, pvpq], transpose(Pbus[pvpq] - B[pvpq.T, ref] * Va0[ref]))
+    Va[pvpq] = real(spsolve(B[pvpq.T, pvpq], transpose(Pbus[pvpq] - B[pvpq.T, ref] * Va0[ref])))
 
     return Va

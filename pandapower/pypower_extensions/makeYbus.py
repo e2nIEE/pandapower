@@ -143,8 +143,8 @@ def makeYbus(baseMVA, bus, branch):
     Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
     Bc = stat * branch[:, BR_B]              ## line charging susceptance
     tap = ones(nl)                           ## default tap ratio = 1
-    i = nonzero(branch[:, TAP])              ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP]).astype(int) ## assign non-zero tap ratios
+    i = nonzero(real(branch[:, TAP]))              ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP]) ## assign non-zero tap ratios
     tap = tap * exp(1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
 
     Ytt = Ys + 1j * Bc / 2

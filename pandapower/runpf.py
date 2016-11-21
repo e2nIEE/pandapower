@@ -9,11 +9,10 @@ from os.path import dirname, join
 
 from time import time
 
-from numpy import r_, zeros, pi, ones, exp, argmax
+from numpy import r_, zeros, pi, ones, exp, argmax, real
 from numpy import flatnonzero as find
 
 from pypower.ppoption import ppoption
-from pypower.makeBdc import makeBdc
 from pypower.makeSbus import makeSbus
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
@@ -22,8 +21,8 @@ from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pypower.idx_brch import PF, PT, QF, QT
 from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 
+from pandapower.pypower_extensions.makeBdc import makeBdc
 from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.pypower_extensions.loadcase import loadcase
 from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
@@ -48,7 +47,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
     verbose = ppopt["VERBOSE"]
 
     ## read data
-    ppci = loadcase(casedata)
+    ppci = casedata
 
     # get data for calc
     baseMVA, bus, gen, branch = \
@@ -96,7 +95,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
         for k in range(len(ref)):
             temp = find(gbus == ref[k])
             refgen[k] = on[temp[0]]
-        gen[refgen, PG] = gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA
+        gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
         success = 1
 
         if ac and init=='dc':
@@ -232,7 +231,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
                     gen[mx, QG] = fixedQg[mx]  ## set Qg to binding
                     for i in range(len(mx)):  ## [one at a time, since they may be at same bus]
                         gen[mx[i], GEN_STATUS] = 0  ## temporarily turn off gen,
-                        bi = gen[mx[i], GEN_BUS]  ## adjust load accordingly,
+                        bi = gen[mx[i], GEN_BUS].astype(int)  ## adjust load accordingly,
                         bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
 
                     if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
@@ -258,7 +257,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
             ## restore injections from limited gens [those at Q limits]
             gen[limited, QG] = fixedQg[limited]  ## restore Qg value,
             for i in range(len(limited)):  ## [one at a time, since they may be at same bus]
-                bi = gen[limited[i], GEN_BUS]  ## re-adjust load,
+                bi = gen[limited[i], GEN_BUS].astype(int)  ## re-adjust load,
                 bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[limited[i], [PG, QG]]
                 gen[limited[i], GEN_STATUS] = 1  ## and turn gen back on
 

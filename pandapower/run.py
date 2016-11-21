@@ -35,7 +35,7 @@ class LoadflowNotConverged(ppException):
 
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
-          , trafo_loading="current", enforce_q_lims=False, suppress_warnings=False, numba=True
+          , trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, numba=True
           , recycle=None, **kwargs):
     """
     Runs PANDAPOWER AC Flow
@@ -121,7 +121,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
              trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=False, recycle=None, **kwargs):
+def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
