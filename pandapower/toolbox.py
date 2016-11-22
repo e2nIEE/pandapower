@@ -62,26 +62,28 @@ def opf_task(net):
             logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
         else:
             logger.info("    at Node %i", r.bus)
-    logger.info("  Generator")
     if 'controllable' in net.gen.columns:
         if (net.gen.controllable == True).any():
+            logger.info("  Generator")
             if "cost_per_kw" in net.gen.columns:
                 for q, r in net.gen[net.gen.controllable == True].iterrows():
                     logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
             else:
                 logger.info("    at Node %i", r.bus)
-    logger.info("  Static Generator")
     if 'controllable' in net.sgen.columns:
         if (net.sgen.controllable == True).any():
+            logger.info("  Static Generator")
             if "cost_per_kw" in net.sgen.columns:
                 for q, r in net.sgen[net.sgen.controllable == True].iterrows():
                     logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
             else:
                 logger.info("    at Node %i", r.bus)
     logger.info("Constraints:")
+    c_exist = False
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
         if c_bus.shape[0] > 0:
+            c_exist = True
             logger.info("  Voltage Constraints")
             for i in c_bus.index:
                 logger.info("    at Node %i min_vm_pu is %s and max_vm_pu is %s", i,
@@ -89,15 +91,19 @@ def opf_task(net):
     if "max_loading_percent" in net.trafo.columns:
         c_trafo = net.bus['max_loading_percent'].dropna()
         if c_trafo.shape[0] > 0:
+            c_exist = True
             logger.info("  Trafo Constraint")
             for i in c_trafo.index:
                 logger.info("    at Trafo %i max_loading_percent is %s", i, c_trafo[i])
     if "max_loading_percent" in net.line.columns:
         c_line = net.bus['max_loading_percent'].dropna()
         if c_line.shape[0] > 0:
+            c_exist = True
             logger.info("  Line Constraint")
             for i in c_line.index:
                 logger.info("    at Line %i max_loading_percent is %s", i, c_line[i])
+    if not c_exist:
+        ("  There are no constraints.")
 
 
 def switch_info(net, sidx):
