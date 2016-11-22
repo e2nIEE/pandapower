@@ -94,6 +94,14 @@ def opf_task(net):
         if c_sgen.shape[0] > 0:
             c_exist = True
             logger.info("  Static Generator Constraints")
+            if (net.gen.min_p_kw <= net.gen.min_p_kw).any() or \
+               (net.sgen.min_p_kw <= net.sgen.min_p_kw).any():
+                logger.warn("The value of max_p_kw must be less than min_p_kw. Please observe " +
+                            "the pandapower signing system")
+            if (net.gen.min_q_kvar >= net.gen.max_q_kvar).any() or \
+               (net.sgen.min_q_kvar >= net.sgen.max_q_kvar).any():
+                logger.warn("The value of min_q_kvar must be less than max_q_kvar. Please " +
+                            "observe the pandapower signing system")
             for i in c_sgen.index:
                 logger.info("    at Sgen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
                             "[%s, %s, %s, %s]", i, c_sgen.min_p_kw[i], c_sgen.max_p_kw[i],
@@ -103,18 +111,20 @@ def opf_task(net):
         if c_bus.shape[0] > 0:
             c_exist = True
             logger.info("  Voltage Constraints")
+            if (net.bus.min_vm_pu >= net.bus.max_vm_pu).any():
+                logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
             for i in c_bus.index:
                 logger.info("    at Node %i min_vm_pu is %s and max_vm_pu is %s", i,
                             c_bus.min_vm_pu[i], c_bus.max_vm_pu[i])
     if "max_loading_percent" in net.trafo.columns:
-        c_trafo = net.bus['max_loading_percent'].dropna()
+        c_trafo = net.trafo['max_loading_percent'].dropna()
         if c_trafo.shape[0] > 0:
             c_exist = True
             logger.info("  Trafo Constraint")
             for i in c_trafo.index:
                 logger.info("    at Trafo %i max_loading_percent is %s", i, c_trafo[i])
     if "max_loading_percent" in net.line.columns:
-        c_line = net.bus['max_loading_percent'].dropna()
+        c_line = net.line['max_loading_percent'].dropna()
         if c_line.shape[0] > 0:
             c_exist = True
             logger.info("  Line Constraint")
@@ -122,17 +132,6 @@ def opf_task(net):
                 logger.info("    at Line %i max_loading_percent is %s", i, c_line[i])
     if not c_exist:
         ("  There are no constraints.")
-    else:  # check whether there are clearly unfeasable constraints
-        if (net.gen.min_p_kw <= net.gen.min_p_kw).any() or \
-           (net.sgen.min_p_kw <= net.sgen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw. Please observe the " +
-                        "pandapower signing system")
-        if (net.gen.min_q_kvar >= net.gen.max_q_kvar).any() or \
-           (net.sgen.min_q_kvar >= net.sgen.max_q_kvar).any():
-            logger.warn("The value of min_q_kvar must be less than max_q_kvar. Please observe the" +
-                        " pandapower signing system")
-        if (net.bus.min_vm_pu <= net.bus.max_vm_pu).any():
-            logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
 
 
 def switch_info(net, sidx):
