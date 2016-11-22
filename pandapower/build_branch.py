@@ -669,3 +669,26 @@ def _branches_with_oos_buses(n, ppc, is_elems, bus_lookup):
                 new_indices[np.logical_not(ls_info[:, 0])]
 
             ppc["bus"] = np.vstack(future_buses)
+
+
+def _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
+    """
+    Updates the trafo and trafo3w values when reusing the ppc between two powerflows
+
+    :param net: pandapower net
+    :param ppc: pypower format
+    :param bus_lookup: lookup pandapower -> pypower
+    :return: ppc with updates values
+    """
+    line_end = len(net["line"])
+    trafo_end = line_end + len(net["trafo"])
+    trafo3w_end = trafo_end + len(net["trafo3w"]) * 3
+
+    if trafo_end > line_end:
+        ppc["branch"][line_end:trafo_end,
+                      [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
+            _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles,
+                                  trafo_model, set_opf_constraints)
+    if trafo3w_end > trafo_end:
+        ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
+            _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles,  trafo_model)

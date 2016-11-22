@@ -15,7 +15,7 @@ from scipy.sparse.linalg import spsolve
 
 from pypower.ppoption import ppoption
 
-def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, Numba=True):
+def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
     """Solves the power flow using a full Newton's method.
 
     Solves for bus voltages given the full system admittance matrix (for
@@ -37,10 +37,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, Numba=True):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln
 
-    Modified by University of Kassel (Florian Schaefer) to use Numba
+    Modified by University of Kassel (Florian Schaefer) to use numba
     """
 
     ## default arguments
+    global dSbus_dV_calc, dSbus_dV_calc
     if ppopt is None:
         ppopt = ppoption()
 
@@ -59,8 +60,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, Numba=True):
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
 
-    # if Numba is available import "numba enhanced" functions
-    if Numba:
+    # if numba is available import "numba enhanced" functions
+    if numba:
         from pandapower.pypower_extensions.create_J import create_J, create_J2
         from pandapower.pypower_extensions.dSbus_dV import dSbus_dV_calc
         from pandapower.pypower_extensions.dSbus_dV import dSbus_dV
@@ -74,7 +75,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, Numba=True):
         # check if pvpq is sorted. If so: searchsorted can be used for generating the Jacobian -> faster
         is_pvpq_sorted = all(pvpq[i] <= pvpq[i + 1] for i in range(len(pvpq) - 1))
     else:
-        # Numba == False -> Import pypower standard
+        # numba == False -> Import pypower standard
         from pypower.dSbus_dV import dSbus_dV
         is_pvpq_sorted = False
 
@@ -108,9 +109,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, Numba=True):
         i = i + 1
 
         # only if numba version is > 0.25 and pvpq is sorted all speed improvements can be used
-        if Numba and is_pvpq_sorted:
+        if numba and is_pvpq_sorted:
             #create Jacobian with exploiting sorted pvpq and fast calc of dS_dV
-
             dVm_x, dVa_x = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V/abs(V))
 
             # data in J, space preallocated is bigger than acutal Jx -> will be reduced later on
@@ -133,7 +133,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, Numba=True):
 
         else:
             # create Jacobian with standard pypower implementation.
-            # Usage of fast calc of dS_dV still possible (depends on Numba flag)
+            # Usage of fast calc of dS_dV still possible (depends on numba flag)
             dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
 
             ## evaluate Jacobian

@@ -7,7 +7,7 @@
 
 from sys import stderr
 
-from numpy import ones, conj, nonzero, any, exp, pi, r_, argsort, resize, empty, complex128, zeros, int64, array
+from numpy import ones, conj, nonzero, any, exp, pi, r_, argsort, resize, empty, complex128, zeros, int64, array, real
 from scipy.sparse import csr_matrix
 
 from numba import jit
@@ -143,8 +143,8 @@ def makeYbus(baseMVA, bus, branch):
     Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
     Bc = stat * branch[:, BR_B]              ## line charging susceptance
     tap = ones(nl)                           ## default tap ratio = 1
-    i = nonzero(branch[:, TAP])              ## indices of non-zero tap ratios
-    tap[i] = branch[i, TAP]                  ## assign non-zero tap ratios
+    i = nonzero(real(branch[:, TAP]))              ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP]) ## assign non-zero tap ratios
     tap = tap * exp(1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
 
     Ytt = Ys + 1j * Bc / 2
@@ -161,8 +161,8 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = branch[:, F_BUS].astype(int)                           ## list of "from" buses
-    t = branch[:, T_BUS].astype(int)                           ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
 
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end
