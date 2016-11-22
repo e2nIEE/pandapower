@@ -80,6 +80,24 @@ def opf_task(net):
                 logger.info("    at Node %i", r.bus)
     logger.info("Constraints:")
     c_exist = False
+    if pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']).isin(net.gen.columns).any():
+        c_gen = net.gen[['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']].dropna(how='all')
+        if c_gen.shape[0] > 0:
+            c_exist = True
+            logger.info("  Generator Constraints")
+            for i in c_gen.index:
+                logger.info("    at Gen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
+                            "[%s, %s, %s, %s]", i, c_gen.min_p_kw[i], c_gen.max_p_kw[i],
+                            c_gen.min_q_kvar[i], c_gen.max_q_kvar[i])
+    if pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']).isin(net.sgen.columns).any():
+        c_sgen = net.sgen[['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']].dropna(how='all')
+        if c_sgen.shape[0] > 0:
+            c_exist = True
+            logger.info("  Static Generator Constraints")
+            for i in c_sgen.index:
+                logger.info("    at Sgen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
+                            "[%s, %s, %s, %s]", i, c_sgen.min_p_kw[i], c_sgen.max_p_kw[i],
+                            c_sgen.min_q_kvar[i], c_sgen.max_q_kvar[i])
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
         if c_bus.shape[0] > 0:
@@ -104,6 +122,17 @@ def opf_task(net):
                 logger.info("    at Line %i max_loading_percent is %s", i, c_line[i])
     if not c_exist:
         ("  There are no constraints.")
+    else:  # check whether there are clearly unfeasable constraints
+        if (net.gen.min_p_kw <= net.gen.min_p_kw).any() or \
+           (net.sgen.min_p_kw <= net.sgen.min_p_kw).any():
+            logger.warn("The value of max_p_kw must be less than min_p_kw. Please observe the " +
+                        "pandapower signing system")
+        if (net.gen.min_q_kvar >= net.gen.max_q_kvar).any() or \
+           (net.sgen.min_q_kvar >= net.sgen.max_q_kvar).any():
+            logger.warn("The value of min_q_kvar must be less than max_q_kvar. Please observe the" +
+                        " pandapower signing system")
+        if (net.bus.min_vm_pu <= net.bus.max_vm_pu).any():
+            logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
 
 
 def switch_info(net, sidx):
