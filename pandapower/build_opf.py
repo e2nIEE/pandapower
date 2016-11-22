@@ -22,7 +22,7 @@ import warnings
 
 
 def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
-    """ we need to put the sgens into the gen table instead of the bsu table 
+    """ we need to put the sgens into the gen table instead of the bus table
     so we need to change _pd2ppc a little to get the ppc we need for the OPF
     """
 
@@ -56,7 +56,7 @@ def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
 
 
 def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kwargs):
-    """ 
+    """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
 
@@ -80,7 +80,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
             - **"minlossmaxp"** - Quadratic costs of the form  :math:`I\\cdot P_G - dV_m^T Y_L dV_m`.
               :math:`P_G` represents the active power values of the generators,
               :math:`dV_m` the voltage drop for each line and :math:`Y_L` the line admittance matrix.
-              Target of this objectivefunction is to maximize the generator output but minimize the 
+              Target of this objectivefunction is to maximize the generator output but minimize the
               linelosses.
               This then basically is this:
 

@@ -26,6 +26,12 @@ def lf_info(net, numv=1, numi=2):
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
+
+    OPTIONAL:
+
+        **numv** (integer, 1) - maximal number of printed maximal respectively minimal voltages
+
+        **numi** (integer, 2) - maximal number of printed maximal loading at trafos or lines
     """
     logger.info("Max voltage")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
@@ -43,6 +49,89 @@ def lf_info(net, numv=1, numi=2):
     for _, r in net.res_line.sort_values("loading_percent", ascending=False).iloc[:numi].iterrows():
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name,
                     net.line.name.at[r.name])
+
+
+def opf_task(net):
+    """
+    Prints some basic inforamtion of the optimal powerflow task.
+    """
+    logger.info("Cotrollables & Costs:")
+    logger.info("  External Grid")
+    for q, r in net.ext_grid.iterrows():
+        if "cost_per_kw" in net.ext_grid.columns:
+            logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
+        else:
+            logger.info("    at Node %i", r.bus)
+    if 'controllable' in net.gen.columns:
+        if (net.gen.controllable == True).any():
+            logger.info("  Generator")
+            if "cost_per_kw" in net.gen.columns:
+                for q, r in net.gen[net.gen.controllable == True].iterrows():
+                    logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
+            else:
+                logger.info("    at Node %i", r.bus)
+    if 'controllable' in net.sgen.columns:
+        if (net.sgen.controllable == True).any():
+            logger.info("  Static Generator")
+            if "cost_per_kw" in net.sgen.columns:
+                for q, r in net.sgen[net.sgen.controllable == True].iterrows():
+                    logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
+            else:
+                logger.info("    at Node %i", r.bus)
+    logger.info("Constraints:")
+    c_exist = False
+    if pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']).isin(net.gen.columns).any():
+        c_gen = net.gen[['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']].dropna(how='all')
+        if c_gen.shape[0] > 0:
+            c_exist = True
+            logger.info("  Generator Constraints")
+            for i in c_gen.index:
+                logger.info("    at Gen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
+                            "[%s, %s, %s, %s]", i, c_gen.min_p_kw[i], c_gen.max_p_kw[i],
+                            c_gen.min_q_kvar[i], c_gen.max_q_kvar[i])
+    if pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']).isin(net.sgen.columns).any():
+        c_sgen = net.sgen[['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']].dropna(how='all')
+        if c_sgen.shape[0] > 0:
+            c_exist = True
+            logger.info("  Static Generator Constraints")
+            if (net.gen.min_p_kw <= net.gen.min_p_kw).any() or \
+               (net.sgen.min_p_kw <= net.sgen.min_p_kw).any():
+                logger.warn("The value of max_p_kw must be less than min_p_kw. Please observe " +
+                            "the pandapower signing system")
+            if (net.gen.min_q_kvar >= net.gen.max_q_kvar).any() or \
+               (net.sgen.min_q_kvar >= net.sgen.max_q_kvar).any():
+                logger.warn("The value of min_q_kvar must be less than max_q_kvar. Please " +
+                            "observe the pandapower signing system")
+            for i in c_sgen.index:
+                logger.info("    at Sgen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
+                            "[%s, %s, %s, %s]", i, c_sgen.min_p_kw[i], c_sgen.max_p_kw[i],
+                            c_sgen.min_q_kvar[i], c_sgen.max_q_kvar[i])
+    if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
+        c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
+        if c_bus.shape[0] > 0:
+            c_exist = True
+            logger.info("  Voltage Constraints")
+            if (net.bus.min_vm_pu >= net.bus.max_vm_pu).any():
+                logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
+            for i in c_bus.index:
+                logger.info("    at Node %i min_vm_pu is %s and max_vm_pu is %s", i,
+                            c_bus.min_vm_pu[i], c_bus.max_vm_pu[i])
+    if "max_loading_percent" in net.trafo.columns:
+        c_trafo = net.trafo['max_loading_percent'].dropna()
+        if c_trafo.shape[0] > 0:
+            c_exist = True
+            logger.info("  Trafo Constraint")
+            for i in c_trafo.index:
+                logger.info("    at Trafo %i max_loading_percent is %s", i, c_trafo[i])
+    if "max_loading_percent" in net.line.columns:
+        c_line = net.line['max_loading_percent'].dropna()
+        if c_line.shape[0] > 0:
+            c_exist = True
+            logger.info("  Line Constraint")
+            for i in c_line.index:
+                logger.info("    at Line %i max_loading_percent is %s", i, c_line[i])
+    if not c_exist:
+        ("  There are no constraints.")
 
 
 def switch_info(net, sidx):
