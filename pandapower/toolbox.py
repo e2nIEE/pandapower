@@ -69,7 +69,8 @@ def opf_task(net):
                 for q, r in net.gen[net.gen.controllable == True].iterrows():
                     logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
             else:
-                logger.info("    at Node %i", r.bus)
+                for q, r in net.gen[net.gen.controllable == True].iterrows():
+                    logger.info("    at Node %i", r.bus)
     if 'controllable' in net.sgen.columns:
         if (net.sgen.controllable == True).any():
             logger.info("  Static Generator")
@@ -79,33 +80,70 @@ def opf_task(net):
             else:
                 logger.info("    at Node %i", r.bus)
     logger.info("Constraints:")
-    c_exist = False
-    if pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']).isin(net.gen.columns).any():
-        c_gen = net.gen[['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']].dropna(how='all')
-        if c_gen.shape[0] > 0:
-            c_exist = True
-            logger.info("  Generator Constraints")
-            for i in c_gen.index:
-                logger.info("    at Gen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
-                            "[%s, %s, %s, %s]", i, c_gen.min_p_kw[i], c_gen.max_p_kw[i],
+    c_exist = False  # stores if there are any constraints
+    # --- Generator constraints
+    c_gen_columns = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
+    c_gen_columns_exist = c_gen_columns[c_gen_columns.isin(net.gen.columns)]
+    c_gen = net.gen[c_gen_columns_exist].dropna(how='all')
+    if (c_gen.shape[1] > 0) & (c_gen.shape[0] > 0):
+        c_exist = True
+        logger.info("  Generator Constraints")
+        for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
+            c_gen[i] = np.nan
+        if (c_gen.max_p_kw >= c_gen.min_p_kw).any():
+            logger.warn("The value of max_p_kw must be less than min_p_kw for all generators. " +
+                        "Please observe the pandapower signing system.")
+        if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
+            logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. "+
+                        "Please observe the pandapower signing system.")
+        if c_gen.duplicated()[1:].all():
+            logger.info("    at all Gens [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
+                        "[%s, %s, %s, %s]", c_gen.min_p_kw[0], c_gen.max_p_kw[0],
+                        c_gen.min_q_kvar[0], c_gen.max_q_kvar[0])
+        else:
+            unique_rows = ~c_gen.duplicated()
+            duplicated_rows = c_gen.duplicated()
+            for i in c_gen[unique_rows].index:
+                same_data_gens = list([i])
+                for i2 in c_gen[duplicated_rows].index:
+                    if c_gen.iloc[i].equals(c_gen.iloc[i2]):
+                        same_data_gens.append(i2)
+                logger.info('    at Gens %s [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] ' +
+                            'is [%s, %s, %s, %s]', ', '.join(map(str, same_data_gens)),
+                            c_gen.min_p_kw[i], c_gen.max_p_kw[i],
                             c_gen.min_q_kvar[i], c_gen.max_q_kvar[i])
-    if pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']).isin(net.sgen.columns).any():
-        c_sgen = net.sgen[['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']].dropna(how='all')
-        if c_sgen.shape[0] > 0:
-            c_exist = True
-            logger.info("  Static Generator Constraints")
-            if (net.gen.min_p_kw <= net.gen.min_p_kw).any() or \
-               (net.sgen.min_p_kw <= net.sgen.min_p_kw).any():
-                logger.warn("The value of max_p_kw must be less than min_p_kw. Please observe " +
-                            "the pandapower signing system")
-            if (net.gen.min_q_kvar >= net.gen.max_q_kvar).any() or \
-               (net.sgen.min_q_kvar >= net.sgen.max_q_kvar).any():
-                logger.warn("The value of min_q_kvar must be less than max_q_kvar. Please " +
-                            "observe the pandapower signing system")
-            for i in c_sgen.index:
-                logger.info("    at Sgen %i [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
-                            "[%s, %s, %s, %s]", i, c_sgen.min_p_kw[i], c_sgen.max_p_kw[i],
+    # --- Static Generator constraints
+    c_sgen_columns = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
+    c_sgen_columns_exist = c_sgen_columns[c_sgen_columns.isin(net.sgen.columns)]
+    c_sgen = net.sgen[c_sgen_columns_exist].dropna(how='all')
+    if (c_sgen.shape[1] > 0) & (c_sgen.shape[0] > 0):
+        c_exist = True
+        logger.info("  Static Generator Constraints")
+        for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
+            c_sgen[i] = np.nan
+        if (c_sgen.max_p_kw >= c_sgen.min_p_kw).any():
+            logger.warn("The value of max_p_kw must be less than min_p_kw for all static " +
+                        "generators. Please observe the pandapower signing system.")
+        if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
+            logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
+                        "generators. Please observe the pandapower signing system.")
+        if c_sgen.duplicated()[1:].all():
+            logger.info("    at all Sgens [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
+                        "[%s, %s, %s, %s]", c_sgen.min_p_kw[0], c_sgen.max_p_kw[0],
+                        c_sgen.min_q_kvar[0], c_sgen.max_q_kvar[0])
+        else:
+            unique_rows = ~c_sgen.duplicated()
+            duplicated_rows = c_sgen.duplicated()
+            for i in c_sgen[unique_rows].index:
+                same_data_sgens = list([i])
+                for i2 in c_sgen[duplicated_rows].index:
+                    if c_sgen.iloc[i].equals(c_sgen.iloc[i2]):
+                        same_data_sgens.append(i2)
+                logger.info('    at Sgens %s [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar]' +
+                            'is [%s, %s, %s, %s]', ', '.join(map(str, same_data_sgens)),
+                            c_sgen.min_p_kw[i], c_sgen.max_p_kw[i],
                             c_sgen.min_q_kvar[i], c_sgen.max_q_kvar[i])
+    # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
         if c_bus.shape[0] > 0:
@@ -113,23 +151,56 @@ def opf_task(net):
             logger.info("  Voltage Constraints")
             if (net.bus.min_vm_pu >= net.bus.max_vm_pu).any():
                 logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
-            for i in c_bus.index:
-                logger.info("    at Node %i min_vm_pu is %s and max_vm_pu is %s", i,
-                            c_bus.min_vm_pu[i], c_bus.max_vm_pu[i])
+            if c_bus.duplicated()[1:].all():
+                logger.info('    at all Nodes [min_vm_pu, max_vm_pu] is [%s, %s]',
+                            c_bus.min_vm_pu[0], c_bus.max_vm_pu[0])
+            else:
+                unique_rows = ~c_bus.duplicated()
+                duplicated_rows = c_bus.duplicated()
+                for i in c_bus[unique_rows].index:
+                    same_data_nodes = list([i])
+                    for i2 in c_bus[duplicated_rows].index:
+                        if c_bus.iloc[i].equals(c_bus.iloc[i2]):
+                            same_data_nodes.append(i2)
+                    logger.info('    at Nodes %s [min_vm_pu, max_vm_pu] is [%s, %s]',
+                                ', '.join(map(str, same_data_nodes)), c_bus.min_vm_pu[i],
+                                c_bus.max_vm_pu[i])
+    # --- Trafo constraints
     if "max_loading_percent" in net.trafo.columns:
         c_trafo = net.trafo['max_loading_percent'].dropna()
         if c_trafo.shape[0] > 0:
             c_exist = True
             logger.info("  Trafo Constraint")
-            for i in c_trafo.index:
-                logger.info("    at Trafo %i max_loading_percent is %s", i, c_trafo[i])
+            if c_trafo.duplicated()[1:].all():
+                logger.info('    at all Trafos max_loading_percent is %s', c_trafo[0])
+            else:
+                unique_rows = ~c_bus.duplicated()
+                duplicated_rows = c_bus.duplicated()
+                for i in c_trafo[unique_rows].index:
+                    same_data_trafos = list([i])
+                    for i2 in c_trafo[duplicated_rows].index:
+                        if c_trafo.iloc[i].equals(c_trafo.iloc[i2]):
+                            same_data_trafos.append(i2)
+                    logger.info("    at Trafos %s max_loading_percent is %s",
+                                ', '.join(map(str, same_data_trafos)), c_trafo[i])
+    # --- Line constraints
     if "max_loading_percent" in net.line.columns:
         c_line = net.line['max_loading_percent'].dropna()
         if c_line.shape[0] > 0:
             c_exist = True
             logger.info("  Line Constraint")
-            for i in c_line.index:
-                logger.info("    at Line %i max_loading_percent is %s", i, c_line[i])
+            if c_line.duplicated()[1:].all():
+                logger.info('    at all Lines max_loading_percent is %s', c_line[0])
+            else:
+                unique_rows = ~c_bus.duplicated()
+                duplicated_rows = c_bus.duplicated()
+                for i in c_line[unique_rows].index:
+                    same_data_lines = list([i])
+                    for i2 in c_line[duplicated_rows].index:
+                        if c_line.iloc[i].equals(c_line.iloc[i2]):
+                            same_data_lines.append(i2)
+                    logger.info("    at Lines %s max_loading_percent is %s",
+                                ', '.join(map(str, same_data_lines)), c_line[i])
     if not c_exist:
         ("  There are no constraints.")
 
