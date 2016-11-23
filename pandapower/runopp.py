@@ -67,7 +67,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
             warnings are suppressed, too.
     """
     ppopt = ppoption(OPF_VIOLATION=1e-1, PDIPM_GRADTOL=1e-1, PDIPM_COMPTOL=1e-1,
-                     PDIPM_COSTTOL=1e-1, OUT_ALL=0, VERBOSE=verbose, OPF_ALG=560)
+                     PDIPM_COSTTOL=1e-1, OUT_ALL=0, VERBOSE=verbose, OPF_ALG=560, **kwargs)
     net["OPF_converged"] = False
 
     reset_results(net)
