@@ -127,10 +127,10 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
     if objectivetype == "linear":
 
         ppc["gencost"] = zeros((ng, 8), dtype=float)
-        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 100, 1]) # initializing gencost array for eg
-        ppc["gencost"][:nref, 7] = nan_to_num(eg_cost_per_kw)
-        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
-        ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
+        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
+        ppc["gencost"][:nref, 7] = nan_to_num(eg_cost_per_kw*1e3)
+        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
+        ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw*1e3, gen_cost_per_kw*1e3]))
 
 #        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
 #        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 0])  # initializing gencost array
@@ -145,11 +145,11 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
     if objectivetype == "linear_minloss":
 
         ppc["gencost"] = zeros((ng, 8), dtype=float)
-        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 100, 1]) # initializing gencost array for eg
-        ppc["gencost"][:nref, 7] = nan_to_num(eg_cost_per_kw)
-        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
-        ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
-        
+        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
+        ppc["gencost"][:nref, 7] = nan_to_num(eg_cost_per_kw*1e3)
+        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
+        ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw*1e3, gen_cost_per_kw*1e3]))
+
 #        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
 #        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
         #ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
@@ -166,7 +166,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
         nb = len(ppc["bus"])
         nl = len(ppc["branch"])
         dim = 2 * nb + 2 * ng + 2 * nl
-        
+
 #        print("nb %s" % nb)
 #        print("ng %s" % ng)
 #        print("nl %s" % nl)
@@ -190,7 +190,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
         # z constraints upper and lower bounds
         l = ones(2*nl)*eps
         u = ones(2*nl)*-eps
-        
+
         # Initialzie A and H matrix
         H = sparse.csr_matrix((dim, dim), dtype=float)
         A = sparse.csr_matrix((2*nl, dim), dtype=float)
