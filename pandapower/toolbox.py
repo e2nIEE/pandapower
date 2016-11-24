@@ -201,8 +201,9 @@ def opf_task(net):
                             same_data_lines.append(i2)
                     logger.info("    at Lines %s max_loading_percent is %s",
                                 ', '.join(map(str, same_data_lines)), c_line[i])
+
     if not c_exist:
-        ("  There are no constraints.")
+        logger.info("  There are no constraints.")
 
 
 def switch_info(net, sidx):
