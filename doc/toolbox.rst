@@ -19,6 +19,8 @@ Result Information
 
 .. autofunction:: pandapower.lf_info
 
+.. autofunction:: pandapower.opf_task
+
 .. autofunction:: pandapower.switch_info
 
 .. autofunction:: pandapower.overloaded_lines
