@@ -125,7 +125,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
         if numba:
             from pandapower.pypower_extensions.makeYbus import makeYbus
         else:
-            from pypower.makeYbus import makeYbus
+            from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 
         alg = ppopt['PF_ALG']
         if verbose > 0:

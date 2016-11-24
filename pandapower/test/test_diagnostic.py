@@ -9,6 +9,7 @@ import pandapower.networks as nw
 import pytest
 import copy
 import numpy as np
+import warnings
 
 @pytest.fixture(scope='module')
 def test_net():
@@ -227,6 +228,8 @@ def test_switch_configuration(test_net):
     net.switch.closed.at[0] = 1
     net.switch.closed.at[2] = 1
     net.switch.closed = 0
+    # this will raise the warning "Matrix is exactly singular" -> ignore
+    warnings.simplefilter("ignore")
     assert pp.wrong_switch_configuration(net) == True
     net.switch.closed = 1
     net.load.p_kw.at[4] *= 1000

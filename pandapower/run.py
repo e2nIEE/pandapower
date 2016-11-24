@@ -35,8 +35,7 @@ class LoadflowNotConverged(ppException):
 
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
-          , trafo_loading="current", enforce_q_lims=False, suppress_warnings=True, numba=True
-          , recycle=None, **kwargs):
+          , trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -118,7 +117,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, **kwargs):
@@ -177,11 +176,11 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, suppress_warnings, numba, recycle, **kwargs):
+             trafo_loading, enforce_q_lims, numba, recycle, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -210,15 +209,8 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
-    # run the powerflow with or without warnings. If init='dc', AC PF will be
-    # initialized with DC voltages
-    if suppress_warnings:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                                       PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
-    else:
-        result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
+    # run the powerflow
+    result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppopt.ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
