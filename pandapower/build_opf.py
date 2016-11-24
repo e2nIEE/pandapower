@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from numpy import array, ones, arange, zeros, complex128, nan_to_num, hstack, abs, isnan, float64
+from numpy import array, ones, arange, zeros, complex128, nan_to_num, hstack, abs, isnan, float64, max
 import pandapower as pp
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
 from pandapower.build_bus import _build_bus_ppc, _calc_shunts_and_add_on_ppc
@@ -21,8 +21,8 @@ from pypower import makeYbus
 import warnings
 
 
-def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
-    """ we need to put the sgens into the gen table instead of the bus table
+def _pd2ppc_opf(net, is_elems, sg_is):
+    """ we need to put the sgens into the gen table instead of the bsu table
     so we need to change _pd2ppc a little to get the ppc we need for the OPF
     """
 
@@ -55,7 +55,7 @@ def _pd2ppc_opf(net, is_elems, sg_is, lambda_opf=1000):
     return ppc, bus_lookup
 
 
-def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kwargs):
+def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", lambda_opf=1000, **kwargs):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
@@ -67,19 +67,21 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
 
     OPTIONAL:
 
-        **objectivetype** (string, "maxp") - string with name of objective function
+        **objectivetype** (string, "linear") - string with name of objective function
 
-            - **"maxp"** - Linear costs of the form  :math:`I\\cdot P_G`. :math:`P_G` represents the
-              active power values of the generators. Target of this objectivefunction is to maximize
-              the generator output.
+            - **"linear"** - Linear costs of the form  :math:`I\\cdot P_G`. :math:`P_G` represents
+              the active power values of the generators. Target of this objectivefunction is to
+              maximize the generator output.
               This then basically is this:
 
                   .. math::
                       max\{P_G\}
 
-            - **"minlossmaxp"** - Quadratic costs of the form  :math:`I\\cdot P_G - dV_m^T Y_L dV_m`.
+            - **"linear_minloss"** - Quadratic costs of the form
+              :math:`I\\cdot P_G - dV_m^T Y_L dV_m`.
               :math:`P_G` represents the active power values of the generators,
-              :math:`dV_m` the voltage drop for each line and :math:`Y_L` the line admittance matrix.
+              :math:`dV_m` the voltage drop for each line and :math:`Y_L` the line admittance
+              matrix.
               Target of this objectivefunction is to maximize the generator output but minimize the
               linelosses.
               This then basically is this:
@@ -112,7 +114,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
 
     if sg_is.empty:
         sgen_cost_per_kw = array([])
-    elif "cost_per_kw" in gen_is.columns:
+    elif "cost_per_kw" in sg_is.columns:
         sgen_cost_per_kw = sg_is.cost_per_kw
     else:
         sgen_cost_per_kw = ones(len(sg_is))
@@ -130,17 +132,32 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
         ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
         ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
 
+#        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
+#        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 0])  # initializing gencost array
+#        ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
+#        p = p_timestep/-1e3
+#        p[p == 0] = 1e-6
+#        ppc["gencost"][nref:ng, 6] = array(p)
+
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
 
     if objectivetype == "linear_minloss":
 
         ppc["gencost"] = zeros((ng, 8), dtype=float)
-        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 100, net.ext_grid.cost_per_kw])
-        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 100, 100, 0])
+        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 0, 100, 1]) # initializing gencost array for eg
+        ppc["gencost"][:nref, 7] = nan_to_num(eg_cost_per_kw)
+        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 0, 100, 1])  # initializing gencost array
+        ppc["gencost"][nref:ng, 7] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
+        
+#        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
+#        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
+        #ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
+#        p = p_timestep/-1e3
+#        p[p == 0] = 1e-6
+#        ppc["gencost"][nref:ng, 6] = array(p)
 
-        # Set gencosts for sgens
-        ppc["gencost"][nref:ng, 5] = net.sgen.cost_per_kw
+        #print(ppc["gencost"][nref:ng, 6])
 
         ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                                   PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
@@ -148,7 +165,11 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
         # Get additional counts
         nb = len(ppc["bus"])
         nl = len(ppc["branch"])
-        dim = 2 * nb + 2 * ng + nl
+        dim = 2 * nb + 2 * ng + 2 * nl
+        
+#        print("nb %s" % nb)
+#        print("ng %s" % ng)
+#        print("nl %s" % nl)
 
         # Get branch admitance matrices
         with warnings.catch_warnings():
@@ -160,32 +181,38 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="maxp", **kw
         #########################
 
         # z_k = u_i - u_j
+        # z_m = alpha_i - alpha_j
         # with i,j = start and endbus from lines
 
         # Epsilon for z constraints
-        eps = 1e-3
+        eps = 0
 
         # z constraints upper and lower bounds
-        l = ones(nl) * -eps
-        u = ones(nl) * eps
-
+        l = ones(2*nl)*eps
+        u = ones(2*nl)*-eps
+        
         # Initialzie A and H matrix
         H = sparse.csr_matrix((dim, dim), dtype=float)
-        A = sparse.csr_matrix((nl, dim), dtype=float)
+        A = sparse.csr_matrix((2*nl, dim), dtype=float)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             for i in range(nl):
                 bus_f = int(ppc["branch"][i, F_BUS].real)
                 bus_t = int(ppc["branch"][i, T_BUS].real)
-                # weigthing of minloss
-                H[dim - nl + i, dim - nl + i] = abs(Ybus[bus_f, bus_t]) * lambda_opf
-                A[i, nb + bus_f] = 1
-                A[i, nb + bus_t] = -1
-                A[i, dim - nl + i] = 1
+                # minimization of potential difference between two buses
+                H[dim-2*nl+i, dim-2*nl+i] = abs(Ybus[bus_f, bus_t]) * lambda_opf  #  weigthing of minloss
+                A[i, nb+bus_f] = 1
+                A[i, nb+bus_t] = -1
+                A[i, dim-2*nl+i] = 1
+                # minimization of angle between two buses
+                H[dim-nl+i, dim-nl+i] = 800 * lambda_opf# * lambda_opf#  weigthing of angles
+                A[nl+i, bus_f] = 1
+                A[nl+i, bus_t] = -1
+                A[nl+i, dim-nl+i] = 1
 
         # Linear transformation for new omega-vector
-        N = sparse.csr_matrix((dim, dim), dtype=float)
-        for i in range(dim - nl, dim):
+        N = sparse.lil_matrix((dim, dim), dtype=float)
+        for i in range(dim - 2*nl, dim):
             N[i, i] = 1.0
 
         # Cw = 0, no linear costs in additional costfunction
