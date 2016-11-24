@@ -7,13 +7,14 @@
 
 import sys
 
-from numpy import array, angle, exp, linalg, conj, r_, Inf, resize, zeros, float64, empty, int64
+from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int64
 
 from scipy.sparse import issparse, csr_matrix as sparse
 from scipy.sparse import hstack, vstack
 from scipy.sparse.linalg import spsolve
 
 from pypower.ppoption import ppoption
+
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
     """Solves the power flow using a full Newton's method.
@@ -59,6 +60,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
 
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
+    # generate lookup pvpq -> index pvpq (used in createJ)
+    pvpq_lookup = zeros(pvpq[-1]+1, dtype=int)
+    pvpq_lookup[pvpq] = arange(len(pvpq))
 
     # if numba is available import "numba enhanced" functions
     if numba:
@@ -71,13 +75,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
             createJ = create_J2
         else:
             createJ = create_J
-
-        # check if pvpq is sorted. If so: searchsorted can be used for generating the Jacobian -> faster
-        is_pvpq_sorted = all(pvpq[i] <= pvpq[i + 1] for i in range(len(pvpq) - 1))
     else:
         # numba == False -> Import pypower standard
         from pypower.dSbus_dV import dSbus_dV
-        is_pvpq_sorted = False
 
     npv = len(pv)
     npq = len(pq)
@@ -108,9 +108,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
         ## update iteration counter
         i = i + 1
 
-        # only if numba version is > 0.25 and pvpq is sorted all speed improvements can be used
-        if numba and is_pvpq_sorted:
-            #create Jacobian with exploiting sorted pvpq and fast calc of dS_dV
+        # use numba if activated
+        if numba:
+            #create Jacobian from fast calc of dS_dV
             dVm_x, dVa_x = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V/abs(V))
 
             # data in J, space preallocated is bigger than acutal Jx -> will be reduced later on
@@ -121,7 +121,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
             Jj = empty(len(dVm_x) * 4, dtype=int64)
 
             # fill Jx, Jj and Jp
-            createJ(dVm_x, dVa_x, Ybus.indptr, Ybus.indices, pvpq, pq, Jx, Jj, Jp)
+            createJ(dVm_x, dVa_x, Ybus.indptr, Ybus.indices, pvpq_lookup, pvpq, pq, Jx, Jj, Jp)
 
             # resize before generating the scipy sparse matrix
             Jx.resize(Jp[-1], refcheck=False)
@@ -133,7 +133,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
 
         else:
             # create Jacobian with standard pypower implementation.
-            # Usage of fast calc of dS_dV still possible (depends on numba flag)
             dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
 
             ## evaluate Jacobian

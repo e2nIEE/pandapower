@@ -4,13 +4,11 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from numpy import float64, int64, searchsorted
 from numba import jit, i4, i8, f8, c16
-from numba.types import Tuple
 
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
-def create_J(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
+def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
     """Calculates Jacobian faster with numba and sparse matrices.
 
         Input: dS_dVa and dS_dVm in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), pvpq, pq from pypower
@@ -61,7 +59,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
         # check entries in row pvpq[r] of dS_dV
         for c in range(Yp[pvpq[r]], Yp[pvpq[r]+1]):
             # check if column Yj is in pvpq
-            cc = searchsorted(pvpq, Yj[c])
+            cc = pvpq_lookup[Yj[c]]
             # entries for J11 and J12
             if pvpq[cc] == Yj[c]:
                 # entry found
@@ -81,7 +79,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
         nnzStart = nnz
         # iterate columns of J21 = dS_dVa.imag at positions in pvpq
         for c in range(Yp[pq[r]], Yp[pq[r]+1]):
-            cc = searchsorted(pvpq, Yj[c])
+            cc = pvpq_lookup[Yj[c]]
             if pvpq[cc] == Yj[c]:
                 #entry found
                 # equals entry of J21: J[r + lpvpq, cc] = dVa_x[c].imag
@@ -100,7 +98,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
 # @profile
-def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
+def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
     """Calculates Jacobian faster with numba and sparse matrices. This version is similar to create_J except that
         if pvpq = pq (when no pv bus is available) some if statements are obsolete and J11 = J12 and J21 = J22
 
@@ -131,7 +129,7 @@ def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
         # iterate columns of J11 = dS_dVa.real at positions in pvpq
         # iterate columns of J12 = dS_dVm.real at positions in pq (=pvpq)
         for c in range(Yp[pvpq[r]], Yp[pvpq[r]+1]):
-            cc = searchsorted(pvpq, Yj[c])
+            cc = pvpq_lookup[Yj[c]]
             if pvpq[cc] == Yj[c]:
                 # entry found J11
                 # J[r,cc] = dVa_x[c].real
@@ -150,7 +148,7 @@ def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq, pq, Jx, Jj, Jp):
         # iterate columns of J21 = dS_dVa.imag at positions in pvpq
         # iterate columns of J22 = dS_dVm.imag at positions in pq (=pvpq)
         for c in range(Yp[pvpq[r]], Yp[pvpq[r]+1]):
-            cc = searchsorted(pvpq, Yj[c])
+            cc = pvpq_lookup[Yj[c]]
             if pvpq[cc] == Yj[c]:
                 #entry found J21
                 # J[r + lpvpq, cc] = dVa_x[c].imag
