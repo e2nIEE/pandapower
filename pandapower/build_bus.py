@@ -4,12 +4,11 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-
 import numpy as np
 from itertools import chain
 from collections import defaultdict
 
-from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN
+from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE
 
 from pandapower.auxiliary import get_indices, _sum_by_group
 
@@ -34,6 +33,7 @@ class DisjointSet(dict):
 
 def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=False):
     """
+    Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
     # add additional xward and trafo3w buses
     if len(net["trafo3w"]) > 0:
@@ -44,113 +44,110 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
         _create_xward_buses(net, init_results)
 
     # get buses as set
-    bus_list = set(net["bus"].index.values)
+    bus_list = net["bus"].index.values
+    n_bus = len(bus_list)
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
 
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
-    # To sort the array first, so that PV comes first, three steps are necessary:
+    consec_buses = np.arange(n_bus)
+    bus_lookup = dict(zip(bus_list, consec_buses))
 
-    # 1. Find PV / Slack nodes and place them first (necessary for fast generation of Jacobi-Matrix)
-    # get indices of PV (and ref) buses
-    if len(net["xward"]) > 0:
-        # add xwards if available
-        pv_ref = set((np.r_[eg_is["bus"].values, gen_is["bus"].values, net["xward"][
-                     net["xward"].in_service == 1]["ad_bus"].values]).flatten())
-    else:
-        pv_ref = set(np.r_[eg_is["bus"].values, gen_is["bus"].values].flatten())
-
-    # 2. Add PQ buses without switches
-    slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") &\
+    # if there are any opened bus-bus switches update those entries
+    slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") & \
             (net["switch"]["bus"].isin(bus_is.index).values) & (
                 net["switch"]["element"].isin(bus_is.index).values)
 
-    # get buses with switches
-    switch_buses = set((np.r_[net["switch"]["bus"].values[slidx], net[
-                       "switch"]["element"].values[slidx]]).flatten())
-    pq_buses_without_switches = (bus_list - switch_buses) - pv_ref
+    if slidx.any():
+        # Note: this might seem a little odd - first constructing a pp to ppc mapping without
+        # fused busses and then update the entries. The alternative (to construct the final
+        # mapping at once) would require to determine how to fuse busses and which busses
+        # are not part of any opened bus-bus switches first. It turns out, that the latter takes
+        # quite some time in the average usecase, where #busses >> #bus-bus switches.
 
-    # consecutive values for pv, ref, and non switch pq buses
-    npArange = np.arange(len(pq_buses_without_switches) + len(pv_ref))
-    # buses in PandaPower
-    PandaBusses = sorted(pv_ref) + sorted(pq_buses_without_switches)
-    # generate bus_lookup PandaPower -> [PV, PQ(without switches)]
-    bus_lookup = dict(zip(PandaBusses, npArange))
+        # Find PV / Slack nodes -> their bus must be kept when fused with a PQ node
+        if len(net["xward"]) > 0:
+            # add xwards if available
+            pv_ref = set(np.r_[eg_is["bus"].values, gen_is["bus"].values, net["xward"][
+                net["xward"].in_service == 1]["ad_bus"].values].flatten())
+        else:
+            pv_ref = set(np.r_[eg_is["bus"].values, gen_is["bus"].values].flatten())
 
-    # 3. Add PQ buses with switches and fuse them
-    v = defaultdict(set)
+        # get the pp-indices of the buses which are connected to a switch
+        fbus = net["switch"]["bus"].values[slidx]
+        tbus = net["switch"]["element"].values[slidx]
 
-    # get the pp-indices of the buses for those switches
-    fbus = net["switch"]["bus"].values[slidx]
-    tbus = net["switch"]["element"].values[slidx]
+        # create a mapping to map each bus to itself at frist ...
+        ds = DisjointSet({e: e for e in chain(fbus, tbus)})
 
-    # create a mapping to map each bus to itself at frist ...
-    ds = DisjointSet({e: e for e in chain(fbus, tbus)})
-    for f, t in zip(fbus, tbus):
-        ds.union(f, t)
+        # ... to follow each bus along a possible chain of switches to its final bus and update the map
+        for f, t in zip(fbus, tbus):
+            ds.union(f, t)
 
-    for a in ds:
-        v[ds.find(a)].add(a)
-    disjoint_sets = [e for e in v.values() if len(e) > 1]
+        # now we can find out how to fuse each bus by looking up the final bus of the chain they are connected to
+        v = defaultdict(set)
+        for a in ds:
+            v[ds.find(a)].add(a)
+        # build sets of buses which will be fused
+        disjoint_sets = [e for e in v.values() if len(e) > 1]
 
-    i = npArange[-1]
+        # check if PV buses need to be fused
+        # if yes: the sets with PV buses must be found (which is slow)
+        # if no: the check can be omitted
+        if any(i in fbus or i in tbus for i in pv_ref):
+            # for every disjoint set
+            for dj in disjoint_sets:
+                # check if pv buses are in the disjoint set dj
+                pv_buses_in_set = pv_ref & dj
+                nr_pv_bus = len(pv_buses_in_set)
+                if nr_pv_bus == 0:
+                    # no pv buses. Use any bus in dj
+                    map_to = bus_lookup[dj.pop()]
+                elif nr_pv_bus == 1:
+                    # one pv bus. Get bus from pv_buses_in_set
+                    map_to = bus_lookup[pv_buses_in_set.pop()]
+                else:
+                    raise UserWarning("Can't fuse two PV buses")
+                for bus in dj:
+                    # update lookup
+                    bus_lookup[bus] = map_to
+        else:
+            # no PV buses in set
+            for dj in disjoint_sets:
+                # use any bus in set
+                map_to = bus_lookup[dj.pop()]
+                for bus in dj:
+                    # update bus lookup
+                    bus_lookup[bus] = map_to
 
-    # check if PV buses need to be fused
-    # if yes: the sets with PV buses must be found (which is slow)
-    # if no: the check can be omitted
-    if any(i in fbus or i in tbus for i in pv_ref):
-        for dj in disjoint_sets:
-            pv_buses_in_set = pv_ref & dj
-            nr_pv_bus = len(pv_buses_in_set)
-            if nr_pv_bus == 0:
-                i += 1
-                map_to = i
-                bus = dj.pop()
-                PandaBusses.append(bus)
-                bus_lookup[bus] = map_to
-            elif nr_pv_bus == 1:
-                map_to = bus_lookup[pv_buses_in_set.pop()]
-            else:
-                raise UserWarning("Can't fuse two PV buses")
-            for bus in dj:
-                bus_lookup[bus] = map_to
-    else:
-        for dj in disjoint_sets:
-            # new bus to map to
-            i += 1
-            map_to = i
-            # get bus ID and append to Panda bus list
-            bus = dj.pop()
-            PandaBusses.append(bus)
-            bus_lookup[bus] = map_to
-            for bus in dj:
-                bus_lookup[bus] = map_to
-
-    # init ppc with zeros
-    ppc["bus"] = np.zeros(shape=(i + 1, 13), dtype=float)
-    # fill ppc with init values
+    # init ppc with empty values
+    ppc["bus"] = np.zeros(shape=(n_bus, 13), dtype=float)
     ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
-    ppc["bus"][:, BUS_I] = np.arange(i + 1)
+    # apply consecutive bus numbers
+    ppc["bus"][:, BUS_I] = consec_buses
 
-    # change the voltages of the buses to the values in net
-    ppc["bus"][:, BASE_KV] = net["bus"].vn_kv.ix[PandaBusses]
+    # init voltages from net
+    ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
+    # set buses out of service (BUS_TYPE == 4)
+    ppc["bus"][get_indices(net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)],
+        bus_lookup), BUS_TYPE] = 4
 
     if init_results is True and len(net["res_bus"]) > 0:
-        int_index = get_indices(net["bus"].index.values, bus_lookup)
-        ppc["bus"][int_index, 7] = net["res_bus"]["vm_pu"].values
-        ppc["bus"][int_index, 8] = net["res_bus"].va_degree.values
+        # init results (= voltages) from previous power flow
+        ppc["bus"][:n_bus, 7] = net["res_bus"]["vm_pu"].values
+        ppc["bus"][:n_bus, 8] = net["res_bus"].va_degree.values
 
     if set_opf_constraints:
         if "max_vm_pu" in net.bus:
-            ppc["bus"][:, VMAX] = net["bus"].max_vm_pu.loc[PandaBusses]
+            ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:, VMAX] = 10
+            ppc["bus"][:n_bus, VMAX] = 10
         if "min_vm_pu" in net.bus:
-            ppc["bus"][:, VMIN] = net["bus"].min_vm_pu.loc[PandaBusses]
+            ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
-            ppc["bus"][:, VMIN] = 0
+            ppc["bus"][:n_bus, VMIN] = 0
 
     return bus_lookup
 
