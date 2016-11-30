@@ -191,7 +191,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
         l = ones(2*nl)*eps
         u = ones(2*nl)*-eps
 
-        # Initialzie A and H matrix
+        # Initialize A and H matrix
         H = sparse.csr_matrix((dim, dim), dtype=float)
         A = sparse.csr_matrix((2*nl, dim), dtype=float)
         with warnings.catch_warnings():
@@ -200,12 +200,12 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
                 bus_f = int(ppc["branch"][i, F_BUS].real)
                 bus_t = int(ppc["branch"][i, T_BUS].real)
                 # minimization of potential difference between two buses
-                H[dim-2*nl+i, dim-2*nl+i] = abs(Ybus[bus_f, bus_t]) * lambda_opf  #  weigthing of minloss
+                H[dim-2*nl+i, dim-2*nl+i] = abs(Ybus[bus_f, bus_t]) * lambda_opf  # weigthing of minloss
                 A[i, nb+bus_f] = 1
                 A[i, nb+bus_t] = -1
                 A[i, dim-2*nl+i] = 1
                 # minimization of angle between two buses
-                H[dim-nl+i, dim-nl+i] = 800 * lambda_opf# * lambda_opf#  weigthing of angles
+                H[dim-nl+i, dim-nl+i] = 800 * lambda_opf  # weigthing of angles
                 A[nl+i, bus_f] = 1
                 A[nl+i, bus_t] = -1
                 A[nl+i, dim-nl+i] = 1
