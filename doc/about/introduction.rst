@@ -5,17 +5,6 @@ A Short Introduction
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org/>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation tool 
 aimed at automation of analysis and optimization in power systems.
 
-**Electric Network Representation**
-
-A common representation for electric models in open source power system software is the bus/branch model, which models the network as a bunch of nodes that are connected by branches.
-Loads or shunts are then modelled as an attribute or admittances of a certain bus. In reality however, the power demand is not an attribute of the bus, but of seperate electric elements (such as loads, pv generators or capacitor banks), which are connected to the 
-buses. In pandapower, we model each electric bus element instead of considering summed values of power demand and shunt admittance for each bus.
-
-Branch/bus models also make no distinction between modeling different kind of branches, even though the electric models and behaviour for lines and transformers are very different. 
-pandapower includes seperate electric models for lines, transformers and three winding transformers that allow a defintion of each element with common nameplate parameters.
-
-Finally, pandapower includes a comprehensive switch model, which allows explicit modeling of bus/bus and bus/line or bus/transformer switches.
-
 **Datastructure**
 
 A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
