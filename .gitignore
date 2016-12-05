@@ -4,6 +4,7 @@
 build/
 dist/
 .cache/
+.idea
 pandapower.egg-info/
 doc/api/
 doc/.build/*

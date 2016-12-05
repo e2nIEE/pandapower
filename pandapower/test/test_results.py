@@ -6,6 +6,7 @@
 
 import pandapower as pp
 import pytest
+from numpy import in1d
 
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.result_test_network_generator import add_test_enforce_qlims, add_test_gen
@@ -531,6 +532,12 @@ def test_shunt_split(result_test_network):
     assert abs(net.res_shunt.p_kw.loc[s1] - p/2) < 1e-6
     assert abs(net.res_shunt.q_kvar.loc[s1] - q/2) < 1e-6
 
+def test_open(result_test_network):
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "two_open_switches_on_deactive_line"]
+    lines = net['line'][in1d(net['line'].from_bus, buses.index) | in1d(net['line'].to_bus, buses.index) ]
+
+    assert net['res_line'].ix[lines.index].i_ka.iloc[1] == 0.
  
 
 # def test_trafo3w_tap(net):

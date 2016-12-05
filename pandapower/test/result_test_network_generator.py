@@ -33,6 +33,7 @@ def result_test_network_generator():
     yield add_test_oos_bus_with_is_element(net)
     yield add_test_shunt(net)
     yield add_test_shunt_split(net)
+    yield add_test_two_open_switches_on_deactive_line(net)
     
 
 
@@ -421,6 +422,16 @@ def add_test_shunt_split(net):
     s1 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
     s2 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
     return net
+
+def add_test_two_open_switches_on_deactive_line(net):
+    b1, b2, l1 = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
+    b3 = pp.create_bus(net, vn_kv=20.)
+    l2 = create_test_line(net, b2, b3, in_service=False)
+    create_test_line(net, b3, b1)
+    pp.create_switch(net, b2, l2, et="l", closed=False)
+    pp.create_switch(net, b3, l2, et="l", closed=False)
+    return net
+
 
 if __name__ == '__main__':
     net_split = pp.create_empty_network()
