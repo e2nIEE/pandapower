@@ -49,8 +49,6 @@ def _pd2ppc_opf(net, is_elems, sg_is):
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, ppc)
-    bus_lookup["before_fuse"] = dict(zip(net["bus"].index.values,
-                                         arange(len(net["bus"].index.values))))
 
     return ppc, bus_lookup
 

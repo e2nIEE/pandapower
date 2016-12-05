@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE
 
-from pandapower.auxiliary import get_indices, _sum_by_group
+from pandapower.auxiliary import _sum_by_group
 
 
 class DisjointSet(dict):
@@ -53,7 +53,12 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
 
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     consec_buses = np.arange(n_bus)
-    bus_lookup = dict(zip(bus_list, consec_buses))
+    # bus_lookup as dict:
+    # bus_lookup = dict(zip(bus_list, consec_buses))
+
+    # bus lookup as mask from pandapower -> pypower
+    bus_lookup = -np.ones(max(bus_list) + 1, dtype=int)
+    bus_lookup[bus_list] = consec_buses
 
     # if there are any opened bus-bus switches update those entries
     slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") & \
@@ -131,8 +136,7 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    ppc["bus"][get_indices(net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)],
-        bus_lookup), BUS_TYPE] = 4
+    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]], BUS_TYPE] = 4
 
     if init_results is True and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
@@ -153,9 +157,7 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
 
 def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # init values
-    b, p, q = np.array([]), np.array([]), np.array([])
-    # get in service elements
-    bus_is = is_elems["bus"]
+    b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     l = net["load"]
     # element_is = check if element is at a bus in service & element is in service
@@ -186,16 +188,18 @@ def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
         p = np.hstack([p, xw["ps_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
 
-    b = get_indices(b, bus_lookup)
-    b, vp, vq = _sum_by_group(b, p, q)
+    # if array is not empty
+    if b.size:
+        b = bus_lookup[b]
+        b, vp, vq = _sum_by_group(b, p, q)
 
-    ppc["bus"][b, PD] = vp
-    ppc["bus"][b, QD] = vq
+        ppc["bus"][b, PD] = vp
+        ppc["bus"][b, QD] = vq
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # init values
-    b, p, q = np.array([]), np.array([]), np.array([])
+    b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     # get in service elements
     bus_is = is_elems['bus']
 
@@ -220,11 +224,13 @@ def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
 
-    b = get_indices(b, bus_lookup)
-    b, vp, vq = _sum_by_group(b, p, q)
+    # if array is not empty
+    if b.size:
+        b = bus_lookup[b]
+        b, vp, vq = _sum_by_group(b, p, q)
 
-    ppc["bus"][b, GS] = vp
-    ppc["bus"][b, BS] = -vq
+        ppc["bus"][b, GS] = vp
+        ppc["bus"][b, BS] = -vq
 
 
 def _create_xward_buses(net, init_results):
