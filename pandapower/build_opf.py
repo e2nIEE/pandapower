@@ -5,7 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 from numpy import array, ones, arange, zeros, complex128, nan_to_num, hstack, abs, isnan, float64, max
-import pandapower as pp
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
 from pandapower.build_bus import _build_bus_ppc, _calc_shunts_and_add_on_ppc
 from pandapower.run import _set_isolated_buses_out_of_service
@@ -260,13 +259,13 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
 
     # add sgens first so pv bus types won't be overwritten
     if sg_end > gen_end:
-        ppc["gen"][gen_end:sg_end, GEN_BUS] = pp.get_indices(sg_is["bus"].values, bus_lookup)
+        ppc["gen"][gen_end:sg_end, GEN_BUS] = bus_lookup[sg_is["bus"].values]
         ppc["gen"][gen_end:sg_end, PG] = - sg_is["p_kw"].values * 1e-3 * sg_is["scaling"].values
         ppc["gen"][gen_end:sg_end, QG] = sg_is["q_kvar"].values
 
         # set bus values for generator buses
-        sg_buses = pp.get_indices(sg_is["bus"].values, bus_lookup)
-        gen_buses = pp.get_indices(sg_is["bus"].values, bus_lookup)
+        sg_buses = bus_lookup[sg_is["bus"].values]
+        gen_buses = bus_lookup[sg_is["bus"].values]
         ppc["bus"][gen_buses, BUS_TYPE] = PQ
 
         # set constraints for PV generators
@@ -294,12 +293,12 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
             ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw
 
     # add ext grid / slack data
-    ppc["gen"][:eg_end, GEN_BUS] = pp.get_indices(eg_is["bus"].values, bus_lookup)
+    ppc["gen"][:eg_end, GEN_BUS] = bus_lookup[eg_is["bus"].values]
     ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
     ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
 
     # set bus values for external grid buses
-    eg_buses = pp.get_indices(eg_is["bus"].values, bus_lookup)
+    eg_buses = bus_lookup[eg_is["bus"].values]
     if calculate_voltage_angles:
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     ppc["bus"][eg_buses, BUS_TYPE] = REF
@@ -311,12 +310,12 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
 
     # add generator / pv data
     if gen_end > eg_end:
-        ppc["gen"][eg_end:gen_end, GEN_BUS] = pp.get_indices(gen_is["bus"].values, bus_lookup)
+        ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
         ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
         ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
 
         # set bus values for generator buses
-        gen_buses = pp.get_indices(gen_is["bus"].values, bus_lookup)
+        gen_buses = bus_lookup[gen_is["bus"].values]
         ppc["bus"][gen_buses, BUS_TYPE] = PV
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
@@ -362,8 +361,7 @@ def _calc_loads_and_add_opf(net, ppc, bus_lookup):
         sp = []
         sq = []
 
-    b = pp.get_indices(hstack([l["bus"].values, sgen["bus"].values]
-                                 ), bus_lookup)
+    b = bus_lookup[hstack([l["bus"].values, sgen["bus"].values])]
     b, vp, vq = _sum_by_group(b, hstack([lp, sp]), hstack([lq, sq]))
 
     ppc["bus"][b, PD] = vp
