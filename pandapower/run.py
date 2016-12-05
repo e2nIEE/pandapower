@@ -90,12 +90,6 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             violated at any generator, so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
 
-        **suppress_warnings** (bool, True) - suppress warnings in pypower
-
-            If set to True, warnings are disabled during the loadflow. Because of the way data is
-            processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
-            suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
-
         **numba** (bool, True) - Usage numba JIT compiler
 
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
@@ -435,7 +429,8 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     return ppc, ppci, bus_lookup
 
 
-def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_q_lims=False, trafo_model="pi"):
+def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_q_lims=False, 
+                trafo_model="pi"):
     """
     Updates P, Q values of the ppc with changed values from net
 
