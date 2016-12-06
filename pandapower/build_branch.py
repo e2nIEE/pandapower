@@ -466,16 +466,23 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
 
     # if non unique elements are in sw_elem (= multiple opened bus line switches)
     if np.count_nonzero(m) < len(sw_elem):
-        # set branch in ppc out of service
-        # get from and to buses of these branches
-        ppc_from = get_indices(lines_is.ix[sw_elem[~m]].from_bus, bus_lookup)
-        ppc_to = get_indices(lines_is.ix[sw_elem[~m]].to_bus, bus_lookup)
-        ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
-            & np.in1d(ppc['branch'][:, 1], ppc_to)
-        ppc["branch"][ppc_idx, BR_STATUS] = 0
+        from_bus = lines_is.ix[sw_elem[~m]].from_bus
+        to_bus = lines_is.ix[sw_elem[~m]].to_bus
+        # check if branch is already out of service -> ignore switch
+        from_bus = from_bus[~np.isnan(from_bus)]
+        to_bus = to_bus[~np.isnan(to_bus)]
 
-        # drop from in service lines as well
-        lines_is = lines_is.drop(sw_elem[~m])
+        # set branch in ppc out of service if from and to bus are at a line which is in service
+        if from_bus.size and to_bus.size:
+            # get from and to buses of these branches
+            ppc_from = get_indices(from_bus, bus_lookup)
+            ppc_to = get_indices(to_bus, bus_lookup)
+            ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
+                & np.in1d(ppc['branch'][:, 1], ppc_to)
+            ppc["branch"][ppc_idx, BR_STATUS] = 0
+
+            # drop from in service lines as well
+            lines_is = lines_is.drop(sw_elem[~m])
 
     # opened switches at in service lines
     slidx = slidx\
