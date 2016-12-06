@@ -1081,6 +1081,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
         v["tp_pos"] = v["tp_mid"]
+    else:
+        v["tp_pos"] = tp_pos
 
     # store dtypes
     dtypes = net.trafo.dtypes
@@ -1281,6 +1283,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
         v["tp_pos"] = v["tp_mid"]
+    else:
+        v["tp_pos"] = tp_pos
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
@@ -1688,3 +1692,6 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
 if __name__ == "__main__":
     net = create_empty_network()
+    create_bus(net, vn_kv=10)
+    create_bus(net, vn_kv=0.4)
+    create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)
