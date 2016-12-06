@@ -416,37 +416,40 @@ def test_trafo3w(result_test_network):
 
 
 def test_impedance(result_test_network):
-     net = result_test_network
-     buses = net.bus[net.bus.zone == "test_impedance"]
-     impedances = [
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_impedance"]
+    impedances = [
          x for x in net.impedance.index if net.impedance.from_bus[x] in buses.index]
-     runpp_with_consistency_checks(net, trafo_model="t")
-     b2 = buses.index[1]
-     b3 = buses.index[2]
-     imp1 = impedances[0]
-
+    runpp_with_consistency_checks(net)
+    buses = net.bus[net.bus.zone == "test_impedance"]
+    impedances = [x for x in net.impedance.index if net.impedance.from_bus[x] in buses.index]
+    runpp_with_consistency_checks(net, trafo_model="t", numba=True)
+    b2 = buses.index[1]
+    b3 = buses.index[2]
+    imp1 = impedances[0]
+    
      # powerfactory results
-     ifrom = 0.0325
-     ito = 0.0030
-
-     pfrom = 1012.6480
-     qfrom = 506.3231
-
-     pto = -999.9960
-     qto = -499.9971
-
-     u2 = 1.00654678
-     u3 = 0.99397101
-
-     assert abs(net.res_impedance.p_from_kw.at[imp1] - pfrom) < 1e-1
-     assert abs(net.res_impedance.p_to_kw.at[imp1] - pto) < 1e-1
-     assert abs(net.res_impedance.q_from_kvar.at[imp1] - qfrom) < 1e-1
-     assert abs(net.res_impedance.q_to_kvar.at[imp1] - qto) < 1e-1
-     assert abs(net.res_impedance.i_from_ka.at[imp1] - ifrom) < 1e-1
-     assert abs(net.res_impedance.i_to_ka.at[imp1] - ito) < 1e-1
-
-     assert abs(net.res_bus.vm_pu.at[b2] - u2) < 1e-6
-     assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1e-6
+    ifrom = 0.0444
+    ito = 0.0030
+    
+    pfrom = 1123.6859
+    qfrom = 1061.8399
+    
+    pto = -999.9877
+    qto = -499.9960
+    
+    u2 = 1.004242969
+    u3 = 0.987779366
+    
+    assert abs(net.res_impedance.p_from_kw.at[imp1] - pfrom) < 1e-1
+    assert abs(net.res_impedance.p_to_kw.at[imp1] - pto) < 1e-1
+    assert abs(net.res_impedance.q_from_kvar.at[imp1] - qfrom) < 1e-1
+    assert abs(net.res_impedance.q_to_kvar.at[imp1] - qto) < 1e-1
+    assert abs(net.res_impedance.i_from_ka.at[imp1] - ifrom) < 1e-1
+    assert abs(net.res_impedance.i_to_ka.at[imp1] - ito) < 1e-1
+    
+    assert abs(net.res_bus.vm_pu.at[b2] - u2) < 1e-6
+    assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1.5e-6
 
 
 def test_bus_bus_switch(result_test_network):

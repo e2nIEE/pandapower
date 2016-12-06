@@ -139,18 +139,7 @@ def makeYbus(baseMVA, bus, branch):
     ##      |    | = |          | * |    |
     ##      | It |   | Ytf  Ytt |   | Vt |
     ##
-    stat = branch[:, BR_STATUS]              ## ones at in-service branches
-    Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
-    Bc = stat * branch[:, BR_B]              ## line charging susceptance
-    tap = ones(nl)                           ## default tap ratio = 1
-    i = nonzero(real(branch[:, TAP]))              ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP]) ## assign non-zero tap ratios
-    tap = tap * exp(1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
-
-    Ytt = Ys + 1j * Bc / 2
-    Yff = Ytt / (tap * conj(tap))
-    Yft = - Ys / conj(tap)
-    Ytf = - Ys / tap
+    Ytt, Yff, Yft, Ytf = branch_vectors(branch, nl)
 
     ## compute shunt admittance
     ## if Psh is the real power consumed by the shunt at V = 1.0 p.u.
@@ -174,10 +163,28 @@ def makeYbus(baseMVA, bus, branch):
 
     Yf = csr_matrix((Yf_x, (i, col_Y)), (nl, nb))
     Yt = csr_matrix((Yt_x, (i, col_Y)), (nl, nb))
-
     Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, argsort(f), argsort(t), nb, nl,
                                array(range(nl), dtype=int64))
     Ybus = csr_matrix((resize(Yx, nnz), resize(Yj, nnz), Yp))
 
 
     return Ybus, Yf, Yt
+
+def branch_vectors(branch, nl):
+    stat = branch[:, BR_STATUS]              ## ones at in-service branches
+    Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
+    if any(branch[:, 17]) or any(branch[:, 18]):
+        Yst = stat / ((branch[:, BR_R] + branch[:, 17]) + 1j * (branch[:, BR_X]  + branch[:, 18]))  ## series admittance
+    else:
+        Yst = Ysf
+    Bc = stat * branch[:, BR_B]              ## line charging susceptance
+    tap = ones(nl)                           ## default tap ratio = 1
+    i = nonzero(real(branch[:, TAP]))              ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP])                  ## assign non-zero tap ratios
+    tap = tap * exp(1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
+    
+    Ytt = Yst + 1j * Bc / 2
+    Yff = (Ysf + 1j * Bc / 2) / (tap * conj(tap))
+    Yft = - Ysf / conj(tap)
+    Ytf = - Yst / tap
+    return Ytt, Yff, Yft, Ytf

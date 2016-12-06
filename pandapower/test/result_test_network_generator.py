@@ -297,14 +297,17 @@ def add_test_trafo3w(net):
 def add_test_impedance(net):
     b1, b2, ln = add_grid_connection(net, zone="test_impedance")
     b3 = pp.create_bus(net, vn_kv=220., zone="test_impedance")
-    r = 0.02
-    x = 0.01
+    rij = 0.02
+    xij = 0.01
+    rji = 0.03
+    xji = 0.005
     s = 2000
 
     pl = 1000
     ql = 500
 
-    pp.create_impedance(net, b2, b3, r_pu=r, x_pu=x, sn_kva=s, index=pp.get_free_id(net.impedance) + 1)
+    pp.create_impedance(net, b2, b3, rft_pu=rij, xft_pu=xij, rtf_pu=rji, xtf_pu=xji,
+                        sn_kva=s, index=pp.get_free_id(net.impedance) + 1)
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
     net.last_added_case = "test_impedance"
     return net

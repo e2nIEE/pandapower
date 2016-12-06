@@ -314,7 +314,7 @@ def example_multivoltage():
 
     # Impedance
     pp.create_impedance(net, pp.get_element_index(net, "bus", 'Bus HV3'),
-                        pp.get_element_index(net, "bus", 'Bus HV1'), r_pu=0.074873, x_pu=0.198872,
+                        pp.get_element_index(net, "bus", 'Bus HV1'), rft_pu=0.074873, xft_pu=0.198872,
                         sn_kva=100000, name='Impedance')
 
     # xwards
