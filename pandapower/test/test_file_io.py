@@ -25,10 +25,5 @@ def test_excel():
     assert_net_equal(net_in, net_out)
     os.remove('testfile.xlsx')
 
-def test_convert():
-    net = pp.from_pickle("testgrid.p")
-    pp.runpp(net)
-
 if __name__ == "__main__":
     pytest.main(["test_file_io.py", "-xs"])
-
