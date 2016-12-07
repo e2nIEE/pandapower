@@ -24,7 +24,6 @@ def test_excel():
     net_out = pp.from_excel("testfile.xlsx")
     assert_net_equal(net_in, net_out)
     os.remove('testfile.xlsx')
-    
+
 if __name__ == "__main__":
     pytest.main(["test_file_io.py", "-xs"])
-

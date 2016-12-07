@@ -156,8 +156,10 @@ def create_empty_network(name=None, f_hz=50.):
         "impedance": [("name", np.dtype(object)),
                       ("from_bus", "u4"),
                       ("to_bus", "u4"),
-                      ("r_pu", "f8"),
-                      ("x_pu", "f8"),
+                      ("rft_pu", "f8"),
+                      ("xft_pu", "f8"),
+                      ("rtf_pu", "f8"),
+                      ("xtf_pu", "f8"),
                       ("sn_kva", "f8"),
                       ("in_service", 'bool')],
         "ward": [("name", np.dtype(object)),
@@ -1079,6 +1081,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
         v["tp_pos"] = v["tp_mid"]
+    else:
+        v["tp_pos"] = tp_pos
 
     # store dtypes
     dtypes = net.trafo.dtypes
@@ -1279,6 +1283,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
         v["tp_pos"] = v["tp_mid"]
+    else:
+        v["tp_pos"] = tp_pos
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
@@ -1546,8 +1552,8 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
     return index
 
 
-def create_impedance(net, from_bus, to_bus, r_pu, x_pu, sn_kva, name=None, in_service=True,
-                     index=None):
+def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None, xtf_pu=None,
+                     name=None, in_service=True, index=None):
     """
     Creates an per unit impedance element
 
@@ -1577,10 +1583,13 @@ def create_impedance(net, from_bus, to_bus, r_pu, x_pu, sn_kva, name=None, in_se
 
         # store dtypes
     dtypes = net.impedance.dtypes
-
-    net.impedance.loc[index, ["from_bus", "to_bus", "r_pu", "x_pu", "name",
-                              "sn_kva", "in_service"]] = \
-        [from_bus, to_bus, r_pu, x_pu, name, sn_kva, in_service]
+    if rtf_pu is None:
+        rtf_pu = rft_pu
+    if xtf_pu is None:
+        xtf_pu = xft_pu
+    net.impedance.loc[index, ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu",
+                              "name", "sn_kva", "in_service"]] = \
+        [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, name, sn_kva, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.impedance, dtypes)
@@ -1683,3 +1692,6 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
 if __name__ == "__main__":
     net = create_empty_network()
+    create_bus(net, vn_kv=10)
+    create_bus(net, vn_kv=0.4)
+    create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)

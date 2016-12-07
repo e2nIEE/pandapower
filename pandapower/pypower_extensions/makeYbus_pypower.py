@@ -7,12 +7,12 @@
 
 from sys import stderr
 
-from numpy import ones, conj, nonzero, any, exp, pi, r_, real
+from numpy import ones, any, r_, real
 from scipy.sparse import csr_matrix
 
 from pypower.idx_bus import BUS_I, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP
-
+from pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower_extensions.makeYbus import branch_vectors
 
 def makeYbus(baseMVA, bus, branch):
     """Builds the bus admittance matrix and branch admittance matrices.
@@ -42,19 +42,7 @@ def makeYbus(baseMVA, bus, branch):
     ##      |    | = |          | * |    |
     ##      | It |   | Ytf  Ytt |   | Vt |
     ##
-    stat = branch[:, BR_STATUS]              ## ones at in-service branches
-    Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
-    Bc = stat * branch[:, BR_B]              ## line charging susceptance
-    tap = ones(nl)                           ## default tap ratio = 1
-    i = nonzero(real(branch[:, TAP]))              ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP])                  ## assign non-zero tap ratios
-    tap = tap * exp(1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
-
-    Ytt = Ys + 1j * Bc / 2
-    Yff = Ytt / (tap * conj(tap))
-    Yft = - Ys / conj(tap)
-    Ytf = - Ys / tap
-
+    Ytt, Yff, Yft, Ytf = branch_vectors(branch, nl)
     ## compute shunt admittance
     ## if Psh is the real power consumed by the shunt at V = 1.0 p.u.
     ## and Qsh is the reactive power injected by the shunt at V = 1.0 p.u.

@@ -42,7 +42,7 @@ def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, 
     impedance_end = trafo3w_end + len(net["impedance"])
     xward_end = impedance_end + len(net["xward"])
 
-    ppc["branch"] = np.zeros(shape=(xward_end, QT + 1), dtype=np.complex128)
+    ppc["branch"] = np.zeros(shape=(xward_end, QT + 3), dtype=np.complex128)
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
     if line_end > 0:
@@ -57,7 +57,7 @@ def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, 
         ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles,  trafo_model)
     if impedance_end > trafo3w_end:
-        ppc["branch"][trafo3w_end:impedance_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
+        ppc["branch"][trafo3w_end:impedance_end, [F_BUS, T_BUS, BR_R, BR_X, 17, 18, BR_STATUS]] = \
             _calc_impedance_parameter(net, bus_lookup)
     if xward_end > impedance_end:
         ppc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
@@ -398,17 +398,23 @@ def _trafo_df_from_trafo3w(net):
 
 
 def _calc_impedance_parameter(net, bus_lookup):
-    t = np.zeros(shape=(len(net["impedance"].index), 5), dtype=np.complex128)
+    t = np.zeros(shape=(len(net["impedance"].index), 7), dtype=np.complex128)
+    sn = net["impedance"]["sn_kva"] / 1e3
+    rij = net["impedance"]["rft_pu"]
+    xij = net["impedance"]["xft_pu"]
+    rji = net["impedance"]["rtf_pu"]
+    xji = net["impedance"]["xtf_pu"]
     t[:, 0] = bus_lookup[net["impedance"]["from_bus"].values]
     t[:, 1] = bus_lookup[net["impedance"]["to_bus"].values]
-    t[:, 2] = net["impedance"]["r_pu"] / net["impedance"]["sn_kva"] * 1000.
-    t[:, 3] = net["impedance"]["x_pu"] / net["impedance"]["sn_kva"] * 1000.
-    t[:, 4] = net["impedance"]["in_service"].values
+    t[:, 2] = rij / sn
+    t[:, 3] = xij / sn
+    t[:, 4] = (rji - rij) / sn
+    t[:, 5] = (xji - xij) / sn
+    t[:, 6] = net["impedance"]["in_service"].values
     return t
 
 
 def _calc_xward_parameter(net, ppc, is_elems, bus_lookup):
-    bus_is = is_elems['bus']
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = is_elems["xward"]
