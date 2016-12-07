@@ -422,10 +422,6 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     # Note: Also reorders buses and gens in ppc
     ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
-    # add lookup with indices before any busses were fused
-    # bus_lookup["before_fuse"] = dict(
-    #     zip(net["bus"].index.values, np.arange(len(net["bus"].index.values))))
-
     return ppc, ppci, bus_lookup
 
 
@@ -491,7 +487,6 @@ def _ppc2ppci(ppc, ppci, bus_lookup):
     ppci['bus'][:, BUS_I] = ppc['bus'][:len(ppci['bus']), BUS_I]
 
     # update bus_lookup (pandapower -> ppci internal)
-    # bus_lookup = {key: e2i[val] for (key, val) in bus_lookup.items()}
     valid_bus_lookup_entries = bus_lookup >= 0
     bus_lookup[valid_bus_lookup_entries] = e2i[bus_lookup[valid_bus_lookup_entries]]
 
