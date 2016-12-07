@@ -13,7 +13,7 @@ from functools import partial
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, QT
 from pypower.idx_bus import BASE_KV
 
-from pandapower.auxiliary import get_indices, get_values
+from pandapower.auxiliary import get_values
 
 
 def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
@@ -68,8 +68,8 @@ def _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles, traf
     trafo_df = _trafo_df_from_trafo3w(net)
 
     temp_para = np.zeros(shape=(len(trafo_df), 8), dtype=np.complex128)
-    temp_para[:, 0] = get_indices(trafo_df["hv_bus"].values, bus_lookup)
-    temp_para[:, 1] = get_indices(trafo_df["lv_bus"].values, bus_lookup)
+    temp_para[:, 0] = bus_lookup[(trafo_df["hv_bus"].values).astype(int)]
+    temp_para[:, 1] = bus_lookup[(trafo_df["lv_bus"].values).astype(int)]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(
         net, ppc, bus_lookup, trafo_model, trafo_df)
     if calculate_voltage_angles:
@@ -97,8 +97,8 @@ def _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints=False):
     # in kV U^2* ((10^3 V)^2/10^6 VA) = U^2
     # Therefore division by 1 MVA is not necessary.
     line = net["line"]
-    fb = get_indices(line["from_bus"], bus_lookup)
-    tb = get_indices(line["to_bus"], bus_lookup)
+    fb = bus_lookup[line["from_bus"].values]
+    tb = bus_lookup[line["to_bus"].values]
     length = line["length_km"].values
     parallel = line["parallel"]
     baseR = np.square(ppc["bus"][fb, BASE_KV])
@@ -134,8 +134,8 @@ def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_
     '''
     temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
     trafo = net["trafo"]
-    temp_para[:, 0] = get_indices(trafo["hv_bus"].values, bus_lookup)
-    temp_para[:, 1] = get_indices(trafo["lv_bus"].values, bus_lookup)
+    temp_para[:, 0] = bus_lookup[trafo["hv_bus"].values]
+    temp_para[:, 1] = bus_lookup[trafo["lv_bus"].values]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model)
     if calculate_voltage_angles:
         temp_para[:, 6] = trafo["shift_degree"].values
@@ -404,8 +404,8 @@ def _calc_impedance_parameter(net, bus_lookup):
     xij = net["impedance"]["xft_pu"]
     rji = net["impedance"]["rtf_pu"]
     xji = net["impedance"]["xtf_pu"]
-    t[:, 0] = get_indices(net["impedance"]["from_bus"].values, bus_lookup)
-    t[:, 1] = get_indices(net["impedance"]["to_bus"].values, bus_lookup)
+    t[:, 0] = bus_lookup[net["impedance"]["from_bus"].values]
+    t[:, 1] = bus_lookup[net["impedance"]["to_bus"].values]
     t[:, 2] = rij / sn
     t[:, 3] = xij / sn
     t[:, 4] = (rji - rij) / sn
@@ -418,8 +418,8 @@ def _calc_xward_parameter(net, ppc, is_elems, bus_lookup):
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = is_elems["xward"]
-    t[:, 0] = get_indices(net["xward"]["bus"].values, bus_lookup)
-    t[:, 1] = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
+    t[:, 0] = bus_lookup[net["xward"]["bus"].values]
+    t[:, 1] = bus_lookup[net["xward"]["ad_bus"].values]
     t[:, 2] = net["xward"]["r_ohm"] / baseR
     t[:, 3] = net["xward"]["x_ohm"] / baseR
     t[:, 4] = xw_is
@@ -475,8 +475,8 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
         # set branch in ppc out of service if from and to bus are at a line which is in service
         if from_bus.size and to_bus.size:
             # get from and to buses of these branches
-            ppc_from = get_indices(from_bus, bus_lookup)
-            ppc_to = get_indices(to_bus, bus_lookup)
+            ppc_from = bus_lookup[from_bus]
+            ppc_to = bus_lookup[to_bus]
             ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
                 & np.in1d(ppc['branch'][:, 1], ppc_to)
             ppc["branch"][ppc_idx, BR_STATUS] = 0

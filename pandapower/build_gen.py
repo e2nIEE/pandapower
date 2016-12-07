@@ -10,8 +10,6 @@ import numpy as np
 from pypower.idx_gen import QMIN, QMAX, GEN_STATUS, GEN_BUS, PG, VG
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE
 
-from pandapower.auxiliary import get_indices
-
 
 def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles):
     '''
@@ -39,24 +37,24 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     # add ext grid / slack data
-    ppc["gen"][:eg_end, GEN_BUS] = get_indices(eg_is["bus"].values, bus_lookup)
+    ppc["gen"][:eg_end, GEN_BUS] = bus_lookup[eg_is["bus"].values]
     ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
     ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
 
     # set bus values for external grid buses
-    eg_buses = get_indices(eg_is["bus"].values, bus_lookup)
+    eg_buses = bus_lookup[eg_is["bus"].values]
     if calculate_voltage_angles:
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     ppc["bus"][eg_buses, BUS_TYPE] = REF
 
     # add generator / pv data
     if gen_end > eg_end:
-        ppc["gen"][eg_end:gen_end, GEN_BUS] = get_indices(gen_is["bus"].values, bus_lookup)
+        ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
         ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
         ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
 
         # set bus values for generator buses
-        gen_buses = get_indices(gen_is["bus"].values, bus_lookup)
+        gen_buses = bus_lookup[gen_is["bus"].values]
         ppc["bus"][gen_buses, BUS_TYPE] = PV
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
@@ -77,13 +75,13 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
         xw = net["xward"]
         bus_is = is_elems['bus']
         xw_is = is_elems['xward']
-        ppc["gen"][gen_end:xw_end, GEN_BUS] = get_indices(xw["ad_bus"].values, bus_lookup)
+        ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
         ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
         ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
         ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
         ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
 
-        xward_buses = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
+        xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
         ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
         ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
         ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
@@ -114,7 +112,7 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
 
     # set bus values for external grid buses
     if calculate_voltage_angles:
-        eg_buses = get_indices(eg_is["bus"].values, bus_lookup)
+        eg_buses = bus_lookup[eg_is["bus"].values]
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
 
     # add generator / pv data
@@ -123,7 +121,7 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
         ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
 
         # set bus values for generator buses
-        gen_buses = get_indices(gen_is["bus"].values, bus_lookup)
+        gen_buses = bus_lookup[gen_is["bus"].values]
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
         if enforce_q_lims:
@@ -148,7 +146,7 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
         ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
         ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
 
-        xward_buses = get_indices(net["xward"]["ad_bus"].values, bus_lookup)
+        xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
         ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
         ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
         ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
