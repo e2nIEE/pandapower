@@ -328,9 +328,6 @@ def convert_format(net):
     """
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
     from pandapower.run import reset_results
-    if "r_pu" in net.impedance:
-        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
-        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
         add_basic_std_types(net)
@@ -492,6 +489,9 @@ def convert_format(net):
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     net.switch.closed = net.switch.closed.astype(bool)
+    if "r_pu" in net.impedance:
+        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
+        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
     return net
 
 
