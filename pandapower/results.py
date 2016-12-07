@@ -10,16 +10,22 @@ from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV, VM, VA, PD, QD
 from pypower.idx_gen import PG, QG, GEN_BUS
 
-from pandapower.auxiliary import get_indices, _sum_by_group
+from pandapower.auxiliary import _sum_by_group
 
 def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
                      ac=True):
 
     _set_buses_out_of_service(ppc)
-    bus_pq = _get_p_q_results(net, ppc, bus_lookup, is_elems, ac)
-    _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac)
-    _get_branch_results(net, ppc, bus_lookup, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_pq, return_voltage_angles, ac)
+
+    # generate bus_lookup net -> consecutive ordering
+    maxBus = max(net["bus"].index.values)
+    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
+    bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
+
+    bus_pq = _get_p_q_results(net, bus_lookup_aranged, is_elems, ac)
+    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
 
@@ -37,7 +43,7 @@ def _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac=Tru
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
 
     ppi = net["bus"].index.values
-    bus_idx = get_indices(ppi, bus_lookup)
+    bus_idx = bus_lookup[ppi]
     if ac:
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     net["res_bus"].index = net["bus"].index
@@ -45,7 +51,7 @@ def _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac=Tru
         net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
-def _get_branch_results(net, ppc, bus_lookup, pq_buses, trafo_loading, ac=True):
+def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, ac=True):
     """
     Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
 
@@ -80,10 +86,10 @@ def _get_branch_results(net, ppc, bus_lookup, pq_buses, trafo_loading, ac=True):
         net["res_impedance"].index = net["impedance"].index
 
     if xward_end > impedance_end:
-        _get_xward_branch_results(net, ppc, bus_lookup, pq_buses, impedance_end, xward_end, ac)
+        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end, ac)
 
 
-def _get_gen_results(net, ppc, is_elems, bus_lookup, pq_bus, return_voltage_angles, ac=True):
+def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus, return_voltage_angles, ac=True):
     # get in service elements
     gen_is = is_elems['gen']
     eg_is = is_elems['ext_grid']
@@ -96,7 +102,7 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     gidx = eg_is.bus.values
     n_res_eg = len(net['ext_grid'])
     # indices of in service gens in the ppc
-    gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], get_indices(eg_is["bus"], bus_lookup))
+    gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], bus_lookup[eg_is["bus"].values])
     # mask for indices of in service gens in net['res_gen']
     idx_eg = np.in1d(net['ext_grid'].bus, gidx)
     # read results from ppc for these buses
@@ -126,7 +132,7 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, pq_bus, return_voltage_angl
         b = np.hstack([b, net['gen'].bus.values])
 
         # indices of in service gens in the ppc
-        gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], get_indices(gen_is["bus"], bus_lookup))
+        gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], bus_lookup[gen_is["bus"].values])
         # mask for indices of in service gens in net['res_gen']
         idx_gen = np.in1d(net['gen'].bus, gidx)
 
@@ -156,12 +162,12 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, pq_bus, return_voltage_angl
     if not ac:
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
-    b = get_indices(b_sum, bus_lookup, fused_indices=False)
+    b = bus_lookup_aranged[b_sum]
     pq_bus[b, 0] += p_sum
     pq_bus[b, 1] += q_sum
 
 
-def _get_xward_branch_results(net, ppc, bus_lookup, pq_buses, f, t, ac=True):
+def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, f, t, ac=True):
     p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
     net["res_xward"]["p_kw"] += p_branch_xward
     if ac:
@@ -170,7 +176,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup, pq_buses, f, t, ac=True):
     else:
         q_branch_xward = np.zeros(len(p_branch_xward))
     b_pp, p, q = _sum_by_group(net["xward"]["bus"].values, p_branch_xward, q_branch_xward)
-    b_ppc = get_indices(b_pp, bus_lookup, fused_indices=False)
+    b_ppc = bus_lookup_aranged[b_pp]
 
     pq_buses[b_ppc, 0] += p
     pq_buses[b_ppc, 1] += q
@@ -303,7 +309,7 @@ def _get_impedance_results(net, ppc, i_ft, f, t, ac=True):
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
 
 
-def _get_p_q_results(net, ppc, bus_lookup, is_elems, ac=True):
+def _get_p_q_results(net, bus_lookup_aranged, is_elems, ac=True):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 
@@ -361,17 +367,17 @@ def _get_p_q_results(net, ppc, bus_lookup, is_elems, ac=True):
     if not ac:
         q = np.zeros(len(p))
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-    b_ppc = get_indices(b_pp, bus_lookup, fused_indices=False)
+    b_ppc = bus_lookup_aranged[b_pp]
     bus_pq[b_ppc, 0] = vp
     bus_pq[b_ppc, 1] = vq
     return bus_pq
 
 
-def _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac=True):
+def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac=True):
     b, p, q = np.array([]), np.array([]), np.array([])
     s = net["shunt"]
     if len(s) > 0:
-        sidx = get_indices(s["bus"], bus_lookup)
+        sidx = bus_lookup[s["bus"].values]
         shunt_is = is_elems["shunt"]
         u_shunt = ppc["bus"][sidx, VM]
         u_shunt = np.nan_to_num(u_shunt)
@@ -388,7 +394,7 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac=True):
 
     w = net["ward"]
     if len(w) > 0:
-        widx = get_indices(w["bus"], bus_lookup)
+        widx = bus_lookup[w["bus"].values]
         ward_is = is_elems["ward"]
         u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
@@ -405,7 +411,7 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac=True):
 
     xw = net["xward"]
     if len(xw) > 0:
-        widx = get_indices(xw["bus"], bus_lookup)
+        widx = bus_lookup[xw["bus"].values]
         xward_is = is_elems["xward"]
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
@@ -423,7 +429,7 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_pq, is_elems, ac=True):
     if not ac:
         q = np.zeros(len(p))
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-    b_ppc = get_indices(b_pp, bus_lookup, fused_indices=False)
+    b_ppc = bus_lookup_aranged[b_pp]
 
     bus_pq[b_ppc, 0] += vp
     if ac:

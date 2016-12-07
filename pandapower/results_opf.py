@@ -6,9 +6,8 @@
 
 from pandapower.results import _set_buses_out_of_service, _get_shunt_results, _get_branch_results, \
                                                                 _get_gen_results, _get_bus_results
-from numpy import zeros, array, float, hstack, invert
+from numpy import zeros, array, float, hstack, invert, ones, arange
 from pandapower.build_bus import _sum_by_group
-import pandapower as pp
 from pypower.idx_gen import PG, QG
 
 
@@ -17,15 +16,20 @@ def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_v
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
 
+    # generate bus_lookup net -> consecutive ordering
+    maxBus = max(net["bus"].index.values)
+    bus_lookup_aranged = -ones(maxBus + 1, dtype=int)
+    bus_lookup_aranged[net["bus"].index.values] = arange(len(net["bus"].index.values))
+
     _set_buses_out_of_service(ppc)
-    bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup, len(eg_is) + len(gen_is))
-    _get_shunt_results(net, ppc, bus_lookup, bus_pq, bus_is)
-    _get_branch_results(net, ppc, bus_lookup, bus_pq, trafo_loading)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_pq, return_voltage_angles)
+    bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged, len(eg_is) + len(gen_is))
+    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, bus_is)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, return_voltage_angles)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles)
 
 
-def _get_p_q_results_opf(net, ppc, bus_lookup, gen_end):
+def _get_p_q_results_opf(net, ppc, bus_lookup_aranged, gen_end):
     bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
     b, p, q = array([]), array([]), array([])
 
@@ -59,7 +63,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup, gen_end):
         net["res_sgen"].index = net["sgen"].index
 
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-    b_ppc = pp.get_indices(b_pp, bus_lookup, fused_indices=False)
+    b_ppc = bus_lookup_aranged[b_pp]
     bus_pq[b_ppc, 0] = vp
     bus_pq[b_ppc, 1] = vq
     return bus_pq
