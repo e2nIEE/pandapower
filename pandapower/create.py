@@ -1690,6 +1690,48 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
     return index
 
 
+def create_measurement(net, meas_type, bus, value, std_dev, line=None, check_existing=True):
+    """
+    Creates a measurement, which is used by the estimation module. Type of measurements possible:
+    - vbus_pu
+    - pbus_kw
+    - qbus_kvar
+    - pline_kw
+    - qline_kvar
+    - iline_a
+
+    INPUT:
+
+        **meas_type** - meas_type of measurement as explained above
+        **bus** - bus number (not name) of bus, if applicable. determines the position of the
+        measurement for line measurements (bus == from_bus: measurement at from_bus; same for
+        to_bus)
+        **value** - measurement value
+        **std_dev** - standard deviation in the same unit as the measurement
+        **line** - (None) number of line on which the measurement is taken
+        **check_existing** - (True) check for and replace existing measurements for this bus and
+        type. Set to false for performance improvements but unsafe behaviour
+
+    OUTPUT:
+        None
+
+    Example:
+        create_measurement(wlsnet, "pbus_kw", 0,  500, 10) # 500 kW measurement with 10 kW standard
+        deviation on bus 0
+    """
+    if "measurement" not in net:
+        net.measurement = pd.DataFrame(columns=["type", "bus", "line", "value", "std_dev"])
+    if check_existing and len(net.measurement.loc[(net.measurement.type == meas_type)
+            & (net.measurement.bus == bus) & (net.measurement.line == line)]):
+        net.measurement.loc[(net.measurement.type == meas_type)
+                            & (net.measurement.bus == bus)
+                            & (net.measurement.line == line)] = \
+            [meas_type, int(bus), line, value, std_dev]
+    else:
+        mid = get_free_id(net.measurement)
+        net.measurement.loc[mid] = [meas_type, int(bus), line, value, std_dev]
+
+
 if __name__ == "__main__":
     net = create_empty_network()
     create_bus(net, vn_kv=10)

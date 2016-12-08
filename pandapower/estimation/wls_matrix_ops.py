@@ -1,6 +1,4 @@
 __author__ = 'menke'
-
-from past.utils import old_div
 import numpy as np
 import warnings
 from pypower.makeYbus import makeYbus
