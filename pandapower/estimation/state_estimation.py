@@ -14,6 +14,25 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
 
+def estimate(net, v_start=None, delta_start=None, tolerance=1e-6, maximum_iterations=10, s_ref=1e6):
+    """
+    Wrapper function for WLS state estimation.
+    :param net: The net within this line should be created.
+    :param v_start: (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes
+            in p.u. (sorted by bus index)
+    :param delta_start: (np.array, shape=(1,)) - Vector with initial values for all voltage angles
+            in degrees (sorted by bus index)
+    :param tolerance: (float) - When the change between iterations is less than tolerance,
+            the process stops. Default is 1e-6.
+    :param maximum_iterations: (int) - Maximum number of iterations. Default is 10.
+    :param s_ref: (float) - Reference power for the network. Default is 1e6 VA.
+    :return:
+    """
+    wls = state_estimation()
+    wls.configure(tolerance, maximum_iterations, net, s_ref)
+    wls.estimate(v_start, delta_start)
+
+
 class state_estimation:
     """
     Any user of the estimation module only needs to use the class state_estimation. It contains all
@@ -22,8 +41,10 @@ class state_estimation:
     process.
     """
 
-    def __init__(self):
-        self.logger = logging.getLogger("wls_se")
+    def __init__(self, logger=None):
+        self.logger = logger
+        if self.logger is None:
+            self.logger = logging.getLogger("wls_se")
         self.tolerance = 1e-6
         self.max_iterations = 10
         self.net = None
@@ -43,7 +64,7 @@ class state_estimation:
         # Offset to accomodate pypower <-> pandapower differences (additional columns)
         self.br_col_offset = 6
 
-    def configure(self, tolerance, maximum_iterations, net=None):
+    def configure(self, tolerance, maximum_iterations, net=None, s_ref=None):
         """
         The function configure takes up to 3 arguments and configures the process. The first
         argument tolerance sets the tolerance limit, at which the process has found a solution and
@@ -60,7 +81,7 @@ class state_estimation:
             **tolerance** (float) - When the change between iterations is less than tolerance,
             the process stops. Default is 1e-6.
 
-            **maximum_iterations** (int) - Maximum number of iterations. Default is 20.
+            **maximum_iterations** (int) - Maximum number of iterations. Default is 10.
 
         Optional:
 
@@ -75,6 +96,8 @@ class state_estimation:
         self.max_iterations = maximum_iterations
         if net:
             self.set_grid(net)
+        if s_ref:
+            self.s_ref = s_ref
 
     # Set grid data
     def set_grid(self, net, s_ref=None):
@@ -101,7 +124,7 @@ class state_estimation:
         if s_ref:
             self.s_ref = s_ref
 
-    def estimate(self, u_in=None, delta_in=None):
+    def estimate(self, v_start=None, delta_start=None):
         """
         The function estimate is the main function of the module. It takes two input arguments: u_in
         and delta_in. These are the initial state variables for the estimation process. Usually they
@@ -117,10 +140,10 @@ class state_estimation:
 
             **net** - The net within this line should be created
 
-            **u_in** (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes
+            **v_start** (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes
             in p.u. (sorted by bus index)
 
-            **delta_in** (np.array, shape=(1,)) - Vector with initial values for all voltage angles
+            **delta_start** (np.array, shape=(1,)) - Vector with initial values for all voltage angles
             in degrees (sorted by bus index)
 
         Return:
@@ -143,15 +166,15 @@ class state_estimation:
         # add initial values for V and delta
         # node voltages
         # V<delta
-        if u_in is None:
-            u_in = np.ones(self.net.bus.shape[0])
-        if delta_in is None:
-            delta_in = np.zeros(self.net.bus.shape[0])
+        if v_start is None:
+            v_start = np.ones(self.net.bus.shape[0])
+        if delta_start is None:
+            delta_start = np.zeros(self.net.bus.shape[0])
 
         # initialize the ppc bus with the initial values given
         vm_backup, va_backup = self.net.res_bus.vm_pu.copy(), self.net.res_bus.va_degree.copy()
-        self.net.res_bus.vm_pu = u_in
-        self.net.res_bus.va_degree = delta_in
+        self.net.res_bus.vm_pu = v_start
+        self.net.res_bus.va_degree = delta_start
 
         # select elements in service and convert pandapower ppc to ppc
         is_elems = _select_is_elements(self.net)

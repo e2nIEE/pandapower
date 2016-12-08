@@ -11751,11 +11751,11 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="pandapower-WLS-state-estimation">pandapower WLS state estimation<a class="anchor-link" href="#pandapower-WLS-state-estimation">&#182;</a></h1><p>This is an introduction into the usage of the pandapower state estimation module. It shows how to 
+<h1 id="pandapower-WLS-State-Estimation">pandapower WLS State Estimation<a class="anchor-link" href="#pandapower-WLS-State-Estimation">&#182;</a></h1><p>This is an introduction into the usage of the pandapower state estimation module. It shows how to 
 create measurements for a pandapower network and the perform the state estimation with the weighted least squares (WLS) algorithm.</p>
 <h2 id="Example-Network">Example Network<a class="anchor-link" href="#Example-Network">&#182;</a></h2><p>We will be using the reference network from the book "Power System State Estimation" by Ali Abur and Antonio Gómez Expósito. 
 It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 measurements of different types enable WLS state estimation.</p>
-<p>We first create this network in pandapower. Remember that the indices in pandapower are 0-based, so bus 1 has the index 0 and so on. The same goes for all other elements.</p>
+<p>We first create this network in pandapower.</p>
 
 </div>
 </div>
@@ -11769,15 +11769,18 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 
 <span class="n">net</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">create_empty_network</span><span class="p">()</span>
 
-<span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bus 1&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bus 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bus 3&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bus 1&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>  <span class="c1"># bus index is 0</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bus 2&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>  <span class="c1"># bus index is 1</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_bus</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bus 3&quot;</span><span class="p">,</span> <span class="n">vn_kv</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>  <span class="c1"># bus index is 2</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_ext_grid</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># set the slack bus to bus 1</span>
 
-<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=.</span><span class="mi">03</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">imax_ka</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=.</span><span class="mi">02</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=.</span><span class="mi">05</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">imax_ka</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=.</span><span class="mi">03</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=.</span><span class="mi">08</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">imax_ka</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=.</span><span class="mi">03</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                               <span class="n">imax_ka</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=.</span><span class="mi">02</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=.</span><span class="mi">05</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                               <span class="n">imax_ka</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_line_from_parameters</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r_ohm_per_km</span><span class="o">=.</span><span class="mi">03</span><span class="p">,</span> <span class="n">x_ohm_per_km</span><span class="o">=.</span><span class="mi">08</span><span class="p">,</span> <span class="n">c_nf_per_km</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                               <span class="n">imax_ka</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Created the pandapower network.&quot;</span><span class="p">)</span>
 </pre></div>
@@ -11806,7 +11809,24 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Adding-measurements">Adding measurements<a class="anchor-link" href="#Adding-measurements">&#182;</a></h2><p>Now we can add our measurements, which are valid for one point in time. We are adding two voltage magnitude measurements on buses 1 and 2. The standard deviations are 0.004 p.u.. We are also adding bus injection measurements for both P and Q on bus 2. Finally, we are adding line measurements for lines 0 and 1, both placed at the side of bus 1. The bus parameter defines the side at which the line measurement is positioned, the line argument is the index of the line.</p>
+<h2 id="Adding-Measurements">Adding Measurements<a class="anchor-link" href="#Adding-Measurements">&#182;</a></h2><p>Measurements are defined via the pandapower <em>create_measurement</em> function. The function signature is as follows: <em>create_measurement(net, type, bus, value, std_dev, line=None)</em>. The argument <em>net</em> is the pandapower network, for which the new measurement should be added. The argument <em>type</em> sets the measurement type (value is given as a string). The argument <em>bus</em> (int) sets the bus, at which the measurement is placed. <em>Value</em> is a number describing the measurement value. <em>std_dev</em> sets the standard deviation for this measurement (in the same unit as the measurement value). If the measurement belongs to a line instead of a bus, the argument <em>line</em> is set to the number of the line, at which the measurement should be added. In this case, the argument <em>bus</em> should be set to the bus number, at which the measurement is located (either the <em>from_bus</em> or the <em>to_bus</em> of the line). If <em>from_bus</em> is set, the measurement is taken at the <em>from_bus</em> side of the line (<em>P_from_to</em>), if <em>to_bus</em> is set, the measurement is taken at the <em>to_bus</em> side of the line (<em>P_to_from</em>).</p>
+<h3 id="Types-of-Measurements">Types of Measurements<a class="anchor-link" href="#Types-of-Measurements">&#182;</a></h3><p>Possible measurement types are: 
+<em>vbus_pu</em> for voltage measurements (in per-unit)<br>
+<em>pbus_kw</em> for active power measurements at a bus (in kW)<br>
+<em>qbus_kvar</em> for reactive power measurements (in kVar)<br>
+<em>pline_kw</em> for active power measurements at a line (in kW)<br>
+<em>qline_kvar</em> for reactive power measurements at a line (in kVar)<br>
+<em>iline_a</em> for electrical current measurements at a line (in A)</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now we can add our measurements, which are valid for one point in time. We are adding two voltage magnitude measurements on buses 1 and 2. The standard deviations are 0.004 p.u.. We are also adding bus injection measurements for both P and Q on bus 2. Finally, we are adding line measurements for lines 0 and 1, both placed at the side of bus 1. The bus parameter defines the side at which the line measurement is positioned, the line argument is the index of the line.</p>
 
 </div>
 </div>
@@ -11819,16 +11839,16 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pandapower.estimation</span> <span class="k">import</span> <span class="n">state_estimation</span>
 <span class="kn">from</span> <span class="nn">pandapower.create</span> <span class="k">import</span> <span class="n">create_measurement</span>
 
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;vbus_pu&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.006</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">)</span>        <span class="c1"># V at bus 1</span>
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;vbus_pu&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">.</span><span class="mi">968</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">)</span>         <span class="c1"># V at bus 2</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;vbus_pu&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.006</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">)</span>        <span class="c1"># V at bus 1</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;vbus_pu&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">.</span><span class="mi">968</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">)</span>         <span class="c1"># V at bus 2</span>
 
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pbus_kw&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">501</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>           <span class="c1"># P at bus 2</span>
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qbus_kvar&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">286</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>         <span class="c1"># Q at bus 2</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pbus_kw&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">501</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>           <span class="c1"># P at bus 2</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qbus_kvar&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">286</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>         <span class="c1"># Q at bus 2</span>
 
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pline_kw&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">888</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>    <span class="c1"># Pline (bus 1 -&gt; bus 2) at bus 1</span>
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pline_kw&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1173</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># Pline (bus 1 -&gt; bus 3) at bus 1</span>
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qline_kvar&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">568</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Qline (bus 1 -&gt; bus 2) at bus 1</span>
-<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qline_kvar&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">663</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Qline (bus 1 -&gt; bus 3) at bus 1</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pline_kw&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">888</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>    <span class="c1"># Pline (bus 1 -&gt; bus 2) at bus 1</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pline_kw&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1173</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># Pline (bus 1 -&gt; bus 3) at bus 1</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qline_kvar&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">568</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Qline (bus 1 -&gt; bus 2) at bus 1</span>
+<span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qline_kvar&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">663</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Qline (bus 1 -&gt; bus 3) at bus 1</span>
 </pre></div>
 
 </div>
@@ -11881,7 +11901,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>0</th>
       <td>vbus_pu</td>
-      <td>0.0</td>
+      <td>1.0</td>
       <td>None</td>
       <td>1.006</td>
       <td>0.004</td>
@@ -11889,7 +11909,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>1</th>
       <td>vbus_pu</td>
-      <td>1.0</td>
+      <td>2.0</td>
       <td>None</td>
       <td>0.968</td>
       <td>0.004</td>
@@ -11897,7 +11917,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>2</th>
       <td>pbus_kw</td>
-      <td>1.0</td>
+      <td>2.0</td>
       <td>None</td>
       <td>-501.000</td>
       <td>10.000</td>
@@ -11905,7 +11925,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>3</th>
       <td>qbus_kvar</td>
-      <td>1.0</td>
+      <td>2.0</td>
       <td>None</td>
       <td>-286.000</td>
       <td>10.000</td>
@@ -11913,7 +11933,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>4</th>
       <td>pline_kw</td>
-      <td>0.0</td>
+      <td>1.0</td>
       <td>0</td>
       <td>888.000</td>
       <td>8.000</td>
@@ -11921,7 +11941,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>5</th>
       <td>pline_kw</td>
-      <td>0.0</td>
+      <td>1.0</td>
       <td>1</td>
       <td>1173.000</td>
       <td>8.000</td>
@@ -11929,7 +11949,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>6</th>
       <td>qline_kvar</td>
-      <td>0.0</td>
+      <td>1.0</td>
       <td>0</td>
       <td>568.000</td>
       <td>8.000</td>
@@ -11937,7 +11957,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr>
       <th>7</th>
       <td>qline_kvar</td>
-      <td>0.0</td>
+      <td>1.0</td>
       <td>1</td>
       <td>663.000</td>
       <td>8.000</td>
@@ -11958,7 +11978,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Performing-the-state-estimation">Performing the state estimation<a class="anchor-link" href="#Performing-the-state-estimation">&#182;</a></h2><p>The measurements are now set. We have to initialize the starting voltage magnitude and voltage angles for the state estimator. In continous operation, this can be the result of the last state estimation. In our case, we set flat start conditions: 1.0 p.u. for voltage magnitude, 0.0 degree for voltage angles.</p>
+<h2 id="Performing-the-State-Estimation">Performing the State Estimation<a class="anchor-link" href="#Performing-the-State-Estimation">&#182;</a></h2><p>The measurements are now set. We have to initialize the starting voltage magnitude and voltage angles for the state estimator. In continous operation, this can be the result of the last state estimation. In our case, we set flat start conditions: 1.0 p.u. for voltage magnitude, 0.0 degree for voltage angles.</p>
 
 </div>
 </div>
@@ -12024,7 +12044,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Working-with-results">Working with results<a class="anchor-link" href="#Working-with-results">&#182;</a></h2><p>We can show the voltage magnitude and angles directly:</p>
+<h2 id="Working-with-Results">Working with Results<a class="anchor-link" href="#Working-with-Results">&#182;</a></h2><p>We can show the voltage magnitude and angles directly:</p>
 
 </div>
 </div>
@@ -12049,9 +12069,9 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0    0.999629
-1    0.974156
-2    0.943890
+<pre>1    1.016126
+2    0.958471
+3    0.998070
 Name: vm_pu, dtype: float64</pre>
 </div>
 
@@ -12081,9 +12101,9 @@ Name: vm_pu, dtype: float64</pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0    0.000000
-1   -1.247547
-2   -2.745717
+<pre>1    0.000000
+2   -2.745292
+3   -0.859228
 Name: va_degree, dtype: float64</pre>
 </div>
 
@@ -12124,9 +12144,9 @@ Let's look at the bus power injections, which are available in res_bus_est as we
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0   -2064.016454
-1     495.974966
-2    1514.220983
+<pre>1   -1030.374059
+2     498.883558
+3     511.424868
 Name: p_kw, dtype: float64</pre>
 </div>
 
@@ -12156,9 +12176,9 @@ Name: p_kw, dtype: float64</pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0   -1226.440397
-1     297.749528
-2     787.528929
+<pre>1   -615.130495
+2    280.875819
+3    279.536299
 Name: q_kvar, dtype: float64</pre>
 </div>
 
