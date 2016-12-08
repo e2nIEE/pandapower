@@ -326,6 +326,14 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
+    _pre_release_changes(net)
+    # unsymmetric impedance
+    if "r_pu" in net.impedance:
+        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
+        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+    return net
+
+def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
     from pandapower.run import reset_results
     if "std_types" not in net:
@@ -489,12 +497,7 @@ def convert_format(net):
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     net.switch.closed = net.switch.closed.astype(bool)
-    if "r_pu" in net.impedance:
-        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
-        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
-    return net
-
-
+    
 def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"]):
     """
     Adds zones to elements, inferring them from the zones of buses they are

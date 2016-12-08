@@ -35,11 +35,11 @@ def test_ring_network():
     delta_result = net.res_bus_est.va_degree.values
 
     # 3. Print result
-    print("Result:")
-    print("V [p.u.]:")
-    print(v_result)
-    print(u"delta [°]:")
-    print(delta_result)
+#    print("Result:")
+#    print("V [p.u.]:")
+#    print(v_result)
+#    print(u"delta [°]:")
+#    print(delta_result)
 
     target_v = net.res_bus.vm_pu.values
     diff_v = target_v - v_result
