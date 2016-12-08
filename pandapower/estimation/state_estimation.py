@@ -308,8 +308,6 @@ class state_estimation:
 
             # State Vector difference d_E
             # d_E = G_m^-1 * (H' * R^-1 * r)
-            # O(n^3) http://stackoverflow.com/questions/12660052/time-complexity-of-scipy-
-            #               linalg-solve-lapack-gesv-on-large-matrix
             d_E = spsolve(G_m, H.T * (r_inv * r.T))
             E += d_E
 
@@ -381,26 +379,32 @@ class state_estimation:
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None):
         """
-        The function perform_chi2_test performs a Chi^2 test for bad data and topology error detection. The function can
-        be called with the optional input arguments v_in_out and delta_in_out. Then, the Chi^2 test is performed after
-        calling the function estimate using them as input arguments. It can also be called without these arguments if it
-        is called from the same object with which estimate had been called beforehand. Then, the Chi^2 test is performed
-        for the states estimated by the funtion estimate and stored internally in a member variable of the class
-        state_estimation. For bad data detection, the function perform_rn_max_test is more powerful and should be the
-        function of choice. For topology error detection, however, perform_chi2_test should be used.
+        The function perform_chi2_test performs a Chi^2 test for bad data and topology error
+        detection. The function can be called with the optional input arguments v_in_out and
+        delta_in_out. Then, the Chi^2 test is performed after calling the function estimate using
+        them as input arguments. It can also be called without these arguments if it is called
+        from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
+        performed for the states estimated by the funtion estimate and stored internally in a
+        member variable of the class state_estimation. For bad data detection, the function
+        perform_rn_max_test is more powerful and should be the function of choice. For topology
+        error detection, however, perform_chi2_test should be used.
 
         Input:
 
-            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes in p.u. (sorted by bus index)
+            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
+            magnitudes in p.u. (sorted by bus index)
 
-            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage angles in Rad (sorted by bus index)
+            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
+            angles in Rad (sorted by bus index)
 
 
         Return:
 
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes in p.u. (sorted by bus index)
+            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage
+            magnitudes in p.u. (sorted by bus index)
 
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles in Rad (sorted by bus index)
+            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage
+            angles in Rad (sorted by bus index)
 
             **successful** (boolean) - True if the estimation process was successful
 
@@ -456,26 +460,31 @@ class state_estimation:
 
     def perform_rn_max_test(self, v_in_out, delta_in_out):
         """
-        The function perform_rn_max_test performs a largest normalized residual test for bad data identification and removal.
-        It takes two input arguments: v_in_out and delta_in_out. These are the initial state variables for the combined
-        estimation and bad data identification and removal process. They can be initialized as described above, e.g.,
-        using “flat start”. In an iterative process, the function performs a state estimation, identifies a bad data
-        measurement, removes it from the set of measurements, performs the state estimation again, and so on and so
-        forth until no further bad data measurements are detected. The return values are the same as for the function
-        estimate.
+        The function perform_rn_max_test performs a largest normalized residual test for bad data
+        identification and removal. It takes two input arguments: v_in_out and delta_in_out.
+        These are the initial state variables for the combined estimation and bad data
+        identification and removal process. They can be initialized as described above, e.g.,
+        using “flat start”. In an iterative process, the function performs a state estimation,
+        identifies a bad data measurement, removes it from the set of measurements, performs the
+        state estimation again, and so on and so forth until no further bad data measurements are
+        detected. The return values are the same as for the function estimate.
 
         Input:
 
-            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes in p.u. (sorted by bus index)
+            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
+            magnitudes in p.u. (sorted by bus index)
 
-            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage angles in Rad (sorted by bus index)
+            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
+            angles in Rad (sorted by bus index)
 
 
         Return:
 
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes in p.u. (sorted by bus index)
+            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes
+            in p.u. (sorted by bus index)
 
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles in Rad (sorted by bus index)
+            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles
+            in Rad (sorted by bus index)
 
             **successful** (boolean) - True if the estimation process was successful
 
