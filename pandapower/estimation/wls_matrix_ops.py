@@ -4,7 +4,7 @@ import warnings
 from pypower.makeYbus import makeYbus
 
 
-class se_matrix:
+class wls_matrix_ops:
     def __init__(self, ppc, slack, s_ref):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppc = ppc

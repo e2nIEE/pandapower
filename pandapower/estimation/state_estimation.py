@@ -4,7 +4,7 @@ import logging
 import pandas as pd
 import warnings
 from scipy.stats import chi2
-from pandapower.estimation.wls_matrix_ops import se_matrix
+from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.run import _pd2ppc, _select_is_elements
 from pandapower.results import _set_buses_out_of_service
 from pandapower.auxiliary import get_values
@@ -262,7 +262,7 @@ class state_estimation:
             return False
 
         # Matrix calculation object
-        sem = se_matrix(ppc_i, slack_bus, self.s_ref)
+        sem = wls_matrix_ops(ppc_i, slack_bus, self.s_ref)
 
         # Set the starting values for all active buses
         v_m = ppc_i["bus"][:, 7]
