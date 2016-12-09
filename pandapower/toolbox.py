@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 from pandapower.auxiliary import get_indices, PandapowerNet
 from pandapower.create import create_empty_network
+from pandapower.topology import unsupplied_buses
 
 # --- Information
 
@@ -752,19 +753,17 @@ def fuse_buses(net, b1, b2, drop=True):
 
 def set_element_status(net, buses, in_service):
     """
-    Sets buses and all elements connected to them out of service.
+    Sets buses and all elements connected to them in or out of service.
     """
     net.bus.loc[buses, "in_service"] = in_service
 
-    lines = net.line[(net.line.from_bus.isin(buses)) |
-                     (net.line.to_bus.isin(buses))].index
+    lines = net.line[(net.line.from_bus.isin(buses)) & (net.line.to_bus.isin(buses))].index
     net.line.loc[lines, "in_service"] = in_service
 
-    trafo = net.trafo[(net.trafo.hv_bus.isin(buses)) |
-                      (net.trafo.lv_bus.isin(buses))].index
-    net.trafo.loc[trafo, "in_service"] = in_service
+    trafos = net.trafo[(net.trafo.hv_bus.isin(buses)) & (net.trafo.lv_bus.isin(buses))].index
+    net.trafo.loc[trafos, "in_service"] = in_service
 
-    impedances = net.impedance[(net.impedance.from_bus.isin(buses)) |
+    impedances = net.impedance[(net.impedance.from_bus.isin(buses)) &
                                (net.impedance.to_bus.isin(buses))].index
     net.impedance.loc[impedances, "in_service"] = in_service
 
@@ -783,7 +782,23 @@ def set_element_status(net, buses, in_service):
     shunts = net.shunt[net.shunt.bus.isin(buses)].index
     net.shunt.loc[shunts, "in_service"] = in_service
 
-
+def set_isolated_areas_out_of_service(net):
+    unsupplied = unsupplied_buses(net)
+    set_element_status(net, unsupplied, False)
+    
+    for element in ["line", "trafo"]:
+        oos_elements = net.line[net.line.in_service==False].index
+        oos_switches = net.switch[(net.switch.et==element[0]) & 
+                                  (net.switch.element.isin(oos_elements))].index
+        net.switch.loc[oos_switches, "closed"] = True
+        
+        for idx, bus in net.switch[(net.switch.closed==False) & (net.switch.et==element[0])]\
+                                    [["element", "bus"]].values:
+            if net.bus.in_service.at[next_bus(net, bus, idx, element)] == False:
+                net[element].at[idx, "in_service"] = False
+                print("a")
+            
+            
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                   keep_everything_else=False):
     """
