@@ -332,6 +332,13 @@ def convert_format(net):
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+    # initialize measurement dataframe 
+    if "measurement" not in net:
+        net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                        ("bus", "u4"),
+                        ("line", "u4"),
+                        ("value", "f8"),
+                        ("std_dev", "f8")]))
     return net
 
 def _pre_release_changes(net):
@@ -796,7 +803,6 @@ def set_isolated_areas_out_of_service(net):
                                     [["element", "bus"]].values:
             if net.bus.in_service.at[next_bus(net, bus, idx, element)] == False:
                 net[element].at[idx, "in_service"] = False
-                print("a")
             
             
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,

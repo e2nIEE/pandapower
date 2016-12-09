@@ -173,6 +173,15 @@ def test_ring_network():
     assert (np.nanmax(abs(diff_v)) < 1e-2)
     assert (np.nanmax(abs(diff_delta)) < 0.45)
 
+def test_check_existing():
+    net = pp.create_empty_network()
+    m1 = create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0) # p12
+    m2 = create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0, check_existing=True) # p12
+    assert m1 == m2
+    assert len(net.measurement) == 1
+    m2 = create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0, check_existing=False) # p12
+    assert m1 != m2
+    assert len(net.measurement) == 2
 
 def r(v=0.03):
     return np.random.normal(1.0, v)
