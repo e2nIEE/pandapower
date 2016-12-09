@@ -30,7 +30,9 @@ def estimate(net, v_start=None, delta_start=None, tolerance=1e-6, maximum_iterat
     """
     wls = state_estimation()
     wls.configure(tolerance, maximum_iterations, net, s_ref)
-    wls.estimate(v_start, delta_start)
+    success = wls.estimate(v_start, delta_start)
+    return success
+    
 
 
 class state_estimation:

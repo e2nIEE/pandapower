@@ -1724,11 +1724,23 @@ def create_measurement(net, meas_type, bus, value, std_dev, line=None, check_exi
         create_measurement(wlsnet, "pbus_kw", 0,  500, 10) # 500 kW measurement with 10 kW standard
         deviation on bus 0
     """
+
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Bus %s does not exist" % bus)
+
+    if line is not None and not line in net["line"].index.values:
+        raise UserWarning("Line %s does not exist" % line)
+
     mid = get_free_id(net.measurement)
     if check_existing:
-        existing = net.measurement[(net.measurement.type == meas_type) & 
-                                   (net.measurement.bus == bus) &
-                                   (net.measurement.line == line)].index
+        if line is None:
+            existing = net.measurement[(net.measurement.type == meas_type) & 
+                                       (net.measurement.bus == bus) &
+                                       (pd.isnull(net.measurement.line))].index            
+        else:
+            existing = net.measurement[(net.measurement.type == meas_type) & 
+                                       (net.measurement.bus == bus) &
+                                       (net.measurement.line == line)].index
         if len(existing) == 1:
             mid = existing[0]
         elif len(existing) > 1:
