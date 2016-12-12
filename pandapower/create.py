@@ -179,6 +179,11 @@ def create_empty_network(name=None, f_hz=50.):
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
                   ("in_service", "bool")],
+        "measurement": [("type", np.dtype(object)),
+                        ("bus", "u4"),
+                        ("line", np.dtype(object)),
+                        ("value", "f8"),
+                        ("std_dev", "f8")],
 
         # geodata
         "line_geodata": [("coords", np.dtype(object))],
@@ -1719,17 +1724,32 @@ def create_measurement(net, meas_type, bus, value, std_dev, line=None, check_exi
         create_measurement(wlsnet, "pbus_kw", 0,  500, 10) # 500 kW measurement with 10 kW standard
         deviation on bus 0
     """
-    if "measurement" not in net:
-        net.measurement = pd.DataFrame(columns=["type", "bus", "line", "value", "std_dev"])
-    if check_existing and len(net.measurement.loc[(net.measurement.type == meas_type)
-            & (net.measurement.bus == bus) & (net.measurement.line == line)]):
-        net.measurement.loc[(net.measurement.type == meas_type)
-                            & (net.measurement.bus == bus)
-                            & (net.measurement.line == line)] = \
-            [meas_type, int(bus), line, value, std_dev]
-    else:
-        mid = get_free_id(net.measurement)
-        net.measurement.loc[mid] = [meas_type, int(bus), line, value, std_dev]
+
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Bus %s does not exist" % bus)
+
+    if line is not None and not line in net["line"].index.values:
+        raise UserWarning("Line %s does not exist" % line)
+
+    mid = get_free_id(net.measurement)
+    if check_existing:
+        if line is None:
+            existing = net.measurement[(net.measurement.type == meas_type) & 
+                                       (net.measurement.bus == bus) &
+                                       (pd.isnull(net.measurement.line))].index            
+        else:
+            existing = net.measurement[(net.measurement.type == meas_type) & 
+                                       (net.measurement.bus == bus) &
+                                       (net.measurement.line == line)].index
+        if len(existing) == 1:
+            mid = existing[0]
+        elif len(existing) > 1:
+            raise UserWarning("More than one measurement of this type exists")
+
+    dtypes = net.measurement.dtypes
+    net.measurement.loc[mid] = [meas_type, int(bus), line, value, std_dev]
+    _preserve_dtypes(net.measurement, dtypes)
+    return mid
 
 
 if __name__ == "__main__":
@@ -1737,3 +1757,6 @@ if __name__ == "__main__":
     create_bus(net, vn_kv=10)
     create_bus(net, vn_kv=0.4)
     create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)
+    create_measurement(net, "vbus_pu", 0, 1.006, .004)  # V at bus 1
+    create_measurement(net, "pline_kw", 0, 888, 8, line=0)    # Pline (bus 1 -> bus 2) at bus 1
+
