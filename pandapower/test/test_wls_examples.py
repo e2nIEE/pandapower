@@ -2,7 +2,7 @@ from pandapower.estimation import estimate
 import pandapower as pp
 import numpy as np
 import pytest
-import networks as nw
+import pandapower.networks as nw
 
 
 def test_2bus():
@@ -137,7 +137,7 @@ def test_ring_network():
     # test the mv ring network with all available voltage measurements and bus powers
     # test if switches and transformer will work correctly with the state estimation
     np.random.seed(123456)
-    net = nw.mv_network("ring")
+    net = nw.create_cigre_network_mv(with_der=False)
     pp.runpp(net)
 
     for bus, row in net.res_bus.iterrows():
@@ -162,8 +162,9 @@ def test_ring_network():
     diff_delta = target_delta - delta_result
 
     assert success
-    assert (np.nanmax(abs(diff_v)) < 1e-2)
-    assert (np.nanmax(abs(diff_delta)) < 0.45)
+    assert (np.nanmax(abs(diff_v)) < 0.005)
+    assert (np.nanmax(abs(diff_delta)) < 0.2)
+
 
 def test_check_existing():
     net = pp.create_empty_network()
@@ -185,6 +186,7 @@ def test_check_existing():
 
     m6 = pp.create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0, check_existing=False) # p12
     assert m5 != m6
+
 
 def r(v=0.03):
     return np.random.normal(1.0, v)
