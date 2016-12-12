@@ -376,6 +376,10 @@ class state_estimation:
         # Store results, overwrite old results
         self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
                                             index=self.net.bus.index)
+        self.net.res_line_est = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw",
+                                                      "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
+                                                      "i_to_ka", "i_ka", "loading_percent"],
+                                             index=self.net.line.index)
 
         bus_idx = mapping_table[self.net["bus"].index.values]
         self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
@@ -385,6 +389,7 @@ class state_estimation:
                                                   mapping_table) * self.s_ref / 1e3
         self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
                                                    mapping_table) * self.s_ref / 1e3
+        self._calc_line_results()
 
         # Store some variables required for Chi^2 and r_N_max test:
         self.R_inv = r_inv
@@ -397,6 +402,64 @@ class state_estimation:
         self.delta = delta
 
         return successful
+
+    def _calc_line_results(self):
+        """
+        Calculates complex line currents at both bus sides and saves them in the result table
+        """
+        # calculate impedances and complex voltages
+        Zij = self.net.line['length_km'] * (self.net.line['r_ohm_per_km'] + 1j
+                                            * self.net.line['x_ohm_per_km'])
+        Zcbij = 0.5j * 2 * np.pi * 50 * self.net.line['c_nf_per_km'] * 1e-9
+        V = np.full(self.net.bus.index.shape[0], np.nan, dtype=np.complex128)
+        V[self.net.bus.index.values] = self.net.res_bus_est.vm_pu.values \
+                                       * self.net.bus.vn_kv.values * 1e3 \
+                                       * np.exp(1j * np.pi /
+                                                180 * self.net.res_bus_est.va_degree.values)
+        fb = self.net.line.from_bus.astype(int).values
+        tb = self.net.line.to_bus.astype(int).values
+        # calculate line currents of from bus side
+        line_currents_from = ((V[fb] - V[tb]) / np.sqrt(3) / Zij + V[fb] * Zcbij).values
+        open_lines_from = self.net.switch.element.loc[
+            (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
+        line_currents_from[open_lines_from.values] = 0.
+        charging_from = open_lines_from[open_lines_from.index[
+            self.net.line.to_bus.loc[open_lines_from].values ==
+            self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
+                                                                   False)].values]].values
+        line_currents_from[charging_from] = V[self.net.line.ix[charging_from].from_bus] \
+                                            * Zcbij[charging_from] * (1 + Zij[charging_from])
+        # calculate line currents on to bus side
+        line_currents_to = ((V[tb] - V[fb]) / np.sqrt(3) / Zij + V[tb] * Zcbij).values
+        open_lines_to = self.net.switch.element.loc[
+            (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
+        line_currents_to[open_lines_to.values] = 0.
+        charging_to = open_lines_to[open_lines_to.index[
+            self.net.line.from_bus.loc[open_lines_to].values ==
+            self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
+                                                                   False)].values]].values
+        line_currents_to[charging_to] = V[self.net.line.ix[charging_to].to_bus] \
+                                        * Zcbij[charging_to] * (1 + Zij[charging_to])
+        # derive other values
+        line_powers_from = V[fb] * np.conj(line_currents_from) / 1e3
+        line_powers_to = V[tb] * np.conj(line_currents_to) / 1e3
+        self.net.res_line_est.i_from_ka = np.abs(line_currents_from) / 1e3
+        self.net.res_line_est.i_to_ka = np.abs(line_currents_to) / 1e3
+        self.net.res_line_est.i_ka = np.fmax(self.net.res_line_est.i_from_ka,
+                                         self.net.res_line_est.i_to_ka)
+        self.net.res_line_est.loading_percent = self.net.res_line_est.i_ka * 100. \
+                                                / self.net.line.imax_ka.values \
+                                                / self.net.line.df.values \
+                                                / self.net.line.parallel.values
+        self.net.res_line_est.p_from_kw = line_powers_from.real
+        self.net.res_line_est.q_from_kvar = line_powers_from.imag
+        self.net.res_line_est.p_to_kw = line_powers_to.real
+        self.net.res_line_est.q_to_kvar = line_powers_to.imag
+        self.net.res_line_est.pl_kw = self.net.res_line_est.p_from_kw + \
+                                      self.net.res_line_est.p_to_kw
+        self.net.res_line_est.ql_kvar = self.net.res_line_est.q_from_kvar + \
+                                        self.net.res_line_est.q_to_kvar
+
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None):
         """

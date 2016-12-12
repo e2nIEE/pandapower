@@ -132,7 +132,7 @@ def test_3bus_2():
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
 
 
-def test_ring_network():
+def test_cigre_network():
     # 1. create network
     # test the mv ring network with all available voltage measurements and bus powers
     # test if switches and transformer will work correctly with the state estimation
