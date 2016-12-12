@@ -26,11 +26,11 @@ def estimate(net, v_start=None, delta_start=None, tolerance=1e-6, maximum_iterat
             the process stops. Default is 1e-6.
     :param maximum_iterations: (int) - Maximum number of iterations. Default is 10.
     :param s_ref: (float) - Reference power for the network. Default is 1e6 VA.
-    :return:
+    :return: (bool) Was the state estimation successful?
     """
     wls = state_estimation()
     wls.configure(tolerance, maximum_iterations, net, s_ref)
-    wls.estimate(v_start, delta_start)
+    return wls.estimate(v_start, delta_start)
 
 
 class state_estimation:
