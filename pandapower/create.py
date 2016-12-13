@@ -180,10 +180,11 @@ def create_empty_network(name=None, f_hz=50.):
                   ("vm_pu", "f8"),
                   ("in_service", "bool")],
         "measurement": [("type", np.dtype(object)),
-                        ("bus", "u4"),
-                        ("line", np.dtype(object)),
+                        ("element_type", np.dtype(object)),
                         ("value", "f8"),
-                        ("std_dev", "f8")],
+                        ("std_dev", "f8"),
+                        ("bus", "u4"),
+                        ("element", np.dtype(object))],
 
         # geodata
         "line_geodata": [("coords", np.dtype(object))],
@@ -1695,59 +1696,63 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
     return index
 
 
-def create_measurement(net, meas_type, bus, value, std_dev, line=None, check_existing=True):
+def create_measurement(net, meas_type, element_type, value, std_dev, bus, element=None,
+                       check_existing=True):
     """
     Creates a measurement, which is used by the estimation module. Type of measurements possible:
-    - vbus_pu
-    - pbus_kw
-    - qbus_kvar
-    - pline_kw
-    - qline_kvar
-    - iline_a
+    V, P, Q, I
 
     INPUT:
 
-        **meas_type** - meas_type of measurement as explained above
-        **bus** - bus number (not name) of bus, if applicable. determines the position of the
-        measurement for line measurements (bus == from_bus: measurement at from_bus; same for
-        to_bus)
-        **value** - measurement value
-        **std_dev** - standard deviation in the same unit as the measurement
-        **line** - (None) number of line on which the measurement is taken
-        **check_existing** - (True) check for and replace existing measurements for this bus and
+        **meas_type** - (string) meas_type of measurement. "v", "p", "q", "i" are possible.
+        **element_type** - (string) which element is measured. "bus", "line", "transformer" are
+        possible.
+        **value** - (float) measurement value. units are "kW" for P, "kVar" for Q, "p.u." for V,
+        "A" for I. Generation is a positive bus power injection, consumption negative.
+        **std_dev** - (float) standard deviation in the same unit as the measurement.
+        **bus** - (int) bus index of bus, if applicable. determines the position of the
+        measurement for line/transformer measurements (bus == from_bus: measurement at from_bus;
+        same for to_bus)
+        **element** - (int, None) index of measured element, if element_type is "line" or
+        "transformer".
+        **check_existing** - (bool) check for and replace existing measurements for this bus and
         type. Set to false for performance improvements but unsafe behaviour
 
     OUTPUT:
-        None
+        (int) index of measurement
 
     Example:
-        create_measurement(wlsnet, "pbus_kw", 0,  500, 10) # 500 kW measurement with 10 kW standard
-        deviation on bus 0
+        500 kW measurement with 10 kW standard deviation on bus 0:
+        create_measurement(net, "p", "bus", 500, 10, 0)
     """
 
     if bus not in net["bus"].index.values:
         raise UserWarning("Bus %s does not exist" % bus)
 
-    if line is not None and not line in net["line"].index.values:
-        raise UserWarning("Line %s does not exist" % line)
+    if element is not None and element_type == "line" and element not in net["line"].index.values:
+        raise UserWarning("Line %s does not exist" % element)
+
+    if element is not None and element_type == "transformer" and element not in \
+            net["trafo"].index.values:
+        raise UserWarning("Transformer %s does not exist" % element)
 
     mid = get_free_id(net.measurement)
     if check_existing:
-        if line is None:
-            existing = net.measurement[(net.measurement.type == meas_type) & 
+        if element is None:
+            existing = net.measurement[(net.measurement.type == meas_type) &
                                        (net.measurement.bus == bus) &
-                                       (pd.isnull(net.measurement.line))].index            
+                                       (pd.isnull(net.measurement.element))].index
         else:
-            existing = net.measurement[(net.measurement.type == meas_type) & 
+            existing = net.measurement[(net.measurement.type == meas_type) &
                                        (net.measurement.bus == bus) &
-                                       (net.measurement.line == line)].index
+                                       (net.measurement.element == element)].index
         if len(existing) == 1:
             mid = existing[0]
         elif len(existing) > 1:
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[mid] = [meas_type, int(bus), line, value, std_dev]
+    net.measurement.loc[mid] = [meas_type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
     return mid
 
@@ -1756,7 +1761,7 @@ if __name__ == "__main__":
     net = create_empty_network()
     create_bus(net, vn_kv=10)
     create_bus(net, vn_kv=0.4)
+    create_line(net, 0, 1, length_km=1.23, std_type="NAYY 4x50 SE")
     create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)
-    create_measurement(net, "vbus_pu", 0, 1.006, .004)  # V at bus 1
-    create_measurement(net, "pline_kw", 0, 888, 8, line=0)    # Pline (bus 1 -> bus 2) at bus 1
-
+    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)  # V meas at bus 0
+    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)  # Pline meas at line 0, bus 0

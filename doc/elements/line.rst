@@ -108,10 +108,10 @@ The power flow results in the net.res_line table are defined as:
    :nowrap:
    
    \begin{align*}
-    p\_from\_kw &= Re(\underline{v}_{from} \cdot \underline{i}_{from}) \\    
-    q\_from\_kvar &= Im(\underline{v}_{from} \cdot \underline{i}_{from}) \\
-    p\_to\_kw &= Re(\underline{v}_{to} \cdot \underline{i}_{to}) \\
-    q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+    p\_from\_kw &= Re(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\    
+    q\_from\_kvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
+    p\_to\_kw &= Re(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
+    q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
 	pl\_kw &= p\_from\_kw + p\_to\_kw \\
 	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
     i\_from\_ka &= i_{from} \\
