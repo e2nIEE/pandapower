@@ -40,8 +40,8 @@ The PQ-Values are calculated from the parameter table values as:
    :nowrap:
    
    \begin{align*}
-    P_{load} &= p\_kw \cdot scaling \\
-    Q_{load} &= q\_kvar \cdot scaling \\
+    P_{sgen} &= p\_kw \cdot scaling \\
+    Q_{sgen} &= q\_kvar \cdot scaling \\
     \end{align*}
 
 .. note::
@@ -63,7 +63,7 @@ Result Parameters
    :delim: ;
    :widths: 10, 10, 50
 
-The power values in the net.res_sgen table are equivalent to :math:`P_{load}` and :math:`Q_{load}`.
+The power values in the net.res_sgen table are equivalent to :math:`P_{sgen}` and :math:`Q_{sgen}`.
 
    
 Optimal Power Flow Parameters
