@@ -14,11 +14,11 @@ def test_2bus():
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1,x_ohm_per_km=0.5, c_nf_per_km=0,
                                    imax_ka=1)
 
-    pp.create_measurement(net, "pline_kw", 0, 0.0111e3, 0.05e3, line=0)  # p12
-    pp.create_measurement(net, "qline_kvar", 0, 0.06e3, 0.05e3, line=0)  # q12
+    pp.create_measurement(net, "p", "line", 0.0111e3, 0.05e3, 0, element=0)  # p12
+    pp.create_measurement(net, "q", "line", 0.06e3, 0.05e3, 0, element=0)  # q12
 
-    pp.create_measurement(net, "vbus_pu", 0, 1.019, 0.01)  # u1
-    pp.create_measurement(net, "vbus_pu", 1, 1.04, 0.01)   # u2
+    pp.create_measurement(net, "v", "bus", 1.019, 0.01, bus=0)  # u1
+    pp.create_measurement(net, "v", "bus", 1.04, 0.01, bus=1)   # u2
 
     v_start = np.array([1.0, 1.0])
     delta_start = np.array([0., 0.])
@@ -62,16 +62,16 @@ def test_3bus():
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
                                    imax_ka=1)
 
-    pp.create_measurement(net, "vbus_pu", 0, 1.006, .004)  # V at bus 1
-    pp.create_measurement(net, "vbus_pu", 1, .968, .004)   # V at bus 2
+    pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
+    pp.create_measurement(net, "v", "bus", .968, .004, bus=1)   # V at bus 2
 
-    pp.create_measurement(net, "pbus_kw", 1, -501, 10)    # P at bus 2
-    pp.create_measurement(net, "qbus_kvar", 1, -286, 10)  # Q at bus 2
+    pp.create_measurement(net, "p", "bus", -501, 10, 1)  # P at bus 2
+    pp.create_measurement(net, "q", "bus", -286, 10, 1)  # Q at bus 2
 
-    pp.create_measurement(net, "pline_kw", 0, 888, 8, line=0)    # Pline (bus 1 -> bus 2) at bus 1
-    pp.create_measurement(net, "pline_kw", 0, 1173, 8, line=1)   # Pline (bus 1 -> bus 3) at bus 1
-    pp.create_measurement(net, "qline_kvar", 0, 568, 8, line=0)  # Qline (bus 1 -> bus 2) at bus 1
-    pp.create_measurement(net, "qline_kvar", 0, 663, 8, line=1)  # Qline (bus 1 -> bus 3) at bus 1
+    pp.create_measurement(net, "p", "line", 888, 8, 0, 0)   # Pline (bus 1 -> bus 2) at bus 1
+    pp.create_measurement(net, "p", "line", 1173, 8, 0, 1)  # Pline (bus 1 -> bus 3) at bus 1
+    pp.create_measurement(net, "q", "line", 568, 8, 0, 0)   # Qline (bus 1 -> bus 2) at bus 1
+    pp.create_measurement(net, "q", "line", 663, 8, 0, 1)   # Qline (bus 1 -> bus 3) at bus 1
 
     v_start = np.array([1.0, 1.0, 1.0, 0.])
     delta_start = np.array([0., 0., 0., 0.])
@@ -83,7 +83,7 @@ def test_3bus():
 
     target_v = np.array([[0.9996, 0.9741, 0.9438, np.nan]])
     diff_v = target_v - v_result
-    target_delta = np.array([[ 0., -1.2475, -2.7457, np.nan]])
+    target_delta = np.array([[0., -1.2475, -2.7457, np.nan]])
     diff_delta = target_delta - delta_result
 
     assert success
@@ -105,14 +105,14 @@ def test_3bus_2():
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
                                    imax_ka=1)
 
-    pp.create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0) # p12
-    pp.create_measurement(net, "qline_kvar", 0, 0.024e3, 0.01e3, line=0) # q12
+    pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0)  # p12
+    pp.create_measurement(net, "q", "line", 0.024e3, 0.01e3, bus=0, element=0)    # q12
 
-    pp.create_measurement(net, "pbus_kw", 2, 0.018e3, 0.01e3) # p3
-    pp.create_measurement(net, "qbus_kvar", 2, -0.1e3, 0.01e3) # q3
+    pp.create_measurement(net, "p", "bus", 0.018e3, 0.01e3, bus=2)  # p3
+    pp.create_measurement(net, "q", "bus", -0.1e3, 0.01e3, bus=2)   # q3
 
-    pp.create_measurement(net, "vbus_pu", 0, 1.08, 0.05) # u1
-    pp.create_measurement(net, "vbus_pu", 2, 1.015, 0.05) # u3
+    pp.create_measurement(net, "v", "bus", 1.08, 0.05, 0)   # u1
+    pp.create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
 
     v_start = np.array([1.0, 1.0, 1.0])
     delta_start = np.array([0., 0., 0.0])
@@ -141,12 +141,13 @@ def test_cigre_network():
     pp.runpp(net)
 
     for bus, row in net.res_bus.iterrows():
-        pp.create_measurement(net, "vbus_pu", bus, row.vm_pu * r(0.01), 0.01)
+        pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
         # if np.random.randint(0, 4) == 0:
         #    continue
-        pp.create_measurement(net, "pbus_kw", bus, -row.p_kw * r(), max(1.0, abs(0.03 * row.p_kw)))
-        pp.create_measurement(net, "qbus_kvar", bus, -row.q_kvar * r(), max(1.0,
-                                                                         abs(0.03 * row.q_kvar)))
+        pp.create_measurement(net, "p", "bus", -row.p_kw * r(), max(1.0, abs(0.03 * row.p_kw)),
+                              bus)
+        pp.create_measurement(net, "q", "bus", -row.q_kvar * r(), max(1.0, abs(0.03 * row.q_kvar)),
+                              bus)
 
     v_start = np.ones(net.bus.shape[0]) * 1.01
     delta_start = np.zeros_like(v_start)
@@ -171,20 +172,23 @@ def test_check_existing():
     pp.create_bus(net, 10.)
     pp.create_bus(net, 10.)
     pp.create_line(net, 0, 1, 0.5, std_type="149-AL1/24-ST1A 10.0")
-    m1 = pp.create_measurement(net, "vbus_pu", 0, 1.006, .004) # V at bus 1
-    m2 = pp.create_measurement(net, "vbus_pu", 0, 1.006, .004) # V at bus 1
+    m1 = pp.create_measurement(net, "v", "bus", 1.006, .004, 0)  # V at bus 1
+    m2 = pp.create_measurement(net, "v", "bus", 1.006, .004, 0)  # V at bus 1
 
     assert m1 == m2
     assert len(net.measurement) == 1
-    m3 = pp.create_measurement(net, "vbus_pu", 0, 1.006, .004, check_existing=False) # V at bus 1
+    m3 = pp.create_measurement(net, "v", "bus", 1.006, .004, 0, check_existing=False) # V at bus 1
     assert m3 != m2
     assert len(net.measurement) == 2
 
-    m4 = pp.create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0, check_existing=True) # p12
-    m5 = pp.create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0, check_existing=True) # p12
+    m4 = pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0,
+                               check_existing=True)
+    m5 = pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0,
+                               check_existing=True)
     assert m4 == m5
 
-    m6 = pp.create_measurement(net, "pline_kw", 0, -0.0011e3, 0.01e3, line=0, check_existing=False) # p12
+    m6 = pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0,
+                               check_existing=False)
     assert m5 != m6
 
 

@@ -8,6 +8,7 @@ from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.run import _pd2ppc, _select_is_elements
 from pandapower.results import _set_buses_out_of_service
 from pandapower.auxiliary import get_values
+from pandapower.toolbox import convert_format
 from pypower.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
@@ -28,6 +29,7 @@ def estimate(net, v_start=None, delta_start=None, tolerance=1e-6, maximum_iterat
     :param s_ref: (float) - Reference power for the network. Default is 1e6 VA.
     :return: (bool) Was the state estimation successful?
     """
+    net = convert_format(net)
     wls = state_estimation()
     wls.configure(tolerance, maximum_iterations, net, s_ref)
     return wls.estimate(v_start, delta_start)
@@ -186,19 +188,22 @@ class state_estimation:
         # add 6 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev
         bus_append = np.full((ppc["bus"].shape[0], 6), np.nan, dtype=ppc["bus"].dtype)
 
-        v_measurements = self.net.measurement[self.net.measurement.type == "vbus_pu"]
+        v_measurements = self.net.measurement[(self.net.measurement.type == "v")
+                                              & (self.net.measurement.element_type == "bus")]
         if len(v_measurements):
             bus_positions = mapping_table[v_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 0] = v_measurements.value.values
             bus_append[bus_positions, 1] = v_measurements.std_dev.values
 
-        p_measurements = self.net.measurement[self.net.measurement.type == "pbus_kw"]
+        p_measurements = self.net.measurement[(self.net.measurement.type == "p")
+                                              & (self.net.measurement.element_type == "bus")]
         if len(p_measurements):
             bus_positions = mapping_table[p_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 2] = p_measurements.value.values * 1e3 / self.s_ref
             bus_append[bus_positions, 3] = p_measurements.std_dev.values * 1e3 / self.s_ref
 
-        q_measurements = self.net.measurement[self.net.measurement.type == "qbus_kvar"]
+        q_measurements = self.net.measurement[(self.net.measurement.type == "q")
+                                              & (self.net.measurement.element_type == "bus")]
         if len(q_measurements):
             bus_positions = mapping_table[q_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 4] = q_measurements.value.values * 1e3 / self.s_ref
@@ -217,7 +222,8 @@ class state_estimation:
         #  Q, Q position, Q std dev
         branch_append = np.full((ppc["branch"].shape[0], 9), np.nan, dtype=ppc["branch"].dtype)
 
-        i_measurements = self.net.measurement[self.net.measurement.type == "iline_a"]
+        i_measurements = self.net.measurement[(self.net.measurement.type == "i")
+                                              & (self.net.measurement.element_type == "line")]
         if len(i_measurements):
             i_a_to_pu = (self.net.bus.vn_kv[self.net.line.from_bus[i_measurements.line]] * 1e3
                          / self.s_ref).values
@@ -226,16 +232,18 @@ class state_estimation:
             branch_append[ix, 1] = mapping_table[i_measurements.bus.values.astype(int)]
             branch_append[ix, 2] = i_measurements.std_dev.values * i_a_to_pu
 
-        p_measurements = self.net.measurement[self.net.measurement.type == "pline_kw"]
+        p_measurements = self.net.measurement[(self.net.measurement.type == "p")
+                                              & (self.net.measurement.element_type == "line")]
         if len(p_measurements):
-            ix = p_measurements.line.values.astype(int)
+            ix = p_measurements.element.values.astype(int)
             branch_append[ix, 3] = p_measurements.value.values * 1e3 / self.s_ref
             branch_append[ix, 4] = mapping_table[p_measurements.bus.values.astype(int)]
             branch_append[ix, 5] = p_measurements.std_dev.values * 1e3 / self.s_ref
 
-        q_measurements = self.net.measurement[self.net.measurement.type == "qline_kvar"]
+        q_measurements = self.net.measurement[(self.net.measurement.type == "q")
+                                              & (self.net.measurement.element_type == "line")]
         if len(q_measurements):
-            ix = q_measurements.line.values.astype(int)
+            ix = q_measurements.element.values.astype(int)
             branch_append[ix, 6] = q_measurements.value.values * 1e3 / self.s_ref
             branch_append[ix, 7] = mapping_table[q_measurements.bus.values.astype(int)]
             branch_append[ix, 8] = q_measurements.std_dev.values * 1e3 / self.s_ref
@@ -460,7 +468,6 @@ class state_estimation:
         self.net.res_line_est.ql_kvar = self.net.res_line_est.q_from_kvar + \
                                         self.net.res_line_est.q_to_kvar
 
-
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None):
         """
         The function perform_chi2_test performs a Chi^2 test for bad data and topology error
@@ -501,7 +508,7 @@ class state_estimation:
         if (v_in_out is not None) and (delta_in_out is not None):
             successful = self.estimate(v_in_out, delta_in_out)
             v_in_out = self.net.res_bus_est.vm_pu.values
-            delta_in_out = self.net.res_bus_est.va_degree.values * 180 / np.pi
+            delta_in_out = self.net.res_bus_est.va_degree.values
 
         if ((v_in_out is not None) and (delta_in_out is None)) \
                 or ((v_in_out is None) and (delta_in_out is not None)):
@@ -625,12 +632,18 @@ class state_estimation:
 
                 # Sort measurement indexes:
                 sorted_meas_idxs = np.concatenate(
-                    (self.net.measurement.loc[self.net.measurement['type'] == 'pbus_kw'].index,
-                     self.net.measurement.loc[self.net.measurement['type'] == 'pline_kw'].index,
-                     self.net.measurement.loc[self.net.measurement['type'] == 'qbus_kvar'].index,
-                     self.net.measurement.loc[self.net.measurement['type'] == 'qline_kvar'].index,
-                     self.net.measurement.loc[self.net.measurement['type'] == 'vbus_pu'].index,
-                     self.net.measurement.loc[self.net.measurement['type'] == 'iline_a'].index))
+                    (self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
+                        self.net.measurement['element_type'] == 'bus')].index,
+                     self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
+                         self.net.measurement['element_type'] == 'line')].index,
+                     self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
+                         self.net.measurement['element_type'] == 'bus')].index,
+                     self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
+                         self.net.measurement['element_type'] == 'line')].index,
+                     self.net.measurement.loc[(self.net.measurement['type'] == 'v') & (
+                         self.net.measurement['element_type'] == 'bus')].index,
+                     self.net.measurement.loc[(self.net.measurement['type'] == 'i') & (
+                         self.net.measurement['element_type'] == 'line')].index))
 
                 # Determine index of measurement to be removed:
                 meas_idx = sorted_meas_idxs[idx_rN]
