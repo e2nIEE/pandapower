@@ -183,14 +183,14 @@ def _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model, trafo_d
     """
     if trafo_df is None:
         trafo_df = net["trafo"]
-    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], trafo_df["lv_bus"].values,
-                                 bus_lookup))
-
+    vn_lv = get_values(ppc["bus"][:, BASE_KV], trafo_df["lv_bus"].values,
+                                 bus_lookup)
+    baseR = np.square(vn_lv)
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 4), dtype=np.complex128)
     unh, unl = _calc_vn_from_dataframe(trafo_df)
-    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model)
+    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model, vn_lv)
     temp_para[:, 0] = r
     temp_para[:, 1] = x
     temp_para[:, 2] = y
@@ -198,13 +198,15 @@ def _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model, trafo_d
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model):
+def _calc_r_x_y_from_dataframe(trafo_df, unl, baseR, trafo_model, vn_lv):
     y = _calc_y_from_dataframe(trafo_df, baseR)
     r, x = _calc_r_x_from_dataframe(trafo_df)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
-        return _wye_delta(r, x, y)
+        corr =  np.square(unl / vn_lv) #adjust for low voltage side voltage converter
+        r, x, y = _wye_delta(r, x, y)
+        return [r, x, y] * corr
     else:
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
@@ -274,7 +276,7 @@ def _calc_vn_from_dataframe(trafo_df):
 
     """
     # Changing Voltage on high-voltage side
-    unh = copy.copy(trafo_df["vn_hv_kv"].values)
+    unh = copy.copy(trafo_df["vn_hv_kv"].values.astype(float))
     m = (trafo_df["tp_side"] == "hv").values
     tap_os = np.isfinite(trafo_df["tp_pos"].values) & m
     if any(tap_os):

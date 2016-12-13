@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pandapower',
-    version='1.0.2',
+    version='1.0.3',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
