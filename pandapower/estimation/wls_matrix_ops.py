@@ -19,7 +19,7 @@ class wls_matrix_ops:
         self.B_shunt = None
         self.keep_ix = None
         self.i_ij = None
-        # Offset to accomodate pypower <-> pandapower differences (additional columns)
+        # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
         self.create_y()
 

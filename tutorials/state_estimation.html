@@ -11762,7 +11762,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[62]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
@@ -11790,14 +11790,14 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[62]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[1]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
 <pre>This pandapower network includes the following parameter tables:
-   - ext_grid (1 elements)
    - line (3 elements)
-   - bus (3 elements)</pre>
+   - bus (3 elements)
+   - ext_grid (1 elements)</pre>
 </div>
 
 </div>
@@ -11811,16 +11811,10 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Adding-Measurements">Adding Measurements<a class="anchor-link" href="#Adding-Measurements">&#182;</a></h2><p>Measurements are defined via the pandapower <em>create_measurement</em> function.</p>
-<p>Possible measurement types are:</p>
-<ul>
-<li><em>vbus_pu</em> for voltage measurements (in per-unit)  </li>
-<li><em>pbus_kw</em> for active power measurements at a bus (in kW)  </li>
-<li><em>qbus_kvar</em> for reactive power measurements (in kVar)  </li>
-<li><em>pline_kw</em> for active power measurements at a line (in kW)  </li>
-<li><em>qline_kvar</em> for reactive power measurements at a line (in kVar)   </li>
-<li><em>iline_a</em> for electrical current measurements at a line (in A)  </li>
-</ul>
+<h2 id="Adding-Measurements">Adding Measurements<a class="anchor-link" href="#Adding-Measurements">&#182;</a></h2><p>Measurements are defined via the pandapower <em>create_measurement</em> function.<br>
+The physical properties which can be measured are set with the <em>type</em> argument and can be one of the following: "p" for active power, "q" for reactive power, "v" for voltage and "i" for electrical current.<br>
+The element is set with the <em>element_type</em> argument, it can be either "bus", "line" or "transformer".<br>
+Power is measured in kW / kVar, voltage in per unit and current in A. Bus power injections are positive if power is generated at the bus and negative if it is consumed.</p>
 
 </div>
 </div>
@@ -11838,11 +11832,11 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[63]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;vbus_pu&quot;</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="mf">1.006</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">)</span>        <span class="c1"># V at bus 1</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;vbus_pu&quot;</span><span class="p">,</span> <span class="n">b2</span><span class="p">,</span> <span class="mf">0.968</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">)</span>         <span class="c1"># V at bus 2</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;v&quot;</span><span class="p">,</span> <span class="s2">&quot;bus&quot;</span><span class="p">,</span> <span class="mf">1.006</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">,</span> <span class="n">b1</span><span class="p">)</span>        <span class="c1"># V at bus 1</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;v&quot;</span><span class="p">,</span> <span class="s2">&quot;bus&quot;</span><span class="p">,</span> <span class="mf">0.968</span><span class="p">,</span> <span class="o">.</span><span class="mi">004</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>        <span class="c1"># V at bus 2</span>
 <span class="n">net</span><span class="o">.</span><span class="n">measurement</span>
 </pre></div>
 
@@ -11854,7 +11848,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[63]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[2]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11863,28 +11857,31 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr style="text-align: right;">
       <th></th>
       <th>type</th>
-      <th>bus</th>
-      <th>line</th>
+      <th>element_type</th>
       <th>value</th>
       <th>std_dev</th>
+      <th>bus</th>
+      <th>element</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>vbus_pu</td>
-      <td>1</td>
-      <td>None</td>
+      <td>v</td>
+      <td>bus</td>
       <td>1.006</td>
       <td>0.004</td>
+      <td>1</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>vbus_pu</td>
-      <td>2</td>
-      <td>None</td>
+      <td>v</td>
+      <td>bus</td>
       <td>0.968</td>
       <td>0.004</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
   </tbody>
 </table>
@@ -11909,11 +11906,11 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[64]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pbus_kw&quot;</span><span class="p">,</span> <span class="n">b2</span><span class="p">,</span> <span class="o">-</span><span class="mi">501</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>           <span class="c1"># P at bus 2</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qbus_kvar&quot;</span><span class="p">,</span> <span class="n">b2</span><span class="p">,</span> <span class="o">-</span><span class="mi">286</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>         <span class="c1"># Q at bus 2</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;bus&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">501</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>         <span class="c1"># P at bus 2</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="s2">&quot;bus&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">286</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>         <span class="c1"># Q at bus 2</span>
 <span class="n">net</span><span class="o">.</span><span class="n">measurement</span>
 </pre></div>
 
@@ -11925,7 +11922,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[64]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11934,44 +11931,49 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr style="text-align: right;">
       <th></th>
       <th>type</th>
-      <th>bus</th>
-      <th>line</th>
+      <th>element_type</th>
       <th>value</th>
       <th>std_dev</th>
+      <th>bus</th>
+      <th>element</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>vbus_pu</td>
-      <td>1</td>
-      <td>None</td>
+      <td>v</td>
+      <td>bus</td>
       <td>1.006</td>
       <td>0.004</td>
+      <td>1</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>vbus_pu</td>
-      <td>2</td>
-      <td>None</td>
+      <td>v</td>
+      <td>bus</td>
       <td>0.968</td>
       <td>0.004</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>pbus_kw</td>
-      <td>2</td>
-      <td>None</td>
+      <td>p</td>
+      <td>bus</td>
       <td>-501.000</td>
       <td>10.000</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>qbus_kvar</td>
-      <td>2</td>
-      <td>None</td>
+      <td>q</td>
+      <td>bus</td>
       <td>-286.000</td>
       <td>10.000</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
   </tbody>
 </table>
@@ -11996,13 +11998,13 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[65]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pline_kw&quot;</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="mi">888</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">l1</span><span class="p">)</span>    <span class="c1"># Pline (bus 1 -&gt; bus 2) at bus 1</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;pline_kw&quot;</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="mi">1173</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">l2</span><span class="p">)</span>   <span class="c1"># Pline (bus 1 -&gt; bus 3) at bus 1</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qline_kvar&quot;</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="mi">568</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">l1</span><span class="p">)</span>  <span class="c1"># Qline (bus 1 -&gt; bus 2) at bus 1</span>
-<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;qline_kvar&quot;</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="mi">663</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">l2</span><span class="p">)</span>  <span class="c1"># Qline (bus 1 -&gt; bus 3) at bus 1</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="mi">888</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">bus</span><span class="o">=</span><span class="n">b1</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="n">l1</span><span class="p">)</span>    <span class="c1"># Pline (bus 1 -&gt; bus 2) at bus 1</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="mi">1173</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">bus</span><span class="o">=</span><span class="n">b1</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="n">l2</span><span class="p">)</span>   <span class="c1"># Pline (bus 1 -&gt; bus 3) at bus 1</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="mi">568</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">bus</span><span class="o">=</span><span class="n">b1</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="n">l1</span><span class="p">)</span>    <span class="c1"># Qline (bus 1 -&gt; bus 2) at bus 1</span>
+<span class="n">pp</span><span class="o">.</span><span class="n">create_measurement</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="mi">663</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">bus</span><span class="o">=</span><span class="n">b1</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="n">l2</span><span class="p">)</span>    <span class="c1"># Qline (bus 1 -&gt; bus 3) at bus 1</span>
 <span class="n">net</span><span class="o">.</span><span class="n">measurement</span>
 </pre></div>
 
@@ -12014,7 +12016,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[65]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12023,76 +12025,85 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
     <tr style="text-align: right;">
       <th></th>
       <th>type</th>
-      <th>bus</th>
-      <th>line</th>
+      <th>element_type</th>
       <th>value</th>
       <th>std_dev</th>
+      <th>bus</th>
+      <th>element</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>vbus_pu</td>
-      <td>1</td>
-      <td>None</td>
+      <td>v</td>
+      <td>bus</td>
       <td>1.006</td>
       <td>0.004</td>
+      <td>1</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>vbus_pu</td>
-      <td>2</td>
-      <td>None</td>
+      <td>v</td>
+      <td>bus</td>
       <td>0.968</td>
       <td>0.004</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>pbus_kw</td>
-      <td>2</td>
-      <td>None</td>
+      <td>p</td>
+      <td>bus</td>
       <td>-501.000</td>
       <td>10.000</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>qbus_kvar</td>
-      <td>2</td>
-      <td>None</td>
+      <td>q</td>
+      <td>bus</td>
       <td>-286.000</td>
       <td>10.000</td>
+      <td>2</td>
+      <td>None</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>pline_kw</td>
-      <td>1</td>
-      <td>0</td>
+      <td>p</td>
+      <td>line</td>
       <td>888.000</td>
       <td>8.000</td>
+      <td>1</td>
+      <td>0</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>pline_kw</td>
-      <td>1</td>
-      <td>1</td>
+      <td>p</td>
+      <td>line</td>
       <td>1173.000</td>
       <td>8.000</td>
+      <td>1</td>
+      <td>1</td>
     </tr>
     <tr>
       <th>6</th>
-      <td>qline_kvar</td>
-      <td>1</td>
-      <td>0</td>
+      <td>q</td>
+      <td>line</td>
       <td>568.000</td>
       <td>8.000</td>
+      <td>1</td>
+      <td>0</td>
     </tr>
     <tr>
       <th>7</th>
-      <td>qline_kvar</td>
-      <td>1</td>
-      <td>1</td>
+      <td>q</td>
+      <td>line</td>
       <td>663.000</td>
       <td>8.000</td>
+      <td>1</td>
+      <td>1</td>
     </tr>
   </tbody>
 </table>
@@ -12110,26 +12121,10 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Performing-the-State-Estimation">Performing the State Estimation<a class="anchor-link" href="#Performing-the-State-Estimation">&#182;</a></h2><p>The measurements are now set. We have to initialize the starting voltage magnitude and voltage angles for the state estimator. In continous operation, this can be the result of the last state estimation. In our case, we set flat start conditions: 1.0 p.u. for voltage magnitude, 0.0 degree for voltage angles.</p>
+<h2 id="Performing-the-State-Estimation">Performing the State Estimation<a class="anchor-link" href="#Performing-the-State-Estimation">&#182;</a></h2><p>The measurements are now set. We have to initialize the starting voltage magnitude and voltage angles for the state estimator. In continous operation, this can be the result of the last state estimation. In our case, we set flat start conditions: 1.0 p.u. for voltage magnitude, 0.0 degree for voltage angles. This is easily done with the parameter "init", which we define as "flat".</p>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[66]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="n">v_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
-<span class="n">delta_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
@@ -12143,12 +12138,12 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[67]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pandapower.estimation</span> <span class="k">import</span> <span class="n">estimate</span>
 
-<span class="n">success</span> <span class="o">=</span> <span class="n">estimate</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">v_start</span><span class="p">,</span> <span class="n">delta_start</span><span class="p">)</span>
+<span class="n">success</span> <span class="o">=</span> <span class="n">estimate</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s1">&#39;flat&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">success</span><span class="p">)</span>
 </pre></div>
 
@@ -12183,7 +12178,7 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[68]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus_est</span><span class="o">.</span><span class="n">vm_pu</span>
@@ -12197,13 +12192,13 @@ It contains 3 buses with connecting lines between buses 1-2, 1-3 and 2-3. 8 meas
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[68]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[6]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>1    1.016126
-2    0.958471
-3    0.998070
+<pre>1    0.999629
+2    0.974156
+3    0.943890
 Name: vm_pu, dtype: float64</pre>
 </div>
 
@@ -12215,7 +12210,7 @@ Name: vm_pu, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[69]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus_est</span><span class="o">.</span><span class="n">va_degree</span>
@@ -12229,13 +12224,13 @@ Name: vm_pu, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[69]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[7]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
 <pre>1    0.000000
-2   -2.745292
-3   -0.859228
+2   -1.247547
+3   -2.745717
 Name: va_degree, dtype: float64</pre>
 </div>
 
@@ -12250,7 +12245,7 @@ Name: va_degree, dtype: float64</pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>The results match exactly with the results from the book. Nice!<br>
+<p>The results match exactly with the results from the book: Voltages 0.9996, 0.9742, 0.9439; Voltage angles 0.0, -1.2475, -2.7457). Nice!<br>
 Let's look at the bus power injections, which are available in res_bus_est as well</p>
 
 </div>
@@ -12258,7 +12253,7 @@ Let's look at the bus power injections, which are available in res_bus_est as we
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[70]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus_est</span><span class="o">.</span><span class="n">p_kw</span>
@@ -12272,13 +12267,13 @@ Let's look at the bus power injections, which are available in res_bus_est as we
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[70]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>1   -1030.374059
-2     498.883558
-3     511.424868
+<pre>1   -2064.016454
+2     495.974966
+3    1514.220983
 Name: p_kw, dtype: float64</pre>
 </div>
 
@@ -12290,7 +12285,7 @@ Name: p_kw, dtype: float64</pre>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[71]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus_est</span><span class="o">.</span><span class="n">q_kvar</span>
@@ -12304,13 +12299,13 @@ Name: p_kw, dtype: float64</pre>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[71]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>1   -615.130495
-2    280.875819
-3    279.536299
+<pre>1   -1226.440397
+2     297.749528
+3     787.528929
 Name: q_kvar, dtype: float64</pre>
 </div>
 
@@ -12325,7 +12320,82 @@ Name: q_kvar, dtype: float64</pre>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>This concludes the small tutorial how to perform state estimation with a pandapower network.</p>
+<p>We can also compare the resulting line power flows with the measurements.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line_est</span><span class="o">.</span><span class="n">p_from_kw</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[10]:</div>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>0     892.991989
+1    1171.024465
+2     385.911626
+Name: p_from_kw, dtype: float64</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line_est</span><span class="o">.</span><span class="n">q_from_kvar</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[11]:</div>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>0    558.821689
+1    667.618708
+2    227.755971
+Name: q_from_kvar, dtype: float64</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Again, this values do match the estimated values from our reference book.
+This concludes the small tutorial how to perform state estimation with a pandapower network.</p>
 
 </div>
 </div>

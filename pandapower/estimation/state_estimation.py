@@ -15,23 +15,29 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
 
-def estimate(net, v_start=None, delta_start=None, tolerance=1e-6, maximum_iterations=10, s_ref=1e6):
+def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10):
     """
     Wrapper function for WLS state estimation.
     :param net: The net within this line should be created.
-    :param v_start: (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes
-            in p.u. (sorted by bus index)
-    :param delta_start: (np.array, shape=(1,)) - Vector with initial values for all voltage angles
-            in degrees (sorted by bus index)
+    :param init Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses,
+    'results' uses the values from res_bus_est if available and 'slack' considers the slack bus
+    voltage and angle as the initial values. Default is 'flat'.
     :param tolerance: (float) - When the change between iterations is less than tolerance,
             the process stops. Default is 1e-6.
     :param maximum_iterations: (int) - Maximum number of iterations. Default is 10.
-    :param s_ref: (float) - Reference power for the network. Default is 1e6 VA.
     :return: (bool) Was the state estimation successful?
     """
     net = convert_format(net)
-    wls = state_estimation()
-    wls.configure(tolerance, maximum_iterations, net, s_ref)
+    wls = state_estimation(tolerance, maximum_iterations, net)
+    v_start = None
+    delta_start = None
+    if init == 'results':
+        if not np.any(np.isnan(net.res_bus_est.vm_pu)) \
+                and not np.any(np.isnan(net.res_bus_est.va_degree)):
+            v_start = net.res_bus_est.vm_pu
+            delta_start = net.res_bus_est.va_degree
+    elif init == 'slack':
+        to='do'
     return wls.estimate(v_start, delta_start)
 
 
@@ -42,14 +48,13 @@ class state_estimation:
     system according to the users needs while one function is used for the actual estimation
     process.
     """
-
-    def __init__(self, logger=None):
+    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
         self.logger = logger
         if self.logger is None:
             self.logger = logging.getLogger("wls_se")
-        self.tolerance = 1e-6
-        self.max_iterations = 10
-        self.net = None
+        self.tolerance = tolerance
+        self.max_iterations = maximum_iterations
+        self.net = net
         self.s_ref = 1e6
         self.s_node_powers = None
         # for chi square test
@@ -63,78 +68,18 @@ class state_estimation:
         self.delta = None
         self.s_bus_kva = None
         self.bad_data_present = None
-        # Offset to accomodate pypower <-> pandapower differences (additional columns)
+        # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
-
-    def configure(self, tolerance, maximum_iterations, net=None, s_ref=None):
-        """
-        The function configure takes up to 3 arguments and configures the process. The first
-        argument tolerance sets the tolerance limit, at which the process has found a solution and
-        is stopped. The largest difference in a state variable between the current iteration and the
-        last iteration is compared to the tolerance value. If the largest difference is smaller or
-        equal to the given tolerance, the process is successfully terminated. The second argument
-        maximum_iterations sets a maximum amount of iterations done by the process. If the tolerance
-        is not reached in the maximum amount of iterations, the process is unsuccessfully
-        terminated. The third and optional argument net is the pandapower network on which the
-        estimation process is conducted.
-
-        Input:
-
-            **tolerance** (float) - When the change between iterations is less than tolerance,
-            the process stops. Default is 1e-6.
-
-            **maximum_iterations** (int) - Maximum number of iterations. Default is 10.
-
-        Optional:
-
-            **net** - The net within this line should be created.
-
-        Example:
-
-            configure(1e-4, 10, net)
-
-        """
-        self.tolerance = tolerance
-        self.max_iterations = maximum_iterations
-        if net:
-            self.set_grid(net)
-        if s_ref:
-            self.s_ref = s_ref
-
-    # Set grid data
-    def set_grid(self, net, s_ref=None):
-        """
-        If the network is not set by using the configure-function, it can be set by the function
-        set_grid. This function only takes two arguments, the first one being the pandapower
-        network. The second argument s_ref is a reference apparent power value for the network in
-        VA. It is used to convert from and to per-unit values.
-
-        Input:
-
-            **net** - The net within this line should be created
-
-        Optional:
-
-            **s_ref** (float) - Reference power for the network. Default is 1e6 VA.
-
-        Example:
-
-            set_grid(net, 1e6)
-
-        """
-        self.net = net
-        if s_ref:
-            self.s_ref = s_ref
 
     def estimate(self, v_start=None, delta_start=None):
         """
         The function estimate is the main function of the module. It takes two input arguments: u_in
         and delta_in. These are the initial state variables for the estimation process. Usually they
-        can be initialized in a "flart-start" condition: All voltages being 1.0 pu and all voltage
-        angles being 0 degrees. If the estimation is applied continously, using the results from the
-        last estimation as the starting condition for the current estimation can decrease the amount
-        of iterations needed to estimate the current state. Returned is a boolean value, which is
-        true after a successful estimation and false otherwise.
+        can be initialized in a "flat-start" condition: All voltages being 1.0 pu and all voltage
+        angles being 0 degrees. If the estimation is applied continuously, using the results from
+        the last estimation as the starting condition for the current estimation can decrease the
+        amount of iterations needed to estimate the current state. Returned is a boolean value,
+        which is true after a successful estimation and false otherwise.
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
 
@@ -142,10 +87,12 @@ class state_estimation:
 
             **net** - The net within this line should be created
 
-            **v_start** (np.array, shape=(1,)) - Vector with initial values for all voltage magnitudes
+            **v_start** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage magnitudes
             in p.u. (sorted by bus index)
 
-            **delta_start** (np.array, shape=(1,)) - Vector with initial values for all voltage angles
+            **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage angles
             in degrees (sorted by bus index)
 
         Return:
@@ -176,6 +123,7 @@ class state_estimation:
         # initialize the ppc bus with the initial values given
         vm_backup, va_backup = self.net.res_bus.vm_pu.copy(), self.net.res_bus.va_degree.copy()
         self.net.res_bus.vm_pu = v_start
+        self.net.res_bus.vm_pu[self.net.bus.index[self.net.bus.in_service == False]] = np.nan
         self.net.res_bus.va_degree = delta_start
 
         # select elements in service and convert pandapower ppc to ppc
@@ -247,6 +195,24 @@ class state_estimation:
             branch_append[ix, 6] = q_measurements.value.values * 1e3 / self.s_ref
             branch_append[ix, 7] = mapping_table[q_measurements.bus.values.astype(int)]
             branch_append[ix, 8] = q_measurements.std_dev.values * 1e3 / self.s_ref
+
+        p_tr_measurements = self.net.measurement[(self.net.measurement.type == "p") &
+                                                 (self.net.measurement.element_type ==
+                                                  "transformer")]
+        if len(p_tr_measurements):
+            ix = len(self.net.line) + p_tr_measurements.element.values.astype(int)
+            branch_append[ix, 3] = p_tr_measurements.value.values * 1e3 / self.s_ref
+            branch_append[ix, 4] = mapping_table[p_tr_measurements.bus.values.astype(int)]
+            branch_append[ix, 5] = p_tr_measurements.std_dev.values * 1e3 / self.s_ref
+
+        q_tr_measurements = self.net.measurement[(self.net.measurement.type == "q") &
+                                                 (self.net.measurement.element_type ==
+                                                 "transformer")]
+        if len(q_tr_measurements):
+            ix = len(self.net.line) + q_tr_measurements.element.values.astype(int)
+            branch_append[ix, 6] = q_tr_measurements.value.values * 1e3 / self.s_ref
+            branch_append[ix, 7] = mapping_table[q_tr_measurements.bus.values.astype(int)]
+            branch_append[ix, 8] = q_tr_measurements.std_dev.values * 1e3 / self.s_ref
 
         ppc["bus"] = np.hstack((ppc["bus"], bus_append))
         ppc["branch"] = np.hstack((ppc["branch"], branch_append))
@@ -419,15 +385,13 @@ class state_estimation:
         Zij = self.net.line['length_km'] * (self.net.line['r_ohm_per_km'] + 1j
                                             * self.net.line['x_ohm_per_km'])
         Zcbij = 0.5j * 2 * np.pi * 50 * self.net.line['c_nf_per_km'] * 1e-9
-        V = np.full(self.net.bus.index.shape[0], np.nan, dtype=np.complex128)
-        V[self.net.bus.index.values] = self.net.res_bus_est.vm_pu.values \
-                                       * self.net.bus.vn_kv.values * 1e3 \
-                                       * np.exp(1j * np.pi /
-                                                180 * self.net.res_bus_est.va_degree.values)
-        fb = self.net.line.from_bus.astype(int).values
-        tb = self.net.line.to_bus.astype(int).values
+        V = self.net.res_bus_est.vm_pu * self.net.bus.vn_kv * 1e3 \
+            * np.exp(1j * np.pi / 180 * self.net.res_bus_est.va_degree)
+        fb = self.net.line.from_bus
+        tb = self.net.line.to_bus
         # calculate line currents of from bus side
-        line_currents_from = ((V[fb] - V[tb]) / np.sqrt(3) / Zij + V[fb] * Zcbij).values
+        line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
+                              * Zcbij).values
         open_lines_from = self.net.switch.element.loc[
             (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
         line_currents_from[open_lines_from.values] = 0.
@@ -435,10 +399,11 @@ class state_estimation:
             self.net.line.to_bus.loc[open_lines_from].values ==
             self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
                                                                    False)].values]].values
-        line_currents_from[charging_from] = V[self.net.line.ix[charging_from].from_bus] \
+        line_currents_from[charging_from] = V[self.net.line.ix[charging_from].from_bus].values \
                                             * Zcbij[charging_from] * (1 + Zij[charging_from])
         # calculate line currents on to bus side
-        line_currents_to = ((V[tb] - V[fb]) / np.sqrt(3) / Zij + V[tb] * Zcbij).values
+        line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
+                            * Zcbij).values
         open_lines_to = self.net.switch.element.loc[
             (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
         line_currents_to[open_lines_to.values] = 0.
@@ -449,8 +414,8 @@ class state_estimation:
         line_currents_to[charging_to] = V[self.net.line.ix[charging_to].to_bus] \
                                         * Zcbij[charging_to] * (1 + Zij[charging_to])
         # derive other values
-        line_powers_from = V[fb] * np.conj(line_currents_from) / 1e3
-        line_powers_to = V[tb] * np.conj(line_currents_to) / 1e3
+        line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
+        line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
         self.net.res_line_est.i_from_ka = np.abs(line_currents_from) / 1e3
         self.net.res_line_est.i_to_ka = np.abs(line_currents_to) / 1e3
         self.net.res_line_est.i_ka = np.fmax(self.net.res_line_est.i_from_ka,

@@ -1,3 +1,4 @@
+__author__ = 'menke'
 from pandapower.estimation import estimate
 import pandapower as pp
 import numpy as np
@@ -20,11 +21,8 @@ def test_2bus():
     pp.create_measurement(net, "v", "bus", 1.019, 0.01, bus=0)  # u1
     pp.create_measurement(net, "v", "bus", 1.04, 0.01, bus=1)   # u2
 
-    v_start = np.array([1.0, 1.0])
-    delta_start = np.array([0., 0.])
-
     # 2. Do state estimation
-    success = estimate(net, v_start, delta_start)
+    success = estimate(net, init='flat')
 
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
@@ -73,11 +71,8 @@ def test_3bus():
     pp.create_measurement(net, "q", "line", 568, 8, 0, 0)   # Qline (bus 1 -> bus 2) at bus 1
     pp.create_measurement(net, "q", "line", 663, 8, 0, 1)   # Qline (bus 1 -> bus 3) at bus 1
 
-    v_start = np.array([1.0, 1.0, 1.0, 0.])
-    delta_start = np.array([0., 0., 0., 0.])
-
     # 2. Do state estimation
-    success = estimate(net, v_start, delta_start)
+    success = estimate(net, init='flat')
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -89,6 +84,51 @@ def test_3bus():
     assert success
     assert (np.nanmax(abs(diff_v)) < 1e-4)
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
+
+
+def test_3bus_trafo():
+    # 1. Create network
+    net = pp.create_empty_network()
+    pp.create_ext_grid(net, bus=3)
+    pp.create_bus(net, name="bus1", vn_kv=10.)
+    pp.create_bus(net, name="bus2", vn_kv=10.)
+    pp.create_bus(net, name="bus3", vn_kv=10.)
+    pp.create_bus(net, name="bus4", vn_kv=110.)
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
+                                   imax_ka=1)
+    pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
+                                   imax_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
+                                   imax_ka=1)
+    pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV")
+
+    pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
+    pp.create_measurement(net, "v", "bus", .968, .004, bus=1)   # V at bus 2
+
+    pp.create_measurement(net, "p", "bus", -501, 10, 1)  # P at bus 2
+    pp.create_measurement(net, "q", "bus", -286, 10, 1)  # Q at bus 2
+
+    pp.create_measurement(net, "p", "line", 888, 8, 0, 0)   # Pline (bus 1 -> bus 2) at bus 1
+    pp.create_measurement(net, "p", "line", 1173, 8, 0, 1)  # Pline (bus 1 -> bus 3) at bus 1
+    pp.create_measurement(net, "q", "line", 568, 8, 0, 0)   # Qline (bus 1 -> bus 2) at bus 1
+    pp.create_measurement(net, "q", "line", 663, 8, 0, 1)   # Qline (bus 1 -> bus 3) at bus 1
+
+    pp.create_measurement(net, "p", "transformer", 2067, 10, bus=3, element=0)  # transformer meas.
+    pp.create_measurement(net, "q", "transformer", 1228, 10, bus=3, element=0)  # at hv side
+
+    # 2. Do state estimation
+    success = estimate(net, init='flat')
+    v_result = net.res_bus_est.vm_pu.values
+    delta_result = net.res_bus_est.va_degree.values
+
+    target_v = np.array([0.98712592, 0.98686807, 0.98654891, 0.99228971])
+    diff_v = target_v - v_result
+    target_delta = np.array([-0.47745512, -0.4899255, -0.50404252,  0.])
+    diff_delta = target_delta - delta_result
+
+    assert success
+    assert (np.nanmax(abs(diff_v)) < 1e-6)
+    assert (np.nanmax(abs(diff_delta)) < 1e-6)
 
 
 def test_3bus_2():
@@ -114,11 +154,8 @@ def test_3bus_2():
     pp.create_measurement(net, "v", "bus", 1.08, 0.05, 0)   # u1
     pp.create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
 
-    v_start = np.array([1.0, 1.0, 1.0])
-    delta_start = np.array([0., 0., 0.0])
-
     # 2. Do state estimation
-    success = estimate(net, v_start, delta_start)
+    success = estimate(net, init='flat')
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -149,11 +186,8 @@ def test_cigre_network():
         pp.create_measurement(net, "q", "bus", -row.q_kvar * r(), max(1.0, abs(0.03 * row.q_kvar)),
                               bus)
 
-    v_start = np.ones(net.bus.shape[0]) * 1.01
-    delta_start = np.zeros_like(v_start)
-
     # 2. Do state estimation
-    success = estimate(net, v_start, delta_start)
+    success = estimate(net, init='slack')
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -198,4 +232,3 @@ def r(v=0.03):
 
 if __name__ == '__main__':
     pytest.main(['-xs', __file__])
-
