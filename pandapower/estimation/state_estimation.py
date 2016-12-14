@@ -37,7 +37,10 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10):
             v_start = net.res_bus_est.vm_pu
             delta_start = net.res_bus_est.va_degree
     elif init == 'slack':
-        to='do'
+        v_start = np.ones(len(net.bus)) * net.res_bus.vm_pu[net.ext_grid.bus].values[0]
+        delta_start = np.full(len(net.bus), net.res_bus.va_degree[net.ext_grid.bus].values[0])
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
     return wls.estimate(v_start, delta_start)
 
 
@@ -129,6 +132,8 @@ class state_estimation:
         # select elements in service and convert pandapower ppc to ppc
         is_elems = _select_is_elements(self.net)
         ppc, _, mapping_table = _pd2ppc(self.net, is_elems, init_results=True)
+        br_cols = ppc["branch"].shape[1]
+        bs_cols = ppc["bus"].shape[1]
 
         self.net.res_bus.vm_pu = vm_backup
         self.net.res_bus.va_degree = va_backup
@@ -166,53 +171,98 @@ class state_estimation:
         bus_append[new_in_line_buses, 4] = 0.
         bus_append[new_in_line_buses, 5] = 1.
 
-        # add 9 columns to mpc[branch] for Im, Im position, Im std dev, P, P position, P std dev,
-        #  Q, Q position, Q std dev
-        branch_append = np.full((ppc["branch"].shape[0], 9), np.nan, dtype=ppc["branch"].dtype)
+        # add 12 columns to mpc[branch] for Im_from, Im_from std dev, Im_to, Im_to std dev,
+        # P_from, P_from std dev, P_to, P_to std dev, Q_from,Q_from std dev,  Q_to, Q_to std dev
+        branch_append = np.full((ppc["branch"].shape[0], 12), np.nan, dtype=ppc["branch"].dtype)
 
         i_measurements = self.net.measurement[(self.net.measurement.type == "i")
                                               & (self.net.measurement.element_type == "line")]
         if len(i_measurements):
-            i_a_to_pu = (self.net.bus.vn_kv[self.net.line.from_bus[i_measurements.line]] * 1e3
-                         / self.s_ref).values
-            ix = i_measurements.line.values.astype(int)
-            branch_append[ix, 0] = i_measurements.value.values * i_a_to_pu
-            branch_append[ix, 1] = mapping_table[i_measurements.bus.values.astype(int)]
-            branch_append[ix, 2] = i_measurements.std_dev.values * i_a_to_pu
+            i_a_to_pu = (self.net.bus.vn_kv[i_measurements.bus] * 1e3 / self.s_ref).values
+            meas_from = i_measurements[(i_measurements.bus.values.astype(int) ==
+                                        self.net.line.from_bus[i_measurements.element]).values]
+            meas_to = i_measurements[(i_measurements.bus.values.astype(int) ==
+                                      self.net.line.to_bus[i_measurements.element]).values]
+            ix_from = meas_from.element.values.astype(int)
+            ix_to = meas_to.element.values.astype(int)
+            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu
+            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu
+            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu
+            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu
 
         p_measurements = self.net.measurement[(self.net.measurement.type == "p")
                                               & (self.net.measurement.element_type == "line")]
         if len(p_measurements):
-            ix = p_measurements.element.values.astype(int)
-            branch_append[ix, 3] = p_measurements.value.values * 1e3 / self.s_ref
-            branch_append[ix, 4] = mapping_table[p_measurements.bus.values.astype(int)]
-            branch_append[ix, 5] = p_measurements.std_dev.values * 1e3 / self.s_ref
+            meas_from = p_measurements[(p_measurements.bus.values.astype(int) ==
+                                        self.net.line.from_bus[p_measurements.element]).values]
+            meas_to = p_measurements[(p_measurements.bus.values.astype(int) ==
+                                      self.net.line.to_bus[p_measurements.element]).values]
+            ix_from = meas_from.element.values.astype(int)
+            ix_to = meas_to.element.values.astype(int)
+            branch_append[ix_from, 4] = meas_from.value.values * 1e3 / self.s_ref
+            branch_append[ix_from, 5] = meas_from.std_dev.values * 1e3 / self.s_ref
+            branch_append[ix_to, 6] = meas_to.value.values * 1e3 / self.s_ref
+            branch_append[ix_to, 7] = meas_to.std_dev.values * 1e3 / self.s_ref
 
         q_measurements = self.net.measurement[(self.net.measurement.type == "q")
                                               & (self.net.measurement.element_type == "line")]
         if len(q_measurements):
-            ix = q_measurements.element.values.astype(int)
-            branch_append[ix, 6] = q_measurements.value.values * 1e3 / self.s_ref
-            branch_append[ix, 7] = mapping_table[q_measurements.bus.values.astype(int)]
-            branch_append[ix, 8] = q_measurements.std_dev.values * 1e3 / self.s_ref
+            meas_from = q_measurements[(q_measurements.bus.values.astype(int) ==
+                                        self.net.line.from_bus[q_measurements.element]).values]
+            meas_to = q_measurements[(q_measurements.bus.values.astype(int) ==
+                                      self.net.line.to_bus[q_measurements.element]).values]
+            ix_from = meas_from.element.values.astype(int)
+            ix_to = meas_to.element.values.astype(int)
+            branch_append[ix_from, 8] = meas_from.value.values * 1e3 / self.s_ref
+            branch_append[ix_from, 9] = meas_from.std_dev.values * 1e3 / self.s_ref
+            branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
+            branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
+
+        i_tr_measurements = self.net.measurement[(self.net.measurement.type == "i")
+                                                 & (self.net.measurement.element_type ==
+                                                 "transformer")]
+        if len(i_tr_measurements):
+            i_a_to_pu = (self.net.bus.vn_kv[i_tr_measurements.bus] * 1e3 / self.s_ref).values
+            meas_from = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
+                                           self.net.trafo.hv_bus[i_tr_measurements.element]).values]
+            meas_to = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
+                                         self.net.trafo.lv_bus[i_tr_measurements.element]).values]
+            ix_from = meas_from.element.values.astype(int)
+            ix_to = meas_to.element.values.astype(int)
+            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu
+            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu
+            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu
+            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu
 
         p_tr_measurements = self.net.measurement[(self.net.measurement.type == "p") &
                                                  (self.net.measurement.element_type ==
                                                   "transformer")]
         if len(p_tr_measurements):
-            ix = len(self.net.line) + p_tr_measurements.element.values.astype(int)
-            branch_append[ix, 3] = p_tr_measurements.value.values * 1e3 / self.s_ref
-            branch_append[ix, 4] = mapping_table[p_tr_measurements.bus.values.astype(int)]
-            branch_append[ix, 5] = p_tr_measurements.std_dev.values * 1e3 / self.s_ref
+            meas_from = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
+                                           self.net.trafo.hv_bus[p_tr_measurements.element]).values]
+            meas_to = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
+                                         self.net.trafo.lv_bus[p_tr_measurements.element]).values]
+            ix_from = len(self.net.line) + meas_from.element.values.astype(int)
+            ix_to = len(self.net.line) + meas_to.element.values.astype(int)
+            branch_append[ix_from, 4] = meas_from.value.values * 1e3 / self.s_ref
+            branch_append[ix_from, 5] = meas_from.std_dev.values * 1e3 / self.s_ref
+            branch_append[ix_to, 6] = meas_to.value.values * 1e3 / self.s_ref
+            branch_append[ix_to, 7] = meas_to.std_dev.values * 1e3 / self.s_ref
 
         q_tr_measurements = self.net.measurement[(self.net.measurement.type == "q") &
                                                  (self.net.measurement.element_type ==
                                                  "transformer")]
         if len(q_tr_measurements):
-            ix = len(self.net.line) + q_tr_measurements.element.values.astype(int)
-            branch_append[ix, 6] = q_tr_measurements.value.values * 1e3 / self.s_ref
-            branch_append[ix, 7] = mapping_table[q_tr_measurements.bus.values.astype(int)]
-            branch_append[ix, 8] = q_tr_measurements.std_dev.values * 1e3 / self.s_ref
+            meas_from = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
+                                           self.net.trafo.hv_bus[q_tr_measurements.element]).values]
+            meas_to = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
+                                         self.net.trafo.lv_bus[q_tr_measurements.element]).values]
+            ix_from = len(self.net.line) + meas_from.element.values.astype(int)
+            ix_to = len(self.net.line) + meas_to.element.values.astype(int)
+            branch_append[ix_from, 8] = meas_from.value.values * 1e3 / self.s_ref
+            branch_append[ix_from, 9] = meas_from.std_dev.values * 1e3 / self.s_ref
+            branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
+            branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
 
         ppc["bus"] = np.hstack((ppc["bus"], bus_append))
         ppc["branch"] = np.hstack((ppc["branch"], branch_append))
@@ -221,30 +271,26 @@ class state_estimation:
             warnings.simplefilter("ignore")
             ppc_i = ext2int(ppc)
 
-        # adjust line measurement buses to internal index
-        for ix in range(ppc_i["branch"].shape[0]):
-            p = ppc_i["branch"][ix, 17 + self.br_col_offset].real
-            q = ppc_i["branch"][ix, 20 + self.br_col_offset].real
-            i = ppc_i["branch"][ix, 14 + self.br_col_offset].real
-            if ~np.isnan(p):
-                ppc_i["branch"][ix, 17 + self.br_col_offset] = ppc_i["order"]["bus"]["e2i"][int(p)]
-            if ~np.isnan(q):
-                ppc_i["branch"][ix, 20 + self.br_col_offset] = ppc_i["order"]["bus"]["e2i"][int(q)]
-            if ~np.isnan(i):
-                ppc_i["branch"][ix, 14 + self.br_col_offset] = ppc_i["order"]["bus"]["e2i"][int(i)]
+        p_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 2])
+        p_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 4])
+        p_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 6])
+        q_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 4])
+        q_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 8])
+        q_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 10])
+        v_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 0])
+        i_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 0])
+        i_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 2])
 
-        p_bus_not_nan = ~np.isnan(ppc_i["bus"][:, 15])
-        p_line_not_nan = ~np.isnan(ppc_i["branch"][:, 16 + self.br_col_offset])
-        q_bus_not_nan = ~np.isnan(ppc_i["bus"][:, 17])
-        q_line_not_nan = ~np.isnan(ppc_i["branch"][:, 19 + self.br_col_offset])
-        v_bus_not_nan = ~np.isnan(ppc_i["bus"][:, 13])
-        i_line_not_nan = ~np.isnan(ppc_i["branch"][:, 13 + self.br_col_offset])
-        z = np.concatenate((ppc_i["bus"][p_bus_not_nan, 15],
-                            ppc_i["branch"][p_line_not_nan, 16 + self.br_col_offset],
-                            ppc_i["bus"][q_bus_not_nan, 17],
-                            ppc_i["branch"][q_line_not_nan, 19 + self.br_col_offset],
-                            ppc_i["bus"][v_bus_not_nan, 13],
-                            ppc_i["branch"][i_line_not_nan, 13 + self.br_col_offset]
+        # piece together our measurement vector z
+        z = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 2],
+                            ppc_i["branch"][p_line_f_not_nan, br_cols + 4],
+                            ppc_i["branch"][p_line_t_not_nan, br_cols + 6],
+                            ppc_i["bus"][q_bus_not_nan, bs_cols + 4],
+                            ppc_i["branch"][q_line_f_not_nan, br_cols + 8],
+                            ppc_i["branch"][q_line_t_not_nan, br_cols + 10],
+                            ppc_i["bus"][v_bus_not_nan, bs_cols + 0],
+                            ppc_i["branch"][i_line_f_not_nan, br_cols + 0],
+                            ppc_i["branch"][i_line_t_not_nan, br_cols + 2]
                             )).real.astype(np.float64)
 
         # number of nodes
@@ -259,7 +305,7 @@ class state_estimation:
             return False
 
         # Matrix calculation object
-        sem = wls_matrix_ops(ppc_i, slack_bus, self.s_ref)
+        sem = wls_matrix_ops(ppc_i, slack_bus, self.s_ref, bs_cols, br_cols)
 
         # Set the starting values for all active buses
         v_m = ppc_i["bus"][:, 7]
@@ -269,12 +315,15 @@ class state_estimation:
         E = np.concatenate((delta[:slack_bus], delta[slack_bus + 1:], v_m))
 
         # Covariance matrix R
-        r_cov = np.concatenate((ppc_i["bus"][p_bus_not_nan, 16],
-                                ppc_i["branch"][p_line_not_nan, 18 + self.br_col_offset],
-                                ppc_i["bus"][q_bus_not_nan, 18],
-                                ppc_i["branch"][q_line_not_nan, 21 + self.br_col_offset],
-                                ppc_i["bus"][v_bus_not_nan, 14],
-                                ppc_i["branch"][i_line_not_nan, 15 + self.br_col_offset]
+        r_cov = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 3],
+                                ppc_i["branch"][p_line_f_not_nan, br_cols + 5],
+                                ppc_i["branch"][p_line_t_not_nan, br_cols + 7],
+                                ppc_i["bus"][q_bus_not_nan, bs_cols + 5],
+                                ppc_i["branch"][q_line_f_not_nan, br_cols + 9],
+                                ppc_i["branch"][q_line_t_not_nan, br_cols + 11],
+                                ppc_i["bus"][v_bus_not_nan, bs_cols + 1],
+                                ppc_i["branch"][i_line_f_not_nan, br_cols + 1],
+                                ppc_i["branch"][i_line_t_not_nan, br_cols + 3]
                                 )).real.astype(np.float64)
 
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
