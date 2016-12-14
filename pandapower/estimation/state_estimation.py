@@ -178,17 +178,18 @@ class state_estimation:
         i_measurements = self.net.measurement[(self.net.measurement.type == "i")
                                               & (self.net.measurement.element_type == "line")]
         if len(i_measurements):
-            i_a_to_pu = (self.net.bus.vn_kv[i_measurements.bus] * 1e3 / self.s_ref).values
             meas_from = i_measurements[(i_measurements.bus.values.astype(int) ==
                                         self.net.line.from_bus[i_measurements.element]).values]
             meas_to = i_measurements[(i_measurements.bus.values.astype(int) ==
                                       self.net.line.to_bus[i_measurements.element]).values]
             ix_from = meas_from.element.values.astype(int)
             ix_to = meas_to.element.values.astype(int)
-            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu
-            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu
-            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu
-            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu
+            i_a_to_pu_from = (self.net.bus.vn_kv[meas_from.bus] * 1e3 / self.s_ref).values
+            i_a_to_pu_to = (self.net.bus.vn_kv[meas_to.bus] * 1e3 / self.s_ref).values
+            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu_from
+            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu_from
+            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu_to
+            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu_to
 
         p_measurements = self.net.measurement[(self.net.measurement.type == "p")
                                               & (self.net.measurement.element_type == "line")]
@@ -222,17 +223,18 @@ class state_estimation:
                                                  & (self.net.measurement.element_type ==
                                                  "transformer")]
         if len(i_tr_measurements):
-            i_a_to_pu = (self.net.bus.vn_kv[i_tr_measurements.bus] * 1e3 / self.s_ref).values
             meas_from = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
                                            self.net.trafo.hv_bus[i_tr_measurements.element]).values]
             meas_to = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
                                          self.net.trafo.lv_bus[i_tr_measurements.element]).values]
             ix_from = meas_from.element.values.astype(int)
             ix_to = meas_to.element.values.astype(int)
-            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu
-            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu
-            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu
-            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu
+            i_a_to_pu_from = (self.net.bus.vn_kv[meas_from.bus] * 1e3 / self.s_ref).values
+            i_a_to_pu_to = (self.net.bus.vn_kv[meas_to.bus] * 1e3 / self.s_ref).values
+            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu_from
+            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu_from
+            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu_to
+            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu_to
 
         p_tr_measurements = self.net.measurement[(self.net.measurement.type == "p") &
                                                  (self.net.measurement.element_type ==
