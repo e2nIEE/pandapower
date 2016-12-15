@@ -1702,23 +1702,28 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
     Creates a measurement, which is used by the estimation module. Type of measurements possible:
     V, P, Q, I
 
-    INPUT:
-
+    Input:
         **meas_type** - (string) meas_type of measurement. "v", "p", "q", "i" are possible.
+
         **element_type** - (string) which element is measured. "bus", "line", "transformer" are
         possible.
+
         **value** - (float) measurement value. units are "kW" for P, "kVar" for Q, "p.u." for V,
         "A" for I. Generation is a positive bus power injection, consumption negative.
+
         **std_dev** - (float) standard deviation in the same unit as the measurement.
+
         **bus** - (int) bus index of bus, if applicable. determines the position of the
         measurement for line/transformer measurements (bus == from_bus: measurement at from_bus;
         same for to_bus)
+
         **element** - (int, None) index of measured element, if element_type is "line" or
         "transformer".
+
         **check_existing** - (bool) check for and replace existing measurements for this bus and
         type. Set to false for performance improvements but unsafe behaviour
 
-    OUTPUT:
+    Return:
         (int) index of measurement
 
     Example:
