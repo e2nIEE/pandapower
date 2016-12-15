@@ -1,0 +1,5 @@
+**Parameter**;**Tolerance**
+Voltage;0.000001 pu
+Current;0.000001 kA
+Power;0.01 kW
+Element Loading;0.01%

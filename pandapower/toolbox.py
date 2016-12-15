@@ -791,6 +791,9 @@ def set_element_status(net, buses, in_service):
     net.shunt.loc[shunts, "in_service"] = in_service
 
 def set_isolated_areas_out_of_service(net):
+    """
+    Set all isolated buses and all elements connected to isolated buses out of service.
+    """
     unsupplied = unsupplied_buses(net)
     set_element_status(net, unsupplied, False)
     
@@ -840,6 +843,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
     p2.line = net.line[(net.line.from_bus.isin(buses)) & (net.line.to_bus.isin(buses))]
     p2.trafo = net.trafo[(net.trafo.hv_bus.isin(buses)) & (net.trafo.lv_bus.isin(buses))]
+    p2.trafo3w = net.trafo3w[(net.trafo3w.hv_bus.isin(buses)) & (net.trafo3w.mv_bus.isin(buses)) &
+                             (net.trafo3w.lv_bus.isin(buses))]
     p2.impedance = net.impedance[(net.impedance.from_bus.isin(buses)) &
                                  (net.impedance.to_bus.isin(buses))]
 

@@ -34,8 +34,6 @@ def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, 
         **ppc** - The PYPOWER format network to fill in values
 
     """
-#    if len(net["trafo3w"]) > 0:
-#        _one_3w_to_three_2w(net)
     line_end = len(net["line"])
     trafo_end = line_end + len(net["trafo"])
     trafo3w_end = trafo_end + len(net["trafo3w"]) * 3
@@ -197,15 +195,12 @@ def _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model, trafo_d
 
 
 def _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model):
-    y = _calc_y_from_dataframe(trafo_df, vn_lv)
-    r, x = _calc_r_x_from_dataframe(trafo_df)
+    y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv)
+    r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
-        tap_lv =  np.square(vn_trafo_lv / vn_lv) #adjust for low voltage side voltage converter
-        tap_lv2 =  np.square(vn_trafo_lv * vn_lv / trafo_df["vn_lv_kv"].values / vn_lv) if "lv" in \
-                    trafo_df["tp_side"].values else 1
-        return _wye_delta(r*tap_lv, x*tap_lv, y / tap_lv2)
+        return _wye_delta(r, x, y)
     else:
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
@@ -229,7 +224,7 @@ def _wye_delta(r, x, y):
     return r, x, y
 
 
-def _calc_y_from_dataframe(trafo_df, vn_lv):
+def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
     """
     Calculate the subsceptance y from the transformer dataframe.
 
@@ -254,8 +249,11 @@ def _calc_y_from_dataframe(trafo_df, vn_lv):
 
     b_img[b_img < 0] = 0
     b_img = np.sqrt(b_img) * baseR / unl_squared
-
-    return -b_real * 1j - b_img
+    y = -b_real * 1j - b_img
+    if "lv" in trafo_df["tp_side"].values:
+        return y /  np.square(vn_trafo_lv * vn_lv / trafo_df["vn_lv_kv"].values / vn_lv) 
+    else:
+        return y
 
 
 def _calc_vn_from_dataframe(trafo_df, vn_lv):
@@ -297,14 +295,15 @@ def _calc_vn_from_dataframe(trafo_df, vn_lv):
     return unh, unl
 
 
-def _calc_r_x_from_dataframe(trafo_df):
+def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
 
     """
-    z_sc = trafo_df["vsc_percent"].values / 100. / trafo_df.sn_kva.values * 1000.
-    r_sc = trafo_df["vscr_percent"].values / 100. / trafo_df.sn_kva.values * 1000.
+    tap_lv =  np.square(vn_trafo_lv / vn_lv) #adjust for low voltage side voltage converter
+    z_sc = trafo_df["vsc_percent"].values / 100. / trafo_df.sn_kva.values * 1000. * tap_lv 
+    r_sc = trafo_df["vscr_percent"].values / 100. / trafo_df.sn_kva.values * 1000. *tap_lv
     x_sc = np.sqrt(z_sc**2 - r_sc**2)
     return r_sc, x_sc
 

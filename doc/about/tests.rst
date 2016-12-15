@@ -13,6 +13,12 @@ If all packages are installed correctly, all tests should pass.
 
 Loadflow Result Tests
 =========================
-To ensure that pandapower loadflow results are correct, all pandapower element behaviour is tested against DIgSILENT PowerFactory. 
+To ensure that pandapower loadflow results are correct, all pandapower element behaviour is tested against DIgSILENT PowerFactory or PSS Sincal. 
 
-TODO
+The tolerances for the different values are:
+
+.. tabularcolumns:: |l|l|
+.. csv-table:: 
+   :file: tolerances.csv
+   :delim: ;
+   :widths: 30, 30
