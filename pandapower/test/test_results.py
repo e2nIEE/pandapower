@@ -167,8 +167,8 @@ def test_trafo(result_test_network):
      assert abs(net.res_trafo.i_hv_ka.at[t3] - 0) < 1e-1
      assert abs(net.res_trafo.i_lv_ka.at[t3] - 0) < 1e-1
 
-     assert abs(net.res_bus.vm_pu.at[b2] - v2) < 1e-6
-     assert abs(net.res_bus.vm_pu.at[b3] - v3) < 1e-6
+     assert abs(net.res_bus.vm_pu.at[b2] - v2) < 1e-9
+     assert abs(net.res_bus.vm_pu.at[b3] - v3) < 1e-9
 
  #    # sincal results (to check pi-equivalent circuit model)
      runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current")
@@ -183,8 +183,8 @@ def test_trafo(result_test_network):
      assert abs(net.res_trafo.loading_percent.at[t1] - load1) < 1e-1
      assert abs(net.res_trafo.loading_percent.at[t2] - load2) < 1e-1
 
-     assert abs(net.res_bus.vm_pu.at[b2] - v2) < 1e-6
-     assert abs(net.res_bus.vm_pu.at[b3] - v3) < 1e-6
+     assert abs(net.res_bus.vm_pu.at[b2] - v2) < 1e-9
+     assert abs(net.res_bus.vm_pu.at[b3] - v3) < 1e-9
 
      runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="power")
 
@@ -203,8 +203,8 @@ def test_trafo_tap(result_test_network):
      b2 = buses.index[1]
      b3 = buses.index[2]
 
-     assert (1.010114175 - net.res_bus.vm_pu.at[b2]) < 1e-6
-     assert (0.924072090 - net.res_bus.vm_pu.at[b3]) < 1e-6
+     assert (1.010114175 - net.res_bus.vm_pu.at[b2]) < 1e-9
+     assert (0.924072090 - net.res_bus.vm_pu.at[b3]) < 1e-9
 
 
 #def test_shunt(net):
