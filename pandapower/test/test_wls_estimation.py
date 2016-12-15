@@ -169,7 +169,7 @@ def test_3bus_2():
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
 
 
-def test_cigre_network():
+def test_cigre_network(init='flat'):
     # 1. create network
     # test the mv ring network with all available voltage measurements and bus powers
     # test if switches and transformer will work correctly with the state estimation
@@ -187,7 +187,7 @@ def test_cigre_network():
                               bus)
 
     # 2. Do state estimation
-    success = estimate(net, init='slack')
+    success = estimate(net, init=init)
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -197,8 +197,12 @@ def test_cigre_network():
     diff_delta = target_delta - delta_result
 
     assert success
-    assert (np.nanmax(abs(diff_v)) < 0.005)
-    assert (np.nanmax(abs(diff_delta)) < 0.2)
+    assert (np.nanmax(abs(diff_v)) < 0.0043)
+    assert (np.nanmax(abs(diff_delta)) < 0.17)
+
+
+def test_cigre_network_slack_init():
+    test_cigre_network(init='slack')
 
 
 def test_check_existing():
@@ -290,6 +294,50 @@ def test_pq_line_from_to_measurements():
     assert success
     assert (np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.023)
     assert (np.nanmax(abs(net.res_bus_est.va_degree.values - net.res_bus.va_degree.values)) < 0.12)
+
+
+def test_init_slack_trafos():
+    np.random.seed(123)
+    net = pp.create_empty_network("3 trafos")
+    pp.create_bus(net, 220, index=0)
+    pp.create_bus(net, 110, index=1)
+    pp.create_bus(net, 110, index=2)
+    pp.create_bus(net, 110, index=3)
+    pp.create_bus(net, 10, index=4)
+    pp.create_bus(net, 10, index=5)
+    pp.create_bus(net, 10, index=6)
+    pp.create_bus(net, 10, index=7, in_service=False)
+    pp.create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV", in_service=False)
+    pp.create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV")
+    pp.create_transformer(net, 0, 1, std_type="100 MVA 220/110 kV")
+    pp.create_line(net, 1, 2, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
+    pp.create_line(net, 1, 3, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
+    pp.create_line(net, 4, 5, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
+    pp.create_line(net, 5, 6, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
+    pp.create_load(net, 2, 5000, 3300)
+    pp.create_load(net, 5, 900, 500)
+    pp.create_load(net, 6, 700, 300)
+    pp.create_ext_grid(net, bus=0, vm_pu=1.04, va_degree=10., name="Slack 220 kV")
+    pp.runpp(net)
+    for bus, row in net.res_bus[net.bus.in_service == True].iterrows():
+        pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
+        if row.p_kw != 0.:
+            continue
+        pp.create_measurement(net, "p", "bus", -row.p_kw * r(), max(1.0, abs(0.03 * row.p_kw)),
+                              bus)
+        pp.create_measurement(net, "q", "bus", -row.q_kvar * r(), max(1.0, abs(0.03 * row.q_kvar)),
+                              bus)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[0], 10., bus=1, element=0)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[0], 10., bus=1, element=0)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[2], 10., bus=4, element=2)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[2], 10., bus=4, element=2)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[3], 10., bus=5, element=3)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[3], 10., bus=5, element=3)
+    success = estimate(net, init='slack')
+
+    assert success
+    assert (np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.006)
+    assert (np.nanmax(abs(net.res_bus_est.va_degree.values - net.res_bus.va_degree.values)) < 0.005)
 
 
 def r(v=0.03):

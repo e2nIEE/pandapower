@@ -9,6 +9,7 @@ from pandapower.run import _pd2ppc, _select_is_elements
 from pandapower.results import _set_buses_out_of_service
 from pandapower.auxiliary import get_values
 from pandapower.toolbox import convert_format
+from pandapower.topology.multigraph import estimate_voltage_vector
 from pypower.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
@@ -32,13 +33,12 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10):
     v_start = None
     delta_start = None
     if init == 'results':
-        if not np.any(np.isnan(net.res_bus_est.vm_pu)) \
-                and not np.any(np.isnan(net.res_bus_est.va_degree)):
-            v_start = net.res_bus_est.vm_pu
-            delta_start = net.res_bus_est.va_degree
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
     elif init == 'slack':
-        v_start = np.ones(len(net.bus)) * net.res_bus.vm_pu[net.ext_grid.bus].values[0]
-        delta_start = np.full(len(net.bus), net.res_bus.va_degree[net.ext_grid.bus].values[0])
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        # delta_start = res_bus.va_degree.values  # creates convergence issues, skip for now
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
     return wls.estimate(v_start, delta_start)
@@ -303,7 +303,7 @@ class state_estimation:
         if len(z) < 2 * n_active - 1:
             self.logger.error("System is not observable (cancelling)")
             self.logger.error("Measurements available: %d. Measurements required: %d" %
-                          (len(z), 2 * n_active - 1))
+                              (len(z), 2 * n_active - 1))
             return False
 
         # Matrix calculation object
