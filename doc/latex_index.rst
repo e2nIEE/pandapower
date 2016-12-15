@@ -10,6 +10,7 @@ pandapower
     elements
     std_types_latex
     powerflow
+    estimation
     topology
     networks
     plotting

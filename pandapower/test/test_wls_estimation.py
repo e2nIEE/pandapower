@@ -121,14 +121,58 @@ def test_3bus_trafo():
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
-    target_v = np.array([0.98712592, 0.98686807, 0.98654891, 0.99228971])
+    target_v = np.array([0.98712592369954588, 0.98686806637143187, 0.98654891164725134,
+                         0.98668652867504758])
     diff_v = target_v - v_result
-    target_delta = np.array([-0.47745512, -0.4899255, -0.50404252,  0.])
+    target_delta = np.array([0.56755308073946575, 0.55508269341754568, 0.54096568088774744, 0.0])
     diff_delta = target_delta - delta_result
 
     assert success
     assert (np.nanmax(abs(diff_v)) < 1e-6)
     assert (np.nanmax(abs(diff_delta)) < 1e-6)
+
+
+def test_3bus_2_slacks():
+    # load the net which already contains 3 buses
+    net = pp.from_pickle("test_files/3bus_wls.p")
+    # add the same net with different slack (no galvanic connection)
+    # skip bus index 4 as further stability test
+    pp.create_ext_grid(net, 5)
+    pp.create_bus(net, name="bus5", vn_kv=1., index=5)
+    pp.create_bus(net, name="bus6", vn_kv=1., index=6)
+    pp.create_bus(net, name="bus7", vn_kv=1., index=7)
+
+    pp.create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
+                                   imax_ka=1)
+    pp.create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
+                                   imax_ka=1)
+    pp.create_line_from_parameters(net, 6, 7, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
+                                   imax_ka=1)
+
+    pp.create_measurement(net, "v", "bus", 1.006, .004, bus=5)  # V at bus 5
+    pp.create_measurement(net, "v", "bus", .968, .004, bus=6)   # V at bus 6
+
+    pp.create_measurement(net, "p", "bus", -501, 10, 6)  # P at bus 6
+    pp.create_measurement(net, "q", "bus", -286, 10, 6)  # Q at bus 6
+
+    pp.create_measurement(net, "p", "line", 888, 8, 5, 3)   # Pline (bus 1 -> bus 2) at bus 5
+    pp.create_measurement(net, "p", "line", 1173, 8, 5, 4)  # Pline (bus 1 -> bus 3) at bus 5
+    pp.create_measurement(net, "q", "line", 568, 8, 5, 3)   # Qline (bus 1 -> bus 2) at bus 5
+    pp.create_measurement(net, "q", "line", 663, 8, 5, 4)   # Qline (bus 1 -> bus 3) at bus 5
+
+    # 2. Do state estimation
+    success = estimate(net, init='flat', maximum_iterations=30)
+    v_result = net.res_bus_est.vm_pu.values
+    delta_result = net.res_bus_est.va_degree.values
+
+    target_v = np.array([[0.9996, 0.9741, 0.9438, np.nan, 0.9996, 0.9741, 0.9438]])
+    diff_v = target_v - v_result
+    target_delta = np.array([[-1.8942, -3.1417, -4.6399, np.nan, 0., -1.2475, -2.7457]])
+    diff_delta = target_delta - delta_result
+
+    assert success
+    assert (np.nanmax(abs(diff_v)) < 1e-4)
+    assert (np.nanmax(abs(diff_delta)) < 1e-4)
 
 
 def test_3bus_2():
@@ -187,7 +231,7 @@ def test_cigre_network(init='flat'):
                               bus)
 
     # 2. Do state estimation
-    success = estimate(net, init=init)
+    success = estimate(net, init=init, calculate_voltage_angles=False)
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -335,9 +379,19 @@ def test_init_slack_trafos():
     pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[3], 10., bus=5, element=3)
     success = estimate(net, init='slack')
 
+    diff_v = net.res_bus_est.vm_pu.values - np.asarray([1.0448604704566395, 1.0425606589461645,
+                                                        1.0423765877669349, 1.04251108234121,
+                                                        1.0412160511510784, 1.0294819012758345,
+                                                        1.0244679352505268, np.nan])
+    diff_delta = net.res_bus_est.va_degree.values - np.asarray([10.0, 9.5805024081206831,
+                                                                9.5764483439591146,
+                                                                9.5785814051482667,
+                                                                -140.55720540400534,
+                                                                -140.52486543974723,
+                                                                -140.52805104375585, np.nan])
     assert success
-    assert (np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.006)
-    assert (np.nanmax(abs(net.res_bus_est.va_degree.values - net.res_bus.va_degree.values)) < 0.005)
+    assert (np.nanmax(abs(diff_v)) < 1e-8)
+    assert (np.nanmax(abs(diff_delta)) < 1e-8)
 
 
 def r(v=0.03):

@@ -16,17 +16,28 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
 
-def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10):
+def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
+             calculate_voltage_angles=True):
     """
     Wrapper function for WLS state estimation.
-    :param net: The net within this line should be created.
-    :param init Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses,
-    'results' uses the values from res_bus_est if available and 'slack' considers the slack bus
-    voltage and angle as the initial values. Default is 'flat'.
-    :param tolerance: (float) - When the change between iterations is less than tolerance,
-            the process stops. Default is 1e-6.
-    :param maximum_iterations: (int) - Maximum number of iterations. Default is 10.
-    :return: (bool) Was the state estimation successful?
+
+    Input:
+        **net** - The net within this line should be created.
+
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        slack bus voltage and angle as the initial values. Default is 'flat'.
+
+        **tolerance** - (float) - When the change between iterations is less than tolerance,
+        the process stops. Default is 1e-6.
+
+        **maximum_iterations** - (int) - Maximum number of iterations. Default is 10.
+
+        **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and phase
+        shifts in transformers. Default is True.
+
+    Return:
+        (bool) Was the state estimation successful?
     """
     net = convert_format(net)
     wls = state_estimation(tolerance, maximum_iterations, net)
@@ -38,10 +49,11 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10):
     elif init == 'slack':
         res_bus = estimate_voltage_vector(net)
         v_start = res_bus.vm_pu.values
-        # delta_start = res_bus.va_degree.values  # creates convergence issues, skip for now
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
-    return wls.estimate(v_start, delta_start)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles)
 
 
 class state_estimation:
@@ -74,7 +86,7 @@ class state_estimation:
         # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
 
-    def estimate(self, v_start=None, delta_start=None):
+    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
         """
         The function estimate is the main function of the module. It takes two input arguments: u_in
         and delta_in. These are the initial state variables for the estimation process. Usually they
@@ -91,13 +103,13 @@ class state_estimation:
             **net** - The net within this line should be created
 
             **v_start** (np.array, shape=(1,), optional) - Vector with initial values for all
-            voltage magnitudes
-            in p.u. (sorted by bus index)
+            voltage magnitudes in p.u. (sorted by bus index)
 
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
-            voltage angles
-            in degrees (sorted by bus index)
+            voltage angles in degrees (sorted by bus index)
 
+            **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
+            phase shifts in transformers Default is True.
         Return:
 
             **successful** (boolean) - True if the estimation process was successful
@@ -131,7 +143,8 @@ class state_estimation:
 
         # select elements in service and convert pandapower ppc to ppc
         is_elems = _select_is_elements(self.net)
-        ppc, _, mapping_table = _pd2ppc(self.net, is_elems, init_results=True)
+        ppc, _, mapping_table = _pd2ppc(self.net, is_elems, init_results=True,
+                                        calculate_voltage_angles=calculate_voltage_angles)
         br_cols = ppc["branch"].shape[1]
         bs_cols = ppc["bus"].shape[1]
 
