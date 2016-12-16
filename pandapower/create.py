@@ -1713,7 +1713,7 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
 
         **std_dev** - (float) standard deviation in the same unit as the measurement.
 
-        **bus** - (int) bus index of bus, if applicable. determines the position of the
+        **bus** - (int) bus index of bus. determines the position of the
         measurement for line/transformer measurements (bus == from_bus: measurement at from_bus;
         same for to_bus)
 
@@ -1733,6 +1733,9 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
 
     if bus not in net["bus"].index.values:
         raise UserWarning("Bus %s does not exist" % bus)
+
+    if element is None and element_type in ["line", "transformer"]:
+        raise UserWarning("The element type %s requires a value in 'element'" % element_type)
 
     if element is not None and element_type == "line" and element not in net["line"].index.values:
         raise UserWarning("Line %s does not exist" % element)
@@ -1780,5 +1783,5 @@ if __name__ == "__main__":
     create_bus(net, vn_kv=0.4)
     create_line(net, 0, 1, length_km=1.23, std_type="NAYY 4x50 SE")
     create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)
-    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)  # V meas at bus 0
-    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)  # Pline meas at line 0, bus 0
+    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
+    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)

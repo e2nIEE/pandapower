@@ -120,7 +120,18 @@ The power flow results in the net.res_line table are defined as:
     loading\_percent &= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100 
     \end{align*}
     
+
+*net.res_line_est*
+
+The state estimation results are put into *net.res_line_est* with the same definition as in *net.res_line*.
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
+.. csv-table:: 
+   :file: line_res.csv
+   :delim: ;
+   :widths: 15, 10, 55
    
+
 Optimal Power Flow Parameters
 =============================
 
