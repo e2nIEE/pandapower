@@ -31,12 +31,12 @@ The results are compared with the following tolerances:
    
 **Example: Transformer**
 
-To validate the pandapower transformer model, a transformer is created with the same parameters in pandapower and PowerFactory. To test all aspects of the model we use a transformer that:
+To validate the pandapower transformer model, a transformer is created with the same parameters in pandapower and PowerFactory. To test all aspects of the model we use a transformer with
 
-    - has both iron and copper losses
-    - has different nominal voltages than the bus nominal voltage at both sides
-    - has a tap changer with tp_mid != tp_pos
-    - has a voltage angle shift
+    - both iron and copper losses > 0
+    - different nominal voltages than the bus nominal voltage at both sides
+    - a tap changer with tp_mid != tp_pos
+    - a voltage angle shift > 0
 
 We use a transformer with the following parameters:
 
@@ -55,17 +55,29 @@ We use a transformer with the following parameters:
     - tp_pos=3
     - shift_degree=150
 
-And connect it to a 20kV / 0.4 kV bus network. 
-
 To validate the in_service parameter as well as the transformer switch element, we create three transformers in parallel: one in service, on out of service and one with an open switch in open loop operation.
-The test network in PowerFactory looks like this:
+All three transformers are connected to a 20kV / 0.4 kV bus network. The test network then looks like this:
 
 .. image:: ../pics/validation/trafo_test.png
 	:width: 10em
 	:align: center
     
+The loadflow result for the exact same network are now compared in pandapower and PowerFactory. It can be seen that both bus voltages:
+
+.. image:: ../pics/validation/validation_bus.png
+	:width: 20em
+	:align: center
+
+and transformer results:
+
+.. image:: ../pics/validation/validation_trafo.png
+	:width: 60em
+	:align: center
+
+match with the error tolerancse defined above.    
+
     
-Such a test exists for all pandapower elements:
+A test like this exists for all pandapower elements:
 
  - line
  - load / sgen
@@ -78,3 +90,7 @@ Such a test exists for all pandapower elements:
  - ward
  - xward
  - bus-bus switch
+ 
+The PowerFactory file containing all test networks can be downloaded :download:`here  <../../pandapower/test/test_files/test_results.pfd>`.
+The correlating pandapower networks are defined in result_test_network_generatory.py in the pandapower/test module.
+The tests that check pandapower results against PowerFactory results are located in pandapower/test/test_results.py.

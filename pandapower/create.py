@@ -1727,8 +1727,8 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
         (int) index of measurement
 
     Example:
-        500 kW measurement with 10 kW standard deviation on bus 0:
-        create_measurement(net, "p", "bus", 500, 10, 0)
+        500 kW load measurement with 10 kW standard deviation on bus 0:
+        create_measurement(net, "p", "bus", -500., 10., 0)
     """
 
     if bus not in net["bus"].index.values:
