@@ -34,8 +34,8 @@ The results are compared with the following tolerances:
 To validate the pandapower transformer model, a transformer is created with the same parameters in pandapower and PowerFactory. To test all aspects of the model we use a transformer with
 
     - both iron and copper losses > 0
-    - different nominal voltages than the bus nominal voltage at both sides
-    - a tap changer with tp_mid != tp_pos
+    - nominal voltages that deviate from the nominal bus voltages at both sides
+    - an active tap changer
     - a voltage angle shift > 0
 
 We use a transformer with the following parameters:
@@ -58,7 +58,7 @@ We use a transformer with the following parameters:
 To validate the in_service parameter as well as the transformer switch element, we create three transformers in parallel: one in service, on out of service and one with an open switch in open loop operation.
 All three transformers are connected to a 20kV / 0.4 kV bus network. The test network then looks like this:
 
-.. image:: ../pics/validation/trafo_test.png
+.. image:: ../pics/validation/test_trafo.png
 	:width: 10em
 	:align: center
     
@@ -74,22 +74,76 @@ and transformer results:
 	:width: 60em
 	:align: center
 
-match with the error tolerancse defined above.    
+match with the error tolerances defined above.    
 
-    
+
 A test like this exists for all pandapower elements:
 
- - line
- - load / sgen
- - trafo
- - trafo3w
- - ext_grid
- - shunt
- - gen
- - impedance
- - ward
- - xward
- - bus-bus switch
+Line:
+ 
+.. image:: ../pics/validation/test_line.PNG
+	:width: 10em
+	:align: center
+
+load / sgen:
+
+.. image:: ../pics/validation/test_load_sgen.PNG
+	:width: 8em
+	:align: center
+
+trafo:
+
+.. image:: ../pics/validation/test_trafo.png
+	:width: 10em
+	:align: center    
+    
+trafo3w:
+
+.. image:: ../pics/validation/test_trafo3w.PNG
+	:width: 20em
+	:align: center   
+
+ext_grid:
+
+.. image:: ../pics/validation/test_ext_grid.PNG
+	:width: 10em
+	:align: center   
+    
+shunt:
+
+.. image:: ../pics/validation/test_shunt.PNG
+	:width: 10em
+	:align: center  
+
+gen:
+
+.. image:: ../pics/validation/test_gen.PNG
+	:width: 20em
+	:align: center  
+    
+impedance:
+
+.. image:: ../pics/validation/test_impedance.PNG
+	:width: 10em
+	:align: center  
+    
+ward:
+
+.. image:: ../pics/validation/test_ward.PNG
+	:width: 8em
+	:align: center  
+    
+xward:
+
+.. image:: ../pics/validation/test_xward.PNG
+	:width: 20em
+	:align: center  
+
+switch:
+
+.. image:: ../pics/validation/test_bus_bus_switch.PNG
+	:width: 40em
+	:align: center  
  
 The PowerFactory file containing all test networks can be downloaded :download:`here  <../../pandapower/test/test_files/test_results.pfd>`.
 The correlating pandapower networks are defined in result_test_network_generatory.py in the pandapower/test module.
