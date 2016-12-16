@@ -83,7 +83,7 @@ A test like this exists for all pandapower elements:
 
 line:
  
-.. image:: ../pics/validation/test_line.PNG
+.. image:: ../pics/validation/test_line.png
 	:width: 12em
 	:align: center
 
@@ -137,7 +137,7 @@ ward:
     
 xward:
 
-.. image:: ../pics/validation/test_xward.PNG
+.. image:: ../pics/validation/test_xward.png
 	:width: 20em
 	:align: center  
 
