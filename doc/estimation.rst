@@ -14,7 +14,6 @@ In order for the regression to be possible, there is a minimum amount of require
 | For a more in-depth explanation of the internals of the state estimation method, please see one of the following sources:
 | Power System State Estimation: Theory and Implementation by Ali Abur, Antonio Gómez Expósito
 | State Estimation in Electric Power Systems - A Generalized Approach by A. Monticelli
-| Web: http://home.eng.iastate.edu/~jdm/ee553/SE1.pdf
 |
 
 How to Use State Estimation with pandapower 
@@ -23,10 +22,7 @@ How to Use State Estimation with pandapower
 How to Define Measurements
 --------------------------
 
-Measurements are defined via the pandapower *"create_measurement"* function.
-The physical properties which can be measured are set with the type argument and can be one of the following: *"p"* for active power, *"q"* for reactive power, *"v"* for voltage and *"i"* for electrical current.
-The element is set with the element_type argument, it can be either *"bus"*, *"line"* or *"transformer"*.
-Power is measured in kW / kVar, voltage in per unit and current in A. State Estimation power measurements are given in the producer system. Generated power is positive, consumed power is negative.   
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.   
 
 Types of Measurements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -38,11 +34,22 @@ Types of Measurements
 
 Element Types
 ~~~~~~~~~~~~~
-| *"bus"* for bus measurements (v, p, q)
-| *"line"* for line measurements (p, q, i)
-| *"transformer"* for transformer measurements (p, q, i)
+| *"bus"* for bus measurements
+| *"line"* for line measurements
+| *"transformer"* for transformer measurements 
 |
    
+Available Measurements per Element
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++---------------+------------------------------+
+| Element Type  |  Available measurement types |
++===============+==============================+
+| bus           | v, p, q                      |
++---------------+------------------------------+
+| line          | i, p, q                      |
++---------------+------------------------------+
+| transformer   | i, p, q                      |
++---------------+------------------------------+
 
 The *"create_measurement"* function is defined as follows:
 
@@ -85,22 +92,8 @@ Now that the data is ready, the state_estimation can be initialized and run. We 
 The resulting variables now contain the voltage absolute values in *V*, the voltage angles in *delta*, an indication of success in *success*.
 The bus power injections can be accessed similarly with *net.res_bus_est.p_kw* and *net.res_bus_est.q_kvar*. Line data is also available in the same format as defined in *res_line*.
 
-Class state_estimation
-======================
+.. Class state_estimation
+   ======================
 
-.. automodule:: pandapower.estimation.state_estimation
+.. commentout automodule:: pandapower.estimation.state_estimation
     :members:
-
-Default Parameters
-------------------
-
-| *estimate* net: No standard value, v_in: No standard value, delta_in: No standard value
-| *perform_rn_max_test* v_in_out: No standard value, delta_in_out: No standard value
-| *perform_chi2_test* v_in_out: None, delta_in_out: None
-|   
-
-
-Contact
-=======
-
-Please contact jan-hendrik.menke@uni-kassel.de or nils.bornhorst@uni-kassel.de if there are further questions.

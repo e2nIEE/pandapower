@@ -1696,14 +1696,14 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
     return index
 
 
-def create_measurement(net, meas_type, element_type, value, std_dev, bus, element=None,
-                       check_existing=True):
+def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
+                       check_existing=True, index=None):
     """
     Creates a measurement, which is used by the estimation module. Type of measurements possible:
     V, P, Q, I
 
     Input:
-        **meas_type** - (string) meas_type of measurement. "v", "p", "q", "i" are possible.
+        **type** - (string) type of measurement. "v", "p", "q", "i" are possible.
 
         **element_type** - (string) which element is measured. "bus", "line", "transformer" are
         possible.
@@ -1741,25 +1741,37 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
             net["trafo"].index.values:
         raise UserWarning("Transformer %s does not exist" % element)
 
-    mid = get_free_id(net.measurement)
+    if index is None:
+        index = get_free_id(net.measurement)
+
+    if index in net["measurement"].index:
+        raise UserWarning("A measurement with index %s already exists" % index)
+
+    if type == "i" and element_type == "bus":
+        raise UserWarning("Line current measurements cannot be placed at buses")
+
+    if type == "v" and element_type in ["line", "transformer"]:
+        raise UserWarning("Voltage measurements can only be placed at buses, not at %s"
+                          % element_type)
+
     if check_existing:
         if element is None:
-            existing = net.measurement[(net.measurement.type == meas_type) &
+            existing = net.measurement[(net.measurement.type == type) &
                                        (net.measurement.bus == bus) &
                                        (pd.isnull(net.measurement.element))].index
         else:
-            existing = net.measurement[(net.measurement.type == meas_type) &
+            existing = net.measurement[(net.measurement.type == type) &
                                        (net.measurement.bus == bus) &
                                        (net.measurement.element == element)].index
         if len(existing) == 1:
-            mid = existing[0]
+            index = existing[0]
         elif len(existing) > 1:
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[mid] = [meas_type.lower(), element_type, value, std_dev, bus, element]
+    net.measurement.loc[index] = [type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
-    return mid
+    return index
 
 
 if __name__ == "__main__":
