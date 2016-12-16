@@ -45,7 +45,7 @@ Simulation Setup and Preparation
 Topology Modification
 ====================================
 
-.. autofunction:: pandapower.close_switch_at_line_with_two_open_switches
+.. autofunction:: pandapower.set_isolated_areas_out_of_service
 
 .. autofunction:: pandapower.drop_inactive_elements
 
@@ -60,6 +60,8 @@ Topology Modification
 .. autofunction:: pandapower.set_element_status
 
 .. autofunction:: pandapower.select_subnet
+
+.. autofunction:: pandapower.close_switch_at_line_with_two_open_switches
 
 ====================================
 Item/Element Selection

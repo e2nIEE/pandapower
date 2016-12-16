@@ -88,13 +88,17 @@ class state_estimation:
 
     def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
         """
-        The function estimate is the main function of the module. It takes two input arguments: u_in
-        and delta_in. These are the initial state variables for the estimation process. Usually they
-        can be initialized in a "flat-start" condition: All voltages being 1.0 pu and all voltage
-        angles being 0 degrees. If the estimation is applied continuously, using the results from
-        the last estimation as the starting condition for the current estimation can decrease the
-        amount of iterations needed to estimate the current state. Returned is a boolean value,
-        which is true after a successful estimation and false otherwise.
+        The function estimate is the main function of the module. It takes up to three input
+        arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
+        state variables for the estimation process. Usually they can be initialized in a
+        "flat-start" condition: All voltages being 1.0 pu and all voltage angles being 0 degrees.
+        In this case, the parameters can be left at their default values (None). If the estimation
+        is applied continuously, using the results from the last estimation as the starting
+        condition for the current estimation can decrease the  amount of iterations needed to
+        estimate the current state. The third parameter defines whether all voltage angles are
+        calculated absolutely, including phase shifts from transformers. If only the relative
+        differences between buses are required, this parameter can be set to False. Returned is a
+        boolean value, which is true after a successful estimation and false otherwise.
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
 

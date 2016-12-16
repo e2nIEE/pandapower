@@ -1,0 +1,18 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+type;string;"| ""p""
+| ""q""
+| ""i""
+| ""v""";Defines what physical quantity is measured
+element_type;string;"| ""bus""
+| ""line""
+| ""transformer""";Defines which element type is equipped with the measurement
+value;float;;Measurement value
+std_dev;float;;Standard deviation (same unit as measurement)
+bus;int;"| must be in 
+| net.bus.index";"Defines the bus at which the measurement is placed. 
+For line or transformer measurement it defines the side at which the measurement is placed (from_bus or to_bus)."
+element;int;"| must be in 
+| net.line.index or
+| net.trafo.index";"If the element_type is ""line"" or ""transformer"", element is the index of the relevant element. For ""bus"" measurements it is None (default)"
+check_existing;bool;;Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases
+index;int;;Defines a specific index for the new measurement (if possible)

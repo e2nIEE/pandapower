@@ -1696,14 +1696,14 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
     return index
 
 
-def create_measurement(net, meas_type, element_type, value, std_dev, bus, element=None,
-                       check_existing=True):
+def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
+                       check_existing=True, index=None):
     """
     Creates a measurement, which is used by the estimation module. Type of measurements possible:
     V, P, Q, I
 
     Input:
-        **meas_type** - (string) meas_type of measurement. "v", "p", "q", "i" are possible.
+        **type** - (string) type of measurement. "v", "p", "q", "i" are possible.
 
         **element_type** - (string) which element is measured. "bus", "line", "transformer" are
         possible.
@@ -1713,7 +1713,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
 
         **std_dev** - (float) standard deviation in the same unit as the measurement.
 
-        **bus** - (int) bus index of bus, if applicable. determines the position of the
+        **bus** - (int) bus index of bus. determines the position of the
         measurement for line/transformer measurements (bus == from_bus: measurement at from_bus;
         same for to_bus)
 
@@ -1734,6 +1734,9 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
     if bus not in net["bus"].index.values:
         raise UserWarning("Bus %s does not exist" % bus)
 
+    if element is None and element_type in ["line", "transformer"]:
+        raise UserWarning("The element type %s requires a value in 'element'" % element_type)
+
     if element is not None and element_type == "line" and element not in net["line"].index.values:
         raise UserWarning("Line %s does not exist" % element)
 
@@ -1741,25 +1744,37 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
             net["trafo"].index.values:
         raise UserWarning("Transformer %s does not exist" % element)
 
-    mid = get_free_id(net.measurement)
+    if index is None:
+        index = get_free_id(net.measurement)
+
+    if index in net["measurement"].index:
+        raise UserWarning("A measurement with index %s already exists" % index)
+
+    if type == "i" and element_type == "bus":
+        raise UserWarning("Line current measurements cannot be placed at buses")
+
+    if type == "v" and element_type in ["line", "transformer"]:
+        raise UserWarning("Voltage measurements can only be placed at buses, not at %s"
+                          % element_type)
+
     if check_existing:
         if element is None:
-            existing = net.measurement[(net.measurement.type == meas_type) &
+            existing = net.measurement[(net.measurement.type == type) &
                                        (net.measurement.bus == bus) &
                                        (pd.isnull(net.measurement.element))].index
         else:
-            existing = net.measurement[(net.measurement.type == meas_type) &
+            existing = net.measurement[(net.measurement.type == type) &
                                        (net.measurement.bus == bus) &
                                        (net.measurement.element == element)].index
         if len(existing) == 1:
-            mid = existing[0]
+            index = existing[0]
         elif len(existing) > 1:
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[mid] = [meas_type.lower(), element_type, value, std_dev, bus, element]
+    net.measurement.loc[index] = [type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
-    return mid
+    return index
 
 
 if __name__ == "__main__":
@@ -1768,5 +1783,5 @@ if __name__ == "__main__":
     create_bus(net, vn_kv=0.4)
     create_line(net, 0, 1, length_km=1.23, std_type="NAYY 4x50 SE")
     create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)
-    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)  # V meas at bus 0
-    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)  # Pline meas at line 0, bus 0
+    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
+    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)

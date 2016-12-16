@@ -9,13 +9,15 @@ State Estimation in General
 State Estimation is a process to estimate the electrical state of a network by eliminating inaccuracies and errors from measurement data. Various measurements are placed around the network and transferred to the operational control center via SCADA. Unfortunately measurements are not perfect: There are tolerances for each measurement device, which lead to an inherent inaccuracy in the measurement value. Analog transmission of data can change the measurement values through noise. Faulty devices can return completely wrong measurement values. To account for the measurement errors, the state estimation processes all available measurements and uses a regression method to identify the likely real state of the electrical network. 
 The **output** of the state estimator is therefore a **set of voltage absolutes and voltage angles** for all buses in the grid. The **input** is the **network** in pandapower format and a number of **measurements**.
 
-In order for the regression to be possible, there is a minimum amount of required measurements. Assuming the network contains *n* buses, the network is then described by *2n* variables, namely *n* voltage absolute values and *n* voltage angles. Since one bus - called slack bus - serves as a reference, its voltage angle is set at 0 Rad. The other voltage angles are relative to the voltage angle of the slack bus. The state estimation therefore has to find *2n-1* variables, which is also the minimum amount of measurements *m* needed for the method to work (*m>=2n-1*). To perform well however, the number of redundant measurements should be higher. A value of *m* being roughly *4n* is often considered reasonable for practical purposes. Since each measurement device may have a different tolerance and a different path length it has to travel to the control center, the accuracy for measurements may be different. Therefore each measurement is assigned an accuracy value, being defined by a standard deviation. Typical standard deviations for voltage measurements are 0.01 pu.
+In order for the regression to be possible, there is a minimum amount of required measurements. Assuming the network contains *n* buses, the network is then described by *2n* variables, namely *n* voltage absolute values and *n* voltage angles. The slack bus serves as a reference, its voltage angle is set to the value provided in the corresponding *ext_grid.va_degree* entry and is not altered in the estimation process. The other voltage angles are relative to the voltage angle of the slack bus. The state estimation therefore has to find *2n-1* variables, which is also the minimum amount of measurements *m* needed for the method to work (*m>=2n-1*). To perform well however, the number of redundant measurements should be higher. A value of *m* being roughly *4n* is often considered reasonable for practical purposes. Since each measurement device may have a different tolerance and a different path length it has to travel to the control center, the accuracy for measurements may be different. Therefore each measurement is assigned an accuracy value, being defined by a standard deviation. Typical standard deviations for voltage measurements are 1 % (of the measured value). Typical power measurement standard deviations are 1-3 %.
 
-| For a more in-depth explanation of the internals of the state estimation method, please see one of the following sources:
-| Power System State Estimation: Theory and Implementation by Ali Abur, Antonio Gómez Expósito
-| State Estimation in Electric Power Systems - A Generalized Approach by A. Monticelli
-| Web: http://home.eng.iastate.edu/~jdm/ee553/SE1.pdf
-|
+.. seealso::
+	For a more in-depth explanation of the internals of the state estimation method, please see the following sources:  
+
+	- *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito    
+	- *State Estimation in Electric Power Systems - A Generalized Approach* by A. Monticelli
+
+
 
 How to Use State Estimation with pandapower 
 ===========================================
@@ -23,10 +25,7 @@ How to Use State Estimation with pandapower
 How to Define Measurements
 --------------------------
 
-Measurements are defined via the pandapower *"create_measurement"* function.
-The physical properties which can be measured are set with the type argument and can be one of the following: *"p"* for active power, *"q"* for reactive power, *"v"* for voltage and *"i"* for electrical current.
-The element is set with the element_type argument, it can be either *"bus"*, *"line"* or *"transformer"*.
-Power is measured in kW / kVar, voltage in per unit and current in A. State Estimation power measurements are given in the producer system. Generated power is positive, consumed power is negative.   
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative.   
 
 Types of Measurements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -38,11 +37,22 @@ Types of Measurements
 
 Element Types
 ~~~~~~~~~~~~~
-| *"bus"* for bus measurements (v, p, q)
-| *"line"* for line measurements (p, q, i)
-| *"transformer"* for transformer measurements (p, q, i)
+| *"bus"* for bus measurements
+| *"line"* for line measurements
+| *"transformer"* for transformer measurements 
 |
    
+Available Measurements per Element
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++---------------+------------------------------+
+| Element Type  |  Available Measurement Types |
++===============+==============================+
+| bus           | v, p, q                      |
++---------------+------------------------------+
+| line          | i, p, q                      |
++---------------+------------------------------+
+| transformer   | i, p, q                      |
++---------------+------------------------------+
 
 The *"create_measurement"* function is defined as follows:
 
@@ -85,22 +95,8 @@ Now that the data is ready, the state_estimation can be initialized and run. We 
 The resulting variables now contain the voltage absolute values in *V*, the voltage angles in *delta*, an indication of success in *success*.
 The bus power injections can be accessed similarly with *net.res_bus_est.p_kw* and *net.res_bus_est.q_kvar*. Line data is also available in the same format as defined in *res_line*.
 
-Class state_estimation
-======================
+.. Class state_estimation
+   ======================
 
-.. automodule:: pandapower.estimation.state_estimation
+.. commentout automodule:: pandapower.estimation.state_estimation
     :members:
-
-Default Parameters
-------------------
-
-| *estimate* net: No standard value, v_in: No standard value, delta_in: No standard value
-| *perform_rn_max_test* v_in_out: No standard value, delta_in_out: No standard value
-| *perform_chi2_test* v_in_out: None, delta_in_out: None
-|   
-
-
-Contact
-=======
-
-Please contact jan-hendrik.menke@uni-kassel.de or nils.bornhorst@uni-kassel.de if there are further questions.
