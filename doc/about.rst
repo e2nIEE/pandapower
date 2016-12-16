@@ -35,6 +35,7 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
     about/authors
     about/license
     about/changelog
+    about/tests
 
 
 

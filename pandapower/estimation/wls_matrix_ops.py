@@ -5,7 +5,7 @@ from pypower.makeYbus import makeYbus
 
 
 class wls_matrix_ops:
-    def __init__(self, ppc, slack, s_ref):
+    def __init__(self, ppc, slack, s_ref, bs_cols, br_cols):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppc = ppc
         self.s_ref = s_ref
@@ -19,8 +19,8 @@ class wls_matrix_ops:
         self.B_shunt = None
         self.keep_ix = None
         self.i_ij = None
-        # Offset to accomodate pypower <-> pandapower differences (additional columns)
-        self.br_col_offset = 6
+        self.bs_cols = bs_cols
+        self.br_cols = br_cols
         self.create_y()
 
     # Function which builds a node admittance matrix out of the topology data
@@ -61,9 +61,9 @@ class wls_matrix_ops:
 
         # Power flow from node i to node j
         p_ij = (np.multiply((self.G_series + self.G_shunt).T, v ** 2).T - vi_vj *
-               (self.G_series * cos_delta + self.B_series * sin_delta))
+                (self.G_series * cos_delta + self.B_series * sin_delta))
         q_ij = (-1 * np.multiply((self.B_series + self.B_shunt).T, v ** 2).T - vi_vj *
-               (self.G_series * sin_delta - self.B_series * cos_delta))
+                (self.G_series * sin_delta - self.B_series * cos_delta))
 
         # Bus powers:
         p_i = np.sum(vi_vj * (self.G * cos_delta + self.B * sin_delta), axis=1)
@@ -74,32 +74,32 @@ class wls_matrix_ops:
         # [p_i p_ij q_i q_ij U i_ij]
 
         # P line
-        not_nan = ~np.isnan(self.ppc["branch"][:, 16+self.br_col_offset])
-        ix1_first_ix = self.ppc["branch"][not_nan, 17+self.br_col_offset].real.astype(int)
+        not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 4])
+        ix1_first_ix = self.ppc["branch"][not_nan, 0].real.astype(int)
         ix1_second_ix = self.ppc["branch"][not_nan, 1].real.astype(int)
-        tmp = [ix for ix in range(len(ix1_first_ix)) if ix1_first_ix[ix] == ix1_second_ix[ix]]
-        ix1_fb = self.ppc["branch"][not_nan, 0].real
-        ix1_second_ix[tmp] = ix1_fb[tmp]
+        not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 6])
+        ix1_first_ix = np.append(ix1_first_ix, self.ppc["branch"][not_nan, 1].real.astype(int))
+        ix1_second_ix = np.append(ix1_second_ix, self.ppc["branch"][not_nan, 0].real.astype(int))
 
         # Q line
-        not_nan = ~np.isnan(self.ppc["branch"][:, 19+self.br_col_offset])
-        ix2_first_ix = self.ppc["branch"][not_nan, 20+self.br_col_offset].real.astype(int)
+        not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 8])
+        ix2_first_ix = self.ppc["branch"][not_nan, 0].real.astype(int)
         ix2_second_ix = self.ppc["branch"][not_nan, 1].real.astype(int)
-        tmp = [ix for ix in range(len(ix2_first_ix)) if ix2_first_ix[ix] == ix2_second_ix[ix]]
-        ix2_fb = self.ppc["branch"][not_nan, 0].real
-        ix2_second_ix[tmp] = ix2_fb[tmp]
+        not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 10])
+        ix2_first_ix = np.append(ix2_first_ix, self.ppc["branch"][not_nan, 1].real.astype(int))
+        ix2_second_ix = np.append(ix2_second_ix, self.ppc["branch"][not_nan, 0].real.astype(int))
 
         # I line
-        not_nan = ~np.isnan(self.ppc["branch"][:, 13+self.br_col_offset])
-        ix3_first_ix = self.ppc["branch"][not_nan, 14+self.br_col_offset].real.astype(int)
+        not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 0])
+        ix3_first_ix = self.ppc["branch"][not_nan, 0].real.astype(int)
         ix3_second_ix = self.ppc["branch"][not_nan, 1].real.astype(int)
-        tmp = [ix for ix in range(len(ix3_first_ix)) if ix3_first_ix[ix] == ix3_second_ix[ix]]
-        ix3_fb = self.ppc["branch"][not_nan, 0].real
-        ix3_second_ix[tmp] = ix3_fb[tmp]
+        not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 2])
+        ix3_first_ix = np.append(ix3_first_ix, self.ppc["branch"][not_nan, 1].real.astype(int))
+        ix3_second_ix = np.append(ix3_second_ix, self.ppc["branch"][not_nan, 0].real.astype(int))
 
-        v_bus_not_nan = ~np.isnan(self.ppc["bus"][:, 13])
-        p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, 15])
-        q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, 17])
+        v_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 0])
+        p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 2])
+        q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 4])
 
         hx = np.hstack((p_i[p_bus_not_nan],
                         p_ij[ix1_first_ix, ix1_second_ix],
@@ -188,99 +188,88 @@ class wls_matrix_ops:
         range_theta = list(range(self.slack_bus)) + list(range(self.slack_bus + 1, n))
         range_v = list(range(n))
         
-        H = np.zeros((1, columns - 1))  # create matrix with dummy line so that we can append to it
+        h_mat = np.zeros((1, columns - 1))  # create matrix with dummy line so that we can append to it
 
         # if P bus measurements exist
-        p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, 15])
+        p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 2])
         if True in p_bus_not_nan:
             nodes = np.arange(n)[p_bus_not_nan]
-            H_t = H_dPinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
+            h_t = H_dPinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
                 .reshape(len(range_theta), len(nodes)).T
-            H_U = H_dPinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
+            h__u = H_dPinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
                 .reshape(len(range_v), len(nodes)).T
-            H_ = np.hstack((H_t, H_U))
-            H = np.vstack((H, H_))
+            h_ = np.hstack((h_t, h__u))
+            h_mat = np.vstack((h_mat, h_))
 
         # if P line measurements exist
         # and so on ..
-        p_line_not_nan = ~np.isnan(self.ppc["branch"][:, 16+self.br_col_offset])
-        if True in p_line_not_nan:
-            ix1_first_ix = self.ppc["branch"][p_line_not_nan, 17+self.br_col_offset].real.astype(int)
-            ix1_second_ix = self.ppc["branch"][p_line_not_nan, 1].real.astype(int)
-            tmp = [ix for ix in range(len(ix1_first_ix)) if ix1_first_ix[ix] == ix1_second_ix[ix]]
-            ix1_fb = self.ppc["branch"][p_line_not_nan, 0].real
-            ix1_second_ix[tmp] = ix1_fb[tmp]
-            node1 = ix1_first_ix
-            node2 = ix1_second_ix
-
+        p_line_not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 4])
+        node1 = self.ppc["branch"][p_line_not_nan, 0].real.astype(int)
+        node2 = self.ppc["branch"][p_line_not_nan, 1].real.astype(int)
+        p_line_not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 6])
+        node1 = np.append(node1, self.ppc["branch"][p_line_not_nan, 1].real.astype(int))
+        node2 = np.append(node2, self.ppc["branch"][p_line_not_nan, 0].real.astype(int))
+        if len(node1):
             nr = range(0, len(node1))
-            H_ = np.zeros((len(node1), columns))
-            H_[nr, node1] = H_dPij_dth_i[node1, node2]
-            H_[nr, node2] = H_dPij_dth_j[node1, node2]
-            H_[nr, n+node1] = H_dPij_dU_i[node1, node2]
-            H_[nr, n+node2] = H_dPij_dU_j[node1, node2]
-            H_ = np.delete(H_, 0, 1)
-            H = np.vstack((H, H_))
+            h_ = np.zeros((len(node1), columns))
+            h_[nr, node1] = H_dPij_dth_i[node1, node2]
+            h_[nr, node2] = H_dPij_dth_j[node1, node2]
+            h_[nr, n+node1] = H_dPij_dU_i[node1, node2]
+            h_[nr, n+node2] = H_dPij_dU_j[node1, node2]
+            h_ = np.delete(h_, 0, 1)
+            h_mat = np.vstack((h_mat, h_))
 
-        q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, 17])
+        q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 4])
         if True in q_bus_not_nan:
             nodes = np.arange(n)[q_bus_not_nan]
-            H_t = H_dQinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
+            h_t = H_dQinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
                 .reshape(len(range_theta), len(nodes)).T
-            H_U = H_dQinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
+            h__u = H_dQinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
                 .reshape(len(range_v), len(nodes)).T
-            H_ = np.hstack((H_t, H_U))
-            H = np.vstack((H, H_))
+            h_ = np.hstack((h_t, h__u))
+            h_mat = np.vstack((h_mat, h_))
 
-        q_line_not_nan = ~np.isnan(self.ppc["branch"][:, 19+self.br_col_offset])
-        if True in q_line_not_nan:
-            ix2_first_ix = self.ppc["branch"][q_line_not_nan, 20+self.br_col_offset].real.astype(int)
-            ix2_second_ix = self.ppc["branch"][q_line_not_nan, 1].real.astype(int)
-            tmp = [ix for ix in range(len(ix2_first_ix)) if ix2_first_ix[ix] == ix2_second_ix[ix]]
-            ix2_fb = self.ppc["branch"][q_line_not_nan, 0].real
-            ix2_second_ix[tmp] = ix2_fb[tmp]
-            node1 = ix2_first_ix
-            node2 = ix2_second_ix
-
+        q_line_not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 8])
+        node1 = self.ppc["branch"][q_line_not_nan, 0].real.astype(int)
+        node2 = self.ppc["branch"][q_line_not_nan, 1].real.astype(int)
+        q_line_not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 10])
+        node1 = np.append(node1, self.ppc["branch"][q_line_not_nan, 1].real.astype(int))
+        node2 = np.append(node2, self.ppc["branch"][q_line_not_nan, 0].real.astype(int))
+        if len(node1):
             nr = range(0, len(node1))
-            H_ = np.zeros((len(node1), columns))
-            H_[nr, node1] = H_dQij_dth_i[node1, node2]
-            H_[nr, node2] = H_dQij_dth_j[node1, node2]
-            H_[nr, n+node1] = H_dQij_dU_i[node1, node2]
-            H_[nr, n+node2] = H_dQij_dU_j[node1, node2]
-            H_ = np.delete(H_, 0, 1)
-            H = np.vstack((H, H_))
+            h_ = np.zeros((len(node1), columns))
+            h_[nr, node1] = H_dQij_dth_i[node1, node2]
+            h_[nr, node2] = H_dQij_dth_j[node1, node2]
+            h_[nr, n+node1] = H_dQij_dU_i[node1, node2]
+            h_[nr, n+node2] = H_dQij_dU_j[node1, node2]
+            h_ = np.delete(h_, 0, 1)
+            h_mat = np.vstack((h_mat, h_))
 
-        v_bus_not_nan = ~np.isnan(self.ppc["bus"][:, 13])
+        v_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 0])
         if True in v_bus_not_nan:
             nodes = np.arange(n)[v_bus_not_nan]
-            H_t = H_dU_dth[np.repeat(range_theta, len(nodes)), np.tile(nodes, len(range_theta))]\
+            h_t = H_dU_dth[np.repeat(range_theta, len(nodes)), np.tile(nodes, len(range_theta))]\
                 .reshape(len(range_theta), len(nodes)).T
-            H_U = H_dU_dU[np.repeat(range_v, len(nodes)), np.tile(nodes, len(range_v))]\
+            h__u = H_dU_dU[np.repeat(range_v, len(nodes)), np.tile(nodes, len(range_v))]\
                 .reshape(len(range_v), len(nodes)).T
-            H_ = np.hstack((H_t, H_U))
-            H = np.vstack((H, H_))
+            h_ = np.hstack((h_t, h__u))
+            h_mat = np.vstack((h_mat, h_))
 
-        i_line_not_nan = ~np.isnan(self.ppc["branch"][:, 13+self.br_col_offset])
-        if True in i_line_not_nan:
-            ix3_first_ix = self.ppc["branch"][i_line_not_nan, 14+self.br_col_offset].real.astype(int)
-            ix3_second_ix = self.ppc["branch"][i_line_not_nan, 1].real.astype(int)
-            tmp = [ix for ix in range(len(ix3_first_ix)) if ix3_first_ix[ix] == ix3_second_ix[ix]]
-            ix3_fb = self.ppc["branch"][i_line_not_nan, 0].real
-            ix3_second_ix[tmp] = ix3_fb[tmp]
-            node1 = ix3_first_ix
-            node2 = ix3_second_ix
-
+        i_line_not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 0])
+        node1 = self.ppc["branch"][i_line_not_nan, 0].real.astype(int)
+        node2 = self.ppc["branch"][i_line_not_nan, 1].real.astype(int)
+        i_line_not_nan = ~np.isnan(self.ppc["branch"][:, self.br_cols + 2])
+        node1 = np.append(node1, self.ppc["branch"][i_line_not_nan, 1].real.astype(int))
+        node2 = np.append(node2, self.ppc["branch"][i_line_not_nan, 0].real.astype(int))
+        if len(node1):
             nr = range(0, len(node1))
-            H_ = np.zeros((len(node1), columns))
+            h_ = np.zeros((len(node1), columns))
+            if not np.all(self.i_ij == 0.):
+                h_[nr, node1] = H_dIij_dth_i[node1, node2]
+                h_[nr, node2] = H_dIij_dth_j[node1, node2]
+                h_[nr, n+node1] = H_dIij_dU_i[node1, node2]
+                h_[nr, n+node2] = H_dIij_dU_j[node1, node2]
+            h_ = np.delete(h_, 0, 1)
+            h_mat = np.vstack((h_mat, h_))
 
-            if not np.all(self.i_ij==0.):
-                H_[nr, node1] = H_dIij_dth_i[node1, node2]
-                H_[nr, node2] = H_dIij_dth_j[node1, node2]
-                H_[nr, n+node1] = H_dIij_dU_i[node1, node2]
-                H_[nr, n+node2] = H_dIij_dU_j[node1, node2]
-            H_ = np.delete(H_, 0, 1)
-            H = np.vstack((H, H_))    
-        
-        H = H[1:, :]  # delete dummy line
-        return H
+        return h_mat[1:, :]  # delete dummy line

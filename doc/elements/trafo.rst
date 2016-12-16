@@ -176,10 +176,10 @@ Result Parameters
    :nowrap:
    
    \begin{align*}
-    p\_hv\_kw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    
-    q\_hv\_kvar &= Im(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\
-    p\_lv\_kw &= Re(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
-    q\_lv\_kvar &= Im(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
+    p\_hv\_kw &= Re(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\    
+    q\_hv\_kvar &= Im(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\
+    p\_lv\_kw &= Re(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
+    q\_lv\_kvar &= Im(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
 	pl\_kw &= p\_hv\_kw + p\_lv\_kw \\
 	ql\_kvar &= q\_hv\_kvar + q\_lv\_kvar \\
     i\_hv\_ka &= i_{hv} \\
@@ -216,5 +216,5 @@ The transformer loading constraint for the optimal power flow corresponds to the
 .. csv-table:: 
    :file: trafo_opf.csv
    :delim: ;
-   :widths: 10, 10, 40
+   :widths: 10, 40
    

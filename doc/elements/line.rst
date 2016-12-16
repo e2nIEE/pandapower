@@ -108,10 +108,10 @@ The power flow results in the net.res_line table are defined as:
    :nowrap:
    
    \begin{align*}
-    p\_from\_kw &= Re(\underline{v}_{from} \cdot \underline{i}_{from}) \\    
-    q\_from\_kvar &= Im(\underline{v}_{from} \cdot \underline{i}_{from}) \\
-    p\_to\_kw &= Re(\underline{v}_{to} \cdot \underline{i}_{to}) \\
-    q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}_{to}) \\
+    p\_from\_kw &= Re(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\    
+    q\_from\_kvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
+    p\_to\_kw &= Re(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
+    q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
 	pl\_kw &= p\_from\_kw + p\_to\_kw \\
 	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
     i\_from\_ka &= i_{from} \\
@@ -120,7 +120,18 @@ The power flow results in the net.res_line table are defined as:
     loading\_percent &= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100 
     \end{align*}
     
+
+*net.res_line_est*
+
+The state estimation results are put into *net.res_line_est* with the same definition as in *net.res_line*.
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
+.. csv-table:: 
+   :file: line_res.csv
+   :delim: ;
+   :widths: 15, 10, 55
    
+
 Optimal Power Flow Parameters
 =============================
 

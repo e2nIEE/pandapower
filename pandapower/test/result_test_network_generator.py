@@ -18,7 +18,6 @@ def result_test_network_generator():
     yield add_test_load_sgen_split(net)
     yield add_test_ext_grid(net)
     yield add_test_trafo(net)
-    yield add_test_trafo_tap(net)
     yield add_test_single_load_single_eg(net)
     yield add_test_ward(net)
     yield add_test_ward_split(net)
@@ -49,7 +48,9 @@ def add_test_line(net):
 
 def add_test_ext_grid(net):
     b1, b2, ln = add_grid_connection(net, zone="test_ext_grid")
-    pp.create_ext_grid(net, b2, vm_pu=1.02)
+    b3 = pp.create_bus(net, vn_kv=20., zone="test_ext_grid")
+    create_test_line(net, b2, b3)
+    pp.create_ext_grid(net, b3, vm_pu=1.02, va_degree=3.)
     return net
 
 def add_test_ext_grid_gen_switch(net):
@@ -107,28 +108,21 @@ def add_test_trafo(net):
     b1, b2, ln = add_grid_connection(net, zone="test_trafo")
     b3 = pp.create_bus(net, vn_kv=0.4, zone="test_trafo")
     pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
-                                          i0_percent=1., pfe_kw=20, sn_kva=400, vn_hv_kv=20,
-                                          vn_lv_kv=0.4)
+                                          i0_percent=.4, pfe_kw=2, sn_kva=400, vn_hv_kv=22,
+                                          vn_lv_kv=0.42, tp_max=10, tp_mid=5, tp_min=0,
+                                          tp_st_percent=1.25, tp_pos=3, shift_degree=150,
+                                          tp_side="hv")
     t2 = pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
-                                               i0_percent=1., pfe_kw=20, sn_kva=400, vn_hv_kv=20,
-                                               vn_lv_kv=0.4, index=pp.get_free_id(net.trafo) + 1)
+                                               i0_percent=.4, pfe_kw=2, sn_kva=400, vn_hv_kv=22,
+                                               vn_lv_kv=0.42, tp_max=10, tp_mid=5, tp_min=0,
+                                               tp_st_percent=1.25, tp_pos=3, tp_side="hv",
+                                               shift_degree=150,index=pp.get_free_id(net.trafo) + 1)
     pp.create_switch(net, b3, t2, et="t", closed=False)
     pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
                                           i0_percent=1., pfe_kw=20, sn_kva=400, vn_hv_kv=20,
                                           vn_lv_kv=0.4, in_service=False)
     pp.create_load(net, b3, p_kw=200, q_kvar=50)
     net.last_added_case = "test_trafo"
-    return net
-
-def add_test_trafo_tap(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_trafo_tap")
-    b3 = pp.create_bus(net, vn_kv=0.4, zone="test_trafo_tap")
-    pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
-                                          i0_percent=1., pfe_kw=20, sn_kva=400, vn_hv_kv=22,
-                                          vn_lv_kv=0.4, tp_max=10, tp_mid=5, tp_min=0,
-                                          tp_st_percent=1.25, tp_pos=3, tp_side="hv")
-    pp.create_load(net, b3, p_kw=200, q_kvar=50)
-    net.last_added_case = "test_trafo_tap"
     return net
 
 def add_test_single_load_single_eg(net):
@@ -147,17 +141,10 @@ def add_test_ward(net):
     ps = 500
     qs = 200
     # one shunt at a bus
-    w1 = pp.create_ward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs)
+    pp.create_ward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs)
     # add out of service ward shuold not change the result
-    w2 = pp.create_ward(
-        net,
-        b2,
-        pz_kw=pz,
-        qz_kvar=qz,
-        ps_kw=ps,
-        qs_kvar=qs,
-        in_service=False,
-        index=pp.get_free_id(net.ward) + 1)
+    pp.create_ward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs, in_service=False,
+                   index=pp.get_free_id(net.ward) + 1)
     net.last_added_case = "test_ward"
     return net
 
@@ -169,20 +156,8 @@ def add_test_ward_split(net):
     ps = 500
     qs = 200
     b1, b2, ln = add_grid_connection(net, zone="test_ward_split")
-    w1 = pp.create_ward(
-        net,
-        b2,
-        pz_kw=pz / 2,
-        qz_kvar=qz / 2,
-        ps_kw=ps / 2,
-        qs_kvar=qs / 2)
-    w2 = pp.create_ward(
-        net,
-        b2,
-        pz_kw=pz / 2,
-        qz_kvar=qz / 2,
-        ps_kw=ps / 2,
-        qs_kvar=qs / 2)
+    pp.create_ward(net, b2, pz_kw=pz / 2, qz_kvar=qz / 2, ps_kw=ps / 2, qs_kvar=qs / 2)
+    pp.create_ward(net, b2, pz_kw=pz / 2, qz_kvar=qz / 2, ps_kw=ps / 2, qs_kvar=qs / 2)
     net.last_added_case = "test_ward_split"
     return net
 
@@ -198,10 +173,10 @@ def add_test_xward(net):
     r_ohm = 50
     x_ohm = 70
     # one xward at a bus
-    xw1 = pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs,
+    pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs,
                           vm_pu=vm_pu, x_ohm=x_ohm, r_ohm=r_ohm)
     # add out of service xward should not change the result
-    xw2 = pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs, vm_pu=vm_pu,
+    pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs, vm_pu=vm_pu,
                           x_ohm=x_ohm, r_ohm=r_ohm, in_service=False,
                           index=pp.get_free_id(net.xward) + 1)
     net.last_added_case = "test_xward"
@@ -219,13 +194,13 @@ def add_test_xward_combination(net):
     r_ohm = 50
     x_ohm = 70
     # one xward at a bus
-    xw1 = pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs,
+    pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs,
                           vm_pu=vm_pu, x_ohm=x_ohm, r_ohm=r_ohm)
     # add out of service xward should not change the result
-    xw2 = pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs, vm_pu=vm_pu,
+    pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs, vm_pu=vm_pu,
                           x_ohm=x_ohm, r_ohm=r_ohm, in_service=False)
     # add second xward at the bus
-    xw3 = pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs,
+    pp.create_xward(net, b2, pz_kw=pz, qz_kvar=qz, ps_kw=ps, qs_kvar=qs,
                           vm_pu=vm_pu, x_ohm=x_ohm, r_ohm=r_ohm)
     net.last_added_case = "test_xward_combination"
     return net
@@ -264,7 +239,7 @@ def add_test_enforce_qlims(net):
                                    c_nf_per_km=300, imax_ka=.2, df=.8)
 
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
-    g1 = pp.create_gen(net, b3, p_kw=ps, vm_pu=u_set, max_q_kvar=qmax)
+    pp.create_gen(net, b3, p_kw=ps, vm_pu=u_set, max_q_kvar=qmax)
 
     net.last_added_case = "test_enforce_qlims"
     return net
@@ -273,24 +248,27 @@ def add_test_enforce_qlims(net):
 def add_test_trafo3w(net):
     b1, b2, ln = add_grid_connection(net, zone="test_trafo3w")
     b3 = pp.create_bus(net, vn_kv=0.6, zone="test_trafo3w")
-    pp.create_load(net, b3, p_kw=300, q_kvar=100)
+    pp.create_load(net, b3, p_kw=200, q_kvar=0)
     b4 = pp.create_bus(net, vn_kv=0.4, zone="test_trafo3w")
-    pp.create_load(net, b4, p_kw=200, q_kvar=50)
+    pp.create_load(net, b4, p_kw=100, q_kvar=0)
 
-    t3 = pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=20,
-                                                 vn_mv_kv=.6, vn_lv_kv=.4, sn_hv_kva=1000, sn_mv_kva=700,
-                                                 sn_lv_kva=300, vsc_hv_percent=2., vscr_hv_percent=.3,
-                                                 vsc_mv_percent=1., vscr_mv_percent=.2, vsc_lv_percent=.5,
-                                                 vscr_lv_percent=.1, pfe_kw=50., i0_percent=1.,
-                                                 name="test", index=pp.get_free_id(net.trafo3w) + 1)
+    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=22,
+                                                 vn_mv_kv=.64, vn_lv_kv=.42, sn_hv_kva=1000, 
+                                                 sn_mv_kva=700, sn_lv_kva=300, vsc_hv_percent=1., 
+                                                 vscr_hv_percent=.03, vsc_mv_percent=.5, 
+                                                 vscr_mv_percent=.02, vsc_lv_percent=.25,
+                                                 vscr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
+                                                 name="test", index=pp.get_free_id(net.trafo3w) + 1,
+                                                 tp_side="hv", tp_pos=2, tp_st_percent=1.25,
+                                                 tp_min=-5, tp_mid=0, tp_max=5)
     # adding out of service 3w trafo should not change results
-
     pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=20,
                                             vn_mv_kv=.6, vn_lv_kv=.4, sn_hv_kva=1000, sn_mv_kva=700,
                                             sn_lv_kva=300, vsc_hv_percent=2., vscr_hv_percent=.3,
-                                            vsc_mv_percent=1., vscr_mv_percent=.2, vsc_lv_percent=.5,
-                                            vscr_lv_percent=.1, pfe_kw=50., i0_percent=1., name="test",
-                                            in_service=False, index=pp.get_free_id(net.trafo3w) + 1)
+                                            vsc_mv_percent=1., vscr_mv_percent=.2,
+                                            vsc_lv_percent=.5, vscr_lv_percent=.1, pfe_kw=50., 
+                                            i0_percent=1., name="test", in_service=False, 
+                                            index=pp.get_free_id(net.trafo3w) + 1)
     net.last_added_case = "test_trafo3w"
     return net
 
@@ -350,23 +328,6 @@ def add_test_bus_bus_switch(net):
     net.last_added_case = "test_bus_bus_switch"
     return net
 
-
-def add_test_trafo3w_tap(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_trafo3w_tap")
-    b3 = pp.create_bus(net, vn_kv=0.6, zone="test_trafo3w_tap")
-    pp.create_load(net, b3, p_kw=300, q_kvar=100)
-    b4 = pp.create_bus(net, vn_kv=0.4, zone="test_trafo3w_tap")
-    pp.create_load(net, b4, p_kw=200, q_kvar=50)
-    t4 = pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=20,
-                                                 vn_mv_kv=.6, vn_lv_kv=.4, sn_hv_kva=1000, sn_mv_kva=700,
-                                                 sn_lv_kva=300, vsc_hv_percent=2., vscr_hv_percent=.3,
-                                                 vsc_mv_percent=1., vscr_mv_percent=.2, vsc_lv_percent=.5,
-                                                 vscr_lv_percent=.1, pfe_kw=50., i0_percent=1., name="test",
-                                                 tp_side="hv", tp_pos=-1, tp_mid=0, tp_min=-2, tp_max=2,
-                                                 tp_st_percent=1.25)
-    net.last_added_case = "test_trafo3w_tap"
-    return net
-
 def add_test_oos_bus_with_is_element(net):
     b1, b2, ln = add_grid_connection(net, zone="test_oos_bus_with_is_element")
 
@@ -411,9 +372,9 @@ def add_test_shunt(net):
     b1, b2, ln = add_grid_connection(net, zone="test_shunt")
     pz = 120
     qz = -1200
-# one shunt at a bus
-    s1 = pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz)
-# add out of service shunt shuold not change the result
+    # one shunt at a bus
+    pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz)
+    # add out of service shunt shuold not change the result
     pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
     return net
     
@@ -421,9 +382,9 @@ def add_test_shunt_split(net):
     b1, b2, ln = add_grid_connection(net, zone="test_shunt_split")
     pz = 120
     qz = -1200
-# one shunt at a bus
-    s1 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
-    s2 = pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
+    # one shunt at a bus
+    pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
+    pp.create_shunt(net, b2, p_kw=pz/2, q_kvar=qz/2)
     return net
 
 def add_test_two_open_switches_on_deactive_line(net):
@@ -437,6 +398,6 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 
 if __name__ == '__main__':     
-    net = pp.create_empty_network()
-    add_test_bus_bus_switch
-    pp.runpp(net)
+     net = pp.create_empty_network()
+     add_test_trafo(net)
+     pp.runpp(net, "dc", True, trafo_model="t")

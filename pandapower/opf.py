@@ -165,7 +165,7 @@ def opf(*args):
         ppc['branch'] = c_[ppc['branch'], zeros((nl, MU_ANGMAX + 1 - shape(ppc['branch'])[1]))]
 
     ##-----  convert to internal numbering, remove out-of-service stuff  -----
-    ppc = ext2int(ppc)
+    # ppc = ext2int(ppc)
 
     ##-----  construct OPF model object  -----
     om = opf_setup(ppc, ppopt)
@@ -174,14 +174,14 @@ def opf(*args):
     results, success, raw = opf_execute(om, ppopt)
 
     ##-----  revert to original ordering, including out-of-service stuff  -----
-    results = int2ext(results)
+    # results = int2ext(results)
 
     ## zero out result fields of out-of-service gens & branches
-    if len(results['order']['gen']['status']['off']) > 0:
-        results['gen'][ ix_(results['order']['gen']['status']['off'], [PG, QG, MU_PMAX, MU_PMIN]) ] = 0
-
-    if len(results['order']['branch']['status']['off']) > 0:
-        results['branch'][ ix_(results['order']['branch']['status']['off'], [PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX]) ] = 0
+    # if len(results['order']['gen']['status']['off']) > 0:
+    #     results['gen'][ ix_(results['order']['gen']['status']['off'], [PG, QG, MU_PMAX, MU_PMIN]) ] = 0
+    #
+    # if len(results['order']['branch']['status']['off']) > 0:
+    #     results['branch'][ ix_(results['order']['branch']['status']['off'], [PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX]) ] = 0
 
     ##-----  finish preparing output  -----
     et = time() - t0      ## compute elapsed time
