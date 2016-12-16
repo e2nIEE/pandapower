@@ -40,20 +40,20 @@ To validate the pandapower transformer model, a transformer is created with the 
 
 We use a transformer with the following parameters:
 
-    - vsc_percent=5.
-    - vscr_percent=2.
-    - i0_percent=.4
-    - pfe_kw=2
-    - sn_kva=400
-    - vn_hv_kv=22
-    - vn_lv_kv=0.42
-    - tp_max=10
-    - tp_mid=5
-    - tp_min=0
-    - tp_st_percent=1.25
-    - tp_side="hv"
-    - tp_pos=3
-    - shift_degree=150
+    - vsc_percent= 5.0
+    - vscr_percent = 2.0
+    - i0_percent = 0.4
+    - pfe_kw = 2.0
+    - sn_kva = 400
+    - vn_hv_kv = 22
+    - vn_lv_kv = 0.42
+    - tp_max = 10
+    - tp_mid = 5
+    - tp_min = 0
+    - tp_st_percent = 1.25
+    - tp_side = "hv"
+    - tp_pos = 3
+    - shift_degree = 150
 
 To validate the in_service parameter as well as the transformer switch element, we create three transformers in parallel: one in service, on out of service and one with an open switch in open loop operation.
 All three transformers are connected to a 20kV / 0.4 kV bus network. The test network then looks like this:
@@ -76,16 +76,18 @@ and transformer results:
 
 match with the error tolerances defined above.    
 
+Test Networks
+==============
 
 A test like this exists for all pandapower elements:
 
-Line:
+line:
  
 .. image:: ../pics/validation/test_line.PNG
-	:width: 10em
+	:width: 12em
 	:align: center
 
-load / sgen:
+load and sgen:
 
 .. image:: ../pics/validation/test_load_sgen.PNG
 	:width: 8em
@@ -112,7 +114,7 @@ ext_grid:
 shunt:
 
 .. image:: ../pics/validation/test_shunt.PNG
-	:width: 10em
+	:width: 8em
 	:align: center  
 
 gen:
