@@ -216,5 +216,5 @@ The transformer loading constraint for the optimal power flow corresponds to the
 .. csv-table:: 
    :file: trafo_opf.csv
    :delim: ;
-   :widths: 10, 10, 40
+   :widths: 10, 40
    

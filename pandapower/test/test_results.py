@@ -12,7 +12,7 @@ from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.result_test_network_generator import add_test_enforce_qlims, add_test_gen
 
 
-def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_line"]
     lines = [x for x in net.line.index if net.line.from_bus[x] in buses.index]
@@ -69,7 +69,7 @@ def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
     assert abs(net.res_line.q_to_kvar.at[l3] - 0) < s_tol
 
 
-def test_load_sgen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_load_sgen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_load_sgen"]
      loads = [x for x in net.load.index if net.load.bus[x] in buses.index]
@@ -95,7 +95,7 @@ def test_load_sgen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
      assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
 
 
-def test_load_sgen_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_load_sgen_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
 
      # splitting up the load/sgen should not change the result
      net = result_test_network
@@ -107,7 +107,7 @@ def test_load_sgen_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3
      assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
 
 
-def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2, va_tol=1e-2):
+def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3, va_tol=1e-2):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_trafo"]
      trafos = [x for x in net.trafo.index if net.trafo.hv_bus[x] in buses.index]
@@ -202,7 +202,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
      assert abs(net.res_trafo.loading_percent.at[t1] - load1) < l_tol
      assert abs(net.res_trafo.loading_percent.at[t2] - load2) < l_tol
  
-def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      runpp_with_consistency_checks(net, calculate_voltage_angles=True)
      buses = net.bus[net.bus.zone == "test_ext_grid"]
@@ -231,7 +231,7 @@ def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_to
      assert abs(net.res_bus.va_degree.at[b2] - va2) < va_tol
      
 
-def test_ward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_ward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_ward"]
      wards = [x for x in net.ward.index if net.ward.bus[x] in buses.index]
@@ -247,7 +247,7 @@ def test_ward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
      assert abs(net.res_ward.q_kvar.loc[w1] - (-qw)) < s_tol
 
 
-def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_ward_split"]
      wards = [x for x in net.ward.index if net.ward.bus[x] in buses.index]
@@ -265,7 +265,7 @@ def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_t
  #
 
 
-def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_xward"]
      xwards = [x for x in net.xward.index if net.xward.bus[x] in buses.index]
@@ -286,7 +286,7 @@ def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
      assert abs(net.res_xward.q_kvar.loc[[xw1, xw2]].sum() - (-qxw)) < s_tol
 
 
-def test_xward_combination(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_xward_combination(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_xward_combination"]
      xwards = [x for x in net.xward.index if net.xward.bus[x] in buses.index]
@@ -310,7 +310,7 @@ def test_xward_combination(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e
      assert abs(net.res_xward.q_kvar.at[xw3] - (-qxw3)) < s_tol
 
 
-def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_gen"]
      gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
@@ -327,7 +327,7 @@ def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2
      assert abs(net.res_gen.q_kvar.at[g1] - (-q)) < s_tol
 
 
-def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_enforce_qlims"]
      gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
@@ -348,7 +348,7 @@ def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, 
      assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < s_tol
 
 
-def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=1e-2):
+def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=1e-3):
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_trafo3w"]
     trafos = [x for x in net.trafo3w.index if net.trafo3w.hv_bus[
@@ -394,7 +394,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
                 
-def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_impedance"]
     impedances = [
@@ -431,7 +431,7 @@ def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
 
 
-def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_bus_bus_switch"]
      b2 = buses.index[1]
@@ -444,7 +444,7 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
      assert abs(net.res_bus.vm_pu.at[b2] == net.res_bus.vm_pu.at[b2])
 
 
-def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     """ Test for enforce_q_lims loadflow option
     """
     net = pp.create_empty_network()
@@ -478,7 +478,7 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1e-2
     assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < 1e-2
 
-def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_shunt"]
     b2 = buses.index[1]
@@ -493,7 +493,7 @@ def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
     assert abs(net.res_shunt.p_kw.loc[s1] - p) < s_tol
     assert abs(net.res_shunt.q_kvar.loc[s1] - q) < s_tol
 
-def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_shunt_split"]
     b2 = buses.index[1]

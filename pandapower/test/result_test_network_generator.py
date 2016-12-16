@@ -398,6 +398,6 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 
 if __name__ == '__main__':     
-     net2 = pp.create_empty_network()
-     add_test_ext_grid(net2)
-     pp.runpp(net2, "flat", True, trafo_model="t")
+     net = pp.create_empty_network()
+     add_test_trafo(net)
+     pp.runpp(net, "dc", True, trafo_model="t")
