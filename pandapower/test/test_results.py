@@ -202,26 +202,34 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
      assert abs(net.res_trafo.loading_percent.at[t1] - load1) < l_tol
      assert abs(net.res_trafo.loading_percent.at[t2] - load2) < l_tol
  
-def test_ext_grid(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
+def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
      net = result_test_network
+     runpp_with_consistency_checks(net, calculate_voltage_angles=True)
      buses = net.bus[net.bus.zone == "test_ext_grid"]
+     b2 = buses.index[1]
      ext_grids = [
          x for x in net.ext_grid.index if net.ext_grid.bus[x] in buses.index]
      eg1 = ext_grids[0]
      eg2 = ext_grids[1]
      # results from powerfactory
-     p1 = -1273.6434
-     q1 = -2145.0519
+     p1 = --5653.1650
+     q1 = -2107.4499
+     
+     v2 = 1.015506741
+     va2 = 1.47521433
 
-     p2 = 1286.2537
-     q2 = 1690.1253
-
+     p2 = 5837.7758
+     q2 = -2778.6795
+    
      assert abs(net.res_ext_grid.p_kw.at[eg1] - (-p1))
      assert abs(net.res_ext_grid.q_kvar.at[eg1] - (-q1))
 
      assert abs(net.res_ext_grid.p_kw.at[eg2] - (-p2))
      assert abs(net.res_ext_grid.q_kvar.at[eg2] - (-q2))
 
+     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
+     assert abs(net.res_bus.va_degree.at[b2] - va2) < va_tol
+     
 
 def test_ward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-2):
      net = result_test_network

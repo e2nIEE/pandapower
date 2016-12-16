@@ -48,7 +48,9 @@ def add_test_line(net):
 
 def add_test_ext_grid(net):
     b1, b2, ln = add_grid_connection(net, zone="test_ext_grid")
-    pp.create_ext_grid(net, b2, vm_pu=1.02)
+    b3 = pp.create_bus(net, vn_kv=20., zone="test_ext_grid")
+    create_test_line(net, b2, b3)
+    pp.create_ext_grid(net, b3, vm_pu=1.02, va_degree=3.)
     return net
 
 def add_test_ext_grid_gen_switch(net):
@@ -397,5 +399,5 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 if __name__ == '__main__':     
      net2 = pp.create_empty_network()
-     add_test_trafo3w(net2)
-     pp.runpp(net2, "dc", True, trafo_model="t")
+     add_test_ext_grid(net2)
+     pp.runpp(net2, "flat", True, trafo_model="t")
