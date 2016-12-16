@@ -1,5 +1,6 @@
 **Parameter**;**Tolerance**
-Voltage;0.000001 pu
+Voltage Magnitude;0.000001 pu
+Voltage Angle;0.01°
 Current;0.000001 kA
-Power;0.01 kW
+Power;0.005 kW
 Element Loading;0.01%
