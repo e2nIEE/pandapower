@@ -131,13 +131,13 @@ impedance:
     
 ward:
 
-.. image:: ../pics/validation/test_ward.PNG
+.. image:: ../pics/validation/test_ward.png
 	:width: 8em
 	:align: center  
     
 xward:
 
-.. image:: ../pics/validation/test_xward.png
+.. image:: ../pics/validation/test_xward.PNG
 	:width: 20em
 	:align: center  
 
