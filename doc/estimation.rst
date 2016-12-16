@@ -11,10 +11,13 @@ The **output** of the state estimator is therefore a **set of voltage absolutes 
 
 In order for the regression to be possible, there is a minimum amount of required measurements. Assuming the network contains *n* buses, the network is then described by *2n* variables, namely *n* voltage absolute values and *n* voltage angles. Since one bus - called slack bus - serves as a reference, its voltage angle is set at 0 Rad. The other voltage angles are relative to the voltage angle of the slack bus. The state estimation therefore has to find *2n-1* variables, which is also the minimum amount of measurements *m* needed for the method to work (*m>=2n-1*). To perform well however, the number of redundant measurements should be higher. A value of *m* being roughly *4n* is often considered reasonable for practical purposes. Since each measurement device may have a different tolerance and a different path length it has to travel to the control center, the accuracy for measurements may be different. Therefore each measurement is assigned an accuracy value, being defined by a standard deviation. Typical standard deviations for voltage measurements are 0.01 pu.
 
-| For a more in-depth explanation of the internals of the state estimation method, please see one of the following sources:
-| Power System State Estimation: Theory and Implementation by Ali Abur, Antonio Gómez Expósito
-| State Estimation in Electric Power Systems - A Generalized Approach by A. Monticelli
-|
+.. seealso::
+	For a more in-depth explanation of the internals of the state estimation method, please see the following sources:  
+
+	- *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito    
+	- *State Estimation in Electric Power Systems - A Generalized Approach* by A. Monticelli
+
+
 
 How to Use State Estimation with pandapower 
 ===========================================
@@ -42,7 +45,7 @@ Element Types
 Available Measurements per Element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 +---------------+------------------------------+
-| Element Type  |  Available measurement types |
+| Element Type  |  Available Measurement Types |
 +===============+==============================+
 | bus           | v, p, q                      |
 +---------------+------------------------------+
