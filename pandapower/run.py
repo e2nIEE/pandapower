@@ -336,10 +336,13 @@ def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):
 
     # copy the results for bus, gen and branch
     # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
-    ppc['bus'][:len(result['bus'])] = result['bus']
+    n_cols = np.shape(ppc['bus'])[1]
+    ppc['bus'][:len(result['bus']), :n_cols] = result['bus'][:len(result['bus']), :n_cols]
     # in service branches and gens are taken from 'internal'
-    ppc['branch'][result["internal"]['branch_is']] = result['branch']
-    ppc['gen'][result["internal"]['gen_is']] = result['gen']
+    n_cols = np.shape(ppc['branch'])[1]
+    ppc['branch'][result["internal"]['branch_is'], :n_cols] = result['branch'][:, :n_cols]
+    n_cols = np.shape(ppc['gen'])[1]
+    ppc['gen'][result["internal"]['gen_is'], :n_cols] = result['gen'][:, :n_cols]
     ppc['internal'] = result['internal']
 
     ppc['success'] = result['success']

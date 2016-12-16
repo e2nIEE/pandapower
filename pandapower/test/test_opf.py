@@ -293,25 +293,25 @@ def test_opf_sgen_loading():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
-#def test_opf_oberrhein():
-#    """ Testing a  simple network with transformer for loading
-#    constraints with OPF using a generator """
-#    import pandapower.networks as nw
-#    # create net
-#    net = nw.ms_oberrhein_balanced()
-##    net = nw.ms_oberrhein_radial()
-#    net.bus["max_vm_pu"]=1.1
-#    net.bus["min_vm_pu"]=0.9
-#    net.line["max_loading_percent"]=200
-#    net.trafo["max_loading_percent"]=100
-#    net.sgen["max_p_kw"]=-net.sgen.sn_kva
-#    net.sgen["min_p_kw"]=0
-#    net.sgen["max_q_kvar"]=1
-#    net.sgen["min_q_kvar"]=-1
-#    net.sgen["controllable"] =1
-#    # run OPF
-#    pp.runopp(net, verbose=False)
-##    assert net["OPF_converged"]
+def test_opf_oberrhein():
+   """ Testing a  simple network with transformer for loading
+   constraints with OPF using a generator """
+   import pandapower.networks as nw
+   # create net
+   net = nw.mv_oberrhein()
+#    net = nw.ms_oberrhein_radial()
+   net.bus["max_vm_pu"]=1.1
+   net.bus["min_vm_pu"]=0.9
+   net.line["max_loading_percent"]=200
+   net.trafo["max_loading_percent"]=100
+   net.sgen["max_p_kw"]=-net.sgen.sn_kva
+   net.sgen["min_p_kw"]=0
+   net.sgen["max_q_kvar"]=1
+   net.sgen["min_q_kvar"]=-1
+   net.sgen["controllable"] =1
+   # run OPF
+   pp.runopp(net, verbose=False)
+#    assert net["OPF_converged"]
 
 
 #def test_linear_minloss_cost_fnc():
@@ -322,7 +322,7 @@ if __name__ == "__main__":
     """
 #    import time
 #    t = time.time()
-    pytest.main(["test_opf.py", "-s"])
+    pytest.main(["test_opf.py", "-x"])
 #    elapsed = time.time()-t
     logger.setLevel("DEBUG")
 #    test_simplest_voltage()
