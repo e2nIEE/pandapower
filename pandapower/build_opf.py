@@ -4,10 +4,12 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import copy
+import numpy as np
 from numpy import array, ones, arange, zeros, complex128, nan_to_num, hstack, abs, isnan, float64, max
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
 from pandapower.build_bus import _build_bus_ppc, _calc_shunts_and_add_on_ppc
-from pandapower.run import _set_isolated_buses_out_of_service
+from pandapower.run import _set_isolated_buses_out_of_service, _ppc2ppci
 from pypower.idx_bus import BUS_TYPE, PD, QD
 from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pypower.idx_bus import PV, REF, VA, VM, PQ, VMAX, VMIN
@@ -16,7 +18,6 @@ import pypower.ppoption as ppoption
 import numpy.core.numeric as ncn
 from pandapower.auxiliary import _sum_by_group
 from scipy import sparse
-from pypower import makeYbus
 import warnings
 
 
@@ -30,7 +31,18 @@ def _pd2ppc_opf(net, is_elems, sg_is):
            "bus": array([], dtype=float),
            "branch": array([], dtype=complex128),
            "gen": array([], dtype=float),
-           "gencost": array([], dtype=float)}
+           "gencost": array([], dtype=float)
+           , "internal": {
+                  "Ybus": np.array([], dtype=np.complex128)
+                  , "Yf": np.array([], dtype=np.complex128)
+                  , "Yt": np.array([], dtype=np.complex128)
+                  , "branch_is": np.array([], dtype=bool)
+                  , "gen_is": np.array([], dtype=bool)
+                  }
+           }
+
+    # init empty ppci
+    ppci = copy.deepcopy(ppc)
 
     calculate_voltage_angles = False
     trafo_model = "t"
@@ -48,8 +60,11 @@ def _pd2ppc_opf(net, is_elems, sg_is):
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, ppc)
+    # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
+    # Note: Also reorders buses and gens in ppc
+    ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
-    return ppc, bus_lookup
+    return ppc, ppci, bus_lookup
 
 
 def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", lambda_opf=1000, **kwargs):
