@@ -8,13 +8,19 @@ pandapower is tested with Python 2.7, 3.4 and 3.5, but should probably (!) work 
 
 We recommend the anaconda distribution, which already contains a lot of modules for scientific computing that are needed for working with pandapower.
 
+In order to install Anaconda and open a python shell do the following:
+
+1. Go to the `Anaconda Website <https://www.continuum.io/downloads>`_
+2. Download Anaconda for your OS and install it
+3. Open the command prompt by clicking **Start** and typing **anaconda prompt** on Windows systems
+
 **pandapower**
 
 pandapower itself can be installed with the following steps:
 
 1. Download and unzip the pandapower source distribution to your local hard drive.
 
-2. Open a python shell (e.g. Anaconda prompt) and navigate to the folder that contains the setup.py file
+2. Open a python shell (e.g. Anaconda prompt, see above) and navigate to the folder that contains the setup.py file with the command cd <folder>
 
 3. Install pandapower by running ::
 
