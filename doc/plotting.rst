@@ -14,6 +14,7 @@ can be plotted as direct connections between the buses.
     plotting/create_colormaps
     plotting/draw
     plotting/generic
+    plotting/simple_plot
 
 
 

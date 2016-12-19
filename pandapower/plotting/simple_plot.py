@@ -14,8 +14,39 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=None, ext_grid_size=None,
+def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
                 bus_color=colors[0], line_color='grey', trafo_color='g', ext_grid_color='y'):
+    """
+        Plots a pandapower network as simple as possible. If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+
+        INPUT:
+            **net** - The pandapower format network. If none is provided, mv_oberrhein() will be plotted as an example
+
+        Optional:
+
+            **respect_switches** (bool, False) - Respect switches when artificial geodata is created
+
+            **line_width** (float, 1.0) - width of lines
+
+            **bus_size** (float, 1.0) - Relative size of buses to plot.
+
+                The value bus_size is multiplied with mean_distance_between_buses, which equals the distance between
+                the max geoocord and the min divided by 200.
+                mean_distance_between_buses = sum((net['bus_geodata'].max() - net['bus_geodata'].min()) / 200)
+
+            **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot.
+
+                See bus sizes for details. Note: ext_grids are plottet as rectangles
+
+            **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette. Usually colors[0] = "b".
+
+            **line_color** (String, 'grey') - Line Color. Init is grey
+
+            **trafo_color** (String, 'g') - Trafo Color. Init is green
+
+            **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
+
+        """
     if net is None:
         import pandapower.networks as nw
         logger.warning("No Pandapower network provided -> Plotting mv_oberrhein")
@@ -36,16 +67,11 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=None,
         # Comment: This is implemented because if you would choose a fixed values
         # (e.g. bus_size = 0.2), the size
         # could be to small for large networks and vice versa
-        if bus_size is None:
-            bus_size = mean_distance_between_buses
-        if ext_grid_size is None:
-            ext_grid_size = mean_distance_between_buses * 1.5
+        bus_size *= mean_distance_between_buses
+        ext_grid_size *= mean_distance_between_buses * 1.5
 
     # if bus geodata is available, but no line geodata
-    if len(net.line_geodata) == 0:
-        use_line_geodata = False
-    else:
-        use_line_geodata = True
+    use_line_geodata = False if len(net.line_geodata) == 0 else True
 
     # create bus collections ti plot
     bc = plot.create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
@@ -54,10 +80,8 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=None,
     sc = plot.create_bus_collection(net, net.ext_grid.bus.values, patch_type="rect",
                                     size=ext_grid_size, color=ext_grid_color, zorder=11)
     # create trafo collection if trafo is available
-    if len(net.trafo):
-        tc = plot.create_trafo_collection(net, net.trafo.index, color=trafo_color)
-    else:
-        tc = None
+    tc = plot.create_trafo_collection(net, net.trafo.index, color=trafo_color) if len(net.trafo) else None
+
     plot.draw_collections([lc, bc, tc, sc])
     plt.show()
 
