@@ -7,7 +7,7 @@ from pandapower.run import _pd2ppc, _select_is_elements
 from pandapower.results import _set_buses_out_of_service
 from pandapower.auxiliary import get_values
 from pandapower.toolbox import convert_format
-from pandapower.topology.multigraph import estimate_voltage_vector
+from pandapower.topology import estimate_voltage_vector
 from pypower.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix

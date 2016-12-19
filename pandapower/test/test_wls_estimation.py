@@ -3,8 +3,7 @@ import pandapower as pp
 import numpy as np
 import pytest
 import pandapower.networks as nw
-__author__ = 'menke'
-
+import os
 
 def test_2bus():
     # 1. Create network
@@ -134,7 +133,7 @@ def test_3bus_trafo():
 
 def test_3bus_2_slacks():
     # load the net which already contains 3 buses
-    net = pp.from_pickle("test_files/3bus_wls.p")
+    net = load_3bus_network()
     # add the same net with different slack (no galvanic connection)
     # skip bus index 4 as further stability test
     pp.create_ext_grid(net, 5)
@@ -278,7 +277,7 @@ def test_check_existing():
 
 def test_i_line_measurements():
     np.random.seed(1)
-    net = pp.from_pickle("test_files/3bus_wls.p")
+    net = load_3bus_network()
     net.measurement.drop(net.measurement.index, inplace=True)
     pp.create_load(net, 1, p_kw=495.974966, q_kvar=297.749528)
     pp.create_load(net, 2, p_kw=1514.220983, q_kvar=787.528929)
@@ -310,7 +309,7 @@ def test_i_line_measurements():
 
 def test_pq_line_from_to_measurements():
     np.random.seed(2017)
-    net = pp.from_pickle("test_files/3bus_wls.p")
+    net = load_3bus_network()
     net.measurement.drop(net.measurement.index, inplace=True)
     pp.create_load(net, 1, p_kw=495.974966, q_kvar=297.749528)
     pp.create_load(net, 2, p_kw=1514.220983, q_kvar=787.528929)
@@ -343,7 +342,7 @@ def test_pq_line_from_to_measurements():
 
 def test_init_slack_trafos():
     np.random.seed(123)
-    net = pp.create_empty_network("3 trafos")
+    net = pp.create_empty_network()
     pp.create_bus(net, 220, index=0)
     pp.create_bus(net, 110, index=1)
     pp.create_bus(net, 110, index=2)
@@ -395,6 +394,10 @@ def test_init_slack_trafos():
     assert (np.nanmax(abs(diff_delta)) < 1e-8)
 
 
+def load_3bus_network():
+    folder = os.path.abspath(os.path.dirname(pp.__file__))
+    return pp.from_pickle(os.path.join(folder, "test", "3bus_wls.p"))
+    
 def r(v=0.03):
     return np.random.normal(1.0, v)
 
