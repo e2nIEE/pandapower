@@ -287,7 +287,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
         **index** (int, default None) - Force a specified ID if it is available
 
-        **vn_kv** (float, default 0.4) - The grid voltage level.
+        **vn_kv** (float) - The grid voltage level.
 
         **busgeodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
@@ -341,7 +341,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     return index
 
 
-def create_buses(net, nr_buses, vn_kv=0.4, index=None, name=None, type="b", geodata=None,
+def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
                  zone=None, in_service=True):
     """
     Adds several buses in table net["bus"] at once.
@@ -360,7 +360,7 @@ def create_buses(net, nr_buses, vn_kv=0.4, index=None, name=None, type="b", geod
 
         **index** (int, default None) - Force a specified ID if it is available
 
-        **vn_kv** (float, default 0.4) - The grid voltage level.
+        **vn_kv** (float) - The grid voltage level.
 
         **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
@@ -1394,10 +1394,10 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
     if index in net["trafo3w"].index:
         raise UserWarning("A three winding transformer with index %s already exists" % index)
-        
+
     if tp_pos is np.nan:
         tp_pos = tp_mid
-    
+
     # store dtypes
     dtypes = net.trafo3w.dtypes
 
