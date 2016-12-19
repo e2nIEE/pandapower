@@ -4,3 +4,6 @@ scipy
 pandas
 networkx
 numba>=0.25.0
+matplotlib
+xlrd
+openpyxl

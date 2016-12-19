@@ -23,7 +23,7 @@ To run the tutorials interactively (jupyter module is needed):
 
 3. Run: ::
 
-    juypter notebook
+    jupyter notebook
     
 4. Click on the tutorial of your choice in the browser menue and start going through the tutorials step by step .
 

@@ -225,7 +225,8 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = pp.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
+    folder = os.path.abspath(os.path.dirname(pandapower.test.__file__))
+    net = pp.from_pickle(os.path.join(folder, "testgrid.p"))
 #    net = pp.file_io.from_pickle("testgrid.p")
 
     return net

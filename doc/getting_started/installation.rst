@@ -33,11 +33,14 @@ pandapower itself can be installed with the following steps:
    This will install the following packages (if not already installed):
 
         - pypower >= 5.0.0
+        - pandas
         - numpy
         - scipy
         - networkx
-        - numba >=0.2.8
+        - numba > 0.25.0
         - matplotlib
+        - openpyxl
+        - xlrd
 
 .. note::
     All of these packages except pypower are included in the anacaonda distribution. 
