@@ -3,4 +3,4 @@ numpy>1.8
 scipy
 pandas
 networkx
-numba>0.2.5.0
+numba>=0.25.0
