@@ -5,7 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-import pandas as pd
 import copy
 
 try:
