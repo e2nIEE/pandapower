@@ -5,11 +5,12 @@ from pypower.makeYbus import makeYbus
 
 
 class wls_matrix_ops:
-    def __init__(self, ppc, slack, s_ref, bs_cols, br_cols):
+    def __init__(self, ppc, slack_buses, non_slack_buses, s_ref, bs_cols, br_cols):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppc = ppc
         self.s_ref = s_ref
-        self.slack_bus = slack
+        self.slack_buses = slack_buses
+        self.non_slack_buses = non_slack_buses
         self.Y_bus = None
         self.G = None
         self.B = None
@@ -127,7 +128,7 @@ class wls_matrix_ops:
         cos_delta = np.cos(deltas)  # cos(delta_i - delta_j)
         sin_delta = np.sin(deltas)  # sin(delta_i - delta_j)
         vi_vj = np.outer(v, v)  # Ui * Uj
-        diag_n = list(range(n))  # Used for indexing the diagonal of a n x n matrix
+        diag_n = np.arange(n)  # Used for indexing the diagonal of a n x n matrix
 
         # Submatrices d(Pinj)/d(theta) and d(Pinj)/d(V)
         H_dPinj_dth = vi_vj * (G * sin_delta - B * cos_delta)
@@ -184,11 +185,11 @@ class wls_matrix_ops:
                           (v - np.multiply(cos_delta.T, v).T)
 
         # Build H dynamically from submatrices and measurements
-        columns = 2 * n
-        range_theta = list(range(self.slack_bus)) + list(range(self.slack_bus + 1, n))
+        columns = 2 * n - len(self.slack_buses)
+        range_theta = self.non_slack_buses
         range_v = list(range(n))
         
-        h_mat = np.zeros((1, columns - 1))  # create matrix with dummy line so that we can append to it
+        h_mat = np.zeros((1, columns))  # create matrix with dummy line so that we can append to it
 
         # if P bus measurements exist
         p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 2])
@@ -211,12 +212,12 @@ class wls_matrix_ops:
         node2 = np.append(node2, self.ppc["branch"][p_line_not_nan, 0].real.astype(int))
         if len(node1):
             nr = range(0, len(node1))
-            h_ = np.zeros((len(node1), columns))
+            h_ = np.zeros((len(node1), columns + len(self.slack_buses)))
             h_[nr, node1] = H_dPij_dth_i[node1, node2]
             h_[nr, node2] = H_dPij_dth_j[node1, node2]
             h_[nr, n+node1] = H_dPij_dU_i[node1, node2]
             h_[nr, n+node2] = H_dPij_dU_j[node1, node2]
-            h_ = np.delete(h_, 0, 1)
+            h_ = np.delete(h_, self.slack_buses, 1)
             h_mat = np.vstack((h_mat, h_))
 
         q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 4])
@@ -237,12 +238,12 @@ class wls_matrix_ops:
         node2 = np.append(node2, self.ppc["branch"][q_line_not_nan, 0].real.astype(int))
         if len(node1):
             nr = range(0, len(node1))
-            h_ = np.zeros((len(node1), columns))
+            h_ = np.zeros((len(node1), columns + len(self.slack_buses)))
             h_[nr, node1] = H_dQij_dth_i[node1, node2]
             h_[nr, node2] = H_dQij_dth_j[node1, node2]
             h_[nr, n+node1] = H_dQij_dU_i[node1, node2]
             h_[nr, n+node2] = H_dQij_dU_j[node1, node2]
-            h_ = np.delete(h_, 0, 1)
+            h_ = np.delete(h_, self.slack_buses, 1)
             h_mat = np.vstack((h_mat, h_))
 
         v_bus_not_nan = ~np.isnan(self.ppc["bus"][:, self.bs_cols + 0])
@@ -263,13 +264,13 @@ class wls_matrix_ops:
         node2 = np.append(node2, self.ppc["branch"][i_line_not_nan, 0].real.astype(int))
         if len(node1):
             nr = range(0, len(node1))
-            h_ = np.zeros((len(node1), columns))
+            h_ = np.zeros((len(node1), columns + len(self.slack_buses)))
             if not np.all(self.i_ij == 0.):
                 h_[nr, node1] = H_dIij_dth_i[node1, node2]
                 h_[nr, node2] = H_dIij_dth_j[node1, node2]
                 h_[nr, n+node1] = H_dIij_dU_i[node1, node2]
                 h_[nr, n+node2] = H_dIij_dU_j[node1, node2]
-            h_ = np.delete(h_, 0, 1)
+            h_ = np.delete(h_, self.slack_buses, 1)
             h_mat = np.vstack((h_mat, h_))
 
         return h_mat[1:, :]  # delete dummy line

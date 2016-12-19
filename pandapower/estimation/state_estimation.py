@@ -313,7 +313,7 @@ class state_estimation:
 
         # number of nodes
         n_active = len(np.where(ppc_i["bus"][:, 1] != 4)[0])
-        slack_bus = np.where(ppc_i["bus"][:, 1] == 3)[0][0]
+        slack_buses = np.where(ppc_i["bus"][:, 1] == 3)[0]
 
         # Check if observability criterion is fulfilled and the state estimation is possible
         if len(z) < 2 * n_active - 1:
@@ -322,15 +322,18 @@ class state_estimation:
                               (len(z), 2 * n_active - 1))
             return False
 
-        # Matrix calculation object
-        sem = wls_matrix_ops(ppc_i, slack_bus, self.s_ref, bs_cols, br_cols)
-
         # Set the starting values for all active buses
         v_m = ppc_i["bus"][:, 7]
         delta = ppc_i["bus"][:, 8] * np.pi / 180  # convert to rad
+        delta_masked = np.ma.array(delta, mask=False)
+        delta_masked.mask[slack_buses] = True
+        non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
+
+        # Matrix calculation object
+        sem = wls_matrix_ops(ppc_i, slack_buses, non_slack_buses, self.s_ref, bs_cols, br_cols)
 
         # state vector
-        E = np.concatenate((delta[:slack_bus], delta[slack_bus + 1:], v_m))
+        E = np.concatenate((delta_masked.compressed(), v_m))
 
         # Covariance matrix R
         r_cov = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 3],
@@ -374,9 +377,8 @@ class state_estimation:
             E += d_E
 
             # Update V/delta
-            delta[:slack_bus] = E[:slack_bus]
-            delta[slack_bus + 1:] = E[slack_bus:n_active - 1]
-            v_m = np.squeeze(E[n_active - 1:])
+            delta[non_slack_buses] = E[:len(non_slack_buses)]
+            v_m = np.squeeze(E[len(non_slack_buses):])
 
             current_iterations += 1
             current_error = np.max(np.abs(d_E))

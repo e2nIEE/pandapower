@@ -165,9 +165,10 @@ def test_3bus_2_slacks():
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
-    target_v = np.array([[0.9996, 0.9741, 0.9438, np.nan, 0.9996, 0.9741, 0.9438]])
+    target_v = np.array([0.9996, 0.9741, 0.9438, np.nan, 0.9996, 0.9741, 0.9438])
     diff_v = target_v - v_result
-    target_delta = np.array([[-1.8942, -3.1417, -4.6399, np.nan, 0., -1.2475, -2.7457]])
+    target_delta = np.array([0.0, -1.2475469989322963, -2.7457167371166862, np.nan, 0.0,
+                             -1.2475469989322963, -2.7457167371166862])
     diff_delta = target_delta - delta_result
 
     assert success
