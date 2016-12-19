@@ -1,9 +1,9 @@
-__author__ = 'menke'
 from pandapower.estimation import estimate
 import pandapower as pp
 import numpy as np
 import pytest
 import pandapower.networks as nw
+__author__ = 'menke'
 
 
 def test_2bus():
