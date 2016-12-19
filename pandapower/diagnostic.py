@@ -5,6 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
+import pandas as pd
 import copy
 
 try:
@@ -24,7 +25,7 @@ log_message_sep = ("\n --------\n")
 
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
                overload_scaling_factor=0.001, lines_min_length_km=0, lines_min_z_ohm=0,
-               nom_voltage_tolerance=0.3):
+               nom_voltage_tolerance=0.3, numba_tolerance=1e-5):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -74,37 +75,23 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-
+    diag_functions = ["disconnected_elements(net)",
+                      "different_voltage_levels_connected(net)",
+                      "lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm)",
+                      "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
+                      "invalid_values(net)",
+                      "overload(net, overload_scaling_factor)",
+                      "wrong_switch_configuration(net)",
+                      "multiple_voltage_controlling_elements_per_bus(net)",
+                      "no_ext_grid(net)",
+                      "wrong_reference_system(net)",
+                      "deviation_from_std_type(net)",
+                      "numba_comparison(net, numba_tolerance)"]
     diag_results = {}
-    if disconnected_elements(net):
-        diag_results["disconnected_elements"] = disconnected_elements(net)
-    if different_voltage_levels_connected(net):
-        diag_results["different_voltage_levels_connected"] = \
-            different_voltage_levels_connected(net)
-    if lines_with_impedance_close_to_zero(net, lines_min_length_km,
-                                          lines_min_z_ohm):
-        diag_results["lines_with_impedance_close_to_zero"] = \
-            lines_with_impedance_close_to_zero(net, lines_min_length_km,
-                                               lines_min_z_ohm)
-    if nominal_voltages_dont_match(net, nom_voltage_tolerance):
-        diag_results["nominal_voltages_dont_match"] = \
-            nominal_voltages_dont_match(net, nom_voltage_tolerance)
-    if invalid_values(net):
-        diag_results["invalid_values"] = invalid_values(net)
-    if overload(net, overload_scaling_factor):
-        diag_results["overload"] = overload(net, overload_scaling_factor)
-    if wrong_switch_configuration(net):
-        diag_results["wrong_switch_configuration"] = wrong_switch_configuration(net)
-    if multiple_voltage_controlling_elements_per_bus(net):
-        diag_results["multiple_voltage_controlling_elements_per_bus"] = \
-            multiple_voltage_controlling_elements_per_bus(net)
-    if no_ext_grid(net):
-        diag_results["no_ext_grid"] = no_ext_grid(net)
-    if wrong_reference_system(net):
-        diag_results["wrong_reference_system"] = wrong_reference_system(net)
-    if deviation_from_std_type(net):
-        diag_results["deviation_from_std_type"] = deviation_from_std_type(net)
-
+    for diag_function in diag_functions:
+        diag_result = eval(diag_function)
+        if diag_result:
+            diag_results[diag_function.split("(")[0]] = diag_result
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
@@ -145,10 +132,6 @@ def check_greater_zero(element, element_index, column):
         **element_index (index)**   - index of element instance, if input type restriction is not
                                       fulfilled
 
-     EXAMPLE:
-
-         import misc
-         misc.check_greater_zero(net.bus.loc[1], 1, 'vn_kv')
 
     """
 
@@ -252,11 +235,6 @@ def invalid_values(net):
                                           Format: {'element': [element_index, 'element_attribute',
                                                     attribute_value]}
 
-     EXAMPLE:
-
-        import misc
-        misc.invalid_values(net, True)
-
     """
 
     check_results = {}
@@ -343,10 +321,6 @@ def no_ext_grid(net):
 
         **net** (PandapowerNet)         - pandapower network
 
-     EXAMPLE:
-
-        import misc
-        misc.check_ext_grid(net)
 
     """
 
@@ -372,11 +346,6 @@ def multiple_voltage_controlling_elements_per_bus(net):
                                           all buses with multiple external grids
                                           Format: {'mult_ext_grids': [buses]
                                                    'buses_with_mult_gens', [buses]}
-
-     EXAMPLE:
-
-         import misc
-         misc.check_mult_gens_and_ext_grids_per_bus(net, True)
 
     """
     check_results = {}
@@ -409,11 +378,6 @@ def overload(net, overload_scaling_factor):
         **check_results** (dict)        - dict with the results of the overload check
                                           Format: {'load_overload': True/False/uncertain
                                                    'generation_overload', True/False/uncertain}
-
-     EXAMPLE:
-
-         import misc
-         misc.check_overload(net)
 
     """
     check_result = {}
@@ -463,11 +427,6 @@ def wrong_switch_configuration(net):
 
         **check_result** (boolean)
 
-     EXAMPLE:
-
-        import misc
-        misc.check_wrong_switch_configuration(net)
-
 
     """
     switch_configuration = copy.deepcopy(net.switch.closed)
@@ -500,10 +459,6 @@ def different_voltage_levels_connected(net):
                                           different voltage levels.
                                           Format: {'lines': lines, 'switches': switches}
 
-     EXAMPLE:
-
-         import misc
-         misc.check_greater_zero(net.bus.iloc[0], 0, 'vn_kv')
 
     """
     check_results = {}
@@ -540,10 +495,6 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
         **implausible_lines** (list)    - list that contains the indeces of all lines with an
                                           impedance value of zero.
 
-     EXAMPLE:
-
-        import misc
-        misc.lines_with_impedance_zero(net)
 
     """
     implausible_lines = net.line[(net.line.length_km <= lines_min_length_km)
@@ -568,11 +519,6 @@ def closed_switches_between_oos_and_is_buses(net):
         **problematic_switches** (list)  - list that contains the indeces of all switches
                                            connecting an out-of-service and an in-service bus.
 
-
-     EXAMPLE:
-
-        import misc
-        misc.problematic_switches(net)
 
     """
 
@@ -614,11 +560,6 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
                                                       'mv_bus' : trafos3w_indeces
                                                       'lv_bus' : trafo3w_indeces,
                                                       'connectors_swapped_3w' : trafo3w_indeces}}
-
-     EXAMPLE:
-
-         import misc
-         misc.deviating_nominal_voltages(net)
 
     """
     results = {}
@@ -731,11 +672,6 @@ def disconnected_elements(net):
                                                    'disconnected gens'     : gen_indeces,
                                                    'disconnected sgens'    : sgen_indeces}
 
-     EXAMPLE:
-
-         import misc
-         misc.disconnected_elements(net, True)
-
     """
 
     mg = top.create_nxgraph(net)
@@ -830,11 +766,6 @@ def wrong_reference_system(net):
 
                                           Format: {'element_type': element_indeces}
 
-     EXAMPLE:
-
-         import misc
-         misc.wrong_reference_system(net)
-
     """
     check_results = {}
     neg_loads = list(net.load[net.load.p_kw < 0].index)
@@ -847,6 +778,46 @@ def wrong_reference_system(net):
         check_results['gens'] = pos_gens
     if pos_sgens:
         check_results['sgens'] = pos_sgens
+
+    if check_results:
+        return check_results
+
+
+def numba_comparison(net, numba_tolerance):
+    """
+        Compares the results of loadflows with numba=True vs. numba=False.
+
+         INPUT:
+
+            **net** (PandapowerNet)    - pandapower network
+
+         OPTIONAL:
+
+            **tol** (float, 1e-5)      - Maximum absolute deviation allowed between
+                                         numba=True/False results.
+
+
+         RETURN:
+
+            **check_result** (dict)    - Absolute deviations between numba=True/False results.
+    """
+    check_results = {}
+    runpp(net, numba=True)
+    result_numba_true = copy.deepcopy(net)
+    runpp(net, numba=False)
+    result_numba_false = copy.deepcopy(net)
+    res_keys = [key for key in result_numba_true.keys() if (key[:4] == 'res_')]
+    for key in res_keys:
+        diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
+        if any(diffs.any()):
+            if (key not in check_results.keys()):
+                check_results[key] = {}
+            for col in diffs.columns:
+                if (col not in check_results[key].keys()) and (diffs.any()[col]):
+                    check_results[key][col] = {}
+                    numba_true = result_numba_true[key][col][diffs[col]]
+                    numba_false = result_numba_false[key][col][diffs[col]]
+                    check_results[key][col] = abs(numba_true - numba_false)
 
     if check_results:
         return check_results
@@ -866,12 +837,8 @@ def deviation_from_std_type(net):
             **check_results** (dict)   - All elements, that don't match the values in the
                                          standard type library
 
-                                              Format: (element_type, element_index, parameter)
+                                         Format: (element_type, element_index, parameter)
 
-         EXAMPLE:
-
-             import misc
-             misc.check_std_types(net)
 
         """
     check_results = {}
@@ -884,13 +851,13 @@ def deviation_from_std_type(net):
                         continue
                     if param in net[key].columns:
                         if not element[param] == std_type_values[param]:
-                            if not key in check_results.keys():
+                            if key not in check_results.keys():
                                 check_results[key] = {}
                             check_results[key][i] = {'param': param, 'e_value': element[param],
                                                      'std_type_value': std_type_values[param],
                                                      'std_type_in_lib': True}
             else:
-                if not key in check_results.keys():
+                if key not in check_results.keys():
                                 check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}
 

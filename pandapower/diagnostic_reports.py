@@ -30,7 +30,8 @@ def diagnostic_report(net, diag_results, diag_params, compact_report):
         "multiple_voltage_controlling_elements_per_bus": diag_report.report_multiple_voltage_controlling_elements_per_bus,
         "no_ext_grid": diag_report.report_no_ext_grid,
         "wrong_reference_system": diag_report.report_wrong_reference_system,
-        "deviation_from_std_type": diag_report.report_deviation_from_std_type
+        "deviation_from_std_type": diag_report.report_deviation_from_std_type,
+        "numba_comparison": diag_report.report_numba_comparison
                     }
 
     logger.warning("\n\n_____________ PANDAPOWER DIAGNOSTIC TOOL _____________ \n")
@@ -63,19 +64,19 @@ class DiagnosticReports:
             element_counter = 0
             for disc_section in diag_result:
                 if self.compact_report:
-                    logger.warning("disonnected_section: %s" %(disc_section))
+                    logger.warning("disonnected_section: %s" % (disc_section))
 
                 else:
                     logger.warning("Disconnected section found,"
                                    " consisting of the following elements:")
                     for key in disc_section:
                         element_counter += len(disc_section[key])
-                        logger.warning("%s: %s" %(key, disc_section[key]))
+                        logger.warning("%s: %s" % (key, disc_section[key]))
 
         # message summary
             if not self.compact_report:
                 logger.warning("")
-                logger.warning("SUMMARY: %s disconnected element(s) found." %(element_counter))
+                logger.warning("SUMMARY: %s disconnected element(s) found." % (element_counter))
         else:
             logger.info("PASSED: No problematic switches found")
 
@@ -97,7 +98,7 @@ class DiagnosticReports:
             for key in diag_result:
                 element_counter += len(diag_result[key])
                 if self.compact_report:
-                    logger.warning("%s:" %(key))
+                    logger.warning("%s:" % (key))
                 for element in diag_result[key]:
                     if key == "lines":
                         element_type = "line"
@@ -106,11 +107,11 @@ class DiagnosticReports:
                     buses = list(get_connected_buses_at_element(self.net, element,
                                                                      key[0]))
                     if self.compact_report:
-                        logger.warning("%s %s: buses %s" %(element_type, element, buses))
+                        logger.warning("%s %s: buses %s" % (element_type, element, buses))
                     else:
                         logger.warning("%s %s connects bus %s: %s (vn_kv = %s) "
                                        "and bus %s: %s (vn_kv = %s)"
-                                       %(element_type, element, buses[0],
+                                       % (element_type, element, buses[0],
                                          self.net.bus.name.at[buses[0]],
                                          self.net.bus.vn_kv.at[buses[0]],
                                          buses[1], self.net.bus.name.at[buses[1]],
@@ -119,7 +120,7 @@ class DiagnosticReports:
             if not self.compact_report:
                 logger.warning("")
                 logger.warning("SUMMARY: %s element(s) that connect different voltage "
-                               "levels found." %(element_counter))
+                               "levels found." % (element_counter))
         else:
             logger.info("PASSED: No problematic switches found")
 
@@ -140,7 +141,7 @@ class DiagnosticReports:
             for line in diag_result:
                 if self.compact_report:
                     logger.warning("line %s: length_km: %s; r_ohm_per_km: %s; x_ohm_per_km: %s"
-                                    %(line, self.net.line.length_km.at[line],
+                                    % (line, self.net.line.length_km.at[line],
                                       self.net.line.r_ohm_per_km.at[line],
                                       self.net.line.x_ohm_per_km.at[line]))
                 else:
@@ -148,7 +149,7 @@ class DiagnosticReports:
                                    " Impedance is close to zero. If a direct connection between"
                                    " two buses was intended, please use a"
                                    " bus-bus-switch instead."
-                                   %(line, self.net.line.length_km.at[line],
+                                   % (line, self.net.line.length_km.at[line],
                                      self.net.line.r_ohm_per_km.at[line],
                                      self.net.line.x_ohm_per_km.at[line]))
 
@@ -156,7 +157,7 @@ class DiagnosticReports:
             if not self.compact_report:
                 logger.warning("")
                 logger.warning("SUMMARY: %s line(s) with impedance close to zero found."
-                               %(len(diag_result)))
+                               % (len(diag_result)))
         else:
             logger.info("PASSED: No lines with impedance close to zero...")
 
@@ -178,23 +179,23 @@ class DiagnosticReports:
             element_counter = 0
             for element in diag_result:
                 if self.compact_report:
-                    logger.warning("%s:" %(element))
+                    logger.warning("%s:" % (element))
                 for key in diag_result[element]:
                     element_counter += len(diag_result[element][key])
                     if element == "trafo":
                         if self.compact_report:
-                            logger.warning("%s: %s" %(key, diag_result[element][key]))
+                            logger.warning("%s: %s" % (key, diag_result[element][key]))
                         else:
                             if key == "hv_lv_swapped":
                                 logger.warning("Trafo(s) %s: hv and lv connectors seem to "
-                                               "be swapped" %(diag_result[element][key]))
+                                               "be swapped" % (diag_result[element][key]))
                             elif key == "hv_bus":
                                 for trafo in diag_result[element][key]:
                                     logger.warning("Trafo %s: Nominal voltage on hv_side "
                                                    "(%s kV) and voltage_level of hv_bus "
                                                    "(bus %s with voltage_level %s kV) "
                                                    "deviate more than +/- %s percent."
-                                                    %(trafo, self.net.trafo.vn_hv_kv.at[trafo],
+                                                    % (trafo, self.net.trafo.vn_hv_kv.at[trafo],
                                                       self.net.trafo.hv_bus.at[trafo],
                                                       self.net.bus.vn_kv.at[self.net.trafo.hv_bus.at[trafo]],
                                                       nom_voltage_tolerance * 100))
@@ -204,24 +205,24 @@ class DiagnosticReports:
                                                    "(%s kV) and voltage_level of lv_bus "
                                                    "(bus %s with voltage_level %s kV) "
                                                    "deviate more than +/- %s percent."
-                                                    %(trafo, self.net.trafo.vn_lv_kv.at[trafo],
+                                                    % (trafo, self.net.trafo.vn_lv_kv.at[trafo],
                                                       self.net.trafo.lv_bus.at[trafo],
                                                       self.net.bus.vn_kv.at[self.net.trafo.lv_bus.at[trafo]],
                                                       nom_voltage_tolerance * 100))
                     if element == "trafo3w":
                         if self.compact_report:
-                            logger.warning("%s: %s" %(key, diag_result[element][key]))
+                            logger.warning("%s: %s" % (key, diag_result[element][key]))
                         else:
                             if key == "connectors_swapped_3w":
                                 logger.warning("Trafo3w %s: connectors seem to "
-                                               "be swapped" %(diag_result[element][key]))
+                                               "be swapped" % (diag_result[element][key]))
                             elif key == "hv_bus":
                                 for trafo3w in diag_result[element][key]:
                                     logger.warning("Trafo3w %s: Nominal voltage on hv_side "
                                                    "(%s kV) and voltage_level of hv_bus "
                                                    "(bus %s with voltage_level %s kV) "
                                                    "deviate more than +/- %s percent."
-                                                    %(trafo3w, self.net.trafo3w.vn_hv_kv.at[trafo3w],
+                                                    % (trafo3w, self.net.trafo3w.vn_hv_kv.at[trafo3w],
                                                       self.net.trafo3w.hv_bus.at[trafo3w],
                                                       self.net.bus.vn_kv.at[self.net.trafo3w.hv_bus.at[trafo3w]],
                                                       nom_voltage_tolerance * 100))
@@ -231,7 +232,7 @@ class DiagnosticReports:
                                                    "(%s kV) and voltage_level of mv_bus "
                                                    "(bus %s with voltage_level %s kV) "
                                                    "deviate more than +/- %s percent."
-                                                    %(trafo3w, self.net.trafo3w.vn_mv_kv.at[trafo3w],
+                                                    % (trafo3w, self.net.trafo3w.vn_mv_kv.at[trafo3w],
                                                       self.net.trafo3w.mv_bus.at[trafo3w],
                                                       self.net.bus.vn_kv.at[self.net.trafo3w.mv_bus.at[trafo3w]],
                                                       nom_voltage_tolerance * 100))
@@ -241,7 +242,7 @@ class DiagnosticReports:
                                                    "(%s kV) and voltage_level of lv_bus "
                                                    "(bus %s with voltage_level %s kV) "
                                                    "deviate more than +/- %s percent."
-                                                    %(trafo3w, self.net.trafo3w.vn_lv_kv.at[trafo3w],
+                                                    % (trafo3w, self.net.trafo3w.vn_lv_kv.at[trafo3w],
                                                       self.net.trafo3w.lv_bus.at[trafo3w],
                                                       self.net.bus.vn_kv.at[self.net.trafo3w.lv_bus.at[trafo3w]],
                                                       nom_voltage_tolerance * 100))
@@ -250,7 +251,7 @@ class DiagnosticReports:
             if not self.compact_report:
                 logger.warning("")
                 logger.warning("SUMMARY: %s components(s) with deviating nominal voltages found"
-                               %(element_counter))
+                               % (element_counter))
         else:
             logger.info("PASSED: No components with deviating nominal voltages found")
 
@@ -271,16 +272,16 @@ class DiagnosticReports:
             element_counter = 0
             for element_type in diag_result:
                 element_counter += len(diag_result[element_type])
-                logger.warning("%s:" %(element_type))
+                logger.warning("%s:" % (element_type))
                 for inv_value in diag_result[element_type]:
                     if self.compact_report:
                         logger.warning("%s %s: '%s' = %s (restriction: %s)"
-                                       %(element_type, inv_value[0], inv_value[1], inv_value[2],
+                                       % (element_type, inv_value[0], inv_value[1], inv_value[2],
                                          inv_value[3]))
                     else:
                         logger.warning("Invalid value found: '%s %s' with attribute '%s' = %s "
                                        "(data type: %s). Valid input needs to be %s."
-                                       %(element_type, inv_value[0], inv_value[1], inv_value[2],
+                                       % (element_type, inv_value[0], inv_value[1], inv_value[2],
                                          type(inv_value[2]), inv_value[3]))
 
         # message summary
@@ -313,7 +314,7 @@ class DiagnosticReports:
                     else:
                         logger.warning("Possibly overload found: power flow converges with "
                                        "%s scaled down to %s percent."
-                                       %(overload_type, overload_scaling_factor*100))
+                                       % (overload_type, overload_scaling_factor*100))
                 elif diag_result[overload_type] is 'uncertain':
                     if self.compact_report:
                         logger.warning("power flow still does not converge after %s "
@@ -321,7 +322,7 @@ class DiagnosticReports:
                     else:
                         logger.warning("Overload check failed: Power flow still does not "
                                        "converge with %s scaled down to %s percent."
-                                       %(overload_type, overload_scaling_factor*100))
+                                       % (overload_type, overload_scaling_factor*100))
         # message summary
         else:
             logger.info("PASSED: Power flow converges. No overload found.")
@@ -384,24 +385,24 @@ class DiagnosticReports:
             for feeder_type in diag_result:
                 element_counter += len(diag_result[feeder_type])
                 if self.compact_report:
-                    logger.warning("%s: %s" %(feeder_type, diag_result[feeder_type]))
+                    logger.warning("%s: %s" % (feeder_type, diag_result[feeder_type]))
 
                 else:
                     for bus in diag_result[feeder_type]:
                         if feeder_type is "buses_with_mult_ext_grids":
                             logger.warning("External grids %s are connected to bus %s. Only one "
                                            "external grid per bus is allowed."
-                                           %(list(self.net.ext_grid[self.net.ext_grid.bus
+                                           % (list(self.net.ext_grid[self.net.ext_grid.bus
                                                                     == bus].index), bus))
                         elif feeder_type is "buses_with_mult_gens":
                             logger.warning("Generators %s are connected to bus %s. Only one "
                                            "generator per bus is allowed."
-                                           %(list(self.net.gen[self.net.gen.bus == bus].index), bus))
+                                           % (list(self.net.gen[self.net.gen.bus == bus].index), bus))
                         elif feeder_type is "buses_with_gens_and_ext_grids":
                             logger.warning("Generator(s) %s and external grid(s) %s are connected "
                                            "to bus %s. Only one generator OR one external grids "
                                            "per bus is allowed."
-                                           %(list(self.net.gen[self.net.gen.bus == bus].index),
+                                           % (list(self.net.gen[self.net.gen.bus == bus].index),
                                              list(self.net.ext_grid[self.net.ext_grid.bus
                                                                     == bus].index), bus))
 
@@ -409,7 +410,7 @@ class DiagnosticReports:
             if not self.compact_report:
                 logger.warning("")
                 logger.warning("SUMMARY: %s bus(ses) with multiple gens and/or ext_grids "
-                               "found." %(element_counter))
+                               "found." % (element_counter))
         else:
             logger.info("PASSED: No buses with multiple gens and/or ext_grids found.")
 
@@ -431,33 +432,33 @@ class DiagnosticReports:
                 if element_type is "loads":
                     if self.compact_report:
                         logger.warning("loads %s: wrong reference system."
-                                       %(diag_result[element_type]))
+                                       % (diag_result[element_type]))
                     else:
                         for load in diag_result[element_type]:
                             logger.warning("Found load %s: '%s' with p_kw = %s. In load reference "
                                            "system p_kw should be positive."
-                                           %(load, self.net.load.name.at[load],
+                                           % (load, self.net.load.name.at[load],
                                              self.net.load.p_kw.at[load]))
 
                 elif element_type is "gens":
                     if self.compact_report:
                         logger.warning("gens %s: wrong reference system."
-                                       %(diag_result[element_type]))
+                                       % (diag_result[element_type]))
                     else:
                         for gen in diag_result[element_type]:
                             logger.warning("Found gen %s: '%s' with p_kw = %s. In load reference "
                             "system p_kw should be negative."
-                            %(gen, self.net.gen.name.at[gen], self.net.gen.p_kw.at[gen]))
+                            % (gen, self.net.gen.name.at[gen], self.net.gen.p_kw.at[gen]))
 
                 elif element_type is "sgens":
                     if self.compact_report:
                         logger.warning("sgens %s: wrong reference system."
-                                       %(diag_result[element_type]))
+                                       % (diag_result[element_type]))
                     else:
                         for sgen in diag_result[element_type]:
                             logger.warning("Found sgen %s: '%s' with p_kw = %s. In load reference "
                             "system p_kw should be negative."
-                            %(sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
+                            % (sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
 
         # message summary
             if not self.compact_report:
@@ -466,17 +467,17 @@ class DiagnosticReports:
                     logger.warning("SUMMARY: Found %s load(s) with negative p_kw. In load "
                                    "reference system, p_kw should be positive. If the intention "
                                    "was to model a constant generation, please use an sgen instead."
-                                   %(len(diag_result['loads'])))
+                                   % (len(diag_result['loads'])))
                 if 'gens' in diag_result:
                     logger.warning("SUMMARY: Found %s gen(s) with positive p_kw. In load "
                                    "reference system, p_kw should be negative. If the intention "
                                    "was to model a load, please use a load instead."
-                                   %(len(diag_result['gens'])))
+                                   % (len(diag_result['gens'])))
                 if 'sgens' in diag_result:
                     logger.warning("SUMMARY: Found %s sgen(s) with positive p_kw. In load "
                                    "reference system, p_kw should be negative. If the intention "
                                    "was to model a load, please use a load instead."
-                                   %(len(diag_result['sgens'])))
+                                   % (len(diag_result['sgens'])))
 
         else:
             logger.info("PASSED: power flow converges. No overload found.")
@@ -501,16 +502,51 @@ class DiagnosticReports:
                     values = diag_result[et][eid]
                     if values['std_type_in_lib']:
                         logger.warning("%s %s: %s = %s, std_type_value = %s"
-                                       %(et, eid, values['param'], values['e_value'],
+                                       % (et, eid, values['param'], values['e_value'],
                                          values['std_type_value']))
                     else:
                         logger.warning("%s %s: No valid std_type or std_type not in net.std_types"
-                                       %(et, eid))
+                                       % (et, eid))
 
         # message summary
             if not self.compact_report:
                 logger.warning("")
                 logger.warning("SUMMARY: %s elements with deviations from std_type found."
-                               %(element_counter))
+                               % (element_counter))
         else:
             logger.info("PASSED: No elements with deviations from std_type found.")
+
+
+    def report_numba_comparison(self):
+
+        if "numba_comparison" in self.diag_results:
+        # message header
+            if self.compact_report:
+                logger.warning("numba_comparison:")
+            else:
+                logger.warning("Checking for deviations between numba = True vs. False...")
+            logger.warning("")
+
+        # message body
+            diag_result = self.diag_results["numba_comparison"]
+            element_counter = 0
+            for element_type in diag_result:
+                for res_type in diag_result[element_type]:
+                    if self.compact_report:
+                        logger.warning("%s.%s absolute deviations:\n%s"
+                                       % (element_type, res_type,
+                                          diag_result[element_type][res_type]))
+                    else:
+                        for idx in diag_result[element_type][res_type].index:
+                            element_counter += 1
+                            dev = diag_result[element_type][res_type].loc[idx]
+                            logger.warning("%s.%s at index %s: absolute deviation = %s"
+                                           % (element_type, res_type, idx, dev))
+
+        # message summary
+            if not self.compact_report:
+                logger.warning("")
+                logger.warning("SUMMARY: %s results with deviations between numba = True vs. \
+                                False found." % (element_counter))
+        else:
+            logger.info("PASSED: No results with deviations between numba = True vs. False found.")
