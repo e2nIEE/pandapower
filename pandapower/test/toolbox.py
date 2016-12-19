@@ -248,7 +248,7 @@ def create_test_line(net, b1, b2, in_service=True):
                                           in_service=in_service,index=pp.get_free_id(net.line) + 1)
 
 if __name__ == "__main__":
-    net_nr = create_test_network2()
+#    net_nr = create_test_network2()
 #    pp.to_pickle(net_nr, "testgrid.p")
 #    pp.rundcpp(net_nr)
 #    net_dc = create_test_network2()
