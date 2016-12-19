@@ -5,6 +5,7 @@ unreleased
 ----------------------
 - [FIXED] bug in create_transformer function for tp_pos parameter
 - [ADDED] impedance element can now be used with unsymetric impedances zij != zji
+- [ADDED] simple plotting function. Call pp.simple_plot(net) to directly plot the network
 
 
 [1.0.2] - 2016-11-30
