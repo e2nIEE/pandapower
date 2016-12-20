@@ -6,4 +6,4 @@ The function simple_plot() can be used for simple plotting. For advanced possibi
 
 .. _simple_plot:
 
-.. autofunction:: pandapower.simple_plot
+.. autofunction:: pandapower.plotting.simple_plot
