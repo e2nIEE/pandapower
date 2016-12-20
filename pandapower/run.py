@@ -513,8 +513,11 @@ def _ppc2ppci(ppc, ppci, bus_lookup):
         ppc["areas"][:, PRICE_REF_BUS] = \
             e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(int)].copy()
 
-    # reorder gens in order of increasing bus number
-    ppc['gen'] = ppc['gen'][ppc['gen'][:, GEN_BUS].argsort(), ]
+    # reorder gens (and gencosts) in order of increasing bus number
+    sort_gens = ppc['gen'][:, GEN_BUS].argsort()
+    ppc['gen'] = ppc['gen'][sort_gens, ]
+    if 'gencost' in ppc:
+        ppc['gencost'] = ppc['gencost'][sort_gens, ]
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -538,6 +541,9 @@ def _ppc2ppci(ppc, ppci, bus_lookup):
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
     ppci["gen"] = ppc["gen"][gs]
+
+    if 'gencost' in ppc:
+        ppci["gencost"] = ppc["gencost"][gs]
 
     # execute userfcn callbacks for 'ext2int' stage
     if 'userfcn' in ppci:

@@ -21,7 +21,7 @@ from scipy import sparse
 import warnings
 
 
-def _pd2ppc_opf(net, is_elems, sg_is):
+def _pd2ppc_opf(net, is_elems, sg_is, ppopt, cost_function, **kwargs):
     """ we need to put the sgens into the gen table instead of the bsu table
     so we need to change _pd2ppc a little to get the ppc we need for the OPF
     """
@@ -60,11 +60,15 @@ def _pd2ppc_opf(net, is_elems, sg_is):
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, ppc)
+
+    # make opf objective
+    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, cost_function, **kwargs)
+
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
-    return ppc, ppci, bus_lookup
+    return ppc, ppci, bus_lookup, ppopt
 
 
 def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", lambda_opf=1000, **kwargs):

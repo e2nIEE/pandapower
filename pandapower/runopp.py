@@ -81,15 +81,13 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
     else:
         sg_is = DataFrame()
 
-    ppc, ppci, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is)
-    ppci, ppopt = _make_objective(ppci, net, is_elems, sg_is, ppopt, cost_function, **kwargs)
+    ppc, ppci, bus_lookup, ppopt = _pd2ppc_opf(net, is_elems, sg_is, ppopt, cost_function, **kwargs)
     net["_ppc_opf"] = ppc
 
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             result = opf(ppci, ppopt)
-            # _delete_cols_ppci_after_opf(result)
             if not result["success"]:
                 raise OPFNotConverged("Optimal Power Flow did not converge!")
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
@@ -98,16 +96,3 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
     _extract_results_opf(net, result, is_elems, bus_lookup,  "current", True)
-
-def _delete_cols_ppci_after_opf(ppc):
-
-    ppc['bus'] = np.delete(ppc['bus'], range(LAM_P, MU_VMIN+1), 1)
-    ppc['branch'] = np.delete(ppc['bus'], range(MU_ANGMIN, MU_ANGMAX + 1), 1)
-
-
-
-    # if shape(ppc['gen'])[1] < MU_QMIN + 1:
-    #     ppc['gen'] = c_[ppc['gen'], zeros((ng, MU_QMIN + 1 - shape(ppc['gen'])[1]))]
-    #
-    # if shape(ppc['branch'])[1] < MU_ANGMAX + 1:
-    #     ppc['branch'] = c_[ppc['branch'], zeros((nl, MU_ANGMAX + 1 - shape(ppc['branch'])[1]))]
