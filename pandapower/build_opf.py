@@ -55,7 +55,7 @@ def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
     _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
                       set_opf_constraints=True)
     _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
-    _calc_loads_and_add_opf(net, ppc, bus_lookup)
+    _calc_loads_and_add_opf(net, ppc, bus_lookup, is_elems)
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, ppc)
@@ -352,27 +352,31 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         ppc["gen"][eg_end:gen_end, [PMAX]] = pmax
 
 
-def _calc_loads_and_add_opf(net, ppc, bus_lookup):
+def _calc_loads_and_add_opf(net, ppc, bus_lookup, is_elems):
     """ we need to exclude controllable sgens from the bus table
     """
+    b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     l = net["load"]
-    vl = l["in_service"].values * l["scaling"].values.T / float64(1000.)
-    lp = l["p_kw"].values * vl
-    lq = l["q_kvar"].values * vl
+    vl = is_elems["load"] * l["scaling"].values.T / float64(1000.)
+    q = np.hstack([q, l["q_kvar"].values * vl])
+    p = np.hstack([p, l["p_kw"].values * vl])
+    b = np.hstack([b, l["bus"].values])
 
-    sgen = net["sgen"]
-    if not sgen.empty:
-        vl = (sgen["in_service"].values & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+    s = net["sgen"]
+    if not s.empty:
+        vl = (is_elems["sgen"] & ~s["controllable"]) * s["scaling"].values.T / \
             float64(1000.)
-        sp = sgen["p_kw"].values * vl
-        sq = sgen["q_kvar"].values * vl
+        q = np.hstack([q, s["q_kvar"].values * vl])
+        p = np.hstack([p, s["p_kw"].values * vl])
+        b = np.hstack([b, s["bus"].values])
     else:
         sp = []
         sq = []
 
-    b = bus_lookup[hstack([l["bus"].values, sgen["bus"].values])]
-    b, vp, vq = _sum_by_group(b, hstack([lp, sp]), hstack([lq, sq]))
+    if b.size:
+        b = bus_lookup[b]
+        b, vp, vq = _sum_by_group(b, p, q)
 
-    ppc["bus"][b, PD] = vp
-    ppc["bus"][b, QD] = vq
+        ppc["bus"][b, PD] = vp
+        ppc["bus"][b, QD] = vq
