@@ -362,7 +362,7 @@ def test_minimize_active_power_curtailment():
     assert allclose(net.res_bus.va_degree.values, array([ 0.        , -0.75048127, -0.32215732,  2.80089141]), atol=1e-9)
 
     try:
-        pp.runopp(net, verbose=False, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
+        pp.runopp(net, verbose=False, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                               PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
     except OPFNotConverged:
         pass

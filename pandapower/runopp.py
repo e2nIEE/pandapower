@@ -68,7 +68,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    ppopt = ppoption(VERBOSE=verbose, **kwargs)
+    ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, **kwargs)
     net["OPF_converged"] = False
 
     reset_results(net)
