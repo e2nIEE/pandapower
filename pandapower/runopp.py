@@ -68,8 +68,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    ppopt = ppoption(OPF_VIOLATION=1e-1, PDIPM_GRADTOL=1e-1, PDIPM_COMPTOL=1e-1,
-                     PDIPM_COSTTOL=1e-1, OUT_ALL=0, VERBOSE=verbose, OPF_ALG=560, **kwargs)
+    ppopt = ppoption(VERBOSE=verbose, **kwargs)
     net["OPF_converged"] = False
 
     reset_results(net)
@@ -81,13 +80,13 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
     else:
         sg_is = DataFrame()
 
-    ppc, ppci, bus_lookup, ppopt = _pd2ppc_opf(net, is_elems, sg_is, ppopt, cost_function, **kwargs)
+    ppc, ppci, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs)
     net["_ppc_opf"] = ppc
 
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = opf(ppci, ppopt)
+            result = opf(ppci,ppopt) #, ppopt)
             if not result["success"]:
                 raise OPFNotConverged("Optimal Power Flow did not converge!")
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly

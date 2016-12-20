@@ -14,14 +14,13 @@ from pypower.idx_bus import BUS_TYPE, PD, QD
 from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pypower.idx_bus import PV, REF, VA, VM, PQ, VMAX, VMIN
 from pypower.idx_brch import T_BUS, F_BUS
-import pypower.ppoption as ppoption
 import numpy.core.numeric as ncn
 from pandapower.auxiliary import _sum_by_group
 from scipy import sparse
 import warnings
 
 
-def _pd2ppc_opf(net, is_elems, sg_is, ppopt, cost_function, **kwargs):
+def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
     """ we need to put the sgens into the gen table instead of the bsu table
     so we need to change _pd2ppc a little to get the ppc we need for the OPF
     """
@@ -62,24 +61,22 @@ def _pd2ppc_opf(net, is_elems, sg_is, ppopt, cost_function, **kwargs):
     _set_isolated_buses_out_of_service(net, ppc)
 
     # make opf objective
-    ppc, ppopt = _make_objective(ppc, net, is_elems, sg_is, ppopt, cost_function, **kwargs)
+    ppc = _make_objective(ppc, net, is_elems, sg_is, cost_function, **kwargs)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
-    return ppc, ppci, bus_lookup, ppopt
+    return ppc, ppci, bus_lookup
 
 
-def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", lambda_opf=1000, **kwargs):
+def _make_objective(ppc, net, is_elems, sg_is, objectivetype="linear", lambda_opf=1000, **kwargs):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
 
     INPUT:
         **ppc** - Matpower case of the net
-
-        **ppopt** -
 
     OPTIONAL:
 
@@ -155,8 +152,6 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
 #        p[p == 0] = 1e-6
 #        ppc["gencost"][nref:ng, 6] = array(p)
 
-        ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
-                                  PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
 
     if objectivetype == "linear_minloss":
 
@@ -174,9 +169,6 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
 #        ppc["gencost"][nref:ng, 6] = array(p)
 
         #print(ppc["gencost"][nref:ng, 6])
-
-        ppopt = ppoption.ppoption(ppopt, OPF_FLOW_LIM=2, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
-                                  PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
 
         # Get additional counts
         nb = len(ppc["bus"])
@@ -251,7 +243,7 @@ def _make_objective(ppc, net, is_elems, sg_is, ppopt, objectivetype="linear", la
         ppc["u"] = u
         ppc["fparm"] = hstack((d, r, k, m))
 
-    return ppc, ppopt
+    return ppc
 
 
 def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is):
