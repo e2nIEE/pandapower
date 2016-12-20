@@ -16,7 +16,8 @@ from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import get_values
 
 
-def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
+def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, 
+                      set_opf_constraints=False):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.

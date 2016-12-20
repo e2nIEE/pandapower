@@ -14,8 +14,8 @@ Amount of Measurements
 
 There is a minimum amount of required measurements necessary for the regression to be mathematically possible.
 Assuming the network contains :math:`n` buses, the network is then described by :math:`2n` variables, namely :math:`n` voltage absolute values and :math:`n` voltage angles.
-The slack bus serves as a reference, its voltage angle is set to the value provided in the corresponding *net.ext_grid.va_degree* entry and is not altered in the estimation process.
-The other voltage angles are relative to the voltage angle of the slack bus. The state estimation therefore has to find :math:`2n-k` variables, where :math:`k` is the number of defined slack buses.
+A slack bus serves as the reference, its voltage angle is set to zero or the value provided in the corresponding *net.ext_grid.va_degree* entry (see *init* parameter) and is not altered in the estimation process.
+The voltage angles of the other network buses are relative to the voltage angles of the connected slack bus. The state estimation therefore has to find :math:`2n-k` variables, where :math:`k` is the number of defined slack buses.
 The minimum amount of measurements :math:`m_{min}` needed for the method to work is therefore:
 
 :math:`m_{min} = 2n-k`
@@ -30,8 +30,8 @@ Therefore each measurement is assigned an accuracy value in the form of a standa
 For a more in-depth explanation of the internals of the state estimation method, please see the following sources:  
 
 .. seealso::
-	- *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito    
-	- *State Estimation in Electric Power Systems - A Generalized Approach* by A. Monticelli
+	- *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito, CRC Press, 2004.   
+	- *State Estimation in Electric Power Systems - A Generalized Approach* by A. Monticelli, Springer, 1999.  
 
 
 Defining Measurements

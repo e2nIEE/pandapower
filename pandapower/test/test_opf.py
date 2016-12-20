@@ -299,7 +299,6 @@ def test_opf_oberrhein():
    import pandapower.networks as nw
    # create net
    net = nw.mv_oberrhein()
-#    net = nw.ms_oberrhein_radial()
    net.bus["max_vm_pu"]=1.1
    net.bus["min_vm_pu"]=0.9
    net.line["max_loading_percent"]=200
@@ -311,24 +310,11 @@ def test_opf_oberrhein():
    net.sgen["controllable"] =1
    # run OPF
    pp.runopp(net, verbose=False)
-#    assert net["OPF_converged"]
+   assert net["OPF_converged"]
 
 
 #def test_linear_minloss_cost_fnc():
 
 
 if __name__ == "__main__":
-    """ test for optimal power flow using default cost function "maxp"
-    """
-#    import time
-#    t = time.time()
-    pytest.main(["test_opf.py", "-x"])
-#    elapsed = time.time()-t
-    logger.setLevel("DEBUG")
-#    test_simplest_voltage()
-#    test_simplest_dispatch()
-#    test_opf_gen_voltage()
-#    test_opf_sgen_voltage()
-#    net =test_opf_gen_loading()
-#    net = test_opf_sgen_loading()
-#    test_eg_voltage()
+    pytest.main(["test_opf.py", "-s"])

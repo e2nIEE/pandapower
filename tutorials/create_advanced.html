@@ -13929,7 +13929,7 @@ div#notebook {
       <td>Shunt</td>
       <td>-960.0</td>
       <td>0.0</td>
-      <td>1</td>
+      <td>True</td>
     </tr>
   </tbody>
 </table>
@@ -13969,7 +13969,7 @@ div#notebook {
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Impedance</span>
 <span class="n">pp</span><span class="o">.</span><span class="n">create_impedance</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">pp</span><span class="o">.</span><span class="n">get_element_index</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;bus&quot;</span><span class="p">,</span> <span class="s1">&#39;Bus HV3&#39;</span><span class="p">),</span> <span class="n">pp</span><span class="o">.</span><span class="n">get_element_index</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;bus&quot;</span><span class="p">,</span> <span class="s1">&#39;Bus HV1&#39;</span><span class="p">),</span> 
-                    <span class="n">r_pu</span><span class="o">=</span><span class="mf">0.074873</span><span class="p">,</span> <span class="n">x_pu</span><span class="o">=</span><span class="mf">0.198872</span><span class="p">,</span> <span class="n">sn_kva</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Impedance&#39;</span><span class="p">)</span>
+                    <span class="n">rij_pu</span><span class="o">=</span><span class="mf">0.074873</span><span class="p">,</span> <span class="n">xij_pu</span><span class="o">=</span><span class="mf">0.198872</span><span class="p">,</span> <span class="n">sn_kva</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Impedance&#39;</span><span class="p">)</span>
 
 <span class="c1"># show impedance table</span>
 <span class="n">net</span><span class="o">.</span><span class="n">impedance</span>
@@ -13994,8 +13994,10 @@ div#notebook {
       <th>name</th>
       <th>from_bus</th>
       <th>to_bus</th>
-      <th>r_pu</th>
-      <th>x_pu</th>
+      <th>rij_pu</th>
+      <th>xij_pu</th>
+      <th>rji_pu</th>
+      <th>xji_pu</th>
       <th>sn_kva</th>
       <th>in_service</th>
     </tr>
@@ -14006,6 +14008,8 @@ div#notebook {
       <td>Impedance</td>
       <td>34</td>
       <td>32</td>
+      <td>0.074873</td>
+      <td>0.198872</td>
       <td>0.074873</td>
       <td>0.198872</td>
       <td>100000.0</td>

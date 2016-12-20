@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pandapower',
-    version='1.0.3',
+    version='1.1.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
@@ -20,7 +20,7 @@ setup(
                       "scipy",
                       "pandas",
                       "networkx",
-                      "numba>0.2.5.0"],
+                      "numba>=0.25.0"],
     packages=find_packages(),
     include_package_data=True,
     classifiers=[

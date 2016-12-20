@@ -6,7 +6,7 @@
 
 import copy
 import numpy as np
-from numpy import array, ones, arange, zeros, complex128, nan_to_num, hstack, abs, isnan, float64, max
+from numpy import array, ones, zeros, complex128, nan_to_num, hstack, abs, isnan, float64
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses
 from pandapower.build_bus import _build_bus_ppc, _calc_shunts_and_add_on_ppc
 from pandapower.run import _set_isolated_buses_out_of_service, _ppc2ppci
@@ -279,7 +279,6 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         ppc["gen"][gen_end:sg_end, QG] = sg_is["q_kvar"].values
 
         # set bus values for generator buses
-        sg_buses = bus_lookup[sg_is["bus"].values]
         gen_buses = bus_lookup[sg_is["bus"].values]
         ppc["bus"][gen_buses, BUS_TYPE] = PQ
 
