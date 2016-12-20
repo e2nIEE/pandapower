@@ -32,7 +32,13 @@ Advantages and Contributions
     - all native `networkx algorithms <https:/networkx.readthedocs.io/en/stable/reference/algorithms.html>`_ can be used to perform graph searches on pandapower networks
     - pandapower provides some search algorithms specialiced on electric power networks
 
-5. Plotting and geographical data
+5. Plotting and Geographical Data
     - geographical data for buses and lines can be stored in the pandapower datastructure
     - networks with geographic information can be plotted using matplotlib
     - if no geographical information is available for the buses, generic coordinates can be created through a `python-igraph <http:/igraph.org/python/>`_ interface
+
+6. State Estimation
+    - data structure to manage measurements for real-time simulations
+    - WLS state estimation generates an exact grid state out of unexact measurements
+    - WLS as the industry standard is a good reference for evaluating new state estimation developments
+    - Bad data detection and filtering methods improve performance of the state estimator (upcoming)
