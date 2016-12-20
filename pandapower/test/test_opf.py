@@ -312,9 +312,54 @@ def test_opf_oberrhein():
    pp.runopp(net, verbose=False)
    assert net["OPF_converged"]
 
+def test_minimize_active_power_curtailment():
+    net = pp.create_empty_network()
+
+    # create buses
+    bus1 = pp.create_bus(net, vn_kv=220.)
+    bus2 = pp.create_bus(net, vn_kv=110.)
+    bus3 = pp.create_bus(net, vn_kv=110.)
+    bus4 = pp.create_bus(net, vn_kv=110.)
+
+    # create 220/110 kV transformer
+    pp.create_transformer(net, bus1, bus2, std_type="100 MVA 220/110 kV")
+
+    # create 110 kV lines
+    pp.create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
+
+    # create loads
+    pp.create_load(net, bus2, p_kw=60e3)
+    pp.create_load(net, bus3, p_kw=70e3)
+    pp.create_load(net, bus4, p_kw=10e3)
+
+    # create generators
+    eg = pp.create_ext_grid(net, bus1)
+    g0 = pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=0, max_p_kw=-80e3, vm_pu=1.01, controllable=True)
+    g1 = pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=0, max_p_kw=-100e3, vm_pu=1.01, controllable=True)
+
+    net.ext_grid.loc[eg, "cost_per_kw"] = 0.10
+    net.gen.loc[g0, "cost_per_kw"] = 0.15
+    net.gen.loc[g1, "cost_per_kw"] = 0.12
+
+    net.trafo["max_loading_percent"] = 50
+    net.line["max_loading_percent"] = 50
+
+    net.bus["min_vm_pu"] = 1.0
+    net.bus["max_vm_pu"] = 1.02
+
+    net.ext_grid.cost_per_kw = 0
+    net.gen.cost_per_kw = -1
+
+    pp.runopp(net)
+    # logger.info(net['res_bus'])
+    assert net["OPF_converged"]
+    # ToDo: Werte abtesten (@rieke)
 
 #def test_linear_minloss_cost_fnc():
 
 
 if __name__ == "__main__":
     pytest.main(["test_opf.py", "-s"])
+    # test_minimize_active_power_curtailment()

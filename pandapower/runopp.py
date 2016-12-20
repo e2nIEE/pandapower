@@ -87,7 +87,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = opf(ppci, ppopt)
+            result = opf(ppci)
             if not result["success"]:
                 raise OPFNotConverged("Optimal Power Flow did not converge!")
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
