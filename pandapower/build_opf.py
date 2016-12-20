@@ -55,7 +55,7 @@ def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
     _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
                       set_opf_constraints=True)
     _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
-    _calc_loads_and_add_opf(net, ppc, bus_lookup)
+    _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup)
     _switch_branches(net, ppc, is_elems, bus_lookup)
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     _set_isolated_buses_out_of_service(net, ppc)
@@ -352,18 +352,18 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         ppc["gen"][eg_end:gen_end, [PMAX]] = pmax
 
 
-def _calc_loads_and_add_opf(net, ppc, bus_lookup):
+def _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup):
     """ we need to exclude controllable sgens from the bus table
     """
 
     l = net["load"]
-    vl = l["in_service"].values * l["scaling"].values.T / float64(1000.)
+    vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
     lp = l["p_kw"].values * vl
     lq = l["q_kvar"].values * vl
 
     sgen = net["sgen"]
     if not sgen.empty:
-        vl = (sgen["in_service"].values & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+        vl = (is_elems["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
             float64(1000.)
         sp = sgen["p_kw"].values * vl
         sq = sgen["q_kvar"].values * vl
