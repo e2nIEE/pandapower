@@ -5,15 +5,12 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-import warnings
 import copy
-
-from scipy.sparse import csr_matrix as sparse
 
 import pypower.ppoption as ppopt
 from pypower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pypower.idx_gen import GEN_BUS, GEN_STATUS
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, QT
+from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pypower.idx_area import PRICE_REF_BUS
 from pypower.run_userfcn import run_userfcn
 

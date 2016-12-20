@@ -6,7 +6,8 @@ from pandapower.auxiliary import *
 from pandapower.std_types import *
 from pandapower.diagnostic import *
 from pandapower.runopp import *
-from pandapower.plotting.simple_plot import simple_plot
 
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
+
+__version__ = "1.1.0"

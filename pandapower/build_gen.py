@@ -73,7 +73,6 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
     # add extended ward pv node data
     if xw_end > gen_end:
         xw = net["xward"]
-        bus_is = is_elems['bus']
         xw_is = is_elems['xward']
         ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
         ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
@@ -139,7 +138,6 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
     # add extended ward pv node data
     if xw_end > gen_end:
         xw = net["xward"]
-        bus_is = is_elems['bus']
         xw_is = is_elems["xward"]
         ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
         ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
