@@ -347,7 +347,7 @@ def test_minimize_active_power_curtailment():
     net.line["max_loading_percent"] = 50
 
     net.bus["min_vm_pu"] = 1.0
-    net.bus["max_vm_pu"] = 1.02
+    net.bus["max_vm_pu"] = 1.021
 
     net.ext_grid.cost_per_kw = 0
     net.gen.cost_per_kw = -1
