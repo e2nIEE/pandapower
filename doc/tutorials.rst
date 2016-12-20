@@ -1,8 +1,8 @@
 .. _tutorial:
 
-=================
+########################
 Tutorials
-=================
+########################
 
 There are jupyter notebook tutorials on how to:
 
@@ -13,7 +13,8 @@ There are jupyter notebook tutorials on how to:
     - use pandas for data analysis in pandapower: `data_analysis <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/data_analysis.html>`_
     - run topological searches in pandapower: `topology <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/topology.html>`_
     - plot pandapower networks: `plotting <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting.html>`_
-    - optimal power flow: `opf <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf.html>`_
+    - configure and run an optimal power flow : `opf <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf.html>`_
+    - condfigure and run a state estimation: `opf <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/state_estimation.html>`_
     
 To run the tutorials interactively (jupyter module is needed):
 

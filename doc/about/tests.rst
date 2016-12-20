@@ -43,7 +43,7 @@ pandapower is tested with python 2.7: ::
 python 3.4: ::
 
     ============================= test session starts =============================
-    platform win32 -- Python 2.7.12, pytest-3.0.5, py-1.4.32, pluggy-0.4.0
+    platform win32 -- Python 3.4.4, pytest-3.0.5, py-1.4.32, pluggy-0.4.0
     collected 119 items
 
     test_auxiliary.py .
@@ -63,7 +63,7 @@ python 3.4: ::
     test_toolbox.py .....
     test_wls_estimation.py ...........
 
-    ========================= 119 passed in 61.42 seconds =========================
+    ========================= 119 passed in 64.94 seconds =========================
 
 and python 3.5: ::
 

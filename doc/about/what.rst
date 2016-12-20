@@ -31,11 +31,12 @@ pandapower allows
     - solving three phase AC, DC and optimal power flow problems
     - topological searches in electric networks
     - plotting of structural and/or geographical network plans
+    - configuring and running state estimation
 
 pandapower does not yet support:
     - static short circuit calculation (currently in development)
     - unbalanced power flow problems (planned, but not currently in development)
-    - RMS simulation (theoretically possible, but not currently in development)
+    - RMS simulation (planned, but not currently in development)
     
 pandapower does not, and most likely never will, support:
     - electromagnetic transient simulations

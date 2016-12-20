@@ -41,4 +41,4 @@ Advantages and Contributions
     - data structure to manage measurements for real-time simulations
     - WLS state estimation generates an exact grid state out of unexact measurements
     - WLS as the industry standard is a good reference for evaluating new state estimation developments
-    - Bad data detection and filtering methods improve performance of the state estimator (upcoming)
+    - bad data detection and filtering methods improve performance of the state estimator (upcoming)
