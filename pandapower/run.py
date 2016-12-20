@@ -100,7 +100,6 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             Contains a dict with the following parameters:
             is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
             ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
-            bus_lookup: If True the bus_lookup variable (Indices Pandapower -> ppc) is taken from net["_bus_lookup"]
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
 
         ****kwargs** - options to use for PYPOWER.runpf
@@ -154,7 +153,6 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             Contains a dict with the following parameters:
             is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
             ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
-            bus_lookup: If True the bus_lookup variable (Indices Pandapower -> ppc) is taken from net["_bus_lookup"]
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
 
         ****kwargs** - options to use for PYPOWER.runpf
