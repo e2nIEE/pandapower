@@ -25,7 +25,7 @@ To perform well however, the number of redundant measurements should be higher. 
 Standard Deviation
 ---------------------
 Since each measurement device may have a different tolerance and a different path length it has to travel to the control center, the accuracy of each measurement can be different.
-Therefore each measurement is assigned an accuracy value in the form of a standard deviation. Typical standard deviations are 1 % for voltage measurements and 1-3 % for power measurements.
+Therefore each measurement is assigned an accuracy value in the form of a standard deviation. Typical measurement errors are 1 % for voltage measurements and 1-3 % for power measurements.
 
 For a more in-depth explanation of the internals of the state estimation method, please see the following sources:  
 

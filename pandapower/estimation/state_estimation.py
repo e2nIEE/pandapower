@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# BSD-style license that can be found in the LICENSE file.
+
 import numpy as np
 import logging
 import pandas as pd
@@ -12,7 +18,6 @@ from pypower.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
-__author__ = 'menke, nbornhorst'
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,

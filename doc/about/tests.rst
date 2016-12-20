@@ -6,14 +6,90 @@ Tests and Validation
 Unit Tests
 ========================
 
-pandapower is tested with pytest. There are currently over 100 unit tests testing all kinds of pandapower functionality.
+pandapower is tested with pytest. There are currently over 100 tests testing all kinds of pandapower functionality.
 
-The complete test suit can be run with: ::
+The complete test suite can be run with: ::
 
         import pandapower.test
         pandapower.test.run_all_tests()
     
 If all packages are installed correctly, all tests should pass.
+
+pandapower is tested with python 2.7: ::
+
+    ============================= test session starts =============================
+    platform win32 -- Python 2.7.12, pytest-3.0.5, py-1.4.32, pluggy-0.4.0
+    collected 119 items
+
+    test_auxiliary.py .
+    test_cigre_networks.py ...
+    test_create_example.py ..
+    test_diagnostic.py ....................
+    test_file_io.py ..
+    test_ieee_cases.py .......
+    test_kerber_networks.py .................
+    test_oos_bus.py .
+    test_opf.py ........
+    test_results.py ..................
+    test_runpp.py .....
+    test_scenarios.py .....
+    test_simple_pandapower_test_networks.py ....
+    test_std_types.py ..........
+    test_toolbox.py .....
+    test_wls_estimation.py ...........
+
+    ========================= 119 passed in 60.16 seconds =========================
+
+python 3.4: ::
+
+    ============================= test session starts =============================
+    platform win32 -- Python 2.7.12, pytest-3.0.5, py-1.4.32, pluggy-0.4.0
+    collected 119 items
+
+    test_auxiliary.py .
+    test_cigre_networks.py ...
+    test_create_example.py ..
+    test_diagnostic.py ....................
+    test_file_io.py ..
+    test_ieee_cases.py .......
+    test_kerber_networks.py .................
+    test_oos_bus.py .
+    test_opf.py ........
+    test_results.py ..................
+    test_runpp.py .....
+    test_scenarios.py .....
+    test_simple_pandapower_test_networks.py ....
+    test_std_types.py ..........
+    test_toolbox.py .....
+    test_wls_estimation.py ...........
+
+    ========================= 119 passed in 61.42 seconds =========================
+
+and python 3.5: ::
+
+    ============================= test session starts =============================
+    platform win32 -- Python 3.5.1, pytest-3.0.5, py-1.4.31, pluggy-0.4.0
+    collected 119 items
+
+    test_auxiliary.py .
+    test_cigre_networks.py ...
+    test_create_example.py ..
+    test_diagnostic.py ....................
+    test_file_io.py ..
+    test_ieee_cases.py .......
+    test_kerber_networks.py .................
+    test_oos_bus.py .
+    test_opf.py ........
+    test_results.py ..................
+    test_runpp.py .....
+    test_scenarios.py .....
+    test_simple_pandapower_test_networks.py ....
+    test_std_types.py ..........
+    test_toolbox.py .....
+    test_wls_estimation.py ...........
+
+    ========================= 119 passed in 50.28 seconds =========================
+
 
 Model and Loadflow Validation
 =============================
@@ -27,9 +103,9 @@ The results are compared with the following tolerances:
    :file: tolerances.csv
    :delim: ;
    :widths: 30, 30
-   
-   
-**Example: Transformer**
+
+Validation Transformer
+=======================
 
 To validate the pandapower transformer model, a transformer is created with the same parameters in pandapower and PowerFactory. To test all aspects of the model we use a transformer with
 
@@ -74,79 +150,92 @@ and transformer results:
 	:width: 60em
 	:align: center
 
-match with the error tolerances defined above.    
+match within the margins defined above.
 
-Test Networks
-==============
+All Test Networks
+==================
 
-A test like this exists for all pandapower elements:
+There is a test network for the validation of each pandapower element in the same way the transformer model is tested.
 
-line:
+The PowerFactory file containing all test networks can be downloaded :download:`here  <../../pandapower/test/test_files/test_results.pfd>`.
+The correlating pandapower networks are defined in result_test_network_generatory.py in the pandapower/test module.
+The tests that check pandapower results against PowerFactory results are located in pandapower/test/test_results.py.
+
+line
+-----
  
 .. image:: ../pics/validation/test_line.png
 	:width: 12em
 	:align: center
 
-load and sgen:
+load and sgen
+---------------
 
 .. image:: ../pics/validation/test_load_sgen.PNG
 	:width: 8em
 	:align: center
 
-trafo:
+trafo
+---------------
 
 .. image:: ../pics/validation/test_trafo.png
 	:width: 10em
 	:align: center    
     
-trafo3w:
+trafo3w
+---------------
 
 .. image:: ../pics/validation/test_trafo3w.PNG
 	:width: 20em
 	:align: center   
 
-ext_grid:
+ext_grid
+---------------
 
 .. image:: ../pics/validation/test_ext_grid.PNG
 	:width: 10em
 	:align: center   
     
-shunt:
+shunt
+---------------
 
 .. image:: ../pics/validation/test_shunt.PNG
 	:width: 8em
 	:align: center  
 
-gen:
+gen
+---------------
 
 .. image:: ../pics/validation/test_gen.PNG
 	:width: 20em
 	:align: center  
     
-impedance:
+impedance
+---------------
 
 .. image:: ../pics/validation/test_impedance.PNG
 	:width: 10em
 	:align: center  
     
-ward:
+ward
+---------------
 
 .. image:: ../pics/validation/test_ward.png
 	:width: 8em
 	:align: center  
     
-xward:
+xward
+---------------
 
 .. image:: ../pics/validation/test_xward.PNG
 	:width: 20em
 	:align: center  
 
-switch:
+switch
+---------------
 
 .. image:: ../pics/validation/test_bus_bus_switch.PNG
 	:width: 40em
 	:align: center  
- 
-The PowerFactory file containing all test networks can be downloaded :download:`here  <../../pandapower/test/test_files/test_results.pfd>`.
-The correlating pandapower networks are defined in result_test_network_generatory.py in the pandapower/test module.
-The tests that check pandapower results against PowerFactory results are located in pandapower/test/test_results.py.
+
+    

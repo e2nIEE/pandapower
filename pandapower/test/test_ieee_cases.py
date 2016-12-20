@@ -79,4 +79,5 @@ def test_case30Q():
     assert net.converged is True
 
 if __name__ == '__main__':
+#    net = pn.case30Q()
     pytest.main(["test_ieee_cases.py","-xs"])

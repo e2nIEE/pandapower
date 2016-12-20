@@ -7,19 +7,11 @@
 import os
 import pickle
 import pandas as pd
+import sys
 
 from pandapower.toolbox import convert_format
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import PandapowerNet
-
-
-def to_hdf5(net, filename, complevel=1, complib="zlib", save_res=False):
-    raise Exception('to_hdf5 is deprecated. Use to_pickle instead')
-
-
-def from_hdf5(filename):
-    # Load HDF5 File
-    raise Exception('from_hdf5 is deprecated. If you need to open a hdf5 File you may go back in GIT. However, to save and load files, to_pickle and from_pickle should be used.')
 
 
 def to_pickle(net, filename):
@@ -40,7 +32,7 @@ def to_pickle(net, filename):
     if not filename.endswith(".p"):
         raise Exception("Please use .p to save pandapower networks!")
     with open(filename, "wb") as f:
-        pickle.dump(dict(net), f, protocol=2)
+        pickle.dump(dict(net), f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
@@ -109,10 +101,10 @@ def from_pickle(filename, convert=True):
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     with open(filename, "rb") as f:
-        try:
-            net = pickle.load(f)
-        except:
-            net = pickle.load(f, encoding='latin1')
+        if sys.version_info >= (3,0):
+            net = pickle.load(f, encoding='latin1') #with encoding in python 3
+        else:
+            net = pickle.load(f) #without encoding in python 2
     net = PandapowerNet(net)
     if convert:
         convert_format(net)
