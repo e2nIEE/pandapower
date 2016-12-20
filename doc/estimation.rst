@@ -30,8 +30,8 @@ Therefore each measurement is assigned an accuracy value in the form of a standa
 For a more in-depth explanation of the internals of the state estimation method, please see the following sources:  
 
 .. seealso::
-	- *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito    
-	- *State Estimation in Electric Power Systems - A Generalized Approach* by A. Monticelli
+	- *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito, CRC Press, 2004.   
+	- *State Estimation in Electric Power Systems - A Generalized Approach* by A. Monticelli, Springer, 1999.  
 
 
 Defining Measurements
