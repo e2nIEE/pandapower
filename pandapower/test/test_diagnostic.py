@@ -395,6 +395,16 @@ def test_deviation_from_std_type(test_net):
               1: {'std_type_in_lib': False}},
     'trafo3w': {0: {'std_type_in_lib': False}}}
 
+
+def test_numba_comparison(test_net):
+    net = copy.deepcopy(test_net)
+    numba_tolerance=1e-10
+    check_results = pp.numba_comparison(net, numba_tolerance)
+    for element_type in check_results:
+        for result_type in check_results[element_type]:
+            for result in check_results[element_type][result_type]:
+                assert result > numba_tolerance
+
 #def test_mixed():
 #    net = networks.mv_network("ring")
 #    net.switch.loc[6, "closed"] = 0
