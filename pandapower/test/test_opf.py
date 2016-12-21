@@ -355,23 +355,12 @@ def test_minimize_active_power_curtailment():
     net.ext_grid.cost_per_kw = 0
     net.gen.cost_per_kw = -1e-5
 
-    pp.runopp(net, verbose=True)
-    # logger.info(net['res_bus'])
+    pp.runopp(net)
+    assert net["OPF_converged"]
+    assert allclose(net.res_bus.vm_pu.values, array([ 1.        ,  1.00000149,  1.01998544,  1.01999628]), atol=1e-5)
+    assert allclose(net.res_bus.va_degree.values, array([ 0.        , -0.7055226 ,  0.85974768,  2.24584537]), atol=1e-5)
 
-    # assert net["OPF_converged"]
-    # assert allclose(net.res_bus.vm_pu.values, array([1., 1., 1.02, 1.02]), atol=1e-9)
-    # assert allclose(net.res_bus.va_degree.values, array([ 0.        , -0.75048127, -0.32215732,  2.80089141]), atol=1e-9)
-
-    # try:
-    pp.runopp(net, verbose=False, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
-                                  PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
-    # except OPFNotConverged:
-    #     pass
-    #
-    # assert not net["OPF_converged"]
-#def test_linear_minloss_cost_fnc():
 
 
 if __name__ == "__main__":
     pytest.main(["test_opf.py", "-xs"])
-    # test_minimize_active_pcower_curtailment()
