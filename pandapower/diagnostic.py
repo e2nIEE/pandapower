@@ -801,25 +801,28 @@ def numba_comparison(net, numba_tolerance):
             **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
     check_results = {}
-    runpp(net, numba=True)
-    result_numba_true = copy.deepcopy(net)
-    runpp(net, numba=False)
-    result_numba_false = copy.deepcopy(net)
-    res_keys = [key for key in result_numba_true.keys() if (key[:4] == 'res_')]
-    for key in res_keys:
-        diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
-        if any(diffs.any()):
-            if (key not in check_results.keys()):
-                check_results[key] = {}
-            for col in diffs.columns:
-                if (col not in check_results[key].keys()) and (diffs.any()[col]):
-                    check_results[key][col] = {}
-                    numba_true = result_numba_true[key][col][diffs[col]]
-                    numba_false = result_numba_false[key][col][diffs[col]]
-                    check_results[key][col] = abs(numba_true - numba_false)
-
-    if check_results:
-        return check_results
+    try:
+        runpp(net, numba=True)
+        result_numba_true = copy.deepcopy(net)
+        runpp(net, numba=False)
+        result_numba_false = copy.deepcopy(net)
+        res_keys = [key for key in result_numba_true.keys() if (key[:4] == 'res_')]
+        for key in res_keys:
+            diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
+            if any(diffs.any()):
+                if (key not in check_results.keys()):
+                    check_results[key] = {}
+                for col in diffs.columns:
+                    if (col not in check_results[key].keys()) and (diffs.any()[col]):
+                        check_results[key][col] = {}
+                        numba_true = result_numba_true[key][col][diffs[col]]
+                        numba_false = result_numba_false[key][col][diffs[col]]
+                        check_results[key][col] = abs(numba_true - numba_false)
+    
+        if check_results:
+            return check_results
+    except:
+        return
 
 
 def deviation_from_std_type(net):

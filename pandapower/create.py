@@ -1089,7 +1089,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
-
+        if type(tp_pos) == float:
+            net.trafo.tp_pos = net.trafo.tp_pos.astype(float)
     # store dtypes
     dtypes = net.trafo.dtypes
 
@@ -1190,11 +1191,18 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": None, "sn_kva": sn_kva, "vn_hv_kv": vn_hv_kv,
         "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
-        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_pos": tp_pos, "tp_mid": tp_mid,
+        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
         "tp_side": tp_side, "tp_st_percent": tp_st_percent
     }
 
+    if ("tp_mid" in v) and (tp_pos is np.nan):
+        v["tp_pos"] = v["tp_mid"]
+    else:
+        v["tp_pos"] = tp_pos
+        if type(tp_pos) == float:
+            net.trafo.tp_pos = net.trafo.tp_pos.astype(float)
+    
     # store dtypes
     dtypes = net.trafo.dtypes
 
@@ -1291,6 +1299,9 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
+        if type(tp_pos) == float:
+            net.trafo3w.tp_pos = net.trafo3w.tp_pos.astype(float)
+            
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
@@ -1782,6 +1793,6 @@ if __name__ == "__main__":
     create_bus(net, vn_kv=10)
     create_bus(net, vn_kv=0.4)
     create_line(net, 0, 1, length_km=1.23, std_type="NAYY 4x50 SE")
-    create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3)
+    create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3.2)
     create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
     create_measurement(net, "p", "line", 888, 8, bus=0, element=0)

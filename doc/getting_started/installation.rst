@@ -32,12 +32,12 @@ pandapower itself can be installed with the following steps:
 
    This will install the following packages (if not already installed):
 
-        - pypower >= 5.0.0
+        - pypower >= 5.0.1
         - pandas
         - numpy
         - scipy
         - networkx
-        - numba > 0.25.0
+        - numba >= 0.25.0
         - matplotlib
         - openpyxl
         - xlrd
@@ -47,12 +47,6 @@ pandapower itself can be installed with the following steps:
     
 If you are having problems with the dependencies, you can also install these packages manually with pip install or any 
 other way you like.
-
-.. note::
-
-    pypower 5.0.0 canot be installed in Python 2 through pip install, since its not listed as python 2 compatible in the PyPI index.
-    From our tests it however seems to work just fine with Python 2 if downloaded as sourcecode from PyPI and manually installed (no guarantees of course).
-    
 
 5. open a python shell or a script and test if all pandapower submodules import without error: ::
 

@@ -9,6 +9,7 @@ unreleased
 - [ADDED] measurement table for networks. Enables the definition of measurements for real-time simulations.
 - [ADDED] estimation module, which provides state estimation functionality. The weighted least squares algorithm is used.
 - [FIXED] bug in voltage ratio for low voltage side tap changers
+- [ADDED] documentation of model validation and tests
 
 [1.0.2] - 2016-11-30
 ----------------------

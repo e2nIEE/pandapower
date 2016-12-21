@@ -617,87 +617,40 @@ def drop_inactive_elements(net):
     Drops any elements not in service AND any elements connected to inactive
     buses.
     """
+    set_isolated_areas_out_of_service(net)
     # removes inactive lines and its switches and geodata
-    inactive_lines = net["line"][net["line"]["in_service"] == False].index
+    inactive_lines = net.line[net.line.in_service == False].index
     drop_lines(net, inactive_lines)
+    
+    inactive_trafos = net.trafo[net.trafo.in_service == False].index
+    drop_trafos(net, inactive_trafos)
 
-    # removes inactive buses safely by deleting all connected elements and
-    # its geodata as well
-    disconnected_buses = (set(net["bus"].index)
-                          - set(net["line"]["from_bus"])
-                          - set(net["line"]["to_bus"])
-                          - set(net["impedance"]["from_bus"])
-                          - set(net["impedance"]["to_bus"])
-                          - set(net["trafo"]["hv_bus"])
-                          - set(net["trafo"]["lv_bus"])
-                          - set(net["trafo3w"]["hv_bus"])
-                          - set(net["trafo3w"]["mv_bus"])
-                          - set(net["trafo3w"]["lv_bus"])
-                          - set(net["switch"]["bus"])
-                          - set(net["switch"][net["switch"]["et"] == "b"]["element"]))
-    inactive_buses = (disconnected_buses | set(net["bus"].query("in_service==0").index))
-    drop_buses(net, inactive_buses, also_drop_elements=True)
+    do_not_delete = set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
+                    set(net.line.from_bus.values) | set(net.line.to_bus.values)
 
-    # finally drops any remaining elements out of service
+    # removes inactive buses safely
+    inactive_buses = set(net.bus[net.bus.in_service==False].index) - do_not_delete
+    drop_buses(net, inactive_buses)
+
     for element in net.keys():
-        # by iterating over all tables
-        try:
-            try:
-                # and try to drop any elements OOS
-                net[element] = net[element].query("in_service==1")
-            except pd.computation.ops.UndefinedVariableError:
-                # except for tables that have no "in_service"
-                continue
-        except AttributeError:
-            # and except if net[element] is no DataFrame, and has no attribute "query"
-            continue
+        if element not in ["bus", "trafo", "line"] and type(net[element]) == pd.DataFrame \
+                                                        and "in_service" in net[element].columns:
+            drop_idx = net[element][net[element].in_service==False].index
+            net[element].drop(drop_idx, inplace=True)
 
 
-def drop_buses(net, buses, also_drop_elements=True):
+def drop_buses(net, buses):
     """
     Drops buses and by default safely drops all elements connected to them as well.
     """
-    # Note: lines and trafos are deleted seperately since switches may be
-    # deleted along with them
-
-    # drop any lines connected to the bus
-    droplines = net["line"][(net["line"]["from_bus"].isin(buses)) | (
-        net["line"]["to_bus"].isin(buses))].index
-    if not also_drop_elements and len(droplines) > 0:
-        raise UserWarning("Can not drop buses, "
-                          "there are still lines connected")
-    elif len(droplines) > 0:
-        drop_lines(net, droplines)
-
-    # drop any trafo connected to the bus
-    droptrafos = net["trafo"][(net["trafo"]["hv_bus"].isin(buses)) | (
-        net["trafo"]["lv_bus"].isin(buses))].index
-    if not also_drop_elements and len(droptrafos) > 0:
-        raise UserWarning("Can not drop buses, "
-                          "there are still trafos connected")
-    elif len(droptrafos) > 0:
-        drop_trafos(net, droptrafos)
-
-    # drop any other elements connected to the bus
-    for element, value in [("sgen", "bus"), ("load", "bus"), ("switch", "bus"),
-                           ("ext_grid", "bus"), ("shunt", "bus"),
-                           ("impedance", "from_bus"), ("impedance", "to_bus"),
-                           ("ward", "bus"), ("xward", "bus")]:
-        i = net[element][net[element][value].isin(buses)].index
-        if not also_drop_elements and i:
-            raise UserWarning("Can not drop buses, "
-                              "there are still elements connected")
-        net[element].drop(i, inplace=True)
-
     # drop busbus switches
-    i = net["switch"].index[
-        (net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b")]
+    i = net["switch"][((net["switch"]["element"].isin(buses)) | (net["switch"]["bus"].isin(buses)))\
+                      & (net["switch"]["et"] == "b")].index
     net["switch"].drop(i, inplace=True)
 
-    # finally drop buses and their geodata
+    # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
-    net["bus_geodata"].drop(set(buses) & set(
-        net["bus_geodata"].index), inplace=True)
+    net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
 
 
 def drop_trafos(net, trafos):
@@ -706,8 +659,7 @@ def drop_trafos(net, trafos):
     any switches connected to it.
     """
     # drop any switches
-    i = net["switch"].index[
-        (net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == "t")]
+    i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == "t")]
     net["switch"].drop(i, inplace=True)
 
     # drop the lines+geodata
@@ -720,14 +672,12 @@ def drop_lines(net, lines):
     any switches connected to it.
     """
     # drop any switches
-    i = net["switch"].index[
-        (net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")]
+    i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
     net["switch"].drop(i, inplace=True)
 
     # drop the lines+geodata
     net["line"].drop(lines, inplace=True)
-    net["line_geodata"].drop(set(lines) & set(
-        net["line_geodata"].index), inplace=True)
+    net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
 
 
 def fuse_buses(net, b1, b2, drop=True):
