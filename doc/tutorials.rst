@@ -14,7 +14,7 @@ There are jupyter notebook tutorials on how to:
     - run topological searches in pandapower: `topology <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/topology.html>`_
     - plot pandapower networks: `plotting <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting.html>`_
     - configure and run an optimal power flow : `opf <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf.html>`_
-    - condfigure and run a state estimation: `state_estimation <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/state_estimation.html>`_
+    - configure and run a state estimation: `state_estimation <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/state_estimation.html>`_
     
 To run the tutorials interactively (jupyter module is needed):
 
