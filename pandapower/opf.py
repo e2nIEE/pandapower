@@ -8,17 +8,15 @@
 
 from time import time
 
-from numpy import zeros, c_, shape, ix_
+from numpy import zeros, c_, shape
 
 from pypower.idx_bus import MU_VMIN
-from pypower.idx_gen import PG, QG, MU_QMIN, MU_PMAX, MU_PMIN
-from pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX
+from pypower.idx_gen import MU_QMIN
+from pypower.idx_brch import MU_ANGMAX
 
-from pypower.ext2int import ext2int
 from pypower.opf_args import opf_args2
 from pandapower.pypower_extensions.opf_setup import opf_setup #temporary changed import to match bugfix path
 from pandapower.pypower_extensions.opf_execute import opf_execute #temporary changed import to match bugfix path
-from pypower.int2ext import int2ext
 
 
 def opf(*args):

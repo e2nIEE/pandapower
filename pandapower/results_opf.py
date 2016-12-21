@@ -11,7 +11,8 @@ from pandapower.build_bus import _sum_by_group
 from pypower.idx_gen import PG, QG, GEN_BUS
 
 
-def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles):
+def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
+                         ac):
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
@@ -22,11 +23,13 @@ def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_v
     bus_lookup_aranged[net["bus"].index.values] = arange(len(net["bus"].index.values))
 
     _set_buses_out_of_service(ppc)
-    bus_pq = _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, len(eg_is) + len(gen_is))
-    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, bus_is)
-    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, return_voltage_angles)
-    _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles)
+    len_gen = len(eg_is) + len(gen_is)
+    bus_pq = _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, len_gen)
+    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, bus_is, ac)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
+                     return_voltage_angles, ac)
+    _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
 
 def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen_end):

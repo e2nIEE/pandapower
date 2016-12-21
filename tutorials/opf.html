@@ -11761,7 +11761,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="prompt input_prompt">In&nbsp;[57]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandapower</span> <span class="k">as</span> <span class="nn">pp</span>
@@ -11809,7 +11809,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[58]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -11826,61 +11826,9 @@ div#notebook {
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>PYPOWER Version 5.0.0, 29-May-2015 -- AC Optimal Power Flow
+Python Interior Point Solver - PIPS, Version 1.0, 07-Feb-2011
+Converged!
 </pre>
-</div>
-</div>
-
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_text output_error">
-<pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-2-89e51745b9f9&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
-<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>pp<span class="ansi-yellow-intense-fg ansi-bold">.</span>runopp<span class="ansi-yellow-intense-fg ansi-bold">(</span>net<span class="ansi-yellow-intense-fg ansi-bold">,</span> verbose<span class="ansi-yellow-intense-fg ansi-bold">=</span><span class="ansi-green-intense-fg ansi-bold">True</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\runopp.py</span> in <span class="ansi-cyan-fg">runopp</span><span class="ansi-blue-fg">(net, cost_function, verbose, suppress_warnings, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">     89</span>         <span class="ansi-green-intense-fg ansi-bold">with</span> warnings<span class="ansi-yellow-intense-fg ansi-bold">.</span>catch_warnings<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">     90</span>             warnings<span class="ansi-yellow-intense-fg ansi-bold">.</span>simplefilter<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;ignore&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">---&gt; 91</span><span class="ansi-red-fg">             </span>result <span class="ansi-yellow-intense-fg ansi-bold">=</span> opf<span class="ansi-yellow-intense-fg ansi-bold">(</span>ppci<span class="ansi-yellow-intense-fg ansi-bold">,</span> ppopt<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">     92</span>             <span class="ansi-red-intense-fg ansi-bold"># _delete_cols_ppci_after_opf(result)</span>
-<span class="ansi-green-intense-fg ansi-bold">     93</span>             <span class="ansi-green-intense-fg ansi-bold">if</span> <span class="ansi-green-intense-fg ansi-bold">not</span> result<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;success&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\opf.py</span> in <span class="ansi-cyan-fg">opf</span><span class="ansi-blue-fg">(*args)</span>
-<span class="ansi-green-intense-fg ansi-bold">    172</span> 
-<span class="ansi-green-intense-fg ansi-bold">    173</span>     <span class="ansi-red-intense-fg ansi-bold">##-----  execute the OPF  -----</span>
-<span class="ansi-green-fg">--&gt; 174</span><span class="ansi-red-fg">     </span>results<span class="ansi-yellow-intense-fg ansi-bold">,</span> success<span class="ansi-yellow-intense-fg ansi-bold">,</span> raw <span class="ansi-yellow-intense-fg ansi-bold">=</span> opf_execute<span class="ansi-yellow-intense-fg ansi-bold">(</span>om<span class="ansi-yellow-intense-fg ansi-bold">,</span> ppopt<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    175</span> 
-<span class="ansi-green-intense-fg ansi-bold">    176</span>     <span class="ansi-red-intense-fg ansi-bold">##-----  revert to original ordering, including out-of-service stuff  -----</span>
-
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\pypower_extensions\opf_execute.py</span> in <span class="ansi-cyan-fg">opf_execute</span><span class="ansi-blue-fg">(om, ppopt)</span>
-<span class="ansi-green-intense-fg ansi-bold">     82</span>         <span class="ansi-red-intense-fg ansi-bold">## run specific AC OPF solver</span>
-<span class="ansi-green-intense-fg ansi-bold">     83</span>         <span class="ansi-green-intense-fg ansi-bold">if</span> alg <span class="ansi-yellow-intense-fg ansi-bold">==</span> <span class="ansi-cyan-intense-fg ansi-bold">560</span> <span class="ansi-green-intense-fg ansi-bold">or</span> alg <span class="ansi-yellow-intense-fg ansi-bold">==</span> <span class="ansi-cyan-intense-fg ansi-bold">565</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>                   <span class="ansi-red-intense-fg ansi-bold">## PIPS</span>
-<span class="ansi-green-fg">---&gt; 84</span><span class="ansi-red-fg">             </span>results<span class="ansi-yellow-intense-fg ansi-bold">,</span> success<span class="ansi-yellow-intense-fg ansi-bold">,</span> raw <span class="ansi-yellow-intense-fg ansi-bold">=</span> pipsopf_solver<span class="ansi-yellow-intense-fg ansi-bold">(</span>om<span class="ansi-yellow-intense-fg ansi-bold">,</span> ppopt<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">     85</span>         <span class="ansi-green-intense-fg ansi-bold">elif</span> alg <span class="ansi-yellow-intense-fg ansi-bold">==</span> <span class="ansi-cyan-intense-fg ansi-bold">580</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>                              <span class="ansi-red-intense-fg ansi-bold">## IPOPT</span>
-<span class="ansi-green-intense-fg ansi-bold">     86</span>             <span class="ansi-green-intense-fg ansi-bold">try</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-
-<span class="ansi-green-fg">D:\Python\pandapower\pandapower\pypower_extensions\pipsopf_solver.py</span> in <span class="ansi-cyan-fg">pipsopf_solver</span><span class="ansi-blue-fg">(om, ppopt, out_opt)</span>
-<span class="ansi-green-intense-fg ansi-bold">    135</span>     hess_fcn <span class="ansi-yellow-intense-fg ansi-bold">=</span> <span class="ansi-green-intense-fg ansi-bold">lambda</span> x<span class="ansi-yellow-intense-fg ansi-bold">,</span> lmbda<span class="ansi-yellow-intense-fg ansi-bold">,</span> cost_mult<span class="ansi-yellow-intense-fg ansi-bold">:</span> opf_hessfcn<span class="ansi-yellow-intense-fg ansi-bold">(</span>x<span class="ansi-yellow-intense-fg ansi-bold">,</span> lmbda<span class="ansi-yellow-intense-fg ansi-bold">,</span> om<span class="ansi-yellow-intense-fg ansi-bold">,</span> Ybus<span class="ansi-yellow-intense-fg ansi-bold">,</span> Yf<span class="ansi-yellow-intense-fg ansi-bold">[</span>il<span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-yellow-intense-fg ansi-bold">:</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> Yt<span class="ansi-yellow-intense-fg ansi-bold">[</span>il<span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-yellow-intense-fg ansi-bold">:</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> ppopt<span class="ansi-yellow-intense-fg ansi-bold">,</span> il<span class="ansi-yellow-intense-fg ansi-bold">,</span> cost_mult<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    136</span> 
-<span class="ansi-green-fg">--&gt; 137</span><span class="ansi-red-fg">     </span>solution <span class="ansi-yellow-intense-fg ansi-bold">=</span> pips<span class="ansi-yellow-intense-fg ansi-bold">(</span>f_fcn<span class="ansi-yellow-intense-fg ansi-bold">,</span> x0<span class="ansi-yellow-intense-fg ansi-bold">,</span> A<span class="ansi-yellow-intense-fg ansi-bold">,</span> l<span class="ansi-yellow-intense-fg ansi-bold">,</span> u<span class="ansi-yellow-intense-fg ansi-bold">,</span> xmin<span class="ansi-yellow-intense-fg ansi-bold">,</span> xmax<span class="ansi-yellow-intense-fg ansi-bold">,</span> gh_fcn<span class="ansi-yellow-intense-fg ansi-bold">,</span> hess_fcn<span class="ansi-yellow-intense-fg ansi-bold">,</span> opt<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    138</span>     x<span class="ansi-yellow-intense-fg ansi-bold">,</span> f<span class="ansi-yellow-intense-fg ansi-bold">,</span> info<span class="ansi-yellow-intense-fg ansi-bold">,</span> lmbda<span class="ansi-yellow-intense-fg ansi-bold">,</span> output <span class="ansi-yellow-intense-fg ansi-bold">=</span> solution<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;x&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> solution<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;f&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span><span class="ansi-red-fg"> </span><span class="ansi-red-fg">\</span>
-<span class="ansi-green-intense-fg ansi-bold">    139</span>             solution<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;eflag&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> solution<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;lmbda&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> solution<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;output&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span>
-
-<span class="ansi-green-fg">C:\Program Files\Anaconda3\lib\site-packages\pypower\pips.py</span> in <span class="ansi-cyan-fg">pips</span><span class="ansi-blue-fg">(f_fcn, x0, A, l, u, xmin, xmax, gh_fcn, hess_fcn, opt)</span>
-<span class="ansi-green-intense-fg ansi-bold">    265</span>     <span class="ansi-green-intense-fg ansi-bold">if</span> nonlinear<span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">    266</span>         hn<span class="ansi-yellow-intense-fg ansi-bold">,</span> gn<span class="ansi-yellow-intense-fg ansi-bold">,</span> dhn<span class="ansi-yellow-intense-fg ansi-bold">,</span> dgn <span class="ansi-yellow-intense-fg ansi-bold">=</span> gh_fcn<span class="ansi-yellow-intense-fg ansi-bold">(</span>x<span class="ansi-yellow-intense-fg ansi-bold">)</span>        <span class="ansi-red-intense-fg ansi-bold"># nonlinear constraints</span>
-<span class="ansi-green-fg">--&gt; 267</span><span class="ansi-red-fg">         </span>h <span class="ansi-yellow-intense-fg ansi-bold">=</span> hn <span class="ansi-green-intense-fg ansi-bold">if</span> Ai <span class="ansi-green-intense-fg ansi-bold">is</span> <span class="ansi-green-intense-fg ansi-bold">None</span> <span class="ansi-green-intense-fg ansi-bold">else</span> r_<span class="ansi-yellow-intense-fg ansi-bold">[</span>hn<span class="ansi-yellow-intense-fg ansi-bold">,</span> Ai <span class="ansi-yellow-intense-fg ansi-bold">*</span> x <span class="ansi-yellow-intense-fg ansi-bold">-</span> bi<span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-red-intense-fg ansi-bold"># inequality constraints</span>
-<span class="ansi-green-intense-fg ansi-bold">    268</span>         g <span class="ansi-yellow-intense-fg ansi-bold">=</span> gn <span class="ansi-green-intense-fg ansi-bold">if</span> Ae <span class="ansi-green-intense-fg ansi-bold">is</span> <span class="ansi-green-intense-fg ansi-bold">None</span> <span class="ansi-green-intense-fg ansi-bold">else</span> r_<span class="ansi-yellow-intense-fg ansi-bold">[</span>gn<span class="ansi-yellow-intense-fg ansi-bold">,</span> Ae <span class="ansi-yellow-intense-fg ansi-bold">*</span> x <span class="ansi-yellow-intense-fg ansi-bold">-</span> be<span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-red-intense-fg ansi-bold"># equality constraints</span>
-<span class="ansi-green-intense-fg ansi-bold">    269</span> 
-
-<span class="ansi-green-fg">C:\Program Files\Anaconda3\lib\site-packages\numpy\lib\index_tricks.py</span> in <span class="ansi-cyan-fg">__getitem__</span><span class="ansi-blue-fg">(self, key)</span>
-<span class="ansi-green-intense-fg ansi-bold">    336</span>                 objs<span class="ansi-yellow-intense-fg ansi-bold">[</span>k<span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">=</span> objs<span class="ansi-yellow-intense-fg ansi-bold">[</span>k<span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">.</span>astype<span class="ansi-yellow-intense-fg ansi-bold">(</span>final_dtype<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    337</span> 
-<span class="ansi-green-fg">--&gt; 338</span><span class="ansi-red-fg">         </span>res <span class="ansi-yellow-intense-fg ansi-bold">=</span> _nx<span class="ansi-yellow-intense-fg ansi-bold">.</span>concatenate<span class="ansi-yellow-intense-fg ansi-bold">(</span>tuple<span class="ansi-yellow-intense-fg ansi-bold">(</span>objs<span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> axis<span class="ansi-yellow-intense-fg ansi-bold">=</span>self<span class="ansi-yellow-intense-fg ansi-bold">.</span>axis<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    339</span>         <span class="ansi-green-intense-fg ansi-bold">return</span> self<span class="ansi-yellow-intense-fg ansi-bold">.</span>_retval<span class="ansi-yellow-intense-fg ansi-bold">(</span>res<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    340</span> 
-
-<span class="ansi-red-fg">ValueError</span>: all the input arrays must have same number of dimensions</pre>
 </div>
 </div>
 
@@ -11900,7 +11848,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[59]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -11914,7 +11862,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[3]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[59]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11929,8 +11877,8 @@ div#notebook {
   <tbody>
     <tr>
       <th>0</th>
-      <td>-56530.141272</td>
-      <td>-1974.46685</td>
+      <td>-56530.142717</td>
+      <td>-1974.467822</td>
     </tr>
   </tbody>
 </table>
@@ -11945,7 +11893,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[60]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -11959,7 +11907,7 @@ div#notebook {
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[60]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -11976,16 +11924,16 @@ div#notebook {
   <tbody>
     <tr>
       <th>0</th>
-      <td>-71313.708686</td>
-      <td>1969.652197</td>
-      <td>-3.712798</td>
+      <td>-71313.730159</td>
+      <td>1969.652493</td>
+      <td>-3.712797</td>
       <td>1.000009</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-12299.439808</td>
-      <td>1451.156929</td>
-      <td>-3.712787</td>
+      <td>-12299.416890</td>
+      <td>1451.157410</td>
+      <td>-3.712788</td>
       <td>1.000010</td>
     </tr>
   </tbody>
@@ -12022,7 +11970,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[61]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">ext_grid</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eg</span><span class="p">,</span> <span class="s2">&quot;cost_per_kw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.10</span>
@@ -12047,7 +11995,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[62]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -12087,7 +12035,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[63]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
@@ -12113,7 +12061,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[64]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
@@ -12127,11 +12075,11 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[8]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[64]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>14.45595158623663</pre>
+<pre>14.455951448820986</pre>
 </div>
 
 </div>
@@ -12152,7 +12100,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[65]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
@@ -12166,7 +12114,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[9]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[65]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12188,15 +12136,15 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>144559.376399</td>
-      <td>9192.999921</td>
-      <td>-143959.448402</td>
-      <td>15993.78371</td>
-      <td>599.927997</td>
-      <td>25186.783631</td>
+      <td>144559.383879</td>
+      <td>9193.004654</td>
+      <td>-143959.455824</td>
+      <td>15993.781675</td>
+      <td>599.928055</td>
+      <td>25186.786329</td>
       <td>0.380136</td>
       <td>0.759988</td>
-      <td>144.851388</td>
+      <td>144.851396</td>
     </tr>
   </tbody>
 </table>
@@ -12221,7 +12169,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[66]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">trafo</span><span class="p">[</span><span class="s2">&quot;max_loading_percent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
@@ -12245,7 +12193,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[67]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
@@ -12268,7 +12216,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[68]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
@@ -12282,7 +12230,7 @@ and run the OPF:</p>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[12]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[68]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12304,15 +12252,15 @@ and run the OPF:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>49953.527334</td>
-      <td>-2147.249369</td>
-      <td>-49833.477544</td>
-      <td>5167.348248</td>
-      <td>120.049789</td>
-      <td>3020.098879</td>
-      <td>0.131215</td>
-      <td>0.262151</td>
-      <td>49.999656</td>
+      <td>49953.831917</td>
+      <td>-2147.297933</td>
+      <td>-49833.781328</td>
+      <td>5167.433554</td>
+      <td>120.050589</td>
+      <td>3020.13562</td>
+      <td>0.131216</td>
+      <td>0.262153</td>
+      <td>49.999962</td>
     </tr>
   </tbody>
 </table>
@@ -12337,7 +12285,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[69]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -12351,7 +12299,7 @@ and run the OPF:</p>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[13]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[69]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12366,8 +12314,8 @@ and run the OPF:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-49953.527352</td>
-      <td>2147.24937</td>
+      <td>-49953.831917</td>
+      <td>2147.297934</td>
     </tr>
   </tbody>
 </table>
@@ -12382,7 +12330,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[70]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -12396,7 +12344,7 @@ and run the OPF:</p>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[14]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[70]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12413,16 +12361,16 @@ and run the OPF:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-0.280311</td>
-      <td>-2993.094181</td>
-      <td>-6.232780</td>
+      <td>-0.047351</td>
+      <td>-2993.136942</td>
+      <td>-6.232823</td>
       <td>0.985230</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-93304.128507</td>
-      <td>-3453.267596</td>
-      <td>-1.237846</td>
+      <td>-93304.066210</td>
+      <td>-3453.327899</td>
+      <td>-1.237880</td>
       <td>1.025709</td>
     </tr>
   </tbody>
@@ -12448,7 +12396,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[71]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
@@ -12462,11 +12410,11 @@ and run the OPF:</p>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[15]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[71]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>16.191890202723577</pre>
+<pre>16.191878239553787</pre>
 </div>
 
 </div>
@@ -12496,7 +12444,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[72]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
@@ -12510,7 +12458,7 @@ and run the OPF:</p>
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[16]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[72]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12524,6 +12472,8 @@ and run the OPF:</p>
       <th>q_to_kvar</th>
       <th>pl_kw</th>
       <th>ql_kvar</th>
+      <th>i_from_ka</th>
+      <th>i_to_ka</th>
       <th>i_ka</th>
       <th>loading_percent</th>
     </tr>
@@ -12531,36 +12481,42 @@ and run the OPF:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>19779.834885</td>
-      <td>-2479.406830</td>
-      <td>-19341.528367</td>
-      <td>1104.348550</td>
-      <td>438.306518</td>
-      <td>-1375.058280</td>
+      <td>19779.987855</td>
+      <td>-2479.429478</td>
+      <td>-19341.674584</td>
+      <td>1104.385359</td>
+      <td>438.313270</td>
+      <td>-1375.044119</td>
       <td>0.104308</td>
-      <td>22.193125</td>
+      <td>0.103207</td>
+      <td>0.104308</td>
+      <td>22.193296</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-50658.191411</td>
-      <td>1888.745716</td>
-      <td>52783.580480</td>
-      <td>921.051915</td>
-      <td>2125.389070</td>
-      <td>2809.797631</td>
-      <td>0.270139</td>
-      <td>57.476425</td>
+      <td>-50658.278064</td>
+      <td>1888.751583</td>
+      <td>52783.674521</td>
+      <td>921.061618</td>
+      <td>2125.396457</td>
+      <td>2809.813201</td>
+      <td>0.270060</td>
+      <td>0.270140</td>
+      <td>0.270140</td>
+      <td>57.476525</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>30520.548121</td>
-      <td>2532.215803</td>
-      <td>-29946.357283</td>
-      <td>-2687.941435</td>
-      <td>574.190839</td>
-      <td>-155.725632</td>
-      <td>0.157324</td>
-      <td>33.473168</td>
+      <td>30520.391688</td>
+      <td>2532.266282</td>
+      <td>-29946.206527</td>
+      <td>-2688.004075</td>
+      <td>574.185162</td>
+      <td>-155.737793</td>
+      <td>0.156712</td>
+      <td>0.157323</td>
+      <td>0.157323</td>
+      <td>33.473005</td>
     </tr>
   </tbody>
 </table>
@@ -12585,7 +12541,7 @@ and run the OPF:</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[73]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">line</span><span class="p">[</span><span class="s2">&quot;max_loading_percent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
@@ -12625,7 +12581,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="prompt input_prompt">In&nbsp;[74]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
@@ -12639,7 +12595,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[18]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[74]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12653,6 +12609,8 @@ Converged!
       <th>q_to_kvar</th>
       <th>pl_kw</th>
       <th>ql_kvar</th>
+      <th>i_from_ka</th>
+      <th>i_to_ka</th>
       <th>i_ka</th>
       <th>loading_percent</th>
     </tr>
@@ -12660,36 +12618,42 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>16727.370958</td>
-      <td>-3203.510785</td>
-      <td>-16412.543224</td>
-      <td>1542.694314</td>
-      <td>314.827734</td>
-      <td>-1660.816471</td>
-      <td>0.088856</td>
-      <td>18.905569</td>
+      <td>16727.532318</td>
+      <td>-3194.198556</td>
+      <td>-16412.740583</td>
+      <td>1533.356250</td>
+      <td>314.791735</td>
+      <td>-1660.842305</td>
+      <td>0.088848</td>
+      <td>0.087130</td>
+      <td>0.088848</td>
+      <td>18.903796</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-44451.003651</td>
-      <td>888.003392</td>
-      <td>46059.718758</td>
-      <td>811.619557</td>
-      <td>1608.715107</td>
-      <td>1699.622949</td>
+      <td>-44451.211099</td>
+      <td>867.137901</td>
+      <td>46059.955230</td>
+      <td>832.560223</td>
+      <td>1608.744131</td>
+      <td>1699.698124</td>
       <td>0.235000</td>
-      <td>49.999981</td>
+      <td>0.235000</td>
+      <td>0.235000</td>
+      <td>49.999997</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>27532.897210</td>
-      <td>4042.154936</td>
-      <td>-27060.003950</td>
-      <td>-4420.233591</td>
-      <td>472.893260</td>
-      <td>-378.078655</td>
-      <td>0.143049</td>
-      <td>30.435913</td>
+      <td>27533.096563</td>
+      <td>4051.891931</td>
+      <td>-27060.152701</td>
+      <td>-4429.882352</td>
+      <td>472.943862</td>
+      <td>-377.990422</td>
+      <td>0.141965</td>
+      <td>0.143058</td>
+      <td>0.143058</td>
+      <td>30.437792</td>
     </tr>
   </tbody>
 </table>
@@ -12714,7 +12678,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="prompt input_prompt">In&nbsp;[75]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -12728,7 +12692,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[19]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[75]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12743,8 +12707,8 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-49787.580003</td>
-      <td>4603.457521</td>
+      <td>-49787.594269</td>
+      <td>4603.789001</td>
     </tr>
   </tbody>
 </table>
@@ -12759,7 +12723,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="prompt input_prompt">In&nbsp;[76]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -12773,7 +12737,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[20]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[76]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12790,17 +12754,17 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-9136.450967</td>
-      <td>-2430.689358</td>
-      <td>-5.815435</td>
-      <td>0.993014</td>
+      <td>-9136.048164</td>
+      <td>-2400.493544</td>
+      <td>-5.814910</td>
+      <td>0.992992</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-83592.613615</td>
-      <td>-4853.769506</td>
-      <td>-1.511329</td>
-      <td>1.028887</td>
+      <td>-83593.051621</td>
+      <td>-4884.451800</td>
+      <td>-1.511686</td>
+      <td>1.028900</td>
     </tr>
   </tbody>
 </table>
@@ -12825,7 +12789,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[77]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
@@ -12839,11 +12803,11 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[21]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[77]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>16.38033927907391</pre>
+<pre>16.380332845968116</pre>
 </div>
 
 </div>
@@ -12864,7 +12828,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="prompt input_prompt">In&nbsp;[78]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -12878,7 +12842,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[22]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[78]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -12897,29 +12861,29 @@ Converged!
       <th>0</th>
       <td>1.000000</td>
       <td>0.000000</td>
-      <td>-49787.580003</td>
-      <td>4603.457521</td>
+      <td>-49787.594269</td>
+      <td>4603.789001</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>1.006024</td>
+      <td>1.006025</td>
       <td>-3.408832</td>
       <td>60000.000000</td>
       <td>0.000000</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>0.993014</td>
-      <td>-5.815435</td>
-      <td>60863.549033</td>
-      <td>-2430.689358</td>
+      <td>0.992992</td>
+      <td>-5.814910</td>
+      <td>60863.951836</td>
+      <td>-2400.493544</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>1.028887</td>
-      <td>-1.511329</td>
-      <td>-73592.613615</td>
-      <td>-4853.769506</td>
+      <td>1.028900</td>
+      <td>-1.511686</td>
+      <td>-73593.051621</td>
+      <td>-4884.451800</td>
     </tr>
   </tbody>
 </table>
@@ -12944,7 +12908,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="prompt input_prompt">In&nbsp;[79]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">bus</span><span class="p">[</span><span class="s2">&quot;min_vm_pu&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
@@ -12969,7 +12933,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="prompt input_prompt">In&nbsp;[80]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -12983,7 +12947,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[24]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[80]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13002,29 +12966,29 @@ Converged!
       <th>0</th>
       <td>1.000000</td>
       <td>0.000000</td>
-      <td>-49906.817982</td>
-      <td>3050.590592</td>
+      <td>-49906.847832</td>
+      <td>3050.617583</td>
     </tr>
     <tr>
       <th>1</th>
       <td>1.004168</td>
-      <td>-3.421013</td>
+      <td>-3.421015</td>
       <td>60000.000000</td>
       <td>0.000000</td>
     </tr>
     <tr>
       <th>2</th>
       <td>1.000000</td>
-      <td>-5.976090</td>
-      <td>59278.074279</td>
-      <td>-14859.213746</td>
+      <td>-5.976094</td>
+      <td>59278.207273</td>
+      <td>-14858.927798</td>
     </tr>
     <tr>
       <th>3</th>
       <td>1.020000</td>
-      <td>-1.366887</td>
-      <td>-71863.385929</td>
-      <td>9173.011326</td>
+      <td>-1.366892</td>
+      <td>-71863.493411</td>
+      <td>9172.685486</td>
     </tr>
   </tbody>
 </table>
@@ -13049,7 +13013,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="prompt input_prompt">In&nbsp;[81]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -13063,7 +13027,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[25]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[81]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13078,8 +13042,8 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-49906.817982</td>
-      <td>3050.590592</td>
+      <td>-49906.847832</td>
+      <td>3050.617583</td>
     </tr>
   </tbody>
 </table>
@@ -13094,7 +13058,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="prompt input_prompt">In&nbsp;[82]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -13108,7 +13072,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[26]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[82]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13125,16 +13089,16 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-10721.925721</td>
-      <td>-14859.213746</td>
-      <td>-5.976090</td>
+      <td>-10721.792727</td>
+      <td>-14858.927798</td>
+      <td>-5.976094</td>
       <td>1.00</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-81863.385929</td>
-      <td>9173.011326</td>
-      <td>-1.366887</td>
+      <td>-81863.493411</td>
+      <td>9172.685486</td>
+      <td>-1.366892</td>
       <td>1.02</td>
     </tr>
   </tbody>
@@ -13160,7 +13124,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="prompt input_prompt">In&nbsp;[83]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
@@ -13174,11 +13138,461 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[27]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[83]:</div>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>16.422576967990047</pre>
+<pre>16.422572901622082</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="DC-OPF">DC OPF<a class="anchor-link" href="#DC-OPF">&#182;</a></h2><p>pandapower also provides the possibility of running a DC Optimal Power Flow:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[84]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pp</span><span class="o">.</span><span class="n">rundcopp</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Since voltage magnitudes are not included in the DC power flow formulation, voltage constraints canot be considered in the DC OPF:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[85]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[85]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>vm_pu</th>
+      <th>va_degree</th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.00</td>
+      <td>0.000000</td>
+      <td>-49999.999962</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.00</td>
+      <td>-3.436967</td>
+      <td>60000.000000</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.01</td>
+      <td>-5.708566</td>
+      <td>61488.746675</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1.01</td>
+      <td>-1.362340</td>
+      <td>-71488.746713</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Line and transformer loading limits are however complied with:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[86]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[86]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_from_kw</th>
+      <th>q_from_kvar</th>
+      <th>p_to_kw</th>
+      <th>q_to_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_from_ka</th>
+      <th>i_to_ka</th>
+      <th>i_ka</th>
+      <th>loading_percent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>16715.233326</td>
+      <td>NaN</td>
+      <td>-16715.233326</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.087732</td>
+      <td>0.086864</td>
+      <td>0.087732</td>
+      <td>18.666430</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-44773.513348</td>
+      <td>NaN</td>
+      <td>44773.513348</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.232673</td>
+      <td>0.232673</td>
+      <td>0.232673</td>
+      <td>49.504950</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>26715.233365</td>
+      <td>NaN</td>
+      <td>-26715.233365</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.138830</td>
+      <td>0.140219</td>
+      <td>0.140219</td>
+      <td>29.833747</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[87]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[87]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_hv_kw</th>
+      <th>q_hv_kvar</th>
+      <th>p_lv_kw</th>
+      <th>q_lv_kvar</th>
+      <th>pl_kw</th>
+      <th>ql_kvar</th>
+      <th>i_hv_ka</th>
+      <th>i_lv_ka</th>
+      <th>loading_percent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>49999.999962</td>
+      <td>NaN</td>
+      <td>-49999.999962</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.131216</td>
+      <td>0.262432</td>
+      <td>50.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As are generator limits:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[88]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">gen</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[88]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>name</th>
+      <th>bus</th>
+      <th>p_kw</th>
+      <th>vm_pu</th>
+      <th>sn_kva</th>
+      <th>min_q_kvar</th>
+      <th>max_q_kvar</th>
+      <th>scaling</th>
+      <th>in_service</th>
+      <th>type</th>
+      <th>min_p_kw</th>
+      <th>max_p_kw</th>
+      <th>controllable</th>
+      <th>cost_per_kw</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>None</td>
+      <td>2</td>
+      <td>-80000.0</td>
+      <td>1.01</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>True</td>
+      <td>None</td>
+      <td>0.0</td>
+      <td>-80000.0</td>
+      <td>True</td>
+      <td>0.15</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>None</td>
+      <td>3</td>
+      <td>-100000.0</td>
+      <td>1.01</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>True</td>
+      <td>None</td>
+      <td>0.0</td>
+      <td>-100000.0</td>
+      <td>True</td>
+      <td>0.12</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[89]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[89]:</div>
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>p_kw</th>
+      <th>q_kvar</th>
+      <th>va_degree</th>
+      <th>vm_pu</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-8511.253325</td>
+      <td>NaN</td>
+      <td>-5.708566</td>
+      <td>1.01</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-81488.746713</td>
+      <td>NaN</td>
+      <td>-1.362340</td>
+      <td>1.01</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The cost function is the same for the linearized OPF as for the non-linear one:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[91]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">calc_costs</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt output_prompt">Out[91]:</div>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>16.055337600528507</pre>
 </div>
 
 </div>
@@ -13200,11 +13614,11 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="prompt input_prompt">In&nbsp;[96]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">ext_grid</span><span class="o">.</span><span class="n">cost_per_kw</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">cost_per_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">cost_per_kw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">5</span>
 <span class="n">pp</span><span class="o">.</span><span class="n">runopp</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
@@ -13241,7 +13655,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="prompt input_prompt">In&nbsp;[97]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -13255,7 +13669,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[31]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[97]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13272,17 +13686,17 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-46052.644816</td>
-      <td>-18912.998087</td>
-      <td>-0.485062</td>
-      <td>1.02</td>
+      <td>-70912.108927</td>
+      <td>-6419.322325</td>
+      <td>0.859748</td>
+      <td>1.019985</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-85097.782114</td>
-      <td>19478.228436</td>
-      <td>2.869966</td>
-      <td>1.02</td>
+      <td>-60071.966220</td>
+      <td>9018.279985</td>
+      <td>2.245845</td>
+      <td>1.019996</td>
     </tr>
   </tbody>
 </table>
@@ -13297,7 +13711,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[32]:</div>
+<div class="prompt input_prompt">In&nbsp;[98]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_ext_grid</span>
@@ -13311,7 +13725,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[32]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[98]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13326,8 +13740,8 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-11071.74798</td>
-      <td>153.958385</td>
+      <td>-10287.524256</td>
+      <td>148.243639</td>
     </tr>
   </tbody>
 </table>
@@ -13342,7 +13756,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="prompt input_prompt">In&nbsp;[99]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -13356,7 +13770,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[33]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[99]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13373,31 +13787,31 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>1.00</td>
+      <td>1.000000</td>
       <td>0.000000</td>
-      <td>-11071.747980</td>
-      <td>153.958385</td>
+      <td>-10287.524256</td>
+      <td>148.243639</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>1.00</td>
-      <td>-0.759444</td>
+      <td>1.000001</td>
+      <td>-0.705523</td>
       <td>60000.000000</td>
       <td>0.000000</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>1.02</td>
-      <td>-0.485062</td>
-      <td>23947.355184</td>
-      <td>-18912.998087</td>
+      <td>1.019985</td>
+      <td>0.859748</td>
+      <td>-912.108927</td>
+      <td>-6419.322325</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>1.02</td>
-      <td>2.869966</td>
-      <td>-75097.782114</td>
-      <td>19478.228436</td>
+      <td>1.019996</td>
+      <td>2.245845</td>
+      <td>-50071.966220</td>
+      <td>9018.279985</td>
     </tr>
   </tbody>
 </table>
@@ -13412,7 +13826,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="prompt input_prompt">In&nbsp;[100]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_trafo</span>
@@ -13426,7 +13840,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[34]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[100]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13448,15 +13862,15 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>11071.74798</td>
-      <td>-153.958385</td>
-      <td>-11013.579078</td>
-      <td>324.308603</td>
-      <td>58.168902</td>
-      <td>170.350217</td>
-      <td>0.029059</td>
-      <td>0.057831</td>
-      <td>11.072818</td>
+      <td>10287.524111</td>
+      <td>-148.243608</td>
+      <td>-10229.789241</td>
+      <td>298.54739</td>
+      <td>57.73487</td>
+      <td>150.303782</td>
+      <td>0.027001</td>
+      <td>0.053715</td>
+      <td>10.288592</td>
     </tr>
   </tbody>
 </table>
@@ -13471,7 +13885,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="prompt input_prompt">In&nbsp;[101]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_line</span>
@@ -13485,7 +13899,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[35]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[101]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13499,6 +13913,8 @@ Converged!
       <th>q_to_kvar</th>
       <th>pl_kw</th>
       <th>ql_kvar</th>
+      <th>i_from_ka</th>
+      <th>i_to_ka</th>
       <th>i_ka</th>
       <th>loading_percent</th>
     </tr>
@@ -13506,36 +13922,42 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-4940.672063</td>
-      <td>-7253.499354</td>
-      <td>5009.683533</td>
-      <td>5024.003563</td>
-      <td>69.011470</td>
-      <td>-2229.495791</td>
-      <td>0.046064</td>
-      <td>9.800775</td>
+      <td>-12793.008061</td>
+      <td>-3375.721206</td>
+      <td>12982.175842</td>
+      <td>1400.195130</td>
+      <td>189.167781</td>
+      <td>-1975.526076</td>
+      <td>0.069444</td>
+      <td>0.067191</td>
+      <td>0.069444</td>
+      <td>14.775336</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-28957.038717</td>
-      <td>13888.994524</td>
-      <td>29770.861583</td>
-      <td>-13899.328668</td>
-      <td>813.822866</td>
-      <td>-10.334143</td>
-      <td>0.169066</td>
-      <td>35.971544</td>
+      <td>-12070.025472</td>
+      <td>5019.233652</td>
+      <td>12208.963354</td>
+      <td>-6455.840092</td>
+      <td>138.937882</td>
+      <td>-1436.606440</td>
+      <td>0.067266</td>
+      <td>0.071067</td>
+      <td>0.071067</td>
+      <td>15.120541</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>45326.920531</td>
-      <td>-5578.899768</td>
-      <td>-44045.748858</td>
-      <td>6929.190751</td>
-      <td>1281.171673</td>
-      <td>1350.290984</td>
-      <td>0.235000</td>
-      <td>49.999973</td>
+      <td>37863.061183</td>
+      <td>-2562.355591</td>
+      <td>-36977.193287</td>
+      <td>3077.213831</td>
+      <td>885.867895</td>
+      <td>514.858239</td>
+      <td>0.195279</td>
+      <td>0.194751</td>
+      <td>0.195279</td>
+      <td>41.548772</td>
     </tr>
   </tbody>
 </table>
@@ -13560,7 +13982,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="prompt input_prompt">In&nbsp;[102]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">bus</span><span class="o">.</span><span class="n">max_vm_pu</span> <span class="o">=</span> <span class="mf">1.05</span>
@@ -13584,7 +14006,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="prompt input_prompt">In&nbsp;[103]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_gen</span>
@@ -13598,7 +14020,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[37]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[103]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13615,17 +14037,17 @@ Converged!
   <tbody>
     <tr>
       <th>0</th>
-      <td>-79999.991970</td>
-      <td>-17252.186816</td>
-      <td>2.328271</td>
-      <td>1.050000</td>
+      <td>-79992.581105</td>
+      <td>-17028.219165</td>
+      <td>2.330143</td>
+      <td>1.049971</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>-66517.876366</td>
-      <td>10225.945538</td>
-      <td>3.665995</td>
-      <td>1.040019</td>
+      <td>-66519.007460</td>
+      <td>9934.629011</td>
+      <td>3.660411</td>
+      <td>1.040270</td>
     </tr>
   </tbody>
 </table>
@@ -13640,7 +14062,7 @@ Converged!
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[38]:</div>
+<div class="prompt input_prompt">In&nbsp;[104]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">res_bus</span>
@@ -13654,7 +14076,7 @@ Converged!
 <div class="output">
 
 
-<div class="output_area"><div class="prompt output_prompt">Out[38]:</div>
+<div class="output_area"><div class="prompt output_prompt">Out[104]:</div>
 
 <div class="output_html rendered_html output_subarea output_execute_result">
 <div>
@@ -13673,29 +14095,29 @@ Converged!
       <th>0</th>
       <td>1.000000</td>
       <td>0.000000</td>
-      <td>4542.414746</td>
-      <td>8523.970418</td>
+      <td>4540.111086</td>
+      <td>8599.338977</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>1.010373</td>
-      <td>0.298333</td>
+      <td>1.010464</td>
+      <td>0.298039</td>
       <td>60000.000000</td>
       <td>0.000000</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>1.050000</td>
-      <td>2.328271</td>
-      <td>-9999.991970</td>
-      <td>-17252.186816</td>
+      <td>1.049971</td>
+      <td>2.330143</td>
+      <td>-9992.581105</td>
+      <td>-17028.219165</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>1.040019</td>
-      <td>3.665995</td>
-      <td>-56517.876366</td>
-      <td>10225.945538</td>
+      <td>1.040270</td>
+      <td>3.660411</td>
+      <td>-56519.007460</td>
+      <td>9934.629011</td>
     </tr>
   </tbody>
 </table>
