@@ -5,8 +5,6 @@
 """Runs a power flow.
 """
 
-from os.path import dirname, join
-
 from time import time
 
 from numpy import r_, zeros, pi, ones, exp, argmax, real
@@ -62,6 +60,8 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
 
     ##-----  run the power flow  -----
     t0 = time()
+    if not ac:
+        ppci["bus"][:, VM] = 1.0
 
     if not ac or (ac and init == 'dc'):  # DC formulation
         if verbose:

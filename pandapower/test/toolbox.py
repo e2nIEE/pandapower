@@ -12,11 +12,13 @@ import numpy as np
 from math import isnan
 import pytest
 import os
+import importlib
 
 
 def run_all_tests():
     """ function exdecuting all tests
     """
+    importlib.reload(pp)
     pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)),"-s"])
 
 def assert_mpc_equal(mpc1, mpc2):

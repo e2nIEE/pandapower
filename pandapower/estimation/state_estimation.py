@@ -9,9 +9,9 @@ import logging
 import pandas as pd
 import warnings
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.run import _pd2ppc, _select_is_elements
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _set_buses_out_of_service
-from pandapower.auxiliary import get_values
+from pandapower.auxiliary import get_values, _select_is_elements
 from pandapower.toolbox import convert_format
 from pandapower.topology import estimate_voltage_vector
 from pypower.ext2int import ext2int

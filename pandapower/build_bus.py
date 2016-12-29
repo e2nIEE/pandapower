@@ -196,12 +196,35 @@ def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
 
+def _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup):
+    """ we need to exclude controllable sgens from the bus table
+    """
+
+    l = net["load"]
+    vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
+    lp = l["p_kw"].values * vl
+    lq = l["q_kvar"].values * vl
+
+    sgen = net["sgen"]
+    if not sgen.empty:
+        vl = (is_elems["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+            np.float64(1000.)
+        sp = sgen["p_kw"].values * vl
+        sq = sgen["q_kvar"].values * vl
+    else:
+        sp = []
+        sq = []
+
+    b = bus_lookup[np.hstack([l["bus"].values, sgen["bus"].values])]
+    b, vp, vq = _sum_by_group(b, np.hstack([lp, sp]), np.hstack([lq, sq]))
+
+    ppc["bus"][b, PD] = vp
+    ppc["bus"][b, QD] = vq
 
 def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     # get in service elements
-    bus_is = is_elems['bus']
 
     s = net["shunt"]
     if len(s) > 0:
