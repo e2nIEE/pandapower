@@ -48,6 +48,7 @@ def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_v
     _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
+    _get_costs(net)
 
 
 def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen_end):
@@ -499,6 +500,17 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elem
     bus_pq[b_ppc, 0] += vp
     if ac:
         bus_pq[b_ppc, 1] += vq
+
+def _get_costs(net):
+    cost = 0
+    if "cost_per_kw" in net.gen:
+        cost += (-net.res_gen.p_kw * net.gen.cost_per_kw).sum()
+    if "cost_per_kw" in net.sgen:
+        cost += (-net.res_sgen.p_kw * net.sgen.cost_per_kw).sum()
+    if "cost_per_kw" in net.ext_grid:
+        cost += (-net.res_ext_grid.p_kw * net.ext_grid.cost_per_kw).sum()
+    net.res_cost = cost
+
 
 def reset_results(net):
     net["res_bus"] = copy.copy(net["_empty_res_bus"])
