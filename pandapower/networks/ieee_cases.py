@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
@@ -84,6 +84,26 @@ def case9Q():
     """
     case9Q = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case9Q.p"))
     return case9Q
+
+
+def case24_ieee_rts():
+    """
+    Calls the pickle file case24_ieee_rts.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Illinois University <http://icseg.iti.illinois.edu/ieee-24-bus-system/>`_.
+
+    RETURN:
+
+         **net** - Returns the required ieee network case30
+
+    EXAMPLE:
+
+         import pandapower.networks as pn
+
+         net = pn.case24_ieee_rts()
+    """
+    case24 = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles",
+                                         "case24_ieee_rts.p"))
+    return case24
 
 
 def case30():

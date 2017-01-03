@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pytest
@@ -49,6 +49,14 @@ def test_case9Q():
     assert net.converged is True
 
 
+def test_case24_ieee_rts():
+    net = pn.case24_ieee_rts()
+    assert net.converged is True
+    pp.runpp(net)
+    assert len(net.bus) == 24
+    assert net.converged is True
+
+
 def test_case30():
     net = pn.case30()
     assert net.converged is True
@@ -80,4 +88,4 @@ def test_case30Q():
 
 if __name__ == '__main__':
 #    net = pn.case30Q()
-    pytest.main(["test_ieee_cases.py","-xs"])
+    pytest.main(["test_ieee_cases.py", "-xs"])
