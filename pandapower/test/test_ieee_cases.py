@@ -39,6 +39,16 @@ def test_case9():
     assert net.converged is True
 
 
+def test_case14():
+    net = pn.case14()
+    assert net.converged is True
+    pp.runpp(net)
+    assert len(net.bus) == 14
+    assert len(net.line) + len(net.trafo) == 20
+    assert len(net.gen) + len(net.ext_grid) == 5
+    assert net.converged is True
+
+
 def test_case9Q():
     net = pn.case9Q()
     assert net.converged is True

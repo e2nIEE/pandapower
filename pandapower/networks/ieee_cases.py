@@ -86,6 +86,27 @@ def case9Q():
     return case9Q
 
 
+def case14():
+    """
+    Calls the pickle file case14.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network was converted from IEEE Common Data Format (ieee14cdf.txt) on 20-Sep-2004 by
+    cdf2matp, rev. 1.11, to matpower format and finally converted to pandapower format by
+    pandapower.converter.ppc2pp
+
+    RETURN:
+
+         **net** - Returns the required ieee network case14
+
+    EXAMPLE:
+
+         import pandapower.networks as pn
+
+         net = pn.case14()
+    """
+    case14 = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case14.p"))
+    return case14
+
+
 def case24_ieee_rts():
     """
     Calls the pickle file case24_ieee_rts.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
@@ -93,7 +114,7 @@ def case24_ieee_rts():
 
     RETURN:
 
-         **net** - Returns the required ieee network case30
+         **net** - Returns the required ieee network case24
 
     EXAMPLE:
 

@@ -375,8 +375,8 @@ def overload(net, overload_scaling_factor):
      RETURN:
 
         **check_results** (dict)        - dict with the results of the overload check
-                                          Format: {'load_overload': True/False/uncertain
-                                                   'generation_overload', True/False/uncertain}
+                                          Format: {'load_overload': True/uncertain
+                                                   'generation_overload', True/uncertain}
 
     """
     check_result = {}
@@ -803,6 +803,9 @@ def numba_comparison(net, numba_tolerance):
     check_results = {}
     try:
         runpp(net, numba=True)
+    except:
+        pass
+    if net.converged:
         result_numba_true = copy.deepcopy(net)
         runpp(net, numba=False)
         result_numba_false = copy.deepcopy(net)
@@ -818,11 +821,9 @@ def numba_comparison(net, numba_tolerance):
                         numba_true = result_numba_true[key][col][diffs[col]]
                         numba_false = result_numba_false[key][col][diffs[col]]
                         check_results[key][col] = abs(numba_true - numba_false)
-    
-        if check_results:
-            return check_results
-    except:
-        return
+
+    if check_results:
+        return check_results
 
 
 def deviation_from_std_type(net):
