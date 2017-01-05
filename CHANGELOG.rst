@@ -12,6 +12,7 @@ unreleased
 - [ADDED] documentation of model validation and tests
 - [ADDED] case24_ieee_rts network added
 - [ADDED] mpc and ppc converter
+- [ADDED] DC power flow function pp.rundcopp
 
 [1.0.2] - 2016-11-30
 ----------------------

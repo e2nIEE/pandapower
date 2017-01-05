@@ -9,7 +9,6 @@ import numpy as np
 from collections import MutableMapping
 import six
 
-
 class ADict(dict, MutableMapping):
 
     def __init__(self, *args, **kwargs):
@@ -230,3 +229,107 @@ def get_values(source, selection, lookup):
     :return:
     """
     return np.array([source[lookup[k]] for k in selection])
+    
+def _select_is_elements(net, recycle=None):
+
+    """
+    Selects certain "in_service" elements from net.
+    This is quite time consuming so it is done once at the beginning
+
+
+    @param net: Pandapower Network
+    @return: is_elems Certain in service elements
+    """
+
+    if recycle is not None and recycle["is_elems"]:
+        if "_is_elems" not in net or net["_is_elems"] is None:
+            # sort elements according to their in service status
+            elems = ['bus', 'line']
+            for elm in elems:
+                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
+
+            # select in service buses. needed for the other elements to be selected
+            bus_is = net["bus"]["in_service"].values.astype(bool)
+            line_is = net["line"]["in_service"].values.astype(bool)
+            bus_is_ind = net["bus"][bus_is].index
+            # check if in service elements are at in service buses
+            is_elems = {
+                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                                  & net["gen"]["in_service"].values.astype(bool)]
+                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
+                          & net["load"].in_service.values.astype(bool)
+                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                          & net["sgen"].in_service.values.astype(bool)
+                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
+                          & net["ward"].in_service.values.astype(bool)
+                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
+                           & net["xward"].in_service.values.astype(bool)
+                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                           & net["shunt"].in_service.values.astype(bool)
+                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                                        & net["ext_grid"]["in_service"].values.astype(bool)]
+                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
+                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
+            }
+        else:
+            # just update the elements
+            is_elems = net['_is_elems']
+
+            bus_is_ind = is_elems['bus'].index
+            #update elements
+            elems = ['gen', 'ext_grid']
+            for elm in elems:
+                is_elems[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
+                                     & net[elm]["in_service"].values.astype(bool)]
+
+    else:
+        # select in service buses. needed for the other elements to be selected
+        bus_is = net["bus"]["in_service"].values.astype(bool)
+        line_is = net["line"]["in_service"].values.astype(bool)
+        bus_is_ind = net["bus"][bus_is].index
+        # check if in service elements are at in service buses
+        is_elems = {
+            "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                    & net["gen"]["in_service"].values.astype(bool)]
+            , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
+                    & net["load"].in_service.values.astype(bool)
+            , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                    & net["sgen"].in_service.values.astype(bool)
+            , "ward" : np.in1d(net["ward"].bus.values, bus_is_ind) \
+                    & net["ward"].in_service.values.astype(bool)
+            , "xward" : np.in1d(net["xward"].bus.values, bus_is_ind) \
+                    & net["xward"].in_service.values.astype(bool)
+            , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                    & net["shunt"].in_service.values.astype(bool)
+            , "ext_grid" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                    & net["ext_grid"]["in_service"].values.astype(bool)]
+            , 'bus': net['bus'][bus_is]
+            , 'line': net['line'][line_is]
+        }
+
+    return is_elems
+    
+def _clean_up(net):
+    if len(net["trafo3w"]) > 0:
+        buses_3w = net.trafo3w["ad_bus"].values
+        net["res_bus"].drop(buses_3w, inplace=True)
+        net["bus"].drop(buses_3w, inplace=True)
+        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+
+    if len(net["xward"]) > 0:
+        xward_buses = net["xward"]["ad_bus"].values
+        net["bus"].drop(xward_buses, inplace=True)
+        net["res_bus"].drop(xward_buses, inplace=True)
+        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+
+
+def _set_isolated_buses_out_of_service(net, ppc):
+    # set disconnected buses out of service
+    # first check if buses are connected to branches
+    disco = np.setxor1d(ppc["bus"][:, 0].astype(int),
+                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
+
+    # but also check if they may be the only connection to an ext_grid
+    disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
+    ppc["bus"][disco, 1] = 4
+    

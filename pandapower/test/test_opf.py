@@ -7,7 +7,6 @@
 import pandapower as pp
 import pytest
 from numpy import array, allclose
-from pandapower.runopp import OPFNotConverged
 try:
     import pplog as logging
 except:

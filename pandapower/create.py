@@ -9,7 +9,7 @@ import pandas as pd
 
 from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
-from pandapower.run import reset_results
+from pandapower.results import reset_results
 
 
 def create_empty_network(name=None, f_hz=50.):
