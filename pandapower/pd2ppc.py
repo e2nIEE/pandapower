@@ -22,7 +22,7 @@ from pandapower.auxiliary import _set_isolated_buses_out_of_service
 from pandapower.make_objective import _make_objective
 
 def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
-            trafo_model="pi", init_results=False):
+            trafo_model="pi", init_results=False, copy_voltage_boundaries=False):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -74,7 +74,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
-    bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results)
+    bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results, copy_voltage_boundaries=copy_voltage_boundaries)
     # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
     _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
     # generate ppc['branch'] and directly generates branch values

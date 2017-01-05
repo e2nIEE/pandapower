@@ -10,24 +10,24 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 
 .. image:: /pics/iwes.png
 		:width: 18em
-		:align: left 
-        
+		:align: left
+
 .. image:: /pics/e2n.png
 		:width: 22em
-		:align: right 
+		:align: right
 
 .. |br| raw:: html
 
     <br />
-    
-|br|    
-|br|    
-|br|    
-|br|    
 
-.. toctree:: 
+|br|
+|br|
+|br|
+|br|
+
+.. toctree::
     :maxdepth: 2
-    
+
     about
     getting_started
     tutorials
@@ -39,4 +39,5 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
     networks
     plotting
     file_io
+    converter
     toolbox
