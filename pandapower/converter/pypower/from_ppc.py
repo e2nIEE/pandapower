@@ -273,7 +273,7 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
         cv.validate_ppc2pp(ppc_net, pp_net)
     """
     # run a pypower power flow
-    ppopt = ppoption.ppoption(OUT_ALL=0)
+    ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
     ppc_res = runpf.runpf(ppc_net, ppopt)[0]
     # store pypower power flow results
     ppc_res_branch = ppc_res['branch'][:, 13:17]
