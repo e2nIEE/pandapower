@@ -2,6 +2,8 @@
 Converter
 #############################
 
+.. _ppConverter:
+
 Pandapower provides some very useful converters which enable an exchange of network data with other
 Power System analysis tools.
 
