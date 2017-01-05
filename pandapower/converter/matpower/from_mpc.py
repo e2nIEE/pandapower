@@ -1,11 +1,52 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
 import scipy.io
 import numpy as np
+
+from pandapower.converter import ppc2pp
 import pplog
 
 logger = pplog.getLogger(__name__)
 
 
-def mpc2ppc(mpc_file):
+def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv'):
+        """
+    This function converts a matpower case file (.mat) to a pandapower net.
+    Note: python is 0-based while Matlab is 1-based.
+
+    INPUT:
+
+        **mpc_file** - The matpower case file (.mat).
+
+    OPTIONAL:
+
+        **f_hz** - The frequency of the network.
+
+        **detect_trafo** - In case of 'vn_kv' trafos are detected by different bus voltages.
+            In case of 'ratio' trafos are detected by tap ratios != 0.
+
+    OUTPUT:
+
+        **net**
+
+    EXAMPLE:
+
+        import pandapower.converter as pc
+
+        pp_net = cv.ppc2pp('case9.mat', f_hz=60)
+
+    """
+    ppc = _mpc2ppc(mpc_file)
+    net = ppc2pp(ppc, f_hz, detect_trafo)
+
+    return net
+
+
+def _mpc2ppc(mpc_file):
     # load mpc from file
     mpc = scipy.io.loadmat(mpc_file, squeeze_me=True, struct_as_record=False)
 
