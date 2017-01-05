@@ -12,7 +12,7 @@ from pandapower.run import reset_results, _select_is_elements, _pd2ppc
 logger = pplog.getLogger(__name__)
 
 
-def pp2mat(net, filename, init="flat", calculate_voltage_angles=False, trafo_model="t",
+def pp2mpc(net, filename, init="flat", calculate_voltage_angles=False, trafo_model="t",
            enforce_q_lims=False):
     """
     Store network in Pypower/Matpower format as mat-file
@@ -37,15 +37,9 @@ def pp2mat(net, filename, init="flat", calculate_voltage_angles=False, trafo_mod
     ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
                                     trafo_model, init_results)
 
-    ppc["busnames"] = list(net.bus.name.values)
-    ppc["linenames"] = list(net.line.name.values) + list(net.trafo.name.values)
     # convert ppc to mpc
     _ppc_to_mpc(ppc)
-    # delete unnecessary fields (for now)
-    if None in ppc["busnames"]:
-        del ppc["busnames"]
-    if None in ppc["linenames"]:
-        del ppc["linenames"]
+    # savemat
     savemat(filename, ppc)
 
 
