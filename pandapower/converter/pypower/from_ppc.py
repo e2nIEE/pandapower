@@ -22,7 +22,7 @@ import pplog
 logger = pplog.getLogger(__name__)
 
 
-def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
+def ppc2pp(ppc, f_hz=50, detect_trafo='vn_kv'):
     """
     This function converts pypower case files to pandapower net structure.
 
@@ -43,9 +43,14 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
 
     EXAMPLE:
 
-        import converter as cv
+        import pandapower.converter as pc
 
-        net = cv.from_ppc(ppc)
+        from pypower import case4gs
+
+        ppc_net = case4gs.case4gs()
+
+        pp_net = cv.ppc2pp(ppc_net, f_hz=60)
+
     """
     # --- catch common failures
     if Series(ppc['bus'][:, 9] <= 0).any():
@@ -232,7 +237,7 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
     return net
 
 
-def validate_ppc_conversion(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None):
+def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None):
     """
     This function validates the pypower case files to pandapower net structure conversion via a \
     comparison of loadflow calculations.
@@ -260,7 +265,7 @@ def validate_ppc_conversion(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_valu
 
     EXAMPLE:
 
-        import converter as cv
+        import pandapower.converter as pc
 
         from pypower import case4gs
 
@@ -268,7 +273,7 @@ def validate_ppc_conversion(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_valu
 
         pp_net = cv.from_ppc(ppc_net, f_hz=60)
 
-        cv.validate_ppc_conversion(ppc_net, pp_net)
+        cv.validate_ppc2pp(ppc_net, pp_net)
     """
     # run a pypower power flow
     ppopt = ppoption.ppoption(OUT_ALL=0)
