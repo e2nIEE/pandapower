@@ -1,6 +1,8 @@
 ==============
-MATPOWER
+Matpower
 ==============
+
+.. _converter_matpower:
 
 To communicate to MATPOWER to exchange network data these functions are available.
 

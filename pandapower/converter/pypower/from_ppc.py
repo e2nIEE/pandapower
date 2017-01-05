@@ -4,7 +4,8 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from math import pi, sign, nan, append, zeros, max, array
+from math import pi
+from numpy import sign, nan, append, zeros, max, array
 from pandas import Series, DataFrame
 
 from pypower import runpf
