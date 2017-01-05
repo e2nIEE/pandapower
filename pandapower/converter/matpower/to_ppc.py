@@ -12,7 +12,7 @@ from pandapower.run import reset_results, _select_is_elements, _pd2ppc
 logger = pplog.getLogger(__name__)
 
 
-def pd2mat(net, filename, init="flat", calculate_voltage_angles=False, trafo_model="t",
+def pp2mat(net, filename, init="flat", calculate_voltage_angles=False, trafo_model="t",
            enforce_q_lims=False):
     """
     Store network in Pypower/Matpower format as mat-file

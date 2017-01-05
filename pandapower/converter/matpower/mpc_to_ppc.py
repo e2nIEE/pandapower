@@ -5,7 +5,7 @@ import pplog
 logger = pplog.getLogger(__name__)
 
 
-def mpc_to_ppc(mpc_file):
+def mpc2ppc(mpc_file):
     # load mpc from file
     mpc = scipy.io.loadmat(mpc_file, squeeze_me=True, struct_as_record=False)
 
