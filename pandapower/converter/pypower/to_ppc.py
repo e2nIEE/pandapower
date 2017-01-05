@@ -37,7 +37,6 @@ def pp2ppc(net):
         ppc = pc.pp2ppc(net)
 
     """
-
     is_elems = _select_is_elements(net, dict(is_elems=False, ppc=False, Ybus=False))
     ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, trafo_model="pi", copy_voltage_boundaries=True)
 

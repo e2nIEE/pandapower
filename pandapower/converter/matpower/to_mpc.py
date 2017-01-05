@@ -5,25 +5,47 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-import pplog
 from scipy.io import savemat
+
 from pandapower.run import reset_results, _select_is_elements, _pd2ppc
+import pplog
 
 logger = pplog.getLogger(__name__)
 
 
 def pp2mpc(net, filename, init="flat", calculate_voltage_angles=False, trafo_model="t",
            enforce_q_lims=False):
-    """
-    Store network in Pypower/Matpower format as mat-file
-    Convert 0-based python to 1-based Matlab
-    Take care of a few small details
+        """
+    This function converts a pandapower net to a matpower case files (.mat).
+    Note: python is 0-based while Matlab is 1-based.
 
-    **INPUT**:
-        * net - The Pandapower format network
-        * filename - File path + name of the mat file which is created
-    """
+    INPUT:
 
+        **net** - The pandapower net.
+
+        **filename** - File path + name of the mat file which will be created.
+
+    OPTIONAL:
+
+        **init** - (str, 'flat')
+
+        **calculate_voltage_angles** - (bool, False)
+
+        **trafo_model** - (str, 't')
+
+        **enforce_q_lims** - (bool, False)
+
+    EXAMPLE:
+
+        import pandapower.converter as pc
+
+        import pandapower.networks as pn
+
+        net = pn.case9()
+
+        pc.pp2mpc(net)
+
+    """
     # convert to matpower
     net["converged"] = False
     if not init == "results":
