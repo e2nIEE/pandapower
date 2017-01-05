@@ -19,7 +19,8 @@ from pypower.idx_bus import VM, BUS_I, VA
 
 def test_pp2ppc():
     # pypower cases to validate
-    functions = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q', 'case24_ieee_rts']
+    functions = ['case4gs', 'case6ww', 'case14', 'case30', 'case30pwl', 'case30Q',
+    'case24_ieee_rts']
     for fn in functions:
         # get pypower results
         pypower_module = __import__('pypower.' + fn)
@@ -45,7 +46,8 @@ def test_pp2ppc():
             bus_lookup = net['_bus_lookup']
             # check for equality in bus voltages
             pp_buses = bus_lookup[res_converted_pp['bus'][:, BUS_I].astype(int)]
-            assert np.allclose(res_converted_pp['bus'][pp_buses, VM:VA + 1], res_pypower['bus'][:, VM:VA + 1])
+            assert np.allclose(res_converted_pp['bus'][pp_buses, VM:VA + 1],
+                               res_pypower['bus'][:, VM:VA + 1])
             # ToDo: check equality of branch and gen values
             # pp_gen = bus_lookup[res_converted_pp['bus'][:, BUS_I].astype(int)]
             # assert np.allclose(res_pypower['gen'][res_pypower['order']['gen']['e2i'], PG:QG+1]
