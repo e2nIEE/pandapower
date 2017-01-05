@@ -10,7 +10,7 @@ unreleased
 - [ADDED] estimation module, which provides state estimation functionality. The weighted least squares algorithm is used.
 - [FIXED] bug in voltage ratio for low voltage side tap changers
 - [ADDED] documentation of model validation and tests
-- [ADDED] case24_ieee_rts network added
+- [ADDED] case14, case24_ieee_rts network added
 - [ADDED] mpc and ppc converter
 - [ADDED] DC power flow function pp.rundcopp
 
