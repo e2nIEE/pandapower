@@ -12,7 +12,7 @@ logger = pplog.getLogger(__name__)
 
 def pp2ppc(net):
     """
-    This function converts a pandapower net to a pypower case files.
+     This function converts a pandapower net to a pypower case file.
 
     INPUT:
 
@@ -24,7 +24,7 @@ def pp2ppc(net):
 
     OUTPUT:
 
-        **ppc**
+        **ppc** - The Pypower casefile for usage with pypower
 
     EXAMPLE:
 
@@ -37,7 +37,10 @@ def pp2ppc(net):
         ppc = pc.pp2ppc(net)
 
     """
+
     is_elems = _select_is_elements(net, dict(is_elems=False, ppc=False, Ybus=False))
     ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, trafo_model="pi", copy_voltage_boundaries=True)
+    ppc['branch'] = ppc['branch'].real
+    ppc.pop('internal')
 
     return ppc
