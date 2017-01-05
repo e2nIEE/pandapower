@@ -10,6 +10,9 @@ from pypower import case9, case9Q
 import pandapower as pp
 import pandapower.test as pt
 from pandapower.converter import ppc2pp, validate_ppc2pp
+import pplog
+
+logger = pplog.getLogger(__name__)
 
 max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3,
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
@@ -59,6 +62,7 @@ def test_cases():
         ppc_net = my_function()
         pp_net = ppc2pp(ppc_net, f_hz=60)
         assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
+        logger.info('%s has been checked successfully.' % i)
     # check pypower cases
     name = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q']
     for i in name:
@@ -68,6 +72,7 @@ def test_cases():
         ppc_net = my_function()
         pp_net = ppc2pp(ppc_net, f_hz=60)
         assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
+        logger.info('%s has been checked successfully.' % i)
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3,
@@ -75,9 +80,11 @@ def test_cases():
     ppc_net = case9.case9()
     pp_net = ppc2pp(ppc_net, f_hz=60)
     assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values2)
+    logger.info('case9 has been checked successfully.')
     ppc_net = case9Q.case9Q()
     pp_net = ppc2pp(ppc_net, f_hz=60)
     assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values2)
+    logger.info('case9Q has been checked successfully.')
 
 
 if __name__ == '__main__':

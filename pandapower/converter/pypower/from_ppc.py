@@ -232,7 +232,9 @@ def ppc2pp(ppc, f_hz=50, detect_trafo='vn_kv'):
     return net
 
 
-def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None):
+def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
+    "vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3, "p_gen_kw": 1e-3,
+        "q_gen_kvar": 1e-3}):
     """
     This function validates the pypower case files to pandapower net structure conversion via a \
     comparison of loadflow calculations.
@@ -255,8 +257,8 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None)
     OUTPUT:
 
         **conversion_success** - conversion_success is returned as False if pypower or pandapower
-            cannot calculate a power flow or if max_diff_values is given to compare the maximum
-            difference values.
+            cannot calculate a power flow or if the maximum difference values (max_diff_values )
+            cannot be hold.
 
     EXAMPLE:
 
@@ -289,14 +291,14 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None)
                 pp.runpp(pp_net, trafo_model="pi")
             except:
                 if (ppc_res['success'] == 1) & (~pp_net.converged):
-                    logger.info('The validation of ppc conversion fails because the pandapower net '
-                                'power flow do not convert.')
+                    logger.debug('The validation of ppc conversion fails because the pandapower net'
+                                 ' power flow do not convert.')
                 elif (ppc_res['success'] != 1) & (pp_net.converged):
-                    logger.info('The validation of ppc conversion fails because the power flow of '
-                                'the pypower case do not convert.')
+                    logger.debug('The validation of ppc conversion fails because the power flow of '
+                                 'the pypower case do not convert.')
                 elif (ppc_res['success'] != 1) & (~pp_net.converged):
-                    logger.info('The power flow of both, the pypower case and the pandapower net, '
-                                'do not convert.')
+                    logger.debug('The power flow of both, the pypower case and the pandapower net, '
+                                 'do not convert.')
                 return False
 
     # --- prepare power flow result comparison
@@ -381,25 +383,25 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None)
         diff_res_branch = ppc_res_branch - pp_res_branch*1e-3
         diff_res_gen = ppc_res_gen + pp_res_gen*1e-3
         # logger info
-        logger.info("Maximum voltage magnitude difference between pypower and pandapower: "
-                    "%.2e pu" % max(abs(diff_res_bus[:, 0])))
-        logger.info("Maximum voltage angle difference between pypower and pandapower: "
-                    "%.2e degree" % max(abs(diff_res_bus[:, 1])))
-        logger.info("Maximum branch flow active power difference between pypower and pandapower: "
-                    "%.2e kW" % max(abs(diff_res_branch[:, [0, 2]]*1e3)))
-        logger.info("Maximum branch flow reactive power difference between pypower and pandapower: "
-                    "%.2e kVAr" % max(abs(diff_res_branch[:, [1, 3]]*1e3)))
-        logger.info("Maximum active power generation difference between pypower and pandapower: "
-                    "%.2e kW" % max(abs(diff_res_gen[:, 0]*1e3)))
-        logger.info("Maximum reactive power generation difference between pypower and pandapower: "
-                    "%.2e kVAr" % max(abs(diff_res_gen[:, 1]*1e3)))
+        logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
+                     "%.2e pu" % max(abs(diff_res_bus[:, 0])))
+        logger.debug("Maximum voltage angle difference between pypower and pandapower: "
+                     "%.2e degree" % max(abs(diff_res_bus[:, 1])))
+        logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
+                     "%.2e kW" % max(abs(diff_res_branch[:, [0, 2]]*1e3)))
+        logger.debug("Maximum branch flow reactive power difference between pypower and "
+                     "pandapower: %.2e kVAr" % max(abs(diff_res_branch[:, [1, 3]]*1e3)))
+        logger.debug("Maximum active power generation difference between pypower and pandapower: "
+                     "%.2e kW" % max(abs(diff_res_gen[:, 0]*1e3)))
+        logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
+                     "%.2e kVAr" % max(abs(diff_res_gen[:, 1]*1e3)))
         if (max(abs(diff_res_bus[:, 0])) < 1e-3) & (max(abs(diff_res_bus[:, 1])) < 1e-3) & \
            (max(abs(diff_res_branch[:, [0, 2]])) < 1e-3) & \
            (max(abs(diff_res_branch[:, [1, 3]])) < 1e-3) & \
            (max(abs(diff_res_gen)) > 1e-1).any():
-                logger.info("The active/reactive power generation difference possibly results "
-                            "because of a pypower fault. If you have an access, please validate "
-                            "the results via matpower loadflow.")  # this occurs e.g. at case9
+                logger.debug("The active/reactive power generation difference possibly results "
+                             "because of a pypower fault. If you have an access, please validate "
+                             "the results via matpower loadflow.")  # this occurs e.g. at case9
 
         if type(max_diff_values) == dict:
             if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
@@ -415,3 +417,5 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values=None)
                     return False
             else:
                 logger.debug('Not all requried dict keys are provided.')
+        else:
+            logger.debug("'max_diff_values' must be a dict.")
