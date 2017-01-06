@@ -26,7 +26,8 @@ def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_volta
     bus_pq = _get_p_q_results(net, bus_lookup_aranged, is_elems, ac)
     _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, return_voltage_angles, ac)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
+                     return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
 def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
@@ -152,10 +153,11 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         net["res_impedance"].index = net["impedance"].index
 
     if xward_end > impedance_end:
-        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end, ac)
+        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
+                                  ac)
 
-
-def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus, return_voltage_angles, ac=True):
+def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus, 
+                     return_voltage_angles, ac=True):
     # get in service elements
     gen_is = is_elems['gen']
     eg_is = is_elems['ext_grid']
@@ -225,6 +227,12 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
             q = np.hstack([q, q_gen])
             net["res_gen"]["q_kvar"] = q_gen
 
+    if len(net.dclink) > 0:
+        _get_dclink_results(net)
+        b = np.hstack([b, net.dclink[["from_bus", "to_bus"]].values.flatten()])
+        p = np.hstack([p, -net.res_dclink[["p_from_kw", "p_to_kw"]].values.flatten()])
+        q = np.hstack([q, -net.res_dclink[["q_from_kvar", "q_to_kvar"]].values.flatten()])
+
     if not ac:
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
@@ -232,6 +240,28 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
     pq_bus[b, 0] += p_sum
     pq_bus[b, 1] += q_sum
 
+
+        
+
+
+def _get_dclink_results(net):
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dclink)*2):]
+    from_gens = net.res_gen.loc[dc_gens[::2]]
+    to_gens = net.res_gen.loc[dc_gens[1::2]]
+
+    net.res_dclink.p_from_kw = from_gens.p_kw.values
+    net.res_dclink.p_to_kw = to_gens.p_kw.values
+    net.res_dclink.pl_kw = from_gens.p_kw.values +  to_gens.p_kw.values
+   
+    net.res_dclink.q_from_kvar = from_gens.q_kvar.values
+    net.res_dclink.q_to_kvar = to_gens.q_kvar.values
+
+    net.res_dclink.vm_from_pu = from_gens.vm_pu.values
+    net.res_dclink.vm_to_pu = to_gens.vm_pu.values
+    net.res_dclink.va_from_degree = from_gens.va_degree.values
+    net.res_dclink.va_to_degree = to_gens.va_degree.values
+    
+    net.res_dclink.index = net.dclink.index
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, f, t, ac=True):
     p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
@@ -525,6 +555,7 @@ def reset_results(net):
     net["res_gen"] = copy.copy(net["_empty_res_gen"])
     net["res_ward"] = copy.copy(net["_empty_res_ward"])
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
+    net["res_dclink"] = copy.copy(net["_empty_res_dclink"])
     
     
 def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):

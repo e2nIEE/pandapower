@@ -108,7 +108,8 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
              trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, **kwargs):
+def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, 
+            **kwargs):
     """
     Runs PANDAPOWER DC Flow
 

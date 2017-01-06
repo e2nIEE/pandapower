@@ -162,6 +162,20 @@ def create_empty_network(name=None, f_hz=50.):
                       ("xtf_pu", "f8"),
                       ("sn_kva", "f8"),
                       ("in_service", 'bool')],
+        "dclink": [("name", np.dtype(object)),
+                ("from_bus", "u4"),
+                ("to_bus", "u4"),
+                ("p_kw", "f8"),
+                ("loss_percent", 'bool'),
+                ("loss_kw", 'bool'),
+                ("vm_from_pu", "f8"),
+                ("vm_to_pu", "f8"),
+                ("min_q_from_kvar", "f8"),
+                ("min_q_to_kvar", "f8"),
+                ("max_q_from_kvar", "f8"),
+                ("max_q_to_kvar", "f8"),
+                ("forward", 'bool'),
+                ("in_service", 'bool')],
         "ward": [("name", np.dtype(object)),
                  ("bus", "u4"),
                  ("ps_kw", "f8"),
@@ -234,7 +248,8 @@ def create_empty_network(name=None, f_hz=50.):
                             ("q_kvar", "f8")],
         "_empty_res_gen": [("p_kw", "f8"),
                            ("q_kvar", "f8"),
-                           ("va_degree", "f8")],
+                           ("va_degree", "f8"),
+                           ("vm_pu", "f8")],
         "_empty_res_shunt": [("p_kw", "f8"),
                              ("q_kvar", "f8"),
                              ("vm_pu", "f8")],
@@ -246,6 +261,15 @@ def create_empty_network(name=None, f_hz=50.):
                                  ("ql_kvar", "f8"),
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
+        "_empty_res_dclink": [("p_from_kw", "f8"),
+                            ("q_from_kvar", "f8"),
+                            ("p_to_kw", "f8"),
+                            ("q_to_kvar", "f8"),
+                            ("pl_kw", "f8"),
+                            ("vm_from_pu", "f8"),
+                            ("va_from_degree", "f8"),                            
+                            ("vm_to_pu", "f8"),
+                            ("va_to_degree", "f8")],
         "_empty_res_ward": [("p_kw", "f8"),
                             ("q_kvar", "f8"),
                             ("vm_pu", "f8")],
@@ -1706,6 +1730,39 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     return index
 
+def create_dclink(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, index=None,
+                  name=None, min_q_from_kvar=np.nan, min_q_to_kvar=np.nan, max_q_from_kvar=np.nan,
+                  max_q_to_kvar=np.nan, forward=True, in_service=True):
+    for bus in [from_bus, to_bus]:
+        if bus not in net["bus"].index.values:
+            raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+    
+        if bus in net.ext_grid.bus.values:
+            raise UserWarning(
+                "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+    
+        if bus in net.gen.bus.values:
+            raise UserWarning(
+                "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+
+    if index is None:
+        index = get_free_id(net["dclink"])
+
+    if index in net["dclink"].index:
+        raise UserWarning("A dclink with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.dclink.dtypes
+
+    net.dclink.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
+                       "vm_from_pu", "vm_to_pu", "min_q_from_kvar", "min_q_to_kvar", 
+                       "max_q_from_kvar", "max_q_to_kvar", "forward", "in_service"]]\
+        = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, 
+           min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, forward, in_service]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.dclink, dtypes)
+    
 
 def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
                        check_existing=True, index=None):

@@ -31,7 +31,8 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=False, copy_voltage_boundaries=False):
+def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=False, 
+                   copy_voltage_boundaries=False):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """

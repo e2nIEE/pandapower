@@ -11,6 +11,7 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
+from pandapower.create import create_gen
 
 def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles):
     '''
@@ -22,6 +23,9 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
 
         **ppc** - The PYPOWER format network to fill in values
     '''
+    if len(net.dclink) > 0:
+        add_dclink_gens(net)
+        is_elems["gen"] = net.gen[net.gen.in_service==True]
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -256,3 +260,20 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         pmax = ppc["gen"][eg_end:gen_end, [PMAX]]
         ncn.copyto(pmax, p_lim_default, where=isnan(pmax))
         ppc["gen"][eg_end:gen_end, [PMAX]] = pmax
+
+def add_dclink_gens(net):
+    for _, dctab in net.dclink.iterrows():
+        p1 = dctab.p_kw
+        p2 = p1* (1 - dctab.loss_percent / 100) - dctab.loss_kw
+        if dctab.forward:
+            pfrom = p1
+            pto = -p2
+        else:
+            pfrom = -p2
+            pto = p1
+        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
+                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
+                   in_service=dctab.in_service)
+        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
+                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
+                   in_service=dctab.in_service)
