@@ -60,7 +60,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     return wls.estimate(v_start, delta_start, calculate_voltage_angles)
 
 
-class state_estimation:
+class state_estimation(object):
     """
     Any user of the estimation module only needs to use the class state_estimation. It contains all
     relevant functions to control and operator the module. Two functions are used to configure the
