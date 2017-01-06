@@ -440,12 +440,12 @@ class state_estimation(object):
         self.net.res_line_est = calculate_line_results(self.net, use_res_bus_est=True)
 
         # Store some variables required for Chi^2 and r_N_max test:
-        self.R_inv = r_inv
+        self.R_inv = r_inv.toarray()
         self.hx = h_x
-        self.H = H
-        self.Ht = H.T
-        self.Gm = G_m
-        self.r = r
+        self.H = H.toarray()
+        self.Ht = self.H.T
+        self.Gm = G_m.toarray()
+        self.r = r.toarray()
         self.V = v_m
         self.delta = delta
 
