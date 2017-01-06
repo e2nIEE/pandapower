@@ -33,6 +33,18 @@ Case 9Q
 .. autofunction:: pandapower.networks.case9Q()
 ---------------------------
 
+Case 14
+---------
+
+.. autofunction:: pandapower.networks.case14()
+---------------------------
+
+Case 24_ieee_rts
+---------
+
+.. autofunction:: pandapower.networks.case24_ieee_rts()
+---------------------------
+
 Case 30
 --------
 
