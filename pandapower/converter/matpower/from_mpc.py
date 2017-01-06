@@ -31,7 +31,7 @@ def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv'):
 
     OUTPUT:
 
-        **net**
+        **net** - The pandapower network
 
     EXAMPLE:
 
