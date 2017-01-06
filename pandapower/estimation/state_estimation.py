@@ -85,7 +85,6 @@ class state_estimation(object):
         self.r = None
         self.V = None
         self.delta = None
-        self.s_bus_kva = None
         self.bad_data_present = None
         # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
@@ -418,9 +417,6 @@ class state_estimation(object):
             ppc = int2ext(ppc_i)
             _set_buses_out_of_service(ppc)
 
-        # Store bus powers in kVa:
-        self.s_bus_kva = ppc["bus"][:, 2] + 1j * ppc["bus"][:, 3] * self.s_ref / 1e3
-
         # Store results, overwrite old results
         self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
                                             index=self.net.bus.index)
@@ -445,7 +441,7 @@ class state_estimation(object):
         self.H = H.toarray()
         self.Ht = self.H.T
         self.Gm = G_m.toarray()
-        self.r = r.toarray()
+        self.r = r.T.toarray()
         self.V = v_m
         self.delta = delta
 
