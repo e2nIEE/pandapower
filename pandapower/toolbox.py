@@ -506,7 +506,7 @@ def _pre_release_changes(net):
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     net.switch.closed = net.switch.closed.astype(bool)
-    
+
 def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"]):
     """
     Adds zones to elements, inferring them from the zones of buses they are
@@ -621,7 +621,7 @@ def drop_inactive_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[net.line.in_service == False].index
     drop_lines(net, inactive_lines)
-    
+
     inactive_trafos = net.trafo[net.trafo.in_service == False].index
     drop_trafos(net, inactive_trafos)
 
@@ -746,19 +746,19 @@ def set_isolated_areas_out_of_service(net):
     """
     unsupplied = unsupplied_buses(net)
     set_element_status(net, unsupplied, False)
-    
+
     for element in ["line", "trafo"]:
         oos_elements = net.line[net.line.in_service==False].index
-        oos_switches = net.switch[(net.switch.et==element[0]) & 
+        oos_switches = net.switch[(net.switch.et==element[0]) &
                                   (net.switch.element.isin(oos_elements))].index
         net.switch.loc[oos_switches, "closed"] = True
-        
+
         for idx, bus in net.switch[(net.switch.closed==False) & (net.switch.et==element[0])]\
                                     [["element", "bus"]].values:
             if net.bus.in_service.at[next_bus(net, bus, idx, element)] == False:
                 net[element].at[idx, "in_service"] = False
-            
-            
+
+
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                   keep_everything_else=False):
     """

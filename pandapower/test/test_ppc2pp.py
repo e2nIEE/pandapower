@@ -51,10 +51,10 @@ def test_validate_ppc2pp():
                            detect_trafo='vn_kv')
 
 
-def test_cases():
-    # check ppc_testfile
-    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case39',
-            'case57', 'case118']
+def test_ppc_testgrids():
+    # check ppc_testgrids
+    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case57',
+            'case118']
     module = __import__('pandapower')
     sub_module = getattr(module, 'test')
     for i in name:
@@ -63,15 +63,23 @@ def test_cases():
         pp_net = ppc2pp(ppc_net, f_hz=60)
         assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
+
+
+def test_pypower_cases():
     # check pypower cases
-    name = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q']
+    name = ['case4gs', 'case6ww', 'case14', 'case30', 'case30pwl', 'case30Q', 'case39']
     for i in name:
         module = __import__('pypower.' + i)
         submodule = getattr(module, i)
         my_function = getattr(submodule, i)
         ppc_net = my_function()
-        pp_net = ppc2pp(ppc_net, f_hz=60)
-        assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
+        if i == 'case39':
+            pp_net = ppc2pp(ppc_net, f_hz=60, detect_trafo='ratio')
+            assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1,
+                                   detect_trafo='ratio')
+        else:
+            pp_net = ppc2pp(ppc_net, f_hz=60)
+            assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation

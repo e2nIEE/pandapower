@@ -20,7 +20,7 @@ from pypower.idx_bus import VM, BUS_I, VA
 def test_pp2ppc():
     # pypower cases to validate
     functions = ['case4gs', 'case6ww', 'case14', 'case30', 'case30pwl', 'case30Q',
-    'case24_ieee_rts']
+    'case24_ieee_rts', 'case39']
     for fn in functions:
         # get pypower results
         pypower_module = __import__('pypower.' + fn)
