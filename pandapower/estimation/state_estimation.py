@@ -363,7 +363,7 @@ class state_estimation(object):
             h_x = sem.create_hx(v_m, delta)
 
             # Residual r
-            r = csr_matrix(z - h_x)
+            r = csr_matrix(z - h_x).T
 
             # Jacobian matrix H
             H = csr_matrix(sem.create_jacobian(v_m, delta))
@@ -377,7 +377,7 @@ class state_estimation(object):
 
             # State Vector difference d_E
             # d_E = G_m^-1 * (H' * R^-1 * r)
-            d_E = spsolve(G_m, H.T * (r_inv * r.T))
+            d_E = spsolve(G_m, H.T * (r_inv * r))
             E += d_E
 
             # Update V/delta
@@ -437,11 +437,11 @@ class state_estimation(object):
 
         # Store some variables required for Chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()
-        self.hx = h_x
+        self.Gm = G_m.toarray()
+        self.r = r.toarray()
         self.H = H.toarray()
         self.Ht = self.H.T
-        self.Gm = G_m.toarray()
-        self.r = r.T.toarray()
+        self.hx = h_x
         self.V = v_m
         self.delta = delta
 
