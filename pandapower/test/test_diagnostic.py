@@ -68,6 +68,12 @@ class TestInvalidValues:
         net.trafo3w.loc[0, 'vscr_lv_percent'] = 1
         net.trafo3w.loc[0, 'pfe_kw'] = '2'
         net.trafo3w.loc[0, 'i0_percent'] = 10
+        net.load.loc[0, 'scaling'] = -0.1
+        net.load.loc[1, 'scaling'] = 0
+        net.load.loc[2, 'scaling'] = 1
+        net.load.loc[3, 'scaling'] = '1'
+        net.gen.loc[0, 'scaling'] = None
+        net.sgen.loc[0, 'scaling'] = False
 
         assert pp.invalid_values(net) ==  \
         {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'), (8, 'x_ohm_per_km', 'nan', '>=0'),
@@ -75,7 +81,10 @@ class TestInvalidValues:
          'trafo': [(0, 'vscr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
                    (0, 'i0_percent', -0.001, '>=0')],
          'trafo3w': [(0, 'vscr_hv_percent', True, '>=0'), (0, 'vscr_mv_percent', False, '>=0'),
-                     (0, 'pfe_kw', '2', '>=0')]}
+                     (0, 'pfe_kw', '2', '>=0')],
+         'gen': [(0, 'scaling', 'nan', '>=0')],
+         'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
+         'sgen': [(0, 'scaling', False, '>=0')]}
 #
 #
 #    #def test_smaller_zero(self, net):           # check_smaller_zero currently not in use
@@ -160,18 +169,9 @@ class TestInvalidValues:
     def test_between_zero_and_one(self, test_net):
         net = copy.deepcopy(test_net)
         net.line.loc[0, 'df'] = 1.5
-        net.load.loc[0, 'scaling'] = -0.1
-        net.load.loc[1, 'scaling'] = 0
-        net.load.loc[2, 'scaling'] = 1
-        net.load.loc[3, 'scaling'] = '1'
-        net.gen.loc[0, 'scaling'] = None
-        net.sgen.loc[0, 'scaling'] = False
 
         assert pp.invalid_values(net) ==  \
-        {'gen': [(0, 'scaling', 'nan', '0to1')],
-         'line': [(0, 'df', 1.5, '0to1')],
-         'load': [(0, 'scaling', -0.1, '0to1'), (3, 'scaling', '1', '0to1')],
-         'sgen': [(0, 'scaling', False, '0to1')]}
+        {'line': [(0, 'df', 1.5, '0to1')]}
 
     def test_switch_type(self, test_net):
         net = copy.deepcopy(test_net)
