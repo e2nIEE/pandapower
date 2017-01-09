@@ -12,9 +12,12 @@ from pypower import runpf
 from pypower import ppoption
 
 import pandapower as pp
-import pplog
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def ppc2pp(ppc, f_hz=50, detect_trafo='vn_kv'):

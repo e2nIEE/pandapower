@@ -10,10 +10,12 @@ from pypower import case9, case9Q
 import pandapower as pp
 import pandapower.test as pt
 from pandapower.converter import ppc2pp, validate_ppc2pp
-import pplog
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
 max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3,
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
 

@@ -8,9 +8,12 @@ import scipy.io
 import numpy as np
 
 from pandapower.converter import ppc2pp
-import pplog
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):

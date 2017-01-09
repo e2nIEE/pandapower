@@ -8,10 +8,12 @@ import numpy as np
 from scipy.io import savemat
 
 from pandapower.run import reset_results, _select_is_elements, _pd2ppc
-import pplog
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
 
 def pp2mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_model="t"):
     """

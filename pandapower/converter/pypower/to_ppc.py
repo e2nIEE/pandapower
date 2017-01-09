@@ -5,9 +5,12 @@
 # BSD-style license that can be found in the LICENSE file.
 
 from pandapower.run import _pd2ppc, _select_is_elements, reset_results
-import pplog
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def pp2ppc(net, init="results", calculate_voltage_angles=False, trafo_model="t"):
