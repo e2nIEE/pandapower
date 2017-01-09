@@ -75,7 +75,8 @@ def pp2ppc(net, init="results", calculate_voltage_angles=False, trafo_model="t")
 
     init_results = True if init == "results" else False
     ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims=False,
-                                    trafo_model=trafo_model, init_results=init_results)
+                                    trafo_model=trafo_model, init_results=init_results,
+                                    copy_voltage_boundaries=True)
     ppc['branch'] = ppc['branch'].real
     ppc.pop('internal')
 

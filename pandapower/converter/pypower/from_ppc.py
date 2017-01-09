@@ -78,26 +78,7 @@ def ppc2pp(ppc, f_hz=50, detect_trafo='vn_kv'):
     # unused data: Vm, Va (partwise: in ext_grid), zone
 
     # --- prepare gen data -> no duplicates
-    GEN = DataFrame(ppc['gen'])
-    GEN_uniq = GEN.drop_duplicates(subset=[0])
-    dupl = GEN[0].duplicated()
-    GEN_dupl = GEN[dupl]
-    if len(GEN_dupl) > 0:
-        logger.debug('There are several generators at one bus.')
-    for i in GEN_dupl.index:
-        GEN_bus = int(GEN_dupl[0][i])
-        current_bus_idx = pp.get_element_index(net, 'bus', name=GEN_bus)
-        current_bus_type = int(ppc['bus'][current_bus_idx, 1])
-        # check different vm_pu values for gen at the same bus
-        if GEN_dupl[5][i] != GEN_uniq[GEN_uniq[0] == GEN_bus][5].values[0]:
-            logger.error('Several generators at one bus have different vm_pu values.')
-        # set in_service
-        if (GEN[GEN[0] == GEN_bus][7] > 0).any():
-            GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, 7] = 1
-        # sum up active powers and power limits as well as reactive power limits
-        for j in [1, 3, 4, 8, 9]:
-            GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, j] = \
-                GEN[(GEN[0] == GEN_bus) & (GEN[7] > 0)][j].sum()
+    GEN, GEN_uniq, GEN_dupl = GEN_unique(ppc, net)
 
     # --- gen data -> create ext_grid, gen, sgen
     for i in GEN_uniq.index:
@@ -275,10 +256,12 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
     # run a pypower power flow
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
     ppc_res = runpf.runpf(ppc_net, ppopt)[0]
+    # consider GEN duplicates at one node
+    GEN, GEN_uniq, GEN_dupl = GEN_unique(ppc_res, pp_net)
     # store pypower power flow results
     ppc_res_branch = ppc_res['branch'][:, 13:17]
     ppc_res_bus = ppc_res['bus'][:, 7:9]
-    ppc_res_gen = ppc_res['gen'][:, 1:3]
+    ppc_res_gen = array(GEN_uniq)[:, 1:3]
 
     # try to run a pandapower power flow
     try:
@@ -306,11 +289,11 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
         # pandapower bus result table
         pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
         # consideration of parallel generators
-        GENs = DataFrame(ppc_res['gen'][:, [0]])
-        GENs_uniq = GENs.drop_duplicates()
+        GEN = DataFrame(ppc_res['gen'][:, [0]])
+        GEN_uniq = GEN.drop_duplicates()
         # pandapower gen result table
         pp_res_gen = zeros([1, 2])
-        for i in GENs_uniq.index:
+        for i in GEN_uniq.index:
             current_bus_idx = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['gen'][i, 0]))
             current_bus_type = int(ppc_res['bus'][current_bus_idx, 1])
             # ext_grid
@@ -419,3 +402,28 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
                 logger.debug('Not all requried dict keys are provided.')
         else:
             logger.debug("'max_diff_values' must be a dict.")
+
+
+def GEN_unique(ppc, net):
+    GEN = DataFrame(ppc['gen'])
+    GEN_uniq = GEN.drop_duplicates(subset=[0])
+    dupl = GEN[0].duplicated()
+    GEN_dupl = GEN[dupl]
+    if len(GEN_dupl) > 0:
+        logger.debug('There are several generators at one bus.')
+    for i in GEN_dupl.index:
+        GEN_bus = int(GEN_dupl[0][i])
+        current_bus_idx = pp.get_element_index(net, 'bus', name=GEN_bus)
+        current_bus_type = int(ppc['bus'][current_bus_idx, 1])
+        # check different vm_pu values for gen at the same bus
+        if GEN_dupl[5][i] != GEN_uniq[GEN_uniq[0] == GEN_bus][5].values[0]:
+            logger.error('Several generators at one bus have different vm_pu values.')
+        # set in_service
+        if (GEN[GEN[0] == GEN_bus][7] > 0).any():
+            GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, 7] = 1
+        # sum up active and reactive powers and power limits as well as reactive power limits
+        for j in [1, 2, 3, 4, 8, 9]:
+            GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, j] = \
+                GEN[(GEN[0] == GEN_bus) & (GEN[7] > 0)][j].sum()
+
+    return GEN, GEN_uniq, GEN_dupl
