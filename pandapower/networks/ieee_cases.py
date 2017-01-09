@@ -12,7 +12,7 @@ def _get_networks_path():
     return os.path.abspath(os.path.dirname(pp.networks.__file__))
 
 
-def case4gs(generator_nodes_as_pv=False):
+def case4gs():
     """
     Calls the pickle file case4gs.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
@@ -30,7 +30,7 @@ def case4gs(generator_nodes_as_pv=False):
     return case4gs
 
 
-def case6ww(generator_nodes_as_pv=False):
+def case6ww():
     """
     Calls the pickle file case6ww.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
@@ -48,7 +48,7 @@ def case6ww(generator_nodes_as_pv=False):
     return case6ww
 
 
-def case9(generator_nodes_as_pv=False):
+def case9():
     """
     Calls the pickle file case9.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was published in Anderson and Fouad's book 'Power System Control and Stability' for the first time in 1980.
