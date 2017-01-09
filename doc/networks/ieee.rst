@@ -92,4 +92,4 @@ with b_shunt=0 for transformer branches from node 68 to 116 and from 86 to 87.
  import pandapower.test as pt
  import pandapower.converter as pc
  ppc_case118_adapt = pt.case118()
- pp_case118_adapt = pc.ppc2pp(case118)
+ pp_case118_adapt = pc.from_ppc(case118)

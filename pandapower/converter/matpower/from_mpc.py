@@ -7,7 +7,7 @@
 import scipy.io
 import numpy as np
 
-from pandapower.converter import ppc2pp
+from pandapower.converter import from_ppc
 try:
     import pplog as logging
 except:
@@ -16,14 +16,14 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
+def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
     """
     This function converts a matpower case file (.mat) version 2 to a pandapower net.
     Note: python is 0-based while Matlab is 1-based.
 
     INPUT:
 
-        **mpc_file** - The matpower case file (.mat).
+        **mpc_file** - path to a matpower case file (.mat).
 
     OPTIONAL:
 
@@ -43,11 +43,11 @@ def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
 
         import pandapower.converter as pc
 
-        pp_net = cv.ppc2pp('case9.mat', f_hz=60)
+        pp_net = cv.from_ppc('case9.mat', f_hz=60)
 
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
-    net = ppc2pp(ppc, f_hz, detect_trafo)
+    net = from_ppc(ppc, f_hz, detect_trafo)
 
     return net
 

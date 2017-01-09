@@ -12,14 +12,11 @@ import numpy as np
 from math import isnan
 import pytest
 import os
-import importlib
 
 
 def run_all_tests():
     """ function exdecuting all tests
     """
-#    import pandapower as pp
-#    importlib.reload(pp)
     pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)),"-s"])
 
 def assert_mpc_equal(mpc1, mpc2):
@@ -229,7 +226,7 @@ def create_test_network2():
     """Creates a simple pandapower test network
     """
     folder = os.path.abspath(os.path.dirname(pandapower.test.__file__))
-    net = pp.from_pickle(os.path.join(folder, "testgrid.p"))
+    net = pp.from_pickle(os.path.join(folder, "loadflow", "testgrid.p"))
 #    net = pp.file_io.from_pickle("testgrid.p")
 
     return net

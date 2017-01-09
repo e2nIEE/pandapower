@@ -8,8 +8,8 @@ import pytest
 from pypower import case9, case9Q
 
 import pandapower as pp
-import pandapower.test as pt
-from pandapower.converter import ppc2pp, validate_ppc2pp
+import pandapower.test.converter.ppc_testgrids as testgrids
+from pandapower.converter import from_ppc, validate_ppc2pp
 try:
     import pplog as logging
 except:
@@ -20,24 +20,24 @@ max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_br
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
 
 
-def test_ppc2pp():
-    ppc_net = pt.case2_2()
-    net_by_ppc_net = ppc2pp(ppc_net)
-    net_by_code = pt.case2_2_by_code()
-    pp.runpp(net_by_ppc_net, trafo_model="pi")
+def test_from_ppc():
+    ppc = testgrids.case2_2()
+    net_by_ppc = from_ppc(ppc)
+    net_by_code = testgrids.case2_2_by_code()
+    pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
 
-    assert type(net_by_ppc_net) == type(net_by_code)
-    assert net_by_ppc_net.converged
-    assert len(net_by_ppc_net.bus) == len(net_by_code.bus)
-    assert len(net_by_ppc_net.trafo) == len(net_by_code.trafo)
-    assert len(net_by_ppc_net.ext_grid) == len(net_by_code.ext_grid)
-    assert pp.equal_nets(net_by_ppc_net, net_by_code, check_only_results=True, tol=1.e-9)
+    assert type(net_by_ppc) == type(net_by_code)
+    assert net_by_ppc.converged
+    assert len(net_by_ppc.bus) == len(net_by_code.bus)
+    assert len(net_by_ppc.trafo) == len(net_by_code.trafo)
+    assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
+    assert pp.equal_nets(net_by_ppc, net_by_code, check_only_results=True, tol=1.e-9)
 
     # check detect_trafo
-    ppc_net2_4 = pt.case2_4()
-    net1 = ppc2pp(ppc_net2_4, detect_trafo='vn_kv')
-    net2 = ppc2pp(ppc_net2_4, detect_trafo='ratio')
+    ppc2_4 = testgrids.case2_4()
+    net1 = from_ppc(ppc2_4, detect_trafo='vn_kv')
+    net2 = from_ppc(ppc2_4, detect_trafo='ratio')
     assert type(net1) == type(net_by_code)
     assert type(net2) == type(net_by_code)
     assert len(net1.trafo) == 1
@@ -47,9 +47,9 @@ def test_ppc2pp():
 
 
 def test_validate_ppc2pp():
-    ppc_net = pt.case2_2()
-    pp_net = pt.case2_2_by_code()
-    assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1,
+    ppc = testgrids.case2_2()
+    net = testgrids.case2_2_by_code()
+    assert validate_ppc2pp(ppc, net, max_diff_values=max_diff_values1,
                            detect_trafo='vn_kv')
 
 
@@ -57,13 +57,11 @@ def test_ppc_testgrids():
     # check ppc_testgrids
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case57',
             'case118']
-    module = __import__('pandapower')
-    sub_module = getattr(module, 'test')
     for i in name:
-        my_function = getattr(sub_module, i)
-        ppc_net = my_function()
-        pp_net = ppc2pp(ppc_net, f_hz=60)
-        assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
+        my_function = getattr(testgrids, i)
+        ppc = my_function()
+        net = from_ppc(ppc, f_hz=60)
+        assert validate_ppc2pp(ppc, net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
 
 
@@ -74,28 +72,28 @@ def test_pypower_cases():
         module = __import__('pypower.' + i)
         submodule = getattr(module, i)
         my_function = getattr(submodule, i)
-        ppc_net = my_function()
+        ppc = my_function()
         if i == 'case39':
-            pp_net = ppc2pp(ppc_net, f_hz=60, detect_trafo='ratio')
-            assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1,
+            net = from_ppc(ppc, f_hz=60, detect_trafo='ratio')
+            assert validate_ppc2pp(ppc, net, max_diff_values=max_diff_values1,
                                    detect_trafo='ratio')
         else:
-            pp_net = ppc2pp(ppc_net, f_hz=60)
-            assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values1)
+            net = from_ppc(ppc, f_hz=60)
+            assert validate_ppc2pp(ppc, net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3,
                         "q_branch_kvar": 1e-3, "p_gen_kw": 1e3, "q_gen_kvar": 1e3}
-    ppc_net = case9.case9()
-    pp_net = ppc2pp(ppc_net, f_hz=60)
-    assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values2)
+    ppc = case9.case9()
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_ppc2pp(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')
-    ppc_net = case9Q.case9Q()
-    pp_net = ppc2pp(ppc_net, f_hz=60)
-    assert validate_ppc2pp(ppc_net, pp_net, max_diff_values=max_diff_values2)
+    ppc = case9Q.case9Q()
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_ppc2pp(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9Q has been checked successfully.')
 
 
 if __name__ == '__main__':
-    pytest.main(["test_ppc2pp.py", "-xs"])
+    pytest.main(["-xs"])

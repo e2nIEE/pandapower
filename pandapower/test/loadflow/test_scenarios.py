@@ -8,7 +8,7 @@ import pytest
 import pandapower as pp
 from pandapower.test.toolbox import create_test_network2
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.result_test_network_generator import add_test_bus_bus_switch
+from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch
 import numpy as np
 
 #TODO: 2 gen 2 ext_grid missing

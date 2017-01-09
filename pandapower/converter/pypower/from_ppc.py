@@ -20,7 +20,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def ppc2pp(ppc, f_hz=50, detect_trafo='vn_kv'):
+def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
     """
     This function converts pypower case files to pandapower net structure.
 
@@ -47,7 +47,7 @@ def ppc2pp(ppc, f_hz=50, detect_trafo='vn_kv'):
 
         ppc_net = case4gs.case4gs()
 
-        pp_net = cv.ppc2pp(ppc_net, f_hz=60)
+        pp_net = cv.from_ppc(ppc_net, f_hz=60)
 
     """
     # --- catch common failures

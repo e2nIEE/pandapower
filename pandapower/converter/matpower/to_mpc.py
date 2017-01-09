@@ -15,7 +15,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
-def pp2mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_model="t"):
+def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_model="t"):
     """
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.

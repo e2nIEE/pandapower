@@ -13,7 +13,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def pp2ppc(net, init="results", calculate_voltage_angles=False, trafo_model="t"):
+def to_ppc(net, init="results", calculate_voltage_angles=False, trafo_model="t"):
     """
      This function converts a pandapower net to a pypower case file.
 

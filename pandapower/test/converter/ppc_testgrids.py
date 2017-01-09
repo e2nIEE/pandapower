@@ -5,7 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 
-# This script provides pypower case files to test the converter 'ppc2pp' and 'validate_ppc2pp'.
+# This script provides pypower case files to test the converter 'from_ppc' and 'validate_ppc2pp'.
 # There are some small and simple generic networks as well as adapted ieee cases 39, 57 and 118
 # which origin is pypower.
 

@@ -10,7 +10,7 @@ import os
 @pytest.fixture
 def one_line_one_transformer():
     folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net = pp.from_pickle(os.path.join(folder, "test", "sc_test_one_line_one_transformer.p"))
+    net = pp.from_pickle(os.path.join(folder, "test", "shortcircuit", "sc_test_one_line_one_transformer.p"))
     bid = pp.create_bus(net, vn_kv=10.) #add a bus bus switch to test switch compatibility
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
     net.ext_grid.bus.at[0] = bid
@@ -20,7 +20,7 @@ def one_line_one_transformer():
 @pytest.fixture
 def meshed_grid():
     folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net = pp.from_pickle(os.path.join(folder, "test", "sc_test_meshed_grid.p"))
+    net = pp.from_pickle(os.path.join(folder, "test", "shortcircuit", "sc_test_meshed_grid.p"))
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
     net.ext_grid.bus.iloc[0] = bid
@@ -30,7 +30,7 @@ def meshed_grid():
 @pytest.fixture
 def one_line_one_generator():
     folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net = pp.from_pickle(os.path.join(folder, "test", "sc_test_gen.p"))
+    net = pp.from_pickle(os.path.join(folder, "test", "shortcircuit", "sc_test_gen.p"))
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, bid, net.gen.bus.iloc[0], et="b")
     net.gen.bus.iloc[0] = bid
@@ -255,4 +255,4 @@ def test_min_gen(one_line_one_generator):
     assert abs(net.res_bus_sc.ikss_min_ka.at[1] - 1.3697407) < 1e-7    
 
 if __name__ == '__main__':   
-    pytest.main(['-x', "test_sc.py"])
+    pytest.main(['-xs'])
