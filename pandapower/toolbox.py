@@ -333,7 +333,10 @@ def convert_format(net):
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
     # initialize measurement dataframe
-    if "measurement" not in net or "element_type" not in net.measurement:
+    if "measurement" in net and "element_type" not in net.measurement:
+        raise UserWarning("The measurement structure seems outdated. Please adjust it according"
+                          "to the documentation.")
+    if "measurement" not in net:
         net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
                                                              ("element_type", np.dtype(object)),
                                                              ("value", "f8"),

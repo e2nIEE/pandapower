@@ -43,7 +43,6 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     Return:
         (bool) Was the state estimation successful?
     """
-    net = convert_format(net)
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
     delta_start = None
