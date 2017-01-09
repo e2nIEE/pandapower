@@ -57,7 +57,10 @@ def _make_objective(ppc, net, is_elems, sg_is, objectivetype="linear", lambda_op
     """
     ng = len(ppc["gen"])  # -
     nref = sum(ppc["bus"][:, BUS_TYPE] == REF)
-    gen_is = is_elems['gen']
+    if len(net.dclink) > 0:
+        gen_is = net.gen[net.gen.in_service==True]
+    else:
+        gen_is = is_elems['gen']
     eg_is = is_elems['ext_grid']
 
     if gen_is.empty:

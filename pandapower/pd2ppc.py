@@ -122,12 +122,8 @@ def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
     calculate_voltage_angles = False
     trafo_model = "t"
 
-    # get in service elements
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
-
     bus_lookup = _build_bus_ppc(net, ppc, is_elems, set_opf_constraints=True)
-    _build_gen_opf(net, ppc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
+    _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, sg_is)
     _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
                       set_opf_constraints=True)
     _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)

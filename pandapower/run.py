@@ -338,3 +338,4 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
     _extract_results_opf(net, result, is_elems, bus_lookup, "current", True, ac)
+    _clean_up(net)

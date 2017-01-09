@@ -154,7 +154,7 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
         ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
         ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
         
-def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is,
+def _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, sg_is,
                    delta=1e-10):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
@@ -165,6 +165,13 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
 
         **ppc** - The PYPOWER format network to fill in values
     '''
+    if len(net.dclink) > 0:
+        add_dclink_gens(net)
+        is_elems["gen"] = net.gen[net.gen.in_service==True]
+    # get in service elements
+    eg_is = is_elems['ext_grid']
+    gen_is = is_elems['gen']
+
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
     sg_end = gen_end + len(sg_is)
@@ -242,8 +249,8 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         # set constraints for PV generators
         ppc["gen"][eg_end:gen_end, QMIN] = - (gen_is["max_q_kvar"].values * 1e-3 + delta)
         ppc["gen"][eg_end:gen_end, QMAX] = - (gen_is["min_q_kvar"].values * 1e-3 - delta)
-        ppc["gen"][eg_end:gen_end, PMIN] = - (gen_is["min_p_kw"].values * 1e-3 - delta)
-        ppc["gen"][eg_end:gen_end, PMAX] = - (gen_is["max_p_kw"].values * 1e-3 + delta)
+        ppc["gen"][eg_end:gen_end, PMIN] = - (gen_is["min_p_kw"].values * 1e-3 + delta)
+        ppc["gen"][eg_end:gen_end, PMAX] = - (gen_is["max_p_kw"].values * 1e-3 - delta)
 
         qmin = ppc["gen"][eg_end:gen_end, [QMIN]]
         ncn.copyto(qmin, -q_lim_default, where=isnan(qmin))
@@ -272,8 +279,10 @@ def add_dclink_gens(net):
             pfrom = -p2
             pto = p1
         create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
+                   min_p_kw=pfrom, max_p_kw=pfrom, 
                    max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
                    in_service=dctab.in_service)
         create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
+                   min_p_kw=pto, max_p_kw=pto, 
                    max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
                    in_service=dctab.in_service)
