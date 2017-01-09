@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
 from scipy.sparse.linalg import inv
 import numpy as np
 import warnings

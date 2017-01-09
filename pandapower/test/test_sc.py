@@ -9,7 +9,7 @@ import os
 
 @pytest.fixture
 def one_line_one_transformer():
-    folder = os.path.abspath(os.path.dirname(sc.__file__))
+    folder = os.path.abspath(os.path.dirname(pp.__file__))
     net = pp.from_pickle(os.path.join(folder, "test", "sc_test_one_line_one_transformer.p"))
     bid = pp.create_bus(net, vn_kv=10.) #add a bus bus switch to test switch compatibility
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
@@ -19,7 +19,7 @@ def one_line_one_transformer():
 
 @pytest.fixture
 def meshed_grid():
-    folder = os.path.abspath(os.path.dirname(sc.__file__))
+    folder = os.path.abspath(os.path.dirname(pp.__file__))
     net = pp.from_pickle(os.path.join(folder, "test", "sc_test_meshed_grid.p"))
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
@@ -29,9 +29,8 @@ def meshed_grid():
 
 @pytest.fixture
 def one_line_one_generator():
-    folder = os.path.abspath(os.path.dirname(sc.__file__))
+    folder = os.path.abspath(os.path.dirname(pp.__file__))
     net = pp.from_pickle(os.path.join(folder, "test", "sc_test_gen.p"))
-    pp.parameter_from_std_type(net, "endtmp_deg", "line")
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, bid, net.gen.bus.iloc[0], et="b")
     net.gen.bus.iloc[0] = bid

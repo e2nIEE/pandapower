@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
 import numpy as np
 import networkx as nx
 

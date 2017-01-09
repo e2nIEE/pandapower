@@ -1,5 +1,3 @@
-.. role:: red
-
 ############################
 Short-Circuit *beta!*
 ############################
@@ -25,12 +23,15 @@ The following currents can be calculated:
    - Ith (does not yet work for generator)
    - ip (does not yet work for generators)
 
-with the runsc function in the shortcircuit submodule:
+
+Additional to the standard load flow parameters, the following parameters have to be defined for the different elements:
+
+   - short circuit end temperature for lines in net.line.endtemp_degree (only if minimal short-circuit current is calculated)
+   - 
 
 .. autofunction:: pandapower.shortcircuit.runsc
 
 
-For the 
 
 .. code:: python
 
