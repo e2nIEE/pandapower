@@ -67,6 +67,5 @@ By specifying objectivetype='linear_minloss' in the OPF, the cost function is ev
      
 The weighting factor :math:`\lambda` can be specified as the keyword argument lambda_opf for runopp().
    
-.. note::
-
-    The pandapower optimal power flow is a recent development. In the future, this module will be developed further in order to allow more flexible opf calculations.
+**Results**
+The results of the OPF can be found in the same result tables as for the regular power flow (res_bus, res_line, res_trafo etc.). The dispatch costs can be found in net.res_cost.
