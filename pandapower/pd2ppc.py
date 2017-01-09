@@ -226,7 +226,8 @@ def _ppc2ppci(ppc, ppci, bus_lookup):
 
     if 'gencost' in ppc:
         ppci["gencost"] = ppc["gencost"][gs]
-
+    if 'dcline' in ppc:
+        ppci['dcline'] = ppc['dcline']
     # execute userfcn callbacks for 'ext2int' stage
     if 'userfcn' in ppci:
         ppci = run_userfcn(ppci['userfcn'], 'ext2int', ppci)

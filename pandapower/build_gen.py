@@ -167,6 +167,7 @@ def _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, sg_
     '''
     if len(net.dclink) > 0:
         add_dclink_gens(net)
+        ppc["dcline"] = net.dclink[["loss_percent", "loss_kw"]].values
         is_elems["gen"] = net.gen[net.gen.in_service==True]
     # get in service elements
     eg_is = is_elems['ext_grid']
@@ -279,10 +280,10 @@ def add_dclink_gens(net):
             pfrom = -p2
             pto = p1
         create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
-                   min_p_kw=pfrom, max_p_kw=pfrom, 
+                   min_p_kw=0., max_p_kw=-p1, 
                    max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
-                   in_service=dctab.in_service)
+                   in_service=dctab.in_service, cost_per_kw=0.)
         create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
-                   min_p_kw=pto, max_p_kw=pto, 
+                   min_p_kw=p1, max_p_kw=0., 
                    max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
-                   in_service=dctab.in_service)
+                   in_service=dctab.in_service, cost_per_kw=0.)
