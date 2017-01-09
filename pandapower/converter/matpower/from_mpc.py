@@ -13,7 +13,7 @@ import pplog
 logger = pplog.getLogger(__name__)
 
 
-def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv'):
+def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
     """
     This function converts a matpower case file (.mat) version 2 to a pandapower net.
     Note: python is 0-based while Matlab is 1-based.
@@ -24,10 +24,13 @@ def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv'):
 
     OPTIONAL:
 
-        **f_hz** - The frequency of the network.
+        **f_hz** (int, 50) - The frequency of the network.
 
-        **detect_trafo** - In case of 'vn_kv' trafos are detected by different bus voltages.
+        **detect_trafo** (str, 'vn_kv') - In case of 'vn_kv' trafos are detected by different bus voltages.
             In case of 'ratio' trafos are detected by tap ratios != 0.
+
+        **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch" and "bus" it will use the
+            sub-struct casename_mpc_file
 
     OUTPUT:
 
@@ -40,20 +43,20 @@ def mpc2pp(mpc_file, f_hz=50, detect_trafo='vn_kv'):
         pp_net = cv.ppc2pp('case9.mat', f_hz=60)
 
     """
-    ppc = _mpc2ppc(mpc_file)
+    ppc = _mpc2ppc(mpc_file, casename_mpc_file)
     net = ppc2pp(ppc, f_hz, detect_trafo)
 
     return net
 
 
-def _mpc2ppc(mpc_file):
+def _mpc2ppc(mpc_file, casename_mpc_file):
     # load mpc from file
     mpc = scipy.io.loadmat(mpc_file, squeeze_me=True, struct_as_record=False)
 
     # init empty ppc
     ppc = dict()
 
-    _copy_data_from_mpc_to_ppc(ppc, mpc)
+    _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file)
     _adjust_ppc_indices(ppc)
     _change_ppc_TAP_value(ppc)
 
@@ -68,17 +71,17 @@ def _adjust_ppc_indices(ppc):
     ppc["gen"][:, 0] -= 1
 
 
-def _copy_data_from_mpc_to_ppc(ppc, mpc):
-    if 'mpc' in mpc:
+def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
+    if casename_mpc_file in mpc:
         # if struct contains a field named mpc
-        ppc['version'] = mpc['mpc'].version
-        ppc["baseMVA"] = mpc['mpc'].baseMVA
-        ppc["bus"] = mpc['mpc'].bus
-        ppc["gen"] = mpc['mpc'].gen
-        ppc["branch"] = mpc['mpc'].branch
+        ppc['version'] = mpc[casename_mpc_file].version
+        ppc["baseMVA"] = mpc[casename_mpc_file].baseMVA
+        ppc["bus"] = mpc[casename_mpc_file].bus
+        ppc["gen"] = mpc[casename_mpc_file].gen
+        ppc["branch"] = mpc[casename_mpc_file].branch
 
         try:
-            ppc['gencost'] = mpc['mpc'].gencost
+            ppc['gencost'] = mpc[casename_mpc_file].gencost
         except:
             logger.info('gencost is not in mpc')
 
