@@ -16,8 +16,8 @@ from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import get_values
 
 
-def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model, 
-                      set_opf_constraints=False):
+def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
+                      copy_constraints_to_ppc=False):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -46,12 +46,12 @@ def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, 
 
     if line_end > 0:
         ppc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, RATE_A]] = \
-            _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints)
+            _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc)
     if trafo_end > line_end:
         ppc["branch"][line_end:trafo_end,
                       [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
             _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles,
-                                  trafo_model, set_opf_constraints)
+                                  trafo_model, copy_constraints_to_ppc)
     if trafo3w_end > trafo_end:
         ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles,  trafo_model)
@@ -79,7 +79,7 @@ def _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles, traf
     return temp_para
 
 
-def _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints=False):
+def _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc=False):
     """
     calculates the line parameter in per unit.
 
@@ -110,7 +110,7 @@ def _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints=False):
     t[:, 3] = line["x_ohm_per_km"] * length / baseR / parallel
     t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
     t[:, 5] = line["in_service"]
-    if set_opf_constraints:
+    if copy_constraints_to_ppc:
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 1000
         vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
         t[:, 6] = max_load / 100 * line.imax_ka.values * line.df.values * parallel * vr
@@ -118,7 +118,7 @@ def _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints=False):
 
 
 def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model,
-                          set_opf_constraints=False):
+                          copy_constraints_to_ppc=False):
     '''
     Calculates the transformer parameter in per unit.
 
@@ -141,7 +141,7 @@ def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_
     else:
         temp_para[:, 6] = np.zeros(shape=(len(trafo.index),), dtype=np.complex128)
     temp_para[:, 7] = trafo["in_service"].values
-    if set_opf_constraints:
+    if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
         temp_para[:, 8] = max_load / 100 * trafo.sn_kva / 1000
     return temp_para
@@ -687,7 +687,7 @@ def _branches_with_oos_buses(n, ppc, is_elems, bus_lookup):
             ppc["bus"] = np.vstack(future_buses)
 
 
-def _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model, set_opf_constraints=False):
+def _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model,copy_constraints_to_ppc=False):
     """
     Updates the trafo and trafo3w values when reusing the ppc between two powerflows
 
@@ -704,7 +704,7 @@ def _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, tr
         ppc["branch"][line_end:trafo_end,
                       [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
             _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles,
-                                  trafo_model, set_opf_constraints)
+                                  trafo_model, copy_constraints_to_ppc)
     if trafo3w_end > trafo_end:
         ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles,  trafo_model)

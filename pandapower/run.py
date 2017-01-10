@@ -4,7 +4,6 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandas import DataFrame
 import warnings
 
 from pypower.ppoption import ppoption
@@ -12,10 +11,11 @@ from pypower.idx_bus import VM
 
 from pandapower.pypower_extensions.runpf import _runpf
 from pandapower.auxiliary import ppException, _select_is_elements, _clean_up
-from pandapower.pd2ppc import _pd2ppc, _pd2ppc_opf, _update_ppc
+from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
-                               _extract_results_opf
+    _extract_results_opf
+
 
 class LoadflowNotConverged(ppException):
     """
@@ -23,11 +23,13 @@ class LoadflowNotConverged(ppException):
     """
     pass
 
+
 class OPFNotConverged(ppException):
     """
     Exception being raised in case optimal powerflow did not converge.
     """
     pass
+
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
           , trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None, **kwargs):
@@ -186,7 +188,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     else:
         # convert pandapower net to ppc
         ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
-                                       trafo_model, init_results=(init == "results"))
+                                        trafo_model, init_results=(init == "results"))
 
     # store variables
     net["_ppc"] = ppc
@@ -212,7 +214,6 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 
     _extract_results(net, result, is_elems, bus_lookup, trafo_loading, ac)
     _clean_up(net)
-
 
 
 def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
@@ -259,7 +260,8 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
             warnings are suppressed, too.
     """
     _runopp(net, verbose, suppress_warnings, cost_function, True, **kwargs)
-    
+
+
 def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
@@ -313,10 +315,8 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net)
 
-    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
-                if "controllable" in net.sgen.columns else DataFrame()
-
-    ppc, ppci, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs)
+    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
+                                    opf=True, cost_function=cost_function, calculate_voltage_angles=False)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
@@ -327,10 +327,10 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     else:
         result = opf(ppci, ppopt)
     net["_ppc_opf"] = result
-        
+
     if not result["success"]:
         raise OPFNotConverged("Optimal Power Flow did not converge!")
-        
+
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
     result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
 

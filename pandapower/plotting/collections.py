@@ -30,7 +30,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         **patch_type** (str, "circle") - patch type, can be
         
                 - "circle" for a circle
-                - "rect" for a rectanlge
+                - "rect" for a rectangle
                 - "poly<n>" for a polygon with n edges 
         
         **infofunc** (function, None) - infofunction for the patch element
