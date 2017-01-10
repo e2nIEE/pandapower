@@ -227,11 +227,11 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
             q = np.hstack([q, q_gen])
             net["res_gen"]["q_kvar"] = q_gen
 
-    if len(net.dclink) > 0:
-        _get_dclink_results(net)
-        b = np.hstack([b, net.dclink[["from_bus", "to_bus"]].values.flatten()])
-        p = np.hstack([p, -net.res_dclink[["p_from_kw", "p_to_kw"]].values.flatten()])
-        q = np.hstack([q, -net.res_dclink[["q_from_kvar", "q_to_kvar"]].values.flatten()])
+    if len(net.dcline) > 0:
+        _get_dcline_results(net)
+        b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
+        p = np.hstack([p, -net.res_dcline[["p_from_kw", "p_to_kw"]].values.flatten()])
+        q = np.hstack([q, -net.res_dcline[["q_from_kvar", "q_to_kvar"]].values.flatten()])
 
     if not ac:
         q = np.zeros(len(p))
@@ -244,24 +244,24 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
         
 
 
-def _get_dclink_results(net):
-    dc_gens = net.gen.index[(len(net.gen) - len(net.dclink)*2):]
-    from_gens = net.res_gen.loc[dc_gens[::2]]
-    to_gens = net.res_gen.loc[dc_gens[1::2]]
+def _get_dcline_results(net):
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
+    from_gens = net.res_gen.loc[dc_gens[1::2]]
+    to_gens = net.res_gen.loc[dc_gens[::2]]
 
-    net.res_dclink.p_from_kw = from_gens.p_kw.values
-    net.res_dclink.p_to_kw = to_gens.p_kw.values
-    net.res_dclink.pl_kw = from_gens.p_kw.values +  to_gens.p_kw.values
+    net.res_dcline.p_from_kw = from_gens.p_kw.values
+    net.res_dcline.p_to_kw = to_gens.p_kw.values
+    net.res_dcline.pl_kw = from_gens.p_kw.values +  to_gens.p_kw.values
    
-    net.res_dclink.q_from_kvar = from_gens.q_kvar.values
-    net.res_dclink.q_to_kvar = to_gens.q_kvar.values
+    net.res_dcline.q_from_kvar = from_gens.q_kvar.values
+    net.res_dcline.q_to_kvar = to_gens.q_kvar.values
 
-    net.res_dclink.vm_from_pu = from_gens.vm_pu.values
-    net.res_dclink.vm_to_pu = to_gens.vm_pu.values
-    net.res_dclink.va_from_degree = from_gens.va_degree.values
-    net.res_dclink.va_to_degree = to_gens.va_degree.values
+    net.res_dcline.vm_from_pu = from_gens.vm_pu.values
+    net.res_dcline.vm_to_pu = to_gens.vm_pu.values
+    net.res_dcline.va_from_degree = from_gens.va_degree.values
+    net.res_dcline.va_to_degree = to_gens.va_degree.values
     
-    net.res_dclink.index = net.dclink.index
+    net.res_dcline.index = net.dcline.index
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, f, t, ac=True):
     p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
@@ -555,7 +555,7 @@ def reset_results(net):
     net["res_gen"] = copy.copy(net["_empty_res_gen"])
     net["res_ward"] = copy.copy(net["_empty_res_ward"])
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
-    net["res_dclink"] = copy.copy(net["_empty_res_dclink"])
+    net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
     
     
 def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):

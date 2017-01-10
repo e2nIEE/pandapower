@@ -34,6 +34,7 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
     elements
     std_types
     powerflow
+    shortcircuit
     estimation
     topology
     networks

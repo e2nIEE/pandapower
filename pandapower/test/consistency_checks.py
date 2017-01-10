@@ -20,7 +20,7 @@ def consistency_checks(net):
     
 def indices_consistent(net):
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt", 
-                    "ward", "xward", "impedance", "gen", "dclink"]:
+                    "ward", "xward", "impedance", "gen", "dcline"]:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
@@ -38,12 +38,12 @@ def branch_loss_consistent_with_bus_feed_in(net):
 
     branch_loss_p = net.res_line.pl_kw.sum() + net.res_trafo.pl_kw.sum() + \
                     net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum() + \
-                    net.res_dclink.pl_kw.sum()
+                    net.res_dcline.pl_kw.sum()
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
                     net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() + \
-                    net.res_dclink.q_to_kvar.sum() + net.res_dclink.q_from_kvar.sum()             
-    assert allclose(bus_surplus_p, branch_loss_p)
-    assert allclose(bus_surplus_q, branch_loss_q)
+                    net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()             
+    assert allclose(bus_surplus_p, branch_loss_p, rtol=1e-4)
+    assert allclose(bus_surplus_q, branch_loss_q, rtol=1e-4)
 
 
 def element_power_consistent_with_bus_power(net):

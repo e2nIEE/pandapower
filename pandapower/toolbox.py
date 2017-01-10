@@ -333,15 +333,18 @@ def convert_format(net):
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
     # initialize measurement dataframe
-    if "measurement" not in net or "element_type" not in net.measurement:
+    if "measurement" in net and "element_type" not in net.measurement:
+        raise UserWarning("The measurement structure seems outdated. Please adjust it according"
+                          "to the documentation.")
+    if "measurement" not in net:
         net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
                                                              ("element_type", np.dtype(object)),
                                                              ("value", "f8"),
                                                              ("std_dev", "f8"),
                                                              ("bus", "u4"),
                                                              ("element", np.dtype(object))]))
-    if "dclink" not in net:
-        net["dclink"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+    if "dcline" not in net:
+        net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                         ("from_bus", "u4"),
                                                         ("to_bus", "u4"),
                                                         ("p_kw", "f8"),
@@ -355,8 +358,8 @@ def convert_format(net):
                                                         ("max_q_to_kvar", "f8"),
                                                         ("forward", 'bool'),
                                                         ("in_service", 'bool')]))
-    if "_empty_res_dclink" not in net:
-        net["_empty_res_dclink"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
+    if "_empty_res_dcline" not in net:
+        net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
                                                                     ("q_from_kvar", "f8"),
                                                                     ("p_to_kw", "f8"),
                                                                     ("q_to_kvar", "f8"),
@@ -531,7 +534,7 @@ def _pre_release_changes(net):
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     net.switch.closed = net.switch.closed.astype(bool)
-    
+
 def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"]):
     """
     Adds zones to elements, inferring them from the zones of buses they are
@@ -646,7 +649,7 @@ def drop_inactive_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[net.line.in_service == False].index
     drop_lines(net, inactive_lines)
-    
+
     inactive_trafos = net.trafo[net.trafo.in_service == False].index
     drop_trafos(net, inactive_trafos)
 
@@ -771,19 +774,19 @@ def set_isolated_areas_out_of_service(net):
     """
     unsupplied = unsupplied_buses(net)
     set_element_status(net, unsupplied, False)
-    
+
     for element in ["line", "trafo"]:
         oos_elements = net.line[net.line.in_service==False].index
-        oos_switches = net.switch[(net.switch.et==element[0]) & 
+        oos_switches = net.switch[(net.switch.et==element[0]) &
                                   (net.switch.element.isin(oos_elements))].index
         net.switch.loc[oos_switches, "closed"] = True
-        
+
         for idx, bus in net.switch[(net.switch.closed==False) & (net.switch.et==element[0])]\
                                     [["element", "bus"]].values:
             if net.bus.in_service.at[next_bus(net, bus, idx, element)] == False:
                 net[element].at[idx, "in_service"] = False
-            
-            
+
+
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                   keep_everything_else=False):
     """

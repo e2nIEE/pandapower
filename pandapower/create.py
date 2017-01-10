@@ -162,7 +162,7 @@ def create_empty_network(name=None, f_hz=50.):
                       ("xtf_pu", "f8"),
                       ("sn_kva", "f8"),
                       ("in_service", 'bool')],
-        "dclink": [("name", np.dtype(object)),
+        "dcline": [("name", np.dtype(object)),
                 ("from_bus", "u4"),
                 ("to_bus", "u4"),
                 ("p_kw", "f8"),
@@ -170,6 +170,7 @@ def create_empty_network(name=None, f_hz=50.):
                 ("loss_kw", 'f8'),
                 ("vm_from_pu", "f8"),
                 ("vm_to_pu", "f8"),
+                ("max_p_kw", "f8"),
                 ("min_q_from_kvar", "f8"),
                 ("min_q_to_kvar", "f8"),
                 ("max_q_from_kvar", "f8"),
@@ -261,7 +262,7 @@ def create_empty_network(name=None, f_hz=50.):
                                  ("ql_kvar", "f8"),
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
-        "_empty_res_dclink": [("p_from_kw", "f8"),
+        "_empty_res_dcline": [("p_from_kw", "f8"),
                             ("q_from_kvar", "f8"),
                             ("p_to_kw", "f8"),
                             ("q_to_kvar", "f8"),
@@ -753,6 +754,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=np.nan, s_sc_min_mva=np.nan, rx_max=np.nan, rx_min=np.nan,
+                    max_p_kw=np.nan, min_p_kw=np.nan, max_q_kvar=np.nan, min_q_kvar=np.nan,
                     index=None, cost_per_kw=np.nan, cost_per_kvar=np.nan):
     """
     Creates an external grid connection.
@@ -835,6 +837,30 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         net.ext_grid.at[index, "rx_max"] = float(rx_max)
 
+    if not np.isnan(min_p_kw):
+        if "min_p_kw" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "min_p_kw"] = pd.Series()
+
+        net.ext_grid.loc[index, "min_p_kw"] = float(min_p_kw)
+
+    if not np.isnan(max_p_kw):
+        if "max_p_kw" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "max_p_kw"] = pd.Series()
+
+        net.ext_grid.loc[index, "max_p_kw"] = float(max_p_kw)
+
+    if not np.isnan(min_q_kvar):
+        if "min_q_kvar" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "min_q_kvar"] = pd.Series()
+
+        net.ext_grid.loc[index, "min_q_kvar"] = float(min_q_kvar)
+
+    if not np.isnan(max_q_kvar):
+        if "max_q_kvar" not in net.ext_grid.columns:
+            net.ext_grid.loc[:, "max_q_kvar"] = pd.Series()
+
+        net.ext_grid.loc[index, "max_q_kvar"] = float(max_q_kvar)
+        
     if not np.isnan(cost_per_kw):
         if "cost_per_kw" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "cost_per_kw"] = pd.Series()
@@ -1730,9 +1756,10 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     return index
 
-def create_dclink(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, index=None,
-                  name=None, min_q_from_kvar=np.nan, min_q_to_kvar=np.nan, max_q_from_kvar=np.nan,
-                  max_q_to_kvar=np.nan, forward=True, in_service=True):
+def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, index=None,
+                  name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan, 
+                  min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan, 
+                  in_service=True):
     for bus in [from_bus, to_bus]:
         if bus not in net["bus"].index.values:
             raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
@@ -1746,22 +1773,22 @@ def create_dclink(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
                 "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
 
     if index is None:
-        index = get_free_id(net["dclink"])
+        index = get_free_id(net["dcline"])
 
-    if index in net["dclink"].index:
-        raise UserWarning("A dclink with the id %s already exists" % index)
+    if index in net["dcline"].index:
+        raise UserWarning("A dcline with the id %s already exists" % index)
 
     # store dtypes
-    dtypes = net.dclink.dtypes
+    dtypes = net.dcline.dtypes
 
-    net.dclink.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
-                       "vm_from_pu", "vm_to_pu", "min_q_from_kvar", "min_q_to_kvar", 
-                       "max_q_from_kvar", "max_q_to_kvar", "forward", "in_service"]]\
+    net.dcline.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
+                       "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar", 
+                       "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "in_service"]]\
         = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, 
-           min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, forward, in_service]
+           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, in_service]
 
     # and preserve dtypes
-    _preserve_dtypes(net.dclink, dtypes)
+    _preserve_dtypes(net.dcline, dtypes)
     
 
 def create_measurement(net, type, element_type, value, std_dev, bus, element=None,

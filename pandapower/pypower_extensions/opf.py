@@ -201,12 +201,9 @@ def add_dcline_constraints(om):
     ng  = ppc['gen'].shape[0] - 2 * ndc  ## number of original gens/disp loads
 
     ## constraints
-    nL0 = -dc[:, 1] * 1e-3 #
-    L1  = -dc[:, 0] * 1e-3
-    print(nL0)
-    print(L1)
+    nL0 = -dc[:, 0] * 1e-3 #absolute losses
+    L1  = -dc[:, 1] * 1e-2 #relative losses
     Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
-
 
     ## add them to the model
     om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])

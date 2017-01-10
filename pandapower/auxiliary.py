@@ -322,8 +322,8 @@ def _clean_up(net):
         net["res_bus"].drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
     
-    if len(net["dclink"]) > 0:
-        dc_gens = net.gen.index[(len(net.gen) - len(net.dclink)*2):]
+    if len(net["dcline"]) > 0:
+        dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
         net.gen.drop(dc_gens, inplace=True)
         net.res_gen.drop(dc_gens, inplace=True)
 

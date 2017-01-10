@@ -4,23 +4,22 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.run import _pd2ppc, _select_is_elements
-import pplog
+from pandapower.run import _pd2ppc, _select_is_elements, reset_results
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-def pp2ppc(net):
+def to_ppc(net):
     """
      This function converts a pandapower net to a pypower case file.
 
     INPUT:
 
         **net** - The pandapower net.
-
-    OPTIONAL:
-
-        **...** - ...
 
     OUTPUT:
 
@@ -38,8 +37,22 @@ def pp2ppc(net):
 
     """
 
-    is_elems = _select_is_elements(net, dict(is_elems=False, ppc=False, Ybus=False))
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, trafo_model="pi", copy_voltage_boundaries=True)
+    # always convert results if available
+    init_results = True
+
+    # matpower and pypower uses pi trafo model
+    trafo_model = "pi"
+
+    # copy the voltage angles from pandapower to the ppc
+    calculate_voltage_angles = True
+
+    # select elements in service
+    is_elems = _select_is_elements(net)
+
+    #  do the conversion
+    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims=False,
+                                    trafo_model=trafo_model, init_results=init_results,
+                                    copy_constraints_to_ppc=True)
     ppc['branch'] = ppc['branch'].real
     ppc.pop('internal')
 

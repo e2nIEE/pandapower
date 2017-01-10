@@ -8,13 +8,14 @@ import numpy as np
 from scipy.io import savemat
 
 from pandapower.run import reset_results, _select_is_elements, _pd2ppc
-import pplog
+try:
+    import pplog as logging
+except:
+    import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-
-def pp2mpc(net, filename, init="flat", calculate_voltage_angles=False, trafo_model="t",
-           enforce_q_lims=False):
+def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_model="t"):
     """
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.
@@ -27,13 +28,31 @@ def pp2mpc(net, filename, init="flat", calculate_voltage_angles=False, trafo_mod
 
     OPTIONAL:
 
-        **init** - (str, 'flat')
+        **init** (str, "results") - initialization method of the loadflow
+        For the conversion to a mpc, the following options can be chosen:
 
-        **calculate_voltage_angles** - (bool, False)
+            - "flat"- flat start with voltage of 1.0pu and angle of 0° at all buses as initial solution
+            - "results" - voltage vector of last loadflow from net.res_bus is copied to the mpc
 
-        **trafo_model** - (str, 't')
+        **calculate_voltage_angles** (bool, False) - copy the voltage angles from pandapower to the mpc
 
-        **enforce_q_lims** - (bool, False)
+            If True, voltage angles are copied from pandapower to the mpc. In some cases with
+            large differences in voltage angles (for example in case of transformers with high
+            voltage shift), the difference between starting and end angle value is very large.
+            In this case, the loadflow might be slow or it might not converge at all. That is why
+            the possibility of neglecting the voltage angles of transformers and ext_grids is
+            provided to allow and/or accelarate convergence for networks where calculation of
+            voltage angles is not necessary.
+
+            The default value is False because pandapower was developed for distribution networks.
+            Please be aware that this parameter has to be set to True in meshed network for correct
+            results!
+
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        Pandapower provides two equivalent circuit models for the transformer:
+
+            - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
+            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
 
     EXAMPLE:
 
@@ -56,8 +75,8 @@ def pp2mpc(net, filename, init="flat", calculate_voltage_angles=False, trafo_mod
 
     init_results = True if init == "results" else False
     # convert pandapower net to ppc
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
-                                    trafo_model, init_results)
+    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims=False,
+                                    trafo_model=trafo_model, init_results=init_results)
 
     # convert ppc to mpc
     _ppc_to_mpc(ppc)

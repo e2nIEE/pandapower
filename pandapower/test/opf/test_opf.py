@@ -26,7 +26,7 @@ def test_simplest_voltage():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-150, min_p_kw=-5, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50, cost_per_kw=100)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20)
@@ -59,7 +59,7 @@ def test_eg_voltage():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-150, min_p_kw=-5, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0, vm_pu=1.01)
     pp.create_load(net, 1, p_kw=20)
@@ -90,7 +90,7 @@ def test_simplest_dispatch():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-150, min_p_kw=-5, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50, cost_per_kw=100)
     pp.create_ext_grid(net, 0, cost_per_kw=101)
     pp.create_load(net, 1, p_kw=20)
@@ -133,7 +133,7 @@ def test_opf_gen_voltage():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=200)
-    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=-25, min_p_kw=-5, max_q_kvar=50,
+    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=-5, min_p_kw=-25, max_q_kvar=50,
                   min_q_kvar=-50, cost_per_kw = -100)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
@@ -177,8 +177,8 @@ def test_opf_sgen_voltage():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=1000000)
-    pp.create_sgen(net, 3, p_kw=-10, controllable=True, max_p_kw=-
-                   15, min_p_kw=-5, max_q_kvar=25, min_q_kvar=-25, cost_per_kw = -100)
+    pp.create_sgen(net, 3, p_kw=-10, controllable=True, max_p_kw=-5, min_p_kw=-15, max_q_kvar=25,
+                   min_q_kvar=-25, cost_per_kw = -100)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
@@ -222,7 +222,7 @@ def test_opf_gen_loading():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=145)
-    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=-15, min_p_kw=-5, max_q_kvar=50,
+    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=-5, min_p_kw=-15, max_q_kvar=50,
                   min_q_kvar=-50, cost_per_kw=-10)
     pp.create_ext_grid(net, 0, cost_per_kw=0.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
@@ -271,7 +271,7 @@ def test_opf_sgen_loading():
                                           tp_st_percent=2.5, i0_percent=0.68751, sn_kva=16.0,
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
-    pp.create_sgen(net, 3, p_kw=-10, controllable=True, max_p_kw=-15, min_p_kw=-5, max_q_kvar=25,
+    pp.create_sgen(net, 3, p_kw=-10, controllable=True, max_p_kw=-5, min_p_kw=-15, max_q_kvar=25,
                    min_q_kvar=-25, cost_per_kw=-10)
     pp.create_ext_grid(net, 0, cost_per_kw=0.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
@@ -305,8 +305,8 @@ def test_opf_oberrhein():
    net.bus["min_vm_pu"]=0.9
    net.line["max_loading_percent"]=200
    net.trafo["max_loading_percent"]=100
-   net.sgen["max_p_kw"]=-net.sgen.sn_kva
-   net.sgen["min_p_kw"]=0
+   net.sgen["min_p_kw"]=-net.sgen.sn_kva
+   net.sgen["max_p_kw"]=0
    net.sgen["max_q_kvar"]=1
    net.sgen["min_q_kvar"]=-1
    net.sgen["controllable"] =1
@@ -338,8 +338,10 @@ def test_minimize_active_power_curtailment():
 
     # create generators
     eg = pp.create_ext_grid(net, bus1)
-    g0 = pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=0, max_p_kw=-80e3, vm_pu=1.01, controllable=True)
-    g1 = pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=0, max_p_kw=-100e3, vm_pu=1.01, controllable=True)
+    g0 = pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01, 
+                       controllable=True)
+    g1 = pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01, 
+                       controllable=True)
 
     net.ext_grid.loc[eg, "cost_per_kw"] = 0.10
     net.gen.loc[g0, "cost_per_kw"] = 0.15
@@ -356,8 +358,10 @@ def test_minimize_active_power_curtailment():
 
     pp.runopp(net)
     assert net["OPF_converged"]
-    assert allclose(net.res_bus.vm_pu.values, array([ 1.        ,  1.00000149,  1.01998544,  1.01999628]), atol=1e-5)
-    assert allclose(net.res_bus.va_degree.values, array([ 0.        , -0.7055226 ,  0.85974768,  2.24584537]), atol=1e-5)
+    assert allclose(net.res_bus.vm_pu.values, array([ 1. , 1.00000149,  1.01998544,  1.01999628]),
+                    atol=1e-5)
+    assert allclose(net.res_bus.va_degree.values, array([ 0., -0.7055226, 0.85974768, 2.24584537]),
+                    atol=1e-5)
 
 
 

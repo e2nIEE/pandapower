@@ -1,4 +1,2 @@
-from .toolbox import *
-from .ppc_testgrids import *
-from .result_test_network_generator import *
-from .conftest import *
+from pandapower.test.toolbox import *
+from pandapower.test.conftest import *

@@ -4,15 +4,18 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pypower.idx_brch import T_BUS, F_BUS
-from pypower.idx_bus import BUS_TYPE, REF
-from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
-from scipy import sparse
 import numpy as np
 import warnings
 
+from pypower.idx_brch import T_BUS, F_BUS
+from pypower.idx_bus import BUS_TYPE, REF
+from pandas import DataFrame
+from scipy import sparse
 
-def _make_objective(ppc, net, is_elems, sg_is, objectivetype="linear", lambda_opf=1000, **kwargs):
+from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
+
+
+def _make_objective(ppc, net, is_elems, objectivetype="linear", lambda_opf=1000):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
@@ -57,11 +60,13 @@ def _make_objective(ppc, net, is_elems, sg_is, objectivetype="linear", lambda_op
     """
     ng = len(ppc["gen"])  # -
     nref = sum(ppc["bus"][:, BUS_TYPE] == REF)
-    if len(net.dclink) > 0:
+    if len(net.dcline) > 0:
         gen_is = net.gen[net.gen.in_service==True]
     else:
         gen_is = is_elems['gen']
     eg_is = is_elems['ext_grid']
+    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
+        if "controllable" in net.sgen.columns else DataFrame()
 
     if gen_is.empty:
         gen_cost_per_kw = np.array([])

@@ -6,6 +6,6 @@ Matpower
 
 To communicate to MATPOWER to exchange network data these functions are available.
 
-.. autofunction:: pandapower.converter.mpc2pp
+.. autofunction:: pandapower.converter.from_mpc
 
-.. autofunction:: pandapower.converter.pp2mpc
+.. autofunction:: pandapower.converter.to_mpc
