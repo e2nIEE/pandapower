@@ -12,7 +12,7 @@ import numpy as np
 import warnings
 
 
-def _make_objective(ppc, net, is_elems, sg_is, objectivetype="linear", lambda_opf=1000, **kwargs):
+def _make_objective(ppc, net, is_elems, sg_is, objectivetype="linear", lambda_opf=1000):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}

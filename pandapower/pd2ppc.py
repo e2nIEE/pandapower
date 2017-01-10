@@ -12,6 +12,7 @@ from pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pypower.idx_area import PRICE_REF_BUS
 from pypower.run_userfcn import run_userfcn
+from pandas import DataFrame
 
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
                         _update_trafo_trafo3w_ppc
@@ -22,7 +23,8 @@ from pandapower.auxiliary import _set_isolated_buses_out_of_service
 from pandapower.make_objective import _make_objective
 
 def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
-            trafo_model="pi", init_results=False, copy_constraints_from_ppc=False):
+            trafo_model="pi", init_results=False, copy_constraints_to_ppc=False,
+            opf=False, cost_function=None):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -37,6 +39,18 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
         **net** - The Pandapower format network
         **is_elems** - In service elements from the network (see _select_is_elements())
 
+    OPTIONAL PARAMETERS:
+        **calculate_voltage_angles** (bool, False) - consider voltage angles in powerflow calculation
+            (see the description of runpp())
+        **enforce_q_lims** (bool, False) - respect generator reactive power limits (see description of runpp())
+        **trafo_model** (str,pi) - transformer equivalent circuit model (see description of runpp())
+        **init_results** (bool, False) - initialization method of the loadflow (see description of runpp())
+        **copy_constraints_to_ppc** (bool, False) - additional constraints
+            (like voltage boundaries, maximum thermal capacity of branches rateA and generator P and Q limits
+             will be copied to the ppc). This is necessary for the OPF as well as the converter functions
+        **opf** (bool, False) - changes to the ppc are necessary if OPF is calculated instead of PF
+        **cost_function** (obj, None) - The OPF cost function
+
 
     RETURN:
         **ppc** - The simple matpower format network. Which consists of:
@@ -46,6 +60,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
                         "bus": np.array([], dtype=float),
                         "branch": np.array([], dtype=np.complex128),
                         "gen": np.array([], dtype=float),
+                        "gencost" =  np.array([], dtype=float), only for OPF
                         "internal": {
                               "Ybus": np.array([], dtype=np.complex128)
                               , "Yf": np.array([], dtype=np.complex128)
@@ -71,18 +86,35 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
                   , "gen_is": np.array([], dtype=bool)
                   }
            }
+
+    if opf:
+        # additional fields in ppc
+        ppc["gencost"] =  np.array([], dtype=float)
+
+        # in service elements
+        eg_is = is_elems['ext_grid']
+        gen_is = is_elems['gen']
+        sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
+            if "controllable" in net.sgen.columns else DataFrame()
+
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
-    bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results, copy_constraints_from_ppc=copy_constraints_from_ppc)
+    bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results, copy_constraints_to_ppc=copy_constraints_to_ppc)
     # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
-    _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
-                   copy_constraints_from_ppc=copy_constraints_from_ppc)
+    if opf:
+        _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
+    else:
+        _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+                       copy_constraints_to_ppc=copy_constraints_to_ppc)
     # generate ppc['branch'] and directly generates branch values
     _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
-                      copy_constraints_from_ppc=copy_constraints_from_ppc)
+                      copy_constraints_to_ppc=copy_constraints_to_ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
-    _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
+    if opf:
+        _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup)
+    else:
+        _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
     # adds P and Q for shunts, wards and xwards (to PQ nodes)
     _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
     # adds auxilary buses for open switches at branches
@@ -92,55 +124,10 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
     # sets buses out of service, which aren't connected to branches / REF buses
     _set_isolated_buses_out_of_service(net, ppc)
-    # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
-    # Note: Also reorders buses and gens in ppc
-    ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
-    return ppc, ppci, bus_lookup
-
-
-def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
-    """ we need to put the sgens into the gen table instead of the bsu table
-    so we need to change _pd2ppc a little to get the ppc we need for the OPF
-    """
-
-    ppc = {"baseMVA": 1.,
-           "version": 2,
-           "bus": np.array([], dtype=float),
-           "branch": np.array([], dtype=np.complex128),
-           "gen": np.array([], dtype=float),
-           "gencost": np.array([], dtype=float)
-           , "internal": {
-                  "Ybus": np.array([], dtype=np.complex128)
-                  , "Yf": np.array([], dtype=np.complex128)
-                  , "Yt": np.array([], dtype=np.complex128)
-                  , "branch_is": np.array([], dtype=bool)
-                  , "gen_is": np.array([], dtype=bool)
-                  }
-           }
-
-    # init empty ppci
-    ppci = copy.deepcopy(ppc)
-
-    calculate_voltage_angles = False
-    trafo_model = "t"
-
-    # get in service elements
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
-
-    bus_lookup = _build_bus_ppc(net, ppc, is_elems, copy_constraints_from_ppc=True)
-    _build_gen_opf(net, ppc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
-    _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
-                      copy_constraints_from_ppc=True)
-    _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
-    _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup)
-    _switch_branches(net, ppc, is_elems, bus_lookup)
-    _branches_with_oos_buses(net, ppc, is_elems, bus_lookup)
-    _set_isolated_buses_out_of_service(net, ppc)
-
-    # make opf objective
-    ppc = _make_objective(ppc, net, is_elems, sg_is, cost_function, **kwargs)
+    if opf:
+        # make opf objective
+        ppc = _make_objective(ppc, net, is_elems, sg_is, cost_function)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc

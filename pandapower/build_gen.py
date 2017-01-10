@@ -13,7 +13,7 @@ from numpy import array,  zeros, isnan
 
 
 def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
-                   copy_constraints_from_ppc=False):
+                   copy_constraints_to_ppc=False):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -61,11 +61,11 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
         ppc["bus"][gen_buses, BUS_TYPE] = PV
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
-        if enforce_q_lims or copy_constraints_from_ppc:
+        if enforce_q_lims or copy_constraints_to_ppc:
             _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
             _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
 
-        if copy_constraints_from_ppc:
+        if copy_constraints_to_ppc:
             _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
             _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
 

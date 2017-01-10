@@ -31,7 +31,7 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_from_ppc=False):
+def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_ppc=False):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
@@ -144,7 +144,7 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_from
         ppc["bus"][:n_bus, 7] = net["res_bus"]["vm_pu"].values
         ppc["bus"][:n_bus, 8] = net["res_bus"].va_degree.values
 
-    if copy_constraints_from_ppc:
+    if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:

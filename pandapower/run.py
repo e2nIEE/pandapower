@@ -4,7 +4,6 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandas import DataFrame
 import warnings
 
 from pypower.ppoption import ppoption
@@ -12,7 +11,7 @@ from pypower.idx_bus import VM
 
 from pandapower.pypower_extensions.runpf import _runpf
 from pandapower.auxiliary import ppException, _select_is_elements, _clean_up
-from pandapower.pd2ppc import _pd2ppc, _pd2ppc_opf, _update_ppc
+from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
                                _extract_results_opf
@@ -313,10 +312,8 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net)
 
-    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
-                if "controllable" in net.sgen.columns else DataFrame()
-
-    ppc, ppci, bus_lookup = _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs)
+    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True,  trafo_model="t",
+                                    opf=True, cost_function=cost_function, calculate_voltage_angles=False)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
