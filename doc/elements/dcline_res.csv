@@ -1,0 +1,10 @@
+**Parameter**;**Datatype**;**Explanation**
+p_from_kw;float;active power flow into the line at 'from_bus' [kW]
+q_from_kvar;float;reactive power flow into the line at 'from_bus' [kVar]
+p_to_kw;float;active power flow into the line at 'to_bus' [kW]
+q_to_kvar;float;reactive power flow into the line at 'to_bus' [kVar]
+pl_kw;float;active power losses of the line [kW]
+vm_from_pu;float;voltage magnitude at 'from_bus' [p.u]
+va_from_degree;float;voltage angle at 'from_bus' [degree]
+vm_to_pu;float;voltage magnitude at 'to_bus' [p.u]
+va_to_degree;float;voltage angle at 'to_bus' [degree]

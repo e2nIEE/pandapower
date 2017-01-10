@@ -13,10 +13,10 @@ def runpp_with_consistency_checks(net, **kwargs):
     consistency_checks(net)
     return True
 
-def consistency_checks(net):
+def consistency_checks(net, rtol):
     indices_consistent(net)
-    branch_loss_consistent_with_bus_feed_in(net)
-    element_power_consistent_with_bus_power(net)
+    branch_loss_consistent_with_bus_feed_in(net, rtol)
+    element_power_consistent_with_bus_power(net, rtol)
     
 def indices_consistent(net):
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt", 
@@ -27,7 +27,7 @@ def indices_consistent(net):
         assert all(e_idx == res_idx), "%s bus and res_%s indices do not match"%(element, element)
 
 
-def branch_loss_consistent_with_bus_feed_in(net):
+def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
     """
     The surpluss of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
@@ -42,11 +42,11 @@ def branch_loss_consistent_with_bus_feed_in(net):
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
                     net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() + \
                     net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()             
-    assert allclose(bus_surplus_p, branch_loss_p, rtol=1e-4)
-    assert allclose(bus_surplus_q, branch_loss_q, rtol=1e-4)
+    assert allclose(bus_surplus_p, branch_loss_p, rtol=rtol)
+    assert allclose(bus_surplus_q, branch_loss_q, rtol=rtol)
 
 
-def element_power_consistent_with_bus_power(net):
+def element_power_consistent_with_bus_power(net, rtol=1e-5):
     """
     The bus feed-in at each node has to be equal to the sum of the element feed ins at each node.
     """
@@ -83,5 +83,5 @@ def element_power_consistent_with_bus_power(net):
         bus_p.at[tab.bus] += net.res_xward.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_kvar.at[idx]
 
-    assert allclose(net.res_bus.p_kw.values, bus_p.values, equal_nan=True)
-    assert allclose(net.res_bus.q_kvar.values, bus_q.values, equal_nan=True)
+    assert allclose(net.res_bus.p_kw.values, bus_p.values, equal_nan=True, rtol=rtol)
+    assert allclose(net.res_bus.q_kvar.values, bus_q.values, equal_nan=True, rtol=rtol)

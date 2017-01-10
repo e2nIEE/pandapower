@@ -20,13 +20,18 @@ pandapower itself can be installed with the following steps:
 
 1. Download and unzip the `pandapower source distribution <http://www.uni-kassel.de/eecs/fachgebiete/e2n/software/pandapower.html>`_ to your local hard drive.
 
-2. Open a python shell (e.g. Anaconda prompt, see above) and navigate to the folder that contains the setup.py file with the command cd <folder> ::
+2. Open a command prompt (e.g. Windows --> cmd) and navigate to the folder that contains the setup.py file with the command cd <folder> ::
 
     cd %path_to_pandapower%\pandapower-1.0.2\
 
 3. Install pandapower by running ::
 
     python setup.py install
+
+.. image:: /pics/install.png
+		:width: 40em
+		:alt: alternate Text
+		:align: center 
     
 4. Install the dependencies needed for pandapower by running (in the same folder): ::
 
@@ -56,6 +61,8 @@ other way you like.
         import pandapower.networks
         import pandapower.topology
         import pandapower.plotting
+        import pandapower.converter
+        import pandapower.estimation
 
   If you want to be really sure that everything works fine, you can run the pandapower test suite (pytest module is needed): ::
     

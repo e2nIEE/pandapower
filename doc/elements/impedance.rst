@@ -71,9 +71,3 @@ Result Parameters
 	pl\_kw &= p\_from\_kw + p\_to\_kw \\
 	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
     \end{align*}
-    
-   
-Optimal Power Flow Parameters
-=============================
-
-Impedances are not yet respected in the optimal power flow. No constraints can be formulated.

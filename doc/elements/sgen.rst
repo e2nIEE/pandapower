@@ -21,7 +21,11 @@ Input Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-\*necessary for executing a power flow calculation.
+.. |br| raw:: html
+
+   <br />
+   
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
 
    
 Electric Model
@@ -64,15 +68,3 @@ Result Parameters
    :widths: 10, 10, 50
 
 The power values in the net.res_sgen table are equivalent to :math:`P_{sgen}` and :math:`Q_{sgen}`.
-
-   
-Optimal Power Flow Parameters
-=============================
-
-The cost and constraints of a generator can be definded using the following parameters:
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: sgen_opf.csv
-   :delim: ;
-   :widths: 10, 10, 40

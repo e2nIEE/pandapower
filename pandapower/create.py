@@ -175,7 +175,7 @@ def create_empty_network(name=None, f_hz=50.):
                 ("min_q_to_kvar", "f8"),
                 ("max_q_from_kvar", "f8"),
                 ("max_q_to_kvar", "f8"),
-                ("forward", 'bool'),
+                ("cost_per_kw", 'f8'),
                 ("in_service", 'bool')],
         "ward": [("name", np.dtype(object)),
                  ("bus", "u4"),
@@ -628,7 +628,8 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
 
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, max_q_kvar=np.nan,
                min_q_kvar=np.nan, min_p_kw=np.nan, max_p_kw=np.nan, scaling=1., type=None,
-               in_service=True, cost_per_kw=np.nan, cost_per_kvar=np.nan, controllable=np.nan):
+               cost_per_kw=np.nan, cost_per_kvar=np.nan, controllable=np.nan, vn_kv=np.nan,
+               xdss=np.nan, rdss=np.nan, cos_phi=np.nan, in_service=True):
     """
     Adds a generator to the network.
 
@@ -658,8 +659,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
         **type** (string, None) - type variable to classify generators
 
-        **in_service** (bool, True) - True for in_service or False for out of service
-
         **cost_per_kw** (float, NaN) - Defines operation cost of the generator for active power.
         Is only considered, if you run a optimal powerflow
 
@@ -668,6 +667,16 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
+        
+        **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
+
+        **xdss** (float, NaN) - Subtransient generator reactance for short-circuit calculation
+
+        **rdss** (float, NaN) - Subtransient generator resistance for short-circuit calculation
+
+        **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
+
+        **in_service** (bool, True) - True for in_service or False for out of service
 
     OUTPUT:
 
@@ -707,48 +716,60 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
     if not np.isnan(min_p_kw):
         if "min_p_kw" not in net.gen.columns:
             net.gen.loc[:, "min_p_kw"] = pd.Series()
-
         net.gen.loc[index, "min_p_kw"] = float(min_p_kw)
 
     if not np.isnan(max_p_kw):
         if "max_p_kw" not in net.gen.columns:
             net.gen.loc[:, "max_p_kw"] = pd.Series()
-
         net.gen.loc[index, "max_p_kw"] = float(max_p_kw)
 
     if not np.isnan(min_q_kvar):
         if "min_q_kvar" not in net.gen.columns:
             net.gen.loc[:, "min_q_kvar"] = pd.Series()
-
         net.gen.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
     if not np.isnan(max_q_kvar):
         if "max_q_kvar" not in net.gen.columns:
             net.gen.loc[:, "max_q_kvar"] = pd.Series()
-
         net.gen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
     if not np.isnan(cost_per_kw):
         if "cost_per_kw" not in net.gen.columns:
             net.gen.loc[:, "cost_per_kw"] = pd.Series()
-
         net.gen.loc[index, "cost_per_kw"] = float(cost_per_kw)
 
     if not np.isnan(cost_per_kvar):
         if "cost_per_kvar" not in net.gen.columns:
             net.gen.loc[:, "cost_per_kvar"] = pd.Series()
-
         net.gen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
     if not np.isnan(controllable):
         if "controllable" not in net.gen.columns:
             net.gen.loc[:, "controllable"] = pd.Series(False)
-
         net.gen.loc[index, "controllable"] = bool(controllable)
-    else:
-        if "controllable" in net.gen.columns:
+    elif "controllable" in net.gen.columns:
             net.gen.loc[index, "controllable"] = False
 
+    if not np.isnan(vn_kv):
+        if "vn_kv" not in net.gen.columns:
+            net.gen.loc[:, "vn_kv"] = pd.Series()
+        net.gen.loc[index, "vn_kv"] = float(vn_kv)
+
+    if not np.isnan(xdss):
+        if "xdss" not in net.gen.columns:
+            net.gen.loc[:, "xdss"] = pd.Series()
+        net.gen.loc[index, "xdss"] = float(xdss)        
+        
+    if not np.isnan(rdss):
+        if "rdss" not in net.gen.columns:
+            net.gen.loc[:, "rdss"] = pd.Series()
+        net.gen.loc[index, "rdss"] = float(rdss)    
+
+    if not np.isnan(cos_phi):
+        if "cos_phi" not in net.gen.columns:
+            net.gen.loc[:, "cos_phi"] = pd.Series()
+        net.gen.loc[index, "cos_phi"] = float(cos_phi)  
+        
     return index
 
 
@@ -1756,10 +1777,10 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     return index
 
-def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, index=None,
-                  name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan, 
+def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, 
+                  index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan, 
                   min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan, 
-                  in_service=True):
+                  cost_per_kw=np.nan, in_service=True):
     for bus in [from_bus, to_bus]:
         if bus not in net["bus"].index.values:
             raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
@@ -1783,9 +1804,11 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
     net.dcline.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
                        "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar", 
-                       "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "in_service"]]\
+                       "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
+                       "in_service"]]\
         = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, 
-           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, in_service]
+           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, cost_per_kw,
+           in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.dcline, dtypes)

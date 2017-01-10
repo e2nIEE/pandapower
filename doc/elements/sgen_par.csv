@@ -9,4 +9,11 @@ p_kw*;float;:math:`\leq` 0;active power of the static generator [kW]
 q_kvar*;float;;reactive power of the static generator [kVar]
 sn_kva;float;:math:`>` 0;rated power ot the static generator [kVA]
 scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
+max_p_kw**;float;;Maximum active power
+min_p_kw**;float;;Minimum active power
+max_q_kvar**;float;;Maximum reactive power
+min_q_kvar**;float;;Minimum reactive power
+controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable
+cost_per_kw**;float;;Cost per kW
+cost_per_kvar**;float;;Cost per kvar
 in_service*;boolean;True / False;specifies if the generator is in service.

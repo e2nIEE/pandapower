@@ -34,7 +34,11 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 25, 40
 
-\*necessary for executing a power flow calculation.
+.. |br| raw:: html
+
+   <br />
+   
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
 .. note::
 
@@ -130,15 +134,3 @@ The state estimation results are put into *net.res_line_est* with the same defin
    :file: line_res.csv
    :delim: ;
    :widths: 15, 10, 55
-   
-
-Optimal Power Flow Parameters
-=============================
-
-The line loading constraint is an upper constraint for loading_percent.
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: line_opf.csv
-   :delim: ;
-   :widths: 10, 10, 40
