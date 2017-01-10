@@ -3,16 +3,18 @@ Change Log
 
 unreleased
 ----------------------
-- [FIXED] bug in create_transformer function for tp_pos parameter
 - [ADDED] impedance element can now be used with unsymetric impedances zij != zji
-- [ADDED] simple plotting function. Call pp.simple_plot(net) to directly plot the network
+- [ADDED] simple plotting function: call pp.simple_plot(net) to directly plot the network
 - [ADDED] measurement table for networks. Enables the definition of measurements for real-time simulations.
-- [ADDED] estimation module, which provides state estimation functionality. The weighted least squares algorithm is used.
-- [FIXED] bug in voltage ratio for low voltage side tap changers
+- [ADDED] estimation module, which provides state estimation functionality with weighted least squares algorithm
+- [ADDED] shortcircuit module in beta version for short-circuit calculation according to IEC-60909
 - [ADDED] documentation of model validation and tests
-- [ADDED] case14, case24_ieee_rts, case39, case57 network added
+- [ADDED] case14, case24_ieee_rts, case39, case57 networks
 - [ADDED] mpc and ppc converter
 - [ADDED] DC power flow function pp.rundcopp
+- [FIXED] bug in create_transformer function for tp_pos parameter
+- [FIXED] bug in voltage ratio for low voltage side tap changers
+- [FIXED] bug in rated voltage calculation for opf line constraints
 
 [1.0.2] - 2016-11-30
 ----------------------
