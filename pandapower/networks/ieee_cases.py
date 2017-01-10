@@ -91,7 +91,8 @@ def case14():
     Calls the pickle file case14.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was converted from IEEE Common Data Format (ieee14cdf.txt) on 20-Sep-2004 by
     cdf2matp, rev. 1.11, to matpower format and finally converted to pandapower format by
-    pandapower.converter.from_ppc
+    pandapower.converter.from_ppc. The vn_kv was adapted considering the proposed voltage levels in
+    `Washington <http://www2.ee.washington.edu/research/pstca/pf14/ieee14cdf.txt>`_
 
     RETURN:
 
