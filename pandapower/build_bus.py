@@ -14,7 +14,6 @@ from pandapower.auxiliary import _sum_by_group
 
 
 class DisjointSet(dict):
-
     def add(self, item):
         self[item] = item
 
@@ -156,7 +155,19 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_p
 
     return bus_lookup
 
-def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
+
+def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup, opf=False):
+    '''
+    wrapper function to call either the PF or the OPF version
+    '''
+
+    if opf:
+        _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup)
+    else:
+        _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup)
+
+
+def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
@@ -197,7 +208,8 @@ def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
 
-def _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup):
+
+def _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup):
     """ we need to exclude controllable sgens from the bus table
     """
 
@@ -209,7 +221,7 @@ def _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup):
     sgen = net["sgen"]
     if not sgen.empty:
         vl = (is_elems["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
-            np.float64(1000.)
+             np.float64(1000.)
         sp = sgen["p_kw"].values * vl
         sq = sgen["q_kvar"].values * vl
     else:
@@ -221,6 +233,7 @@ def _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup):
 
     ppc["bus"][b, PD] = vp
     ppc["bus"][b, QD] = vq
+
 
 def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # init values

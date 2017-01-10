@@ -7,13 +7,27 @@
 import numpy.core.numeric as ncn
 import numpy as np
 
+from pandas import DataFrame
 from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
 
 def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
-                   copy_constraints_to_ppc=False):
+                   copy_constraints_to_ppc=False, opf=False):
+    '''
+    wrapper function to call either the PF or the OPF version
+    '''
+
+    if opf:
+        _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, delta=1e-10)
+    else:
+        _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+                   copy_constraints_to_ppc)
+
+
+def _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+                   copy_constraints_to_ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -118,9 +132,9 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
     # add extended ward pv node data
     if xw_end > gen_end:
         _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default, update_lookup=False)
-        
-def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is,
-                   delta=1e-10):
+
+
+def _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, delta=1e-10):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -130,6 +144,13 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
 
         **ppc** - The PYPOWER format network to fill in values
     '''
+
+    # get in service elements
+    eg_is = is_elems['ext_grid']
+    gen_is = is_elems['gen']
+    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
+        if "controllable" in net.sgen.columns else DataFrame()
+
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
     sg_end = gen_end + len(sg_is)
