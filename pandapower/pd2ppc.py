@@ -22,7 +22,7 @@ from pandapower.auxiliary import _set_isolated_buses_out_of_service
 from pandapower.make_objective import _make_objective
 
 def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
-            trafo_model="pi", init_results=False, copy_voltage_boundaries=False):
+            trafo_model="pi", init_results=False, copy_constraints_from_ppc=False):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -74,11 +74,13 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
-    bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results, copy_voltage_boundaries=copy_voltage_boundaries)
+    bus_lookup = _build_bus_ppc(net, ppc, is_elems, init_results, copy_constraints_from_ppc=copy_constraints_from_ppc)
     # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
-    _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles)
+    _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+                   copy_constraints_from_ppc=copy_constraints_from_ppc)
     # generate ppc['branch'] and directly generates branch values
-    _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model)
+    _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
+                      copy_constraints_from_ppc=copy_constraints_from_ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
     # adds P and Q for shunts, wards and xwards (to PQ nodes)
@@ -95,6 +97,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     ppci, bus_lookup = _ppc2ppci(ppc, ppci, bus_lookup)
 
     return ppc, ppci, bus_lookup
+
 
 def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
     """ we need to put the sgens into the gen table instead of the bsu table
@@ -126,10 +129,10 @@ def _pd2ppc_opf(net, is_elems, sg_is, cost_function, **kwargs):
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
 
-    bus_lookup = _build_bus_ppc(net, ppc, is_elems, set_opf_constraints=True)
+    bus_lookup = _build_bus_ppc(net, ppc, is_elems, copy_constraints_from_ppc=True)
     _build_gen_opf(net, ppc,  gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is)
     _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
-                      set_opf_constraints=True)
+                      copy_constraints_from_ppc=True)
     _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup)
     _calc_loads_and_add_opf(net, ppc, is_elems, bus_lookup)
     _switch_branches(net, ppc, is_elems, bus_lookup)

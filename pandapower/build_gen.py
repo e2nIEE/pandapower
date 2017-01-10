@@ -12,7 +12,8 @@ from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
 
-def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles):
+def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+                   copy_constraints_from_ppc=False):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -31,6 +32,7 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
     xw_end = gen_end + len(net["xward"])
 
     q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
+    p_lim_default = 1e9
 
     # initialize generator matrix
     ppc["gen"] = np.zeros(shape=(xw_end, 21), dtype=float)
@@ -59,32 +61,17 @@ def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vol
         ppc["bus"][gen_buses, BUS_TYPE] = PV
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
-        if enforce_q_lims:
-            ppc["gen"][eg_end:gen_end, QMIN] = -gen_is["max_q_kvar"].values * 1e-3
-            ppc["gen"][eg_end:gen_end, QMAX] = -gen_is["min_q_kvar"].values * 1e-3
+        if enforce_q_lims or copy_constraints_from_ppc:
+            _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+            _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
 
-            qmax = ppc["gen"][eg_end:gen_end, [QMIN]]
-            ncn.copyto(qmax, -q_lim_default, where=np.isnan(qmax))
-            ppc["gen"][eg_end:gen_end, [QMIN]] = qmax
-
-            qmin = ppc["gen"][eg_end:gen_end, [QMAX]]
-            ncn.copyto(qmin, q_lim_default, where=np.isnan(qmin))
-            ppc["gen"][eg_end:gen_end, [QMAX]] = qmin
+        if copy_constraints_from_ppc:
+            _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+            _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        xw = net["xward"]
-        xw_is = is_elems['xward']
-        ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
-        ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
-        ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
-        ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
-        ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
-
-        xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
-        ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
-        ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
-        ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
+        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default)
 
 
 def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles):
@@ -125,30 +112,12 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
         if enforce_q_lims:
-            ppc["gen"][eg_end:gen_end, QMIN] = -gen_is["max_q_kvar"].values * 1e-3
-            ppc["gen"][eg_end:gen_end, QMAX] = -gen_is["min_q_kvar"].values * 1e-3
-
-            qmax = ppc["gen"][eg_end:gen_end, [QMIN]]
-            ncn.copyto(qmax, -q_lim_default, where=np.isnan(qmax))
-            ppc["gen"][eg_end:gen_end, [QMIN]] = qmax
-
-            qmin = ppc["gen"][eg_end:gen_end, [QMAX]]
-            ncn.copyto(qmin, q_lim_default, where=np.isnan(qmin))
-            ppc["gen"][eg_end:gen_end, [QMAX]] = qmin
+            _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+            _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        xw = net["xward"]
-        xw_is = is_elems["xward"]
-        ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
-        ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
-        ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
-        ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
-
-        xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
-        ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
-        ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
-        ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
+        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default, update_lookup=False)
         
 def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles, sg_is,
                    delta=1e-10):
@@ -186,21 +155,21 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         # set constraints for PV generators
         if "min_q_kvar" in sg_is.columns:
             ppc["gen"][gen_end:sg_end, QMAX] = - (sg_is["min_q_kvar"].values * 1e-3 - delta)
-            qmax = ppc["gen"][gen_end:sg_end, [QMIN]]
-            ncn.copyto(qmax, -q_lim_default, where=isnan(qmax))
-            ppc["gen"][gen_end:sg_end, [QMIN]] = qmax
+            max_q_kvar = ppc["gen"][gen_end:sg_end, [QMIN]]
+            ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
+            ppc["gen"][gen_end:sg_end, [QMIN]] = max_q_kvar
 
         if "max_q_kvar" in sg_is.columns:
             ppc["gen"][gen_end:sg_end, QMIN] = - (sg_is["max_q_kvar"].values * 1e-3 + delta)
-            qmin = ppc["gen"][gen_end:sg_end, [QMAX]]
-            ncn.copyto(qmin, q_lim_default, where=isnan(qmin))
-            ppc["gen"][gen_end:sg_end, [QMAX]] = qmin - 1e-10
+            min_q_kvar = ppc["gen"][gen_end:sg_end, [QMAX]]
+            ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
+            ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10
 
         if "min_p_kw" in sg_is.columns:
             ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["min_p_kw"].values * 1e-3 - delta)
-            pmax = ppc["gen"][gen_end:sg_end, [PMIN]]
-            ncn.copyto(pmax, -p_lim_default, where=isnan(pmax))
-            ppc["gen"][gen_end:sg_end, [PMIN]] = pmax
+            max_p_kw = ppc["gen"][gen_end:sg_end, [PMIN]]
+            ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
+            ppc["gen"][gen_end:sg_end, [PMIN]] = max_p_kw
 
         if "max_p_kw" in sg_is.columns:
             ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
@@ -236,23 +205,57 @@ def _build_gen_opf(net, ppc, gen_is, eg_is, bus_lookup, calculate_voltage_angles
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
         # set constraints for PV generators
-        ppc["gen"][eg_end:gen_end, QMIN] = - (gen_is["max_q_kvar"].values * 1e-3 + delta)
-        ppc["gen"][eg_end:gen_end, QMAX] = - (gen_is["min_q_kvar"].values * 1e-3 - delta)
-        ppc["gen"][eg_end:gen_end, PMIN] = - (gen_is["min_p_kw"].values * 1e-3 - delta)
-        ppc["gen"][eg_end:gen_end, PMAX] = - (gen_is["max_p_kw"].values * 1e-3 + delta)
+        _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is, delta)
+        _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is, delta)
 
-        qmin = ppc["gen"][eg_end:gen_end, [QMIN]]
-        ncn.copyto(qmin, -q_lim_default, where=isnan(qmin))
-        ppc["gen"][eg_end:gen_end, [QMIN]] = qmin
+        _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
+        _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
 
-        qmax = ppc["gen"][eg_end:gen_end, [QMAX]]
-        ncn.copyto(qmax, q_lim_default, where=isnan(qmax))
-        ppc["gen"][eg_end:gen_end, [QMAX]] = qmax
 
-        min_p_kw = ppc["gen"][eg_end:gen_end, [PMIN]]
-        ncn.copyto(min_p_kw, -p_lim_default, where=isnan(min_p_kw))
-        ppc["gen"][eg_end:gen_end, [PMIN]] = min_p_kw
+def _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is, delta=0.0):
+    # Note: Pypower has generator reference system, pandapower uses load reference system (max <-> min)
+    ppc["gen"][eg_end:gen_end, QMIN] = -gen_is["max_q_kvar"].values * 1e-3 - delta
+    ppc["gen"][eg_end:gen_end, QMAX] = -gen_is["min_q_kvar"].values * 1e-3 + delta
 
-        pmax = ppc["gen"][eg_end:gen_end, [PMAX]]
-        ncn.copyto(pmax, p_lim_default, where=isnan(pmax))
-        ppc["gen"][eg_end:gen_end, [PMAX]] = pmax
+
+def _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is, delta=0.0):
+    ppc["gen"][eg_end:gen_end, PMIN] = -gen_is["min_p_kw"].values * 1e-3 + delta
+    ppc["gen"][eg_end:gen_end, PMAX] = -gen_is["max_p_kw"].values * 1e-3 - delta
+
+
+def _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default):
+    # Note: Pypower has generator reference system, pandapower uses load reference system (max <-> min)
+    max_q_kvar = ppc["gen"][eg_end:gen_end, [QMIN]]
+    ncn.copyto(max_q_kvar, -q_lim_default, where=np.isnan(max_q_kvar))
+    ppc["gen"][eg_end:gen_end, [QMIN]] = max_q_kvar
+
+    min_q_kvar = ppc["gen"][eg_end:gen_end, [QMAX]]
+    ncn.copyto(min_q_kvar, q_lim_default, where=np.isnan(min_q_kvar))
+    ppc["gen"][eg_end:gen_end, [QMAX]] = min_q_kvar
+
+
+def _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default):
+    # Note: Pypower has generator reference system, pandapower uses load reference system (max <-> min)
+    max_p_kw = ppc["gen"][eg_end:gen_end, [PMIN]]
+    ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
+    ppc["gen"][eg_end:gen_end, [PMIN]] = max_p_kw
+
+    min_p_kw = ppc["gen"][eg_end:gen_end, [PMAX]]
+    ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
+    ppc["gen"][eg_end:gen_end, [PMAX]] = min_p_kw
+
+
+def _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default, update_lookup=True):
+    xw = net["xward"]
+    xw_is = is_elems['xward']
+    if update_lookup:
+        ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
+    ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
+    ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
+    ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
+    ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
+
+    xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
+    ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
+    ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
+    ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
