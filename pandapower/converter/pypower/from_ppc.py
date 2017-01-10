@@ -78,10 +78,10 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
         if ppc['bus'][i, 4] != 0 or ppc['bus'][i, 5] != 0:
             pp.create_shunt(net, i, p_kw=ppc['bus'][i, 4]*1e3,
                             q_kvar=-ppc['bus'][i, 5]*1e3)
-    # unused data: Vm, Va (partwise: in ext_grid), zone
+    # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
 
-    # --- prepare gen data -> no duplicates
-    GEN, GEN_uniq, GEN_dupl = GEN_unique(ppc, net)
+    # --- prepare gen data -> maximum generator number at each bus is one
+    GEN, GEN_uniq, GEN_dupl = _GEN_unique(ppc, net)
 
     # --- gen data -> create ext_grid, gen, sgen
     for i in GEN_uniq.index:
@@ -112,8 +112,8 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
                            max_p_kw=-GEN_uniq[8][i]*1e3, min_p_kw=-GEN_uniq[9][i]*1e3,
                            max_q_kvar=GEN_uniq[3][i]*1e3,
                            min_q_kvar=GEN_uniq[4][i]*1e3, controllable=True)
-    # unused data: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max, Qc2min,
-    # Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
+    # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
+    # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
     # --- branch data -> create line, trafo
     for i in range(len(ppc['branch'])):
@@ -209,9 +209,9 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
                     tp_st_percent=abs(ratio_1) if ratio_1 else nan,
                     tp_pos=sign(ratio_1) if ratio_1 else nan,
                     tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
-    # unused data: rateB, rateC
+    # unused data of ppc: rateB, rateC
 
-    # gencost is currently unconverted
+    # gencost, areas are currently unconverted
 
     return net
 
@@ -256,17 +256,19 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
 
         cv.validate_ppc2pp(ppc_net, pp_net)
     """
-    # run a pypower power flow
+    # --- run a pypower power flow
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
     ppc_res = runpf.runpf(ppc_net, ppopt)[0]
-    # consider GEN duplicates at one node
-    GEN, GEN_uniq, GEN_dupl = GEN_unique(ppc_res, pp_net)
-    # store pypower power flow results
+
+    # --- consider several GEN at one node as one sum
+    GEN, GEN_uniq, GEN_dupl = _GEN_unique(ppc_res, pp_net)
+
+    # --- store pypower power flow results
     ppc_res_branch = ppc_res['branch'][:, 13:17]
     ppc_res_bus = ppc_res['bus'][:, 7:9]
     ppc_res_gen = array(GEN_uniq)[:, 1:3]
 
-    # try to run a pandapower power flow
+    # --- try to run a pandapower power flow
     try:
         pp.runpp(pp_net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
     except:
@@ -287,7 +289,7 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
                                  'do not convert.')
                 return False
 
-    # --- prepare power flow result comparison
+    # --- prepare power flow result comparison by reordering pp results as they are in ppc results
     if (ppc_res['success'] == 1) & (pp_net.converged):
         # pandapower bus result table
         pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
@@ -407,7 +409,12 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
             logger.debug("'max_diff_values' must be a dict.")
 
 
-def GEN_unique(ppc, net):
+def _GEN_unique(ppc, net):
+    """
+    This function return DataFrames of all generators, concentrated generator powers to maximum one
+    generator at each node and a DataFrame with all duplicated generators at the nodes with several
+    generators at a node. This is because pandapower do not accept several generators at one node.
+    """
     GEN = DataFrame(ppc['gen'])
     GEN_uniq = GEN.drop_duplicates(subset=[0])
     dupl = GEN[0].duplicated()
@@ -416,8 +423,6 @@ def GEN_unique(ppc, net):
         logger.debug('There are several generators at one bus.')
     for i in GEN_dupl.index:
         GEN_bus = int(GEN_dupl[0][i])
-        current_bus_idx = pp.get_element_index(net, 'bus', name=GEN_bus)
-        current_bus_type = int(ppc['bus'][current_bus_idx, 1])
         # check different vm_pu values for gen at the same bus
         if GEN_dupl[5][i] != GEN_uniq[GEN_uniq[0] == GEN_bus][5].values[0]:
             logger.error('Several generators at one bus have different vm_pu values.')
