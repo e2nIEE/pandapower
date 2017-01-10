@@ -11,7 +11,7 @@ Creating networks:
     - `create_advanced <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/create_advanced.html>`_ 
 
 Running (optimal) power flows:
-    - `power flow <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/power flow.html>`_
+    - `power flow <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/powerflow.html>`_
     - `optimal power flow <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf_basic.html>`_
     - `active power curtailment with OPF <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf_curtail.html>`_
     - `DC line dispatch with OPF <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf_dc.html>`_
