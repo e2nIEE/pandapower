@@ -187,13 +187,13 @@ def _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, del
             ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10
 
         if "min_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["min_p_kw"].values * 1e-3 - delta)
+            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 - delta)
             max_p_kw = ppc["gen"][gen_end:sg_end, [PMIN]]
             ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
             ppc["gen"][gen_end:sg_end, [PMIN]] = max_p_kw
 
         if "max_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
+            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 + delta)
             min_p_kw = ppc["gen"][gen_end:sg_end, [PMAX]]
             ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
             ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw
@@ -240,8 +240,8 @@ def _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is, delta=0.0):
 
 
 def _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is, delta=0.0):
-    ppc["gen"][eg_end:gen_end, PMIN] = -gen_is["min_p_kw"].values * 1e-3 + delta
-    ppc["gen"][eg_end:gen_end, PMAX] = -gen_is["max_p_kw"].values * 1e-3 - delta
+    ppc["gen"][eg_end:gen_end, PMIN] = -gen_is["max_p_kw"].values * 1e-3 + delta
+    ppc["gen"][eg_end:gen_end, PMAX] = -gen_is["min_p_kw"].values * 1e-3 - delta
 
 
 def _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default):
