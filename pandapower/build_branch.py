@@ -99,7 +99,7 @@ def _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints=False):
     fb = bus_lookup[line["from_bus"].values]
     tb = bus_lookup[line["to_bus"].values]
     length = line["length_km"].values
-    parallel = line["parallel"]
+    parallel = line["parallel"].values
     baseR = np.square(ppc["bus"][fb, BASE_KV])
     t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
@@ -111,9 +111,9 @@ def _calc_line_parameter(net, ppc, bus_lookup, set_opf_constraints=False):
     t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
     t[:, 5] = line["in_service"]
     if set_opf_constraints:
-        max_load = line.max_loading_percent if "max_loading_percent" in line else 1000
-        vr = net.bus.vn_kv[fb].values * np.sqrt(3)
-        t[:, 6] = max_load / 100 * line.imax_ka * line.df * parallel * vr
+        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 1000
+        vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
+        t[:, 6] = max_load / 100 * line.imax_ka.values * line.df.values * parallel * vr
     return t
 
 
