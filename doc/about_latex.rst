@@ -12,9 +12,11 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
     :maxdepth: 1
     
     about/what
-    about/introduction
     about/contributions
+    getting_started/introduction
     about/units
+    about/tests
+    about/changelog
     about/license
 
 

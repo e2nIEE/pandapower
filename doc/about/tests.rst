@@ -149,7 +149,7 @@ The loadflow result for the exact same network are now compared in pandapower an
 and transformer results:
 
 .. image:: ../pics/validation/validation_trafo.png
-	:width: 60em
+	:width: 40em
 	:align: center
 
 match within the margins defined above.

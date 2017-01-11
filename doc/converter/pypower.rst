@@ -1,5 +1,5 @@
 ==================
-Pypower
+PYPOWER
 ==================
 
 .. _converter_pypower:

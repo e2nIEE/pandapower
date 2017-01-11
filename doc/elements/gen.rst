@@ -72,7 +72,8 @@ The power flow returns reactive generator power and generator voltage angle:
    \begin{align*}
     p\_kw &= P_{gen} \\
     q\_kvar &= Q_{gen} \\
-    va\_degree &= \angle \underline{v}_{bus}
+    va\_degree &= \angle \underline{v}_{bus} \\
+    vm\_degree &= |\underline{v}_{bus}|
    \end{align*}
 
    

@@ -1,8 +1,8 @@
 .. _file_io:
 
-########################
+========================
 Save and Load Networks
-########################
+========================
 
 pandapower networks can be saved and loaded using the pickle library or with an excel file.
 
@@ -17,7 +17,7 @@ Even though the relevant information is conserved, the process is not as robust 
 
 
 pickle
-=======================================
+-----------
 
 .. autofunction:: pandapower.to_pickle
 
@@ -25,7 +25,7 @@ pickle
 
 
 Excel
-=======================================
+-----------
 
 .. autofunction:: pandapower.to_excel
 

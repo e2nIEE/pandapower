@@ -1,7 +1,7 @@
 Change Log
 =============
 
-unreleased
+[1.1.0] - 2017-01-11
 ----------------------
 - [ADDED] impedance element can now be used with unsymetric impedances zij != zji
 - [ADDED] dcline element that allows modelling DC lines in PF and OPF

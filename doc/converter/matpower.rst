@@ -1,5 +1,5 @@
 ==============
-Matpower
+MATPOWER
 ==============
 
 .. _converter_matpower:
