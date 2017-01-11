@@ -113,7 +113,7 @@ def _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc=False):
     if copy_constraints_to_ppc:
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 1000
         vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
-        t[:, 6] = max_load / 100 * line.imax_ka.values * line.df.values * parallel * vr
+        t[:, 6] = max_load / 100. * line.imax_ka.values * line.df.values * parallel * vr
     return t
 
 
@@ -143,7 +143,7 @@ def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_
     temp_para[:, 7] = trafo["in_service"].values
     if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
-        temp_para[:, 8] = max_load / 100 * trafo.sn_kva / 1000
+        temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000.
     return temp_para
 
 

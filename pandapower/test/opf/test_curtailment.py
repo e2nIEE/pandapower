@@ -37,15 +37,11 @@ def test_minimize_active_power_curtailment():
     pp.create_load(net, bus4, p_kw=10e3)
 
     # create generators
-    eg = pp.create_ext_grid(net, bus1)
-    g0 = pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01, 
+    pp.create_ext_grid(net, bus1)
+    pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01, 
                        controllable=True)
-    g1 = pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01, 
+    pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01, 
                        controllable=True)
-
-    net.ext_grid.loc[eg, "cost_per_kw"] = 0.10
-    net.gen.loc[g0, "cost_per_kw"] = 0.15
-    net.gen.loc[g1, "cost_per_kw"] = 0.12
 
     net.trafo["max_loading_percent"] = 50
     net.line["max_loading_percent"] = 50
@@ -53,8 +49,8 @@ def test_minimize_active_power_curtailment():
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    net.ext_grid.cost_per_kw = 0
-    net.gen.cost_per_kw = -1e-5
+    net.ext_grid["cost_per_kw"] = 0
+    net.gen["cost_per_kw"] = -1e-5
 
     pp.runopp(net)
     assert net["OPF_converged"]
