@@ -265,7 +265,7 @@ def create_empty_network(name=None, f_hz=50.):
                             ("q_to_kvar", "f8"),
                             ("pl_kw", "f8"),
                             ("vm_from_pu", "f8"),
-                            ("va_from_degree", "f8"),                            
+                            ("va_from_degree", "f8"),
                             ("vm_to_pu", "f8"),
                             ("va_to_degree", "f8")],
         "_empty_res_ward": [("p_kw", "f8"),
@@ -650,7 +650,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
-        
+
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
         **xdss** (float, NaN) - Subtransient generator reactance for short-circuit calculation
@@ -739,18 +739,18 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
     if not np.isnan(xdss):
         if "xdss" not in net.gen.columns:
             net.gen.loc[:, "xdss"] = pd.Series()
-        net.gen.loc[index, "xdss"] = float(xdss)        
-        
+        net.gen.loc[index, "xdss"] = float(xdss)
+
     if not np.isnan(rdss):
         if "rdss" not in net.gen.columns:
             net.gen.loc[:, "rdss"] = pd.Series()
-        net.gen.loc[index, "rdss"] = float(rdss)    
+        net.gen.loc[index, "rdss"] = float(rdss)
 
     if not np.isnan(cos_phi):
         if "cos_phi" not in net.gen.columns:
             net.gen.loc[:, "cos_phi"] = pd.Series()
-        net.gen.loc[index, "cos_phi"] = float(cos_phi)  
-        
+        net.gen.loc[index, "cos_phi"] = float(cos_phi)
+
     return index
 
 
@@ -860,7 +860,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             net.ext_grid.loc[:, "max_q_kvar"] = pd.Series()
 
         net.ext_grid.loc[index, "max_q_kvar"] = float(max_q_kvar)
-        
+
     if not np.isnan(cost_per_kw):
         if "cost_per_kw" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "cost_per_kw"] = pd.Series()
@@ -1480,7 +1480,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
 
         **bus** - The bus that the switch is connected to
 
-        **element** - index of the element: bus id if et == "b", line id if et == "l"
+        **element** - index of the element: bus id if et == "b", line id if et == "l", trafo id if et == "t"
 
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
         bus and transformer, "t3" = switch between bus and 3-winding transformer, "b" = switch
@@ -1729,18 +1729,18 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     return index
 
-def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, 
-                  index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan, 
-                  min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan, 
+def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
+                  index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan,
+                  min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan,
                   cost_per_kw=np.nan, in_service=True):
     for bus in [from_bus, to_bus]:
         if bus not in net["bus"].index.values:
             raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
-    
+
         if bus in net.ext_grid.bus.values:
             raise UserWarning(
                 "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
-    
+
         if bus in net.gen.bus.values:
             raise UserWarning(
                 "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
@@ -1755,16 +1755,16 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     dtypes = net.dcline.dtypes
 
     net.dcline.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
-                       "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar", 
+                       "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
                        "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
                        "in_service"]]\
-        = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, 
+        = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
            max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, cost_per_kw,
            in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.dcline, dtypes)
-    
+
 
 def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
                        check_existing=True, index=None):
