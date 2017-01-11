@@ -216,7 +216,7 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
     return net
 
 
-def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
+def validate_from_ppc(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
     "vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3, "p_gen_kw": 1e-3,
         "q_gen_kvar": 1e-3}):
     """
@@ -254,7 +254,7 @@ def validate_ppc2pp(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
 
         pp_net = cv.from_ppc(ppc_net, f_hz=60)
 
-        cv.validate_ppc2pp(ppc_net, pp_net)
+        cv.validate_from_ppc(ppc_net, pp_net)
     """
     # --- run a pypower power flow
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
