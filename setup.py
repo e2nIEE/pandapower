@@ -20,7 +20,10 @@ setup(
                       "scipy",
                       "pandas",
                       "networkx",
-                      "numba>=0.25.0"],
+                      "numba>=0.25.0",
+                      "matplotlib",
+                      "xlrd",
+                      "openpyxl"],
     packages=find_packages(),
     include_package_data=True,
     classifiers=[

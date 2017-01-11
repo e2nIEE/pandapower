@@ -35,9 +35,14 @@ Additional to the standard load flow parameters, the following parameters have t
 
 .. code:: python
 
-	import shortcircuit as sc
-	import networks as nw
+    import pandapower.shortcircuit as sc
+    import pandapower.networks as nw
 
-	net = nw.mv_network("ring")
-	sc.runsc(net, case="min", ip=True)
-	print(net.res_bus.loc[1,5,10])
+    net = nw.mv_oberrhein()
+    net.ext_grid["s_sc_min_mva"] = 100
+    net.ext_grid["rx_min"] = 0.1
+
+    net.line["endtemp_degree"] = 20
+    sc.runsc(net, case="min")
+    print(net.res_bus_sc)
+
