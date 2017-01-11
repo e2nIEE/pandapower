@@ -1,8 +1,8 @@
 .. _std_types:
 
-=========================
+============================
 Standard Type Libraries
-==========================
+============================
 
 Lines and transformers have two different categories of parameters: parameter that depend on the specific element (like the length of a line or the bus to which a transformer is connected to etc.) and parameter that only 
 depend on the type of line or transformer which is used (like the rated power of a transformer or the resistance per kilometer line).

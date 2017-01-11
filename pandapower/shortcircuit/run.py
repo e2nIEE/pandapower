@@ -8,6 +8,11 @@ import pandas as pd
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
 from pandapower.shortcircuit.impedance import calc_equiv_sc_impedance
 from pandapower.shortcircuit.kappa import calc_kappa
+try:
+    import pplog as logging
+except:
+    import logging
+logger = logging.getLogger(__name__)
 
 def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False, ith=False, 
           tk_s=1.):

@@ -1,5 +1,4 @@
 *.pyc
-.tox/
 *~
 build/
 dist/
