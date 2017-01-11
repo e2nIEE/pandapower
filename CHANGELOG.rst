@@ -4,6 +4,7 @@ Change Log
 unreleased
 ----------------------
 - [ADDED] impedance element can now be used with unsymetric impedances zij != zji
+- [ADDED] dcline element that allows modelling DC lines in PF and OPF
 - [ADDED] simple plotting function: call pp.simple_plot(net) to directly plot the network
 - [ADDED] measurement table for networks. Enables the definition of measurements for real-time simulations.
 - [ADDED] estimation module, which provides state estimation functionality with weighted least squares algorithm

@@ -30,7 +30,6 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 
     about
     getting_started
-    tutorials
     elements
     std_types
     powerflow
