@@ -1,4 +1,6 @@
-﻿Minimal Example
+﻿include installation.rst
+
+Minimal Example
 =====================
 
 A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
