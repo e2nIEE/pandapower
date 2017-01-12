@@ -863,6 +863,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         newnet = copy.deepcopy(net)
         newnet.update(p2)
         return PandapowerNet(newnet)
+    p2["std_types"] = copy.deepcopy(net["std_types"])
     return PandapowerNet(p2)
 
 
