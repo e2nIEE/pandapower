@@ -909,7 +909,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **df** (float) - derating factor: maximal current of line  in relation to nominal current of line (from 0 to 1)
+        **df** (float) - derating factor: maximal current of line in relation to nominal current of line (from 0 to 1)
 
         **parallel** (integer) - number of parallel line systems
 
