@@ -92,12 +92,15 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
         if current_bus_type == 3:
             pp.create_ext_grid(net, bus=current_bus_idx, vm_pu=GEN_uniq[5][i],
                                va_degree=ppc['bus'][current_bus_idx, 8],
-                               in_service=bool(GEN_uniq[7][i] > 0))
+                               in_service=bool(GEN_uniq[7][i] > 0),
+                               max_p_kw=-GEN_uniq[9][i]*1e3, min_p_kw=-GEN_uniq[8][i]*1e3,
+                               max_q_kvar=GEN_uniq[3][i]*1e3,
+                               min_q_kvar=GEN_uniq[4][i]*1e3)
         # create gen
         elif current_bus_type == 2:
             pp.create_gen(net, bus=current_bus_idx, vm_pu=GEN_uniq[5][i],
                           p_kw=-GEN_uniq[1][i]*1e3, in_service=bool(GEN_uniq[7][i] > 0),
-                          max_p_kw=-GEN_uniq[8][i]*1e3, min_p_kw=-GEN_uniq[9][i]*1e3,
+                          max_p_kw=-GEN_uniq[9][i]*1e3, min_p_kw=-GEN_uniq[8][i]*1e3,
                           max_q_kvar=GEN_uniq[3][i]*1e3,
                           min_q_kvar=GEN_uniq[4][i]*1e3, controllable=True)
             if GEN_uniq[4][i] > GEN_uniq[3][i]:
@@ -109,7 +112,7 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
             pp.create_sgen(net, bus=current_bus_idx, p_kw=-GEN_uniq[1][i]*1e3,
                            q_kvar=-GEN_uniq[2][i]*1e3, type="",
                            in_service=bool(GEN_uniq[7][i] > 0),
-                           max_p_kw=-GEN_uniq[8][i]*1e3, min_p_kw=-GEN_uniq[9][i]*1e3,
+                           max_p_kw=-GEN_uniq[9][i]*1e3, min_p_kw=-GEN_uniq[8][i]*1e3,
                            max_q_kvar=GEN_uniq[3][i]*1e3,
                            min_q_kvar=GEN_uniq[4][i]*1e3, controllable=True)
     # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
