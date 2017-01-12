@@ -1,6 +1,13 @@
 Change Log
 =============
 
+[1.1.1] - 2017-01-12
+----------------------
+- [ADDED] installation description and pypi files from github
+- [ADDED] automatic inversion of active power limits in convert format (see change below)
+- [CHANGED] install_requires in setup.py
+
+
 [1.1.0] - 2017-01-11
 ----------------------
 - [ADDED] impedance element can now be used with unsymetric impedances zij != zji
@@ -12,6 +19,7 @@ Change Log
 - [ADDED] documentation of model validation and tests
 - [ADDED] case14, case24_ieee_rts, case39, case57 networks
 - [ADDED] mpc and ppc converter
+- [CHANGED] convention for active power limits of generators. Generator with max. feed in of 50kW before: p_min_kw=0, p_max_kw=-50. Now p_max_kw=0, p_min_kw=50
 - [ADDED] DC power flow function pp.rundcopp
 - [FIXED] bug in create_transformer function for tp_pos parameter
 - [FIXED] bug in voltage ratio for low voltage side tap changers

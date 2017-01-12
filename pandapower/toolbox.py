@@ -368,6 +368,14 @@ def convert_format(net):
                                                                     ("va_from_degree", "f8"),                            
                                                                     ("vm_to_pu", "f8"),
                                                                     ("va_to_degree", "f8")]))
+    if not "version" in net or net.version < 1.1:
+        if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
+            if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
+                pmin = copy.copy(net.gen.min_p_kw.values)
+                pmax = copy.copy(net.gen.max_p_kw.values)
+                net.gen["min_p_kw"] = pmax
+                net.gen["max_p_kw"] = pmin
+    net.version = 1.1
     return net
 
 def _pre_release_changes(net):

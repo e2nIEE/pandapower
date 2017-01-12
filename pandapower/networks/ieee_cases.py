@@ -247,4 +247,5 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
 
 if __name__ == "__main__":
-    net = pp.networks.case9()
+    import pandapower.networks as pn
+    net = pn.networks.case9()
