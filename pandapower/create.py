@@ -279,7 +279,7 @@ def create_empty_network(name=None, f_hz=50.):
         "_ppc": None,
         "_is_elems": None,
         "_bus_lookup": None,
-        "version": 1.0,
+        "version": 1.1,
         "converged": False,
         "name": name,
         "f_hz": f_hz
@@ -675,9 +675,9 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
         raise UserWarning(
             "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
 
-    if bus in net.gen.bus.values:
-        raise UserWarning(
-            "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+#    if bus in net.gen.bus.values:
+#        raise UserWarning(
+#            "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
 
     if index is None:
         index = get_free_id(net["gen"])
