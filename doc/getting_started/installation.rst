@@ -39,7 +39,7 @@ pandapower itself can be installed with the following steps:
         - networkx
         
 4.  To use all of pandapowers functionalites, you will need the following additional packages:
- (for topological )
+
         - numba>=0.25.0 (for accelerated loadflow calculation)
         - matplotlib (for plotting)
         - python-igraph (for plotting networks without geographical information)

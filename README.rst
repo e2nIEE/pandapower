@@ -16,7 +16,12 @@ This will install the following dependencies:
     - pypower>=5.0.1
     - pandas
     - networkx
-    
+
+You will also need numpy and scipy, which are dependencies of pypower.
+We recommend the `Anaconda Distribution <https://www.continuum.io/downloads>`_, which already contains a
+numpy and scipy as well as a lot of other modules for scientific computing that are needed for working with 
+pandapower.
+   
 To use all of pandapowers functionalites, you will need the following additional packages:
     - numba>=0.25.0 (for accelerated loadflow calculation)
     - matplotlib (for plotting)
@@ -24,8 +29,8 @@ To use all of pandapowers functionalites, you will need the following additional
     - xlrd (for loading/saving files from/to excel)
     - openpyxl (for loading/saving files from/to excel)
     
-We recommend the `Anaconda Distribution <https://www.continuum.io/downloads>`_, which already contains a lot of modules for scientific computing that are needed for working with pandapower.
-
+All of these packages (except python-igraph) are already included in the anaconda distribution.
+    
 Minimal Example
 =====================
 
