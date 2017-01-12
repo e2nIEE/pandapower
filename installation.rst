@@ -14,7 +14,6 @@ To install pandapower, simply use: ::
 
 This will install the following dependencies:
     - pypower>=5.0.1
-    - numpy>1.8
     - pandas
     - networkx
     

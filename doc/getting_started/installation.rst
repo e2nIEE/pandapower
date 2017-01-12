@@ -32,22 +32,19 @@ pandapower itself can be installed with the following steps:
 		:width: 40em
 		:alt: alternate Text
 		:align: center 
-    
-4. Install the dependencies needed for pandapower by running (in the same folder): ::
 
-    pip install -r requirements.txt
-
-   This will install the following packages (if not already installed):
-
-        - pypower >= 5.0.1
+    This will install the following dependencies:
+        - pypower>=5.0.1
         - pandas
-        - numpy
-        - scipy
         - networkx
-        - numba >= 0.25.0
-        - matplotlib
-        - openpyxl
-        - xlrd
+        
+4.  To use all of pandapowers functionalites, you will need the following additional packages:
+ (for topological )
+        - numba>=0.25.0 (for accelerated loadflow calculation)
+        - matplotlib (for plotting)
+        - python-igraph (for plotting networks without geographical information)
+        - xlrd (for loading/saving files from/to excel)
+        - openpyxl (for loading/saving files from/to excel)
 
 .. note::
     All of these packages except pypower are included in the anacaonda distribution. 
@@ -64,7 +61,8 @@ other way you like.
         import pandapower.converter
         import pandapower.estimation
 
-  If you want to be really sure that everything works fine, you can run the pandapower test suite (pytest module is needed): ::
+    Some submodules only import correctly with all optional dependencies named above installed.
+    If you want to be really sure that everything works fine, you can run the pandapower test suite (pytest module is needed): ::
     
         import pandapower.test
         pandapower.test.run_all_tests()

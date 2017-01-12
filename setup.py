@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pandapower',
-    version='1.1.0',
+    version='1.1.1',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
@@ -18,7 +18,6 @@ setup(
     url='http://www.uni-kassel.de/go/pandapower',
     license='BSD',
     install_requires=["pypower>=5.0.1",
-                      "numpy>1.8",
                       "pandas",
                       "networkx"],
     packages=find_packages(),
