@@ -334,8 +334,11 @@ def convert_format(net):
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
     # initialize measurement dataframe
     if "measurement" in net and "element_type" not in net.measurement:
-        raise UserWarning("The measurement structure seems outdated. Please adjust it according"
-                          "to the documentation.")
+        if net.measurement.empty:
+            del net["measurement"]
+        else:
+            raise UserWarning("The measurement structure seems outdated. Please adjust it "
+                              "according to the documentation.")
     if "measurement" not in net:
         net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
                                                              ("element_type", np.dtype(object)),
@@ -860,6 +863,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         newnet = copy.deepcopy(net)
         newnet.update(p2)
         return PandapowerNet(newnet)
+    p2["std_types"] = copy.deepcopy(net["std_types"])
     return PandapowerNet(p2)
 
 
