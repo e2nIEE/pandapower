@@ -1,3 +1,3 @@
-include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst installation.rst
+include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst
 global-include *.p 
 

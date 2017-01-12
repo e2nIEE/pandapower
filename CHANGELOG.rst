@@ -4,7 +4,7 @@ Change Log
 [1.1.1] - 2017-01-12
 ----------------------
 - [ADDED] installation description and pypi files from github
-- [ADDED] automatic inversion of active power limits in convert format (see change below)
+- [ADDED] automatic inversion of active power limits in convert format to account for convention change in version 1.1.0
 - [CHANGED] install_requires in setup.py
 
 

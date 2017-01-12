@@ -20,9 +20,9 @@ pandapower itself can be installed with the following steps:
 
 1. Download and unzip the `pandapower source distribution <http://www.uni-kassel.de/eecs/fachgebiete/e2n/software/pandapower.html>`_ to your local hard drive.
 
-2. Open a command prompt (e.g. Windows --> cmd) and navigate to the folder that contains the setup.py file with the command cd <folder> ::
+2. Open a command prompt (e.g. Windows cmd or Anaconda Command Prompt) and navigate to the folder that contains the setup.py file with the command cd <folder> ::
 
-    cd %path_to_pandapower%\pandapower-1.0.2\
+    cd %path_to_pandapower%\pandapower-x.x.x\
 
 3. Install pandapower by running ::
 
@@ -47,7 +47,7 @@ pandapower itself can be installed with the following steps:
         - openpyxl (for loading/saving files from/to excel)
 
 .. note::
-    All of these packages except pypower are included in the anacaonda distribution. 
+    All of these packages except pypower and python-igraph are already included in the anacaonda distribution. 
     
 If you are having problems with the dependencies, you can also install these packages manually with pip install or any 
 other way you like.
