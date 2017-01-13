@@ -85,12 +85,21 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
     lc = create_line_collection(net, net.line.index, color=line_color, linewidths=line_width,
                                      use_line_geodata=use_line_geodata)
-    sc = create_bus_collection(net, net.ext_grid.bus.values, patch_type="rect",
-                                    size=ext_grid_size, color=ext_grid_color, zorder=11)
+    collections = [bc, lc]
+    eg_buses_with_geocoordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
+    if len(eg_buses_with_geocoordinates) > 0:
+        sc = create_bus_collection(net, eg_buses_with_geocoordinates, patch_type="rect", 
+                                   size=ext_grid_size, color=ext_grid_color, zorder=11)
+        collections.append(sc)
     # create trafo collection if trafo is available
-    tc = create_trafo_collection(net, net.trafo.index, color=trafo_color) if len(net.trafo) else None
+    trafo_buses_with_geocoordinates = [t for t, trafo in net.trafo.iterrows() \
+                                       if trafo.hv_bus in net.bus_geodata.index \
+                                       and trafo.lv_bus in net.bus_geodata.index]
+    if len(trafo_buses_with_geocoordinates) > 0:
+        tc = create_trafo_collection(net, trafo_buses_with_geocoordinates, color=trafo_color)
+        collections.append(tc)
 
-    draw_collections([lc, bc, tc, sc])
+    draw_collections(collections)
     plt.show()
 
 if __name__ == "__main__":
