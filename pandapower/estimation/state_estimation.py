@@ -447,5 +447,5 @@ class state_estimation(object):
         return successful
 
 if __name__ == "__main__":
-    from pandapower.test.test_wls_estimation import test_3bus
+    from pandapower.test.estimation.test_wls_estimation import test_3bus
     test_3bus()
