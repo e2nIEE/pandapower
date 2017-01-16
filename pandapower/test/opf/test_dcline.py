@@ -19,33 +19,10 @@ logger = logging.getLogger(__name__)
 def dcline_net():
     net = pp.create_empty_network()
     
-    b1 = pp.create_bus(net, 380)
-    b2 = pp.create_bus(net, 380)
-    b3 = pp.create_bus(net, 380)
-    b4 = pp.create_bus(net, 380)
     b5 = pp.create_bus(net, 380)
-    
-    pp.create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
-    pp.create_line(net, b3, b4, 20, "490-AL1/64-ST1A 380.0")
-    pp.create_line(net, b4, b5, 20, "490-AL1/64-ST1A 380.0")
-    
-    pp.create_dcline(net, name="dc line", from_bus=b2, to_bus=b3, p_kw=0.2e6, loss_percent=1.0, 
-                      loss_kw=500, vm_from_pu=1.01, vm_to_pu=1.012, max_p_kw=1e6,
-                      in_service=True)
-    
-    pp.create_ext_grid(net, b1, 1.02, max_p_kw=0.)
-    pp.create_ext_grid(net, b5, 1.02, max_p_kw=0.)
-    
-    pp.create_load(net, bus=b4, p_kw=800e3)
-    return net
-
-def dcline_net2():
-    net = pp.create_empty_network()
-    
-    b5 = pp.create_bus(net, 380)
-    b4 = pp.create_bus(net, 380)
     b3 = pp.create_bus(net, 380)
     b2 = pp.create_bus(net, 380)
+    b4 = pp.create_bus(net, 380)
     b1 = pp.create_bus(net, 380)
     
     pp.create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
@@ -117,6 +94,4 @@ def test_dcline_dispatch2(dcline_net):
     assert allclose(net.res_dcline.q_to_kvar.values, q_to_expect)     
 
 if __name__ == "__main__":
-    dcline_net = dcline_net()
-    test_dispatch1(dcline_net)
-#    pytest.main(["test_dcline.py"])
+    pytest.main(["test_dcline.py"])

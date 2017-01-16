@@ -5,9 +5,11 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import warnings
+from functools import partial
 
 from pypower.ppoption import ppoption
 from pypower.idx_bus import VM
+from pypower.add_userfcn import add_userfcn
 
 from pandapower.pypower_extensions.runpf import _runpf
 from pandapower.auxiliary import ppException, _select_is_elements, _clean_up
@@ -217,7 +219,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["converged"] = True
 
     _extract_results(net, result, is_elems, trafo_loading, ac)
-    _clean_up(net)
+#    _clean_up(net)
 
 
 def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
@@ -325,6 +327,9 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
+    if len(net.dcline) > 0:
+        ppci = add_userfcn(ppci, 'formulation', add_dcline_constraints, args=net)
+
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -395,3 +400,27 @@ def _add_dcline_gens(net):
                    min_p_kw=0, max_p_kw=pmax, 
                    max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
                    in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
+        
+def add_dcline_constraints(om, net):
+    from numpy import hstack, diag, eye, zeros
+    from scipy.sparse import csr_matrix as sparse
+    ppc = om.get_ppc()
+    ndc = len(net.dcline)              ## number of in-service DC lines
+    ng  = ppc['gen'].shape[0]          ## number of total gens
+    Adc = sparse((ndc,ng))
+    gen_lookup = net._pd2ppc_lookups["gen"]
+
+    dcline_gens_from = net.gen.index[-2*ndc::2]
+    dcline_gens_to = net.gen.index[-2*ndc+1::2]
+    for i, (f, t, loss) in enumerate(zip(dcline_gens_from, dcline_gens_to,
+                                       net.dcline.loss_percent.values)):
+        Adc[i, gen_lookup[f]] = 1. + loss*1e-2
+        Adc[i, gen_lookup[t]] = 1.
+
+    ## constraints
+    nL0 = -net.dcline.loss_kw.values * 1e-3 #absolute losses
+#    L1  = -net.dcline.loss_percent.values * 1e-2 #relative losses
+#    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
+
+    ## add them to the model
+    om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])

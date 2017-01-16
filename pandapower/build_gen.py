@@ -134,7 +134,8 @@ def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default, update_lookup=False)
+        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default, 
+                                  update_lookup=False)
 
 
 def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
