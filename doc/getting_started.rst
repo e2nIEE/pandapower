@@ -8,5 +8,7 @@ Getting Started
     getting_started/introduction
     getting_started/download
     getting_started/installation
+    getting_started/tutorials
+
 
     

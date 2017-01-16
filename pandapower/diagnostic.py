@@ -265,12 +265,12 @@ def invalid_values(net):
                                     ('in_service', 'boolean')],
                         'load': [('bus', 'positive_integer'), ('p_kw', 'number'),
                                  ('q_kvar', 'number'),
-                                 ('scaling', '0to1'), ('in_service', 'boolean')],
+                                 ('scaling', '>=0'), ('in_service', 'boolean')],
                         'sgen': [('bus', 'positive_integer'), ('p_kw', 'number'),
                                  ('q_kvar', 'number'),
-                                 ('scaling', '0to1'), ('in_service', 'boolean')],
+                                 ('scaling', '>=0'), ('in_service', 'boolean')],
                         'gen': [('bus', 'positive_integer'), ('p_kw', 'number'),
-                                ('scaling', '0to1'), ('in_service', 'boolean')],
+                                ('scaling', '>=0'), ('in_service', 'boolean')],
                         'ext_grid': [('bus', 'positive_integer'), ('vm_pu', '>0'),
                                      ('va_degree', 'number')],
                         'switch': [('bus', 'positive_integer'), ('element', 'positive_integer'),
@@ -375,8 +375,8 @@ def overload(net, overload_scaling_factor):
      RETURN:
 
         **check_results** (dict)        - dict with the results of the overload check
-                                          Format: {'load_overload': True/False/uncertain
-                                                   'generation_overload', True/False/uncertain}
+                                          Format: {'load_overload': True/uncertain
+                                                   'generation_overload', True/uncertain}
 
     """
     check_result = {}
@@ -803,10 +803,18 @@ def numba_comparison(net, numba_tolerance):
     check_results = {}
     try:
         runpp(net, numba=True)
+    except:
+        pass
+    if net.converged:
         result_numba_true = copy.deepcopy(net)
         runpp(net, numba=False)
         result_numba_false = copy.deepcopy(net)
-        res_keys = [key for key in result_numba_true.keys() if (key[:4] == 'res_')]
+        res_keys = [key for key in result_numba_true.keys() if (key in ['res_bus', 'res_ext_grid',
+                                                                        'res_gen', 'res_impedance',
+                                                                        'res_line', 'res_load',
+                                                                        'res_sgen', 'res_shunt',
+                                                                        'res_trafo', 'res_trafo3w',
+                                                                        'res_ward', 'res_xward'])]
         for key in res_keys:
             diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
             if any(diffs.any()):
@@ -818,11 +826,9 @@ def numba_comparison(net, numba_tolerance):
                         numba_true = result_numba_true[key][col][diffs[col]]
                         numba_false = result_numba_false[key][col][diffs[col]]
                         check_results[key][col] = abs(numba_true - numba_false)
-    
-        if check_results:
-            return check_results
-    except:
-        return
+
+    if check_results:
+        return check_results
 
 
 def deviation_from_std_type(net):

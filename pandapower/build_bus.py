@@ -14,7 +14,6 @@ from pandapower.auxiliary import _sum_by_group
 
 
 class DisjointSet(dict):
-
     def add(self, item):
         self[item] = item
 
@@ -31,10 +30,11 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=False):
+def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_ppc=False):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
+
     # add additional xward and trafo3w buses
     if len(net["trafo3w"]) > 0:
         # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
@@ -143,11 +143,11 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
         ppc["bus"][:n_bus, 7] = net["res_bus"]["vm_pu"].values
         ppc["bus"][:n_bus, 8] = net["res_bus"].va_degree.values
 
-    if set_opf_constraints:
+    if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 10
+            ppc["bus"][:n_bus, VMAX] = 2
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
@@ -155,7 +155,19 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, set_opf_constraints=F
 
     return bus_lookup
 
-def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
+
+def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup, opf=False):
+    '''
+    wrapper function to call either the PF or the OPF version
+    '''
+
+    if opf:
+        _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup)
+    else:
+        _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup)
+
+
+def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
@@ -197,11 +209,36 @@ def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
         ppc["bus"][b, QD] = vq
 
 
+def _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup):
+    """ we need to exclude controllable sgens from the bus table
+    """
+
+    l = net["load"]
+    vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
+    lp = l["p_kw"].values * vl
+    lq = l["q_kvar"].values * vl
+
+    sgen = net["sgen"]
+    if not sgen.empty:
+        vl = (is_elems["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+             np.float64(1000.)
+        sp = sgen["p_kw"].values * vl
+        sq = sgen["q_kvar"].values * vl
+    else:
+        sp = []
+        sq = []
+
+    b = bus_lookup[np.hstack([l["bus"].values, sgen["bus"].values])]
+    b, vp, vq = _sum_by_group(b, np.hstack([lp, sp]), np.hstack([lq, sq]))
+
+    ppc["bus"][b, PD] = vp
+    ppc["bus"][b, QD] = vq
+
+
 def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     # get in service elements
-    bus_is = is_elems['bus']
 
     s = net["shunt"]
     if len(s) > 0:

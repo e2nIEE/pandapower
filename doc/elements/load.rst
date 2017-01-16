@@ -24,7 +24,8 @@ Input Parameters
 
 \*necessary for executing a power flow calculation.
 
-   
+.. note:: Loads are not yet respected by the optimal power flow as a flexibility.
+
 Electric Model
 =================
 
@@ -65,8 +66,3 @@ Result Parameters
    
 The power values in the net.res_load table are equivalent to :math:`P_{load}` and :math:`Q_{load}`.
 
-   
-Optimal Power Flow Parameters
-=============================
-
-Loads are not yet respected by the optimal power flow as a flexibility.

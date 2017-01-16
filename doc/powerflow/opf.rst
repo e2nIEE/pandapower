@@ -1,6 +1,7 @@
+.. _opf:
+
 Optimal Power Flow
 =====================
-.. _ppOPF:
 
 The pandapower optimal power flow is a tool for optimizing the grid state. It offers two cost function options, that are fitting special use cases. 
 In addition to the equality constraints in the problem formulations below, the full set of nonlinear real and reactive power balance equations is always considered in the pandapower optimal power flow.
@@ -19,6 +20,8 @@ pandapower uses PYPOWER to solve the optimal power flow problem:
 
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc_opf"].
     However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
+
+    
 
 **Generator Flexibilities**
 
@@ -64,6 +67,5 @@ By specifying objectivetype='linear_minloss' in the OPF, the cost function is ev
      
 The weighting factor :math:`\lambda` can be specified as the keyword argument lambda_opf for runopp().
    
-.. note::
-
-    The pandapower optimal power flow is a recent development. In the future, this module will be developed further in order to allow more flexible opf calculations.
+**Results**
+The results of the OPF can be found in the same result tables as for the regular power flow (res_bus, res_line, res_trafo etc.). The dispatch costs can be found in net.res_cost.

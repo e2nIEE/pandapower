@@ -6,7 +6,7 @@
 
 
 latex_file_path = "..\\doc\\_build\\latex\\pandapower.tex"
-version = "1.0.2"
+version = "1.1.0"
 
 class AlreadyProcessedException(Exception):
     pass

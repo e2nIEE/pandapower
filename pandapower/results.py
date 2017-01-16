@@ -5,7 +5,8 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-
+import copy
+from numpy import zeros, array, float, hstack, invert, ones, arange, searchsorted
 from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV, VM, VA, PD, QD
 from pypower.idx_gen import PG, QG, GEN_BUS
@@ -25,10 +26,76 @@ def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_volta
     bus_pq = _get_p_q_results(net, bus_lookup_aranged, is_elems, ac)
     _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, return_voltage_angles, ac)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
+                     return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
+def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
+                         ac):
+    eg_is = is_elems['ext_grid']
+    gen_is = is_elems['gen']
+    bus_is = is_elems['bus']
 
+    # generate bus_lookup net -> consecutive ordering
+    maxBus = max(net["bus"].index.values)
+    bus_lookup_aranged = -ones(maxBus + 1, dtype=int)
+    bus_lookup_aranged[net["bus"].index.values] = arange(len(net["bus"].index.values))
+
+    _set_buses_out_of_service(ppc)
+    len_gen = len(eg_is) + len(gen_is)
+    bus_pq = _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, len_gen)
+    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, bus_is, ac)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
+    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
+                     return_voltage_angles, ac)
+    _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
+    _get_costs(net)
+
+
+def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen_end):
+    bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
+    b, p, q = array([]), array([]), array([])
+
+    l = net["load"]
+    if len(l) > 0:
+        load_is = is_elems["load"]
+        scaling = l["scaling"].values
+        pl = l["p_kw"].values * scaling * load_is
+        net["res_load"]["p_kw"] = pl
+        p = hstack([p, pl])
+        # q results
+        ql = l["q_kvar"].values * scaling * load_is
+        net["res_load"]["q_kvar"] = ql
+        q = hstack([q, ql])
+
+        b = hstack([b, l["bus"].values])
+        net["res_load"].index = net["load"].index
+
+    sg = net["sgen"]
+    if len(sg) > 0:
+        sgen_is = is_elems["sgen"]
+        sgen_ctrl = sg["controllable"].values
+        scaling = sg["scaling"].values
+        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
+        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
+        # get gen index in ppc
+        gidx_ppc = searchsorted(ppc['gen'][:, GEN_BUS], bus_lookup[net['sgen'][sgen_is].bus.values])
+        psg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, PG] * 1000
+        qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, QG] * 1000
+
+        net["res_sgen"]["p_kw"] = psg
+        net["res_sgen"]["q_kvar"] = qsg
+        q = hstack([q, qsg])
+        p = hstack([p, psg])
+        b = hstack([b, sg["bus"].values])
+        net["res_sgen"].index = net["sgen"].index
+
+    b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
+    b_ppc = bus_lookup_aranged[b_pp]
+    bus_pq[b_ppc, 0] = vp
+    bus_pq[b_ppc, 1] = vq
+    return bus_pq
+    
 def _set_buses_out_of_service(ppc):
     disco = np.where(ppc["bus"][:, 1] == 4)[0]
     ppc["bus"][disco, VM] = np.nan
@@ -86,10 +153,11 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         net["res_impedance"].index = net["impedance"].index
 
     if xward_end > impedance_end:
-        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end, ac)
+        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
+                                  ac)
 
-
-def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus, return_voltage_angles, ac=True):
+def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus, 
+                     return_voltage_angles, ac=True):
     # get in service elements
     gen_is = is_elems['gen']
     eg_is = is_elems['ext_grid']
@@ -159,6 +227,12 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
             q = np.hstack([q, q_gen])
             net["res_gen"]["q_kvar"] = q_gen
 
+    if len(net.dcline) > 0:
+        _get_dcline_results(net)
+        b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
+        p = np.hstack([p, -net.res_dcline[["p_from_kw", "p_to_kw"]].values.flatten()])
+        q = np.hstack([q, -net.res_dcline[["q_from_kvar", "q_to_kvar"]].values.flatten()])
+
     if not ac:
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
@@ -166,6 +240,28 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
     pq_bus[b, 0] += p_sum
     pq_bus[b, 1] += q_sum
 
+
+        
+
+
+def _get_dcline_results(net):
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
+    from_gens = net.res_gen.loc[dc_gens[1::2]]
+    to_gens = net.res_gen.loc[dc_gens[::2]]
+
+    net.res_dcline.p_from_kw = from_gens.p_kw.values
+    net.res_dcline.p_to_kw = to_gens.p_kw.values
+    net.res_dcline.pl_kw = from_gens.p_kw.values +  to_gens.p_kw.values
+   
+    net.res_dcline.q_from_kvar = from_gens.q_kvar.values
+    net.res_dcline.q_to_kvar = to_gens.q_kvar.values
+
+    net.res_dcline.vm_from_pu = from_gens.vm_pu.values
+    net.res_dcline.vm_to_pu = to_gens.vm_pu.values
+    net.res_dcline.va_from_degree = from_gens.va_degree.values
+    net.res_dcline.va_to_degree = to_gens.va_degree.values
+    
+    net.res_dcline.index = net.dcline.index
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, f, t, ac=True):
     p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
@@ -434,3 +530,67 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elem
     bus_pq[b_ppc, 0] += vp
     if ac:
         bus_pq[b_ppc, 1] += vq
+
+def _get_costs(net):
+    cost = 0
+    if "cost_per_kw" in net.gen:
+        cost += (-net.res_gen.p_kw * net.gen.cost_per_kw).sum()
+    if "cost_per_kw" in net.sgen:
+        cost += (-net.res_sgen.p_kw * net.sgen.cost_per_kw).sum()
+    if "cost_per_kw" in net.ext_grid:
+        cost += (-net.res_ext_grid.p_kw * net.ext_grid.cost_per_kw).sum()
+    net.res_cost = cost
+
+
+def reset_results(net):
+    net["res_bus"] = copy.copy(net["_empty_res_bus"])
+    net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
+    net["res_line"] = copy.copy(net["_empty_res_line"])
+    net["res_load"] = copy.copy(net["_empty_res_load"])
+    net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
+    net["res_trafo"] = copy.copy(net["_empty_res_trafo"])
+    net["res_trafo3w"] = copy.copy(net["_empty_res_trafo3w"])
+    net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
+    net["res_impedance"] = copy.copy(net["_empty_res_impedance"])
+    net["res_gen"] = copy.copy(net["_empty_res_gen"])
+    net["res_ward"] = copy.copy(net["_empty_res_ward"])
+    net["res_xward"] = copy.copy(net["_empty_res_xward"])
+    net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
+    
+    
+def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):
+    '''
+    result contains results for all in service elements
+    ppc shall get the results for in- and out of service elements
+    -> results must be copied
+
+    ppc and ppci are structured as follows:
+
+          [in_service elements]
+    ppc = [out_of_service elements]
+
+    result = [in_service elements]
+
+    @author: fschaefer
+
+    @param result:
+    @param ppc:
+    @return:
+    '''
+
+    # copy the results for bus, gen and branch
+    # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
+    n_cols = np.shape(ppc['bus'])[1]
+    ppc['bus'][:len(result['bus']), :n_cols] = result['bus'][:len(result['bus']), :n_cols]
+    # in service branches and gens are taken from 'internal'
+    n_cols = np.shape(ppc['branch'])[1]
+    ppc['branch'][result["internal"]['branch_is'], :n_cols] = result['branch'][:, :n_cols]
+    n_cols = np.shape(ppc['gen'])[1]
+    ppc['gen'][result["internal"]['gen_is'], :n_cols] = result['gen'][:, :n_cols]
+    ppc['internal'] = result['internal']
+
+    ppc['success'] = result['success']
+    ppc['et'] = result['et']
+
+    result = ppc
+    return result

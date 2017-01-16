@@ -28,6 +28,7 @@ information about the definition and interpretation of the parameters in the fol
     elements/shunt
     elements/impedance
     elements/ward	
-    elements/xward	
+    elements/xward
+    elements/dcline
     elements/measurement
 

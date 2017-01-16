@@ -42,3 +42,7 @@ Advantages and Contributions
     - WLS state estimation generates an exact grid state out of unexact measurements
     - WLS as the industry standard is a good reference for evaluating new state estimation developments
     - bad data detection and filtering methods improve performance of the state estimator (upcoming)
+
+7. Powerflow
+    - The implemented powerflow core in pandapower is an advanced version of the pypower powerflow. By integrating the numba JIT-compiler, the pandapower powerflow can be up to :download:`twice as fast  <../getting_started/calc_times.png>` as the standard pypower version
+    - It is possible to deactive the numba JIT-compiler

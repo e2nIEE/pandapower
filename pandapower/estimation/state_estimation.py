@@ -9,9 +9,9 @@ import logging
 import pandas as pd
 import warnings
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.run import _pd2ppc, _select_is_elements
+from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _set_buses_out_of_service
-from pandapower.auxiliary import get_values
+from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results
 from pandapower.toolbox import convert_format
 from pandapower.topology import estimate_voltage_vector
 from pypower.ext2int import ext2int
@@ -43,7 +43,6 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     Return:
         (bool) Was the state estimation successful?
     """
-    net = convert_format(net)
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
     delta_start = None
@@ -60,7 +59,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     return wls.estimate(v_start, delta_start, calculate_voltage_angles)
 
 
-class state_estimation:
+class state_estimation(object):
     """
     Any user of the estimation module only needs to use the class state_estimation. It contains all
     relevant functions to control and operator the module. Two functions are used to configure the
@@ -85,7 +84,6 @@ class state_estimation:
         self.r = None
         self.V = None
         self.delta = None
-        self.s_bus_kva = None
         self.bad_data_present = None
         # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
@@ -364,7 +362,7 @@ class state_estimation:
             h_x = sem.create_hx(v_m, delta)
 
             # Residual r
-            r = csr_matrix(z - h_x)
+            r = csr_matrix(z - h_x).T
 
             # Jacobian matrix H
             H = csr_matrix(sem.create_jacobian(v_m, delta))
@@ -378,7 +376,7 @@ class state_estimation:
 
             # State Vector difference d_E
             # d_E = G_m^-1 * (H' * R^-1 * r)
-            d_E = spsolve(G_m, H.T * (r_inv * r.T))
+            d_E = spsolve(G_m, H.T * (r_inv * r))
             E += d_E
 
             # Update V/delta
@@ -418,9 +416,6 @@ class state_estimation:
             ppc = int2ext(ppc_i)
             _set_buses_out_of_service(ppc)
 
-        # Store bus powers in kVa:
-        self.s_bus_kva = ppc["bus"][:, 2] + 1j * ppc["bus"][:, 3] * self.s_ref / 1e3
-
         # Store results, overwrite old results
         self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
                                             index=self.net.bus.index)
@@ -437,73 +432,20 @@ class state_estimation:
                                                   mapping_table) * self.s_ref / 1e3
         self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
                                                    mapping_table) * self.s_ref / 1e3
-        self._calc_line_results()
+        self.net.res_line_est = calculate_line_results(self.net, use_res_bus_est=True)
 
         # Store some variables required for Chi^2 and r_N_max test:
-        self.R_inv = r_inv
+        self.R_inv = r_inv.toarray()
+        self.Gm = G_m.toarray()
+        self.r = r.toarray()
+        self.H = H.toarray()
+        self.Ht = self.H.T
         self.hx = h_x
-        self.H = H
-        self.Ht = H.T
-        self.Gm = G_m
-        self.r = r
         self.V = v_m
         self.delta = delta
 
         return successful
 
-    def _calc_line_results(self):
-        """
-        Calculates complex line currents at both bus sides and saves them in the result table
-        """
-        # calculate impedances and complex voltages
-        Zij = self.net.line['length_km'] * (self.net.line['r_ohm_per_km'] + 1j
-                                            * self.net.line['x_ohm_per_km'])
-        Zcbij = 0.5j * 2 * np.pi * 50 * self.net.line['c_nf_per_km'] * 1e-9
-        V = self.net.res_bus_est.vm_pu * self.net.bus.vn_kv * 1e3 \
-            * np.exp(1j * np.pi / 180 * self.net.res_bus_est.va_degree)
-        fb = self.net.line.from_bus
-        tb = self.net.line.to_bus
-        # calculate line currents of from bus side
-        line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
-                              * Zcbij).values
-        open_lines_from = self.net.switch.element.loc[
-            (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
-        line_currents_from[open_lines_from.values] = 0.
-        charging_from = open_lines_from[open_lines_from.index[
-            self.net.line.to_bus.loc[open_lines_from].values ==
-            self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
-                                                                   False)].values]].values
-        line_currents_from[charging_from] = V[self.net.line.ix[charging_from].from_bus].values \
-                                            * Zcbij[charging_from] * (1 + Zij[charging_from])
-        # calculate line currents on to bus side
-        line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
-                            * Zcbij).values
-        open_lines_to = self.net.switch.element.loc[
-            (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
-        line_currents_to[open_lines_to.values] = 0.
-        charging_to = open_lines_to[open_lines_to.index[
-            self.net.line.from_bus.loc[open_lines_to].values ==
-            self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
-                                                                   False)].values]].values
-        line_currents_to[charging_to] = V[self.net.line.ix[charging_to].to_bus] \
-                                        * Zcbij[charging_to] * (1 + Zij[charging_to])
-        # derive other values
-        line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
-        line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
-        self.net.res_line_est.i_from_ka = np.abs(line_currents_from) / 1e3
-        self.net.res_line_est.i_to_ka = np.abs(line_currents_to) / 1e3
-        self.net.res_line_est.i_ka = np.fmax(self.net.res_line_est.i_from_ka,
-                                         self.net.res_line_est.i_to_ka)
-        self.net.res_line_est.loading_percent = self.net.res_line_est.i_ka * 100. \
-                                                / self.net.line.imax_ka.values \
-                                                / self.net.line.df.values \
-                                                / self.net.line.parallel.values
-        self.net.res_line_est.p_from_kw = line_powers_from.real
-        self.net.res_line_est.q_from_kvar = line_powers_from.imag
-        self.net.res_line_est.p_to_kw = line_powers_to.real
-        self.net.res_line_est.q_to_kvar = line_powers_to.imag
-        self.net.res_line_est.pl_kw = self.net.res_line_est.p_from_kw + \
-                                      self.net.res_line_est.p_to_kw
-        self.net.res_line_est.ql_kvar = self.net.res_line_est.q_from_kvar + \
-                                        self.net.res_line_est.q_to_kvar
-
+if __name__ == "__main__":
+    from pandapower.test.estimation.test_wls_estimation import test_3bus
+    test_3bus()

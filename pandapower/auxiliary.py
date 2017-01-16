@@ -9,7 +9,6 @@ import numpy as np
 from collections import MutableMapping
 import six
 
-
 class ADict(dict, MutableMapping):
 
     def __init__(self, *args, **kwargs):
@@ -230,3 +229,170 @@ def get_values(source, selection, lookup):
     :return:
     """
     return np.array([source[lookup[k]] for k in selection])
+    
+def _select_is_elements(net, recycle=None):
+
+    """
+    Selects certain "in_service" elements from net.
+    This is quite time consuming so it is done once at the beginning
+
+
+    @param net: Pandapower Network
+    @return: is_elems Certain in service elements
+    """
+
+    if recycle is not None and recycle["is_elems"]:
+        if "_is_elems" not in net or net["_is_elems"] is None:
+            # sort elements according to their in service status
+            elems = ['bus', 'line']
+            for elm in elems:
+                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
+
+            # select in service buses. needed for the other elements to be selected
+            bus_is = net["bus"]["in_service"].values.astype(bool)
+            line_is = net["line"]["in_service"].values.astype(bool)
+            bus_is_ind = net["bus"][bus_is].index
+            # check if in service elements are at in service buses
+            is_elems = {
+                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                                  & net["gen"]["in_service"].values.astype(bool)]
+                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
+                          & net["load"].in_service.values.astype(bool)
+                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                          & net["sgen"].in_service.values.astype(bool)
+                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
+                          & net["ward"].in_service.values.astype(bool)
+                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
+                           & net["xward"].in_service.values.astype(bool)
+                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                           & net["shunt"].in_service.values.astype(bool)
+                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                                        & net["ext_grid"]["in_service"].values.astype(bool)]
+                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
+                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
+            }
+        else:
+            # just update the elements
+            is_elems = net['_is_elems']
+
+            bus_is_ind = is_elems['bus'].index
+            #update elements
+            elems = ['gen', 'ext_grid']
+            for elm in elems:
+                is_elems[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
+                                     & net[elm]["in_service"].values.astype(bool)]
+
+    else:
+        # select in service buses. needed for the other elements to be selected
+        bus_is = net["bus"]["in_service"].values.astype(bool)
+        line_is = net["line"]["in_service"].values.astype(bool)
+        bus_is_ind = net["bus"][bus_is].index
+        # check if in service elements are at in service buses
+        is_elems = {
+            "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                    & net["gen"]["in_service"].values.astype(bool)]
+            , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
+                    & net["load"].in_service.values.astype(bool)
+            , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                    & net["sgen"].in_service.values.astype(bool)
+            , "ward" : np.in1d(net["ward"].bus.values, bus_is_ind) \
+                    & net["ward"].in_service.values.astype(bool)
+            , "xward" : np.in1d(net["xward"].bus.values, bus_is_ind) \
+                    & net["xward"].in_service.values.astype(bool)
+            , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                    & net["shunt"].in_service.values.astype(bool)
+            , "ext_grid" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                    & net["ext_grid"]["in_service"].values.astype(bool)]
+            , 'bus': net['bus'][bus_is]
+            , 'line': net['line'][line_is]
+        }
+
+    return is_elems
+    
+def _clean_up(net):
+    if len(net["trafo3w"]) > 0:
+        buses_3w = net.trafo3w["ad_bus"].values
+        net["res_bus"].drop(buses_3w, inplace=True)
+        net["bus"].drop(buses_3w, inplace=True)
+        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+
+    if len(net["xward"]) > 0:
+        xward_buses = net["xward"]["ad_bus"].values
+        net["bus"].drop(xward_buses, inplace=True)
+        net["res_bus"].drop(xward_buses, inplace=True)
+        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+    
+    if len(net["dcline"]) > 0:
+        dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
+        net.gen.drop(dc_gens, inplace=True)
+        net.res_gen.drop(dc_gens, inplace=True)
+
+
+def _set_isolated_buses_out_of_service(net, ppc):
+    # set disconnected buses out of service
+    # first check if buses are connected to branches
+    disco = np.setxor1d(ppc["bus"][:, 0].astype(int),
+                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
+
+    # but also check if they may be the only connection to an ext_grid
+    disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
+    ppc["bus"][disco, 1] = 4
+
+
+def calculate_line_results(net, use_res_bus_est=False):
+    """
+    Calculates complex line currents, powers at both bus sides and saves them in the result table.
+    Requires the res_bus or res_bus_est table of the network to be filled.
+    :param net: pandapower network
+    :param use_res_bus_est: use res_bus_est dataframe instead of res_bus
+    :return: new dataframe, which can be assigned to either res_line or res_line_est
+    """
+    res_line = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw", "q_to_kvar", "pl_kw",
+                                     "ql_kvar", "i_from_ka", "i_to_ka", "i_ka", "loading_percent"],
+                            index=net.line.index)
+    # calculate impedances and complex voltages
+    Zij = net.line['length_km'] * (net.line['r_ohm_per_km'] + 1j * net.line['x_ohm_per_km'])
+    Zcbij = 0.5j * 2 * np.pi * 50 * net.line['c_nf_per_km'] * 1e-9
+    if use_res_bus_est:
+        V = net.res_bus_est.vm_pu * net.bus.vn_kv * 1e3 * np.exp(
+            1j * np.pi / 180 * net.res_bus_est.va_degree)
+    else:
+        V = net.res_bus.vm_pu * net.bus.vn_kv * 1e3 * np.exp(
+            1j * np.pi / 180 * net.res_bus.va_degree)
+    fb = net.line.from_bus
+    tb = net.line.to_bus
+    # calculate line currents of from bus side
+    line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
+                          * Zcbij).values
+    open_lines_from = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
+    line_currents_from[open_lines_from.values] = 0.
+    charging_from = open_lines_from[open_lines_from.index[
+        net.line.to_bus.loc[open_lines_from].values ==
+        net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
+    line_currents_from[charging_from] = V[net.line.ix[charging_from].from_bus].values \
+                                        * Zcbij[charging_from] * (1 + Zij[charging_from])
+    # calculate line currents on to bus side
+    line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
+                        * Zcbij).values
+    open_lines_to = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
+    line_currents_to[open_lines_to.values] = 0.
+    charging_to = open_lines_to[open_lines_to.index[
+        net.line.from_bus.loc[open_lines_to].values ==
+        net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
+    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus] * Zcbij[charging_to] \
+                                    * (1 + Zij[charging_to])
+    # derive other values
+    line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
+    line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
+    res_line.i_from_ka = np.abs(line_currents_from) / 1e3
+    res_line.i_to_ka = np.abs(line_currents_to) / 1e3
+    res_line.i_ka = np.fmax(res_line.i_from_ka, res_line.i_to_ka)
+    res_line.loading_percent = res_line.i_ka * 100. / net.line.imax_ka.values \
+                                       / net.line.df.values / net.line.parallel.values
+    res_line.p_from_kw = line_powers_from.real
+    res_line.q_from_kvar = line_powers_from.imag
+    res_line.p_to_kw = line_powers_to.real
+    res_line.q_to_kvar = line_powers_to.imag
+    res_line.pl_kw = res_line.p_from_kw + res_line.p_to_kw
+    res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
+    return res_line

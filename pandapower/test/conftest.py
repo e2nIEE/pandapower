@@ -7,7 +7,7 @@
 import pytest
 import pandapower as pp
 import numpy as np
-from pandapower.test.result_test_network_generator import result_test_network_generator
+from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 
 @pytest.fixture(scope="session")

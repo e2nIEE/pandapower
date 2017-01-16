@@ -1,0 +1,15 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the generator
+from_bus*;integer;;Index of bus where the dc line starts
+to_bus*;integer;;Index of bus where the dc line ends
+p_kw*;float;:math:`>` 0;Active power transmitted from 'from_bus' to 'to_bus'
+loss_percent*;float;:math:`>` 0;Relative transmission loss in percent of active power transmission
+loss_kw*;float;:math:`>` 0;Total transmission loss in kW
+vm_from_pu*;float;:math:`>` 0;Voltage setpoint at from bus
+vm_to_pu*;float;:math:`>` 0;Voltage setpoint at to bus
+max_p_kw**;float;:math:`>` 0;Maximum active power transmission
+min_q_from_kvar**;float;;Minimum reactive power at from bus
+max_q_from_kvar**;float;;Maximum reactive power at from bus
+min_q_to_kvar**;float;;Minimum reactive power at to bus
+max_q_to_kvar**;float;;Maximum reactive power at to bus
+in_service*;bool;True/False;specifies if DC line is in service

@@ -34,7 +34,11 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 25, 40
 
-\*necessary for executing a power flow calculation.
+.. |br| raw:: html
+
+   <br />
+   
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
 .. note::
 
@@ -69,7 +73,7 @@ The elements in the equivalent circuit are calculated from the parameters in the
 
    \begin{align*}
     \underline{Z} &= (r\_ohm\_per\_km + j \cdot x\_ohm\_per\_km) \cdot \frac{length\_km}{parallel}  \\
-    \underline{Y}&= j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^9 \cdot length\_km \cdot parallel
+    \underline{Y}&= j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^-9 \cdot length\_km \cdot parallel
    \end{align*}
     
 The power system frequency :math:`f` is defined when creating an empty network, the default value is :math:`f = 50 Hz`.
@@ -130,15 +134,3 @@ The state estimation results are put into *net.res_line_est* with the same defin
    :file: line_res.csv
    :delim: ;
    :widths: 15, 10, 55
-   
-
-Optimal Power Flow Parameters
-=============================
-
-The line loading constraint is an upper constraint for loading_percent.
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: line_opf.csv
-   :delim: ;
-   :widths: 10, 10, 40

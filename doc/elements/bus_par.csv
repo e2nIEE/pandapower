@@ -6,4 +6,6 @@ type;string;"| naming conventions:
 | *""b""* - busbar
 | *""m""* - muff";type variable to classify buses
 zone;string;;can be used to group buses, for example network groups / regions
+max_vm_pu**;float;:math:`>` 0;Maximum voltage
+min_vm_pu**;float;:math:`>` 0;Minimum voltage
 in_service*;boolean;True / False;specifies if the bus is in service.

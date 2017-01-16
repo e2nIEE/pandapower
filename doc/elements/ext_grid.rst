@@ -22,16 +22,11 @@ Input Parameters
    :delim: ;
    :widths: 15, 10, 15, 40
 
-\*necessary for executing a power flow calculation.
+.. |br| raw:: html
 
-*Optional Parameters*:
-
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: ext_grid_opt.csv
-   :delim: ;
-   :widths: 15, 10, 15, 40
-
+   <br />
+   
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
    
 Electric Model
 =================
@@ -76,14 +71,3 @@ Active and reactive power feed-in / consumption at the slack node is a result of
 .. note::
 
    All power values are given in the consumer system, therefore p_kw is positive if the external grid is absorbing power and negative if it is supplying power.
-   
-Optimal Power Flow Parameters
-=============================
-
-An external grid is not considered as a flexibility for the optimal power flow. The voltage setpoint can not be changed by the optimal power flow. Still, costs can be defined for an external grid:
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-    :file: ext_grid_opf.csv
-    :delim: ;
-    :widths: 10, 10, 40

@@ -22,7 +22,6 @@ def create_std_type(net, data, name, element="line", overwrite=True):
     The standard type is saved into the pandapower library of the given network by default.
 
     INPUT:
-
         **net** - The pandapower network
 
         **data** - dictionary of standard type parameters
@@ -63,7 +62,6 @@ def create_std_types(net, data, element="line", overwrite=True):
     Creates multiple standard types in the type database.
 
     INPUT:
-
         **net** - The pandapower network
 
         **data** - dictionary of standard type parameter sets
@@ -113,7 +111,6 @@ def load_std_type(net, name, element="line"):
         **element** - "line" or "trafo"
 
     OUTPUT:
-
         **typedata** - dictionary containing type data
     """
     library = net.std_types[element]
@@ -135,7 +132,6 @@ def std_type_exists(net, name, element="line"):
         **element** - type of element ("line" or "trafo")
 
     OUTPUT:
-
         **exists** - True if standard type exists, False otherwise
     """
     library = net.std_types[element]
@@ -163,7 +159,7 @@ def delete_std_type(net, name, element="line"):
 
 def available_std_types(net, element="line"):
     """
-    Returns the all standard types available for this network as a table.
+    Returns all standard types available for this network as a table.
 
     INPUT:
         **net** - Pandapower Network
@@ -171,7 +167,6 @@ def available_std_types(net, element="line"):
         **element** - type of element ("line" or "trafo")
 
     OUTPUT:
-
         **typedata** - table of standard type parameters
 
     """
@@ -246,7 +241,6 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
         **epsilon** - tolerance margin for parameter comparison
 
     OUTPUT:
-
         **fitting_types** - list of fitting types or empty list
     """
     assert epsilon >= 0

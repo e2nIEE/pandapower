@@ -11,3 +11,4 @@ pandapower provides an AC powerflow, DC powerflow and an OPF.
     ac
     dc
     opf
+    dcopf

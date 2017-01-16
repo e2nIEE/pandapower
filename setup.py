@@ -7,20 +7,27 @@
 
 from setuptools import setup, find_packages
 
+with open('README.rst', 'rb') as f:
+    install = f.read().decode('utf-8').partition("Minimal Example")[0]
+with open('CHANGELOG.rst', 'rb') as f:
+    changelog = f.read().decode('utf-8')
+
+long_description = '\n\n'.join((install, changelog))
+
 setup(
     name='pandapower',
-    version='1.1.0',
+    version='1.1.1',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
+    long_description = long_description,
     url='http://www.uni-kassel.de/go/pandapower',
     license='BSD',
     install_requires=["pypower>=5.0.1",
-                      "numpy>1.8",
+                      "numpy",
                       "scipy",
                       "pandas",
-                      "networkx",
-                      "numba>=0.25.0"],
+                      "networkx"],
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
