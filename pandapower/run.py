@@ -189,8 +189,8 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 
     if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
-        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, 
-                                            enforce_q_lims, trafo_model)
+        ppc, ppci = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
+                                            trafo_model)
     else:
         # convert pandapower net to ppc
         ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
