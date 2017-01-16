@@ -16,7 +16,7 @@ from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import get_values
 
 
-def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, trafo_model,
+def _build_branch_ppc(net, ppc, is_elems, calculate_voltage_angles, trafo_model,
                       copy_constraints_to_ppc=False):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
@@ -46,31 +46,32 @@ def _build_branch_ppc(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, 
 
     if line_end > 0:
         ppc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, RATE_A]] = \
-            _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc)
+            _calc_line_parameter(net, ppc, copy_constraints_to_ppc)
     if trafo_end > line_end:
         ppc["branch"][line_end:trafo_end,
                       [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
-            _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles,
+            _calc_trafo_parameter(net, ppc, calculate_voltage_angles,
                                   trafo_model, copy_constraints_to_ppc)
     if trafo3w_end > trafo_end:
         ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
-            _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles,  trafo_model)
+            _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles,  trafo_model)
     if impedance_end > trafo3w_end:
         ppc["branch"][trafo3w_end:impedance_end, [F_BUS, T_BUS, BR_R, BR_X, 17, 18, BR_STATUS]] = \
-            _calc_impedance_parameter(net, bus_lookup)
+            _calc_impedance_parameter(net)
     if xward_end > impedance_end:
         ppc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
-            _calc_xward_parameter(net, ppc, is_elems, bus_lookup)
+            _calc_xward_parameter(net, ppc, is_elems)
 
 
-def _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model):
+def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     trafo_df = _trafo_df_from_trafo3w(net)
 
     temp_para = np.zeros(shape=(len(trafo_df), 8), dtype=np.complex128)
     temp_para[:, 0] = bus_lookup[(trafo_df["hv_bus"].values).astype(int)]
     temp_para[:, 1] = bus_lookup[(trafo_df["lv_bus"].values).astype(int)]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(
-        net, ppc, bus_lookup, trafo_model, trafo_df)
+        net, ppc, trafo_model, trafo_df)
     if calculate_voltage_angles:
         temp_para[:, 6] = trafo_df["shift_degree"].values
     else:
@@ -79,7 +80,7 @@ def _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles, traf
     return temp_para
 
 
-def _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc=False):
+def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
     """
     calculates the line parameter in per unit.
 
@@ -91,7 +92,7 @@ def _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc=False):
                 Nunmpy array. with the following order:
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
-
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # baseR converts Ohm to p.u. Formula is U^2/Sref. Sref is 1 MVA and vn_kv is
     # in kV U^2* ((10^3 V)^2/10^6 VA) = U^2
     # Therefore division by 1 MVA is not necessary.
@@ -117,7 +118,7 @@ def _calc_line_parameter(net, ppc, bus_lookup, copy_constraints_to_ppc=False):
     return t
 
 
-def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model,
+def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
                           copy_constraints_to_ppc=False):
     '''
     Calculates the transformer parameter in per unit.
@@ -131,11 +132,12 @@ def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_
         Numpy array. with the following order:
         0:hv_bus; 1:lv_bus; 2:r_pu; 3:x_pu; 4:b_pu; 5:tab, 6:shift
     '''
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
     trafo = net["trafo"]
     temp_para[:, 0] = bus_lookup[trafo["hv_bus"].values]
     temp_para[:, 1] = bus_lookup[trafo["lv_bus"].values]
-    temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model)
+    temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, ppc, trafo_model)
     if calculate_voltage_angles:
         temp_para[:, 6] = trafo["shift_degree"].values
     else:
@@ -147,7 +149,7 @@ def _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles, trafo_
     return temp_para
 
 
-def _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model, trafo_df=None):
+def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, trafo_df=None):
     """
     Calculates the MAT/PYPOWER-branch-attributes from the pandapower trafo dataframe.
 
@@ -180,6 +182,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, bus_lookup, trafo_model, trafo_d
                         0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
 
     """
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]
     vn_lv = get_values(ppc["bus"][:, BASE_KV], trafo_df["lv_bus"].values, bus_lookup)
@@ -400,7 +403,8 @@ def _trafo_df_from_trafo3w(net):
     return trafo_df
 
 
-def _calc_impedance_parameter(net, bus_lookup):
+def _calc_impedance_parameter(net):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     t = np.zeros(shape=(len(net["impedance"].index), 7), dtype=np.complex128)
     sn = net["impedance"]["sn_kva"] / 1e3
     rij = net["impedance"]["rft_pu"]
@@ -417,7 +421,8 @@ def _calc_impedance_parameter(net, bus_lookup):
     return t
 
 
-def _calc_xward_parameter(net, ppc, is_elems, bus_lookup):
+def _calc_xward_parameter(net, ppc, is_elems):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = is_elems["xward"]
@@ -443,7 +448,7 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
         return is_to_bus, bus, net["trafo"].index.get_loc(branch_id)
 
 
-def _switch_branches(n, ppc, is_elems, bus_lookup):
+def _switch_branches(net, ppc, is_elems):
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     according of the status of switches
@@ -453,17 +458,17 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
 
         **ppc** - The PYPOWER format network to fill in values
     """
-
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     lines_is = is_elems['line']
     bus_is = is_elems['bus']
 
     # opened bus line switches
-    slidx = (n["switch"]["closed"].values == 0) \
-        & (n["switch"]["et"].values == "l")
+    slidx = (net["switch"]["closed"].values == 0) \
+        & (net["switch"]["et"].values == "l")
 
     # check if there are multiple opened switches at a line (-> set line out of service)
-    sw_elem = n['switch'].ix[slidx].element
+    sw_elem = net['switch'].ix[slidx].element
     m = np.zeros_like(sw_elem, dtype=bool)
     m[np.unique(sw_elem, return_index=True)[1]] = True
 
@@ -489,11 +494,11 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
 
     # opened switches at in service lines
     slidx = slidx\
-        & (np.in1d(n["switch"]["element"].values, lines_is.index)) \
-        & (np.in1d(n["switch"]["bus"].values, bus_is.index))
+        & (np.in1d(net["switch"]["element"].values, lines_is.index)) \
+        & (np.in1d(net["switch"]["bus"].values, bus_is.index))
     nlo = np.count_nonzero(slidx)
 
-    stidx = (n.switch["closed"].values == 0) & (n.switch["et"].values == "t")
+    stidx = (net.switch["closed"].values == 0) & (net.switch["et"].values == "t")
     nto = np.count_nonzero(stidx)
 
     if (nlo + nto) > 0:
@@ -501,10 +506,10 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
 
         if nlo:
             future_buses = [ppc["bus"]]
-            line_switches = n["switch"].loc[slidx]
+            line_switches = net["switch"].loc[slidx]
 
             # determine on which side the switch is located
-            mapfunc = partial(_gather_branch_switch_info, branch_type="l", net=n)
+            mapfunc = partial(_gather_branch_switch_info, branch_type="l", net=net)
             ls_info = list(map(mapfunc,
                                line_switches["bus"].values,
                                line_switches["element"].values))
@@ -546,10 +551,10 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
 
         if nto:
             future_buses = [ppc["bus"]]
-            trafo_switches = n["switch"].loc[stidx]
+            trafo_switches = net["switch"].loc[stidx]
 
             # determine on which side the switch is located
-            mapfunc = partial(_gather_branch_switch_info, branch_type="t", net=n)
+            mapfunc = partial(_gather_branch_switch_info, branch_type="t", net=net)
             ts_info = list(map(mapfunc,
                                trafo_switches["bus"].values,
                                trafo_switches["element"].values))
@@ -591,15 +596,15 @@ def _switch_branches(n, ppc, is_elems, bus_lookup):
             # (trafo entries follow line entries)
             at_lv_bus = ts_info[:, 0].astype(bool)
             at_hv_bus = ~at_lv_bus
-            ppc["branch"][len(n.line) + ts_info[at_lv_bus, 2], 1] = \
+            ppc["branch"][len(net.line) + ts_info[at_lv_bus, 2], 1] = \
                 new_indices[at_lv_bus]
-            ppc["branch"][len(n.line) + ts_info[at_hv_bus, 2], 0] = \
+            ppc["branch"][len(net.line) + ts_info[at_hv_bus, 2], 0] = \
                 new_indices[at_hv_bus]
 
             ppc["bus"] = np.vstack(future_buses)
 
 
-def _branches_with_oos_buses(n, ppc, is_elems, bus_lookup):
+def _branches_with_oos_buses(net, ppc, is_elems):
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     if the branch is connected to an out of service bus
@@ -612,21 +617,20 @@ def _branches_with_oos_buses(n, ppc, is_elems, bus_lookup):
 
         **ppc** - The PYPOWER format network to fill in values
         **bus_is** - The in service buses
-        **bus_lookup** - Lookup table for pandapower indices -> ppc indices
     """
-
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     bus_is = is_elems['bus']
     line_is = is_elems['line']
 
-    n_oos_buses = len(n['bus']) - len(bus_is)
+    n_oos_buses = len(net['bus']) - len(bus_is)
 
     # only filter lines at oos buses if oos buses exists
     if n_oos_buses > 0:
         n_bus = len(ppc["bus"])
         future_buses = [ppc["bus"]]
         # out of service buses
-        bus_oos = n['bus'].drop(bus_is.index).index
+        bus_oos = net['bus'].drop(bus_is.index).index
         # from buses of line
         f_bus = line_is.from_bus.values
         t_bus = line_is.to_bus.values
@@ -657,7 +661,7 @@ def _branches_with_oos_buses(n, ppc, is_elems, bus_lookup):
             ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
-            ls_info[:, 2] = np.nonzero(np.in1d(n['line'].index, line_is.index[mask_or]))[0]
+            ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is.index[mask_or]))[0]
 
             # ls_info = list(map(mapfunc,
             #               line_switches["bus"].values,
@@ -687,13 +691,12 @@ def _branches_with_oos_buses(n, ppc, is_elems, bus_lookup):
             ppc["bus"] = np.vstack(future_buses)
 
 
-def _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, trafo_model,copy_constraints_to_ppc=False):
+def _update_trafo_trafo3w_ppc(net, ppc, calculate_voltage_angles, trafo_model,copy_constraints_to_ppc=False):
     """
     Updates the trafo and trafo3w values when reusing the ppc between two powerflows
 
     :param net: pandapower net
     :param ppc: pypower format
-    :param bus_lookup: lookup pandapower -> pypower
     :return: ppc with updates values
     """
     line_end = len(net["line"])
@@ -703,8 +706,8 @@ def _update_trafo_trafo3w_ppc(net, ppc, bus_lookup, calculate_voltage_angles, tr
     if trafo_end > line_end:
         ppc["branch"][line_end:trafo_end,
                       [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
-            _calc_trafo_parameter(net, ppc, bus_lookup, calculate_voltage_angles,
+            _calc_trafo_parameter(net, ppc, calculate_voltage_angles,
                                   trafo_model, copy_constraints_to_ppc)
     if trafo3w_end > trafo_end:
         ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
-            _calc_trafo3w_parameter(net, ppc, bus_lookup, calculate_voltage_angles,  trafo_model)
+            _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles,  trafo_model)

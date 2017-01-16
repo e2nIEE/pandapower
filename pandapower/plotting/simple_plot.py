@@ -5,9 +5,11 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import matplotlib.pyplot as plt
+
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
                                             create_trafo_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+
 try:
     import pplog as logging
 except:
@@ -91,7 +93,10 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
     tc = create_trafo_collection(net, net.trafo.index, color=trafo_color) if len(net.trafo) else None
 
     draw_collections([lc, bc, tc, sc])
+
     plt.show()
+
+
 
 if __name__ == "__main__":
     simple_plot()

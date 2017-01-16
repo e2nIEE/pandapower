@@ -182,18 +182,17 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net, recycle)
 
-    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_bus_lookup" in net:
+    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
         ppc, ppci, bus_lookup = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
                                             trafo_model)
     else:
         # convert pandapower net to ppc
-        ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
+        ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
                                         trafo_model, init_results=(init == "results"))
 
     # store variables
     net["_ppc"] = ppc
-    net["_bus_lookup"] = bus_lookup
     net["_is_elems"] = is_elems
 
     if not "VERBOSE" in kwargs:
@@ -204,6 +203,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
 
     # raise if PF was not successful. If DC -> success is always 1
@@ -213,7 +213,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, is_elems, bus_lookup, trafo_loading, ac)
+    _extract_results(net, result, is_elems, trafo_loading, ac)
     _clean_up(net)
 
 
@@ -316,7 +316,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net)
 
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
+    ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
                                     opf=True, cost_function=cost_function, 
                                     calculate_voltage_angles=False)
     if not ac:
@@ -334,9 +334,10 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, is_elems, bus_lookup, "current", True, ac)
+    _extract_results_opf(net, result, is_elems, "current", True, ac)
     _clean_up(net)

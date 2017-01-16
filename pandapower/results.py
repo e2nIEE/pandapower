@@ -13,7 +13,7 @@ from pypower.idx_gen import PG, QG, GEN_BUS
 
 from pandapower.auxiliary import _sum_by_group
 
-def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
+def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
                      ac=True):
 
     _set_buses_out_of_service(ppc)
@@ -22,6 +22,7 @@ def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_volta
     maxBus = max(net["bus"].index.values)
     bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
     bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     bus_pq = _get_p_q_results(net, bus_lookup_aranged, is_elems, ac)
     _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac)
@@ -30,12 +31,12 @@ def _extract_results(net, ppc, is_elems, bus_lookup, trafo_loading, return_volta
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
-def _extract_results_opf(net, ppc, is_elems, bus_lookup, trafo_loading, return_voltage_angles,
+def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angles,
                          ac):
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
-
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
     bus_lookup_aranged = -ones(maxBus + 1, dtype=int)
@@ -156,76 +157,16 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
                                   ac)
 
-def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus, 
+def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
                      return_voltage_angles, ac=True):
-    # get in service elements
-    gen_is = is_elems['gen']
-    eg_is = is_elems['ext_grid']
-
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])
 
-    # get results for external grids
-    # bus index of in service egs
-    gidx = eg_is.bus.values
-    n_res_eg = len(net['ext_grid'])
-    # indices of in service gens in the ppc
-    gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], bus_lookup[eg_is["bus"].values])
-    # mask for indices of in service gens in net['res_gen']
-    idx_eg = np.in1d(net['ext_grid'].bus, gidx)
-    # read results from ppc for these buses
-    p = np.zeros(n_res_eg)
-    p[idx_eg] = -ppc["gen"][gidx_ppc, PG] * 1e3
-    # store result in net['res']
-    net["res_ext_grid"]["p_kw"] = p
-
-    # if ac PF q results are also available
-    if ac:
-        q = np.zeros(n_res_eg)
-        q[idx_eg] = -ppc["gen"][gidx_ppc, QG] * 1e3
-        net["res_ext_grid"]["q_kvar"] = q
-
-    # get bus values for pq_bus
-    b = net['ext_grid'].bus.values
-    # copy index for results
-    net["res_ext_grid"].index = net['ext_grid'].index
+    b, p, q = _get_ext_grid_results(net, ppc, is_elems, ac)
 
     # get results for gens
     if gen_end > eg_end:
-
-        # bus index of in service gens
-        gidx = gen_is.bus.values
-        n_res_gen = len(net['gen'])
-
-        b = np.hstack([b, net['gen'].bus.values])
-
-        # indices of in service gens in the ppc
-        gidx_ppc = np.searchsorted(ppc['gen'][:, GEN_BUS], bus_lookup[gen_is["bus"].values])
-        # mask for indices of in service gens in net['res_gen']
-        idx_gen = np.in1d(net['gen'].bus, gidx)
-
-        # read results from ppc for these buses
-        p_gen = np.zeros(n_res_gen)
-        p_gen[idx_gen] = -ppc["gen"][gidx_ppc, PG] * 1e3
-        if ac:
-            q_gen = np.zeros(n_res_gen)
-            q_gen[idx_gen] = -ppc["gen"][gidx_ppc, QG] * 1e3
-
-        v_pu = np.zeros(n_res_gen)
-        v_pu[idx_gen] = ppc["bus"][gidx_ppc][:, VM]
-        net["res_gen"]["vm_pu"] = v_pu
-        if return_voltage_angles:
-            v_a = np.zeros(n_res_gen)
-            v_a[idx_gen] = ppc["bus"][gidx_ppc][:, VA]
-            net["res_gen"]["va_degree"] = v_a
-        net["res_gen"].index = net['gen'].index
-
-        # store result in net['res']
-        p = np.hstack([p, p_gen])
-        net["res_gen"]["p_kw"] = p_gen
-        if ac:
-            q = np.hstack([q, q_gen])
-            net["res_gen"]["q_kvar"] = q_gen
+        b, p, q = _get_pp_gen_results(net, ppc, is_elems, ac, return_voltage_angles, b, p, q)
 
     if len(net.dcline) > 0:
         _get_dcline_results(net)
@@ -240,8 +181,79 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
     pq_bus[b, 0] += p_sum
     pq_bus[b, 1] += q_sum
 
+def _get_ext_grid_results(net, ppc, is_elems, ac):
 
-        
+    eg_is = is_elems['ext_grid']
+    ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
+    # get results for external grids
+    # bus index of in service egs
+    gidx = eg_is.bus.values
+    n_res_eg = len(net['ext_grid'])
+    # indices of in service gens in the ppc
+    gen_idx_ppc = ext_grid_lookup[eg_is.index]
+    # mask for indices of in service gens in net['res_gen']
+    idx_eg = np.in1d(net['ext_grid'].bus, gidx)
+    # read results from ppc for these buses
+    p = np.zeros(n_res_eg)
+    q = np.zeros(n_res_eg)
+    p[idx_eg] = -ppc["gen"][gen_idx_ppc, PG] * 1e3
+    # store result in net['res']
+    net["res_ext_grid"]["p_kw"] = p
+
+    # if ac PF q results are also available
+    if ac:
+        q[idx_eg] = -ppc["gen"][gen_idx_ppc, QG] * 1e3
+        net["res_ext_grid"]["q_kvar"] = q
+
+    # get bus values for pq_bus
+    b = net['ext_grid'].bus.values
+    # copy index for results
+    net["res_ext_grid"].index = net['ext_grid'].index
+
+    return b, p, q
+
+
+def _get_pp_gen_results(net, ppc, is_elems, ac, return_voltage_angles, b, p, q):
+
+    gen_is = is_elems['gen']
+    gen_lookup = net["_pd2ppc_lookups"]["gen"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    # bus index of in service gens
+    gidx = gen_is.bus.values
+    n_res_gen = len(net['gen'])
+
+    b = np.hstack([b, net['gen'].bus.values])
+
+    # indices of in service gens in the ppc
+    gen_idx_ppc = gen_lookup[gen_is.index]
+    bus_idx_ppc = bus_lookup[gen_is["bus"].values]
+    # mask for indices of in service gens in net['res_gen']
+    idx_gen = np.in1d(net['gen'].bus, gidx)
+
+    # read results from ppc for these buses
+    p_gen = np.zeros(n_res_gen)
+    p_gen[idx_gen] = -ppc["gen"][gen_idx_ppc, PG] * 1e3
+    if ac:
+        q_gen = np.zeros(n_res_gen)
+        q_gen[idx_gen] = -ppc["gen"][gen_idx_ppc, QG] * 1e3
+
+    v_pu = np.zeros(n_res_gen)
+    v_pu[idx_gen] = ppc["bus"][bus_idx_ppc][:, VM]
+    net["res_gen"]["vm_pu"] = v_pu
+    if return_voltage_angles:
+        v_a = np.zeros(n_res_gen)
+        v_a[idx_gen] = ppc["bus"][bus_idx_ppc][:, VA]
+        net["res_gen"]["va_degree"] = v_a
+    net["res_gen"].index = net['gen'].index
+
+    # store result in net['res']
+    p = np.hstack([p, p_gen])
+    net["res_gen"]["p_kw"] = p_gen
+    if ac:
+        q = np.hstack([q, q_gen])
+        net["res_gen"]["q_kvar"] = q_gen
+
+    return b, p, q
 
 
 def _get_dcline_results(net):
