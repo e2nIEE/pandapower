@@ -12,7 +12,6 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
-from pandapower.create import create_gen
 
 def _build_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc=False, opf=False):
@@ -39,10 +38,7 @@ def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
         **ppc** - The PYPOWER format network to fill in values
     '''
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    
-    if len(net.dcline) > 0:
-        add_dcline_gens(net, copy_constraints_to_ppc)
-        is_elems["gen"] = net.gen[net.gen.in_service==True]
+
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -154,9 +150,7 @@ def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     
     if len(net.dcline) > 0:
-        add_dcline_gens(net, copy_constraints_to_ppc=True)
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
-        is_elems["gen"] = net.gen[net.gen.in_service==True]
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -317,16 +311,3 @@ def _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default
     ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
     ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
-def add_dcline_gens(net, copy_constraints_to_ppc):
-    for _, dctab in net.dcline.iterrows():
-        pfrom = dctab.p_kw
-        pto = - (pfrom* (1 - dctab.loss_percent / 100) - dctab.loss_kw)
-        pmax = dctab.max_p_kw if copy_constraints_to_ppc else np.nan
-        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
-                   min_p_kw=-pmax, max_p_kw=0., 
-                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
-                   in_service=dctab.in_service, cost_per_kw=0.)
-        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
-                   min_p_kw=0, max_p_kw=pmax, 
-                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
-                   in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)

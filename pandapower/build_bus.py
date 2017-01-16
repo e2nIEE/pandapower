@@ -34,15 +34,6 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_p
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
-
-    # add additional xward and trafo3w buses
-    if len(net["trafo3w"]) > 0:
-        # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
-        _create_trafo3w_buses(net, init_results)
-    if len(net["xward"]) > 0:
-        # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
-        _create_xward_buses(net, init_results)
-
     # get bus indices
     bus_index = net["bus"].index.values
     n_bus = len(bus_index)
@@ -273,29 +264,3 @@ def _calc_shunts_and_add_on_ppc(net, ppc, is_elems):
         ppc["bus"][b, BS] = -vq
 
 
-def _create_xward_buses(net, init_results):
-    from pandapower.create import create_buses
-    main_buses = net.bus.loc[net.xward.bus.values]
-    bid = create_buses(net, nr_buses=len(main_buses),
-                       vn_kv=main_buses.vn_kv.values,
-                       in_service=net["xward"]["in_service"].values)
-    net.xward["ad_bus"] = bid
-    if init_results:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(main_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
-
-
-def _create_trafo3w_buses(net, init_results):
-    from pandapower.create import create_buses
-    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
-    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
-                       vn_kv=hv_buses.vn_kv.values,
-                       in_service=net.trafo3w.in_service.values)
-    net.trafo3w["ad_bus"] = bid
-    if init_results:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(hv_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
