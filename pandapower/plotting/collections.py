@@ -10,6 +10,7 @@ from matplotlib.patches import Circle, Rectangle, RegularPolygon
 import matplotlib.pyplot as plt
 import copy
 
+
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           cmap=None, norm=None, infofunc=None, **kwargs):
     """
@@ -21,7 +22,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                
     Optional:
     
-        **buses** (list, None) - The buses for which the collections are created. If None, all buses in the network are considered.
+        **buses** (list, None) - The buses for which the collections are created.
+                                 If None, all buses in the network are considered.
 
         **size** (int, 5) - patch size
 
@@ -45,6 +47,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         
     """
     buses = net.bus.index.tolist() if buses is None else list(buses)
+    if len(buses) == 0:
+        return None
     patches = []
     infos = []
     def figmaker(x, y, i):
@@ -110,6 +114,8 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
     """
     if lines is None:
         lines = net.line.index
+    if len(lines) == 0:
+        return None
     if use_line_geodata:
         data = [(net.line_geodata.coords.loc[line],
                  infofunc(line) if infofunc else [])
