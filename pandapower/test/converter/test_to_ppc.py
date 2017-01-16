@@ -43,7 +43,7 @@ def test_to_ppc():
 
         if status_converted_pp and status_pypower:
             # get lookup pp2ppc
-            bus_lookup = net['_bus_lookup']
+            bus_lookup = net["_pd2ppc_lookups"]["bus"]
             # check for equality in bus voltages
             pp_buses = bus_lookup[res_converted_pp['bus'][:, BUS_I].astype(int)]
             assert np.allclose(res_converted_pp['bus'][pp_buses, VM:VA + 1],
