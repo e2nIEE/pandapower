@@ -252,73 +252,57 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def equal_nets(x, y, check_only_results=False, tol=1.e-14):
+def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     """
-    Compares two networks. The networks are considered equal
+    Compares the DataFrames of two networks. The networks are considered equal
     if they share the same keys and values, except of the
     'et' (elapsed time) entry which differs depending on
     runtime conditions and entries stating with '_'.
     """
     eq = True
-    eq_count = 0
-    if isinstance(x, dict) or isinstance(x, PandapowerNet) and \
-            isinstance(y, dict) or isinstance(y, PandapowerNet):
+    not_equal = []
 
+    if isinstance(x, PandapowerNet) and isinstance(y, PandapowerNet):
         # for two networks make sure both have the same keys ...
         if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
             logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
             return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for k in [k for k in x.keys() if(k != 'et' and not k.startswith("_"))]:
-            if check_only_results and not k.startswith("res_"):
-                continue  # skip anything thats not a result table
+        for df_name in x.keys():
+            # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
+            if (df_name != 'et' and not df_name.startswith("_")):
+                if check_only_results and not df_name.startswith("res_"):
+                    continue  # skip anything that is not a result table
 
-            eq = equal_nets(x[k], y[k], check_only_results, tol)
+                if isinstance(x[df_name], pd.DataFrame) and isinstance(y[df_name], pd.DataFrame):
+                    frames_equal = dataframes_equal(x[df_name], y[df_name], tol)
+                    eq &= frames_equal
 
-            # counts the mismatches and creates a list to print
-            if not eq:
-                if eq_count == 0:
-                    logger_str = "Mismatch(es) at table(s): %s" % k
-                else:
-                    logger_str = logger_str + ", %s" % k
-                eq_count += 1
+                    if not frames_equal:
+                        not_equal.append(df_name)
 
-        if eq_count:
-            logger.info(logger_str)
-            return False
-    else:
-        if isinstance(x, pd.DataFrame) and isinstance(y, pd.DataFrame):
-            # for two DataFrames eval if all entries are equal
-            if len(x) != len(y):
-                logger.info("The number of elements of differ.")
-                return False
+    if len(not_equal) > 0:
+        logger.info("Networks do not match in DataFrame(s): %s"%(', '.join(not_equal)))
 
-            if len(x.dtypes) != len(y.dtypes):
-                logger.info("The number of columns of differ.")
-                return False
-
-            # we use numpy.allclose to grant a tolerance
-            numerical_equal = np.allclose(x.select_dtypes(include=[np.number]),
-                                          y.select_dtypes(include=[np.number]),
-                                          atol=tol, equal_nan=True)
-
-            # we use pandas equals for the rest, which also evaluates NaNs to be equal
-            rest_equal = x.select_dtypes(exclude=[np.number]).equals(
-                y.select_dtypes(exclude=[np.number]))
-
-            eq &= numerical_equal & rest_equal
-        else:
-            # else items are assumed to be single values, compare them
-            if isinstance(x, numbers.Number):
-                eq &= np.isclose(x, y, atol=tol)
-            else:
-                eq &= x == y
-
-            # Note: if we deal with HDFStores we might encounter a problem here:
-            # empty DataFrames are stored as None to HDFStore so we might be
-            # comparing None to an empty DataFrame
     return eq
+
+
+def dataframes_equal(x_df, y_df, tol=1.e-14):
+    # eval if two DataFrames are equal, with regard to a tolerance
+    if len(x_df) == len(y_df) and len(x_df.columns) == len(y_df.columns):
+        # we use numpy.allclose to grant a tolerance on numerical values
+        numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
+                                      y_df.select_dtypes(include=[np.number]),
+                                      atol=tol, equal_nan=True)
+
+        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
+        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
+            y_df.select_dtypes(exclude=[np.number]))
+
+        return numerical_equal & rest_equal
+    else:
+        return False
 
 
 # --- Simulation setup and preparations
