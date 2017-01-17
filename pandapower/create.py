@@ -191,7 +191,8 @@ def create_empty_network(name=None, f_hz=50.):
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
                   ("in_service", "bool")],
-        "measurement": [("type", np.dtype(object)),
+        "measurement": [("name", np.dtype(object)),
+                        ("type", np.dtype(object)),
                         ("element_type", np.dtype(object)),
                         ("value", "f8"),
                         ("std_dev", "f8"),
@@ -1731,6 +1732,7 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     return index
 
+
 def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
                   index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan,
                   min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan,
@@ -1756,10 +1758,10 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     # store dtypes
     dtypes = net.dcline.dtypes
 
-    net.dcline.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
-                       "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
-                       "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
-                       "in_service"]]\
+    net.dcline.loc[index, ["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
+                           "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
+                           "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
+                           "in_service"]]\
         = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
            max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, cost_per_kw,
            in_service]
@@ -1769,7 +1771,7 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
 
 def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
-                       check_existing=True, index=None):
+                       check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i
@@ -1795,6 +1797,8 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     OPTIONAL:
         **check_existing** - (bool) Check for and replace existing measurements for this bus and
         type. Set it to false for performance improvements which can cause unsafe behaviour.
+
+        **name** - (str, None) name of measurement.
 
     RETURN:
         (int) Index of measurement
