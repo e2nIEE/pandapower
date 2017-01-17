@@ -323,6 +323,8 @@ def convert_format(net):
         else:
             raise UserWarning("The measurement structure seems outdated. Please adjust it "
                               "according to the documentation.")
+    if "measurement" in net and "name" not in net.measurement:
+        net.measurement["name"] = None
     if "measurement" not in net:
         net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                              ("type", np.dtype(object)),
