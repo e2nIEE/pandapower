@@ -324,7 +324,8 @@ def convert_format(net):
             raise UserWarning("The measurement structure seems outdated. Please adjust it "
                               "according to the documentation.")
     if "measurement" not in net:
-        net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+        net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                             ("type", np.dtype(object)),
                                                              ("element_type", np.dtype(object)),
                                                              ("value", "f8"),
                                                              ("std_dev", "f8"),
@@ -347,14 +348,14 @@ def convert_format(net):
                                                         ("in_service", 'bool')]))
     if "_empty_res_dcline" not in net:
         net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                    ("q_from_kvar", "f8"),
-                                                                    ("p_to_kw", "f8"),
-                                                                    ("q_to_kvar", "f8"),
-                                                                    ("pl_kw", "f8"),
-                                                                    ("vm_from_pu", "f8"),
-                                                                    ("va_from_degree", "f8"),                            
-                                                                    ("vm_to_pu", "f8"),
-                                                                    ("va_to_degree", "f8")]))
+                                                                   ("q_from_kvar", "f8"),
+                                                                   ("p_to_kw", "f8"),
+                                                                   ("q_to_kvar", "f8"),
+                                                                   ("pl_kw", "f8"),
+                                                                   ("vm_from_pu", "f8"),
+                                                                   ("va_from_degree", "f8"),
+                                                                   ("vm_to_pu", "f8"),
+                                                                   ("va_to_degree", "f8")]))
     if not "version" in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
@@ -364,6 +365,7 @@ def convert_format(net):
                 net.gen["max_p_kw"] = pmin
     net.version = 1.1
     return net
+
 
 def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
