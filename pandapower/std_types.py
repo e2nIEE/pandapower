@@ -216,7 +216,6 @@ def change_std_type(net, eid, name, element="line"):
 
         **name** - name of the new standard type
 
-        **element** - type of element ("line" or "trafo")
     """
     type_param = load_std_type(net, name, element)
     table = net[element]
