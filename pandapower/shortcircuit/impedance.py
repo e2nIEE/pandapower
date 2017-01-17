@@ -19,7 +19,8 @@ from pypower.idx_bus import GS, BS
 
 def calc_equiv_sc_impedance(net, case):
     is_elems = _select_is_elements(net)
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems)
+    ppc, ppci = _pd2ppc(net, is_elems)
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     correct_branch_impedances(net, case, ppci, bus_lookup)
     if len(net.ext_grid) > 0:
         add_ext_grid_admittance_to_ppc(net, case, ppci, bus_lookup)

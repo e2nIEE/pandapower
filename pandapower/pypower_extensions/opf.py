@@ -167,8 +167,6 @@ def opf(*args):
 
     ##-----  construct OPF model object  -----
     om = opf_setup(ppc, ppopt)
-    if "dcline" in ppc:
-        add_dcline_constraints(om)
 
     ##-----  execute the OPF  -----
     results, success, raw = opf_execute(om, ppopt)
@@ -191,19 +189,3 @@ def opf(*args):
     results['raw'] = raw
 
     return results
-
-def add_dcline_constraints(om):
-    from numpy import hstack, diag, eye, zeros
-    from scipy.sparse import csr_matrix as sparse
-    ppc = om.get_ppc()
-    dc = ppc['dcline']
-    ndc = dc.shape[0]              ## number of in-service DC lines
-    ng  = ppc['gen'].shape[0] - 2 * ndc  ## number of original gens/disp loads
-
-    ## constraints
-    nL0 = -dc[:, 0] * 1e-3 #absolute losses
-    L1  = -dc[:, 1] * 1e-2 #relative losses
-    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
-
-    ## add them to the model
-    om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])

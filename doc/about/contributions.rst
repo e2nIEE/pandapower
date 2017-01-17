@@ -17,12 +17,12 @@ Advantages and Contributions
     - since variables of any datatype can be stored in the pandas dataframes, electric parameters (integer / float) can be stored together with names (strings), status variables (boolean) etc.
     - variables can be accessed by name instead of by column number of a matrix
     - since all information is stored in pandas tables, all inherent pandas methods can be used to
-    
-        - `access <http:/pandas.pydata.org/pandas-docs/stable/indexing.html>`_,
-        - `query <http:/pandas.pydata.org/pandas-docs/stable/indexing.html#boolean-indexing>`_,
-        - `statistically evaluate <http:/pandas.pydata.org/pandas-docs/version/0.17.1/api.html#api-dataframe-stats>`_,
-        - `iterate over <http:/pandas.pydata.org/pandas-docs/stable/basics.html#iteration>`_,
-        - `visualize <http:/pandas.pydata.org/pandas-docs/stable/visualization.html>`_,
+
+        - `access <http://pandas.pydata.org/pandas-docs/stable/indexing.html>`_,
+        - `query <http://pandas.pydata.org/pandas-docs/stable/indexing.html#boolean-indexing>`_,
+        - `statistically evaluate <http://pandas.pydata.org/pandas-docs/version/0.17.1/api.html#api-dataframe-stats>`_,
+        - `iterate over <http://pandas.pydata.org/pandas-docs/stable/basics.html#iteration>`_,
+        - `visualize <http://pandas.pydata.org/pandas-docs/stable/visualization.html>`_,
         -  etc.
         
       any information that is stored in the pandapower dataframes - be it element parameters, power flow results or a combination of both.

@@ -5,9 +5,11 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import warnings
+from functools import partial
 
 from pypower.ppoption import ppoption
 from pypower.idx_bus import VM
+from pypower.add_userfcn import add_userfcn
 
 from pandapower.pypower_extensions.runpf import _runpf
 from pandapower.auxiliary import ppException, _select_is_elements, _clean_up
@@ -15,6 +17,7 @@ from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
     _extract_results_opf
+from pandapower.create import create_gen
 
 
 class LoadflowNotConverged(ppException):
@@ -176,24 +179,25 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
     """
 
     net["converged"] = False
-    if (ac and not init == "results") or not ac:
+    init_results = (init == "results")
+    _add_auxiliary_elements(net, init_results)
+    if (ac and not init_results) or not ac:
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net, recycle)
 
-    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_bus_lookup" in net:
+    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
-        ppc, ppci, bus_lookup = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
+        ppc, ppci = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
                                             trafo_model)
     else:
         # convert pandapower net to ppc
-        ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
-                                        trafo_model, init_results=(init == "results"))
+        ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
+                                        trafo_model, init_results=init_results)
 
     # store variables
     net["_ppc"] = ppc
-    net["_bus_lookup"] = bus_lookup
     net["_is_elems"] = is_elems
 
     if not "VERBOSE" in kwargs:
@@ -204,6 +208,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
 
     # raise if PF was not successful. If DC -> success is always 1
@@ -213,8 +218,8 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, is_elems, bus_lookup, trafo_loading, ac)
-    _clean_up(net)
+    _extract_results(net, result, is_elems, trafo_loading, ac)
+#    _clean_up(net)
 
 
 def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
@@ -311,17 +316,20 @@ def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True,
 def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
     net["OPF_converged"] = False
-
+    _add_auxiliary_elements(net, False)
     reset_results(net)
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net)
 
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
+    ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
                                     opf=True, cost_function=cost_function, 
                                     calculate_voltage_angles=False)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
+    if len(net.dcline) > 0:
+        ppci = add_userfcn(ppci, 'formulation', add_dcline_constraints, args=net)
+
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -334,9 +342,85 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, is_elems, bus_lookup, "current", True, ac)
+    _extract_results_opf(net, result, is_elems, "current", True, ac)
     _clean_up(net)
+
+
+def _add_auxiliary_elements(net, init_results):
+    # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
+    if len(net["trafo3w"]) > 0:
+        _create_trafo3w_buses(net, init_results)
+    if len(net.dcline) > 0:
+        _add_dcline_gens(net)
+    if len(net["xward"]) > 0:
+        _create_xward_buses(net, init_results)    
+
+def _create_xward_buses(net, init_results):
+    from pandapower.create import create_buses
+    main_buses = net.bus.loc[net.xward.bus.values]
+    bid = create_buses(net, nr_buses=len(main_buses),
+                       vn_kv=main_buses.vn_kv.values,
+                       in_service=net["xward"]["in_service"].values)
+    net.xward["ad_bus"] = bid
+    if init_results:
+        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
+        #      pd2ppc anyways. LT
+        for hv_bus, aux_bus in zip(main_buses.index, bid):
+            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+
+
+def _create_trafo3w_buses(net, init_results):
+    from pandapower.create import create_buses
+    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
+    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
+                       vn_kv=hv_buses.vn_kv.values,
+                       in_service=net.trafo3w.in_service.values)
+    net.trafo3w["ad_bus"] = bid
+    if init_results:
+        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
+        #      pd2ppc anyways. LT
+        for hv_bus, aux_bus in zip(hv_buses.index, bid):
+            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+    
+def _add_dcline_gens(net):
+    for _, dctab in net.dcline.iterrows():
+        pfrom = dctab.p_kw
+        pto = - (pfrom* (1 - dctab.loss_percent / 100) - dctab.loss_kw)
+        pmax = dctab.max_p_kw 
+        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
+                   min_p_kw=-pmax, max_p_kw=0., 
+                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
+                   in_service=dctab.in_service, cost_per_kw=0.)
+        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
+                   min_p_kw=0, max_p_kw=pmax, 
+                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
+                   in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
+        
+def add_dcline_constraints(om, net):
+    from numpy import hstack, diag, eye, zeros
+    from scipy.sparse import csr_matrix as sparse
+    ppc = om.get_ppc()
+    ndc = len(net.dcline)              ## number of in-service DC lines
+    ng  = ppc['gen'].shape[0]          ## number of total gens
+    Adc = sparse((ndc,ng))
+    gen_lookup = net._pd2ppc_lookups["gen"]
+
+    dcline_gens_from = net.gen.index[-2*ndc::2]
+    dcline_gens_to = net.gen.index[-2*ndc+1::2]
+    for i, (f, t, loss) in enumerate(zip(dcline_gens_from, dcline_gens_to,
+                                       net.dcline.loss_percent.values)):
+        Adc[i, gen_lookup[f]] = 1. + loss*1e-2
+        Adc[i, gen_lookup[t]] = 1.
+
+    ## constraints
+    nL0 = -net.dcline.loss_kw.values * 1e-3 #absolute losses
+#    L1  = -net.dcline.loss_percent.values * 1e-2 #relative losses
+#    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
+
+    ## add them to the model
+    om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])

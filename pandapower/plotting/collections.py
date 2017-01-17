@@ -91,7 +91,6 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     pc.info = infos
     return pc
 
-
 def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, cmap=None,
                            norm=None, **kwargs):
     """

@@ -32,7 +32,7 @@ def test_from_ppc():
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
     assert len(net_by_ppc.trafo) == len(net_by_code.trafo)
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
-    assert pp.equal_nets(net_by_ppc, net_by_code, check_only_results=True, tol=1.e-9)
+    assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, tol=1.e-9)
 
     # check detect_trafo
     ppc2_4 = testgrids.case2_4()

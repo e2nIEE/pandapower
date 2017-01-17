@@ -34,18 +34,9 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_p
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
-
-    # add additional xward and trafo3w buses
-    if len(net["trafo3w"]) > 0:
-        # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
-        _create_trafo3w_buses(net, init_results)
-    if len(net["xward"]) > 0:
-        # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower. LT
-        _create_xward_buses(net, init_results)
-
-    # get buses as set
-    bus_list = net["bus"].index.values
-    n_bus = len(bus_list)
+    # get bus indices
+    bus_index = net["bus"].index.values
+    n_bus = len(bus_index)
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -54,11 +45,11 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_p
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     consec_buses = np.arange(n_bus)
     # bus_lookup as dict:
-    # bus_lookup = dict(zip(bus_list, consec_buses))
+    # bus_lookup = dict(zip(bus_index, consec_buses))
 
     # bus lookup as mask from pandapower -> pypower
-    bus_lookup = -np.ones(max(bus_list) + 1, dtype=int)
-    bus_lookup[bus_list] = consec_buses
+    bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
+    bus_lookup[bus_index] = consec_buses
 
     # if there are any opened bus-bus switches update those entries
     slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") & \
@@ -153,21 +144,21 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_p
         else:
             ppc["bus"][:n_bus, VMIN] = 0
 
-    return bus_lookup
+    net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_loads_and_add_on_ppc(net, ppc, is_elems, bus_lookup, opf=False):
+def _calc_loads_and_add_on_ppc(net, ppc, is_elems, opf=False):
     '''
     wrapper function to call either the PF or the OPF version
     '''
 
     if opf:
-        _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup)
+        _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems)
     else:
-        _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup)
+        _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems)
 
 
-def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup):
+def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
@@ -202,6 +193,7 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup):
 
     # if array is not empty
     if b.size:
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
 
@@ -209,10 +201,11 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems, bus_lookup):
         ppc["bus"][b, QD] = vq
 
 
-def _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup):
+def _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems):
     """ we need to exclude controllable sgens from the bus table
     """
-
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    
     l = net["load"]
     vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
     lp = l["p_kw"].values * vl
@@ -235,7 +228,7 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems, bus_lookup):
     ppc["bus"][b, QD] = vq
 
 
-def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
+def _calc_shunts_and_add_on_ppc(net, ppc, is_elems):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     # get in service elements
@@ -263,6 +256,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
 
     # if array is not empty
     if b.size:
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
 
@@ -270,29 +264,3 @@ def _calc_shunts_and_add_on_ppc(net, ppc, is_elems, bus_lookup):
         ppc["bus"][b, BS] = -vq
 
 
-def _create_xward_buses(net, init_results):
-    from pandapower.create import create_buses
-    main_buses = net.bus.loc[net.xward.bus.values]
-    bid = create_buses(net, nr_buses=len(main_buses),
-                       vn_kv=main_buses.vn_kv.values,
-                       in_service=net["xward"]["in_service"].values)
-    net.xward["ad_bus"] = bid
-    if init_results:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(main_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
-
-
-def _create_trafo3w_buses(net, init_results):
-    from pandapower.create import create_buses
-    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
-    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
-                       vn_kv=hv_buses.vn_kv.values,
-                       in_service=net.trafo3w.in_service.values)
-    net.trafo3w["ad_bus"] = bid
-    if init_results:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(hv_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values

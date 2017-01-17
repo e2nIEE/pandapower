@@ -50,7 +50,7 @@ def to_ppc(net):
     is_elems = _select_is_elements(net)
 
     #  do the conversion
-    ppc, ppci, bus_lookup = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims=False,
+    ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims=False,
                                     trafo_model=trafo_model, init_results=init_results,
                                     copy_constraints_to_ppc=True)
     ppc['branch'] = ppc['branch'].real

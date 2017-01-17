@@ -191,7 +191,8 @@ def create_empty_network(name=None, f_hz=50.):
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
                   ("in_service", "bool")],
-        "measurement": [("type", np.dtype(object)),
+        "measurement": [("name", np.dtype(object)),
+                        ("type", np.dtype(object)),
                         ("element_type", np.dtype(object)),
                         ("value", "f8"),
                         ("std_dev", "f8"),
@@ -278,7 +279,9 @@ def create_empty_network(name=None, f_hz=50.):
         # internal
         "_ppc": None,
         "_is_elems": None,
-        "_bus_lookup": None,
+        "_pd2ppc_lookups": {"bus": None,
+                            "ext_grid": None,
+                            "gen": None},
         "version": 1.1,
         "converged": False,
         "name": name,
@@ -528,10 +531,10 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
         **in_service** (boolean) - True for in_service or False for out of service
 
         **cost_per_kw** (float, NaN) - Defines operation cost of the static generator for active
-        power. Is only considered, if you run a optimal powerflow
+        power. Is only considered, if you run an optimal powerflow
 
         **cost_per_kvar** (float, NaN) - Defines operation cost of the static generator for reactive
-        power. Is only considered, if you run a optimal powerflow
+        power. Is only considered, if you run an optimal powerflow
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
@@ -643,10 +646,10 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
         **type** (string, None) - type variable to classify generators
 
         **cost_per_kw** (float, NaN) - Defines operation cost of the generator for active power.
-        Is only considered, if you run a optimal powerflow
+        Is only considered, if you run an optimal powerflow
 
         **cost_per_kvar** (float, NaN) - Defines operation cost of the generator for reactive power.
-        Is only considered, if you run a optimal powerflow
+        Is only considered, if you run an optimal powerflow
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
@@ -1729,21 +1732,61 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
     return index
 
+
 def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
                   index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan,
                   min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan,
                   cost_per_kw=np.nan, in_service=True):
+    """
+    Creates a dc line.
+
+    INPUT:
+        **from_bus** (int) - ID of the bus on one side which the line will be connected with
+
+        **to_bus** (int) - ID of the bus on the other side which the line will be connected with
+
+        **p_kw** - (float) Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
+        "A" for I. Generation is a positive bus power injection, consumption negative.
+
+        **loss_percent** - (float) Standard deviation in the same unit as the measurement.
+
+        **loss_kw** - (int) Index of bus. Determines the position of the measurement for
+        line/transformer measurements (bus == from_bus: measurement at from_bus;
+        same for to_bus)
+
+        **vm_from_pu** - (int, None) Index of measured element, if element_type is "line" or
+        "transformer".
+
+        **vm_to_pu** - (int, None) Index of measured element, if element_type is "line" or
+        "transformer".
+
+    OPTIONAL:
+        **index** (int) - Force a specified ID if it is available
+
+        **name** (str, None) - A custom name for this dc line
+
+        **cost_per_kw** (float, NaN) - Defines operation cost of the dc line for active power.
+            Is only considered, if you run an optimal powerflow
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+    RETURN:
+        (int) Index of dc line
+
+    EXAMPLE:
+        create_dcline(net, from_bus=0, to_bus=1, p_kw=1e4, loss_percent=1.2, loss_kw=25, vm_from_pu=1.01, vm_to_pu=1.02)
+    """
     for bus in [from_bus, to_bus]:
         if bus not in net["bus"].index.values:
             raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
         if bus in net.ext_grid.bus.values:
-            raise UserWarning(
-                "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            raise UserWarning("There is already an external grid at bus %u, only one voltage " +
+                              "controlling element (ext_grid, gen) is allowed per bus." % bus)
 
         if bus in net.gen.bus.values:
-            raise UserWarning(
-                "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            raise UserWarning("There is already a generator at bus %u, only one voltage " +
+                              "controlling element (ext_grid, gen) is allowed per bus." % bus)
 
     if index is None:
         index = get_free_id(net["dcline"])
@@ -1754,10 +1797,10 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     # store dtypes
     dtypes = net.dcline.dtypes
 
-    net.dcline.loc[index,["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
-                       "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
-                       "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
-                       "in_service"]]\
+    net.dcline.loc[index, ["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
+                           "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
+                           "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
+                           "in_service"]]\
         = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
            max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, cost_per_kw,
            in_service]
@@ -1765,34 +1808,38 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     # and preserve dtypes
     _preserve_dtypes(net.dcline, dtypes)
 
+    return index
+
 
 def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
-                       check_existing=True, index=None):
+                       check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i
 
     INPUT:
-        **type** - (string) Type of measurement. "v", "p", "q", "i" are possible.
+        **type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
 
-        **element_type** - (string) Clarifies which element is measured. "bus", "line",
+        **element_type** (string) - Clarifies which element is measured. "bus", "line",
         "transformer" are possible.
 
-        **value** - (float) Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
+        **value** (float) - Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
         "A" for I. Generation is a positive bus power injection, consumption negative.
 
-        **std_dev** - (float) Standard deviation in the same unit as the measurement.
+        **std_dev** (float) - Standard deviation in the same unit as the measurement.
 
-        **bus** - (int) Index of bus. Determines the position of the measurement for
+        **bus** (int) - Index of bus. Determines the position of the measurement for
         line/transformer measurements (bus == from_bus: measurement at from_bus;
         same for to_bus)
 
-        **element** - (int, None) Index of measured element, if element_type is "line" or
+        **element** (int, None) - Index of measured element, if element_type is "line" or
         "transformer".
 
     OPTIONAL:
-        **check_existing** - (bool) Check for and replace existing measurements for this bus and
+        **check_existing** (bool) - Check for and replace existing measurements for this bus and
         type. Set it to false for performance improvements which can cause unsafe behaviour.
+
+        **name** (str, None) - name of measurement.
 
     RETURN:
         (int) Index of measurement
@@ -1843,7 +1890,7 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[index] = [type.lower(), element_type, value, std_dev, bus, element]
+    net.measurement.loc[index] = [name, type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
     return index
 

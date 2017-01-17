@@ -12,22 +12,21 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
-from pandapower.create import create_gen
 
-def _build_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+def _build_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc=False, opf=False):
     '''
     wrapper function to call either the PF or the OPF version
     '''
 
     if opf:
-        _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, delta=1e-10)
+        _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10)
     else:
-        _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+        _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc)
 
 
-def _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles,
+def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
@@ -38,9 +37,8 @@ def _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_volt
 
         **ppc** - The PYPOWER format network to fill in values
     '''
-    if len(net.dcline) > 0:
-        add_dcline_gens(net, copy_constraints_to_ppc)
-        is_elems["gen"] = net.gen[net.gen.in_service==True]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -58,12 +56,12 @@ def _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_volt
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     # add ext grid / slack data
-    ppc["gen"][:eg_end, GEN_BUS] = bus_lookup[eg_is["bus"].values]
+    eg_buses = bus_lookup[eg_is["bus"].values]
+    ppc["gen"][:eg_end, GEN_BUS] = eg_buses
     ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
     ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
 
     # set bus values for external grid buses
-    eg_buses = bus_lookup[eg_is["bus"].values]
     if calculate_voltage_angles:
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     ppc["bus"][eg_buses, BUS_TYPE] = REF
@@ -89,10 +87,10 @@ def _build_gen_pf(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_volt
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default)
+        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default)
 
 
-def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_voltage_angles):
+def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles):
     '''
     Takes the ppc network and updates the gen values from the values in net.
 
@@ -101,6 +99,7 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
 
         **ppc** - The PYPOWER format network to fill in values
     '''
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -135,10 +134,11 @@ def _update_gen_ppc(net, ppc, is_elems, bus_lookup, enforce_q_lims, calculate_vo
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default, update_lookup=False)
+        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default, 
+                                  update_lookup=False)
 
 
-def _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, delta=1e-10):
+def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -148,10 +148,10 @@ def _build_gen_opf(net, ppc, is_elems, bus_lookup, calculate_voltage_angles, del
 
         **ppc** - The PYPOWER format network to fill in values
     '''
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    
     if len(net.dcline) > 0:
-        add_dcline_gens(net, copy_constraints_to_ppc=True)
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
-        is_elems["gen"] = net.gen[net.gen.in_service==True]
     # get in service elements
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
@@ -296,7 +296,8 @@ def _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_defau
     ppc["gen"][eg_end:gen_end, [PMAX]] = min_p_kw
 
 
-def _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q_lim_default, update_lookup=True):
+def _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default, update_lookup=True):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     xw = net["xward"]
     xw_is = is_elems['xward']
     if update_lookup:
@@ -311,16 +312,3 @@ def _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, bus_lookup, q
     ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
     ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
-def add_dcline_gens(net, copy_constraints_to_ppc):
-    for _, dctab in net.dcline.iterrows():
-        pfrom = dctab.p_kw
-        pto = - (pfrom* (1 - dctab.loss_percent / 100) - dctab.loss_kw)
-        pmax = dctab.max_p_kw if copy_constraints_to_ppc else np.nan
-        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
-                   min_p_kw=-pmax, max_p_kw=0., 
-                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
-                   in_service=dctab.in_service, cost_per_kw=0.)
-        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
-                   min_p_kw=0, max_p_kw=pmax, 
-                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
-                   in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
