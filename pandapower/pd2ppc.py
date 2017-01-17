@@ -18,7 +18,7 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
-from pandapower.auxiliary import _set_isolated_buses_out_of_service
+from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net
 from pandapower.make_objective import _make_objective
 
 def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
@@ -105,7 +105,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
-    ppci = _ppc2ppci(ppc, ppci, net)
+    ppci = _ppc2ppci(ppc, ppci, net, is_elems)
 
     return ppc, ppci
 
@@ -134,7 +134,7 @@ def _init_lookups(net):
                                    "branch": None}
 
 
-def _ppc2ppci(ppc, ppci, net):
+def _ppc2ppci(ppc, ppci, net, is_elems):
     # BUS Sorting and lookups
     
     # get bus_lookup
@@ -161,9 +161,8 @@ def _ppc2ppci(ppc, ppci, net):
     ppc['bus'][:, BUS_I] = aranged_buses
     ppci['bus'][:, BUS_I] = ppc['bus'][:len(ppci['bus']), BUS_I]
 
-    # update bus_lookup (pandapower -> ppci internal)
-    valid_bus_lookup_entries = bus_lookup >= 0
-    bus_lookup[valid_bus_lookup_entries] = e2i[bus_lookup[valid_bus_lookup_entries]]
+    # update lookups (pandapower -> ppci internal)
+    _update_lookup_entries(net, bus_lookup, e2i, "bus")
 
     if 'areas' in ppc:
         if len(ppc["areas"]) == 0:  # if areas field is empty
@@ -192,9 +191,19 @@ def _ppc2ppci(ppc, ppci, net):
 
     # reorder gens (and gencosts) in order of increasing bus number
     sort_gens = ppc['gen'][:, GEN_BUS].argsort()
+    new_gen_positions = np.searchsorted(ppc['gen'][sort_gens, GEN_BUS],ppc['gen'][:, GEN_BUS])
     ppc['gen'] = ppc['gen'][sort_gens, ]
     if 'gencost' in ppc:
         ppc['gencost'] = ppc['gencost'][sort_gens, ]
+
+    # update gen lookups
+    eg_end = len(is_elems['ext_grid'])
+    gen_end = eg_end + len(is_elems['gen'])
+
+    if len(is_elems["ext_grid"]):
+        _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions, is_elems)
+    if len(is_elems["gen"]):
+        _build_gen_lookups(net, "gen", eg_end, gen_end, new_gen_positions, is_elems)
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -227,29 +236,26 @@ def _ppc2ppci(ppc, ppci, net):
     if 'userfcn' in ppci:
         ppci = run_userfcn(ppci['userfcn'], 'ext2int', ppci)
 
-    # update bus lookup in net
-    _update_lookup(net, "bus", bus_lookup)
-    # generate gen lookup
-    _create_ppc_gen_lookup(net, ppc, "ext_grid")
-    _create_ppc_gen_lookup(net, ppc, "gen")
-
     return ppci
 
-def _create_ppc_gen_lookup(net, ppc, element):
+def _update_lookup_entries(net, lookup, e2i, element):
+    valid_bus_lookup_entries = lookup >= 0
+    # update entries
+    lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
+    _write_lookup_to_net(net, element, lookup)
 
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # pandapower element index
-    element_index = net[element].index.values
-    element_buses = net[element].bus.values
 
-    # check if element is not empty
-    if len(element_index):
-        ppc_index = np.searchsorted(ppc["gen"][:, GEN_BUS], bus_lookup[element_buses])
-        # generate element (mask from pandapower index -> pypower gen_index)
-        element_lookup = -np.ones(max(element_index) + 1, dtype=int)
-        element_lookup[element_index] = ppc_index
+def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens, is_elems):
+    # get buses from pandapower and ppc
+    pandapower_index = is_elems[element].index.values
+    ppc_index = sort_gens[ppc_start_index: ppc_end_index]
 
-        _update_lookup(net, element, element_lookup)
+    # init lookup
+    lookup = -np.ones(max(pandapower_index) + 1, dtype=int)
+
+    # update lookup
+    lookup[pandapower_index] = ppc_index
+    _write_lookup_to_net(net, element, lookup)
 
 def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_q_lims=False, 
                 trafo_model="pi"):
@@ -284,9 +290,3 @@ def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_
     ppci["gen"] = ppc["gen"][gs]
 
     return ppc, ppci
-
-def _update_lookup(net, element, element_lookup):
-    """
-    Updates selected lookups in net
-    """
-    net["_pd2ppc_lookups"][element] = element_lookup

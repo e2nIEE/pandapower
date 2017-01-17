@@ -396,3 +396,9 @@ def calculate_line_results(net, use_res_bus_est=False):
     res_line.pl_kw = res_line.p_from_kw + res_line.p_to_kw
     res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
     return res_line
+
+def _write_lookup_to_net(net, element, element_lookup):
+    """
+    Updates selected lookups in net
+    """
+    net["_pd2ppc_lookups"][element] = element_lookup

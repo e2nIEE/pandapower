@@ -27,7 +27,7 @@ def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
     bus_pq = _get_p_q_results(net, bus_lookup_aranged, is_elems, ac)
     _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
+    _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
@@ -47,7 +47,7 @@ def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angle
     bus_pq = _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, len_gen)
     _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, bus_is, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, bus_pq, 
+    _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
     _get_costs(net)
@@ -157,7 +157,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
                                   ac)
 
-def _get_gen_results(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, pq_bus,
+def _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, pq_bus,
                      return_voltage_angles, ac=True):
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])
@@ -225,7 +225,10 @@ def _get_pp_gen_results(net, ppc, is_elems, ac, return_voltage_angles, b, p, q):
     b = np.hstack([b, net['gen'].bus.values])
 
     # indices of in service gens in the ppc
-    gen_idx_ppc = gen_lookup[gen_is.index]
+    if len(is_elems["gen"]):
+        gen_idx_ppc = gen_lookup[gen_is.index]
+    else:
+        gen_idx_ppc = []
     bus_idx_ppc = bus_lookup[gen_is["bus"].values]
     # mask for indices of in service gens in net['res_gen']
     idx_gen = np.in1d(net['gen'].bus, gidx)

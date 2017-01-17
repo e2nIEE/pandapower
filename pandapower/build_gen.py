@@ -12,6 +12,8 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
+from pandapower.auxiliary import _write_lookup_to_net
+
 
 def _build_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc=False, opf=False):
@@ -37,7 +39,7 @@ def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
 
         **ppc** - The PYPOWER format network to fill in values
     '''
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    
 
     # get in service elements
     eg_is = is_elems['ext_grid']
@@ -47,14 +49,32 @@ def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
     gen_end = eg_end + len(gen_is)
     xw_end = gen_end + len(net["xward"])
 
+    # define default q limits
     q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
     p_lim_default = 1e9
 
+    _init_ppc_gen(ppc, xw_end, q_lim_default)
+    _build_pp_ext_grid(net, ppc, eg_is, eg_end, calculate_voltage_angles)
+
+    # add generator / pv data
+    if gen_end > eg_end:
+        _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, enforce_q_lims,
+                      copy_constraints_to_ppc, q_lim_default, p_lim_default)
+
+    # add extended ward pv node data
+    if xw_end > gen_end:
+        _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default)
+
+
+def _init_ppc_gen(ppc, xw_end, q_lim_default):
     # initialize generator matrix
     ppc["gen"] = np.zeros(shape=(xw_end, 21), dtype=float)
     ppc["gen"][:] = np.array([0, 0, 0, q_lim_default, -q_lim_default, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
+
+def _build_pp_ext_grid(net, ppc, eg_is, eg_end, calculate_voltage_angles):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # add ext grid / slack data
     eg_buses = bus_lookup[eg_is["bus"].values]
     ppc["gen"][:eg_end, GEN_BUS] = eg_buses
@@ -65,31 +85,51 @@ def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
     if calculate_voltage_angles:
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     ppc["bus"][eg_buses, BUS_TYPE] = REF
-
-    # add generator / pv data
-    if gen_end > eg_end:
-        ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
-        ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
-        ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
-
-        # set bus values for generator buses
-        gen_buses = bus_lookup[gen_is["bus"].values]
-        ppc["bus"][gen_buses, BUS_TYPE] = PV
-        ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
-
-        if enforce_q_lims or copy_constraints_to_ppc:
-            _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
-            _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
-
-        if copy_constraints_to_ppc:
-            _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
-            _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
-
-    # add extended ward pv node data
-    if xw_end > gen_end:
-        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default)
+    # _build_gen_lookups(net, "ext_grid", 0, eg_end)
 
 
+def _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, enforce_q_lims,
+                  copy_constraints_to_ppc, q_lim_default, p_lim_default):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
+    ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
+    ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
+
+    # set bus values for generator buses
+    gen_buses = bus_lookup[gen_is["bus"].values]
+    ppc["bus"][gen_buses, BUS_TYPE] = PV
+    ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
+
+    if enforce_q_lims or copy_constraints_to_ppc:
+        _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+        _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
+
+    if copy_constraints_to_ppc:
+        _copy_p_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+        _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
+
+    # _build_gen_lookups(net, "gen", eg_end, gen_end)
+
+
+def _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default, update_lookup=True):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    xw = net["xward"]
+    xw_is = is_elems['xward']
+    if update_lookup:
+        ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
+    ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
+    ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
+    ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
+    ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
+
+    xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
+    ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
+    ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
+    ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
+
+
+
+        
 def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles):
     '''
     Takes the ppc network and updates the gen values from the values in net.
@@ -134,7 +174,7 @@ def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default, 
+        _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default, 
                                   update_lookup=False)
 
 
@@ -295,20 +335,4 @@ def _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_defau
     ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
     ppc["gen"][eg_end:gen_end, [PMAX]] = min_p_kw
 
-
-def _copy_xward_values_to_ppc(net, ppc, is_elems, gen_end, xw_end, q_lim_default, update_lookup=True):
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    xw = net["xward"]
-    xw_is = is_elems['xward']
-    if update_lookup:
-        ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
-    ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
-    ppc["gen"][gen_end:xw_end, GEN_STATUS] = xw_is
-    ppc["gen"][gen_end:xw_end, QMIN] = -q_lim_default
-    ppc["gen"][gen_end:xw_end, QMAX] = q_lim_default
-
-    xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
-    ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
-    ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
-    ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
