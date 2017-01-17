@@ -855,21 +855,25 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 def get_element_index(net, element, name, exact_match=True, regex=False):
     """
-    Returns the element identified by the element string and a name.
+    Returns the element(s) identified by a name or regex and its element-table.
 
     INPUT:
       **net** - pandapower network
 
-      **element** - line indices of lines that are considered. If None, all lines in the network are \
-                  considered.
+      **element** - Table to get indices from ("line", "bus", "trafo" etc.)
 
-      **name** - if True, switches are also considered as connected elements.
+      **name** - Name of the element to match.
+
+    OPTIONAL:
+      **exact_match** (boolean, True) - True: Expects exactly one match, raises
+                                                UserWarning otherwise.
+                                        False: returns all indices matching the name/pattern
+
+      **regex** (boolean, False) - True: parameter name is evaluated as regular expression.
+                                    False: name is matched exactly.
 
     OUTPUT:
-
-      **connections** - pandapower Series with number of connected elements for each bus. If a \
-                      selection of lines is given, only buses connected to these lines are in \
-                      the returned series.
+      **index** - The indices of matching element(s).
     """
     if exact_match:
         idx = net[element][net[element]["name"] == name].index
@@ -877,9 +881,11 @@ def get_element_index(net, element, name, exact_match=True, regex=False):
             raise UserWarning("There is no %s with name %s" % (element, name))
         if len(idx) > 1:
             raise UserWarning("Duplicate %s names for %s" % (element, name))
+        return idx[0]
     else:
-        return net[element][net[element]["name"].str.contains(name, regex=regex)].index
-    return idx[0]
+        return net[element][net[element]["name"].str.match(name,
+                                                           regex=regex,
+                                                           as_indexer=True)].index
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):
