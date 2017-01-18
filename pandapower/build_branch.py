@@ -247,13 +247,14 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
     ### Calculate subsceptance ###
     unl_squared = trafo_df["vn_lv_kv"].values**2
     b_real = trafo_df["pfe_kw"].values / (1000. * unl_squared) * baseR
-
-    b_img = (trafo_df["i0_percent"].values / 100. * trafo_df["sn_kva"].values / 1000.)**2 \
-        - (trafo_df["pfe_kw"].values / 1000.)**2
+    i0 = trafo_df["i0_percent"].values
+    pfe = trafo_df["pfe_kw"].values
+    sn = trafo_df["sn_kva"].values
+    b_img = (i0 / 100. * sn  / 1000.)**2 - (pfe / 1000.)**2
 
     b_img[b_img < 0] = 0
     b_img = np.sqrt(b_img) * baseR / unl_squared
-    y = -b_real * 1j - b_img
+    y = - b_real * 1j  - b_img * np.sign(i0)
     if "lv" in trafo_df["tp_side"].values:
         return y /  np.square(vn_trafo_lv * vn_lv / trafo_df["vn_lv_kv"].values / vn_lv) 
     else:
