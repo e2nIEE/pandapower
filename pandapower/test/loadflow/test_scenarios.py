@@ -5,7 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import pytest
-from scipy.spatial.tests.test_kdtree import test_two_random_trees
+#from scipy.spatial.tests.test_kdtree import test_two_random_trees
 
 import pandapower as pp
 from pandapower.test.toolbox import create_test_network2

@@ -356,9 +356,7 @@ def test_disconnected_elements(test_net):
     net = copy.deepcopy(test_net)
     net.switch.closed.loc[37,38] = False
     pp.drop_trafos(net, [1])
-
-    assert pp.disconnected_elements(net) == \
-    [{'buses': [33, 36, 37, 38, 39, 40, 41, 42, 43, 44],
+    expected_disconnect = [{'buses': [33, 36, 37, 38, 39, 40, 41, 42, 43, 44],
       'lines': [6, 7, 8, 9, 11, 12, 13],
       'loads': [2, 5, 6, 7, 8, 9, 10, 11, 12],
       'sgens': [1, 2, 3, 4],
@@ -370,6 +368,9 @@ def test_disconnected_elements(test_net):
       'sgens': [5, 6, 7, 8, 9, 10],
       'switches': [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
                    82, 83]}]
+    for area, expected_area in zip(pp.disconnected_elements(net), expected_disconnect):
+        assert area == expected_area
+
 
 
 def test_deviation_from_std_type(test_net):
