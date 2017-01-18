@@ -12,9 +12,6 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
-from pandapower.auxiliary import _write_lookup_to_net
-
-
 def _build_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc=False, opf=False):
     '''

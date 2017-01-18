@@ -185,7 +185,7 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc, is_elems):
         b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
-    if len(w) > 0:
+    if len(xw) > 0:
         vl = is_elems["xward"] / np.float64(1000.)
         q = np.hstack([q, xw["qs_kvar"].values * vl])
         p = np.hstack([p, xw["ps_kw"].values * vl])
