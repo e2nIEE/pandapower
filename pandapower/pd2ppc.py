@@ -191,7 +191,8 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
 
     # reorder gens (and gencosts) in order of increasing bus number
     sort_gens = ppc['gen'][:, GEN_BUS].argsort()
-    new_gen_positions = np.searchsorted(ppc['gen'][sort_gens, GEN_BUS],ppc['gen'][:, GEN_BUS])
+    new_gen_positions = np.arange(len(sort_gens))
+    new_gen_positions[sort_gens] = np.arange(len(sort_gens))
     ppc['gen'] = ppc['gen'][sort_gens, ]
     if 'gencost' in ppc:
         ppc['gencost'] = ppc['gencost'][sort_gens, ]
