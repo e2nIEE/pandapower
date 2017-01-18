@@ -119,6 +119,25 @@ def test_bb_switch():
     net = add_test_bus_bus_switch(net)
     runpp_with_consistency_checks(net)
 
+def test_two_gens_at_one_bus():
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, 380)
+    b2 = pp.create_bus(net, 380)
+    b3 = pp.create_bus(net, 380)
+    
+    pp.create_ext_grid(net, b1, 1.02, max_p_kw=0., cost_per_kw=0.1)
+    p1 = 800
+    p2 = 500
+    
+    g1 = pp.create_gen(net, b3, vm_pu=1.018, p_kw=p1)
+    g2 = pp.create_gen(net, b3, vm_pu=1.018, p_kw=p2)
+    pp.create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
+    pp.create_line(net, b2, b3, 20, "490-AL1/64-ST1A 380.0")
+    
+    pp.runpp(net)
+    assert net.res_gen.p_kw.at[g1] == p1
+    assert net.res_gen.p_kw.at[g2] == p2
 
 if __name__ == "__main__":
     pytest.main(["test_scenarios.py"])

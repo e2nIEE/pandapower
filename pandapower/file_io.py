@@ -57,6 +57,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     for item, table in net.items():
+        if item == "bus_geodata":
+            table = pd.DataFrame(table[["x", "y"]])
         if type(table) != pd.DataFrame or item.startswith("_"):
             continue
         elif item.startswith("res"):

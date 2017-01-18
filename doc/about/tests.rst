@@ -130,8 +130,8 @@ The results are compared with the following tolerances:
    :delim: ;
    :widths: 30, 30
 
-Validation Transformer
-=======================
+Example: Transformer Model Validation
+--------------------------------------
 
 To validate the pandapower transformer model, a transformer is created with the same parameters in pandapower and PowerFactory. To test all aspects of the model we use a transformer with
 
@@ -179,7 +179,7 @@ and transformer results:
 match within the margins defined above.
 
 All Test Networks
-==================
+-------------------------------------
 
 There is a test network for the validation of each pandapower element in the same way the transformer model is tested.
 
@@ -187,78 +187,67 @@ The PowerFactory file containing all test networks can be downloaded :download:`
 The correlating pandapower networks are defined in result_test_network_generatory.py in the pandapower/test module.
 The tests that check pandapower results against PowerFactory results are located in pandapower/test/test_results.py.
 
-line
------
+**line**
  
 .. image:: ../pics/validation/test_line.png
 	:width: 12em
 	:align: center
 
-load and sgen
----------------
+**load and sgen**
 
 .. image:: ../pics/validation/test_load_sgen.PNG
 	:width: 8em
 	:align: center
 
-trafo
----------------
+**trafo**
 
 .. image:: ../pics/validation/test_trafo.png
 	:width: 10em
 	:align: center    
     
-trafo3w
----------------
+**trafo3w**
 
 .. image:: ../pics/validation/test_trafo3w.PNG
 	:width: 20em
 	:align: center   
 
-ext_grid
----------------
+**ext_grid**
 
 .. image:: ../pics/validation/test_ext_grid.PNG
 	:width: 10em
 	:align: center   
     
-shunt
----------------
+**shunt**
 
 .. image:: ../pics/validation/test_shunt.PNG
 	:width: 8em
 	:align: center  
 
-gen
----------------
+**gen**
 
 .. image:: ../pics/validation/test_gen.PNG
 	:width: 20em
 	:align: center  
     
-impedance
----------------
+**impedance**
 
 .. image:: ../pics/validation/test_impedance.PNG
 	:width: 10em
 	:align: center  
     
-ward
----------------
+**ward**
 
 .. image:: ../pics/validation/test_ward.png
 	:width: 8em
 	:align: center  
     
-xward
----------------
+**xward**
 
 .. image:: ../pics/validation/test_xward.PNG
 	:width: 20em
 	:align: center  
 
-switch
----------------
+**switch**
 
 .. image:: ../pics/validation/test_bus_bus_switch.PNG
 	:width: 40em

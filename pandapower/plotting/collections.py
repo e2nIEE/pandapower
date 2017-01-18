@@ -12,7 +12,7 @@ import copy
 
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          cmap=None, norm=None, infofunc=None, **kwargs):
+                          cmap=None, norm=None, infofunc=None, picker=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
     
@@ -76,7 +76,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                for i, (x, y) in enumerate(zip(net.bus_geodata.loc[buses].x.values,
                                               net.bus_geodata.loc[buses].y.values))
                if x != -1 and x != np.nan]
-    pc = PatchCollection(patches, match_original=True)
+    pc = PatchCollection(patches, match_original=True, picker=picker)
+    pc.bus_indices = np.array(buses)
     if cmap:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
@@ -92,7 +93,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     return pc
 
 def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, cmap=None,
-                           norm=None, **kwargs):
+                           norm=None, picker=False, **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
     
@@ -111,8 +112,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
         **kwargs - key word arguments are passed to the patch function
         
     """
-    if lines is None:
-        lines = net.line.index
+    lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return None
     if use_line_geodata:
@@ -129,7 +129,8 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
 
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
-    lc = LineCollection(data, **kwargs)
+    lc = LineCollection(data, picker=picker, **kwargs)
+    lc.line_indices = np.array(lines)
     if cmap:
         lc.set_cmap(cmap)
         lc.set_norm(norm)

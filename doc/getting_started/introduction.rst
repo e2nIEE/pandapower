@@ -17,15 +17,18 @@ We consider the following simple 3-bus example network as a minimal example:
 		:alt: alternate Text
 		:align: center 
 
-To create this network in pandapower, we first create an empty network with three buses: ::
+To create this network in pandapower, we first create an empty pandapower network: ::
     
     import pandapower as pp
     net = pp.create_empty_network()
+    
+we then create the buses with the given voltage levels: ::
+
     b1 = pp.create_bus(net, vn_kv=20., name="Bus 1")
     b2 = pp.create_bus(net, vn_kv=0.4, name="Bus 2")
     b3 = pp.create_bus(net, vn_kv=0.4, name="Bus 3")
 
-We then create the bus elements, namely a grid connection at Bus 1 and an load at Bus 3: ::
+we then create the bus elements, namely a grid connection at Bus 1 and an load at Bus 3: ::
 
     pp.create_ext_grid(net, bus=b1, vm_pu=1.02, name="Grid Connection")
     pp.create_load(net, bus=b3, p_kw=100, q_kvar=50, name="Load")
@@ -40,7 +43,7 @@ We now create the branch elements. First, we create the transformer from the typ
                                                 name="Trafo")
 
 Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/elements/trafo.html#electric-model>`_.
-The transformer model and all other pandapower electric elements are `validated against commercial software <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/elements/about/tests.html>`_.
+The transformer model and all other pandapower electric elements are `validated against commercial software <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/about/tests.html#model-and-loadflow-validation>`_.
 
 The `standard type library <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types.html>`_ allows even easier creation of the transformer. 
 The parameters given above are the parameters of the transformer "0.4 MVA 20/0.4 kV" from the pandapower `basic standard types <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types/basic.html>`_. The transformer can be created from the standard type library like this: ::
