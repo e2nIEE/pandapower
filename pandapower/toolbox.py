@@ -857,7 +857,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 # --- item/element selections
 
-def get_element_index(net, element, name, exact_match=True, regex=False):
+def get_element_index(net, element, name, exact_match=True):
     """
     Returns the element(s) identified by a name or regex and its element-table.
 
@@ -873,9 +873,6 @@ def get_element_index(net, element, name, exact_match=True, regex=False):
                                                 UserWarning otherwise.
                                         False: returns all indices matching the name/pattern
 
-      **regex** (boolean, False) - True: parameter name is evaluated as regular expression.
-                                    False: name is matched exactly.
-
     OUTPUT:
       **index** - The indices of matching element(s).
     """
@@ -887,9 +884,7 @@ def get_element_index(net, element, name, exact_match=True, regex=False):
             raise UserWarning("Duplicate %s names for %s" % (element, name))
         return idx[0]
     else:
-        return net[element][net[element]["name"].str.match(name,
-                                                           regex=regex,
-                                                           as_indexer=True)].index
+        return net[element][net[element]["name"].str.match(name, as_indexer=True)].index
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):
