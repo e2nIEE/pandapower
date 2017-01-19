@@ -172,12 +172,9 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
     bt = ppc["bus"][:, BUS_TYPE]
 
     # update branch, gen and areas bus numbering
-    ppc['gen'][:, GEN_BUS] = \
-        e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)].copy()
-    ppc["branch"][:, F_BUS] = \
-        e2i[np.real(ppc["branch"][:, F_BUS]).astype(int)].copy()
-    ppc["branch"][:, T_BUS] = \
-        e2i[np.real(ppc["branch"][:, T_BUS]).astype(int)].copy()
+    ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(int)].copy()
+    ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(int)].copy()
+    ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(int)].copy()
 
     # Note: The "update branch, gen and areas bus numbering" does the same as this:
     # ppc['gen'][:, GEN_BUS] = get_indices(ppc['gen'][:, GEN_BUS], bus_lookup_ppc_ppci)
@@ -199,12 +196,15 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
 
     # update gen lookups
     eg_end = len(is_elems['ext_grid'])
-    gen_end = eg_end + len(is_elems['gen'])
-
-    if len(is_elems["ext_grid"]):
+    sgen_end = len(is_elems["sgen_controllable"]) + eg_end if "sgen_controllable" in is_elems else eg_end
+    gen_end = sgen_end + len(is_elems['gen'])
+    
+    if eg_end > 0:
         _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions, is_elems)
-    if len(is_elems["gen"]):
-        _build_gen_lookups(net, "gen", eg_end, gen_end, new_gen_positions, is_elems)
+    if sgen_end > eg_end:
+        _build_gen_lookups(net, "sgen_controllable", eg_end, sgen_end, new_gen_positions, is_elems)
+    if gen_end > sgen_end:
+        _build_gen_lookups(net, "gen", sgen_end, gen_end, new_gen_positions, is_elems)
 
     # determine which buses, branches, gens are connected and
     # in-service

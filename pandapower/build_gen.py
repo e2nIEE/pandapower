@@ -194,7 +194,7 @@ def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
     gen_is = is_elems['gen']
     sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
         if "controllable" in net.sgen.columns else DataFrame()
-
+    is_elems["sgen_controllable"] = sg_is
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
     sg_end = gen_end + len(sg_is)

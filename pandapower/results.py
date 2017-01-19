@@ -80,7 +80,7 @@ def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen
         psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
         qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
         # get gen index in ppc
-        gidx_ppc = searchsorted(ppc['gen'][:, GEN_BUS], bus_lookup[net['sgen'][sgen_is].bus.values])
+        gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][is_elems["sgen_controllable"].index]
         psg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, PG] * 1000
         qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, QG] * 1000
 
