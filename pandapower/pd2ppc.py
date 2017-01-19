@@ -99,14 +99,15 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     _branches_with_oos_buses(net, ppc, is_elems)
     # sets buses out of service, which aren't connected to branches / REF buses
     _set_isolated_buses_out_of_service(net, ppc)
-    if opf:
-        # make opf objective
-        ppc = _make_objective(ppc, net, is_elems, cost_function)
-
+        
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net, is_elems)
 
+    if opf:
+        # make opf objective
+        ppci = _make_objective(ppci, net, is_elems, cost_function)
+        
     return ppc, ppci
 
 def _init_ppc(net):
@@ -191,20 +192,18 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
     new_gen_positions = np.arange(len(sort_gens))
     new_gen_positions[sort_gens] = np.arange(len(sort_gens))
     ppc['gen'] = ppc['gen'][sort_gens, ]
-    if 'gencost' in ppc:
-        ppc['gencost'] = ppc['gencost'][sort_gens, ]
 
     # update gen lookups
     eg_end = len(is_elems['ext_grid'])
-    sgen_end = len(is_elems["sgen_controllable"]) + eg_end if "sgen_controllable" in is_elems else eg_end
-    gen_end = sgen_end + len(is_elems['gen'])
-    
+    gen_end = eg_end + len(is_elems['gen'])
+    sgen_end = len(is_elems["sgen_controllable"]) + gen_end if "sgen_controllable" in is_elems else gen_end
+
     if eg_end > 0:
         _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions, is_elems)
-    if sgen_end > eg_end:
-        _build_gen_lookups(net, "sgen_controllable", eg_end, sgen_end, new_gen_positions, is_elems)
-    if gen_end > sgen_end:
-        _build_gen_lookups(net, "gen", sgen_end, gen_end, new_gen_positions, is_elems)
+    if gen_end > eg_end:
+        _build_gen_lookups(net, "gen", eg_end, gen_end, new_gen_positions, is_elems)
+    if sgen_end > gen_end:
+        _build_gen_lookups(net, "sgen_controllable", gen_end, sgen_end, new_gen_positions, is_elems)
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -229,8 +228,6 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
     ppci["branch"] = ppc["branch"][brs]
     ppci["gen"] = ppc["gen"][gs]
 
-    if 'gencost' in ppc:
-        ppci["gencost"] = ppc["gencost"][gs]
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']
     # execute userfcn callbacks for 'ext2int' stage
