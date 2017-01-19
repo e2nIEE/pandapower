@@ -71,7 +71,7 @@ def case2_2_by_code():
     pp.create_ext_grid(ppnet, bus=bus0, vm_pu=1.02, va_degree=15, in_service=True)
     pp.create_transformer_from_parameters(ppnet, hv_bus=bus0, lv_bus=bus1, sn_kva=2.5e5,
                                           vn_hv_kv=110, vn_lv_kv=20, vsc_percent=13.462912017836263,
-                                          vscr_percent=5, pfe_kw=0, i0_percent=-0.8, shift_degree=0)
+                                          vscr_percent=5, pfe_kw=0, i0_percent=0.8, shift_degree=0)
     return ppnet
 
 

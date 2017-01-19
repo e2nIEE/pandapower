@@ -96,4 +96,4 @@ def test_pypower_cases():
 
 
 if __name__ == '__main__':
-    pytest.main(["-xs"])
+    pytest.main(["-s"])

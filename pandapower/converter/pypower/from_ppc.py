@@ -153,8 +153,8 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
                 zk = (rk**2+xk**2)**0.5
                 sn = ppc['branch'][i, 5]*1e3
                 ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
-                i0_percent = ppc['branch'][i, 4]*100*baseMVA*1e3/sn
-                if i0_percent > 0:
+                i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
+                if i0_percent < 0:
                     logger.error('A transformer always behaves inductive consumpting but the '
                                  'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
                                  'positive', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
