@@ -82,14 +82,4 @@ Case 57
 Case 118
 ---------
 
-In pandapower case118 is not provided as function because two transformer branches would act capacitively.
-But this prohibited in pandapower because of physical laws.
-However if you want to receive case118 you may use the following code to get a tiny changed data set
-with b_shunt=0 for transformer branches from node 68 to 116 and from 86 to 87.
-
-.. code:: python
-
- import pandapower.test as pt
- import pandapower.converter as pc
- ppc_case118_adapt = pt.case118()
- pp_case118_adapt = pc.from_ppc(case118)
+.. autofunction:: pandapower.networks.case118

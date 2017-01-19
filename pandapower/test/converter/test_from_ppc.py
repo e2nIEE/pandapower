@@ -56,7 +56,7 @@ def test_validate_from_ppc():
 def test_ppc_testgrids():
     # check ppc_testgrids
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
-            'case57', 'case118']
+            'case57']
     for i in name:
         my_function = getattr(testgrids, i)
         ppc = my_function()
@@ -67,7 +67,7 @@ def test_ppc_testgrids():
 
 def test_pypower_cases():
     # check pypower cases
-    name = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q', 'case39']
+    name = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q', 'case39', 'case118']
     for i in name:
         module = __import__('pypower.' + i)
         submodule = getattr(module, i)

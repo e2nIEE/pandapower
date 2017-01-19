@@ -246,6 +246,25 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
     return case57
 
 
+def case118():
+    """
+    Calls the pickle file case118.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Washington <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and `Illinois University <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
+
+    RETURN:
+
+         **net** - Returns the required ieee network case118
+
+    EXAMPLE:
+
+         import pandapower.networks as pn
+
+         net = pn.case118()
+    """
+    case118 = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case118.p"))
+    return case118
+
+
 if __name__ == "__main__":
     import pandapower.networks as pn
     net = pn.networks.case9()
