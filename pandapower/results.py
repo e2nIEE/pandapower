@@ -60,15 +60,20 @@ def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen
     l = net["load"]
     if len(l) > 0:
         load_is = is_elems["load"]
+        load_ctrl = l["controllable"].values
         scaling = l["scaling"].values
-        pl = l["p_kw"].values * scaling * load_is
-        net["res_load"]["p_kw"] = pl
-        p = hstack([p, pl])
-        # q results
-        ql = l["q_kvar"].values * scaling * load_is
-        net["res_load"]["q_kvar"] = ql
-        q = hstack([q, ql])
+        pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
+        ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
+        if any(load_ctrl):
+            # get load index in ppc
+            lidx_ppc = net._pd2ppc_lookups["load_controllable"][is_elems["load_controllable"].index]
+            pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
+            ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
 
+        net["res_load"]["p_kw"] = pl
+        net["res_load"]["q_kvar"] = ql
+        p = hstack([p, pl])
+        q = hstack([q, ql])
         b = hstack([b, l["bus"].values])
         net["res_load"].index = net["load"].index
 
@@ -79,10 +84,11 @@ def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen
         scaling = sg["scaling"].values
         psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
         qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
-        # get gen index in ppc
-        gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][is_elems["sgen_controllable"].index]
-        psg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, PG] * 1000
-        qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, QG] * 1000
+        if any(sgen_ctrl):
+            # get gen index in ppc
+            gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][is_elems["sgen_controllable"].index]
+            psg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, PG] * 1000
+            qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, QG] * 1000
 
         net["res_sgen"]["p_kw"] = psg
         net["res_sgen"]["q_kvar"] = qsg

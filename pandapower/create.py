@@ -429,7 +429,9 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
 
 def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., index=None,
-                in_service=True, type=None):
+                in_service=True, type=None, max_p_kw=np.nan, min_p_kw=np.nan,
+                max_q_kvar=np.nan, min_q_kvar=np.nan, cost_per_kw=np.nan, cost_per_kvar=np.nan,
+                controllable=np.nan):
     """
     Adds one load in table net["load"].
 
@@ -486,6 +488,51 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 
     # and preserve dtypes
     _preserve_dtypes(net.load, dtypes)
+    
+    if not np.isnan(min_p_kw):
+        if "min_p_kw" not in net.load.columns:
+            net.load.loc[:, "min_p_kw"] = pd.Series()
+
+        net.load.loc[index, "min_p_kw"] = float(min_p_kw)
+
+    if not np.isnan(max_p_kw):
+        if "max_p_kw" not in net.load.columns:
+            net.load.loc[:, "max_p_kw"] = pd.Series()
+
+        net.load.loc[index, "max_p_kw"] = float(max_p_kw)
+
+    if not np.isnan(min_q_kvar):
+        if "min_q_kvar" not in net.load.columns:
+            net.load.loc[:, "min_q_kvar"] = pd.Series()
+
+        net.load.loc[index, "min_q_kvar"] = float(min_q_kvar)
+
+    if not np.isnan(max_q_kvar):
+        if "max_q_kvar" not in net.load.columns:
+            net.load.loc[:, "max_q_kvar"] = pd.Series()
+
+        net.load.loc[index, "max_q_kvar"] = float(max_q_kvar)
+
+    if not np.isnan(cost_per_kw):
+        if "cost_per_kw" not in net.load.columns:
+            net.load.loc[:, "cost_per_kw"] = pd.Series()
+
+        net.load.loc[index, "cost_per_kw"] = float(cost_per_kw)
+
+    if not np.isnan(cost_per_kvar):
+        if "cost_per_kvar" not in net.load.columns:
+            net.load.loc[:, "cost_per_kvar"] = pd.Series()
+
+        net.load.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
+
+    if not np.isnan(controllable):
+        if "controllable" not in net.load.columns:
+            net.load.loc[:, "controllable"] = pd.Series()
+
+        net.load.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.load.columns:
+            net.load.loc[index, "controllable"] = False
 
     return index
 

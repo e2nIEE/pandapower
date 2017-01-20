@@ -59,9 +59,12 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
 
     """
     
-    eg_idx = net._pd2ppc_lookups["ext_grid"]
-    gen_idx = net._pd2ppc_lookups["gen"]
-    sgen_idx = net._pd2ppc_lookups["sgen_controllable"]
+    eg_idx = net._pd2ppc_lookups["ext_grid"] if "ext_grid" in net._pd2ppc_lookups else None
+    gen_idx = net._pd2ppc_lookups["gen"] if "gen" in net._pd2ppc_lookups else None
+    sgen_idx = net._pd2ppc_lookups["sgen_controllable"] if "sgen_controllable" in \
+                    net._pd2ppc_lookups else None
+    load_idx = net._pd2ppc_lookups["load_controllable"] if "load_controllable" in \
+                    net._pd2ppc_lookups else None
     
     gen_costs = np.ones(len(ppci["gen"]))
     if eg_idx is not None and "cost_per_kw" in is_elems["ext_grid"]:
@@ -70,6 +73,11 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
         gen_costs[gen_idx[is_elems["gen"].index]] = is_elems["gen"].cost_per_kw
     if sgen_idx is not None and "cost_per_kw" in is_elems["sgen_controllable"]:
         gen_costs[sgen_idx[is_elems["sgen_controllable"].index]] = is_elems["sgen_controllable"].cost_per_kw
+    if load_idx is not None and "cost_per_kw" in is_elems["load_controllable"]:
+        gen_costs[load_idx[is_elems["load_controllable"].index]] = is_elems["load_controllable"].cost_per_kw
+        
+    print(gen_costs)
+    print(ppci["gen"])
     
     ng = len(ppci["gen"])  # -
     nref = sum(ppci["bus"][:, BUS_TYPE] == REF)

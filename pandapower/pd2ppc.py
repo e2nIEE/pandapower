@@ -197,6 +197,7 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
     eg_end = len(is_elems['ext_grid'])
     gen_end = eg_end + len(is_elems['gen'])
     sgen_end = len(is_elems["sgen_controllable"]) + gen_end if "sgen_controllable" in is_elems else gen_end
+    load_end = len(is_elems["load_controllable"]) + sgen_end if "load_controllable" in is_elems else sgen_end
 
     if eg_end > 0:
         _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions, is_elems)
@@ -204,6 +205,8 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
         _build_gen_lookups(net, "gen", eg_end, gen_end, new_gen_positions, is_elems)
     if sgen_end > gen_end:
         _build_gen_lookups(net, "sgen_controllable", gen_end, sgen_end, new_gen_positions, is_elems)
+    if load_end > sgen_end:
+        _build_gen_lookups(net, "load_controllable", sgen_end, load_end, new_gen_positions, is_elems)
 
     # determine which buses, branches, gens are connected and
     # in-service
