@@ -207,12 +207,18 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc, is_elems):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     
     l = net["load"]
-    vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
-    lp = l["p_kw"].values * vl
-    lq = l["q_kvar"].values * vl
+    if not l.empty:
+        l["controllable"] = _controllable_to_bool(l["controllable"])
+        vl = (is_elems["load"] & ~l["controllable"]) * l["scaling"].values.T / np.float64(1000.)
+        lp = l["p_kw"].values * vl
+        lq = l["q_kvar"].values * vl
+    else: 
+        lp = []
+        lq = []
 
     sgen = net["sgen"]
     if not sgen.empty:
+        sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
         vl = (is_elems["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
              np.float64(1000.)
         sp = sgen["p_kw"].values * vl
@@ -262,5 +268,12 @@ def _calc_shunts_and_add_on_ppc(net, ppc, is_elems):
 
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
+        
+def _controllable_to_bool(ctrl):
+    ctrl_bool = []
+    for val in ctrl:
+        ctrl_bool.append(val if not np.isnan(val) else False)
+    return np.array(ctrl_bool, dtype=bool)
+        
 
 
