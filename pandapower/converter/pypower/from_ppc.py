@@ -135,6 +135,10 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
                     c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
                     imax_ka=ppc['branch'][i, 5]/ppc['bus'][to_bus, 9], type='ol',
                     in_service=bool(ppc['branch'][i, 10]))
+                if (ppc['branch'][i, 8] != 0) | (ppc['branch'][i, 8] != 1):
+                    logger.error('A line  do not have a ratio but the '
+                                 'ratio of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
+                                 'not zero.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
             else:
                 if from_vn_kv > to_vn_kv:
                     hv_bus = from_bus
@@ -157,7 +161,7 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
                 if i0_percent < 0:
                     logger.error('A transformer always behaves inductive consumpting but the '
                                  'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
-                                 'positive', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+                                 'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
 
                 pp.create_transformer_from_parameters(
                     net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,

@@ -14,6 +14,9 @@ import pandapower as pp
 
 
 def case2_1():
+    """
+    2 bus system with a line
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
@@ -38,6 +41,9 @@ def case2_1():
 
 
 def case2_2():
+    """
+    2 bus system with a transformer which can be detect by vn_kv an by ratio
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
@@ -76,6 +82,9 @@ def case2_2_by_code():
 
 
 def case2_3():
+    """
+    2 bus system with a transformer which has a ratio != 1 and can be detect by vn_kv an by ratio
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
@@ -100,6 +109,9 @@ def case2_3():
 
 
 def case2_4():
+    """
+    2 bus system with a transformer which only can be detected by vn_kv
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
