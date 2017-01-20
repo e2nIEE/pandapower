@@ -323,7 +323,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
 
     ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
                                     opf=True, cost_function=cost_function, 
-                                    calculate_voltage_angles=False)
+                                    calculate_voltage_angles=False, **kwargs)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc

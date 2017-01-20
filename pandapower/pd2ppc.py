@@ -23,7 +23,7 @@ from pandapower.make_objective import _make_objective
 
 def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
             trafo_model="pi", init_results=False, copy_constraints_to_ppc=False,
-            opf=False, cost_function=None):
+            opf=False, cost_function=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -106,7 +106,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
 
     if opf:
         # make opf objective
-        ppci = _make_objective(ppci, net, is_elems, cost_function)
+        ppci = _make_objective(ppci, net, is_elems, cost_function, **kwargs)
         
     return ppc, ppci
 

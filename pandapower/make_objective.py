@@ -82,79 +82,26 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
 #        gen_is = net.gen[net.gen.in_service==True]
 #    else:
 #        gen_is = is_elems['gen']
-#    eg_is = is_elems['ext_grid']
-#    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
-#        if "controllable" in net.sgen.columns else DataFrame()
-#
-#    if gen_is.empty:
-#        gen_cost_per_kw = np.array([])
-#    elif "cost_per_kw" in gen_is.columns:
-#        gen_cost_per_kw = gen_is.cost_per_kw
-#    else:
-#        gen_cost_per_kw = np.ones(len(gen_is))
-#
-#    if sg_is.empty:
-#        sgen_cost_per_kw = np.array([])
-#    elif "cost_per_kw" in sg_is.columns:
-#        sgen_cost_per_kw = sg_is.cost_per_kw
-#    else:
-#        sgen_cost_per_kw = np.ones(len(sg_is))
-#
-#    if "cost_per_kw" not in eg_is.columns:
-#        eg_cost_per_kw = np.ones(len(eg_is))
-#    else:
-#        eg_cost_per_kw = eg_is.cost_per_kw
 
     if cost_function == "linear":
 
         ppci["gencost"] = np.zeros((ng, 8), dtype=float)
         ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-#        ppc["gencost"][:nref, 7] = np.nan_to_num(eg_cost_per_kw*1e3)
         ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initializing gencost array
         ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
-#        ppc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw*1e3,
-#                                                              gen_cost_per_kw*1e3]))
-        
-#        ppc["gencost"][nref:ng, 6] = np.nan_to_num(np.hstack([net.sgen.sn_kva.values*1e-3,
-#                                                              net.gen.sn_kva.values*1e-3]))
-
-#        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
-#        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 0])  # initializing gencost array
-#        ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
-#        p = p_timestep/-1e3
-#        p[p == 0] = 1e-6
-#        ppc["gencost"][nref:ng, 6] = array(p)
-
-#        print(ppci["gencost"][:, 7])
 
 
     if cost_function == "linear_minloss":
 
         ppci["gencost"] = np.zeros((ng, 8), dtype=float)
         ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-#        ppc["gencost"][:nref, 7] = np.nan_to_num(eg_cost_per_kw*1e3)
         ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initializing gencost array
         ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
-#        ppc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw*1e3,
-#                                                             gen_cost_per_kw*1e3]))
-
-#        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
-#        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
-        #ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
-#        p = p_timestep/-1e3
-#        p[p == 0] = 1e-6
-#        ppc["gencost"][nref:ng, 6] = array(p)
-
-        #print(ppc["gencost"][nref:ng, 6])
 
         # Get additional counts
         nb = len(ppci["bus"])
         nl = len(ppci["branch"])
         dim = 2 * nb + 2 * ng + 2 * nl
-
-#        print("nb %s" % nb)
-#        print("ng %s" % ng)
-#        print("nl %s" % nl)
 
         # Get branch admitance matrices
         with warnings.catch_warnings():
