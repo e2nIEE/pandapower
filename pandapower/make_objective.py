@@ -75,9 +75,6 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
         gen_costs[sgen_idx[is_elems["sgen_controllable"].index]] = is_elems["sgen_controllable"].cost_per_kw
     if load_idx is not None and "cost_per_kw" in is_elems["load_controllable"]:
         gen_costs[load_idx[is_elems["load_controllable"].index]] = is_elems["load_controllable"].cost_per_kw
-        
-    print(gen_costs)
-    print(ppci["gen"])
     
     ng = len(ppci["gen"])  # -
     nref = sum(ppci["bus"][:, BUS_TYPE] == REF)
