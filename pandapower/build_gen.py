@@ -216,7 +216,7 @@ def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
     if sg_end > gen_end:
         ppc["gen"][gen_end:sg_end, GEN_BUS] = bus_lookup[sg_is["bus"].values]
         ppc["gen"][gen_end:sg_end, PG] = - sg_is["p_kw"].values * 1e-3 * sg_is["scaling"].values
-        ppc["gen"][gen_end:sg_end, QG] = sg_is["q_kvar"].values
+        ppc["gen"][gen_end:sg_end, QG] = sg_is["q_kvar"].values * 1e-3 * sg_is["scaling"].values
 
         # set bus values for generator buses
         gen_buses = bus_lookup[sg_is["bus"].values]
@@ -253,7 +253,7 @@ def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
 
         ppc["gen"][sg_end:l_end, GEN_BUS] = load_buses
         ppc["gen"][sg_end:l_end, PG] = - l_is["p_kw"].values * 1e-3 * l_is["scaling"].values
-        ppc["gen"][sg_end:l_end, QG] = l_is["q_kvar"].values
+        ppc["gen"][sg_end:l_end, QG] = l_is["q_kvar"].values * 1e-3 * l_is["scaling"].values
 
         # set bus values for controllable loads
         ppc["bus"][load_buses, BUS_TYPE] = PQ
