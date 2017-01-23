@@ -16,7 +16,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
+def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc'):
     """
     This function converts a matpower case file (.mat) version 2 to a pandapower net.
     Note: python is 0-based while Matlab is 1-based.
@@ -28,9 +28,6 @@ def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
     OPTIONAL:
 
         **f_hz** (int, 50) - The frequency of the network.
-
-        **detect_trafo** (str, 'vn_kv') - In case of 'vn_kv' trafos are detected by different bus voltages.
-            In case of 'ratio' trafos are detected by tap ratios != 0.
 
         **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch" and "bus" it will use the
             sub-struct casename_mpc_file
@@ -47,7 +44,7 @@ def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
 
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
-    net = from_ppc(ppc, f_hz, detect_trafo)
+    net = from_ppc(ppc, f_hz)
 
     return net
 
