@@ -74,21 +74,22 @@ Medium voltage distribution network
 ---------------------------
 
 
-Medium voltage distribution network with DER
---------------------------------------------
+Medium voltage distribution network with PV and Wind DER
+--------------------------------------------------------
 
 .. note:: This network contains additional 9 distributed energy resources compared to medium voltage distribution network:
 
 			- 8 photovoltaic generators
 			- 1 wind turbine
 
-Compared to the CIGRE Task Force C6.04.02 paper 2 Batteries, 2 residential fuel cells, 1 CHP diesel and 1 CHP fuel cell are neglected.
+Compared to the case study of CIGRE Task Force C6.04.02 paper all pv and wind energy resources are
+considered but 2 Batteries, 2 residential fuel cells, 1 CHP diesel and 1 CHP fuel cell are neglected.
 
 .. code:: python
 
     import pandapower.networks as pn
 
-    net = pn.create_cigre_network_mv(with_der=True)
+    net = pn.create_cigre_network_mv(with_der="pv_wind")
 
     '''
     This pandapower network includes the following parameter tables:
@@ -110,6 +111,45 @@ Compared to the CIGRE Task Force C6.04.02 paper 2 Batteries, 2 residential fuel 
 ---------------------------
 
 
+Medium voltage distribution network with all DER
+------------------------------------------------
+
+.. note:: This network contains additional 15 distributed energy resources compared to medium voltage distribution network:
+
+			- 8 photovoltaic generators
+			- 1 wind turbine
+			- 2 Batteries
+			- 2 residential fuel cells
+			- 1 CHP diesel
+			- 1 CHP fuel cell
+
+Compared to the case study of CIGRE Task Force C6.04.02 paper all distributed energy resources are
+considered.
+
+.. code:: python
+
+    import pandapower.networks as pn
+
+    net = pn.create_cigre_network_mv(with_der="all")
+
+    '''
+    This pandapower network includes the following parameter tables:
+      - switch (8 elements)
+      - load (18 elements)
+      - ext_grid (1 elements)
+      - sgen (15 elements)
+      - line (15 elements)
+      - trafo (2 elements)
+      - bus (15 elements)
+    '''
+
+.. image:: /pics/cigre_network_mv_der_all.png
+	:width: 42em
+	:alt: alternate Text
+	:align: center
+
+
+---------------------------
 
 
 Low voltage distribution network

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pytest
@@ -49,7 +49,7 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged is True
 
-    net = pn.create_cigre_network_mv(with_der=True)
+    net = pn.create_cigre_network_mv(with_der="pv_wind")
     pp.runpp(net)
 
     all_vn_kv = pd.Series([110, 20])
@@ -58,6 +58,22 @@ def test_cigre_mv():
     assert len(net.line) == 15
     assert len(net.gen) == 0
     assert len(net.sgen) == 9
+    assert len(net.shunt) == 0
+    assert len(net.trafo) == 2
+    assert len(net.load) == 18
+    assert len(net.ext_grid) == 1
+    assert len(net.switch) == 8
+    assert net.converged is True
+
+    net = pn.create_cigre_network_mv(with_der="all")
+    pp.runpp(net)
+
+    all_vn_kv = pd.Series([110, 20])
+    assert net.bus.vn_kv.isin(all_vn_kv).all()
+    assert len(net.bus) == 15
+    assert len(net.line) == 15
+    assert len(net.gen) == 0
+    assert len(net.sgen) == 15
     assert len(net.shunt) == 0
     assert len(net.trafo) == 2
     assert len(net.load) == 18

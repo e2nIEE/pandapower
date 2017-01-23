@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
+try:
+    import pplog as logging
+except:
+    import logging
+logger = logging.getLogger(__name__)
 
 
 def create_cigre_network_hv(length_km_6a_6b=0.1):
@@ -111,6 +116,12 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
 
 
 def create_cigre_network_mv(with_der=False):
+    if with_der not in [False, True, "pv_wind", "all"]:
+        logger.error("'with_der' is unknown. It should be in [False, 'pv_wind', 'all'].")
+    if with_der is True:
+        logger.info("'with_der' should be in [False, 'pv_wind', 'all']. with_der=True is replaced "
+                    "by with_der='pv_wind'.")
+
     net_cigre_mv = pp.create_empty_network()
 
     # Linedata
@@ -226,7 +237,7 @@ def create_cigre_network_mv(with_der=False):
     pp.create_load(net_cigre_mv, bus14, p_kw=331.5, q_kvar=205.44525, name='Load CI14')
 
     # Optional distributed energy recources
-    if with_der:
+    if with_der in ["pv_wind", "all"]:
         pp.create_sgen(net_cigre_mv, bus3, p_kw=-20, q_kvar=0, sn_kva=20, name='PV 3', type='PV')
         pp.create_sgen(net_cigre_mv, bus4, p_kw=-20, q_kvar=0, sn_kva=20, name='PV 4', type='PV')
         pp.create_sgen(net_cigre_mv, bus5, p_kw=-30, q_kvar=0, sn_kva=30, name='PV 5', type='PV')
@@ -237,7 +248,19 @@ def create_cigre_network_mv(with_der=False):
         pp.create_sgen(net_cigre_mv, bus11, p_kw=-10, q_kvar=0, sn_kva=10, name='PV 11', type='PV')
         pp.create_sgen(net_cigre_mv, bus7, p_kw=-1500, q_kvar=0, sn_kva=1500, name='WKA 7',
                        type='WP')
-
+        if with_der == "all":
+            pp.create_sgen(net_cigre_mv, bus=bus5, p_kw=-600, sn_kva=600, name='Battery 1',
+                           type='Battery', max_p_kw=-600, min_p_kw=600)
+            pp.create_sgen(net_cigre_mv, bus=bus5, p_kw=-33, sn_kva=33,
+                           name='Residential fuel cell 1', type='Residential fuel cell')
+            pp.create_sgen(net_cigre_mv, bus=bus9, p_kw=-310, sn_kva=310, name='CHP diesel 1',
+                           type='CHP diesel')
+            pp.create_sgen(net_cigre_mv, bus=bus9, p_kw=-212, sn_kva=212, name='Fuel cell 1',
+                           type='Fuel cell')
+            pp.create_sgen(net_cigre_mv, bus=bus10, p_kw=0, sn_kva=200, name='Battery 2',
+                           type='Battery', max_p_kw=-200, min_p_kw=200)
+            pp.create_sgen(net_cigre_mv, bus=bus10, p_kw=-14, sn_kva=14,
+                           name='Residential fuel cell 2', type='Residential fuel cell')
     return net_cigre_mv
 
 
