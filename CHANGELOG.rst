@@ -1,5 +1,7 @@
 Change Log
 =============
+- [CHANGED] from_ppc: no detect_trafo anymore
+- [ADDED] networks: case118, case300, cigre_network_mv with_der='all' der
 
 [1.1.1] - 2017-01-12
 ----------------------

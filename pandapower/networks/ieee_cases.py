@@ -265,6 +265,25 @@ def case118():
     return case118
 
 
+def case300():
+    """
+    Calls the pickle file case300.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Washington <http://www2.ee.washington.edu/research/pstca/pf300/pg_tca300bus.htm>`_ and `Illinois University <http://icseg.iti.illinois.edu/ieee-300-bus-system/>`_.
+
+    RETURN:
+
+         **net** - Returns the required ieee network case300
+
+    EXAMPLE:
+
+         import pandapower.networks as pn
+
+         net = pn.case300()
+    """
+    case300 = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case300.p"))
+    return case300
+
+
 if __name__ == "__main__":
     import pandapower.networks as pn
     net = pn.networks.case9()

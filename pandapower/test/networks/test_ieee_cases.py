@@ -96,6 +96,47 @@ def test_case30Q():
     assert len(net.gen) + len(net.ext_grid) == 6
     assert net.converged is True
 
+
+def test_case39():
+    net = pn.case39()
+    assert net.converged is True
+    pp.runpp(net)
+    assert len(net.bus) == 39
+    assert len(net.line) + len(net.trafo) == 46
+    assert len(net.gen) + len(net.ext_grid) == 10
+    assert net.converged is True
+
+
+def test_case57():
+    net = pn.case57()
+    assert net.converged is True
+    pp.runpp(net)
+    assert len(net.bus) == 57
+    assert len(net.line) + len(net.trafo) == 80
+    assert len(net.gen) + len(net.ext_grid) == 7
+    assert net.converged is True
+
+
+def test_case118():
+    net = pn.case118()
+    assert net.converged is True
+    pp.runpp(net)
+    assert len(net.bus) == 118
+    assert len(net.line) + len(net.trafo) == 186
+    assert len(net.gen) + len(net.ext_grid) == 54
+    assert net.converged is True
+
+
+def test_case300():
+    net = pn.case300()
+    assert net.converged is True
+    pp.runpp(net)
+    assert len(net.bus) == 300
+    assert len(net.line) + len(net.trafo) == 411
+    assert len(net.gen) + len(net.ext_grid) == 69
+    assert net.converged is True
+
+
 if __name__ == '__main__':
 #    net = pn.case30Q()
     pytest.main(["test_ieee_cases.py", "-xs"])

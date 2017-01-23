@@ -34,23 +34,11 @@ def test_from_ppc():
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
     assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, tol=1.e-9)
 
-    # check detect_trafo
-    ppc2_4 = testgrids.case2_4()
-    net1 = from_ppc(ppc2_4, detect_trafo='vn_kv')
-    net2 = from_ppc(ppc2_4, detect_trafo='ratio')
-    assert type(net1) == type(net_by_code)
-    assert type(net2) == type(net_by_code)
-    assert len(net1.trafo) == 1
-    assert len(net1.line) == 0
-    assert len(net2.trafo) == 0
-    assert len(net2.line) == 1
-
 
 def test_validate_from_ppc():
     ppc = testgrids.case2_2()
     net = testgrids.case2_2_by_code()
-    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1,
-                             detect_trafo='vn_kv')
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
 def test_ppc_testgrids():
@@ -67,19 +55,14 @@ def test_ppc_testgrids():
 
 def test_pypower_cases():
     # check pypower cases
-    name = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q', 'case39', 'case118']
+    name = ['case4gs', 'case6ww', 'case30', 'case30pwl', 'case30Q', 'case39', 'case118', 'case300']
     for i in name:
         module = __import__('pypower.' + i)
         submodule = getattr(module, i)
         my_function = getattr(submodule, i)
         ppc = my_function()
-        if i == 'case39':
-            net = from_ppc(ppc, f_hz=60, detect_trafo='ratio')
-            assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1,
-                                     detect_trafo='ratio')
-        else:
-            net = from_ppc(ppc, f_hz=60)
-            assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+        net = from_ppc(ppc, f_hz=60)
+        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation

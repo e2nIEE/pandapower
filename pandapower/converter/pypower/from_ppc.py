@@ -20,7 +20,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
+def from_ppc(ppc, f_hz=50):
     """
     This function converts pypower case files to pandapower net structure.
 
@@ -31,9 +31,6 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
     OPTIONAL:
 
         **f_hz** - The frequency of the network.
-
-        **detect_trafo** - In case of 'vn_kv' trafos are detected by different bus voltages.
-            In case of 'ratio' trafos are detected by tap ratios != 0.
 
     OUTPUT:
 
@@ -123,99 +120,53 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
         from_bus = pp.get_element_index(net, 'bus', name=int(ppc['branch'][i, 0]))
         to_bus = pp.get_element_index(net, 'bus', name=int(ppc['branch'][i, 1]))
 
-        if detect_trafo == 'vn_kv':
-            from_vn_kv = ppc['bus'][from_bus, 9]
-            to_vn_kv = ppc['bus'][to_bus, 9]
-            if from_vn_kv == to_vn_kv:
-                Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
+        from_vn_kv = ppc['bus'][from_bus, 9]
+        to_vn_kv = ppc['bus'][to_bus, 9]
+        if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)):
+            Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
 
-                pp.create_line_from_parameters(
-                    net, from_bus=from_bus, to_bus=to_bus, length_km=1,
-                    r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
-                    c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                    imax_ka=ppc['branch'][i, 5]/ppc['bus'][to_bus, 9], type='ol',
-                    in_service=bool(ppc['branch'][i, 10]))
-                if (ppc['branch'][i, 8] != 0) | (ppc['branch'][i, 8] != 1):
-                    logger.error('A line  do not have a ratio but the '
-                                 'ratio of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
-                                 'not zero.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+            pp.create_line_from_parameters(
+                net, from_bus=from_bus, to_bus=to_bus, length_km=1,
+                r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
+                c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
+                imax_ka=ppc['branch'][i, 5]/ppc['bus'][to_bus, 9], type='ol',
+                in_service=bool(ppc['branch'][i, 10]))
+
+        else:
+            if from_vn_kv >= to_vn_kv:
+                hv_bus = from_bus
+                vn_hv_kv = from_vn_kv
+                lv_bus = to_bus
+                vn_lv_kv = to_vn_kv
+                tp_side = 'hv'
             else:
-                if from_vn_kv > to_vn_kv:
-                    hv_bus = from_bus
-                    vn_hv_kv = from_vn_kv
-                    lv_bus = to_bus
-                    vn_lv_kv = to_vn_kv
-                    tp_side = 'hv'
-                else:
-                    hv_bus = to_bus
-                    vn_hv_kv = to_vn_kv
-                    lv_bus = from_bus
-                    vn_lv_kv = from_vn_kv
-                    tp_side = 'lv'
-                rk = ppc['branch'][i, 2]
-                xk = ppc['branch'][i, 3]
-                zk = (rk**2+xk**2)**0.5
-                sn = ppc['branch'][i, 5]*1e3
-                ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
-                i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
-                if i0_percent < 0:
-                    logger.error('A transformer always behaves inductive consumpting but the '
-                                 'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
-                                 'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+                hv_bus = to_bus
+                vn_hv_kv = to_vn_kv
+                lv_bus = from_bus
+                vn_lv_kv = from_vn_kv
+                tp_side = 'lv'
+                if from_vn_kv == to_vn_kv:
+                    logger.warn('The pypower branch %d (from_bus, to_bus)=(%d, %d) is considered as'
+                                'a transformer because of a ratio != 0 | 1 but it connects the same'
+                                ' voltage level', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+            rk = ppc['branch'][i, 2]
+            xk = ppc['branch'][i, 3]
+            zk = (rk**2+xk**2)**0.5
+            sn = ppc['branch'][i, 5]*1e3
+            ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
+            i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
+            if i0_percent < 0:
+                logger.error('A transformer always behaves inductive consumpting but the '
+                             'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
+                             'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
 
-                pp.create_transformer_from_parameters(
-                    net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
-                    vn_lv_kv=vn_lv_kv, vsc_percent=zk*sn/1e3, vscr_percent=rk*sn/1e3, pfe_kw=0,
-                    i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
-                    tp_st_percent=abs(ratio_1) if ratio_1 else nan,
-                    tp_pos=sign(ratio_1) if ratio_1 else nan,
-                    tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
-
-        elif detect_trafo == 'ratio':
-            if ppc['branch'][i, 8] == 0:
-                Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-
-                pp.create_line_from_parameters(
-                    net, from_bus=from_bus, to_bus=to_bus, length_km=1,
-                    r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
-                    c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                    imax_ka=ppc['branch'][i, 5]/ppc['bus'][to_bus, 9], type='ol',
-                    in_service=bool(ppc['branch'][i, 10]))
-            else:
-                from_vn_kv = ppc['bus'][from_bus, 9]
-                to_vn_kv = ppc['bus'][to_bus, 9]
-                if from_vn_kv >= to_vn_kv:
-                    hv_bus = from_bus
-                    vn_hv_kv = from_vn_kv
-                    lv_bus = to_bus
-                    vn_lv_kv = to_vn_kv
-                    tp_side = 'hv'
-                    if from_vn_kv == to_vn_kv:
-                        logger.debug('A transformer voltage is on both side the same.')
-                else:
-                    hv_bus = to_bus
-                    vn_hv_kv = to_vn_kv
-                    lv_bus = from_bus
-                    vn_lv_kv = from_vn_kv
-                    tp_side = 'lv'
-                rk = ppc['branch'][i, 2]
-                xk = ppc['branch'][i, 3]
-                zk = (rk**2+xk**2)**0.5
-                sn = ppc['branch'][i, 5]*1e3
-                ratio_1 = (ppc['branch'][i, 8] - 1) * 100
-                i0_percent = ppc['branch'][i, 4]*100*baseMVA*1e3/sn
-                if i0_percent > 0:
-                    logger.error('A transformer always behaves inductive consumpting but the '
-                                 'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
-                                 'positive', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
-
-                pp.create_transformer_from_parameters(
-                    net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
-                    vn_lv_kv=vn_lv_kv, vsc_percent=zk*sn/1e3, vscr_percent=rk*sn/1e3, pfe_kw=0,
-                    i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
-                    tp_st_percent=abs(ratio_1) if ratio_1 else nan,
-                    tp_pos=sign(ratio_1) if ratio_1 else nan,
-                    tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
+            pp.create_transformer_from_parameters(
+                net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
+                vn_lv_kv=vn_lv_kv, vsc_percent=zk*sn/1e3, vscr_percent=rk*sn/1e3, pfe_kw=0,
+                i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
+                tp_st_percent=abs(ratio_1) if ratio_1 else nan,
+                tp_pos=sign(ratio_1) if ratio_1 else nan,
+                tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
     # unused data of ppc: rateB, rateC
 
     # gencost, areas are currently unconverted
@@ -223,7 +174,7 @@ def from_ppc(ppc, f_hz=50, detect_trafo='vn_kv'):
     return net
 
 
-def validate_from_ppc(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
+def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     "vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3, "p_gen_kw": 1e-3,
         "q_gen_kvar": 1e-3}):
     """
@@ -237,9 +188,6 @@ def validate_from_ppc(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
         **pp_net** - The pandapower network.
 
     OPTIONAL:
-
-        **detect_trafo** - In case of 'vn_kv' trafos are detected by different bus voltages.
-            In case of 'ratio' trafos are detected by tap ratios != 0.
 
         **max_diff_values** - Dict of maximal allowed difference values. The keys must be
             'vm_pu', 'va_degree', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw' and 'q_gen_kvar' and
@@ -329,48 +277,26 @@ def validate_from_ppc(ppc_net, pp_net, detect_trafo='vn_kv', max_diff_values={
         for i in BRANCHES_uniq.index:
             from_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 0]))
             to_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 1]))
-            # detect_trafo == 'vn_kv'
-            if detect_trafo == 'vn_kv':
-                from_vn_kv = ppc_res['bus'][from_bus, 9]
-                to_vn_kv = ppc_res['bus'][to_bus, 9]
-                if from_vn_kv == to_vn_kv:
-                    pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
-                        (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
-                            [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
+            from_vn_kv = ppc_res['bus'][from_bus, 9]
+            to_vn_kv = ppc_res['bus'][to_bus, 9]
+            if (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
+                                           (ppc_res['branch'][i, 8] == 1)):
+                pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
+                    (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
+                        [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
+            else:
+                if from_vn_kv >= to_vn_kv:
+                    hv_bus = from_bus
+                    lv_bus = to_bus
+                    pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
+                        (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
+                            [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']]), 0)
                 else:
-                    if from_vn_kv >= to_vn_kv:
-                        hv_bus = from_bus
-                        lv_bus = to_bus
-                        pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                            (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
-                                [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']]), 0)
-                    else:
-                        hv_bus = to_bus
-                        lv_bus = from_bus
-                        pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                            (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
-                                [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']]), 0)
-            # detect_trafo == 'ratio'
-            elif detect_trafo == 'ratio':
-                if ppc_res['branch'][i, 8] == 0:
-                    pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
-                        (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
-                            [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
-                else:
-                    from_vn_kv = ppc_res['bus'][from_bus, 9]
-                    to_vn_kv = ppc_res['bus'][to_bus, 9]
-                    if from_vn_kv >= to_vn_kv:
-                        hv_bus = from_bus
-                        lv_bus = to_bus
-                        pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                            (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
-                                [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']]), 0)
-                    else:
-                        hv_bus = to_bus
-                        lv_bus = from_bus
-                        pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                            (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
-                                [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']]), 0)
+                    hv_bus = to_bus
+                    lv_bus = from_bus
+                    pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
+                        (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
+                            [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']]), 0)
         pp_res_branch = pp_res_branch[1:, :]
 
         # --- do the power flow result comparison

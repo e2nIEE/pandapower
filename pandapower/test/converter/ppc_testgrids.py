@@ -35,7 +35,7 @@ def case2_1():
     # branch data
     # fbus, tbus, r, x, b, rateA, rateB, rateC, ratio, angle, status, angmin, angmax
     ppc["branch"] = array([
-        [3, 0, 0,      0.05, 0,     250, 250, 250, 0, 0, 1, -360, 360]
+        [3, 0, 0,      0.05, 0,     250, 250, 250, 1, 0, 1, -360, 360]
     ])
     return ppc
 

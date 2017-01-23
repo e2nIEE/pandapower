@@ -4,7 +4,7 @@ IEEE cases
 
 .. note::
 
-    All IEEE case files were converted from PYPOWER
+    All IEEE case files were converted from `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
 
 Case 4gs
@@ -80,6 +80,11 @@ Case 57
 ---------------------------
 
 Case 118
+---------
+
+.. autofunction:: pandapower.networks.case118
+
+Case 300
 ---------
 
 .. autofunction:: pandapower.networks.case118
