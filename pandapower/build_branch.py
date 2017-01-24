@@ -211,7 +211,7 @@ def _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model):
 
 def _wye_delta(r, x, y):
     """
-    20.05.2016 added by Lothar Löwer                        
+    20.05.2016 added by Lothar Löwer
 
     Calculate transformer Pi-Data based on T-Data
 
@@ -237,8 +237,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
         **trafo** (Dataframe) - The dataframe in net.trafo
         which contains transformer calculation values.
 
-    RETURN:
-
+    OUTPUT:
         **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
         the form (-b_img, -b_real)
     """
@@ -256,7 +255,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
     b_img = np.sqrt(b_img) * baseR / unl_squared
     y = - b_real * 1j  - b_img * np.sign(i0)
     if "lv" in trafo_df["tp_side"].values:
-        return y /  np.square(vn_trafo_lv * vn_lv / trafo_df["vn_lv_kv"].values / vn_lv) 
+        return y /  np.square(vn_trafo_lv * vn_lv / trafo_df["vn_lv_kv"].values / vn_lv)
     else:
         return y
 
@@ -268,12 +267,10 @@ def _calc_vn_from_dataframe(trafo_df, vn_lv):
     If "side" is 2 (low-voltage side) the low voltage vnl is adjusted
 
     INPUT:
-
         **trafo** (Dataframe) - The dataframe in pd_net["structure"]["trafo"]
         which contains transformer calculation values.
 
-    RETURN:
-
+    OUTPUT:
         **vn_hv_kv** (1d array, float) - The adusted high voltages
 
         **vn_lv_kv** (1d array, float) - The adjusted low voltages
@@ -307,7 +304,7 @@ def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
 
     """
     tap_lv =  np.square(vn_trafo_lv / vn_lv) #adjust for low voltage side voltage converter
-    z_sc = trafo_df["vsc_percent"].values / 100. / trafo_df.sn_kva.values * 1000. * tap_lv 
+    z_sc = trafo_df["vsc_percent"].values / 100. / trafo_df.sn_kva.values * 1000. * tap_lv
     r_sc = trafo_df["vscr_percent"].values / 100. / trafo_df.sn_kva.values * 1000. *tap_lv
     x_sc = np.sqrt(z_sc**2 - r_sc**2)
     return r_sc, x_sc
@@ -320,15 +317,13 @@ def _calc_tap_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
                   (vn_hv_kv / vn_lv_kv) / (ub1_in_kv / ub2_in_kv)
 
     INPUT:
-
         **net** (Dataframe) - The net for which to calc the tap ratio.
 
         **vn_hv_kv** (1d array, float) - The adjusted nominal high voltages
 
         **vn_lv_kv** (1d array, float) - The adjusted nominal low voltages
 
-    RETURN:
-
+    OUTPUT:
         **tab** (1d array, float) - The off-nominal tap ratio
     """
     # Calculating tab (trasformer off nominal turns ratio)

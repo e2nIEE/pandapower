@@ -914,7 +914,6 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
      Returns elements connected to a given bus.
 
      INPUT:
-
         **net** (PandapowerNet)
 
         **element** (string, name of the element table)
@@ -922,14 +921,12 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-
         **respect_switches** (boolean, True)    - True: open switches will be respected
                                                   False: open switches will be ignored
         **respect_in_service** (boolean, False) - True: in_service status of connected lines will be
                                                         respected
                                                   False: in_service status will be ignored
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected lines.
 
     """
@@ -1000,13 +997,11 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
      Returns buses connected to given buses. The source buses will NOT be returned.
 
      INPUT:
-
         **net** (PandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-
         **respect_switches** (boolean, True)        - True: open switches will be respected
                                                       False: open switches will be ignored
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
@@ -1018,8 +1013,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
                                                       l: lines
                                                       s: switches
                                                       t: trafos
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected buses.
 
     """
@@ -1055,7 +1049,6 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
      will be returned, else one.
 
      INPUT:
-
         **net** (PandapowerNet)
 
         **element** (integer)
@@ -1066,12 +1059,10 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
                                                       t: trafo
 
      OPTIONAL:
-
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
                                                             will be respected
                                                       False: in_service status will be ignored
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected switches.
 
     """
@@ -1100,13 +1091,11 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     Returns switches connected to given buses.
 
     INPUT:
-
         **net** (PandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
     OPTIONAL:
-
         **respect_switches** (boolean, True)        - True: open switches will be respected
                                                      False: open switches will be ignored
 
@@ -1122,8 +1111,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
 
         **status** (string, ("all", "closed", "open"))    - Determines, which switches will
                                                             be considered
-    RETURN:
-
+    OUTPUT:
        **cl** (set) - Returns connected buses.
 
     """

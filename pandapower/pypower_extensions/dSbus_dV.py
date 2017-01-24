@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 from numpy import conj, zeros, complex128, diag, asmatrix, asarray
@@ -16,10 +16,10 @@ def dSbus_dV_calc(Yx, Yp, Yj, V, Vnorm):
     """Computes partial derivatives of power injection w.r.t. voltage.
 
     Calculates faster with numba and sparse matrices.
-    
+
     Input: Ybus in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), V and Vnorm (= V / abs(V))
-    
-    Output: data from CSR form of dS_dVm, dS_dVa 
+
+    OUTPUT: data from CSR form of dS_dVm, dS_dVa
     (index pointer and indices are the same as the ones from Ybus)
 
     Translation of: dS_dVm = dS_dVm = diagV * conj(Ybus * diagVnorm) + conj(diagIbus) * diagVnorm

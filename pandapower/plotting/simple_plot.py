@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import matplotlib.pyplot as plt
@@ -32,8 +32,7 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
         INPUT:
             **net** - The pandapower format network. If none is provided, mv_oberrhein() will be plotted as an example
 
-        Optional:
-
+        OPTIONAL:
             **respect_switches** (bool, False) - Respect switches when artificial geodata is created
 
             **line_width** (float, 1.0) - width of lines

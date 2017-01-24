@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
@@ -10,13 +10,12 @@ import pandas as pd
 def example_simple():
     """
     Returns the simple example network from the pandapower tutorials.
-    
-    RETURN:
-        
+
+    OUTPUT:
         net - simple example network
-        
+
     EXAMPLE:
-    
+
     >>> import pandapower.networks
     >>> net = pandapower.networks.example_simple()
 
@@ -46,7 +45,7 @@ def example_simple():
     # create bus-bus switches
     sw1 = pp.create_switch(net, bus2, bus3, et="b", type="CB")
     sw2 = pp.create_switch(net, bus4, bus5, et="b", type="CB")
-    
+
     # create bus-line switches
     sw3 = pp.create_switch(net, bus5, line2, et="l", type="LBS", closed=True)
     sw4 = pp.create_switch(net, bus6, line2, et="l", type="LBS", closed=True)
@@ -59,8 +58,8 @@ def example_simple():
     pp.create_load(net, bus7, p_kw=2000, q_kvar=4000, scaling=0.6, name="load")
 
     # create generator
-    pp.create_gen(net, bus6, p_kw=-6000, max_q_kvar=3000, min_q_kvar=-3000, vm_pu=1.03, 
-                  name="generator") 
+    pp.create_gen(net, bus6, p_kw=-6000, max_q_kvar=3000, min_q_kvar=-3000, vm_pu=1.03,
+                  name="generator")
 
     # create static generator
     pp.create_sgen(net, bus7, p_kw=-2000, q_kvar=500, name="static generator")
@@ -69,22 +68,21 @@ def example_simple():
     pp.create_shunt(net, bus3, q_kvar=-960, p_kw=0, name='Shunt')
 
     return net
-    
+
 def example_multivoltage():
     """
     Returns the multivoltage example network from the pandapower tutorials.
-    
-    RETURN:
 
+    OUTPUT:
         net - multivoltage example network
 
     EXAMPLE:
-    
+
     >>> import pandapower.networks
     >>> net = pandapower.networks.example_multivoltage()
 
     """
-    
+
     net = pp.create_empty_network()
 
     ###########################################################################

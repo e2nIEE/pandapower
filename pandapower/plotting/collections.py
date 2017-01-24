@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
@@ -15,13 +15,11 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                           cmap=None, norm=None, infofunc=None, picker=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
-    
-    Input:
 
+    Input:
         **net** (PandapowerNet) - The pandapower network
-               
-    Optional:
-    
+
+    OPTIONAL:
         **buses** (list, None) - The buses for which the collections are created.
                                  If None, all buses in the network are considered.
 
@@ -30,21 +28,21 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         **marker** (str, "o") - patch marker
 
         **patch_type** (str, "circle") - patch type, can be
-        
+
                 - "circle" for a circle
                 - "rect" for a rectangle
-                - "poly<n>" for a polygon with n edges 
-        
+                - "poly<n>" for a polygon with n edges
+
         **infofunc** (function, None) - infofunction for the patch element
-        
+
         **colors** (list, None) - list of colors for every element
-        
+
         **cmap** - colormap for the patch colors
-        
+
         **picker** - picker argument passed to the patch collection
-        
+
         **kwargs - key word arguments are passed to the patch function
-        
+
     """
     buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
@@ -96,21 +94,19 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
                            norm=None, picker=False, **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
-    
+
     Input:
-
         **net** (PandapowerNet) - The pandapower network
-               
-    Optional:
 
+    OPTIONAL:
         **lines** (list, None) - The lines for which the collections are created. If None, all lines in the network are considered.
 
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
-        
+
          **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
-        
+
     """
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
@@ -143,17 +139,15 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
 def create_trafo_collection(net, trafos=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
-    
+
     Input:
-
         **net** (PandapowerNet) - The pandapower network
-               
-    Optional:
 
+    OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created. If None, all transformers in the network are considered.
 
         **kwargs - key word arguments are passed to the patch function
-        
+
     """
     trafos = net.trafo if trafos is None else net.trafo.loc[trafos]
 
@@ -171,11 +165,9 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
     Draws matplotlib collections which can be created with the create collection functions.
 
     Input:
-
         **collections** (list) - iterable of collection objects
-               
-    Optional:
 
+    OPTIONAL:
         **figsize** (tuple, (10,8)) - figsize of the matplotlib figure
 
         **ax** (axis, None) - matplotlib axis object to plot into, new axis is created if None
@@ -192,7 +184,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
             cc = copy.copy(c)
             ax.add_collection(cc)
             if plot_colorbars and hasattr(c, "has_colormap"):
-                cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")                
+                cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")
                 if hasattr(c, "cbar_title"):
                     cbar_load.ax.set_ylabel(c.cbar_title)
     ax.set_axis_bgcolor("white")

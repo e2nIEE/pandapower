@@ -21,21 +21,8 @@ def create_empty_network(name=None, f_hz=50.):
 
         **name** (string, None) - name for the network
 
-    RETURN:
+    OUTPUT:
         **net** (attrdict) - PANDAPOWER attrdict with empty tables:
-
-            - bus
-            - ext_grid
-            - gen
-            - impedance
-            - line
-            - load
-            - sgen
-            - shunt
-            - trafo
-            - trafo3w
-            - ward
-            - xward
 
     EXAMPLE:
         net = create_empty_network()
@@ -488,7 +475,7 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 
     # and preserve dtypes
     _preserve_dtypes(net.load, dtypes)
-    
+
     if not np.isnan(min_p_kw):
         if "min_p_kw" not in net.load.columns:
             net.load.loc[:, "min_p_kw"] = pd.Series()
@@ -1817,7 +1804,7 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-    RETURN:
+    OUTPUT:
         (int) Index of dc line
 
     EXAMPLE:
@@ -1888,7 +1875,7 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
 
         **name** (str, None) - name of measurement.
 
-    RETURN:
+    OUTPUT:
         (int) Index of measurement
 
     EXAMPLE:

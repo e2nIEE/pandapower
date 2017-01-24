@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
@@ -25,7 +25,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     """
     Wrapper function for WLS state estimation.
 
-    Input:
+    INPUT:
         **net** - The net within this line should be created.
 
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
@@ -40,7 +40,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True.
 
-    Return:
+    OUTPUT:
         (bool) Was the state estimation successful?
     """
     wls = state_estimation(tolerance, maximum_iterations, net)
@@ -104,8 +104,7 @@ class state_estimation(object):
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
 
-        Input:
-
+        INPUT:
             **net** - The net within this line should be created
 
             **v_start** (np.array, shape=(1,), optional) - Vector with initial values for all
@@ -116,17 +115,15 @@ class state_estimation(object):
 
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
             phase shifts in transformers Default is True.
-        Return:
 
+        OUTPUT:
             **successful** (boolean) - True if the estimation process was successful
 
         Optional estimation variables:
-
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
 
         Example:
-
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
 
         """

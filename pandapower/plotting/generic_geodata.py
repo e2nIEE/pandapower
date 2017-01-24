@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
@@ -58,30 +58,26 @@ def build_igraph_from_pp(net, respect_switches=False):
     roots = [pp_bus_mapping[s] for s in net.ext_grid.bus.values]
     return g, meshed, roots  # g, (not g.is_dag())
 
-                            
-                            
+
+
 def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=False):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches and rings.
     It will remove out of service buses/lines from the net. The coordinates will be created either by igraph or by
     using networkx library.
 
-    Input:
-
+    INPUT:
         **net** - Pandapower network
 
-    Optional:
-
+    OPTIONAL:
         **mg** - Existing networkx multigraph, if available. Convenience to save computation time.
 
         **library** - "igraph" to use igraph package or "networkx" to use networkx package
 
-    Output:
-
+    OUTPUT:
         **net** - Pandapower network with added geo coordinates for the buses
 
-    Example:
-
+    EXAMPLE:
         net = create_generic_coordinates(net)
 
     """

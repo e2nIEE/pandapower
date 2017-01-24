@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import networkx as nx
@@ -11,34 +11,30 @@ from pandapower.topology.create_graph import create_nxgraph
 def connected_component(mg, bus, notravbuses=[]):
 
     """
-    Finds all buses in a NetworkX graph that are connected to a certain bus. 
-     
+    Finds all buses in a NetworkX graph that are connected to a certain bus.
+
     INPUT:
-     
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
-        
+
         **bus** (integer) - Index of the bus at which the search for connected components originates
-         
-         
+
+
     OPTIONAL:
-     
      **notravbuses** (list/set) - Indeces of notravbuses: lines connected to these buses are
-                                     not being considered in the graph  
-         
-    RETURN:
-     
+                                     not being considered in the graph
+
+    OUTPUT:
         **cc** (generator) - Returns a generator that yields all buses connected to the input bus
-        
+
     EXAMPLE:
-        
          import pandapower.topology as top
-         
+
          mg = top.create_nx_graph(net)
-         
+
          cc = top.connected_component(mg, 5)
-         
-    """    
-    
+
+    """
+
     yield bus
     visited = {bus}
     stack = [(bus, iter(mg[bus]))]
@@ -56,34 +52,30 @@ def connected_component(mg, bus, notravbuses=[]):
 
 
 def connected_components(mg, notravbuses=set()):
-    
+
     """
-     Clusters all buses in a NetworkX graph that are connected to each other.  
-     
+     Clusters all buses in a NetworkX graph that are connected to each other.
+
      INPUT:
-     
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
-         
-         
+
+
      OPTIONAL:
-     
      **notravbuses** (set) - Indeces of notravbuses: lines connected to these buses are
-                                       not being considered in the graph  
-         
-     RETURN:
-     
-        **cc** (generator) - Returns a generator that yields all clusters of buses connected 
+                                       not being considered in the graph
+
+     OUTPUT:
+        **cc** (generator) - Returns a generator that yields all clusters of buses connected
                              to each other.
-        
+
      EXAMPLE:
-        
          import pandapower.topology as top
-         
-         mg = top.create_nx_graph(net)         
-         
+
+         mg = top.create_nx_graph(net)
+
          cc = top.connected_components(net, 5)
-         
-    """ 
+
+    """
 
     nodes = set(mg.nodes()) - notravbuses
     while nodes:
@@ -94,72 +86,64 @@ def connected_components(mg, notravbuses=set()):
     for f, t in mg.edges():
         if f in notravbuses and t in notravbuses:
             yield set([f, t])
-  
-    
+
+
 def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
-                         notravbuses=None):      
+                         notravbuses=None):
     """
-        Calculates the shortest distance between a source bus and all buses connected to it.  
-     
+        Calculates the shortest distance between a source bus and all buses connected to it.
+
      INPUT:
-     
         **net** (PandapowerNet) - Variable that contains a pandapower network.
-        
+
         **bus** (integer) - Index of the source bus.
-         
-         
+
+
      OPTIONAL:
-     
         **respect_switches** (boolean, True) - True: open line switches are being considered
                                                      (no edge between nodes)
                                                False: open line switches are being ignored
-                                                        
+
         **nogobuses** (integer/list, None) - nogobuses are not being considered
-        
+
         **notravbuses** (integer/list, None) - lines connected to these buses are not being
                                               considered
-                                                     
-     RETURN:
-     
-        **dist** - Returns a pandas series with containing all distances to the source bus 
+
+     OUTPUT:
+        **dist** - Returns a pandas series with containing all distances to the source bus
                    in km.
-         
+
      EXAMPLE:
-        
          import pandapower.topology as top
-         
+
          dist = top.calc_distance_to_bus(net, 5)
-         
+
     """
     g = create_nxgraph(net, respect_switches=respect_switches,
                        nogobuses=nogobuses, notravbuses=None)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
-    
+
 
 def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
-    
+
     """
-     Finds buses, that are not connected to an external grid.  
-     
+     Finds buses, that are not connected to an external grid.
+
      INPUT:
-     
         **net** (PandapowerNet) - variable that contains a pandapower network
-         
+
      OPTIONAL:
-     
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
-         
-     RETURN:
-     
+
+     OUTPUT:
         **ub** (set) - unsupplied buses
-        
+
      EXAMPLE:
-        
          import pandapower.topology as top
-         
+
          top.unsupplied_buses(net)
     """
-     
+
     mg = mg or create_nxgraph(net)
     slacks = slacks or set(net.ext_grid[net.ext_grid.in_service==True].bus.values)
     not_supplied = set()
@@ -195,7 +179,7 @@ def find_bridges(g, roots):
             low[grandparent] = min(low[parent], low[grandparent])
     return bridges
 
-    
+
 def get_2connected_buses(g, roots):
     bridges = find_bridges(g, roots)
     if not bridges:
@@ -217,34 +201,27 @@ def get_2connected_buses(g, roots):
 
 
 def determine_stubs(net, roots=None, mg=None):
-    
+
     """
-     Finds stubs in a network. Open switches are being ignored. Results are being written in a new 
+     Finds stubs in a network. Open switches are being ignored. Results are being written in a new
      column in the bus table ("on_stub") and line table ("is_stub") as True/False value.
-     
-     
+
+
      INPUT:
-     
         **net** (PandapowerNet) - Variable that contains a pandapower network.
-         
+
      OPTIONAL:
-     
         **roots** (integer/list, None) - Indeces of buses that should be excluded (by default, the
                                          ext_grid buses will be set as roots)
-         
-     RETURN:
-     
-        None
-        
+
      EXAMPLE:
-        
          import pandapower.topology as top
-         
+
          top.determine_stubs(net, roots = [0, 1])
 
-         
+
     """
-    if mg is None: 
+    if mg is None:
         mg = create_nxgraph(net, respect_switches=False)
     # remove buses with degree lower 2 until none left
     roots = roots or set(net.ext_grid.bus)
@@ -261,70 +238,64 @@ def determine_stubs(net, roots=None, mg=None):
     net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs
-    
+
 def lines_on_path(mg, path):
 
 
     """
-     Finds all lines that connect a given path of buses.  
-     
+     Finds all lines that connect a given path of buses.
+
      INPUT:
-     
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
-        
+
         **path** (list) - List of connected buses.
-         
-     RETURN:
-     
+
+     OUTPUT:
         **lines** (list) - Returns a list of all lines on the path.
-        
+
      EXAMPLE:
-        
          import topology as top
-         
-         mg = top.create_nxgraph(net)         
+
+         mg = top.create_nxgraph(net)
          lines = top.lines_on_path(mg, [4, 5, 6])
-         
-     """ 
+
+     """
 
     return elements_on_path(mg, path, "l")
 
 def elements_on_path(mg, path, element = "l", multi=True):
-    
+
     """
-     Finds all elements that connect a given path of buses.  
-     
+     Finds all elements that connect a given path of buses.
+
      INPUT:
-     
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
-        
+
         **path** (list) - List of connected buses.
-        
+
         **element** (string, "l") - element type
-        
-        **multi** (boolean, True) - True: Applied on a NetworkX MultiGraph                                   
-                                    False: Applied on a NetworkX Graph       
-         
-     RETURN:
-     
+
+        **multi** (boolean, True) - True: Applied on a NetworkX MultiGraph
+                                    False: Applied on a NetworkX Graph
+
+     OUTPUT:
         **elements** (list) - Returns a list of all lines on the path.
-        
+
      EXAMPLE:
-        
          import topology as top
-         
-         mg = top.create_nxgraph(net)         
+
+         mg = top.create_nxgraph(net)
          elements = top.elements_on_path(mg, [4, 5, 6])
-         
-     """    
-    
+
+     """
+
     if multi:
         return [mg[b1][b2][0]["key"] for b1, b2 in zip(path, path[1:])
                     if mg[b1][b2][0]["type"] == element]
     else:
         return [mg[b1][b2]["key"] for b1, b2 in zip(path, path[1:])
-                if mg[b1][b2]["type"] == element]         
-    
+                if mg[b1][b2]["type"] == element]
+
 def estimate_voltage_vector(net):
     """
     Function initializes the voltage vector of net with a rough estimation. All buses are set to the
