@@ -351,7 +351,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True):
+                 zone=None, in_service=True, max_vm_pu=np.nan, min_vm_pu=np.nan):
     """
     Adds several buses in table net["bus"] at once.
 
@@ -411,6 +411,18 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         if len(geodata) != 2:
             raise UserWarning("geodata must be given as (x, y) tupel")
         net["bus_geodata"].loc[bid, ["x", "y"]] = geodata
+
+    if not np.isnan(min_vm_pu):
+        if "min_vm_pu" not in net.bus.columns:
+            net.bus.loc[:, "min_vm_pu"] = pd.Series()
+
+        net.bus.loc[index, "min_vm_pu"] = float(min_vm_pu)
+
+    if not np.isnan(max_vm_pu):
+        if "max_vm_pu" not in net.bus.columns:
+            net.bus.loc[:, "max_vm_pu"] = pd.Series()
+
+        net.bus.loc[index, "max_vm_pu"] = float(max_vm_pu)
 
     return index
 
