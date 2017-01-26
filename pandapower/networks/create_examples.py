@@ -35,12 +35,17 @@ def example_simple():
     pp.create_ext_grid(net, bus1, vm_pu=1.02, va_degree=50)
 
     # create transformer
-    trafo1 = pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer", std_type="25 MVA 110/20 kV")
+    trafo1 = pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer",
+                                   std_type="25 MVA 110/20 kV")
     # create lines
-    line1 = pp.create_line(net, bus1, bus2, length_km=10, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="Line 1")
-    line2 = pp.create_line(net, bus5, bus6, length_km=2.0, std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 2")
-    line3 = pp.create_line(net, bus6, bus7, length_km=3.5, std_type="48-AL1/8-ST1A 20.0", name="Line 3")
-    line4 = pp.create_line(net, bus7, bus5, length_km=2.5, std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 4")
+    line1 = pp.create_line(net, bus1, bus2, length_km=10,
+                           std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="Line 1")
+    line2 = pp.create_line(net, bus5, bus6, length_km=2.0,
+                           std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 2")
+    line3 = pp.create_line(net, bus6, bus7, length_km=3.5,
+                           std_type="48-AL1/8-ST1A 20.0", name="Line 3")
+    line4 = pp.create_line(net, bus7, bus5, length_km=2.5,
+                           std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 4")
 
     # create bus-bus switches
     sw1 = pp.create_switch(net, bus2, bus3, et="b", type="CB")
@@ -68,6 +73,7 @@ def example_simple():
     pp.create_shunt(net, bus3, q_kvar=-960, p_kw=0, name='Shunt')
 
     return net
+
 
 def example_multivoltage():
     """
@@ -229,7 +235,8 @@ def example_multivoltage():
 
     # MV
     mv_sgens = pd.DataFrame()
-    mv_sgens['sgen_name'] = ['Biogas plant', 'Further MV Generator', 'Industry Generator', 'PV Park']
+    mv_sgens['sgen_name'] = ['Biogas plant', 'Further MV Generator', 'Industry Generator',
+                             'PV Park']
     mv_sgens['bus'] = ['Bus MV6', 'Bus MV0', 'Bus MV0 20kV', 'Bus MV5']
     mv_sgens['p'] = [-500, -500, -15000, -2000]
     mv_sgens['q'] = [0, -50, -3000, -100]
@@ -272,7 +279,8 @@ def example_multivoltage():
 
     # MV
     mv_loads = pd.DataFrame()
-    mv_loads['load_name'] = ['Further MV-Rings', 'Industry Load'] + ['LV Net %s' % i for i in [1, 2, 3, 5, 6, 7]]
+    mv_loads['load_name'] = ['Further MV-Rings', 'Industry Load'] + \
+                            ['LV Net %s' % i for i in [1, 2, 3, 5, 6, 7]]
     mv_loads['bus'] = ['Bus MV0', 'Bus MV0 20kV'] + ['Bus MV%s' % i for i in [1, 2, 3, 5, 6, 7]]
     mv_loads['p'] = [6000, 18000, 400, 400, 400, 400, 400, 400]
     mv_loads['q'] = [2000, 4000, 100, 60, 60, 60, 60, 60]
@@ -284,7 +292,8 @@ def example_multivoltage():
     # LV
     lv_loads = pd.DataFrame()
     idx = ['', '(1)', '(2)', '(3)', '(4)', '(5)']
-    lv_loads['load_name'] = ['Further LV-Feeders Load'] + ['Residential Load%s' % i for i in idx[0:5]] + ['Rural Load%s' % i for i in idx[0:6]]
+    lv_loads['load_name'] = ['Further LV-Feeders Load'] + \
+        ['Residential Load%s' % i for i in idx[0:5]] + ['Rural Load%s' % i for i in idx[0:6]]
     lv_loads['bus'] = ['Bus LV%s' % i for i in ['0', '1.1', '1.2', '1.3', '1.4', '1.5', '2.1',
                        '2.2', '2.3', '2.4', '2.2.1', '2.2.2']]
     lv_loads['p'] = [100] + [10]*11
@@ -312,8 +321,8 @@ def example_multivoltage():
 
     # Impedance
     pp.create_impedance(net, pp.get_element_index(net, "bus", 'Bus HV3'),
-                        pp.get_element_index(net, "bus", 'Bus HV1'), rft_pu=0.074873, xft_pu=0.198872,
-                        sn_kva=100000, name='Impedance')
+                        pp.get_element_index(net, "bus", 'Bus HV1'), rft_pu=0.074873,
+                        xft_pu=0.198872, sn_kva=100000, name='Impedance')
 
     # xwards
     pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV3'), ps_kw=23942,
@@ -341,15 +350,15 @@ def example_multivoltage():
                              'Bus SB T5.1', 'Single Busbar'] + \
                             ['Bus SB T%s.2' % i for i in range(1, 6)]
     hv_bus_sw['to_bus'] = ['Bus DB %s' % i for i in
-                          ['T0', 'T1', 'T3', 'T3', 'T5', 'T5', 'T7', 'T7', 'T9', 'T9',
-                           '1', '2', '3', '4', 'T1', 'T2', 'T4', 'T6', 'T8']] + \
-                           ['Bus SB %s' % i for i in
+                           ['T0', 'T1', 'T3', 'T3', 'T5', 'T5', 'T7', 'T7', 'T9', 'T9',
+                            '1', '2', '3', '4', 'T1', 'T2', 'T4', 'T6', 'T8']] + \
+                          ['Bus SB %s' % i for i in
                            ['1', 'T1.2', '2', 'T2.2', '3', 'T3.2', '4', 'T4.2', '5', 'T5.2']] + \
-                           ['Bus SB T%s.1' % i for i in range(1, 6)]
+                          ['Bus SB T%s.1' % i for i in range(1, 6)]
     hv_bus_sw['type'] = ['DS']*14 + ['CB']*5 + ['DS']*10 + ['CB']*5
     hv_bus_sw['et'] = 'b'
-    hv_bus_sw['closed'] = [bool(i) for i in [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1] +
-                           [1]*15]
+    hv_bus_sw['closed'] = [bool(i) for i in [
+        1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1] + [1]*15]
 
     for _, switch in hv_bus_sw.iterrows():
         from_bus = pp.get_element_index(net, "bus", switch.from_bus)
@@ -388,7 +397,6 @@ def example_multivoltage():
                              name='Switch %s - %s' % (net.bus.name.at[line.from_bus], line['name']))
             pp.create_switch(net, line.to_bus, line.name, et='l', closed=True, type='LBS',
                              name='Switch %s - %s' % (net.bus.name.at[line.to_bus], line['name']))
-
 
     # Trafoswitches
     # HV
