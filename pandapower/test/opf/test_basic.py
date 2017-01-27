@@ -28,7 +28,7 @@ def test_simplest_voltage():
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50, cost_per_kw=100)
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20)
+    pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
@@ -61,7 +61,7 @@ def test_eg_voltage():
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0, vm_pu=1.01)
-    pp.create_load(net, 1, p_kw=20)
+    pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
@@ -92,7 +92,7 @@ def test_simplest_dispatch():
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50, cost_per_kw=100)
     pp.create_ext_grid(net, 0, cost_per_kw=101)
-    pp.create_load(net, 1, p_kw=20)
+    pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)

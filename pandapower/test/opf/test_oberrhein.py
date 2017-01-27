@@ -29,9 +29,10 @@ def test_opf_oberrhein():
    net.sgen["max_q_kvar"]=1
    net.sgen["min_q_kvar"]=-1
    net.sgen["controllable"] =1
+   net.load["controllable"] = 0
    # run OPF
    pp.runopp(net, verbose=False)
    assert net["OPF_converged"]
 
 if __name__ == "__main__":
-    pytest.main(["test_opf.py", "-xs"])
+    pytest.main(["test_oberrhein.py", "-xs"])
