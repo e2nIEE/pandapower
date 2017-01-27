@@ -1,5 +1,5 @@
 **Constraint**;**Defined in**
-:math:`P_{max,i} \leq P_{g} \leq P_{min,g}, g  \ \epsilon \ gen` ;net.gen.min_p_kw / net.gen.max_p_kw 
-:math:`Q_{max,g} \leq Q_{g} \leq Q_{min,g}, g  \ \epsilon \ gen` ;net.gen.min_q_kvar / net.gen.max_q_kvar
-:math:`P_{max,sg} \leq P_{sg} \leq P_{min,sg}, sg  \ \epsilon \ sgen` ;net.sgen.min_p_kw  / net.sgen.max_p_kw
-:math:`Q_{max,sg} \leq Q_{sg} \leq Q_{min,sg}, sg  \ \epsilon \ sgen` ;net.sgen.min_q_kvar / net.sgen.max_q_kvar
+:math:`P_{min,i} \leq P_{g} \leq P_{max,g}, g  \ \epsilon \ gen` ;net.gen.min_p_kw / net.gen.max_p_kw 
+:math:`Q_{min,g} \leq Q_{g} \leq Q_{max,g}, g  \ \epsilon \ gen` ;net.gen.min_q_kvar / net.gen.max_q_kvar
+:math:`P_{min,sg} \leq P_{sg} \leq P_{max,sg}, sg  \ \epsilon \ sgen` ;net.sgen.min_p_kw  / net.sgen.max_p_kw
+:math:`Q_{min,sg} \leq Q_{sg} \leq Q_{max,sg}, sg  \ \epsilon \ sgen` ;net.sgen.min_q_kvar / net.sgen.max_q_kvar

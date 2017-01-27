@@ -91,8 +91,8 @@ def opf_task(net):
         logger.info("  Generator Constraints")
         for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
             c_gen[i] = np.nan
-        if (c_gen.max_p_kw >= c_gen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all generators. " +
+        if (c_gen.max_p_kw <= c_gen.min_p_kw).any():
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all generators. " +
                         "Please observe the pandapower signing system.")
         if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. "+
@@ -123,7 +123,7 @@ def opf_task(net):
         for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
             c_sgen[i] = np.nan
         if (c_sgen.max_p_kw >= c_sgen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all static " +
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all static " +
                         "generators. Please observe the pandapower signing system.")
         if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
