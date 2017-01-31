@@ -36,13 +36,13 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6.
 
-        **maximum_iterations** - (int) - Maximum number of iterations. Default is 10.
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
 
-        **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and phase
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True.
 
     OUTPUT:
-        (bool) Was the state estimation successful?
+        (boolean) Was the state estimation successful?
     """
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
@@ -124,7 +124,7 @@ class state_estimation(object):
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
 
-        Example:
+        EXAMPLE:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
 
         """
@@ -445,7 +445,7 @@ class state_estimation(object):
 
         return successful
 
-    def perform_chi2_test(self, v_in_out=None, delta_in_out=None, chi2_threshold=0.95):
+    def perform_chi2_test(self, v_in_out=None, delta_in_out=None, chi2_prob_false=0.05):
         """
         The function perform_chi2_test performs a Chi^2 test for bad data and topology error
         detection. The function can be called with the optional input arguments v_in_out and
@@ -453,11 +453,12 @@ class state_estimation(object):
         them as input arguments. It can also be called without these arguments if it is called
         from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
         performed for the states estimated by the funtion estimate and stored internally in a
-        member variable of the class state_estimation. For bad data detection, the function
+        member variable of the class state_estimation. As a optional argument the probability
+        of a false measurement can be provided additionally. For bad data detection, the function
         perform_rn_max_test is more powerful and should be the function of choice. For topology
         error detection, however, perform_chi2_test should be used.
 
-        Input:
+        INPUT:
 
             **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
             magnitudes in p.u. (sorted by bus index)
@@ -465,11 +466,11 @@ class state_estimation(object):
             **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
             angles in Rad (sorted by bus index)
             
-            **chi2_threshold** (float) - threshold for bad data detection
-            depending on the probability of error / false alarms (standard value: 0.95)
+        OPTIONAL:            
+            
+            **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
-
-        Return:
+        OUTPUT:
 
             **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage
             magnitudes in p.u. (sorted by bus index)
@@ -479,7 +480,7 @@ class state_estimation(object):
 
             **successful** (boolean) - True if the estimation process was successful
 
-        Example:
+        EXAMPLE:
 
             perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
 
@@ -505,7 +506,7 @@ class state_estimation(object):
         n = len(self.V) + len(self.delta) - 1
 
         # Chi^2 test threshold
-        test_thresh = chi2.ppf(chi2_threshold, m - n)
+        test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
 
         # Print results
         self.logger.info("-----------------------")
@@ -529,27 +530,37 @@ class state_estimation(object):
         if (v_in_out is not None) and (delta_in_out is not None):
             return v_in_out, delta_in_out, successful
 
-    def perform_rn_max_test(self, v_in_out, delta_in_out):
+    def perform_rn_max_test(self, v_in_out, delta_in_out, rn_max_threshold=3.0, chi2_prob_false=0.05):
         """
         The function perform_rn_max_test performs a largest normalized residual test for bad data
         identification and removal. It takes two input arguments: v_in_out and delta_in_out.
         These are the initial state variables for the combined estimation and bad data
         identification and removal process. They can be initialized as described above, e.g.,
-        using “flat start”. In an iterative process, the function performs a state estimation,
-        identifies a bad data measurement, removes it from the set of measurements, performs the
-        state estimation again, and so on and so forth until no further bad data measurements are
-        detected. The return values are the same as for the function estimate.
+        using a “flat" start. In an iterative process, the function performs a state estimation,
+        identifies a bad data measurement, removes it from the set of measurements
+        (only if the rn_max threshold is violated by the largest residual of all measurements,
+        which can be modified), performs the state estimation again,
+        and so on and so forth until no further bad data measurements are detected.
+        The output values are similiar to the function estimate, only in this case 
+        the newly estimated voltages are given back as numpy arrays in addition.
 
-        Input:
+        INPUT:
 
             **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
             magnitudes in p.u. (sorted by bus index)
 
             **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
             angles in Rad (sorted by bus index)
+        
+        OPTIONAL:
+            
+            **rn_max_threshold** (float) - Identification threshold to determine
+            if the largest normalized residual reflects a bad measurement
+            (standard value of 3.0)
+            
+            **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
-
-        Return:
+        OUTPUT:
 
             **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes
             in p.u. (sorted by bus index)
@@ -559,9 +570,9 @@ class state_estimation(object):
 
             **successful** (boolean) - True if the estimation process was successful
 
-        Example:
+        EXAMPLE:
 
-            perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+            perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
 
         """
         num_iterations = 0
@@ -579,7 +590,7 @@ class state_estimation(object):
             delta_in_out = self.net.res_bus_est.va_degree.values
 
             # Perform a Chi^2 test to determine whether bad data is to be removed.
-            self.perform_chi2_test()
+            self.perform_chi2_test(chi2_prob_false=chi2_prob_false)
 
             # Error covariance matrix:
             R = np.linalg.inv(self.R_inv)
@@ -599,7 +610,7 @@ class state_estimation(object):
             # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
             rN = np.dot(OmegaInv, np.absolute(self.r))
 
-            if max(rN) <= 5.0:
+            if max(rN) <= rn_max_threshold:
                 self.logger.info("Largest normalized residual test passed "
                                  "--> no bad data detected.")
             else:
@@ -634,7 +645,10 @@ class state_estimation(object):
                 else:
                     self.logger.info("No bad data removed from the set of measurements.")
                     self.logger.info("Finished, successful.")
-
+                
+            self.logger.info("rn_max identification threshold:")
+            self.logger.info(rn_max_threshold)
+            
             num_iterations += 1
 
         return v_in_out, delta_in_out, successful
