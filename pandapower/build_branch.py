@@ -135,6 +135,7 @@ def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
     trafo = net["trafo"]
+    parallel = trafo["parallel"].values
     temp_para[:, 0] = bus_lookup[trafo["hv_bus"].values]
     temp_para[:, 1] = bus_lookup[trafo["lv_bus"].values]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, ppc, trafo_model)
@@ -145,7 +146,7 @@ def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
     temp_para[:, 7] = trafo["in_service"].values
     if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
-        temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000.
+        temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000. * parallel
     return temp_para
 
 
@@ -185,15 +186,16 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, trafo_df=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]
+    parallel = trafo_df["parallel"].values
     vn_lv = get_values(ppc["bus"][:, BASE_KV], trafo_df["lv_bus"].values, bus_lookup)
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 4), dtype=np.complex128)
     vn_trafo_hv, vn_trafo_lv = _calc_vn_from_dataframe(trafo_df, vn_lv)
     r, x, y = _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model)
-    temp_para[:, 0] = r
-    temp_para[:, 1] = x
-    temp_para[:, 2] = y
+    temp_para[:, 0] = r / parallel
+    temp_para[:, 1] = x / parallel
+    temp_para[:, 2] = y * parallel
     temp_para[:, 3] = _calc_tap_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, bus_lookup)
     return temp_para
 
