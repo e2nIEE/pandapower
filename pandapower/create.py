@@ -108,6 +108,7 @@ def create_empty_network(name=None, f_hz=50.):
                   ("tp_max", "i4"),
                   ("tp_st_percent", "f8"),
                   ("tp_pos", "i4"),
+                  ("parallel", "u4"),
                   ("in_service", 'bool')],
         "trafo3w": [("name", np.dtype(object)),
                     ("std_type", np.dtype(object)),
@@ -1114,7 +1115,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, in_service=True,
-                       index=None, max_loading_percent=np.nan):
+                       index=None, max_loading_percent=np.nan, parallel=1):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1137,6 +1138,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
         **index** (int) - Force a specified ID if it is available
 
+        **parallel** (integer) - number of parallel transformers
+
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created transformer
 
@@ -1151,7 +1154,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
-        "in_service": bool(in_service), "std_type": std_type
+        "in_service": bool(in_service), "std_type": std_type,
+        "parallel": parallel
     }
     ti = load_std_type(net, std_type, "trafo")
 
@@ -1203,7 +1207,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        tp_side=None, tp_mid=np.nan, tp_max=np.nan,
                                        tp_min=np.nan, tp_st_percent=np.nan, tp_pos=np.nan,
                                        in_service=True, name=None, index=None,
-                                       max_loading_percent=np.nan, **kwargs):
+                                       max_loading_percent=np.nan, parallel=1, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1231,6 +1235,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
     OPTIONAL:
         **in_service** (boolean) - True for in_service or False for out of service
+
+        **parallel** (integer) - number of parallel transformers
 
         **name** (string) - A custom name for this transformer
 
@@ -1280,7 +1286,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
-        "tp_side": tp_side, "tp_st_percent": tp_st_percent
+        "tp_side": tp_side, "tp_st_percent": tp_st_percent, "parallel": parallel
     }
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
