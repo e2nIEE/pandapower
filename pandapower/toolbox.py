@@ -501,6 +501,8 @@ def _pre_release_changes(net):
 
     if "parallel" not in net.line:
         net.line["parallel"] = 1
+    if "parallel" not in net.trafo:
+        net.trafo["parallel"] = 1
     if "_empty_res_bus" not in net:
         net2 = create_empty_network()
         for key, item in net2.items():
