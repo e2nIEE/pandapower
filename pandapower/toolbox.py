@@ -615,9 +615,10 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] or s for t, s in zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [scale[t] if not np.isnan(scale[t]) else s
+                         for t, s in zip(et.type.values, et.scaling.values)]
 
-    scale = defaultdict(lambda: None, scalings)
+    scale = defaultdict(lambda: np.nan, scalings)
     if scale_load:
         scaleit("load")
     if scale_sgen:
