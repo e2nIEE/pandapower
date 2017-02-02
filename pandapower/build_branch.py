@@ -376,7 +376,7 @@ def _trafo_df_from_trafo3w(net):
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
                        "tp_st_percent": taps[0]["tp_st_percent"],
-                       "in_service": ttab.in_service, "shift_degree": 0}
+                       "in_service": ttab.in_service, "shift_degree": 0, "parallel": 1}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
                                    "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
                                    "vscr_percent": ur_2w[1], "vsc_percent": uk_2w[1], "pfe_kw": 0,
@@ -384,7 +384,8 @@ def _trafo_df_from_trafo3w(net):
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
                                    "tp_st_percent": taps[1]["tp_st_percent"],
-                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree}
+                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree,
+                                   "parallel": 1}
         trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
                                        "sn_kva": ttab.sn_lv_kva,
                                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": ur_2w[2],
@@ -392,7 +393,8 @@ def _trafo_df_from_trafo3w(net):
                                        "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
                                        "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
                                        "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],
-                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree}
+                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree,
+                                       "parallel": 1}
         i += 1
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
