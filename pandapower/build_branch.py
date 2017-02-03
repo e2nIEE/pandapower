@@ -483,8 +483,8 @@ def _switch_branches(net, ppc, is_elems):
         # set branch in ppc out of service if from and to bus are at a line which is in service
         if from_bus.size and to_bus.size:
             # get from and to buses of these branches
-            ppc_from = bus_lookup[from_bus]
-            ppc_to = bus_lookup[to_bus]
+            ppc_from = bus_lookup[int(from_bus)]
+            ppc_to = bus_lookup[int(to_bus)]
             ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
                 & np.in1d(ppc['branch'][:, 1], ppc_to)
             ppc["branch"][ppc_idx, BR_STATUS] = 0
