@@ -7,7 +7,7 @@
 
 from time import time
 
-from numpy import c_,r_, zeros, pi, ones, exp, argmax, real
+from numpy import r_, zeros, pi, ones, exp, argmax, real
 from numpy import flatnonzero as find
 
 from pypower.ppoption import ppoption
@@ -18,15 +18,13 @@ from pypower.makeB import makeB
 from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pypower.idx_brch import PF, PT, QF, QT
 from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
-from pypower.ext2int import ext2int
-from pypower.loadcase import loadcase
+
 from pandapower.pypower_extensions.makeBdc import makeBdc
 from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
-from pypower.printpf import printpf
-from sys import stdout
+
 
 def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None):
     """Runs a power flow.
@@ -47,19 +45,11 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
     verbose = ppopt["VERBOSE"]
 
     ## read data
-    ppc = loadcase(casedata)
+    ppci = casedata
 
-    ## add zero columns to branch for flows if needed
-    if ppc["branch"].shape[1] < QT:
-        ppc["branch"] = c_[ppc["branch"],
-                           zeros((ppc["branch"].shape[0],
-                                  QT - ppc["branch"].shape[1] + 1))]
-
-    ## convert to internal indexing
-    ppc = ext2int(ppc)
     # get data for calc
     baseMVA, bus, gen, branch = \
-        ppc["baseMVA"], ppc["bus"], ppc["gen"], ppc["branch"]
+        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
@@ -71,7 +61,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
     ##-----  run the power flow  -----
     t0 = time()
     if not ac:
-        ppc["bus"][:, VM] = 1.0
+        ppci["bus"][:, VM] = 1.0
 
     if not ac or (ac and init == 'dc'):  # DC formulation
         if verbose:
@@ -110,7 +100,7 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
 
         if ac and init=='dc':
             # get results from DC powerflow for AC powerflow
-            ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
+            ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
 
     if ac:  ## AC formulation
         # options
@@ -164,16 +154,14 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
 
         repeat = True
         while repeat:
-            if recycle:
-                if recycle.get("Ybus") and ppc["internal"]["Ybus"].size:
-                    Ybus, Yf, Yt = ppc["internal"]['Ybus'], ppc["internal"]['Yf'], ppc["internal"]['Yt']
-                else:
-                    ## build admittance matrices
-                    Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-                    if recycle.get("Ybus"):
-                        ppc["internal"]['Ybus'], ppc["internal"]['Yf'], ppc["internal"]['Yt'] = Ybus, Yf, Yt
+            if recycle["Ybus"] and ppci["internal"]["Ybus"].size:
+                Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
             else:
-                 Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+                ## build admittance matrices
+                Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+                if recycle["Ybus"]:
+                    ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
+
             ## compute complex bus power injections [generation - load]
             Sbus = makeSbus(baseMVA, bus, gen)
 
@@ -278,14 +266,13 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
                 #                bus[:, VA] = bus[:, VA] - bus[ref0, VA] + Varef0
 
 
-    ppc["et"] = time() - t0
-    ppc["success"] = success
-    
+    ppci["et"] = time() - t0
+    ppci["success"] = success
+
     ##-----  output results  -----
-    ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
-    results = ppc
-    if verbose:
-         printpf(results,stdout,ppopt)
+    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    results = ppci
+
     return results, success
 
 if __name__ == '__main__':
