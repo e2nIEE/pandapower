@@ -173,8 +173,11 @@ def makeYbus(baseMVA, bus, branch):
 def branch_vectors(branch, nl):
     stat = branch[:, BR_STATUS]              ## ones at in-service branches
     Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
-    if any(branch[:, 17]) or any(branch[:, 18]):
-        Yst = stat / ((branch[:, BR_R] + branch[:, 17]) + 1j * (branch[:, BR_X]  + branch[:, 18]))  ## series admittance
+    if branch.shape[1]>17:
+        if any(branch[:, 17]) or any(branch[:, 18]):
+            Yst = stat / ((branch[:, BR_R] + branch[:, 17]) + 1j * (branch[:, BR_X]  + branch[:, 18]))  ## series admittance
+        else:
+            Yst = Ysf
     else:
         Yst = Ysf
     Bc = stat * branch[:, BR_B]              ## line charging susceptance
