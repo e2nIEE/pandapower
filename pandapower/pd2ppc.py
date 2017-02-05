@@ -76,7 +76,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     ppc = {"baseMVA": 1.
            , "version": 2
            , "bus": np.array([], dtype=float)
-           , "branch": np.array([], dtype=np.complex128)
+           , "branch": np.array([], dtype=np.float)
            , "gen": np.array([], dtype=float)
            , "internal": {
                   "Ybus": np.array([], dtype=np.complex128)
