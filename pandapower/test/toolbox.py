@@ -12,12 +12,19 @@ import numpy as np
 from math import isnan
 import pytest
 import os
-
+try:
+    import pplog as logging
+except:
+    import logging
 
 def run_all_tests():
-    """ function exdecuting all tests
     """
+    function exdecuting all tests
+    """
+    logger = logging.getLogger()
+    logger.setLevel(logging.ERROR)
     pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
+    logger.setLevel(logging.INFO)
 
 def assert_mpc_equal(mpc1, mpc2):
 
