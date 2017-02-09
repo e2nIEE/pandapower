@@ -10,11 +10,13 @@ from pypower import case9, case9Q
 import pandapower as pp
 import pandapower.test.converter.ppc_testgrids as testgrids
 from pandapower.converter import from_ppc, validate_from_ppc
+from pandapower.converter.pypower.from_ppc import logger as cvlog
 try:
     import pplog as logging
 except:
     import logging
 
+cvlog.setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3,
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
@@ -79,4 +81,5 @@ def test_pypower_cases():
 
 
 if __name__ == '__main__':
-    pytest.main(["-s"])
+#    test_pypower_cases()
+    pytest.main(["test_from_ppc.py", "-s"])
