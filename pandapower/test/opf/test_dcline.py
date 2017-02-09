@@ -42,7 +42,7 @@ def dcline_net():
 def test_dispatch1(dcline_net):
     net = dcline_net
     net.ext_grid["cost_per_kw"] = [0.10, 0.08]    
-    pp.runopp(net)
+    pp.runopp(net, cost_function="linear")
 
     consistency_checks(net, rtol=1e-3)
     rel_loss_expect = (net.res_dcline.pl_kw - net.dcline.loss_kw) / \
@@ -69,7 +69,7 @@ def test_dispatch1(dcline_net):
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
     net.ext_grid["cost_per_kw"] = [0.08, 0.10]
-    pp.runopp(net)
+    pp.runopp(net, cost_function="linear")
     consistency_checks(net, rtol=1e-3)
     consistency_checks(net, rtol=1e-3)
     rel_loss_expect = (net.res_dcline.pl_kw - net.dcline.loss_kw) / \

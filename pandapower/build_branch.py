@@ -135,7 +135,6 @@ def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
     trafo = net["trafo"]
-    parallel = trafo["parallel"].values
     temp_para[:, 0] = bus_lookup[trafo["hv_bus"].values]
     temp_para[:, 1] = bus_lookup[trafo["lv_bus"].values]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, ppc, trafo_model)
@@ -146,7 +145,7 @@ def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
     temp_para[:, 7] = trafo["in_service"].values
     if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
-        temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000. * parallel
+        temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000.
     return temp_para
 
 
@@ -186,16 +185,15 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, trafo_df=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]
-    parallel = trafo_df["parallel"].values
     vn_lv = get_values(ppc["bus"][:, BASE_KV], trafo_df["lv_bus"].values, bus_lookup)
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 4), dtype=np.complex128)
     vn_trafo_hv, vn_trafo_lv = _calc_vn_from_dataframe(trafo_df, vn_lv)
     r, x, y = _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model)
-    temp_para[:, 0] = r / parallel
-    temp_para[:, 1] = x / parallel
-    temp_para[:, 2] = y * parallel
+    temp_para[:, 0] = r
+    temp_para[:, 1] = x
+    temp_para[:, 2] = y
     temp_para[:, 3] = _calc_tap_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, bus_lookup)
     return temp_para
 
@@ -376,7 +374,7 @@ def _trafo_df_from_trafo3w(net):
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
                        "tp_st_percent": taps[0]["tp_st_percent"],
-                       "in_service": ttab.in_service, "shift_degree": 0, "parallel": 1}
+                       "in_service": ttab.in_service, "shift_degree": 0}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
                                    "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
                                    "vscr_percent": ur_2w[1], "vsc_percent": uk_2w[1], "pfe_kw": 0,
@@ -384,8 +382,7 @@ def _trafo_df_from_trafo3w(net):
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
                                    "tp_st_percent": taps[1]["tp_st_percent"],
-                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree,
-                                   "parallel": 1}
+                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree}
         trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
                                        "sn_kva": ttab.sn_lv_kva,
                                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": ur_2w[2],
@@ -393,8 +390,7 @@ def _trafo_df_from_trafo3w(net):
                                        "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
                                        "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
                                        "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],
-                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree,
-                                       "parallel": 1}
+                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree}
         i += 1
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
@@ -483,8 +479,8 @@ def _switch_branches(net, ppc, is_elems):
         # set branch in ppc out of service if from and to bus are at a line which is in service
         if from_bus.size and to_bus.size:
             # get from and to buses of these branches
-            ppc_from = bus_lookup[int(from_bus)]
-            ppc_to = bus_lookup[int(to_bus)]
+            ppc_from = bus_lookup[from_bus]
+            ppc_to = bus_lookup[to_bus]
             ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
                 & np.in1d(ppc['branch'][:, 1], ppc_to)
             ppc["branch"][ppc_idx, BR_STATUS] = 0

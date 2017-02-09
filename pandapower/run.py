@@ -220,7 +220,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 #    _clean_up(net)
 
 
-def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
+def runopp(net, cost_function=None, verbose=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -266,7 +266,7 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
     _runopp(net, verbose, suppress_warnings, cost_function, True, **kwargs)
 
 
-def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
+def rundcopp(net, cost_function=None, verbose=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -318,6 +318,14 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     reset_results(net)
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net)
+
+    if cost_function == None:
+        if hasattr(net,"cost_polynomial") and not hasattr(net,"cost_piecewise_linear"):
+            cost_function = "polynomial"
+        elif hasattr(net,"cost_piecewise_linear") and not hasattr(net,"cost_polynomial"):
+            cost_function = "piecewise_linear"
+        else:
+            raise Exception("No cost function specified!")
 
     ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
                                     opf=True, cost_function=cost_function,

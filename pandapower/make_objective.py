@@ -83,12 +83,14 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
 #    else:
 #        gen_is = is_elems['gen']
 
-    if cost_function == "linear":
+    if cost_function == "piecewise_linear":
+        p = net.piecewise_linear_cost.p.values[0]
+        f = net.piecewise_linear_cost.f.values[0]
 
-        ppci["gencost"] = np.zeros((ng, 8), dtype=float)
-        ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-        ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initializing gencost array
-        ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
+        ppci["gencost"] = np.zeros((ng, 4+2*len(p)), dtype=float)
+        ppci["gencost"][:, 0:4] = np.array([1, 0, 0, 2]) # initializing gencost array for eg
+        ppci["gencost"][:, 4::2] = p
+        ppci["gencost"][:, 5::2] = f
 
 
     if cost_function == "linear_minloss":

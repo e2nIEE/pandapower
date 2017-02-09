@@ -108,7 +108,6 @@ def create_empty_network(name=None, f_hz=50.):
                   ("tp_max", "i4"),
                   ("tp_st_percent", "f8"),
                   ("tp_pos", "i4"),
-                  ("parallel", "u4"),
                   ("in_service", 'bool')],
         "trafo3w": [("name", np.dtype(object)),
                     ("std_type", np.dtype(object)),
@@ -186,7 +185,11 @@ def create_empty_network(name=None, f_hz=50.):
                         ("std_dev", "f8"),
                         ("bus", "u4"),
                         ("element", np.dtype(object))],
-
+        "piecewise_linear_cost": [("type", np.dtype(object)),
+                        ("element", np.dtype(object)),
+                        ("element_type", np.dtype(object)),
+                        ("p", np.dtype(object)),
+                        ("f", np.dtype(object))],
         # geodata
         "line_geodata": [("coords", np.dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
@@ -352,7 +355,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True, max_vm_pu=np.nan, min_vm_pu=np.nan):
+                 zone=None, in_service=True):
     """
     Adds several buses in table net["bus"] at once.
 
@@ -412,18 +415,6 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         if len(geodata) != 2:
             raise UserWarning("geodata must be given as (x, y) tupel")
         net["bus_geodata"].loc[bid, ["x", "y"]] = geodata
-
-    if not np.isnan(min_vm_pu):
-        if "min_vm_pu" not in net.bus.columns:
-            net.bus.loc[:, "min_vm_pu"] = pd.Series()
-
-        net.bus.loc[index, "min_vm_pu"] = float(min_vm_pu)
-
-    if not np.isnan(max_vm_pu):
-        if "max_vm_pu" not in net.bus.columns:
-            net.bus.loc[:, "max_vm_pu"] = pd.Series()
-
-        net.bus.loc[index, "max_vm_pu"] = float(max_vm_pu)
 
     return index
 
@@ -1115,7 +1106,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, in_service=True,
-                       index=None, max_loading_percent=np.nan, parallel=1):
+                       index=None, max_loading_percent=np.nan):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1138,8 +1129,6 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
         **index** (int) - Force a specified ID if it is available
 
-        **parallel** (integer) - number of parallel transformers
-
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created transformer
 
@@ -1154,8 +1143,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
-        "in_service": bool(in_service), "std_type": std_type,
-        "parallel": parallel
+        "in_service": bool(in_service), "std_type": std_type
     }
     ti = load_std_type(net, std_type, "trafo")
 
@@ -1207,7 +1195,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        tp_side=None, tp_mid=np.nan, tp_max=np.nan,
                                        tp_min=np.nan, tp_st_percent=np.nan, tp_pos=np.nan,
                                        in_service=True, name=None, index=None,
-                                       max_loading_percent=np.nan, parallel=1, **kwargs):
+                                       max_loading_percent=np.nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1235,8 +1223,6 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
     OPTIONAL:
         **in_service** (boolean) - True for in_service or False for out of service
-
-        **parallel** (integer) - number of parallel transformers
 
         **name** (string) - A custom name for this transformer
 
@@ -1286,7 +1272,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
-        "tp_side": tp_side, "tp_st_percent": tp_st_percent, "parallel": parallel
+        "tp_side": tp_side, "tp_st_percent": tp_st_percent
     }
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
@@ -1947,6 +1933,39 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     return index
 
 
+def create_piecewise_linear_cost(net, element, element_type, data_points, type = "p", index = None):
+    """
+
+    :param net:
+    :param type:
+    :param element_type:
+    :param value:
+    :param std_dev:
+    :param bus:
+    :param element:
+    :param index:
+    :return:
+    """
+    hallo=1
+    if index is None:
+        index = get_free_id(net["piecewise_linear_cost"])
+
+    if index in net["piecewise_linear_cost"].index:
+        raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
+
+    p=data_points[:,0]
+    f=data_points[:,1]
+
+    net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
+        [type, element, element_type]
+
+    net.piecewise_linear_cost.p.loc[0] = p
+    net.piecewise_linear_cost.f.loc[0] = f
+
+
+
+    return index
+
 if __name__ == "__main__":
     net = create_empty_network()
     create_bus(net, vn_kv=10)
@@ -1955,3 +1974,4 @@ if __name__ == "__main__":
     create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3.2)
     create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
     create_measurement(net, "p", "line", 888, 8, bus=0, element=0)
+

@@ -351,13 +351,10 @@ def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
     net["res_trafo"]["i_lv_ka"] = i_ft[:, 1][f:t]
     if trafo_loading == "current":
         lds_trafo = i_ft[f:t] * net["trafo"][["vn_hv_kv", "vn_lv_kv"]].values * 1000. * np.sqrt(3) \
-                    / (net["trafo"]["sn_kva"].values[:, np.newaxis] *
-                       net["trafo"]["parallel"].values[:, np.newaxis])
-        ld_trafo = np.max(lds_trafo, axis=1) * 100.
+            / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100.
+        ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
-        ld_trafo = np.max(s_ft[f:t] / (net["trafo"]["sn_kva"].values[:, np.newaxis]
-                                       * net["trafo"]["parallel"].values[:, np.newaxis]) * 100.,
-                          axis=1)
+        ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100., axis=1)
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)

@@ -52,7 +52,7 @@ def test_minimize_active_power_curtailment():
     net.ext_grid["cost_per_kw"] = 0
     net.gen["cost_per_kw"] = -1e-5
 
-    pp.runopp(net)
+    pp.runopp(net, cost_function="linear")
     assert net["OPF_converged"]
     assert allclose(net.res_bus.vm_pu.values, array([ 1. , 1.00000149,  1.01998544,  1.01999628]),
                     atol=1e-5)

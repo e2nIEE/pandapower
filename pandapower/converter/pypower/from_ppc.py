@@ -49,7 +49,7 @@ def from_ppc(ppc, f_hz=50):
     """
     # --- catch common failures
     if Series(ppc['bus'][:, 9] <= 0).any():
-        logger.info('There are false baseKV given in the pypower case file.')
+        logger.error('There are false baseKV given in the pypower case file.')
 
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
@@ -101,9 +101,9 @@ def from_ppc(ppc, f_hz=50):
                           max_q_kvar=GEN_uniq[3][i]*1e3,
                           min_q_kvar=GEN_uniq[4][i]*1e3, controllable=True)
             if GEN_uniq[4][i] > GEN_uniq[3][i]:
-                logger.info('min_q_kvar must be less than max_q_kvar.')
+                logger.warning('min_q_kvar must be less than max_q_kvar.')
             if -GEN_uniq[9][i] < -GEN_uniq[8][i]:
-                logger.info('max_p_kw must be less than min_p_kw.')
+                logger.warning('max_p_kw must be less than min_p_kw.')
         # create sgen
         elif current_bus_type == 1:
             pp.create_sgen(net, bus=current_bus_idx, p_kw=-GEN_uniq[1][i]*1e3,
@@ -156,7 +156,7 @@ def from_ppc(ppc, f_hz=50):
             ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
             i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
             if i0_percent < 0:
-                logger.info('A transformer always behaves inductive consumpting but the '
+                logger.error('A transformer always behaves inductive consumpting but the '
                              'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
                              'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
 
@@ -358,7 +358,7 @@ def _GEN_unique(ppc, net):
         GEN_bus = int(GEN_dupl[0][i])
         # check different vm_pu values for gen at the same bus
         if GEN_dupl[5][i] != GEN_uniq[GEN_uniq[0] == GEN_bus][5].values[0]:
-            logger.info('Several generators at one bus have different vm_pu values.')
+            logger.error('Several generators at one bus have different vm_pu values.')
         # set in_service
         if (GEN[GEN[0] == GEN_bus][7] > 0).any():
             GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, 7] = 1

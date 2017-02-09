@@ -18,7 +18,6 @@ from pypower.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
-from scipy.stats import chi2
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -36,13 +35,13 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6.
 
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+        **maximum_iterations** - (int) - Maximum number of iterations. Default is 10.
 
-        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True.
 
     OUTPUT:
-        (boolean) Was the state estimation successful?
+        (bool) Was the state estimation successful?
     """
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
@@ -124,7 +123,7 @@ class state_estimation(object):
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
 
-        EXAMPLE:
+        Example:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
 
         """
@@ -444,215 +443,6 @@ class state_estimation(object):
         self.delta = delta
 
         return successful
-
-    def perform_chi2_test(self, v_in_out=None, delta_in_out=None, chi2_prob_false=0.05):
-        """
-        The function perform_chi2_test performs a Chi^2 test for bad data and topology error
-        detection. The function can be called with the optional input arguments v_in_out and
-        delta_in_out. Then, the Chi^2 test is performed after calling the function estimate using
-        them as input arguments. It can also be called without these arguments if it is called
-        from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
-        performed for the states estimated by the funtion estimate and stored internally in a
-        member variable of the class state_estimation. As a optional argument the probability
-        of a false measurement can be provided additionally. For bad data detection, the function
-        perform_rn_max_test is more powerful and should be the function of choice. For topology
-        error detection, however, perform_chi2_test should be used.
-
-        INPUT:
-
-            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            magnitudes in p.u. (sorted by bus index)
-
-            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            angles in Rad (sorted by bus index)
-            
-        OPTIONAL:            
-            
-            **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
-
-        OUTPUT:
-
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            magnitudes in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            angles in Rad (sorted by bus index)
-
-            **successful** (boolean) - True if the estimation process was successful
-
-        EXAMPLE:
-
-            perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
-
-        """
-        # If desired, estimate the state first:
-        if (v_in_out is not None) and (delta_in_out is not None):
-            successful = self.estimate(v_in_out, delta_in_out)
-            v_in_out = self.net.res_bus_est.vm_pu.values
-            delta_in_out = self.net.res_bus_est.va_degree.values
-
-        if ((v_in_out is not None) and (delta_in_out is None)) \
-                or ((v_in_out is None) and (delta_in_out is not None)):
-            self.logger.error("Both V and delta have to be defined or none of them! Cancelling...")
-            return
-
-        # Performance index J(hx)
-        J = np.dot(self.r.T, np.dot(self.R_inv, self.r))
-
-        # Number of measurements
-        m = len(self.net.measurement)
-
-        # Number of state variables (the -1 is due to the reference bus)
-        n = len(self.V) + len(self.delta) - 1
-
-        # Chi^2 test threshold
-        test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
-
-        # Print results
-        self.logger.info("-----------------------")
-        self.logger.info("Result of Chi^2 test:")
-        self.logger.info("Number of measurements:")
-        self.logger.info(m)
-        self.logger.info("Number of state variables:")
-        self.logger.info(n)
-        self.logger.info("Performance index:")
-        self.logger.info(J)
-        self.logger.info("Chi^2 test threshold:")
-        self.logger.info(test_thresh)
-
-        if J <= test_thresh:
-            self.bad_data_present = False
-            self.logger.info("Chi^2 test passed --> no bad data or topology error detected.")
-        else:
-            self.bad_data_present = True
-            self.logger.info("Chi^2 test failed --> bad data or topology error detected.")
-
-        if (v_in_out is not None) and (delta_in_out is not None):
-            return v_in_out, delta_in_out, successful
-
-    def perform_rn_max_test(self, v_in_out, delta_in_out, rn_max_threshold=3.0, chi2_prob_false=0.05):
-        """
-        The function perform_rn_max_test performs a largest normalized residual test for bad data
-        identification and removal. It takes two input arguments: v_in_out and delta_in_out.
-        These are the initial state variables for the combined estimation and bad data
-        identification and removal process. They can be initialized as described above, e.g.,
-        using a “flat" start. In an iterative process, the function performs a state estimation,
-        identifies a bad data measurement, removes it from the set of measurements
-        (only if the rn_max threshold is violated by the largest residual of all measurements,
-        which can be modified), performs the state estimation again,
-        and so on and so forth until no further bad data measurements are detected.
-        The output values are similiar to the function estimate, only in this case 
-        the newly estimated voltages are given back as numpy arrays in addition.
-
-        INPUT:
-
-            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            magnitudes in p.u. (sorted by bus index)
-
-            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            angles in Rad (sorted by bus index)
-        
-        OPTIONAL:
-            
-            **rn_max_threshold** (float) - Identification threshold to determine
-            if the largest normalized residual reflects a bad measurement
-            (standard value of 3.0)
-            
-            **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
-
-        OUTPUT:
-
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes
-            in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles
-            in Rad (sorted by bus index)
-
-            **successful** (boolean) - True if the estimation process was successful
-
-        EXAMPLE:
-
-            perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
-
-        """
-        num_iterations = 0
-
-        v_in = v_in_out
-        delta_in = delta_in_out
-
-        self.bad_data_present = True
-
-        while self.bad_data_present and (num_iterations < 11):
-            # Estimate the state with bad data identified in previous iteration
-            # removed from set of measurements:
-            successful = self.estimate(v_in, delta_in, calculate_voltage_angles=False)
-            v_in_out = self.net.res_bus_est.vm_pu.values
-            delta_in_out = self.net.res_bus_est.va_degree.values
-
-            # Perform a Chi^2 test to determine whether bad data is to be removed.
-            self.perform_chi2_test(chi2_prob_false=chi2_prob_false)
-
-            # Error covariance matrix:
-            R = np.linalg.inv(self.R_inv)
-
-            # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
-            # (S is the sensitivity matrix: r = S*e):
-            Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
-
-            # Diagonalize \Omega:
-            Omega = np.diag(np.diag(Omega))
-
-            # Compute squareroot (|.| since some -0.0 produced nans):
-            Omega = np.sqrt(np.absolute(Omega))
-
-            OmegaInv = np.linalg.inv(Omega)
-
-            # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
-            rN = np.dot(OmegaInv, np.absolute(self.r))
-
-            if max(rN) <= rn_max_threshold:
-                self.logger.info("Largest normalized residual test passed "
-                                 "--> no bad data detected.")
-            else:
-                self.logger.info("Largest normalized residual test failed --> bad data identified.")
-
-                if self.bad_data_present:
-                    # Identify bad data: Determine index corresponding to max(rN):
-                    idx_rN = np.argsort(rN, axis=0)[len(rN) - 1]
-    
-                    # Sort measurement indexes:
-                    sorted_meas_idxs = np.concatenate(
-                        (self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
-                            self.net.measurement['element_type'] == 'bus')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
-                             self.net.measurement['element_type'] == 'line')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
-                             self.net.measurement['element_type'] == 'bus')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
-                             self.net.measurement['element_type'] == 'line')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'v') & (
-                             self.net.measurement['element_type'] == 'bus')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'i') & (
-                             self.net.measurement['element_type'] == 'line')].index))
-    
-                    # Determine index of measurement to be removed:
-                    meas_idx = sorted_meas_idxs[idx_rN]
-    
-                    # Remove bad measurement:
-                    self.net.measurement.drop(meas_idx, inplace=True)
-                    self.logger.info("Bad data removed from the set of measurements.")
-                    self.logger.info("----------------------------------------------")
-                else:
-                    self.logger.info("No bad data removed from the set of measurements.")
-                    self.logger.info("Finished, successful.")
-                
-            self.logger.info("rn_max identification threshold:")
-            self.logger.info(rn_max_threshold)
-            
-            num_iterations += 1
-
-        return v_in_out, delta_in_out, successful
-
 
 if __name__ == "__main__":
     from pandapower.test.estimation.test_wls_estimation import test_3bus

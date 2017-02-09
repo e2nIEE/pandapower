@@ -33,7 +33,7 @@ def test_simplest_voltage():
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -66,7 +66,7 @@ def test_eg_voltage():
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -97,7 +97,7 @@ def test_simplest_dispatch():
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -143,7 +143,7 @@ def test_opf_gen_voltage():
                                    max_loading_percent=100000)
 
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -187,7 +187,7 @@ def test_opf_sgen_voltage():
                                    max_loading_percent=1000000)
 
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
 
     # assert and check result
@@ -233,7 +233,7 @@ def test_opf_gen_loading():
 
     # run OPF
 
-    pp.runopp(net, verbose=False, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
+    pp.runopp(net, cost_function="linear", verbose=False, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
                               PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
     assert net["OPF_converged"]
 
@@ -281,7 +281,7 @@ def test_opf_sgen_loading():
                                    max_loading_percent=max_line_loading)
 
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
 
     # assert and check result
