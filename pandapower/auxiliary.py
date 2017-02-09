@@ -239,6 +239,7 @@ def _select_is_elements(net, recycle=None):
 
     @param net: Pandapower Network
     @return: is_elems Certain in service elements
+    :rtype: object
     """
 
     if recycle is not None and recycle["is_elems"]:
