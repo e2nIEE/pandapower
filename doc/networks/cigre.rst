@@ -84,6 +84,7 @@ Medium voltage distribution network with PV and Wind DER
 
 Compared to the case study of CIGRE Task Force C6.04.02 paper all pv and wind energy resources are
 considered but 2 Batteries, 2 residential fuel cells, 1 CHP diesel and 1 CHP fuel cell are neglected.
+Although the case study mentions the High Voltage as 220 kV, we assume 110 kV again because of no given 220 kV-Trafo data.
 
 .. code:: python
 
@@ -124,7 +125,7 @@ Medium voltage distribution network with all DER
 			- 1 CHP fuel cell
 
 Compared to the case study of CIGRE Task Force C6.04.02 paper all distributed energy resources are
-considered.
+considered. Although the case study mentions the High Voltage as 220 kV, we assume 110 kV again because of no given 220 kV-Trafo data.
 
 .. code:: python
 

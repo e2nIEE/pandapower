@@ -1,4 +1,4 @@
-from pandapower.estimation import estimate
+from pandapower.estimation import estimate, state_estimation
 import pandapower as pp
 import numpy as np
 import pytest
@@ -71,6 +71,56 @@ def test_3bus():
     diff_delta = target_delta - delta_result
 
     assert success
+    assert (np.nanmax(abs(diff_v)) < 1e-4)
+    assert (np.nanmax(abs(diff_delta)) < 1e-4)
+
+
+def test_3bus_with_bad_data():
+    # 1. Create 3-bus-network
+    net = pp.create_empty_network()
+    pp.create_ext_grid(net, 0)
+    pp.create_bus(net, name="bus1", vn_kv=1.)
+    pp.create_bus(net, name="bus2", vn_kv=1.)
+    pp.create_bus(net, name="bus3", vn_kv=1.)
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
+                                   imax_ka=1)
+    pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
+                                   imax_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
+                                   imax_ka=1)
+    
+    pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0)  # Pline (bus 1 -> bus 2) at bus 1  
+    pp.create_measurement(net, "q", "line", 0.024e3, 0.01e3, bus=0, element=0)    # Qline (bus 1 -> bus 2) at bus 1
+    
+    pp.create_measurement(net, "p", "bus", 0.018e3, 0.01e3, bus=2)  # P at bus 3
+    pp.create_measurement(net, "q", "bus", -0.1e3, 0.01e3, bus=2)   # Q at bus 3
+    
+    pp.create_measurement(net, "v", "bus", 1.08, 0.05, bus=0)   # V at bus 1
+    pp.create_measurement(net, "v", "bus", 1.015, 0.05, bus=2)  # V at bus 3
+    
+    # create false voltage measurement for testing bad data detection (-> should be removed)
+    pp.create_measurement(net, "v", "bus", 1.3, 0.05, bus=1)   # V at bus 2
+    
+    # initial state values
+    v_start = np.array([1.0, 1.0, 1.0])
+    delta_start = np.array([0., 0., 0.])
+    
+    # 2. Do state estimation
+    wls = state_estimation(net = net)
+
+    # 3. Do chi2-test
+    v_est_chi2, delta_est_chi2, success_chi2 = wls.perform_chi2_test(v_start, delta_start)
+    
+    # 4. Perform rn_max_test
+    v_est_rn_max, delta_est_rn_max, success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    
+    target_v = np.array([1.0627, 1.0589, 1.0317])
+    diff_v = target_v - v_est_rn_max
+    target_delta = np.array([0., 0.8677, 3.1381])
+    diff_delta = target_delta - delta_est_rn_max
+        
+    assert success_chi2
+    assert success_rn_max
     assert (np.nanmax(abs(diff_v)) < 1e-4)
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
 
