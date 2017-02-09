@@ -236,13 +236,13 @@ def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
             ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10
 
         if "max_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 - delta)
+            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
             max_p_kw = ppc["gen"][gen_end:sg_end, [PMIN]]
             ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
             ppc["gen"][gen_end:sg_end, [PMIN]] = max_p_kw
 
         if "min_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 + delta)
+            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 - delta)
             min_p_kw = ppc["gen"][gen_end:sg_end, [PMAX]]
             ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
             ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw

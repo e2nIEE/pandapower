@@ -15,7 +15,7 @@ from scipy import sparse
 from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 
 
-def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, **kwargs):
+def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, p_nominal=None, **kwargs):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
@@ -58,7 +58,6 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
         **net** (attrdict, None) - Pandapower network
 
     """
-    
     eg_idx = net._pd2ppc_lookups["ext_grid"] if "ext_grid" in net._pd2ppc_lookups else None
     gen_idx = net._pd2ppc_lookups["gen"] if "gen" in net._pd2ppc_lookups else None
     sgen_idx = net._pd2ppc_lookups["sgen_controllable"] if "sgen_controllable" in \
@@ -75,6 +74,18 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
         gen_costs[sgen_idx[is_elems["sgen_controllable"].index]] = is_elems["sgen_controllable"].cost_per_kw
     if load_idx is not None and "cost_per_kw" in is_elems["load_controllable"]:
         gen_costs[load_idx[is_elems["load_controllable"].index]] = is_elems["load_controllable"].cost_per_kw
+        
+        
+        
+#    gen_p_nominal = np.ones(len(ppci["gen"]))
+#    if sgen_idx is not None:
+#        gen_p_nominal[sgen_idx] = -p_nominal[is_elems["sgen_controllable"].index]*1e-3
+        
+#    print(ppci["branch"])
+#    print()
+#    print(ppci["gen"])
+#    print()
+#    print("P_NOMINAL: %s" %gen_p_nominal)
     
     ng = len(ppci["gen"])  # -
     nref = sum(ppci["bus"][:, BUS_TYPE] == REF)
@@ -87,15 +98,15 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
 
         ppci["gencost"] = np.zeros((ng, 8), dtype=float)
         ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-        ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initializing gencost array
+        ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
         ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
-
+#        ppci["gencost"][:, 6] = np.nan_to_num(gen_p_nominal)
 
     if cost_function == "linear_minloss":
 
         ppci["gencost"] = np.zeros((ng, 8), dtype=float)
         ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-        ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initializing gencost array
+        ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
         ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
 
         # Get additional counts
@@ -137,7 +148,7 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
                 A[i, nb+bus_t] = -1
                 A[i, dim-2*nl+i] = 1
                 # minimization of angle between two buses
-                H[dim-nl+i, dim-nl+i] = abs(Ybus[bus_f, bus_t])# * 800 * lambda_opf  # weigthing of angles
+                H[dim-nl+i, dim-nl+i] = abs(Ybus[bus_f, bus_t])# * 0# * 800 * lambda_opf  # weigthing of angles
                 A[nl+i, bus_f] = 1
                 A[nl+i, bus_t] = -1
                 A[nl+i, dim-nl+i] = 1
