@@ -75,7 +75,7 @@ def test_cost_piecewise_linear():
     # check and assert result
     logger.debug("test_costs")
     logger.debug("res_cost:\n%s" % net.res_cost)
-#    assert net.res_cost == 500.0003004141078
+    assert net.res_cost == 500.0003004141078
 
 
 
