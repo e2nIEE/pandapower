@@ -13,7 +13,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
 
         Input: dS_dVa and dS_dVm in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), pvpq, pq from pypower
 
-        Output: data from CSR form of Jacobian (Jx, Jj, Jp) and number of non zeros (nnz)
+        OUTPUT:  data from CSR form of Jacobian (Jx, Jj, Jp) and number of non zeros (nnz)
 
         @author: Florian Schaefer
 
@@ -104,7 +104,7 @@ def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
 
         Input: dS_dVa and dS_dVm in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), pvpq, pq from pypower
 
-        Output: data from CSR form of Jacobian (Jx, Jj, Jp) and number of non zeros (nnz)
+        OUTPUT: data from CSR form of Jacobian (Jx, Jj, Jp) and number of non zeros (nnz)
 
         @author: Florian Schaefer
         @date: 30.08.2016

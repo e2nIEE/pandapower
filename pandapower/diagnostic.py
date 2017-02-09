@@ -64,7 +64,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
      - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
      voltages and bus voltages
 
-    RETURN:
+    OUTPUT:
      - **diag_results** (dict): dict that contains the indeces of all elements where errors were found
 
       Format: {'check_name': check_results}
@@ -118,7 +118,6 @@ def check_greater_zero(element, element_index, column):
      elements are fulfilled. Exemplary description for all type check functions.
 
      INPUT:
-
         **element (pandas.Series)** - pandapower element instance (e.g. net.bus.loc[1])
 
         **element_index (int)**     - index of the element instance
@@ -126,8 +125,7 @@ def check_greater_zero(element, element_index, column):
         **column (string)**         - element attribute (e.g. 'vn_kv')
 
 
-     RETURN:
-
+     OUTPUT:
         **element_index (index)**   - index of element instance, if input type restriction is not
                                       fulfilled
 
@@ -221,14 +219,12 @@ def invalid_values(net):
     Applies type check functions to find violations of input type restrictions.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
         **detailed_report** (boolean)   - True: detailed report of input type restriction violations
                                           False: summary only
 
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all input type restriction violations
                                           grouped by element (keys)
                                           Format: {'element': [element_index, 'element_attribute',
@@ -317,9 +313,7 @@ def no_ext_grid(net):
     Checks, if at least one external grid exists.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
-
 
     """
 
@@ -332,15 +326,12 @@ def multiple_voltage_controlling_elements_per_bus(net):
     Checks, if there are buses with more than one generator and/or more than one external grid.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
-
 
         **detailed_report** (boolean)   - True: detailed report of errors found
                                       l    False: summary only
 
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all buses with multiple generator and
                                           all buses with multiple external grids
                                           Format: {'mult_ext_grids': [buses]
@@ -368,12 +359,10 @@ def overload(net, overload_scaling_factor):
     that by scaling down the loads, gens and sgens to 0.1%.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
 
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict with the results of the overload check
                                           Format: {'load_overload': True/uncertain
                                                    'generation_overload', True/uncertain}
@@ -419,13 +408,10 @@ def wrong_switch_configuration(net):
     the reason for that by closing all switches
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
-     RETURN:
-
+     OUTPUT:
         **check_result** (boolean)
-
 
     """
     switch_configuration = copy.deepcopy(net.switch.closed)
@@ -448,16 +434,12 @@ def different_voltage_levels_connected(net):
     Checks, if there are lines or switches that connect different voltage levels.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all lines and switches that connect
                                           different voltage levels.
                                           Format: {'lines': lines, 'switches': switches}
-
 
     """
     check_results = {}
@@ -486,11 +468,10 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     Checks, if there are lines with an impedance value of zero
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
 
-     RETURN:
+     OUTPUT:
         **implausible_lines** (list)    - list that contains the indeces of all lines with an
                                           impedance value of zero.
 
@@ -510,11 +491,9 @@ def closed_switches_between_oos_and_is_buses(net):
     Checks, if there are switches connecting an out-of-service and an in-service bus.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
-     RETURN:
-
+     OUTPUT:
         **problematic_switches** (list)  - list that contains the indeces of all switches
                                            connecting an out-of-service and an in-service bus.
 
@@ -540,12 +519,9 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     Also checks for trafos with swapped hv and lv connectors.
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all components whose nominal voltages
                                           differ from the nominal voltages of the buses they're
                                           connected to.
@@ -654,12 +630,9 @@ def disconnected_elements(net):
     The same stands for lines 4, 5.)
 
      INPUT:
-
         **net** (PandapowerNet)         - pandapower network
 
-
-     RETURN:
-
+     OUTPUT:
         **disc_elements** (dict)        - list that contains all network elements, without a
                                           connection to an ext_grid.
 
@@ -753,13 +726,9 @@ def wrong_reference_system(net):
     Checks usage of wrong reference system for loads, sgens and gens.
 
      INPUT:
-
         **net** (PandapowerNet)    - pandapower network
 
-
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains the indeces of all components where the
                                           usage of the wrong reference system was found.
 
@@ -787,17 +756,13 @@ def numba_comparison(net, numba_tolerance):
         Compares the results of loadflows with numba=True vs. numba=False.
 
          INPUT:
-
             **net** (PandapowerNet)    - pandapower network
 
          OPTIONAL:
-
             **tol** (float, 1e-5)      - Maximum absolute deviation allowed between
                                          numba=True/False results.
 
-
-         RETURN:
-
+         OUTPUT:
             **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
     check_results = {}
@@ -836,12 +801,10 @@ def deviation_from_std_type(net):
         Checks, if element parameters match the values in the standard type library.
 
          INPUT:
-
             **net** (PandapowerNet)    - pandapower network
 
 
-         RETURN:
-
+         OUTPUT:
             **check_results** (dict)   - All elements, that don't match the values in the
                                          standard type library
 
@@ -852,8 +815,9 @@ def deviation_from_std_type(net):
     check_results = {}
     for key in net.std_types.keys():
         for i, element in net[key].iterrows():
-            if element.std_type in net.std_types[key].keys():
-                std_type_values = net.std_types[key][element.std_type]
+            std_type = element.std_type
+            if std_type in net.std_types[key].keys():
+                std_type_values = net.std_types[key][std_type]
                 for param in std_type_values.keys():
                     if param == "tp_pos":
                         continue
@@ -864,7 +828,7 @@ def deviation_from_std_type(net):
                             check_results[key][i] = {'param': param, 'e_value': element[param],
                                                      'std_type_value': std_type_values[param],
                                                      'std_type_in_lib': True}
-            else:
+            elif std_type is not None:
                 if key not in check_results.keys():
                                 check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}

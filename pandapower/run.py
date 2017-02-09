@@ -44,8 +44,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
     INPUT:
         **net** - The Pandapower format network
 
-    Optional:
-
+    OPTIONAL:
         **init** (str, "flat") - initialization method of the loadflow
         Pandapower supports three methods for initializing the loadflow:
 
@@ -58,9 +57,9 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             If True, voltage angles are considered in the  loadflow calculation. In some cases with
             large differences in voltage angles (for example in case of transformers with high
             voltage shift), the difference between starting and end angle value is very large.
-            In this case, the loadflow might be slow or it might not converge at all. That is why 
+            In this case, the loadflow might be slow or it might not converge at all. That is why
             the possibility of neglecting the voltage angles of transformers and ext_grids is
-            provided to allow and/or accelarate convergence for networks where calculation of 
+            provided to allow and/or accelarate convergence for networks where calculation of
             voltage angles is not necessary. Note that if calculate_voltage_angles is True the
             loadflow is initialized with a DC power flow (init = "dc")
 
@@ -74,14 +73,14 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         Pandapower provides two equivalent circuit models for the transformer:
 
             - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model. 
+            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
             Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
 
             - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
-            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer. 
+            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
 
         **enforce_q_lims** (bool, False) - respect generator reactive power limits
 
@@ -113,7 +112,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
              trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None, 
+def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None,
             **kwargs):
     """
     Runs PANDAPOWER DC Flow
@@ -123,20 +122,19 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
     INPUT:
         **net** - The Pandapower format network
 
-    Optional:
-
+    OPTIONAL:
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         Pandapower provides two equivalent circuit models for the transformer:
 
             - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model. 
+            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
             Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
 
             - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
-            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer. 
+            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
 
@@ -322,7 +320,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     is_elems = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
-                                    opf=True, cost_function=cost_function, 
+                                    opf=True, cost_function=cost_function,
                                     calculate_voltage_angles=False, **kwargs)
     if not ac:
         ppci["bus"][:, VM] = 1.0
@@ -358,7 +356,7 @@ def _add_auxiliary_elements(net, init_results):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
     if len(net["xward"]) > 0:
-        _create_xward_buses(net, init_results)    
+        _create_xward_buses(net, init_results)
 
 def _create_xward_buses(net, init_results):
     from pandapower.create import create_buses
@@ -386,21 +384,21 @@ def _create_trafo3w_buses(net, init_results):
         #      pd2ppc anyways. LT
         for hv_bus, aux_bus in zip(hv_buses.index, bid):
             net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
-    
+
 def _add_dcline_gens(net):
     for _, dctab in net.dcline.iterrows():
         pfrom = dctab.p_kw
         pto = - (pfrom* (1 - dctab.loss_percent / 100) - dctab.loss_kw)
-        pmax = dctab.max_p_kw 
-        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu, 
-                   min_p_kw=-pmax, max_p_kw=0., 
+        pmax = dctab.max_p_kw
+        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu,
+                   min_p_kw=-pmax, max_p_kw=0.,
                    max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
                    in_service=dctab.in_service, cost_per_kw=0.)
-        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu, 
-                   min_p_kw=0, max_p_kw=pmax, 
-                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar, 
+        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu,
+                   min_p_kw=0, max_p_kw=pmax,
+                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar,
                    in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
-        
+
 def add_dcline_constraints(om, net):
     from numpy import hstack, diag, eye, zeros
     from scipy.sparse import csr_matrix as sparse

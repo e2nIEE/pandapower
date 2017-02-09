@@ -91,8 +91,8 @@ def opf_task(net):
         logger.info("  Generator Constraints")
         for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
             c_gen[i] = np.nan
-        if (c_gen.max_p_kw >= c_gen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all generators. " +
+        if (c_gen.max_p_kw <= c_gen.min_p_kw).any():
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all generators. " +
                         "Please observe the pandapower signing system.")
         if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. "+
@@ -123,7 +123,7 @@ def opf_task(net):
         for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
             c_sgen[i] = np.nan
         if (c_sgen.max_p_kw >= c_sgen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all static " +
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all static " +
                         "generators. Please observe the pandapower signing system.")
         if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
@@ -501,6 +501,8 @@ def _pre_release_changes(net):
 
     if "parallel" not in net.line:
         net.line["parallel"] = 1
+    if "parallel" not in net.trafo:
+        net.trafo["parallel"] = 1
     if "_empty_res_bus" not in net:
         net2 = create_empty_network()
         for key, item in net2.items():
@@ -615,9 +617,10 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] or s for t, s in zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [scale[t] if not np.isnan(scale[t]) else s
+                         for t, s in zip(et.type.values, et.scaling.values)]
 
-    scale = defaultdict(lambda: None, scalings)
+    scale = defaultdict(lambda: np.nan, scalings)
     if scale_load:
         scaleit("load")
     if scale_sgen:
@@ -914,7 +917,6 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
      Returns elements connected to a given bus.
 
      INPUT:
-
         **net** (PandapowerNet)
 
         **element** (string, name of the element table)
@@ -922,14 +924,12 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-
         **respect_switches** (boolean, True)    - True: open switches will be respected
                                                   False: open switches will be ignored
         **respect_in_service** (boolean, False) - True: in_service status of connected lines will be
                                                         respected
                                                   False: in_service status will be ignored
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected lines.
 
     """
@@ -1000,13 +1000,11 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
      Returns buses connected to given buses. The source buses will NOT be returned.
 
      INPUT:
-
         **net** (PandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-
         **respect_switches** (boolean, True)        - True: open switches will be respected
                                                       False: open switches will be ignored
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
@@ -1018,8 +1016,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
                                                       l: lines
                                                       s: switches
                                                       t: trafos
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected buses.
 
     """
@@ -1055,7 +1052,6 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
      will be returned, else one.
 
      INPUT:
-
         **net** (PandapowerNet)
 
         **element** (integer)
@@ -1066,12 +1062,10 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
                                                       t: trafo
 
      OPTIONAL:
-
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
                                                             will be respected
                                                       False: in_service status will be ignored
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected switches.
 
     """
@@ -1100,13 +1094,11 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     Returns switches connected to given buses.
 
     INPUT:
-
         **net** (PandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
     OPTIONAL:
-
         **respect_switches** (boolean, True)        - True: open switches will be respected
                                                      False: open switches will be ignored
 
@@ -1122,8 +1114,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
 
         **status** (string, ("all", "closed", "open"))    - Determines, which switches will
                                                             be considered
-    RETURN:
-
+    OUTPUT:
        **cl** (set) - Returns connected buses.
 
     """

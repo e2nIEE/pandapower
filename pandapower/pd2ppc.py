@@ -53,7 +53,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
         **cost_function** (obj, None) - The OPF cost function
 
 
-    RETURN:
+    OUTPUT:
         **ppc** - The simple matpower format network. Which consists of:
                   ppc = {
                         "baseMVA": 1., *float*
@@ -110,7 +110,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     if opf:
         # make opf objective
         ppci = _make_objective(ppci, net, is_elems, cost_function, **kwargs)
-        
+
     return ppc, ppci
 
 def _init_ppc(net):
@@ -140,7 +140,7 @@ def _init_lookups(net):
 
 def _ppc2ppci(ppc, ppci, net, is_elems):
     # BUS Sorting and lookups
-    
+
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
@@ -261,14 +261,14 @@ def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens, 
     lookup[pandapower_index] = ppc_index
     _write_lookup_to_net(net, element, lookup)
 
-def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_q_lims=False, 
+def _update_ppc(net, is_elems, recycle, calculate_voltage_angles=False, enforce_q_lims=False,
                 trafo_model="pi"):
     """
     Updates P, Q values of the ppc with changed values from net
 
     @param is_elems:
     @return:
-    """    
+    """
     # get the old ppc and lookup
     ppc = net["_ppc"]
     ppci = copy.deepcopy(ppc)

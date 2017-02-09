@@ -16,12 +16,10 @@ def case4gs():
     """
     Calls the pickle file case4gs.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case4gs
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case4gs()
@@ -34,12 +32,10 @@ def case6ww():
     """
     Calls the pickle file case6ww.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case6ww
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case6ww()
@@ -53,12 +49,10 @@ def case9():
     Calls the pickle file case9.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was published in Anderson and Fouad's book 'Power System Control and Stability' for the first time in 1980.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case9
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case9()
@@ -72,12 +66,10 @@ def case9Q():
     Calls the pickle file case9Q.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network is highly correlated to case9.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case9Q
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case9Q()
@@ -94,12 +86,10 @@ def case14():
     pandapower.converter.from_ppc. The vn_kv was adapted considering the proposed voltage levels in
     `Washington <http://www2.ee.washington.edu/research/pstca/pf14/ieee14cdf.txt>`_
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case14
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case14()
@@ -113,12 +103,10 @@ def case24_ieee_rts():
     Calls the pickle file case24_ieee_rts.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by `Illinois University <http://icseg.iti.illinois.edu/ieee-24-bus-system/>`_.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case24
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case24_ieee_rts()
@@ -133,12 +121,10 @@ def case30():
     Calls the pickle file case30.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by `Washington <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_ and `Illinois University <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case30
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case30()
@@ -152,12 +138,10 @@ def case30pwl():
     Calls the pickle file case30pwl.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network is highly correlated to case30.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case30pwl
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case30pwl()
@@ -172,12 +156,10 @@ def case30Q():
     Calls the pickle file case30Q.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network is highly correlated to case30.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case30Q
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case30Q()
@@ -192,12 +174,10 @@ def case39():
     Some more information about this network are given by `Illinois University <http://icseg.iti.illinois.edu/ieee-39-bus-system/>`_.
     Because the Pypower data origin proposes vn_kv=345 for all nodes the transformers connect node of the same voltage level.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case39
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case39()
@@ -220,12 +200,10 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
     - area 5 with coinciding voltage level comprises node 41-43 + 56-57
     - area 6 with coinciding voltage level comprises node 52-55 + 26-29
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case57
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case57()
@@ -251,12 +229,10 @@ def case118():
     Calls the pickle file case118.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by `Washington <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and `Illinois University <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case118
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case118()
@@ -270,12 +246,10 @@ def case300():
     Calls the pickle file case300.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by `Washington <http://www2.ee.washington.edu/research/pstca/pf300/pg_tca300bus.htm>`_ and `Illinois University <http://icseg.iti.illinois.edu/ieee-300-bus-system/>`_.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required ieee network case300
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net = pn.case300()
