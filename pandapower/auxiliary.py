@@ -9,9 +9,9 @@ import numpy as np
 from collections import MutableMapping
 import six
 
-import scipy as sp, scipy.sparse
+import scipy as sp
 from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_bus import BUS_I, BUS_TYPE, NONE
+from pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 
 try:
@@ -418,24 +418,23 @@ def _write_lookup_to_net(net, element, element_lookup):
 
 
 
-def _checkConnectivity(net, ppc):
+def _check_connectivity(ppc):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
-    :param net: pandapower network
     :param ppc: pyPoer matrix
     :return:
     """
     nobranch = ppc['branch'].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = np.array(ppc['branch'][:, F_BUS], dtype=np.int)
-    bus_to = np.array(ppc['branch'][:, T_BUS], dtype=np.int)
+    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
 
     adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
                                      shape=(nobus, nobus))
 
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
-    all_nodes = set(ppc['bus'][:, BUS_I])
+    all_nodes = set(ppc['bus'][:, BUS_I].astype(int))
 
     visited_nodes = set()
 
@@ -447,6 +446,14 @@ def _checkConnectivity(net, ppc):
     isolated_nodes = all_nodes.difference(visited_nodes)
 
     if isolated_nodes:
-        logger.info("There are isolated buses in the network!")
+        logger.debug("There are isolated buses in the network!")
         index_array = np.array(list(isolated_nodes), dtype=np.int)
         ppc['bus'][index_array, BUS_TYPE] = NONE
+        iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
+        iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
+        if iso_p > 0 or iso_q > 0:
+            logger.info("%.0f kW active and %.0f kVar reactive power are unsupplied"%(iso_p, iso_q))
+    else:
+        iso_p = iso_q = 0
+    return isolated_nodes, iso_p, iso_q
+            

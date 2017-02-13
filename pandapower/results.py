@@ -6,10 +6,10 @@
 
 import numpy as np
 import copy
-from numpy import zeros, array, float, hstack, invert, ones, arange, searchsorted
+from numpy import zeros, array, float, hstack, invert, ones, arange
 from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV, VM, VA, PD, QD
-from pypower.idx_gen import PG, QG, GEN_BUS
+from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 

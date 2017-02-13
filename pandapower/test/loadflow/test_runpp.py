@@ -13,6 +13,10 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
+from pandapower.auxiliary import _check_connectivity
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.run import _select_is_elements
+from pandapower.networks import create_cigre_network_mv
 
 def test_runpp_init():
     net = pp.create_empty_network()
@@ -107,6 +111,39 @@ def test_oos_bus():
     pp.create_gen(net, 4, p_kw = -500)
     assert runpp_with_consistency_checks(net)
 
+def get_isolated(net):
+    is_elems = _select_is_elements(net)
+    ppc, ppci = _pd2ppc(net, is_elems)
+    return _check_connectivity(ppc)
+
+def test_connectivity():
+    net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 0
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)    
+    
+    isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
+    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")   
+    pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
+                                             std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                                             name="IsolatedLine")
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 2
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+    
+    pp.create_load(net, isolated_bus1, p_kw=200., q_kvar=20)
+    pp.create_sgen(net, isolated_bus2, p_kw=-150., q_kvar=-10)
+
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 2
+    assert np.isclose(iso_p, 350)
+    assert np.isclose(iso_q, 30)
+       
+    runpp_with_consistency_checks(net, check_connectivity=True)
+
 if __name__ == "__main__":
-    pytest.main(["test_runpp.py", "-xs"])
+    test_connectivity()
+#    pytest.main(["test_runpp.py", "-xs"])
 

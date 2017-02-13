@@ -14,7 +14,7 @@ from pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.run_userfcn import run_userfcn
 
 from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \
-                        _checkConnectivity
+                        _check_connectivity
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
                         _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
@@ -102,7 +102,7 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     _set_isolated_buses_out_of_service(net, ppc)
 
     if check_connectivity:
-        _checkConnectivity(net, ppc)
+        _check_connectivity(ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
