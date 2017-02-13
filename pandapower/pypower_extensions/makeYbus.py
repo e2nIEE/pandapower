@@ -26,9 +26,10 @@ def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):
     # allocate data of Ybus in CSR format
     # Note: More space is allocated than needed with empty.
     #       The matrix size will be reduced afterwards
-    Yx = empty(nb * 5, dtype=complex128) # data
+    alloc_size = nl * 2 + nb
+    Yx = empty(alloc_size, dtype=complex128) # data
     Yp = zeros(nb + 1, dtype=int64) # row pointer
-    Yj = empty(nb * 5, dtype=int64) # colum indices
+    Yj = empty(alloc_size, dtype=int64) # colum indices
 
     # index iterators
     # a = iterator of f, b = iterator of t, curRow = current Row
