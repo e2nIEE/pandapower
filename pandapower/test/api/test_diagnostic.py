@@ -392,8 +392,7 @@ def test_deviation_from_std_type(test_net):
               21: {'e_value': '5', 'param': 'imax_ka', 'std_type_in_lib': True,
                    'std_type_value': 0.105}},
     'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
-                  'std_type_value': 12.2},
-              1: {'std_type_in_lib': False}},
+                  'std_type_value': 12.2}},
     'trafo3w': {0: {'std_type_in_lib': False}}}
 
 

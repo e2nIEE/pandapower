@@ -32,9 +32,9 @@ def test_minimize_active_power_curtailment():
     pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
 
     # create loads
-    pp.create_load(net, bus2, p_kw=60e3)
-    pp.create_load(net, bus3, p_kw=70e3)
-    pp.create_load(net, bus4, p_kw=10e3)
+    pp.create_load(net, bus2, p_kw=60e3, controllable = False)
+    pp.create_load(net, bus3, p_kw=70e3, controllable = False)
+    pp.create_load(net, bus4, p_kw=10e3, controllable = False)
 
     # create generators
     pp.create_ext_grid(net, bus1)

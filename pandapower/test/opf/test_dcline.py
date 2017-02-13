@@ -36,7 +36,7 @@ def dcline_net():
     pp.create_ext_grid(net, b1, 1.02, max_p_kw=0.)
     pp.create_ext_grid(net, b5, 1.02, max_p_kw=0.)
     
-    pp.create_load(net, bus=b4, p_kw=800e3)
+    pp.create_load(net, bus=b4, p_kw=800e3, controllable = False)
     return net
     
 def test_dispatch1(dcline_net):

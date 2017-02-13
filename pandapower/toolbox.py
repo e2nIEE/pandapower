@@ -7,7 +7,6 @@
 import numpy as np
 import pandas as pd
 import copy
-import numbers
 from collections import defaultdict
 try:
     import pplog as logging
@@ -437,9 +436,9 @@ def _pre_release_changes(net):
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kv": "sn_hv_kv",
                                                     "snm_kv": "sn_mv_kv", "snl_kv": "sn_lv_kv"})
-    net["switch"]["type"].replace("LS", "CB", inplace=True)
-    net["switch"]["type"].replace("LTS", "LBS", inplace=True)
-    net["switch"]["type"].replace("TS", "DS", inplace=True)
+#    net["switch"]["type"].replace("LS", "CB", inplace=True)
+#    net["switch"]["type"].replace("LTS", "LBS", inplace=True)
+#    net["switch"]["type"].replace("TS", "DS", inplace=True)
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
