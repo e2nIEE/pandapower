@@ -13,18 +13,18 @@ from pypower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.run_userfcn import run_userfcn
 
-from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net
+from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \
+                        _checkConnectivity
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
                         _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
 from pandapower.make_objective import _make_objective
-from connectivity_check.connectivity import  _checkConnectivity
 
 def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
             trafo_model="pi", init_results=False, copy_constraints_to_ppc=False,
-            opf=False, cost_function=None, **kwargs):
+            opf=False, cost_function=None, check_connectivity=False, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -101,7 +101,8 @@ def _pd2ppc(net, is_elems, calculate_voltage_angles=False, enforce_q_lims=False,
     # sets buses out of service, which aren't connected to branches / REF buses
     _set_isolated_buses_out_of_service(net, ppc)
 
-    _checkConnectivity(net, ppc)
+    if check_connectivity:
+        _checkConnectivity(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc

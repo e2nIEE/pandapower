@@ -9,6 +9,18 @@ import numpy as np
 from collections import MutableMapping
 import six
 
+import scipy as sp, scipy.sparse
+from pypower.idx_brch import F_BUS, T_BUS
+from pypower.idx_bus import BUS_I, BUS_TYPE, NONE
+
+
+try:
+    import pplog as logging
+except:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 class ADict(dict, MutableMapping):
 
     def __init__(self, *args, **kwargs):
@@ -403,3 +415,38 @@ def _write_lookup_to_net(net, element, element_lookup):
     Updates selected lookups in net
     """
     net["_pd2ppc_lookups"][element] = element_lookup
+
+
+
+def _checkConnectivity(net, ppc):
+    """
+    Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
+    :param net: pandapower network
+    :param ppc: pyPoer matrix
+    :return:
+    """
+    nobranch = ppc['branch'].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = np.array(ppc['branch'][:, F_BUS], dtype=np.int)
+    bus_to = np.array(ppc['branch'][:, T_BUS], dtype=np.int)
+
+    adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
+                                     shape=(nobus, nobus))
+
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+
+    all_nodes = set(ppc['bus'][:, BUS_I])
+
+    visited_nodes = set()
+
+    for slack in slacks:
+        node_array = sp.sparse.csgraph.depth_first_order(adj_matrix, slack, False, False)
+        node_set = set(node_array)
+        visited_nodes = visited_nodes.union(node_set)
+
+    isolated_nodes = all_nodes.difference(visited_nodes)
+
+    if isolated_nodes:
+        logger.info("There are isolated buses in the network!")
+        index_array = np.array(list(isolated_nodes), dtype=np.int)
+        ppc['bus'][index_array, BUS_TYPE] = NONE
