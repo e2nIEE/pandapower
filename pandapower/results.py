@@ -13,9 +13,10 @@ from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
-def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
+def _extract_results(net, ppc, trafo_loading, return_voltage_angles,
                      ac=True):
 
+    is_elems = net["_is_elems"]
     _set_buses_out_of_service(ppc)
 
     # generate bus_lookup net -> consecutive ordering
@@ -31,8 +32,9 @@ def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
-def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angles,
+def _extract_results_opf(net, ppc, trafo_loading, return_voltage_angles,
                          ac):
+    is_elems = net["_is_elems"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']

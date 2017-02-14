@@ -112,8 +112,8 @@ def test_oos_bus():
     assert runpp_with_consistency_checks(net)
 
 def get_isolated(net):
-    is_elems = _select_is_elements(net)
-    ppc, ppci = _pd2ppc(net, is_elems)
+    net["_is_elems"] = _select_is_elements(net)
+    ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)
 
 def test_connectivity():

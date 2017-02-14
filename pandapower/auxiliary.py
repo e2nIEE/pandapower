@@ -418,7 +418,7 @@ def _write_lookup_to_net(net, element, element_lookup):
 
 
 
-def _check_connectivity(ppc):
+def _check_connectivity(ppc, net=None):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pyPoer matrix
@@ -448,7 +448,17 @@ def _check_connectivity(ppc):
     if isolated_nodes:
         logger.debug("There are isolated buses in the network!")
         index_array = np.array(list(isolated_nodes), dtype=np.int)
+        # set buses in ppc out of service
         ppc['bus'][index_array, BUS_TYPE] = NONE
+        # set buses also in net out of service
+        if net is not None:
+            # get lookup net -> ppc to search indices in net
+            bus_lookup = net["_pd2ppc_lookups"]["bus"]
+            # find indices in net of oos buses
+            oos_ind_in_net = np.searchsorted(bus_lookup, index_array)
+            # set buses in net out of service
+            net["bus"].in_service.values[oos_ind_in_net] = False
+
         iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
         iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
         if iso_p > 0 or iso_q > 0:

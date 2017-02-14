@@ -189,21 +189,20 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    is_elems = _select_is_elements(net, recycle)
+    net["_is_elems"] = _select_is_elements(net, recycle)
 
     if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
-        ppc, ppci = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
+        ppc, ppci = _update_ppc(net, recycle, calculate_voltage_angles, enforce_q_lims,
                                             trafo_model)
     else:
         # convert pandapower net to ppc
-        ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
+        ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims,
                                         trafo_model,  init_results=init_results,
                                         check_connectivity = check_connectivity)
 
     # store variables
     net["_ppc"] = ppc
-    net["_is_elems"] = is_elems
 
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
@@ -223,7 +222,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, is_elems, trafo_loading, ac)
+    _extract_results(net, result, trafo_loading, ac)
 #    _clean_up(net)
 
 
@@ -324,9 +323,9 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     _add_auxiliary_elements(net, False)
     reset_results(net)
     # select elements in service (time consuming, so we do it once)
-    is_elems = _select_is_elements(net)
+    net["_is_elems"] = _select_is_elements(net)
 
-    ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
+    ppc, ppci = _pd2ppc(net, copy_constraints_to_ppc=True, trafo_model="t",
                                     opf=True, cost_function=cost_function,
                                     calculate_voltage_angles=False, **kwargs)
     if not ac:
@@ -352,7 +351,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, is_elems, "current", True, ac)
+    _extract_results_opf(net, result, "current", True, ac)
     _clean_up(net)
 
 

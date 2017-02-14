@@ -8,7 +8,7 @@ import numpy as np
 from itertools import chain
 from collections import defaultdict
 
-from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE
+from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE
 
 from pandapower.auxiliary import _sum_by_group
 
@@ -127,7 +127,7 @@ def _build_bus_ppc(net, ppc, is_elems, init_results=False, copy_constraints_to_p
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]], BUS_TYPE] = 4
+    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]], BUS_TYPE] = NONE
 
     if init_results is True and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
