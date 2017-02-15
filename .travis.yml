@@ -21,7 +21,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pypower pandas networkx numpydoc numba
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy pandas networkx numpydoc numba
   - source activate test-environment
   - python setup.py install
 
