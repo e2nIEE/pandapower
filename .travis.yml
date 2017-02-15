@@ -4,6 +4,7 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
+ 
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -33,6 +34,6 @@ script:
     py.test --cov=pandapower
     
 after_success:
-    - if [[ $ENV == python=3.5* ]]; then
+    - if [[ $TRAVIS_PYTHON_VERSION == "3.5"]]; then
           coveralls;
       fi
