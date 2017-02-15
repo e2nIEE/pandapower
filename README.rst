@@ -2,6 +2,12 @@
 pandapower
 =============
 
+.. image:: https://img.shields.io/pypi/v/pandapower.svg
+   :target: https://pypi.python.org/pypi/pandapower
+
+.. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
+    :target: https://pypi.python.org/pypi/pandapower
+
 .. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
     :target: https://travis-ci.org/lthurner/pandapower
 
