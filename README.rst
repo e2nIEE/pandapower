@@ -4,6 +4,9 @@
 .. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
     :target: https://coveralls.io/github/lthurner/pandapower?branch=master
 
+.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE  
+
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
