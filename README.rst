@@ -21,7 +21,7 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
 
 .. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
-   :target: http://www.pandapower.de
+   :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
     
 
 For more information, go to `<http://www.uni-kassel.de/go/pandapower>`_.
