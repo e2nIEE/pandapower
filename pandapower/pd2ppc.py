@@ -14,7 +14,7 @@ from pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.run_userfcn import run_userfcn
 
 from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \
-                        _check_connectivity, _select_is_elements
+                        _check_connectivity, _create_ppc2pd_bus_lookup, _remove_isolated_elements_from_is_elements
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
                         _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
@@ -104,9 +104,10 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
     _set_isolated_buses_out_of_service(net, ppc)
 
     if check_connectivity:
-        _check_connectivity(ppc, net)
-        # update is_elems
-        net["_is_elems"] = _select_is_elements(net)
+        isolated_nodes, _, _ = _check_connectivity(ppc)
+        _create_ppc2pd_bus_lookup(net)
+        is_elems = _remove_isolated_elements_from_is_elements(net, isolated_nodes, is_elems)
+        # ToDo: The reverse lookup (ppc2pd) needs to be updated in ppc2ppci!
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
@@ -172,6 +173,7 @@ def _ppc2ppci(ppc, ppci, net, is_elems):
 
     # update lookups (pandapower -> ppci internal)
     _update_lookup_entries(net, bus_lookup, e2i, "bus")
+    # ToDo: The reverse lookup (ppc2pd) also needs to be updated when connectivity_check == True!
 
     if 'areas' in ppc:
         if len(ppc["areas"]) == 0:  # if areas field is empty
@@ -300,3 +302,4 @@ def _update_ppc(net, recycle, calculate_voltage_angles=False, enforce_q_lims=Fal
     ppci["gen"] = ppc["gen"][gs]
 
     return ppc, ppci
+

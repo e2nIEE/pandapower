@@ -410,15 +410,14 @@ def calculate_line_results(net, use_res_bus_est=False):
     res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
     return res_line
 
-def _write_lookup_to_net(net, element, element_lookup):
+def _write_lookup_to_net(net, element, element_lookup, lookup_type="_pd2ppc_lookups"):
     """
     Updates selected lookups in net
     """
-    net["_pd2ppc_lookups"][element] = element_lookup
+    net[lookup_type][element] = element_lookup
 
 
-
-def _check_connectivity(ppc, net=None):
+def _check_connectivity(ppc):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pyPoer matrix
@@ -450,14 +449,6 @@ def _check_connectivity(ppc, net=None):
         index_array = np.array(list(isolated_nodes), dtype=np.int)
         # set buses in ppc out of service
         ppc['bus'][index_array, BUS_TYPE] = NONE
-        # set buses also in net out of service
-        if net is not None:
-            # get lookup net -> ppc to search indices in net
-            bus_lookup = net["_pd2ppc_lookups"]["bus"]
-            # find indices in net of oos buses
-            oos_ind_in_net = np.searchsorted(bus_lookup, index_array)
-            # set buses in net out of service
-            net["bus"].in_service.values[oos_ind_in_net] = False
 
         iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
         iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
@@ -467,3 +458,35 @@ def _check_connectivity(ppc, net=None):
         iso_p = iso_q = 0
     return isolated_nodes, iso_p, iso_q
             
+def _create_ppc2pd_bus_lookup(net):
+    # pd to ppc lookup
+    pd2ppc_bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    # valid entries in pd2ppc lookup
+    valid_entries = pd2ppc_bus_lookup >= 0
+    # init reverse (ppc2pd) lookup with -1
+    ppc2pd_bus_lookup = np.ones(max(pd2ppc_bus_lookup[valid_entries]) + 1, dtype=int) * -1
+    # index of pd2ppc lookup
+    ind_pd2ppc_bus_lookup = np.array(range(len(pd2ppc_bus_lookup)), dtype=int)
+    # update reverse lookup
+    ppc2pd_bus_lookup[pd2ppc_bus_lookup[valid_entries]] = ind_pd2ppc_bus_lookup[valid_entries]
+    # store reverse lookup innet
+    net["_ppc2pd_lookups"]["bus"] = ppc2pd_bus_lookup
+
+def _remove_isolated_elements_from_is_elements(net, isolated_nodes, is_elems):
+    pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
+
+    isolated_nodes_pp = pcc2pd_bus_lookup[list(isolated_nodes)]
+    # remove isolated buses from is_elems["bus"]
+    is_elems["bus"] = is_elems["bus"].drop(isolated_nodes_pp)
+    bus_is_ind = is_elems["bus"].index
+    # check if in service elements are at in service buses
+
+    elems_to_update = ["load", "sgen", "ward", "xward", "shunt"]
+    for elem in elems_to_update:
+        is_elems[elem] = np.in1d(net[elem].bus.values, bus_is_ind) \
+                  & net[elem].in_service.values.astype(bool)
+
+    is_elems["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                          & net["gen"]["in_service"].values.astype(bool)]
+
+    return is_elems
