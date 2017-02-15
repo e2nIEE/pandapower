@@ -410,11 +410,11 @@ def calculate_line_results(net, use_res_bus_est=False):
     res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
     return res_line
 
-def _write_lookup_to_net(net, element, element_lookup, lookup_type="_pd2ppc_lookups"):
+def _write_lookup_to_net(net, element, element_lookup):
     """
     Updates selected lookups in net
     """
-    net[lookup_type][element] = element_lookup
+    net["_pd2ppc_lookups"][element] = element_lookup
 
 
 def _check_connectivity(ppc):
