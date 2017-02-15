@@ -32,7 +32,7 @@ install:
 
 script:
   # Your test script goes here
-    py.test coveralls
+    py.test --cov=pandapower
     
 after_success:
     - if [[ $ENV == python=3.5* ]]; then
