@@ -1,5 +1,5 @@
 ﻿======================================================================
-pandapower - Convenient Power System Modelling and Analysis
+pandapower
 ======================================================================
 
 .. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
