@@ -7,6 +7,9 @@
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
     :target: https://github.com/lthurner/pandapower/blob/master/LICENSE  
 
+==============
+pandapower
+==============    
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
@@ -96,9 +99,4 @@ The results are then processed and written back into pandapower:
 For the 3-bus example network, the result tables look like this:
 
 .. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_results.png
-		:width: 30em      
-
-License
-=========
-
-pandapower is licensed under a 3-clause BSD-License that can be found in the LICENSE file.
+		:width: 30em

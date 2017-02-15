@@ -4,4 +4,3 @@ pypower>=5.0.1
 pandas
 networkx
 numpydoc
-numba
