@@ -24,7 +24,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip pytest numpy scipy pandas networkx numpydoc numba openpyxl xlrd xlsxwriter
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter
   - source activate test-environment
   - pip install pytest pytest-cov
   - pip install coveralls
@@ -32,7 +32,9 @@ install:
 
 script:
   # Your test script goes here
-    py.test
+    py.test coveralls
     
 after_success:
-  - coveralls
+    - if [[ $ENV == python=3.5* ]]; then
+          coveralls;
+      fi
