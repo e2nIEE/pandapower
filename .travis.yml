@@ -31,7 +31,7 @@ install:
 
 script:
   # Your test script goes here
-    py.test --cov=pandapower
+    py.test --cov=pandapower --cov-config .coveragerc
     
 after_success:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
