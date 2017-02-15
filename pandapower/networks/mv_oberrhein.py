@@ -68,7 +68,3 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         raise ValueError("Unknown scenario %s - chose 'load' or 'generation'"%scenario)
     pp.runpp(net)
     return net
-
-if __name__ == "__main__":
-    net = mv_oberrhein()
-    pp.runpp(net)

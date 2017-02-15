@@ -652,8 +652,3 @@ class state_estimation(object):
             num_iterations += 1
 
         return v_in_out, delta_in_out, successful
-
-
-if __name__ == "__main__":
-    from pandapower.test.estimation.test_wls_estimation import test_3bus
-    test_3bus()

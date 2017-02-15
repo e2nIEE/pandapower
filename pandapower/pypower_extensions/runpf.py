@@ -274,6 +274,3 @@ def _runpf(casedata=None, init='flat', ac=True, numba=True, recycle=None, ppopt=
     results = ppci
 
     return results, success
-
-if __name__ == '__main__':
-    _runpf()

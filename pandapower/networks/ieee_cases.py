@@ -256,8 +256,3 @@ def case300():
     """
     case300 = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case300.p"))
     return case300
-
-
-if __name__ == "__main__":
-    import pandapower.networks as pn
-    net = pn.networks.case9()
