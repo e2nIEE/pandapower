@@ -1,4 +1,8 @@
-﻿.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
+﻿======================================================================
+pandapower - Convenient Power System Modelling and Analysis
+======================================================================
+
+.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
     :target: https://travis-ci.org/lthurner/pandapower
 
 .. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
@@ -7,9 +11,6 @@
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
     :target: https://github.com/lthurner/pandapower/blob/master/LICENSE  
 
-==============
-pandapower
-==============    
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
