@@ -26,7 +26,7 @@ setup(
     install_requires=["pypower>=5.0.1",
                       "numpy",
                       "scipy",
-                      "pandas",
+                      "pandas>=0.17.0",
                       "networkx"],
     packages=find_packages(),
     include_package_data=True,

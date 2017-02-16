@@ -24,7 +24,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas>=0.17.0 networkx numpydoc numba xlsxwriter xlrd
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
   - source activate test-environment
   - pip install pytest pytest-cov
   - pip install coveralls
