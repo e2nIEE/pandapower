@@ -14,7 +14,7 @@
 import sys, os
 import mock
  
-MOCK_MODULES = ['numpy', 'scipy', 'numba']
+MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
