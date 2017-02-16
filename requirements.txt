@@ -1,6 +1,6 @@
-numpy
+numpy>=1.10.0
 scipy
 pypower>=5.0.1
-pandas
+pandas>=0.17.0
 networkx
 numpydoc
