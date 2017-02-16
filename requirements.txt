@@ -1,4 +1,3 @@
 pypower>=5.0.1
-pandas>=0.17.0
 networkx
 numpydoc
