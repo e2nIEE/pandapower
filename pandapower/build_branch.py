@@ -355,7 +355,7 @@ def _trafo_df_from_trafo3w(net):
         sn = np.array([ttab.sn_hv_kva, ttab.sn_mv_kva, ttab.sn_lv_kva])
         uk_2w = z_br_to_bus(uk, sn)
         ur_2w = z_br_to_bus(ur, sn)
-        taps = [{tv: np.nan for tv in tap_variables} for _ in range(3)]
+        taps = [dict((tv, np.nan) for tv in tap_variables) for _ in range(3)]
         for k in range(3):
             taps[k]["tp_side"] = None
 
@@ -399,7 +399,11 @@ def _trafo_df_from_trafo3w(net):
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
                                       "vn_hv_kv", "vn_lv_kv", "pfe_kw"]:
-        trafo_df[var] = pd.to_numeric(trafo_df[var])
+        try:
+            trafo_df[var] = pd.to_numeric(trafo_df[var])
+        except:
+            #legacy support for pandas versions < 0.17
+            trafo_df[var] = trafo_df[var].convert_objects(convert_numeric=True) 
     return trafo_df
 
 
