@@ -453,7 +453,7 @@ def _check_connectivity(ppc):
         iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
         iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
         if iso_p > 0 or iso_q > 0:
-            logger.info("%.0f kW active and %.0f kVar reactive power are unsupplied"%(iso_p, iso_q))
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied"%(iso_p, iso_q))
     else:
         iso_p = iso_q = 0
     return isolated_nodes, iso_p, iso_q

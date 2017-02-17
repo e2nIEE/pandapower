@@ -169,6 +169,5 @@ def test_makeYbus():
 
 
 if __name__ == "__main__":
-    test_connectivity()
-#    pytest.main(["test_runpp.py", "-xs"])
+    pytest.main(["test_runpp.py", "-xs"])
 

@@ -71,11 +71,11 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    is_elems = _select_is_elements(net)
+    net["_is_elems"] = _select_is_elements(net)
 
     init_results = True if init == "results" else False
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims=False,
+    ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims=False,
                                     trafo_model=trafo_model, init_results=init_results)
 
     # convert ppc to mpc
