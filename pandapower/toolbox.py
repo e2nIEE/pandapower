@@ -769,6 +769,10 @@ def set_element_status(net, buses, in_service):
     shunts = net.shunt[net.shunt.bus.isin(buses)].index
     net.shunt.loc[shunts, "in_service"] = in_service
 
+    grids = net.ext_grid[net.ext_grid.bus.isin(buses)].index
+    net.ext_grid.loc[grids, "in_service"] = in_service
+
+
 def set_isolated_areas_out_of_service(net):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.

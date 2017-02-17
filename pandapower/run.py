@@ -222,7 +222,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, trafo_loading, ac)
+    _extract_results(net, result, trafo_loading, calculate_voltage_angles, ac)
 #    _clean_up(net)
 
 
