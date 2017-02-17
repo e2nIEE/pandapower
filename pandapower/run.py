@@ -212,8 +212,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
+    result = _copy_results_ppci_to_ppc(result, ppc)
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
@@ -346,8 +345,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
+    result = _copy_results_ppci_to_ppc(result, ppc)
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True

@@ -472,9 +472,9 @@ def _create_ppc2pd_bus_lookup(net):
     # store reverse lookup innet
     net["_ppc2pd_lookups"]["bus"] = ppc2pd_bus_lookup
 
-def _remove_isolated_elements_from_is_elements(net, isolated_nodes, is_elems):
+def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
-
+    is_elems = net["_is_elems"]
     isolated_nodes_pp = pcc2pd_bus_lookup[list(isolated_nodes)]
     # remove isolated buses from is_elems["bus"]
     is_elems["bus"] = is_elems["bus"].drop(isolated_nodes_pp)
@@ -489,4 +489,4 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes, is_elems):
     is_elems["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
                           & net["gen"]["in_service"].values.astype(bool)]
 
-    return is_elems
+    net["_is_elems"] = is_elems

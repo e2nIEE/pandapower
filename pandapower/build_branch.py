@@ -16,7 +16,7 @@ from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import get_values
 
 
-def _build_branch_ppc(net, ppc, is_elems, calculate_voltage_angles, trafo_model,
+def _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model,
                       copy_constraints_to_ppc=False):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
@@ -60,7 +60,7 @@ def _build_branch_ppc(net, ppc, is_elems, calculate_voltage_angles, trafo_model,
             _calc_impedance_parameter(net)
     if xward_end > impedance_end:
         ppc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
-            _calc_xward_parameter(net, ppc, is_elems)
+            _calc_xward_parameter(net, ppc)
 
 
 def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model):
@@ -421,11 +421,11 @@ def _calc_impedance_parameter(net):
     return t
 
 
-def _calc_xward_parameter(net, ppc, is_elems):
+def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
-    xw_is = is_elems["xward"]
+    xw_is = net["_is_elems"]["xward"]
     t[:, 0] = bus_lookup[net["xward"]["bus"].values]
     t[:, 1] = bus_lookup[net["xward"]["ad_bus"].values]
     t[:, 2] = net["xward"]["r_ohm"] / baseR
@@ -448,7 +448,7 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
         return is_to_bus, bus, net["trafo"].index.get_loc(branch_id)
 
 
-def _switch_branches(net, ppc, is_elems):
+def _switch_branches(net, ppc):
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     according of the status of switches
@@ -460,6 +460,7 @@ def _switch_branches(net, ppc, is_elems):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
+    is_elems = net["_is_elems"]
     lines_is = is_elems['line']
     bus_is = is_elems['bus']
 
@@ -604,7 +605,7 @@ def _switch_branches(net, ppc, is_elems):
             ppc["bus"] = np.vstack(future_buses)
 
 
-def _branches_with_oos_buses(net, ppc, is_elems):
+def _branches_with_oos_buses(net, ppc):
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     if the branch is connected to an out of service bus
@@ -620,6 +621,7 @@ def _branches_with_oos_buses(net, ppc, is_elems):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
+    is_elems = net["_is_elems"]
     bus_is = is_elems['bus']
     line_is = is_elems['line']
 

@@ -15,7 +15,7 @@ from scipy import sparse
 from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 
 
-def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, **kwargs):
+def _make_objective(ppci, net, cost_function="linear", lambda_opf=1, **kwargs):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
@@ -67,6 +67,8 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, *
                     net._pd2ppc_lookups else None
     
     gen_costs = np.ones(len(ppci["gen"]))
+    # get in service elements
+    is_elems = net["_is_elems"]
     if eg_idx is not None and "cost_per_kw" in is_elems["ext_grid"]:
         gen_costs[eg_idx[is_elems["ext_grid"].index]] = is_elems["ext_grid"].cost_per_kw
     if gen_idx is not None and "cost_per_kw" in is_elems["gen"]:
