@@ -364,6 +364,8 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
+    if not "tp_st_degree" in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
     net.version = 1.1
     return net
 

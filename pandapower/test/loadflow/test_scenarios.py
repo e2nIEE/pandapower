@@ -141,5 +141,21 @@ def test_two_gens_at_one_bus():
     assert net.res_gen.p_kw.at[g1] == p1
     assert net.res_gen.p_kw.at[g2] == p2
 
+def test_transformer_phase_shift():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110.)
+    b2 = pp.create_bus(net, vn_kv=20.)
+    b3 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_ext_grid(net, b1)
+    pp.create_transformer_from_parameters(net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, "hv", 0, 2, -2, 1.25, 10, 0)
+    pp.create_transformer_from_parameters(net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
+    pp.runpp(net, "dc", True)
+    b2_angle = net.res_bus.va_degree.at[b2]
+    b3_angle = net.res_bus.va_degree.at[b3]
+    net.trafo.tp_pos.at[0] = 1
+    pp.runpp(net, "dc", True)
+    assert np.isclose(b2_angle - net.res_bus.va_degree.at[b2], 10)
+    assert np.isclose(b3_angle - net.res_bus.va_degree.at[b3], 10)
+
 if __name__ == "__main__":
     pytest.main(["test_scenarios.py"])

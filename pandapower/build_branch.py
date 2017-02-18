@@ -140,7 +140,7 @@ def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
     temp_para[:, 1] = bus_lookup[trafo["lv_bus"].values]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(net, ppc, trafo_model)
     if calculate_voltage_angles:
-        temp_para[:, 6] = trafo["shift_degree"].values
+        temp_para[:, 6] = _get_trafo_shift(trafo)
     else:
         temp_para[:, 6] = np.zeros(shape=(len(trafo.index),), dtype=np.complex128)
     temp_para[:, 7] = trafo["in_service"].values
@@ -148,6 +148,12 @@ def _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model,
         max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 1000
         temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000. * parallel
     return temp_para
+
+def _get_trafo_shift(trafo_df):
+    trafo_shift = trafo_df["shift_degree"].values.astype(float)
+    tap_shift = np.isfinite(trafo_df["tp_st_degree"].values)
+    trafo_shift[tap_shift] += (trafo_df["tp_pos"].values[tap_shift] - trafo_df["tp_mid"].values[tap_shift]) * trafo_df["tp_st_degree"].values[tap_shift]
+    return trafo_shift
 
 
 def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, trafo_df=None):
