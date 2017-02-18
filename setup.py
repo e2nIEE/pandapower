@@ -24,7 +24,7 @@ setup(
     url='http://www.uni-kassel.de/go/pandapower',
     license='BSD',
     install_requires=["pypower>=5.0.1",
-                      "pandas>=0.17.0",
+#                      "pandas>=0.17.0",
                       "networkx"],
     packages=find_packages(),
     include_package_data=True,
