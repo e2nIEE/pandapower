@@ -3,6 +3,24 @@
 Optimal Power Flow
 =====================
 
+Notes for new Docs:
+
+    ** Hiow the gencost array is built **
+    
+    The gencost array contains
+    
+    1. eg cost2. gen cost3. sgen cost 4. load costs
+    
+    
+    Costs are respected, even if element is not controllable!
+    
+    
+=======================================
+
+OLD OPF DOCS:
+
+========================================
+
 The pandapower optimal power flow is a tool for optimizing the grid state. It offers two cost function options, that are fitting special use cases. 
 In addition to the equality constraints in the problem formulations below, the full set of nonlinear real and reactive power balance equations is always considered in the pandapower optimal power flow.
 To understand the usage, the OPF tutorial is recommended (see :ref:`tutorial`).
@@ -21,6 +39,8 @@ pandapower uses PYPOWER to solve the optimal power flow problem:
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc_opf"].
     However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
 
+
+    
     
 
 **Generator Flexibilities**

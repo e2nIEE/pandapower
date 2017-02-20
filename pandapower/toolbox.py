@@ -207,6 +207,9 @@ def opf_task(net):
         logger.info("  There are no constraints.")
 
 
+    # check if full range of generator is covered by pwl cost function!
+
+
 def switch_info(net, sidx):
     """
     Prints what buses and elements are connected by a certain switch.

@@ -32,7 +32,7 @@ def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
 def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angles,
-                         ac):
+                         ac, cost_function):
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
@@ -50,7 +50,7 @@ def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angle
     _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
-    _get_costs(net)
+    _get_costs(net, ppc, cost_function)
 
 
 def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen_end):
@@ -552,15 +552,26 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elem
     if ac:
         bus_pq[b_ppc, 1] += vq
 
-def _get_costs(net):
-    cost = 0
-    if "cost_per_kw" in net.gen:
-        cost += (-net.res_gen.p_kw * net.gen.cost_per_kw).sum()
-    if "cost_per_kw" in net.sgen:
-        cost += (-net.res_sgen.p_kw * net.sgen.cost_per_kw).sum()
-    if "cost_per_kw" in net.ext_grid:
-        cost += (-net.res_ext_grid.p_kw * net.ext_grid.cost_per_kw).sum()
-    net.res_cost = cost
+def _get_costs(net, ppc, cost_function):
+
+    # Small loop for testing if objective returned by pypower matches our expected cost function value
+    # cost = 0
+    # if cost_function == "piecewise_linear":
+    #     pwlc= net.piecewise_linear_cost
+    #     for item in pwlc[(pwlc.element_type=="gen").values & (pwlc.type=="p").values].itertuples():
+    #         p_act = net.res_gen.p_kw.at[item.element]
+    #         p=item.p
+    #         f=item.f
+    #         x1 = p[:-1][np.logical_and(p_act > p[:-1], p_act < p[1:])]
+    #         x2 = p[1:][np.logical_and(p_act > p[:-1], p_act < p[1:])]
+    #         y1 = f[:-1][np.logical_and(p_act > p[:-1], p_act < p[1:])]
+    #         y2 = f[1:][np.logical_and(p_act > p[:-1], p_act < p[1:])]
+    #         cost += (y2-y1)/(x2-x1)*(p_act-x1)+y1
+    #
+    #
+    #     f = net.piecewise_linear_cost.f.values[0]
+
+    net.res_cost = ppc['obj'] * 1000
 
 
 def reset_results(net):
@@ -612,6 +623,9 @@ def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):
 
     ppc['success'] = result['success']
     ppc['et'] = result['et']
+
+    ppc['obj'] = result['f']
+    ppc['internal_gencost'] = result['gencost']
 
     result = ppc
     return result

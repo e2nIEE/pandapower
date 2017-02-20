@@ -190,6 +190,10 @@ def create_empty_network(name=None, f_hz=50.):
                         ("element_type", np.dtype(object)),
                         ("p", np.dtype(object)),
                         ("f", np.dtype(object))],
+        "polynomial_cost": [("type", np.dtype(object)),
+                                  ("element", np.dtype(object)),
+                                  ("element_type", np.dtype(object)),
+                                  ("c", np.dtype(object))],
         # geodata
         "line_geodata": [("coords", np.dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
@@ -421,8 +425,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
 def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., index=None,
                 in_service=True, type=None, max_p_kw=np.nan, min_p_kw=np.nan,
-                max_q_kvar=np.nan, min_q_kvar=np.nan, cost_per_kw=np.nan, cost_per_kvar=np.nan,
-                controllable=np.nan):
+                max_q_kvar=np.nan, min_q_kvar=np.nan, controllable=np.nan):
     """
     Adds one load in table net["load"].
 
@@ -504,18 +507,6 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 
         net.load.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
-    if not np.isnan(cost_per_kw):
-        if "cost_per_kw" not in net.load.columns:
-            net.load.loc[:, "cost_per_kw"] = pd.Series()
-
-        net.load.loc[index, "cost_per_kw"] = float(cost_per_kw)
-
-    if not np.isnan(cost_per_kvar):
-        if "cost_per_kvar" not in net.load.columns:
-            net.load.loc[:, "cost_per_kvar"] = pd.Series()
-
-        net.load.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
-
     if not np.isnan(controllable):
         if "controllable" not in net.load.columns:
             net.load.loc[:, "controllable"] = pd.Series()
@@ -530,8 +521,7 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=np.nan, min_p_kw=np.nan,
-                max_q_kvar=np.nan, min_q_kvar=np.nan, cost_per_kw=np.nan, cost_per_kvar=np.nan,
-                controllable=np.nan):
+                max_q_kvar=np.nan, min_q_kvar=np.nan, controllable=np.nan):
     """
     Adds one static generator in table net["sgen"].
 
@@ -567,12 +557,6 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
         **type** (string, None) -  type variable to classify the static generator
 
         **in_service** (boolean) - True for in_service or False for out of service
-
-        **cost_per_kw** (float, NaN) - Defines operation cost of the static generator for active
-        power. Is only considered, if you run an optimal powerflow
-
-        **cost_per_kvar** (float, NaN) - Defines operation cost of the static generator for reactive
-        power. Is only considered, if you run an optimal powerflow
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
@@ -627,18 +611,6 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
 
         net.sgen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
-    if not np.isnan(cost_per_kw):
-        if "cost_per_kw" not in net.sgen.columns:
-            net.sgen.loc[:, "cost_per_kw"] = pd.Series()
-
-        net.sgen.loc[index, "cost_per_kw"] = float(cost_per_kw)
-
-    if not np.isnan(cost_per_kvar):
-        if "cost_per_kvar" not in net.sgen.columns:
-            net.sgen.loc[:, "cost_per_kvar"] = pd.Series()
-
-        net.sgen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
-
     if not np.isnan(controllable):
         if "controllable" not in net.sgen.columns:
             net.sgen.loc[:, "controllable"] = pd.Series()
@@ -653,8 +625,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
 
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, max_q_kvar=np.nan,
                min_q_kvar=np.nan, min_p_kw=np.nan, max_p_kw=np.nan, scaling=1., type=None,
-               cost_per_kw=np.nan, cost_per_kvar=np.nan, controllable=np.nan, vn_kv=np.nan,
-               xdss=np.nan, rdss=np.nan, cos_phi=np.nan, in_service=True):
+               controllable=np.nan, vn_kv=np.nan, xdss=np.nan, rdss=np.nan, cos_phi=np.nan, in_service=True):
     """
     Adds a generator to the network.
 
@@ -682,12 +653,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
         **scaling** (float, 1.0) - scaling factor which for the active power of the generator
 
         **type** (string, None) - type variable to classify generators
-
-        **cost_per_kw** (float, NaN) - Defines operation cost of the generator for active power.
-        Is only considered, if you run an optimal powerflow
-
-        **cost_per_kvar** (float, NaN) - Defines operation cost of the generator for reactive power.
-        Is only considered, if you run an optimal powerflow
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
@@ -755,16 +720,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
             net.gen.loc[:, "max_q_kvar"] = pd.Series()
         net.gen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
-    if not np.isnan(cost_per_kw):
-        if "cost_per_kw" not in net.gen.columns:
-            net.gen.loc[:, "cost_per_kw"] = pd.Series()
-        net.gen.loc[index, "cost_per_kw"] = float(cost_per_kw)
-
-    if not np.isnan(cost_per_kvar):
-        if "cost_per_kvar" not in net.gen.columns:
-            net.gen.loc[:, "cost_per_kvar"] = pd.Series()
-        net.gen.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
-
     if not np.isnan(controllable):
         if "controllable" not in net.gen.columns:
             net.gen.loc[:, "controllable"] = pd.Series(False)
@@ -798,7 +753,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=np.nan, s_sc_min_mva=np.nan, rx_max=np.nan, rx_min=np.nan,
                     max_p_kw=np.nan, min_p_kw=np.nan, max_q_kvar=np.nan, min_q_kvar=np.nan,
-                    index=None, cost_per_kw=np.nan, cost_per_kvar=np.nan):
+                    index=None):
     """
     Creates an external grid connection.
 
@@ -901,18 +856,6 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             net.ext_grid.loc[:, "max_q_kvar"] = pd.Series()
 
         net.ext_grid.loc[index, "max_q_kvar"] = float(max_q_kvar)
-
-    if not np.isnan(cost_per_kw):
-        if "cost_per_kw" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "cost_per_kw"] = pd.Series()
-
-        net.ext_grid.loc[index, "cost_per_kw"] = float(cost_per_kw)
-
-    if not np.isnan(cost_per_kvar):
-        if "cost_per_kvar" not in net.ext_grid.columns:
-            net.ext_grid.loc[:, "cost_per_kvar"] = pd.Series()
-
-        net.ext_grid.loc[index, "cost_per_kvar"] = float(cost_per_kvar)
 
         # and preserve dtypes
     _preserve_dtypes(net.ext_grid, dtypes)
@@ -1956,6 +1899,15 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
     p=data_points[:,0]
     f=data_points[:,1]
 
+    if not (p[:-1] < p[1:]).all():
+        raise ValueError("Piecewise linear costs need to be defined in ascending order: p0 < p1 < ... < pn")
+
+    if type == "p":
+        if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
+            raise ValueError("Cost function must be defined for whole power range of the generator")
+
+
+
     net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
 
@@ -1963,6 +1915,37 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
     net.piecewise_linear_cost.f.loc[0] = f
 
 
+
+
+
+    #TODO  check if full range of generator is covered by cost function!
+
+    return index
+
+def create_polynomial_cost(net, element, element_type, coefficients, type = "p", index = None):
+    """
+
+    :param net:
+    :param type:
+    :param element_type:
+    :param value:
+    :param std_dev:
+    :param bus:
+    :param element:
+    :param index:
+    :return:
+    """
+    hallo=1
+    if index is None:
+        index = get_free_id(net["polynomial_cost"])
+
+    if index in net["polynomial_cost"].index:
+        raise UserWarning("A polynomial_cost with the id %s already exists" % index)
+
+    net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
+        [type, element, element_type]
+
+    net.polynomial_cost.c.loc[0] = coefficients
 
     return index
 

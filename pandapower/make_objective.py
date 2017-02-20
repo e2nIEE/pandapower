@@ -11,6 +11,7 @@ from pypower.idx_brch import T_BUS, F_BUS
 from pypower.idx_bus import BUS_TYPE, REF
 from pandas import DataFrame
 from scipy import sparse
+import pandas as pd
 
 from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 
@@ -64,18 +65,7 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, p
                     net._pd2ppc_lookups else None
     load_idx = net._pd2ppc_lookups["load_controllable"] if "load_controllable" in \
                     net._pd2ppc_lookups else None
-    
-    gen_costs = np.ones(len(ppci["gen"]))
-    if eg_idx is not None and "cost_per_kw" in is_elems["ext_grid"]:
-        gen_costs[eg_idx[is_elems["ext_grid"].index]] = is_elems["ext_grid"].cost_per_kw
-    if gen_idx is not None and "cost_per_kw" in is_elems["gen"]:
-        gen_costs[gen_idx[is_elems["gen"].index]] = is_elems["gen"].cost_per_kw
-    if sgen_idx is not None and "cost_per_kw" in is_elems["sgen_controllable"]:
-        gen_costs[sgen_idx[is_elems["sgen_controllable"].index]] = is_elems["sgen_controllable"].cost_per_kw
-    if load_idx is not None and "cost_per_kw" in is_elems["load_controllable"]:
-        gen_costs[load_idx[is_elems["load_controllable"].index]] = is_elems["load_controllable"].cost_per_kw
-        
-        
+
         
 #    gen_p_nominal = np.ones(len(ppci["gen"]))
 #    if sgen_idx is not None:
@@ -87,8 +77,26 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, p
 #    print()
 #    print("P_NOMINAL: %s" %gen_p_nominal)
     
-    ng = len(ppci["gen"])  # -
+    ng = len(ppci["gen"])
+    nb = len(ppci["bus"])
+    nl = len(ppci["branch"])
+
     nref = sum(ppci["bus"][:, BUS_TYPE] == REF)
+    if gen_idx is not None:
+        ngen = len(gen_idx)
+    else:
+        ngen = 0
+
+    if sgen_idx is not None:
+        nsgen= len(sgen_idx)
+    else:
+        nsgen = 0
+
+    if load_idx is not None:
+        nload= len(load_idx)
+    else:
+        nload = 0
+
 #    if len(net.dcline) > 0:
 #        gen_is = net.gen[net.gen.in_service==True]
 #    else:
@@ -99,19 +107,31 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, p
         f = net.piecewise_linear_cost.f.values[0]
 
         ppci["gencost"] = np.zeros((ng, 4+2*len(p)), dtype=float)
-        ppci["gencost"][:, 0:4] = np.array([1, 0, 0, 2]) # initializing gencost array for eg
-        ppci["gencost"][:, 4::2] = p
-        ppci["gencost"][:, 5::2] = f
+        ppci["gencost"][:, 0:8] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initializing gencost array
 
-# =======
-#     if cost_function == "linear":
-#
-#         ppci["gencost"] = np.zeros((ng, 8), dtype=float)
-#         ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-#         ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
-#         ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
-# #        ppci["gencost"][:, 6] = np.nan_to_num(gen_p_nominal)
-# >>>>>>> jkupka
+        egel = net.piecewise_linear_cost.element[net.piecewise_linear_cost.element_type == "ext_grid"].values + nref + ngen
+        egindex = net.piecewise_linear_cost[net.piecewise_linear_cost.element_type == "ext_grid"].index
+        genel = net.piecewise_linear_cost.element[net.piecewise_linear_cost.element_type=="gen"].values + nref
+        genindex = net.piecewise_linear_cost[net.piecewise_linear_cost.element_type == "gen"].index
+        sgenel = net.piecewise_linear_cost.element[net.piecewise_linear_cost.element_type == "sgen"].values + nref + ngen
+        sgenindex = net.piecewise_linear_cost[net.piecewise_linear_cost.element_type == "sgen"].index
+        loadel = net.piecewise_linear_cost.element[net.piecewise_linear_cost.element_type=="load"].values + nref
+        loadindex = net.piecewise_linear_cost[net.piecewise_linear_cost.element_type == "load"].index
+
+        elements = np.append(egel, genel)
+        elements = np.append(elements, sgenel)
+        elements = pd.to_numeric(np.append(elements, loadel))
+
+        ppci["gencost"][elements, 4::2] = p
+        ppci["gencost"][elements, 5::2] = f
+
+
+    if cost_function == "polynomial":
+        c = net.piecewise_linear_cost.c.values[0]
+
+        ppci["gencost"] = np.zeros((ng, 4+len(c)), dtype=float)
+        ppci["gencost"][:, 0:4] = np.array([1, 0, 0, 2]) # initializing gencost array for eg
+        ppci["gencost"][:, 4::] = c
 
     if cost_function == "linear_minloss":
 
@@ -121,8 +141,6 @@ def _make_objective(ppci, net, is_elems, cost_function="linear", lambda_opf=1, p
         ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
 
         # Get additional counts
-        nb = len(ppci["bus"])
-        nl = len(ppci["branch"])
         dim = 2 * nb + 2 * ng + 2 * nl
 
         # Get branch admitance matrices
