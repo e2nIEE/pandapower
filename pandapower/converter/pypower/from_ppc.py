@@ -54,6 +54,7 @@ def from_ppc(ppc, f_hz=50):
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
     omega = pi * f_hz  # 1/s
+    MAX_VAL = 99999.
 
     net = pp.create_empty_network(f_hz=f_hz)
 
@@ -137,12 +138,14 @@ def from_ppc(ppc, f_hz=50):
         to_vn_kv = ppc['bus'][to_bus, 9]
         if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)):
             Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-
+            i_max_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]
+            if i_max_ka == 0.0:
+                i_max_ka = MAX_VAL
             pp.create_line_from_parameters(
                 net, from_bus=from_bus, to_bus=to_bus, length_km=1,
                 r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
                 c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                imax_ka=ppc['branch'][i, 5]/ppc['bus'][to_bus, 9], type='ol',
+                imax_ka=i_max_ka, type='ol',
                 in_service=bool(ppc['branch'][i, 10]))
 
         else:
@@ -166,6 +169,8 @@ def from_ppc(ppc, f_hz=50):
             xk = ppc['branch'][i, 3]
             zk = (rk**2+xk**2)**0.5
             sn = ppc['branch'][i, 5]*1e3
+            if sn == 0.0:
+                sn = MAX_VAL
             ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
             i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
             if i0_percent < 0:

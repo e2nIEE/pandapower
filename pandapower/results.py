@@ -22,34 +22,28 @@ def _extract_results(net, ppc, trafo_loading, return_voltage_angles,
     maxBus = max(net["bus"].index.values)
     bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
     bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     bus_pq = _get_p_q_results(net, bus_lookup_aranged, ac)
-    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, ac)
+    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
-    _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
+    _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac)
 
 def _extract_results_opf(net, ppc, trafo_loading, return_voltage_angles,
                          ac):
-    is_elems = net["_is_elems"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
     bus_lookup_aranged = -ones(maxBus + 1, dtype=int)
     bus_lookup_aranged[net["bus"].index.values] = arange(len(net["bus"].index.values))
 
     _set_buses_out_of_service(ppc)
-    len_gen = len(eg_is) + len(gen_is)
     bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
-    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, ac)
+    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
-    _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
+    _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac)
     _get_costs(net)
 
 
@@ -113,12 +107,13 @@ def _set_buses_out_of_service(ppc):
     ppc["bus"][disco, QD] = 0
 
 
-def _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac=True):
+def _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac=True):
     net["res_bus"]["p_kw"] = bus_pq[:, 0]
     if ac:
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
 
     ppi = net["bus"].index.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     bus_idx = bus_lookup[ppi]
     if ac:
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
@@ -498,9 +493,10 @@ def _get_p_q_results(net, bus_lookup_aranged, ac=True):
     return bus_pq
 
 
-def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, ac=True):
+def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac=True):
     b, p, q = np.array([]), np.array([]), np.array([])
     is_elems = net["_is_elems"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     s = net["shunt"]
     if len(s) > 0:
