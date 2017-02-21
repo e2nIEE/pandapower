@@ -368,6 +368,20 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
+
+    if not "piecewise_linear_cost" in net:
+        net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                              ("element", np.dtype(object)),
+                              ("element_type", np.dtype(object)),
+                              ("p", np.dtype(object)),
+                              ("f", np.dtype(object))]))
+
+    if not "polynomial_cost" in net:
+        net["polynomial_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                              ("element", np.dtype(object)),
+                              ("element_type", np.dtype(object)),
+                              ("c", np.dtype(object))]))
+
     net.version = 1.1
     return net
 

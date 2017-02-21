@@ -263,10 +263,10 @@ def runopp(net, cost_function=None, verbose=False, suppress_warnings=True, **kwa
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, cost_function, True, **kwargs)
+    _runopp(net, verbose, suppress_warnings, True, **kwargs)
 
 
-def rundcopp(net, cost_function=None, verbose=False, suppress_warnings=True, **kwargs):
+def rundcopp(net, verbose=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -308,10 +308,10 @@ def rundcopp(net, cost_function=None, verbose=False, suppress_warnings=True, **k
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, cost_function, False, **kwargs)
+    _runopp(net, verbose, suppress_warnings, False, **kwargs)
 
 
-def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
+def _runopp(net, verbose, suppress_warnings, ac=True, **kwargs):
     ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
     net["OPF_converged"] = False
     _add_auxiliary_elements(net, False)
@@ -319,17 +319,8 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     # select elements in service (time consuming, so we do it once)
     is_elems = _select_is_elements(net)
 
-    if cost_function == None:
-        if hasattr(net,"cost_polynomial") and not hasattr(net,"cost_piecewise_linear"):
-            cost_function = "polynomial"
-        elif hasattr(net,"cost_piecewise_linear") and not hasattr(net,"cost_polynomial"):
-            cost_function = "piecewise_linear"
-        else:
-            raise Exception("No cost function specified!")
-
     ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
-                                    opf=True, cost_function=cost_function,
-                                    calculate_voltage_angles=False, **kwargs)
+                                    opf=True, calculate_voltage_angles=False, **kwargs)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
@@ -349,11 +340,11 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
+    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup, opf = True)
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, is_elems, "current", True, ac, cost_function)
+    _extract_results_opf(net, result, is_elems, "current", True, ac)
     _clean_up(net)
 
 

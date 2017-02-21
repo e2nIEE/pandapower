@@ -1903,7 +1903,15 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
         raise ValueError("Piecewise linear costs need to be defined in ascending order: p0 < p1 < ... < pn")
 
     if type == "p":
+        if not ( hasattr(net[element_type],"max_p_kw") or hasattr(net[element_type],"min_p_kw")) :
+            raise AttributeError("No operational constraints defined!")
         if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
+            raise ValueError("Cost function must be defined for whole power range of the generator")
+
+    if type == "q":
+        if not ( hasattr(net[element_type],"max_q_kvar") or hasattr(net[element_type],"min_q_kvar")) :
+            raise AttributeError("No operational constraints defined!")
+        if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[element_type].min_q_kvar.at[element] >= min(p)):
             raise ValueError("Cost function must be defined for whole power range of the generator")
 
 
@@ -1941,6 +1949,9 @@ def create_polynomial_cost(net, element, element_type, coefficients, type = "p",
 
     if index in net["polynomial_cost"].index:
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
+
+    if len(net["polynomial_cost"][net["polynomial_cost"].element_type == element_type][net["polynomial_cost"].element == element]):
+        raise UserWarning("A polynomial_cost for this element already exists")
 
     net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]

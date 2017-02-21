@@ -20,6 +20,7 @@ def test_opf_oberrhein():
    import pandapower.networks as nw
    # create net
    net = nw.mv_oberrhein()
+
    net.bus["max_vm_pu"]=1.1
    net.bus["min_vm_pu"]=0.9
    net.line["max_loading_percent"]=200
@@ -31,7 +32,7 @@ def test_opf_oberrhein():
    net.sgen["controllable"] =1
    net.load["controllable"] = 0
    # run OPF
-   pp.runopp(net, cost_function="linear", verbose=False)
+   pp.runopp(net, verbose=False)
    assert net["OPF_converged"]
 
 if __name__ == "__main__":

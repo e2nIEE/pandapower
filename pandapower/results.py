@@ -32,7 +32,7 @@ def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
 def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angles,
-                         ac, cost_function):
+                         ac):
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
@@ -50,7 +50,7 @@ def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angle
     _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
-    _get_costs(net, ppc, cost_function)
+    _get_costs(net, ppc)
 
 
 def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen_end):
@@ -552,7 +552,7 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elem
     if ac:
         bus_pq[b_ppc, 1] += vq
 
-def _get_costs(net, ppc, cost_function):
+def _get_costs(net, ppc):
 
     # Small loop for testing if objective returned by pypower matches our expected cost function value
     # cost = 0
@@ -571,7 +571,7 @@ def _get_costs(net, ppc, cost_function):
     #
     #     f = net.piecewise_linear_cost.f.values[0]
 
-    net.res_cost = ppc['obj'] * 1000
+    net.res_cost = ppc['obj']
 
 
 def reset_results(net):
@@ -590,7 +590,7 @@ def reset_results(net):
     net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
     
     
-def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):
+def _copy_results_ppci_to_ppc(result, ppc, bus_lookup, opf = False):
     '''
     result contains results for all in service elements
     ppc shall get the results for in- and out of service elements
@@ -624,8 +624,9 @@ def _copy_results_ppci_to_ppc(result, ppc, bus_lookup):
     ppc['success'] = result['success']
     ppc['et'] = result['et']
 
-    ppc['obj'] = result['f']
-    ppc['internal_gencost'] = result['gencost']
+    if opf:
+        ppc['obj'] = result['f']
+        ppc['internal_gencost'] = result['gencost']
 
     result = ppc
     return result
