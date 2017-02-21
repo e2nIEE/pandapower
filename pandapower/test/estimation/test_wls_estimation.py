@@ -105,7 +105,7 @@ def test_3bus_with_bad_data():
     v_start = np.array([1.0, 1.0, 1.0])
     delta_start = np.array([0., 0., 0.])
     
-    # 2. Do state estimation
+    # 2. Initialize state estimation
     wls = state_estimation(net = net)
 
     # 3. Do chi2-test
