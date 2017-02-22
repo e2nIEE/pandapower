@@ -68,7 +68,10 @@ def _adjust_ppc_indices(ppc):
     ppc["bus"][:, 0] -= 1
     ppc["branch"][:, 0] -= 1
     ppc["branch"][:, 1] -= 1
-    ppc["gen"][:, 0] -= 1
+    if len(ppc["gen"].shape) == 1:  # in ppc is only one gen
+        ppc["gen"][0] -= 1
+    elif len(ppc["gen"].shape) == 2:  # in ppc are several gen
+        ppc["gen"][:, 0] -= 1
 
 
 def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
