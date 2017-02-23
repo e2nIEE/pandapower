@@ -90,17 +90,17 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             violated at any generator, so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
 
-        **numba** (bool, True) - Usage numba JIT compiler
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
             speed improvements are likely.
 
-        **recycle** (dict, none) - Reuse of internal powerflow variables
+        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
             Contains a dict with the following parameters:
             is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
-            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
         **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
 
@@ -148,17 +148,17 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
-        **numba** (bool, True) - Usage numba JIT compiler
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
             speed improvements are likely.
 
-        **recycle** (dict, none) - Reuse of internal powerflow variables
+        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
             Contains a dict with the following parameters:
             is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
-            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
