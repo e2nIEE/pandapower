@@ -530,7 +530,7 @@ class state_estimation(object):
         identification and removal. It takes two input arguments: v_in_out and delta_in_out.
         These are the initial state variables for the combined estimation and bad data
         identification and removal process. They can be initialized as described above, e.g.,
-        using a “flat" start. In an iterative process, the function performs a state estimation,
+        using a "flat" start. In an iterative process, the function performs a state estimation,
         identifies a bad data measurement, removes it from the set of measurements
         (only if the rn_max threshold is violated by the largest residual of all measurements,
         which can be modified), performs the state estimation again,
