@@ -79,6 +79,9 @@ def from_ppc(ppc, f_hz=50):
 
     # --- gen data -> create ext_grid, gen, sgen
     for i in range(len(ppc['gen'])):
+        # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+        if len(ppc["gen"].shape) == 1:
+            ppc["gen"] = array(ppc["gen"], ndmin=2)
         current_bus_idx = pp.get_element_index(net, 'bus', name=int(ppc['gen'][i, 0]))
         current_bus_type = int(ppc['bus'][current_bus_idx, 1])
         # create ext_grid
