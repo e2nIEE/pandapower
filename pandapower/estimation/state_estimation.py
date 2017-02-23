@@ -472,12 +472,6 @@ class state_estimation(object):
 
         OUTPUT:
 
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            magnitudes in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            angles in Rad (sorted by bus index)
-
             **successful** (boolean) - True if the estimation process was successful
 
         EXAMPLE:
@@ -541,8 +535,6 @@ class state_estimation(object):
         (only if the rn_max threshold is violated by the largest residual of all measurements,
         which can be modified), performs the state estimation again,
         and so on and so forth until no further bad data measurements are detected.
-        The output values are similiar to the function estimate, only in this case 
-        the newly estimated voltages are given back as numpy arrays in addition.
 
         INPUT:
 
@@ -561,12 +553,6 @@ class state_estimation(object):
             **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
         OUTPUT:
-
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes
-            in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles
-            in Rad (sorted by bus index)
 
             **successful** (boolean) - True if the estimation process was successful
 

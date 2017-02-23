@@ -38,7 +38,6 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
 
     INPUT:
         **net** - The Pandapower format network
-        **is_elems** - In service elements from the network (see _select_is_elements())
 
     OPTIONAL PARAMETERS:
         **calculate_voltage_angles** (bool, False) - consider voltage angles in powerflow calculation
@@ -51,6 +50,7 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
              will be copied to the ppc). This is necessary for the OPF as well as the converter functions
         **opf** (bool, False) - changes to the ppc are necessary if OPF is calculated instead of PF
         **cost_function** (obj, None) - The OPF cost function
+        **check_connectivity** (bool, False) - If true, isolated buses / grids will be identified and deactivted in the power flow
 
 
     OUTPUT:
@@ -70,7 +70,6 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
                               , "gen_is": np.array([], dtype=bool)
                               }
         **ppci** - The "internal" pypower format network for PF calculations
-        **bus_lookup** - Lookup Pandapower -> ppc / ppci indices
     """
     ppc = _init_ppc(net)
     _init_lookups(net)
