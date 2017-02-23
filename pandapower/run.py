@@ -5,7 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import warnings
-from functools import partial
 
 from pypower.ppoption import ppoption
 from pypower.idx_bus import VM
@@ -404,7 +403,7 @@ def _add_dcline_gens(net):
                    in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
 
 def add_dcline_constraints(om, net):
-    from numpy import hstack, diag, eye, zeros
+    # from numpy import hstack, diag, eye, zeros
     from scipy.sparse import csr_matrix as sparse
     ppc = om.get_ppc()
     ndc = len(net.dcline)              ## number of in-service DC lines
