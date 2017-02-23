@@ -109,7 +109,7 @@ def test_3bus_with_bad_data():
     wls = state_estimation(net = net)
 
     # 3. Do chi2-test
-    v_est_chi2, delta_est_chi2, success_chi2 = wls.perform_chi2_test(v_start, delta_start)
+    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
     
     # 4. Perform rn_max_test
     success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
