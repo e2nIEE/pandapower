@@ -13,8 +13,7 @@ from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
-def _extract_results(net, ppc, trafo_loading, return_voltage_angles,
-                     ac=True):
+def _extract_results(net, ppc, trafo_loading, ac=True):
 
     _set_buses_out_of_service(ppc)
 
@@ -26,12 +25,10 @@ def _extract_results(net, ppc, trafo_loading, return_voltage_angles,
     bus_pq = _get_p_q_results(net, bus_lookup_aranged, ac)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq,
-                     return_voltage_angles, ac)
-    _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac)
+    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
+    _get_bus_results(net, ppc, bus_pq, ac)
 
-def _extract_results_opf(net, ppc, trafo_loading, return_voltage_angles,
-                         ac):
+def _extract_results_opf(net, ppc, trafo_loading, ac):
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
     bus_lookup_aranged = -ones(maxBus + 1, dtype=int)
@@ -41,9 +38,8 @@ def _extract_results_opf(net, ppc, trafo_loading, return_voltage_angles,
     bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq,
-                     return_voltage_angles, ac)
-    _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac)
+    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
+    _get_bus_results(net, ppc, bus_pq, ac)
     _get_costs(net)
 
 
@@ -107,7 +103,7 @@ def _set_buses_out_of_service(ppc):
     ppc["bus"][disco, QD] = 0
 
 
-def _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac=True):
+def _get_bus_results(net, ppc, bus_pq, ac=True):
     net["res_bus"]["p_kw"] = bus_pq[:, 0]
     if ac:
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
@@ -118,8 +114,8 @@ def _get_bus_results(net, ppc, bus_pq, return_voltage_angles, ac=True):
     if ac:
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     net["res_bus"].index = net["bus"].index
-    if return_voltage_angles or not ac:
-        net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+    # voltage angles
+    net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, ac=True):
@@ -160,8 +156,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
                                   ac)
 
-def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus,
-                     return_voltage_angles, ac=True):
+def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus, ac=True):
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])
 
@@ -169,7 +164,7 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus,
 
     # get results for gens
     if gen_end > eg_end:
-        b, p, q = _get_pp_gen_results(net, ppc, ac, return_voltage_angles, b, p, q)
+        b, p, q = _get_pp_gen_results(net, ppc, ac, b, p, q)
 
     if len(net.dcline) > 0:
         _get_dcline_results(net)
@@ -216,7 +211,7 @@ def _get_ext_grid_results(net, ppc, ac):
     return b, p, q
 
 
-def _get_pp_gen_results(net, ppc, ac, return_voltage_angles, b, p, q):
+def _get_pp_gen_results(net, ppc, ac, b, p, q):
     is_elems = net["_is_elems"]
 
     gen_is = is_elems['gen']
@@ -247,10 +242,12 @@ def _get_pp_gen_results(net, ppc, ac, return_voltage_angles, b, p, q):
     v_pu = np.zeros(n_res_gen)
     v_pu[idx_gen] = ppc["bus"][bus_idx_ppc][:, VM]
     net["res_gen"]["vm_pu"] = v_pu
-    if return_voltage_angles:
-        v_a = np.zeros(n_res_gen)
-        v_a[idx_gen] = ppc["bus"][bus_idx_ppc][:, VA]
-        net["res_gen"]["va_degree"] = v_a
+
+    # voltage angles
+    v_a = np.zeros(n_res_gen)
+    v_a[idx_gen] = ppc["bus"][bus_idx_ppc][:, VA]
+    net["res_gen"]["va_degree"] = v_a
+
     net["res_gen"].index = net['gen'].index
 
     # store result in net['res']

@@ -59,7 +59,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             voltage shift), the difference between starting and end angle value is very large.
             In this case, the loadflow might be slow or it might not converge at all. That is why
             the possibility of neglecting the voltage angles of transformers and ext_grids is
-            provided to allow and/or accelarate convergence for networks where calculation of
+            provided to allow and/or accelerate convergence for networks where calculation of
             voltage angles is not necessary. Note that if calculate_voltage_angles is True the
             loadflow is initialized with a DC power flow (init = "dc")
 
@@ -220,7 +220,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, trafo_loading=trafo_loading, return_voltage_angles=True, ac=ac)
+    _extract_results(net, result, trafo_loading=trafo_loading, ac=ac)
 #    _clean_up(net)
 
 
@@ -348,7 +348,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, "current", True, ac)
+    _extract_results_opf(net, result, "current", ac)
     _clean_up(net)
 
 

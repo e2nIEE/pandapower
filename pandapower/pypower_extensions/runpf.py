@@ -280,7 +280,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
 
             if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
-                raise ValueError('Sorry, PYPOWER cannot enforce Q '
+                raise ValueError('Sorry, pandapower cannot enforce Q '
                                  'limits for slack buses in systems '
                                  'with multiple slacks.')
 
