@@ -42,7 +42,7 @@ def case2_1():
 
 def case2_2():
     """
-    2 bus system with a transformer which can be detect by vn_kv an by ratio
+    2 bus system with a transformer which can be detect by vn_kv or by ratio
     """
     ppc = {"version": '2'}
     # system MVA base
@@ -83,7 +83,7 @@ def case2_2_by_code():
 
 def case2_3():
     """
-    2 bus system with a transformer which has a ratio != 1 and can be detect by vn_kv an by ratio
+    2 bus system with a transformer which has a ratio != 1 and can be detect by vn_kv or by ratio
     """
     ppc = {"version": '2'}
     # system MVA base

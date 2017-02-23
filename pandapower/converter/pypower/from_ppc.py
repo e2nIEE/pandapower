@@ -136,12 +136,14 @@ def from_ppc(ppc, f_hz=50):
 
         from_vn_kv = ppc['bus'][from_bus, 9]
         to_vn_kv = ppc['bus'][to_bus, 9]
-        if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)):
+        if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
+           (ppc['branch'][i, 9] == 0):
             Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
             i_max_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]
             if i_max_ka == 0.0:
                 i_max_ka = MAX_VAL
-                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate maximum branch flow")
+                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                             "maximum branch flow")
             pp.create_line_from_parameters(
                 net, from_bus=from_bus, to_bus=to_bus, length_km=1,
                 r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
@@ -163,16 +165,18 @@ def from_ppc(ppc, f_hz=50):
                 vn_lv_kv = from_vn_kv
                 tp_side = 'lv'
                 if from_vn_kv == to_vn_kv:
-                    logger.warning('The pypower branch %d (from_bus, to_bus)=(%d, %d) is considered as'
-                                'a transformer because of a ratio != 0 | 1 but it connects the same'
-                                ' voltage level', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+                    logger.warning('The pypower branch %d (from_bus, to_bus)=(%d, %d) is considered'
+                                   ' as a transformer because of a ratio != 0 | 1 but it connects '
+                                   'the same voltage level', i, ppc['branch'][i, 0],
+                                   ppc['branch'][i, 1])
             rk = ppc['branch'][i, 2]
             xk = ppc['branch'][i, 3]
             zk = (rk**2+xk**2)**0.5
             sn = ppc['branch'][i, 5]*1e3
             if sn == 0.0:
                 sn = MAX_VAL
-                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate apparent power")
+                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                             "apparent power")
             ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
             i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
             if i0_percent < 0:
@@ -308,7 +312,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
             from_vn_kv = ppc_res['bus'][from_bus, 9]
             to_vn_kv = ppc_res['bus'][to_bus, 9]
             if (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
-                                           (ppc_res['branch'][i, 8] == 1)):
+               (ppc_res['branch'][i, 8] == 1)) & (ppc_res['branch'][i, 9] == 0):
                 pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
                     (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
                         [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
