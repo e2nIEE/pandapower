@@ -522,7 +522,7 @@ class state_estimation(object):
             self.logger.info("Chi^2 test failed --> bad data or topology error detected.")
 
         if (v_in_out is not None) and (delta_in_out is not None):
-            return v_in_out, delta_in_out, successful
+            return successful
 
     def perform_rn_max_test(self, v_in_out, delta_in_out, rn_max_threshold=3.0, chi2_prob_false=0.05):
         """
@@ -637,7 +637,7 @@ class state_estimation(object):
             
             num_iterations += 1
 
-        return v_in_out, delta_in_out, successful
+        return successful
 
 
 if __name__ == "__main__":
