@@ -31,6 +31,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
+
 def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None):
     """Runs a power flow.
 
@@ -101,8 +102,8 @@ def _dc_runpf(ppci, ppopt):
 
     return ppci, success
 
-def _ac_runpf(ppci, ppopt, numba, recycle):
 
+def _ac_runpf(ppci, ppopt, numba, recycle):
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(numba)
 
     if ppopt["VERBOSE"] > 0:
@@ -143,9 +144,11 @@ def _get_pf_variables_from_ppci(ppci):
 
     return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
 
+
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
     return ppci
+
 
 def _import_numba_extensions_if_flag_is_true(numba):
     ## check if numba is available and the corresponding flag
@@ -171,6 +174,7 @@ def _import_numba_extensions_if_flag_is_true(numba):
 
     return numba, makeYbus
 
+
 def _print_info_about_solver(alg):
     if alg == 1:
         solver = 'Newton'
@@ -183,6 +187,7 @@ def _print_info_about_solver(alg):
     else:
         solver = 'unknown'
     logger.info(' -- AC Power Flow (%s)\n' % solver)
+
 
 def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
     if recycle["Ybus"] and ppci["internal"]["Ybus"].size:
@@ -211,6 +216,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
 
     return ppci, success, bus, gen, branch
+
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
     baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
@@ -288,7 +294,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
 
             limited = r_[limited, mx].astype(int)
         else:
-            break ## no more generator Q limits violated
+            break  ## no more generator Q limits violated
 
     if len(limited) > 0:
         ## restore injections from limited gens [those at Q limits]
