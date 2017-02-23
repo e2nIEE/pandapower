@@ -76,6 +76,26 @@ Running the State Estimation
 The state estimation can be used with the wrapper function *"estimate"*, which prevents the need to deal with the state_estimation class object and functions. It can be imported from *"estimation.state_estimation"*.
 
 .. autofunction:: pandapower.estimation.estimate
+
+Handling of bad data
+=============================
+The state estimation class allows additionally the removal of bad data, especially single or non-interacting false measurements.
+For detecting bad data the Chi-squared distribution is used to identify the presence of them.
+Afterwards follows the largest normalized residual test that identifys the actual measurements which will be removed at the end.
+Both methods are combined in the *"perform_rn_max_test"* function that is part of the state estimation class.
+
+.. autofunction:: pandapower.estimation.state_estimation.state_estimation.perform_rn_max_test
+
+Nevertheless the Chi-squared test function is available as well to allow a identification of topology errors or, as explained, false measurements.
+It is named as *"perform_chi2_test"*.
+
+.. autofunction:: pandapower.estimation.state_estimation.state_estimation.perform_chi2_test
+
+Background information about this topic can be sourced from the following literature:
+
+.. seealso::
+    - *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito, CRC Press, 2004.
+    - *Power Generation, Operation, and Control by Allen J. Wood, Bruce Wollenberg, Wiley Interscience Publication, 1996. 
  
 Example
 =============================
