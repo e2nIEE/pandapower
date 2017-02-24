@@ -202,7 +202,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, trafo_df=None):
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
-    temp_para[:, 3] = _calc_tap_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, bus_lookup)
+    temp_para[:, 3] = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, bus_lookup)
     return temp_para
 
 
@@ -318,7 +318,7 @@ def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
     return r_sc, x_sc
 
 
-def _calc_tap_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
+def _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
     """
     Calculates (Vectorized) the off nominal tap ratio::
 
