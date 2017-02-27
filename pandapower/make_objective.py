@@ -149,140 +149,58 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
                 ppci["gencost"][elements, 5::2] = f
                 ppci["gencost"][pd.to_numeric(loadel), 5::2] *= -1
 
+
+        if len(net.polynomial_cost):
+
+            if (net.polynomial_cost.type == "p").any():
+                p_costs = net.polynomial_cost[net.polynomial_cost.type == "p"]
+
+                c = np.concatenate(p_costs.c)
+                c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
+
+                egel = p_costs.element[p_costs.element_type == "ext_grid"].values
+                genel = p_costs.element[p_costs.element_type == "gen"].values + nref
+                sgenel = p_costs.element[p_costs.element_type == "sgen"].values + nref + ngen
+                loadel = p_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen
+
+                elements = np.append(egel, genel)
+                elements = np.append(elements, sgenel)
+                elements = pd.to_numeric(np.append(elements, loadel))
+
+                gap = n_coefficients - c.shape[1]
+
+                if gap:
+                    c = np.append(np.zeros(gap), c)
+
+                ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
+                ppci["gencost"][elements, 4::] = c
+                ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
+
+            if (net.polynomial_cost.type == "q").any():
+                q_costs = net.polynomial_cost[net.polynomial_cost.type == "q"]
+
+                c = np.concatenate(q_costs.c)
+                c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
+
+                egel = q_costs.element[p_costs.element_type == "ext_grid"].values + ng
+                genel = q_costs.element[p_costs.element_type == "gen"].values + nref + ng
+                sgenel = q_costs.element[p_costs.element_type == "sgen"].values + nref + ngen + ng
+                loadel = q_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen + ng
+
+                elements = np.append(egel, genel)
+                elements = np.append(elements, sgenel)
+                elements = pd.to_numeric(np.append(elements, loadel))
+
+                gap = n_coefficients - len(c)
+                if gap:
+                    c = np.append(np.zeros(gap), c)
+
+                ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
+                ppci["gencost"][elements, 4::] = c
+                ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
     else:
         ppci["gencost"] = np.zeros((nconst, 8), dtype=float)
-        ppci["gencost"] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initialize as pwl cost - otherwise we will get a user warning from pypower for unspecified costs.
+        ppci["gencost"][:,:] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initialize as pwl cost - otherwise we will get a user warning from pypower for unspecified costs.
 
-    return True
-
-
-
-
-
-    if len(net.polynomial_cost):
-
-        if (net.polynomial_cost.type == "p").any():
-            p_costs = net.polynomial_cost[net.polynomial_cost.type == "p"]
-
-            c = np.concatenate(p_costs.c)
-            c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
-
-            egel = p_costs.element[p_costs.element_type == "ext_grid"].values
-            genel = p_costs.element[p_costs.element_type == "gen"].values + nref
-            sgenel = p_costs.element[p_costs.element_type == "sgen"].values + nref + ngen
-            loadel = p_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen
-
-            elements = np.append(egel, genel)
-            elements = np.append(elements, sgenel)
-            elements = pd.to_numeric(np.append(elements, loadel))
-
-            gap = n_coefficients - c.shape[1]
-
-            if gap:
-                c = np.append(np.zeros(gap), c)
-
-            ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
-            ppci["gencost"][elements, 4::] = c
-            ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
-
-        if (net.polynomial_cost.type == "q").any():
-            q_costs = net.polynomial_cost[net.polynomial_cost.type == "q"]
-
-            c = np.concatenate(q_costs.c)
-            c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
-
-            egel = q_costs.element[p_costs.element_type == "ext_grid"].values + ng
-            genel = q_costs.element[p_costs.element_type == "gen"].values + nref + ng
-            sgenel = q_costs.element[p_costs.element_type == "sgen"].values + nref + ngen + ng
-            loadel = q_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen + ng
-
-            elements = np.append(egel, genel)
-            elements = np.append(elements, sgenel)
-            elements = pd.to_numeric(np.append(elements, loadel))
-
-            gap = n_coefficients - len(c)
-            if gap:
-                c = np.append(np.zeros(gap), c)
-
-            ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
-            ppci["gencost"][elements, 4::] = c
-            ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
-
-    return True
-
-
-    # if cost_function == "linear_minloss":
-    #
-    #     ppci["gencost"] = np.zeros((ng, 8), dtype=float)
-    #     ppci["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-    #     ppci["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
-    #     ppci["gencost"][:, 7] = np.nan_to_num(gen_costs*1e3)
-    #
-    #     # Get additional counts
-    #     dim = 2 * nb + 2 * ng + 2 * nl
-    #
-    #     # Get branch admitance matrices
-    #     with warnings.catch_warnings():
-    #         warnings.simplefilter("ignore")
-    #         Ybus, Yf, Yt = makeYbus(1, ppci["bus"], ppci["branch"])
-    #
-    #     #########################
-    #     # Additional z variables
-    #     #########################
-    #
-    #     # z_k = u_i - u_j
-    #     # z_m = alpha_i - alpha_j
-    #     # with i,j = start and endbus from lines
-    #
-    #     # Epsilon for z constraints
-    #     eps = 0
-    #
-    #     # z constraints upper and lower bounds
-    #     l = np.ones(2*nl)*eps
-    #     u = np.ones(2*nl)*-eps
-    #
-    #     # Initialize A and H matrix
-    #     H = sparse.csr_matrix((dim, dim), dtype=float)
-    #     A = sparse.csr_matrix((2*nl, dim), dtype=float)
-    #     with warnings.catch_warnings():
-    #         warnings.simplefilter("ignore")
-    #         for i in range(nl):
-    #             bus_f = int(ppci["branch"][i, F_BUS].real)
-    #             bus_t = int(ppci["branch"][i, T_BUS].real)
-    #             # minimization of potential difference between two buses
-    #             H[dim-2*nl+i, dim-2*nl+i] = abs(Ybus[bus_f, bus_t]) * lambda_opf  # weigthing of minloss # NICHT BESSER REALTEIL?
-    #             A[i, nb+bus_f] = 1
-    #             A[i, nb+bus_t] = -1
-    #             A[i, dim-2*nl+i] = 1
-    #             # minimization of angle between two buses
-    #             H[dim-nl+i, dim-nl+i] = abs(Ybus[bus_f, bus_t])# * 0# * 800 * lambda_opf  # weigthing of angles
-    #             A[nl+i, bus_f] = 1
-    #             A[nl+i, bus_t] = -1
-    #             A[nl+i, dim-nl+i] = 1
-    #
-    #     # Linear transformation for new omega-vector
-    #     N = sparse.lil_matrix((dim, dim), dtype=float)
-    #     for i in range(dim - 2*nl, dim):
-    #         N[i, i] = 1.0
-    #
-    #     # Cw = 0, no linear costs in additional costfunction
-    #     Cw = np.zeros(dim, dtype=float)
-    #     # d = 1
-    #     d = np.ones((dim, 1), dtype=float)
-    #     # r = 0
-    #     r = np.zeros((dim, 1), dtype=float)
-    #     # k = 0
-    #     k = np.zeros((dim, 1), dtype=float)
-    #     # m = 1
-    #     m = np.ones((dim, 1), dtype=float)
-    #
-    #     # Set ppci matrices
-    #     ppci["H"] = H
-    #     ppci["Cw"] = Cw
-    #     ppci["N"] = N
-    #     ppci["A"] = A
-    #     ppci["l"] = l
-    #     ppci["u"] = u
-    #     ppci["fparm"] = np.hstack((d, r, k, m))
 
     return ppci
