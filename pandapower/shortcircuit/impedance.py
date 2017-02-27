@@ -13,7 +13,7 @@ from pandapower.pypower_extensions.makeYbus import makeYbus
 
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.auxiliary import _select_is_elements
-from pandapower.build_branch import _calc_tap_from_dataframe
+from pandapower.build_branch import _calc_nominal_ratio_from_dataframe
 
 from pypower.idx_bus import GS, BS
 
@@ -49,8 +49,8 @@ def correct_branch_impedances(net, case, ppc, bus_lookup):
     kt = transformer_correction_factor(net)
     ppc["branch"][len(net.line):, 3] *= kt
     ppc["branch"][len(net.line):, 2] *= kt
-    ratio = _calc_tap_from_dataframe(ppc, net.trafo, net.trafo.vn_hv_kv, net.trafo.vn_lv_kv,
-                                     bus_lookup)
+    ratio = _calc_nominal_ratio_from_dataframe(ppc, net.trafo, net.trafo.vn_hv_kv, 
+                                               net.trafo.vn_lv_kv, bus_lookup)
     ppc["branch"][len(net.line):, 3] /= (ratio**2)
     ppc["branch"][len(net.line):, 2] /= (ratio**2)
 
