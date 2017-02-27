@@ -18,8 +18,8 @@ from pandapower.build_branch import _calc_nominal_ratio_from_dataframe
 from pypower.idx_bus import GS, BS
 
 def calc_equiv_sc_impedance(net, case):
-    is_elems = _select_is_elements(net)
-    ppc, ppci = _pd2ppc(net, is_elems)
+    net["_is_elems"] = _select_is_elements(net, None)
+    ppc, ppci = _pd2ppc(net)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     correct_branch_impedances(net, case, ppci, bus_lookup)
     if len(net.ext_grid) > 0:
@@ -30,8 +30,8 @@ def calc_equiv_sc_impedance(net, case):
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
     net.bus["z_equiv"] = np.nan + np.nan *1j
-    ppc_index = bus_lookup[is_elems["bus"].index]
-    net.bus["z_equiv"].loc[is_elems["bus"].index] = z_equiv[ppc_index]
+    ppc_index = bus_lookup[net._is_elems["bus"].index]
+    net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv[ppc_index]
 
 
 def consider_line_end_temperature(net, ppc):

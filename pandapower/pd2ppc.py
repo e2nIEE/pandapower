@@ -278,7 +278,6 @@ def _update_ppc(net, recycle, calculate_voltage_angles=False, enforce_q_lims=Fal
     # get the old ppc and lookup
     ppc = net["_ppc"]
     ppci = copy.deepcopy(ppc)
-    is_elems = net["_is_elems"]
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_loads_and_add_on_ppc(net, ppc)
     # adds P and Q for shunts, wards and xwards (to PQ nodes)
