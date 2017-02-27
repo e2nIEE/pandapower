@@ -16,7 +16,7 @@ import pandas as pd
 from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 
 
-def _make_objective(ppci, net, is_elems, lambda_opf=1, p_nominal=None, **kwargs):
+def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
     """
     Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
     C{H} and C{Cw}
@@ -95,11 +95,11 @@ def _make_objective(ppci, net, is_elems, lambda_opf=1, p_nominal=None, **kwargs)
 
     # calculate lenght of gencost array
     if len(net.piecewise_linear_cost):
-        n_coefficients = len(net.piecewise_linear_cost.p.values[0] )*2
+        n_coefficients = net.piecewise_linear_cost.p.values[0].shape[1]*2
     else:
         n_coefficients = 0
     if len(net.polynomial_cost):
-       n_coefficients = max(n_coefficients,  len(net.polynomial_cost.c.values[0]))
+       n_coefficients = max(n_coefficients,  net.polynomial_cost.c.values[0].shape[1])
 
     ppci["gencost"] = np.zeros((nconst, 4 + n_coefficients), dtype=float)
     ppci["gencost"][:, 0:4] = np.array([2, 0, 0, n_coefficients ])  # initialize as pol cost - otherwise we will get a user warning from pypower for unspecified costs.
@@ -112,8 +112,8 @@ def _make_objective(ppci, net, is_elems, lambda_opf=1, p_nominal=None, **kwargs)
         if (net.piecewise_linear_cost.type == "p").any():
             p_costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == "p"]
 
-            p = p_costs.p.values[0]
-            f = p_costs.f.values[0]
+            p = np.concatenate(p_costs.p)
+            f = np.concatenate(p_costs.f.values)
 
 
             egel = p_costs.element[p_costs.element_type == "ext_grid"].values
@@ -132,8 +132,8 @@ def _make_objective(ppci, net, is_elems, lambda_opf=1, p_nominal=None, **kwargs)
         if (net.piecewise_linear_cost.type == "q").any():
             q_costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == "q"]
 
-            p = q_costs.p.values[0]
-            f = q_costs.f.values[0]
+            p = np.concatenate(q_costs.p)
+            f = np.concatenate(q_costs.f)
 
             egel = q_costs.element[q_costs.element_type == "ext_grid"].values + ng
             genel = q_costs.element[q_costs.element_type=="gen"].values + nref + ng
@@ -150,28 +150,53 @@ def _make_objective(ppci, net, is_elems, lambda_opf=1, p_nominal=None, **kwargs)
 
 
     if len(net.polynomial_cost):
-        c = net.polynomial_cost.c.values[0]
-        c = c * np.power(1e3,np.array(range(len(c)))[::-1])
 
-        p_costs = net.polynomial_cost[net.polynomial_cost.type == "p"]
+        if (net.polynomial_cost.type == "p").any():
+            p_costs = net.polynomial_cost[net.polynomial_cost.type == "p"]
 
-        egel = p_costs.element[p_costs.element_type == "ext_grid"].values
-        genel = p_costs.element[p_costs.element_type == "gen"].values + nref
-        sgenel = p_costs.element[p_costs.element_type == "sgen"].values + nref + ngen
-        loadel = p_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen
+            c = np.concatenate(p_costs.c)
+            c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
 
-        elements = np.append(egel, genel)
-        elements = np.append(elements, sgenel)
-        elements = pd.to_numeric(np.append(elements, loadel))
+            egel = p_costs.element[p_costs.element_type == "ext_grid"].values
+            genel = p_costs.element[p_costs.element_type == "gen"].values + nref
+            sgenel = p_costs.element[p_costs.element_type == "sgen"].values + nref + ngen
+            loadel = p_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen
 
-        gap = n_coefficients - len(c)
-        if gap:
-            c = np.append(np.zeros(gap),c)
+            elements = np.append(egel, genel)
+            elements = np.append(elements, sgenel)
+            elements = pd.to_numeric(np.append(elements, loadel))
 
+            gap = n_coefficients - c.shape[1]
 
-        ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients]) # initializing gencost array for eg
-        ppci["gencost"][elements, 4::] = c
-        ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
+            if gap:
+                c = np.append(np.zeros(gap), c)
+
+            ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
+            ppci["gencost"][elements, 4::] = c
+            ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
+
+        if (net.polynomial_cost.type == "q").any():
+            q_costs = net.polynomial_cost[net.polynomial_cost.type == "q"]
+
+            c = np.concatenate(q_costs.c)
+            c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
+
+            egel = q_costs.element[p_costs.element_type == "ext_grid"].values + ng
+            genel = q_costs.element[p_costs.element_type == "gen"].values + nref + ng
+            sgenel = q_costs.element[p_costs.element_type == "sgen"].values + nref + ngen + ng
+            loadel = q_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen + ng
+
+            elements = np.append(egel, genel)
+            elements = np.append(elements, sgenel)
+            elements = pd.to_numeric(np.append(elements, loadel))
+
+            gap = n_coefficients - len(c)
+            if gap:
+                c = np.append(np.zeros(gap), c)
+
+            ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
+            ppci["gencost"][elements, 4::] = c
+            ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
 
 
 

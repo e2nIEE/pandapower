@@ -12,7 +12,7 @@ from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
-def create_empty_network(name=None, f_hz=50.):
+def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
     """
     This function initializes the pandapower datastructure.
 
@@ -275,6 +275,9 @@ def create_empty_network(name=None, f_hz=50.):
         "_ppc": None,
         "_is_elems": None,
         "_pd2ppc_lookups": {"bus": None,
+                            "ext_grid": None,
+                            "gen": None},
+        "_ppc2pd_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
         "version": 1.1,
@@ -1919,8 +1922,8 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
     net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
 
-    net.piecewise_linear_cost.p.loc[0] = p
-    net.piecewise_linear_cost.f.loc[0] = f
+    net.piecewise_linear_cost.p.loc[0] = p.reshape((1,-1))
+    net.piecewise_linear_cost.f.loc[0] = f.reshape((1,-1))
 
 
 
@@ -1950,13 +1953,13 @@ def create_polynomial_cost(net, element, element_type, coefficients, type = "p",
     if index in net["polynomial_cost"].index:
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
 
-    if len(net["polynomial_cost"][net["polynomial_cost"].element_type == element_type][net["polynomial_cost"].element == element]):
+    if not net["polynomial_cost"][net["polynomial_cost"].element_type == element_type].loc[net["polynomial_cost"].element == element].empty:
         raise UserWarning("A polynomial_cost for this element already exists")
 
     net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
 
-    net.polynomial_cost.c.loc[0] = coefficients
+    net.polynomial_cost.c.loc[index] = coefficients.reshape((1,-1))
 
     return index
 

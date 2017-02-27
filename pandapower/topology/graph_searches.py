@@ -150,6 +150,14 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
     for cc in nx.connected_components(mg):
         if not set(cc) & slacks:
             not_supplied.update(set(cc))
+
+    buses_remove = set()
+    if in_service_only:
+        for bus in not_supplied:
+            if not net.bus.loc[bus, 'in_service']:
+                buses_remove.add(bus)
+
+    not_supplied = not_supplied - buses_remove
     return not_supplied
 
 

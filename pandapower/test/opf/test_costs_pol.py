@@ -39,8 +39,6 @@ def test_cost_pol_gen():
     pp.runopp(net ,verbose=False)
 
     assert net["OPF_converged"]
-    print(net.res_cost)
-    print(net.res_gen.p_kw.values)
     assert net.res_cost == - net.res_gen.p_kw.values
 
     net.polynomial_cost.c.at[0] = np.array([1, 0 , 0])
@@ -50,7 +48,7 @@ def test_cost_pol_gen():
     assert net["OPF_converged"]
     print(net.res_cost)
     print(net.res_gen.p_kw.values)
-    assert net.res_cost - net.res_gen.p_kw.values**2 < 1e-5
+    assert abs(net.res_cost - net.res_gen.p_kw.values**2) < 1e-5
 
 
 def test_cost_pol_all_elements():
@@ -66,30 +64,31 @@ def test_cost_pol_all_elements():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50)
+    pp.create_sgen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+                  min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
 
+
+
     pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 1, 0]))
     # run OPF
     pp.runopp(net ,verbose=False)
 
     assert net["OPF_converged"]
-    print(net.res_cost)
-    print(net.res_gen.p_kw.values)
-    assert net.res_cost == - net.res_gen.p_kw.values
+    assert abs(net.res_cost + (net.res_gen.p_kw.values + net.res_sgen.p_kw.values) ) < 1e-5
 
-    net.polynomial_cost.c.at[0] = np.array([1, 0 , 0])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0 , 0]])
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    print(net.res_cost)
-    print(net.res_gen.p_kw.values)
-    assert net.res_cost - net.res_gen.p_kw.values**2 < 1e-5
+    assert abs(net.res_cost - net.res_gen.p_kw.values**2  + net.res_sgen.p_kw.values) < 1e-5
 
 if __name__ == "__main__":
-    # pytest.main(["test_costs_pwl.py", "-xs"])
-    test_cost_pol_all_elements()
+    pytest.main(["test_costs_pol.py", "-xs"])
+    # test_cost_pol_all_elements()

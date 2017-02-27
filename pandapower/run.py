@@ -35,7 +35,8 @@ class OPFNotConverged(ppException):
 
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
-          , trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None, **kwargs):
+          , trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
+          check_connectivity=False, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -101,6 +102,11 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
 
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = True
@@ -109,7 +115,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None,
@@ -171,7 +177,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, **kwargs):
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -183,20 +189,20 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    is_elems = _select_is_elements(net, recycle)
+    net["_is_elems"] = _select_is_elements(net, recycle)
 
     if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
-        ppc, ppci = _update_ppc(net, is_elems, recycle, calculate_voltage_angles, enforce_q_lims,
+        ppc, ppci = _update_ppc(net, recycle, calculate_voltage_angles, enforce_q_lims,
                                             trafo_model)
     else:
         # convert pandapower net to ppc
-        ppc, ppci = _pd2ppc(net, is_elems, calculate_voltage_angles, enforce_q_lims,
-                                        trafo_model, init_results=init_results)
+        ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims,
+                                        trafo_model,  init_results=init_results,
+                                        check_connectivity = check_connectivity)
 
     # store variables
     net["_ppc"] = ppc
-    net["_is_elems"] = is_elems
 
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
@@ -206,8 +212,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
                                                                    PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup)
+    result = _copy_results_ppci_to_ppc(result, ppc)
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
@@ -216,11 +221,11 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, is_elems, trafo_loading, ac)
+    _extract_results(net, result, trafo_loading=trafo_loading, return_voltage_angles=True, ac=ac)
 #    _clean_up(net)
 
 
-def runopp(net, cost_function=None, verbose=False, suppress_warnings=True, **kwargs):
+def runopp(net, cost_function=None, verbose=False, calculate_voltage_angles=True, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -263,10 +268,10 @@ def runopp(net, cost_function=None, verbose=False, suppress_warnings=True, **kwa
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, True, **kwargs)
+    _runopp(net, verbose, suppress_warnings, calculate_voltage_angles, True, **kwargs)
 
 
-def rundcopp(net, verbose=False, suppress_warnings=True, **kwargs):
+def rundcopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -308,19 +313,19 @@ def rundcopp(net, verbose=False, suppress_warnings=True, **kwargs):
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, False, **kwargs)
+    _runopp(net, verbose, suppress_warnings, calculate_voltage_angles, False, **kwargs)
 
 
-def _runopp(net, verbose, suppress_warnings, ac=True, **kwargs):
+def _runopp(net, verbose, suppress_warnings, calculate_voltage_angles=False, ac=True, **kwargs):
     ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
     net["OPF_converged"] = False
     _add_auxiliary_elements(net, False)
     reset_results(net)
     # select elements in service (time consuming, so we do it once)
-    is_elems = _select_is_elements(net)
+    net["_is_elems"] = _select_is_elements(net)
 
-    ppc, ppci = _pd2ppc(net, is_elems, copy_constraints_to_ppc=True, trafo_model="t",
-                                    opf=True, calculate_voltage_angles=False, **kwargs)
+    ppc, ppci = _pd2ppc(net, copy_constraints_to_ppc=True, trafo_model="t",
+                                    opf=True, calculate_voltage_angles=calculate_voltage_angles, **kwargs)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
@@ -339,12 +344,11 @@ def _runopp(net, verbose, suppress_warnings, ac=True, **kwargs):
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    result = _copy_results_ppci_to_ppc(result, ppc, bus_lookup, opf = True)
+    result = _copy_results_ppci_to_ppc(result, ppc, opf = True)
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, is_elems, "current", True, ac)
+    _extract_results_opf(net, result, "current", True, ac)
     _clean_up(net)
 
 

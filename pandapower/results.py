@@ -6,14 +6,14 @@
 
 import numpy as np
 import copy
-from numpy import zeros, array, float, hstack, invert, ones, arange, searchsorted
+from numpy import zeros, array, float, hstack, invert, ones, arange
 from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV, VM, VA, PD, QD
-from pypower.idx_gen import PG, QG, GEN_BUS
+from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
-def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
+def _extract_results(net, ppc, trafo_loading, return_voltage_angles,
                      ac=True):
 
     _set_buses_out_of_service(ppc)
@@ -24,18 +24,18 @@ def _extract_results(net, ppc, is_elems, trafo_loading, return_voltage_angles,
     bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
-    bus_pq = _get_p_q_results(net, bus_lookup_aranged, is_elems, ac)
-    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac)
+    bus_pq = _get_p_q_results(net, bus_lookup_aranged, ac)
+    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, bus_pq,
+    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
 
-def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angles,
+def _extract_results_opf(net, ppc, trafo_loading, return_voltage_angles,
                          ac):
+    is_elems = net["_is_elems"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
-    bus_is = is_elems['bus']
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
@@ -44,18 +44,20 @@ def _extract_results_opf(net, ppc, is_elems, trafo_loading, return_voltage_angle
 
     _set_buses_out_of_service(ppc)
     len_gen = len(eg_is) + len(gen_is)
-    bus_pq = _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, len_gen)
-    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, bus_is, ac)
+    bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
+    _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, ac)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, bus_pq,
+    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq,
                      return_voltage_angles, ac)
     _get_bus_results(net, ppc, bus_lookup, bus_pq, return_voltage_angles, ac)
     _get_costs(net, ppc)
 
 
-def _get_p_q_results_opf(net, ppc, is_elems, bus_lookup, bus_lookup_aranged, gen_end):
+def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
     b, p, q = array([]), array([]), array([])
+
+    is_elems = net["_is_elems"]
 
     l = net["load"]
     if len(l) > 0:
@@ -163,16 +165,16 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
                                   ac)
 
-def _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, pq_bus,
+def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus,
                      return_voltage_angles, ac=True):
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])
 
-    b, p, q = _get_ext_grid_results(net, ppc, is_elems, ac)
+    b, p, q = _get_ext_grid_results(net, ppc, ac)
 
     # get results for gens
     if gen_end > eg_end:
-        b, p, q = _get_pp_gen_results(net, ppc, is_elems, ac, return_voltage_angles, b, p, q)
+        b, p, q = _get_pp_gen_results(net, ppc, ac, return_voltage_angles, b, p, q)
 
     if len(net.dcline) > 0:
         _get_dcline_results(net)
@@ -187,9 +189,9 @@ def _get_gen_results(net, ppc, is_elems, bus_lookup_aranged, pq_bus,
     pq_bus[b, 0] += p_sum
     pq_bus[b, 1] += q_sum
 
-def _get_ext_grid_results(net, ppc, is_elems, ac):
+def _get_ext_grid_results(net, ppc, ac):
 
-    eg_is = is_elems['ext_grid']
+    eg_is = net["_is_elems"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
     # get results for external grids
     # bus index of in service egs
@@ -219,7 +221,8 @@ def _get_ext_grid_results(net, ppc, is_elems, ac):
     return b, p, q
 
 
-def _get_pp_gen_results(net, ppc, is_elems, ac, return_voltage_angles, b, p, q):
+def _get_pp_gen_results(net, ppc, ac, return_voltage_angles, b, p, q):
+    is_elems = net["_is_elems"]
 
     gen_is = is_elems['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
@@ -426,9 +429,11 @@ def _get_impedance_results(net, ppc, i_ft, f, t, ac=True):
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
 
 
-def _get_p_q_results(net, bus_lookup_aranged, is_elems, ac=True):
+def _get_p_q_results(net, bus_lookup_aranged, ac=True):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
+
+    is_elems = net["_is_elems"]
 
     l = net["load"]
     if len(l) > 0:
@@ -490,8 +495,10 @@ def _get_p_q_results(net, bus_lookup_aranged, is_elems, ac=True):
     return bus_pq
 
 
-def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elems, ac=True):
+def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, ac=True):
     b, p, q = np.array([]), np.array([]), np.array([])
+    is_elems = net["_is_elems"]
+
     s = net["shunt"]
     if len(s) > 0:
         sidx = bus_lookup[s["bus"].values]
@@ -553,24 +560,6 @@ def _get_shunt_results(net, ppc, bus_lookup, bus_lookup_aranged, bus_pq, is_elem
         bus_pq[b_ppc, 1] += vq
 
 def _get_costs(net, ppc):
-
-    # Small loop for testing if objective returned by pypower matches our expected cost function value
-    # cost = 0
-    # if cost_function == "piecewise_linear":
-    #     pwlc= net.piecewise_linear_cost
-    #     for item in pwlc[(pwlc.element_type=="gen").values & (pwlc.type=="p").values].itertuples():
-    #         p_act = net.res_gen.p_kw.at[item.element]
-    #         p=item.p
-    #         f=item.f
-    #         x1 = p[:-1][np.logical_and(p_act > p[:-1], p_act < p[1:])]
-    #         x2 = p[1:][np.logical_and(p_act > p[:-1], p_act < p[1:])]
-    #         y1 = f[:-1][np.logical_and(p_act > p[:-1], p_act < p[1:])]
-    #         y2 = f[1:][np.logical_and(p_act > p[:-1], p_act < p[1:])]
-    #         cost += (y2-y1)/(x2-x1)*(p_act-x1)+y1
-    #
-    #
-    #     f = net.piecewise_linear_cost.f.values[0]
-
     net.res_cost = ppc['obj']
 
 
@@ -589,8 +578,7 @@ def reset_results(net):
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
     net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
     
-    
-def _copy_results_ppci_to_ppc(result, ppc, bus_lookup, opf = False):
+def _copy_results_ppci_to_ppc(result, ppc, opf = False):
     '''
     result contains results for all in service elements
     ppc shall get the results for in- and out of service elements

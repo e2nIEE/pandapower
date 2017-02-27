@@ -7,47 +7,45 @@ Tutorials
 There are jupyter notebook tutorials on different functionalities of pandapower:
 
 Creating networks:
-    - `simple network <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/create_simple.html>`_ 
-    - `advanced network <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/create_advanced.html>`_ 
+    - `simple network <https://github.com/panda-power/pandapower/blob/master/tutorials/create_simple.ipynb>`_ 
+    - `advanced network <https://github.com/panda-power/pandapower/blob/master/tutorials/create_advanced.ipynb>`_ 
 
 Running (optimal) power flows:
-    - `power flow <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/powerflow.html>`_
-    - `optimal power flow <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf_basic.html>`_
-    - `active power curtailment with OPF <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf_curtail.html>`_
-    - `DC line dispatch with OPF <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/opf_dcline.html>`_
+    - `power flow <https://github.com/panda-power/pandapower/blob/master/tutorials/powerflow.ipynb>`_
+    - `optimal power flow <https://github.com/panda-power/pandapower/blob/master/tutorials/opf_basic.ipynb>`_
+    - `active power curtailment with OPF <https://github.com/panda-power/pandapower/blob/master/tutorials/opf_curtail.ipynb>`_
+    - `DC line dispatch with OPF <https://github.com/panda-power/pandapower/blob/master/tutorials/opf_dcline.ipynb>`_
     
 Data analysis and modelling error diagnostic:
-    - `data_analysis <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/data_analysis.html>`_
-    - `diagnostic <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/diagnostic.html>`_
+    - `data_analysis <https://github.com/panda-power/pandapower/blob/master/tutorials/data_analysis.ipynb>`_
+    - `diagnostic <https://github.com/panda-power/pandapower/blob/master/tutorials/diagnostic.ipynb>`_
 
 Configure and run a state estimation:
-    - `state estimation <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/state_estimation.html>`_
+    - `state estimation <https://github.com/panda-power/pandapower/blob/master/tutorials/state_estimation.ipynb>`_
 
 Working with the pandapower standard type library:
-    - `standard types <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/std_types.html>`_ 
+    - `standard types <https://github.com/panda-power/pandapower/blob/master/tutorials/std_types.ipynb>`_ 
 
 Running topological searches:
-    - `topologic searches <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/topology.html>`_
+    - `topologic searches <https://github.com/panda-power/pandapower/blob/master/tutorials/topology.ipynb>`_
 
 Plotting pandapower networks:
-    - `basic plotting <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting_basic.html>`_
-    - `plotting with colormaps <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting_colormaps.html>`_
-    - `plotting without geographical data <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/plotting_structural.html>`_
+    - `basic plotting <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_basic.ipynb>`_
+    - `plotting with colormaps <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_colormaps.ipynb>`_
+    - `plotting without geographical data <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_structural.ipynb>`_
 
     
 To run the tutorials interactively (jupyter module is needed):
 
-1. Downloaded the tutorials :download:`here  <../../tutorials/tutorials.zip>` and unzip them to your hard drive
+1. Download or clone the pandapower github repository: https://github.com/panda-power/pandapower
 
-2. Open a python shell and navigate to the folder that contains the .ipynb tutorials
+2. Open a python shell and navigate to the folder pandapower/tutorials
 
 3. Run: ::
 
     jupyter notebook
     
 4. Click on the tutorial of your choice in the browser menue and start going through the tutorials step by step .
-
-
 
 
 

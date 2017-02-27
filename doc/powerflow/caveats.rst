@@ -28,7 +28,7 @@ The only exception are buses which are not connected to any branch. These buses 
 The reason is that buses which are not connected to any branch can be easily identified, while buses which form an isolated group can only be found with a topology search.
 The pandapower topology package includes a function to find disconnected buses. For the power flow to converge, they have to be set out of service: ::
 
-    import pandapower.topology as topology
+    import pandapower.topology as top
     unsupplied_buses = top.unsupplied_buses(net)
     net.bus.loc[unsupplied_buses, "in_service"] = False
     pp.runpp(net)

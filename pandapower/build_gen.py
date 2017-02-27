@@ -12,20 +12,20 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
-def _build_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
+def _build_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc=False, opf=False):
     '''
     wrapper function to call either the PF or the OPF version
     '''
 
     if opf:
-        _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10)
+        _build_gen_opf(net, ppc, calculate_voltage_angles, delta=1e-10)
     else:
-        _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
+        _build_gen_pf(net, ppc, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc)
 
 
-def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
+def _build_gen_pf(net, ppc, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
@@ -39,6 +39,7 @@ def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
     
 
     # get in service elements
+    is_elems = net["_is_elems"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
 
@@ -60,7 +61,7 @@ def _build_gen_pf(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles,
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default)
+        _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default)
 
 
 def _init_ppc_gen(ppc, xw_end, q_lim_default):
@@ -108,10 +109,10 @@ def _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, enforce_q_lims,
     # _build_gen_lookups(net, "gen", eg_end, gen_end)
 
 
-def _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default, update_lookup=True):
+def _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default, update_lookup=True):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     xw = net["xward"]
-    xw_is = is_elems['xward']
+    xw_is = net["_is_elems"]['xward']
     if update_lookup:
         ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
     ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
@@ -127,7 +128,7 @@ def _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default, update_l
 
 
         
-def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles):
+def _update_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles):
     '''
     Takes the ppc network and updates the gen values from the values in net.
 
@@ -138,6 +139,7 @@ def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles
     '''
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
+    is_elems = net["_is_elems"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
 
@@ -171,11 +173,11 @@ def _update_gen_ppc(net, ppc, is_elems, enforce_q_lims, calculate_voltage_angles
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _build_pp_xward(net, ppc, is_elems, gen_end, xw_end, q_lim_default, 
+        _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default,
                                   update_lookup=False)
 
 
-def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
+def _build_gen_opf(net, ppc, calculate_voltage_angles, delta=1e-10):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -190,6 +192,7 @@ def _build_gen_opf(net, ppc, is_elems, calculate_voltage_angles, delta=1e-10):
     if len(net.dcline) > 0:
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
     # get in service elements
+    is_elems = net["_is_elems"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \

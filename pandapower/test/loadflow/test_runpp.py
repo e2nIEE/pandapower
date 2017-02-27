@@ -13,6 +13,10 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
+from pandapower.auxiliary import _check_connectivity
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.run import _select_is_elements
+from pandapower.networks import create_cigre_network_mv
 
 def test_runpp_init():
     net = pp.create_empty_network()
@@ -21,7 +25,7 @@ def test_runpp_init():
     tidx = pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     net.trafo.shift_degree.at[tidx] = 70
     pp.runpp(net)
-    va = net.res_bus.va_degree.at[4]   
+    va = net.res_bus.va_degree.at[4]
     pp.runpp(net, calculate_voltage_angles=True, init="dc")
     assert np.allclose(va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4])
     pp.runpp(net, calculate_voltage_angles=True, init="results")
@@ -35,7 +39,7 @@ def test_runpp_init_auxiliary_buses():
     tidx = pp.create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV')
     pp.create_load(net, b3, 5e3)
     pp.create_load(net, b4, 5e3)
-    pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)    
+    pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
     pp.runpp(net)
@@ -48,9 +52,9 @@ def test_runpp_init_auxiliary_buses():
     pp.runpp(net, calculate_voltage_angles=True, init="results")
     assert np.allclose(va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3],
                        atol=2)
-    assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], 
+    assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4],
                        atol=2)
-    
+
 def test_result_iter():
     for net in result_test_network_generator():
 #        try:
@@ -76,7 +80,7 @@ def test_bus_bus_switches():
             net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
-    net.bus.in_service.at[5] = False   
+    net.bus.in_service.at[5] = False
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
@@ -88,7 +92,7 @@ def test_two_open_switches():
     b1, b2, l1 = add_grid_connection(net)
     b3 = pp.create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
-    create_test_line(net, b3, b1)    
+    create_test_line(net, b3, b1)
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
     pp.runpp(net)
@@ -98,14 +102,71 @@ def test_oos_bus():
     net = pp.create_empty_network()
     add_test_oos_bus_with_is_element(net)
     assert runpp_with_consistency_checks(net)
-    
+
 #    test for pq-node result
     pp.create_shunt(net, 6, q_kvar = -800)
     assert runpp_with_consistency_checks(net)
-    
+
 #   1test for pv-node result
     pp.create_gen(net, 4, p_kw = -500)
     assert runpp_with_consistency_checks(net)
+
+def get_isolated(net):
+    net["_is_elems"] = _select_is_elements(net)
+    ppc, ppci = _pd2ppc(net)
+    return _check_connectivity(ppc)
+
+def test_connectivity():
+    net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 0
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)    
+    
+    isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
+    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")   
+    pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
+                                             std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                                             name="IsolatedLine")
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 2
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+    
+    pp.create_load(net, isolated_bus1, p_kw=200., q_kvar=20)
+    pp.create_sgen(net, isolated_bus2, p_kw=-150., q_kvar=-10)
+
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 2
+    assert np.isclose(iso_p, 350)
+    assert np.isclose(iso_q, 30)
+       
+    runpp_with_consistency_checks(net, check_connectivity=True)
+
+def test_makeYbus():
+    # tests if makeYbus fails for nets where every bus is connected to each other
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+
+    # number of buses to create
+    n_bus = 20
+    bus_list = []
+    # generate buses and connect them
+    for _ in range(n_bus):
+        bus_list.append(pp.create_bus(net, vn_kv=20.))
+
+    # connect the first bus to slack node
+    create_test_line(net, bus_list[0], b2)
+    # iterate over every bus and add connection to every other bus
+    for bus_1 in bus_list:
+        for bus_2 in bus_list:
+            # add no connection to itself
+            if bus_1 == bus_2:
+                continue
+            create_test_line(net, bus_1, bus_2)
+
+    assert runpp_with_consistency_checks(net)
+
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])

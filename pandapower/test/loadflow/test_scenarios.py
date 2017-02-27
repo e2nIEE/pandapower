@@ -128,7 +128,7 @@ def test_two_gens_at_one_bus():
     b2 = pp.create_bus(net, 380)
     b3 = pp.create_bus(net, 380)
     
-    pp.create_ext_grid(net, b1, 1.02, max_p_kw=0., cost_per_kw=0.1)
+    pp.create_ext_grid(net, b1, 1.02, max_p_kw=0.)
     p1 = 800
     p2 = 500
     
