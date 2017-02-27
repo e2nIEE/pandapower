@@ -367,6 +367,74 @@ def test_cigre_network_with_slack_init():
     test_cigre_network(init='slack')
 
 
+def test_IEEE_case_9_with_bad_data():
+    # 1. Create network
+    # test grid: IEEE case 9 (HV)
+    # overall: 9 buses, 8 lines
+    # choosen standard deviations for different types of measurements:
+    # - V: 0.01 p.u.
+    # - P: 1000 kW (1kW for no load)
+    # - Q: 1000 kVA (1kVA for no load)
+    net = pp.networks.case9()
+    
+    pp.create_measurement(net, "v", "bus", 0.995, 0.01, bus=1)   # V at bus 1
+    pp.create_measurement(net, "v", "bus", 0.992, 0.01, bus=2)   # V at bus 2
+    pp.create_measurement(net, "v", "bus", 0.988, 0.01, bus=3)   # V at bus 3
+    pp.create_measurement(net, "v", "bus", 0.969, 0.01, bus=4)   # V at bus 4
+    pp.create_measurement(net, "v", "bus", 1.019, 0.01, bus=5)   # V at bus 5
+    pp.create_measurement(net, "v", "bus", 0.999, 0.01, bus=7)   # V at bus 7
+    pp.create_measurement(net, "v", "bus", 0.963, 0.01, bus=8)   # V at bus 8
+    
+    pp.create_measurement(net, "p", "bus", 73137., 1000., bus=0)   # P at bus 0
+    pp.create_measurement(net, "p", "bus", 85133., 1000., bus=2)   # P at bus 2
+    pp.create_measurement(net, "p", "bus", 0., 1., bus=3)   # P at bus 3
+    pp.create_measurement(net, "p", "bus", 0., 1., bus=5)   # P at bus 5
+    pp.create_measurement(net, "p", "bus", -99884., 1000., bus=6)   # P at bus 6
+    pp.create_measurement(net, "p", "bus", 0., 10., bus=7)   # P at bus 7
+    
+    pp.create_measurement(net, "q", "bus", 24272., 1000., bus=0)   # P at bus 0
+    pp.create_measurement(net, "q", "bus", 13969., 1000., bus=1)   # P at bus 1
+    pp.create_measurement(net, "q", "bus", 4235., 1000., bus=2)   # P at bus 2
+    pp.create_measurement(net, "q", "bus", 0., 1., bus=3)   # Q at bus 3
+    pp.create_measurement(net, "q", "bus", -30177., 1000., bus=4)   # Q at bus 4
+    pp.create_measurement(net, "q", "bus", 0., 10., bus=5)   # Q at bus 5
+    pp.create_measurement(net, "q", "bus", -36856., 1000., bus=6)   # Q at bus 6
+    pp.create_measurement(net, "q", "bus", 0., 1., bus=7)   # Q at bus 7
+    pp.create_measurement(net, "q", "bus", -49673., 1000., bus=8)   # Q at bus 8
+    
+    success_SE = estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10)
+    v_est_SE = net.res_bus_est.vm_pu.values
+    delta_SE = net.res_bus_est.va_degree.values
+    
+    # 3. Create false P-bus-measurements
+    pp.create_measurement(net, "p", "bus", 300000., 1000., bus=1)   # P at bus 1
+    pp.create_measurement(net, "p", "bus", -20000., 1000., bus=4)   # P at bus 4
+    
+    # 2. Initialize state estimation
+    wls = state_estimation(net = net)
+    
+    # initial state values ('flat'-start)
+    v_start = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    delta_start = np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])
+    
+    # 5. Do chi2-test
+    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
+    
+    # 6. Perform rn_max_test
+    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    v_est_rn_max = net.res_bus_est.vm_pu.values
+    delta_est_rn_max = net.res_bus_est.va_degree.values
+    
+    diff_v = v_est_SE - v_est_rn_max
+    diff_delta = delta_SE - delta_est_rn_max
+    
+    assert success_SE
+    assert success_chi2
+    assert success_rn_max
+    assert (np.nanmax(abs(diff_v)) < 1e-8)
+    assert (np.nanmax(abs(diff_delta)) < 1e-8)
+    
+
 def test_init_slack_with_multiple_transformers():
     np.random.seed(123)
     net = pp.create_empty_network()
