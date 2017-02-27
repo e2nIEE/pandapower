@@ -14,7 +14,7 @@ from pandapower.results import _set_buses_out_of_service
 from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results
 from pandapower.toolbox import convert_format
 from pandapower.topology import estimate_voltage_vector
-from pypower.ext2int import ext2int
+from pandapower.pypower_extensions.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
