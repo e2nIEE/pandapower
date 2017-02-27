@@ -97,7 +97,7 @@ def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
     tb = bus_lookup[line["to_bus"].values]
     length = line["length_km"].values
     parallel = line["parallel"].values
-    baseR = np.square(ppc["bus"][fb, BASE_KV])
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
     t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
     t[:, 0] = fb
@@ -184,7 +184,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, calculate_voltage_a
     temp_para = np.zeros(shape=(len(trafo_df), 5), dtype=np.complex128)
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(trafo_df, vn_lv, 
                                                                calculate_voltage_angles)
-    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model)
+    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model, net.sn_kva)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
@@ -194,9 +194,9 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_model, calculate_voltage_a
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model):
-    y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv)
-    r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv)
+def _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model, sn_kva):
+    y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+    r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
@@ -224,7 +224,7 @@ def _wye_delta(r, x, y):
     return r, x, y
 
 
-def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
+def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     """
     Calculate the subsceptance y from the transformer dataframe.
 
@@ -237,7 +237,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
         **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
         the form (-b_img, -b_real)
     """
-    baseR = np.square(vn_lv)
+    baseR = np.square(vn_lv) / sn_kva * 1e3
 
     ### Calculate subsceptance ###
     vnl_squared = trafo_df["vn_lv_kv"].values**2
@@ -299,13 +299,13 @@ def _calc_tap_from_dataframe(trafo_df, vn_lv, calculate_voltage_angles):
     return vnh, vnl, trafo_shift
 
 
-def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv):
+def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
 
     """
-    tap_lv =  np.square(vn_trafo_lv / vn_lv) #adjust for low voltage side voltage converter
+    tap_lv =  np.square(vn_trafo_lv / vn_lv) * sn_kva * 1e-3  #adjust for low voltage side voltage converter
     z_sc = trafo_df["vsc_percent"].values / 100. / trafo_df.sn_kva.values * 1000. * tap_lv
     r_sc = trafo_df["vscr_percent"].values / 100. / trafo_df.sn_kva.values * 1000. *tap_lv
     x_sc = np.sqrt(z_sc**2 - r_sc**2)
@@ -410,24 +410,26 @@ def _trafo_df_from_trafo3w(net):
 def _calc_impedance_parameter(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     t = np.zeros(shape=(len(net["impedance"].index), 7), dtype=np.complex128)
-    sn = net["impedance"]["sn_kva"] / 1e3
+    sn_impedance = net["impedance"]["sn_kva"]
+    sn_net = net.sn_kva
     rij = net["impedance"]["rft_pu"]
     xij = net["impedance"]["xft_pu"]
     rji = net["impedance"]["rtf_pu"]
     xji = net["impedance"]["xtf_pu"]
     t[:, 0] = bus_lookup[net["impedance"]["from_bus"].values]
     t[:, 1] = bus_lookup[net["impedance"]["to_bus"].values]
-    t[:, 2] = rij / sn
-    t[:, 3] = xij / sn
-    t[:, 4] = (rji - rij) / sn
-    t[:, 5] = (xji - xij) / sn
+    t[:, 2] = rij / sn_impedance * sn_net
+    t[:, 3] = xij / sn_impedance * sn_net
+    t[:, 4] = (rji - rij) / sn_impedance * sn_net
+    t[:, 5] = (xji - xij) / sn_impedance * sn_net
     t[:, 6] = net["impedance"]["in_service"].values
     return t
 
 
 def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup))
+    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) /\
+                net.sn_kva * 1e3
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = net["_is_elems"]["xward"]
     t[:, 0] = bus_lookup[net["xward"]["bus"].values]

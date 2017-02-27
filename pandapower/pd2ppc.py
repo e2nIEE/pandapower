@@ -118,7 +118,7 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
 
 def _init_ppc(net):
     # init empty ppc
-    ppc = {"baseMVA": 1.
+    ppc = {"baseMVA": net.sn_kva * 1e-3
            , "version": 2
            , "bus": np.array([], dtype=float)
            , "branch": np.array([], dtype=np.complex128)

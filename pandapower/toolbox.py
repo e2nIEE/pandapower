@@ -311,6 +311,8 @@ def convert_format(net):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     _pre_release_changes(net)
+    if not "sn_kva" in net:
+        net.sn_kva = 1e3
     # unsymmetric impedance
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
