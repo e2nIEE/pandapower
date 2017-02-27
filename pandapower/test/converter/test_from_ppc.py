@@ -16,7 +16,6 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3,
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
 
