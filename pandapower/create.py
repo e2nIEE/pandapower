@@ -12,7 +12,7 @@ from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
-def create_empty_network(name = None, f_hz = 50., sn_kva=1e3) -> object:
+def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
 
