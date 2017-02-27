@@ -68,6 +68,9 @@ def _adjust_ppc_indices(ppc):
     ppc["bus"][:, 0] -= 1
     ppc["branch"][:, 0] -= 1
     ppc["branch"][:, 1] -= 1
+    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+    if len(ppc["gen"].shape) == 1:
+        ppc["gen"] = np.array(ppc["gen"], ndmin=2)
     ppc["gen"][:, 0] -= 1
 
 

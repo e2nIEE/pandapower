@@ -54,6 +54,7 @@ def from_ppc(ppc, f_hz=50):
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
     omega = pi * f_hz  # 1/s
+    MAX_VAL = 99999.
 
     net = pp.create_empty_network(f_hz=f_hz)
 
@@ -77,41 +78,54 @@ def from_ppc(ppc, f_hz=50):
                             q_kvar=-ppc['bus'][i, 5]*1e3)
     # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
 
-    # --- prepare gen data -> maximum generator number at each bus is one
-    GEN, GEN_uniq, GEN_dupl = _GEN_unique(ppc, net)
-
     # --- gen data -> create ext_grid, gen, sgen
-    for i in GEN_uniq.index:
-        GEN_bus = int(GEN_uniq[0][i])
-        current_bus_idx = pp.get_element_index(net, 'bus', name=GEN_bus)
+    for i in range(len(ppc['gen'])):
+        # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+        if len(ppc["gen"].shape) == 1:
+            ppc["gen"] = array(ppc["gen"], ndmin=2)
+        current_bus_idx = pp.get_element_index(net, 'bus', name=int(ppc['gen'][i, 0]))
         current_bus_type = int(ppc['bus'][current_bus_idx, 1])
         # create ext_grid
         if current_bus_type == 3:
-            pp.create_ext_grid(net, bus=current_bus_idx, vm_pu=GEN_uniq[5][i],
-                               va_degree=ppc['bus'][current_bus_idx, 8],
-                               in_service=bool(GEN_uniq[7][i] > 0),
-                               max_p_kw=-GEN_uniq[9][i]*1e3, min_p_kw=-GEN_uniq[8][i]*1e3,
-                               max_q_kvar=GEN_uniq[3][i]*1e3,
-                               min_q_kvar=GEN_uniq[4][i]*1e3)
+            if len(pp.get_connected_elements(net, 'ext_grid', current_bus_idx)) > 0:
+                logger.info('At bus %d an ext_grid already exists. ' % current_bus_idx +
+                            'Because of that generator %d ' % i +
+                            'is converted not as an ext_grid but as a sgen')
+                current_bus_type = 1
+            else:
+                pp.create_ext_grid(net, bus=current_bus_idx, vm_pu=ppc['gen'][i, 5],
+                                   va_degree=ppc['bus'][current_bus_idx, 8],
+                                   in_service=bool(ppc['gen'][i, 7] > 0),
+                                   max_p_kw=-ppc['gen'][i, 9]*1e3, min_p_kw=-ppc['gen'][i, 8]*1e3,
+                                   max_q_kvar=ppc['gen'][i, 3]*1e3,
+                                   min_q_kvar=ppc['gen'][i, 4]*1e3)
+                if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
+                    logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
+                if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
+                    logger.info('max_p_kw of gen %d must be less than min_p_kw but is not.' % i)
         # create gen
         elif current_bus_type == 2:
-            pp.create_gen(net, bus=current_bus_idx, vm_pu=GEN_uniq[5][i],
-                          p_kw=-GEN_uniq[1][i]*1e3, in_service=bool(GEN_uniq[7][i] > 0),
-                          max_p_kw=-GEN_uniq[9][i]*1e3, min_p_kw=-GEN_uniq[8][i]*1e3,
-                          max_q_kvar=GEN_uniq[3][i]*1e3,
-                          min_q_kvar=GEN_uniq[4][i]*1e3, controllable=True)
-            if GEN_uniq[4][i] > GEN_uniq[3][i]:
-                logger.info('min_q_kvar must be less than max_q_kvar.')
-            if -GEN_uniq[9][i] < -GEN_uniq[8][i]:
-                logger.info('max_p_kw must be less than min_p_kw.')
+            pp.create_gen(net, bus=current_bus_idx, vm_pu=ppc['gen'][i, 5],
+                          p_kw=-ppc['gen'][i, 1]*1e3, in_service=bool(ppc['gen'][i, 7] > 0),
+                          max_p_kw=-ppc['gen'][i, 9]*1e3, min_p_kw=-ppc['gen'][i, 8]*1e3,
+                          max_q_kvar=ppc['gen'][i, 3]*1e3,
+                          min_q_kvar=ppc['gen'][i, 4]*1e3, controllable=True)
+            if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
+                logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
+            if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
+                logger.info('max_p_kw of gen %d must be less than min_p_kw but is not.' % i)
         # create sgen
-        elif current_bus_type == 1:
-            pp.create_sgen(net, bus=current_bus_idx, p_kw=-GEN_uniq[1][i]*1e3,
-                           q_kvar=-GEN_uniq[2][i]*1e3, type="",
-                           in_service=bool(GEN_uniq[7][i] > 0),
-                           max_p_kw=-GEN_uniq[9][i]*1e3, min_p_kw=-GEN_uniq[8][i]*1e3,
-                           max_q_kvar=GEN_uniq[3][i]*1e3,
-                           min_q_kvar=GEN_uniq[4][i]*1e3, controllable=True)
+        if current_bus_type == 1:
+            pp.create_sgen(net, bus=current_bus_idx, p_kw=-ppc['gen'][i, 1]*1e3,
+                           q_kvar=-ppc['gen'][i, 2]*1e3, type="",
+                           in_service=bool(ppc['gen'][i, 7] > 0),
+                           max_p_kw=-ppc['gen'][i, 9]*1e3, min_p_kw=-ppc['gen'][i, 8]*1e3,
+                           max_q_kvar=ppc['gen'][i, 3]*1e3,
+                           min_q_kvar=ppc['gen'][i, 4]*1e3, controllable=True)
+            if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
+                logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
+            if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
+                logger.info('max_p_kw of gen %d must be less than min_p_kw but is not.' % i)
     # unused data of ppc: Vg (partwise: in ext_grid and gen), mBase, Pc1, Pc2, Qc1min, Qc1max,
     # Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30,ramp_q, apf
 
@@ -122,14 +136,19 @@ def from_ppc(ppc, f_hz=50):
 
         from_vn_kv = ppc['bus'][from_bus, 9]
         to_vn_kv = ppc['bus'][to_bus, 9]
-        if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)):
+        if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
+           (ppc['branch'][i, 9] == 0):
             Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-
+            i_max_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]
+            if i_max_ka == 0.0:
+                i_max_ka = MAX_VAL
+                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                             "maximum branch flow")
             pp.create_line_from_parameters(
                 net, from_bus=from_bus, to_bus=to_bus, length_km=1,
                 r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
                 c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                imax_ka=ppc['branch'][i, 5]/ppc['bus'][to_bus, 9], type='ol',
+                imax_ka=i_max_ka, type='ol',
                 in_service=bool(ppc['branch'][i, 10]))
 
         else:
@@ -146,19 +165,24 @@ def from_ppc(ppc, f_hz=50):
                 vn_lv_kv = from_vn_kv
                 tp_side = 'lv'
                 if from_vn_kv == to_vn_kv:
-                    logger.warn('The pypower branch %d (from_bus, to_bus)=(%d, %d) is considered as'
-                                'a transformer because of a ratio != 0 | 1 but it connects the same'
-                                ' voltage level', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+                    logger.warning('The pypower branch %d (from_bus, to_bus)=(%d, %d) is considered'
+                                   ' as a transformer because of a ratio != 0 | 1 but it connects '
+                                   'the same voltage level', i, ppc['branch'][i, 0],
+                                   ppc['branch'][i, 1])
             rk = ppc['branch'][i, 2]
             xk = ppc['branch'][i, 3]
             zk = (rk**2+xk**2)**0.5
             sn = ppc['branch'][i, 5]*1e3
+            if sn == 0.0:
+                sn = MAX_VAL
+                logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                             "apparent power")
             ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
             i0_percent = -ppc['branch'][i, 4]*100*baseMVA*1e3/sn
             if i0_percent < 0:
                 logger.info('A transformer always behaves inductive consumpting but the '
-                             'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
-                             'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
+                            'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
+                            'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
 
             pp.create_transformer_from_parameters(
                 net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
@@ -215,13 +239,10 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
     ppc_res = runpf.runpf(ppc_net, ppopt)[0]
 
-    # --- consider several GEN at one node as one sum
-    GEN, GEN_uniq, GEN_dupl = _GEN_unique(ppc_res, pp_net)
-
     # --- store pypower power flow results
     ppc_res_branch = ppc_res['branch'][:, 13:17]
     ppc_res_bus = ppc_res['bus'][:, 7:9]
-    ppc_res_gen = array(GEN_uniq)[:, 1:3]
+    ppc_res_gen = ppc_res['gen'][:, 1:3]
 
     # --- try to run a pandapower power flow
     try:
@@ -250,22 +271,33 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
         # consideration of parallel generators
         GEN = DataFrame(ppc_res['gen'][:, [0]])
-        GEN_uniq = GEN.drop_duplicates()
+        GEN_uniq = GEN.drop_duplicates(subset=[0])
         # pandapower gen result table
         pp_res_gen = zeros([1, 2])
+        change_q_compare = []
         for i in GEN_uniq.index:
             current_bus_idx = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['gen'][i, 0]))
             current_bus_type = int(ppc_res['bus'][current_bus_idx, 1])
             # ext_grid
             if current_bus_type == 3:
+                len_start = len(pp_res_gen)
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_ext_grid[
                     pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
+                pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
+                    pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
+                len_end = len(pp_res_gen)
+                if len_end - len_start > 1:
+                    change_q_compare += list(range(len_start-1, len_end-1))
             # gen
             elif current_bus_type == 2:
+                len_start = len(pp_res_gen)
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_gen[
                     pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
+                len_end = len(pp_res_gen)
+                if len_end - len_start > 1:
+                    change_q_compare += list(range(len_start-1, len_end-1))
             # sgen
-            elif current_bus_type == 1:
+            if current_bus_type == 1:
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
                     pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
         pp_res_gen = pp_res_gen[1:, :]
@@ -280,7 +312,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
             from_vn_kv = ppc_res['bus'][from_bus, 9]
             to_vn_kv = ppc_res['bus'][to_bus, 9]
             if (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
-                                           (ppc_res['branch'][i, 8] == 1)):
+               (ppc_res['branch'][i, 8] == 1)) & (ppc_res['branch'][i, 9] == 0):
                 pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
                     (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
                         [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
@@ -303,6 +335,15 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         diff_res_bus = ppc_res_bus - pp_res_bus
         diff_res_branch = ppc_res_branch - pp_res_branch*1e-3
         diff_res_gen = ppc_res_gen + pp_res_gen*1e-3
+        # only compare q of buses with several generation units as sum
+        for i in GEN_uniq.index[GEN_uniq.index.isin(change_q_compare)]:
+            next_is = GEN_uniq.index[GEN_uniq.index > i]
+            if len(next_is) > 0:
+                next_i = next_is[0]
+            else:
+                next_i = GEN.index[-1] + 1
+            if (next_i - i) > 1:
+                diff_res_gen[i:next_i, 1] = sum(diff_res_gen[i:next_i, 1])
         # logger info
         logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
                      "%.2e pu" % max(abs(diff_res_bus[:, 0])))
@@ -341,30 +382,5 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         else:
             logger.debug("'max_diff_values' must be a dict.")
 
-
-def _GEN_unique(ppc, net):
-    """
-    This function return DataFrames of all generators, concentrated generator powers to maximum one
-    generator at each node and a DataFrame with all duplicated generators at the nodes with several
-    generators at a node. This is because pandapower do not accept several generators at one node.
-    """
-    GEN = DataFrame(ppc['gen'])
-    GEN_uniq = GEN.drop_duplicates(subset=[0])
-    dupl = GEN[0].duplicated()
-    GEN_dupl = GEN[dupl]
-    if len(GEN_dupl) > 0:
-        logger.debug('There are several generators at one bus.')
-    for i in GEN_dupl.index:
-        GEN_bus = int(GEN_dupl[0][i])
-        # check different vm_pu values for gen at the same bus
-        if GEN_dupl[5][i] != GEN_uniq[GEN_uniq[0] == GEN_bus][5].values[0]:
-            logger.info('Several generators at one bus have different vm_pu values.')
-        # set in_service
-        if (GEN[GEN[0] == GEN_bus][7] > 0).any():
-            GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, 7] = 1
-        # sum up active and reactive powers and power limits as well as reactive power limits
-        for j in [1, 2, 3, 4, 8, 9]:
-            GEN_uniq.loc[GEN_uniq[GEN_uniq[0] == GEN_bus].index, j] = \
-                GEN[(GEN[0] == GEN_bus) & (GEN[7] > 0)][j].sum()
-
-    return GEN, GEN_uniq, GEN_dupl
+if __name__ == '__main__':
+    pass

@@ -12,7 +12,7 @@ from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
-def create_empty_network(name=None, f_hz=50.):
+def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
     """
     This function initializes the pandapower datastructure.
 
@@ -269,6 +269,9 @@ def create_empty_network(name=None, f_hz=50.):
         "_ppc": None,
         "_is_elems": None,
         "_pd2ppc_lookups": {"bus": None,
+                            "ext_grid": None,
+                            "gen": None},
+        "_ppc2pd_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
         "version": 1.1,
@@ -724,7 +727,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
     if bus in net.ext_grid.bus.values:
         raise UserWarning(
-            "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            "There is already an external grid at bus %u, thus no other voltage controlling element (ext_grid, gen) is allowed at this bus." % bus)
 
 #    if bus in net.gen.bus.values:
 #        raise UserWarning(
@@ -852,11 +855,11 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     if bus in net.ext_grid.bus.values:
         raise UserWarning(
-            "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            "There is already an external grid at bus %u, thus no other voltage controlling element (ext_grid, gen) is allowed at this bus." % bus)
 
     if bus in net.gen.bus.values:
         raise UserWarning(
-            "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            "There is already a generator at bus %u, thus no ext_grid is allowed at this bus." % bus)
 
         # store dtypes
     dtypes = net.ext_grid.dtypes

@@ -105,14 +105,16 @@ def test_3bus_with_bad_data():
     v_start = np.array([1.0, 1.0, 1.0])
     delta_start = np.array([0., 0., 0.])
     
-    # 2. Do state estimation
+    # 2. Initialize state estimation
     wls = state_estimation(net = net)
 
     # 3. Do chi2-test
-    v_est_chi2, delta_est_chi2, success_chi2 = wls.perform_chi2_test(v_start, delta_start)
+    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
     
     # 4. Perform rn_max_test
-    v_est_rn_max, delta_est_rn_max, success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    v_est_rn_max = net.res_bus_est.vm_pu.values
+    delta_est_rn_max = net.res_bus_est.va_degree.values
     
     target_v = np.array([1.0627, 1.0589, 1.0317])
     diff_v = target_v - v_est_rn_max

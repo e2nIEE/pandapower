@@ -8,7 +8,9 @@ import os
 import pickle
 import pandas as pd
 import sys
-
+import numbers
+import json
+import numpy
 from pandapower.toolbox import convert_format
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import PandapowerNet
@@ -153,4 +155,62 @@ def from_excel(filename, convert=True):
 #    net.line.geodata.coords.
     if convert:
         convert_format(net)
+    return net
+
+
+def to_json(net, filename):
+    json_string = "{"
+    for k in sorted(net.keys()):
+        if k[:6] == "_empty":
+            continue
+        if k in ["std_types", "_mpc_last_cycle", "_is_elems", "_pd2ppc_lookups", "_ppc"]:
+            continue
+        if isinstance(net[k], pd.DataFrame):
+            if len(net[k]) == 0:  # do not bother saving empty data frames
+                continue
+            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
+        elif isinstance(net[k], numpy.ndarray):
+            json_string += json.dumps(net[k].tolist())
+        elif isinstance(net[k], dict):
+            json_string += json.dumps(net[k])
+        elif isinstance(net[k], bool):
+            json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
+        elif isinstance(net[k], str):
+            json_string += '"%s":"%s",' % (k, net[k])
+        elif isinstance(net[k], numbers.Number):
+            json_string += '"%s":%s,' % (k, net[k])
+        elif net[k] is None:
+            json_string += '"%s":null,' % k
+        else:
+            raise UserWarning("could not detect type of %s" % k)
+    with open(filename, "w") as text_file:
+        text_file.write(json_string[:-1] + "}\n")
+
+
+def from_json(filename):
+    with open(filename) as data_file:
+        data = json.load(data_file)
+    net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
+
+    # checks if field exists in empty network and if yes, matches data type
+    def check_equal_type(name):
+        if name in net:
+            if isinstance(net[name], type(data[name])):
+                return True
+            elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
+                return True
+            else:
+                return False
+        return True
+
+    for k in sorted(data.keys()):
+        if not check_equal_type(k):
+            raise UserWarning("Different data type for existing pandapower field")
+        if isinstance(data[k], dict):
+            columns = net[k].columns
+            net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
+            net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
+            net[k] = net[k][columns]
+        else:
+            net[k] = data[k]
     return net

@@ -146,8 +146,8 @@ class state_estimation(object):
         self.net.res_bus.va_degree = delta_start
 
         # select elements in service and convert pandapower ppc to ppc
-        is_elems = _select_is_elements(self.net)
-        ppc, _ = _pd2ppc(self.net, is_elems, init_results=True,
+        self.net["_is_elems"] = _select_is_elements(self.net)
+        ppc, _ = _pd2ppc(self.net, init_results=True,
                                         calculate_voltage_angles=calculate_voltage_angles)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
@@ -472,12 +472,6 @@ class state_estimation(object):
 
         OUTPUT:
 
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            magnitudes in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            angles in Rad (sorted by bus index)
-
             **successful** (boolean) - True if the estimation process was successful
 
         EXAMPLE:
@@ -528,7 +522,7 @@ class state_estimation(object):
             self.logger.info("Chi^2 test failed --> bad data or topology error detected.")
 
         if (v_in_out is not None) and (delta_in_out is not None):
-            return v_in_out, delta_in_out, successful
+            return successful
 
     def perform_rn_max_test(self, v_in_out, delta_in_out, rn_max_threshold=3.0, chi2_prob_false=0.05):
         """
@@ -536,13 +530,11 @@ class state_estimation(object):
         identification and removal. It takes two input arguments: v_in_out and delta_in_out.
         These are the initial state variables for the combined estimation and bad data
         identification and removal process. They can be initialized as described above, e.g.,
-        using a “flat" start. In an iterative process, the function performs a state estimation,
+        using a "flat" start. In an iterative process, the function performs a state estimation,
         identifies a bad data measurement, removes it from the set of measurements
         (only if the rn_max threshold is violated by the largest residual of all measurements,
         which can be modified), performs the state estimation again,
         and so on and so forth until no further bad data measurements are detected.
-        The output values are similiar to the function estimate, only in this case 
-        the newly estimated voltages are given back as numpy arrays in addition.
 
         INPUT:
 
@@ -561,12 +553,6 @@ class state_estimation(object):
             **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
         OUTPUT:
-
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes
-            in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles
-            in Rad (sorted by bus index)
 
             **successful** (boolean) - True if the estimation process was successful
 
@@ -651,4 +637,9 @@ class state_estimation(object):
             
             num_iterations += 1
 
-        return v_in_out, delta_in_out, successful
+        return successful
+
+
+if __name__ == "__main__":
+    from pandapower.test.estimation.test_wls_estimation import test_3bus
+    test_3bus()

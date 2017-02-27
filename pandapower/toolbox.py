@@ -337,15 +337,16 @@ def convert_format(net):
                                                         ("from_bus", "u4"),
                                                         ("to_bus", "u4"),
                                                         ("p_kw", "f8"),
-                                                        ("loss_percent", 'bool'),
-                                                        ("loss_kw", 'bool'),
+                                                        ("loss_percent", 'f8'),
+                                                        ("loss_kw", 'f8'),
                                                         ("vm_from_pu", "f8"),
                                                         ("vm_to_pu", "f8"),
+                                                        ("max_p_kw", "f8"),
                                                         ("min_q_from_kvar", "f8"),
                                                         ("min_q_to_kvar", "f8"),
                                                         ("max_q_from_kvar", "f8"),
                                                         ("max_q_to_kvar", "f8"),
-                                                        ("forward", 'bool'),
+                                                        ("cost_per_kw", 'f8'),
                                                         ("in_service", 'bool')]))
     if "_empty_res_dcline" not in net:
         net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
@@ -770,6 +771,10 @@ def set_element_status(net, buses, in_service):
 
     shunts = net.shunt[net.shunt.bus.isin(buses)].index
     net.shunt.loc[shunts, "in_service"] = in_service
+
+    grids = net.ext_grid[net.ext_grid.bus.isin(buses)].index
+    net.ext_grid.loc[grids, "in_service"] = in_service
+
 
 def set_isolated_areas_out_of_service(net):
     """

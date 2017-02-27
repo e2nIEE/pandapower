@@ -136,7 +136,7 @@ def test_drop_inactive_elements():
     sum_of_elements = 0
     for element in net.keys():
         # skip this one since we expect items here
-        if element == "std_types" or element == "_pd2ppc_lookups":
+        if element == "std_types" or element == "_pd2ppc_lookups" or element == "_ppc2pd_lookups":
             continue
 
         try:

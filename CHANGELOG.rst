@@ -1,6 +1,6 @@
 Change Log
 =============
-- [CHANGED] from_ppc: no detect_trafo anymore
+- [CHANGED] from_ppc: no detect_trafo anymore, several gen at each node possible
 - [ADDED] networks: case118, case300, cigre_network_mv with_der='all' der
 
 [1.1.1] - 2017-01-12
