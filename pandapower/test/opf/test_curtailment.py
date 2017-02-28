@@ -43,31 +43,23 @@ def test_minimize_active_power_curtailment():
     pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01,
                        controllable=True)
 
-    pp.runopp(net, calculate_voltage_angles=False, verbose=True)
+    net.trafo["max_loading_percent"] = 50
+    net.line["max_loading_percent"] = 50
 
-    print(net.res_bus)
-    print(net.res_load)
-    print(net.res_gen)
+    net.bus["min_vm_pu"] = 1.0
+    net.bus["max_vm_pu"] = 1.02
 
-    # net.trafo["max_loading_percent"] = 50
-    # net.line["max_loading_percent"] = 50
-    #
-    # net.bus["min_vm_pu"] = 1.0
-    # net.bus["max_vm_pu"] = 1.02
-    #
-    # pp.runopp(net, verbose=True)
-    #
-    # pp.create_polynomial_cost(net, 0, "gen", array([1e-5, 0]))
-    # # pp.create_polynomial_cost(net, 1, "gen", array([1e-5, 0]))
-    # pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
-    #
-    #
-    # pp.runopp(net, calculate_voltage_angles=True)
-    # assert net["OPF_converged"]
-    # assert allclose(net.res_bus.vm_pu.values, array([ 1. , 1.00000149,  1.01998544,  1.01999628]),
-    #                 atol=1e-5)
-    # assert allclose(net.res_bus.va_degree.values, array([ 0., -0.7055226, 0.85974768, 2.24584537]),
-    #                 atol=1e-5)
+    pp.create_polynomial_cost(net, 0, "gen", array([-1e-5, 0]))
+    pp.create_polynomial_cost(net, 1, "gen", array([-1e-5, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
+
+
+    pp.runopp(net, calculate_voltage_angles=True)
+    assert net["OPF_converged"]
+    assert allclose(net.res_bus.vm_pu.values, array([ 1. , 1.00000149,  1.01998544,  1.01999628]),
+                    atol=1e-5)
+    assert allclose(net.res_bus.va_degree.values, array([ 0., -0.7055226, 0.85974768, 2.24584537]),
+                    atol=1e-5)
 
 
 

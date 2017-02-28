@@ -200,7 +200,7 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
                 ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
     else:
         ppci["gencost"] = np.zeros((nconst, 8), dtype=float)
-        ppci["gencost"][:,:] = np.array([1, 0, 0, 2, 0, 0, 1, 0])  # initialize as pwl cost - otherwise we will get a user warning from pypower for unspecified costs.
+        ppci["gencost"][:,:] = np.array([1, 0, 0, 2, 0, 0, 1, 1000])  # initialize as pwl cost - otherwise we will get a user warning from pypower for unspecified costs.
 
 
     return ppci
