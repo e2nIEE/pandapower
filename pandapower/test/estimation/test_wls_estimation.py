@@ -1,4 +1,5 @@
-from pandapower.estimation import estimate, state_estimation
+from pandapower.estimation import state_estimation, estimate
+from pandapower.estimation import chi2_analysis, remove_bad_data
 import pandapower as pp
 import numpy as np
 import pytest
@@ -101,18 +102,11 @@ def test_3bus_with_bad_data():
     # create false voltage measurement for testing bad data detection (-> should be removed)
     pp.create_measurement(net, "v", "bus", 1.3, 0.05, bus=1)   # V at bus 2
     
-    # initial state values
-    v_start = np.array([1.0, 1.0, 1.0])
-    delta_start = np.array([0., 0., 0.])
+    # 2. Do chi2-test
+    success_chi2 = chi2_analysis(net, init='flat')
     
-    # 2. Initialize state estimation
-    wls = state_estimation(net = net)
-
-    # 3. Do chi2-test
-    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
-    
-    # 4. Perform rn_max_test
-    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    # 3. Perform rn_max_test
+    success_rn_max = remove_bad_data(net, init='flat')
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
     
@@ -402,26 +396,20 @@ def test_IEEE_case_9_with_bad_data():
     pp.create_measurement(net, "q", "bus", 0., 1., bus=7)   # Q at bus 7
     pp.create_measurement(net, "q", "bus", -49673., 1000., bus=8)   # Q at bus 8
     
-    success_SE = estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10)
+    # 2. Do state estimation
+    success_SE = estimate(net, init='flat')
     v_est_SE = net.res_bus_est.vm_pu.values
     delta_SE = net.res_bus_est.va_degree.values
     
-    # 3. Create false P-bus-measurements
-    pp.create_measurement(net, "p", "bus", 300000., 1000., bus=1)   # P at bus 1
-    pp.create_measurement(net, "p", "bus", -20000., 1000., bus=4)   # P at bus 4
-    
-    # 2. Initialize state estimation
-    wls = state_estimation(net = net)
-    
-    # initial state values ('flat'-start)
-    v_start = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    delta_start = np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])
-    
-    # 5. Do chi2-test
-    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
-    
-    # 6. Perform rn_max_test
-    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    # 3. Create false measurements
+    pp.create_measurement(net, "p", "bus", 3000., 1000., bus=1)   # P at bus 1
+    pp.create_measurement(net, "p", "bus", -2000., 1000., bus=4)   # P at bus 4
+
+    # 4. Do chi2-test
+    success_chi2 = chi2_analysis(net, init='flat')
+
+    # 5. Perform rn_max_test
+    success_rn_max = remove_bad_data(net, init='flat')
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
     
@@ -431,8 +419,8 @@ def test_IEEE_case_9_with_bad_data():
     assert success_SE
     assert success_chi2
     assert success_rn_max
-    assert (np.nanmax(abs(diff_v)) < 1e-8)
-    assert (np.nanmax(abs(diff_delta)) < 1e-8)
+    assert (np.nanmax(abs(diff_v)) < 1e-5)
+    assert (np.nanmax(abs(diff_delta)) < 1e-5)
     
 
 def test_init_slack_with_multiple_transformers():
