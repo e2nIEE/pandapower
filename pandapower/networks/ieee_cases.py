@@ -61,23 +61,6 @@ def case9():
     return case9
 
 
-def case9Q():
-    """
-    Calls the pickle file case9Q.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    This network is highly correlated to case9.
-
-    OUTPUT:
-         **net** - Returns the required ieee network case9Q
-
-    EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case9Q()
-    """
-    case9Q = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case9Q.p"))
-    return case9Q
-
-
 def case14():
     """
     Calls the pickle file case14.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
@@ -131,41 +114,6 @@ def case30():
     """
     case30 = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case30.p"))
     return case30
-
-
-def case30pwl():
-    """
-    Calls the pickle file case30pwl.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    This network is highly correlated to case30.
-
-    OUTPUT:
-         **net** - Returns the required ieee network case30pwl
-
-    EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case30pwl()
-    """
-    case30pwl = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles",
-                                            "case30pwl.p"))
-    return case30pwl
-
-
-def case30Q():
-    """
-    Calls the pickle file case30Q.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    This network is highly correlated to case30.
-
-    OUTPUT:
-         **net** - Returns the required ieee network case30Q
-
-    EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case30Q()
-    """
-    case30Q = pp.from_pickle(os.path.join(_get_networks_path(), "ieee_case_pickles", "case30Q.p"))
-    return case30Q
 
 
 def case39():
