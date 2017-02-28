@@ -1,0 +1,3 @@
+;vscr_mv_percent;vscr_lv_percent;pfe_kw;i0_percent;shift_mv_degree;shift_lv_degree;tp_side;tp_mid;tp_min;tp_max;tp_st_percent
+63/25/38 MVA 110/10/10 kV;0.32;0.35;35;0.89;0;0;hv;0;-10;10;1.2
+63/25/38 MVA 110/20/10 kV;0.32;0.35;35;0.89;0;0;hv;0;-10;10;1.2
