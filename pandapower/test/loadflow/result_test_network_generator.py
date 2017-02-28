@@ -215,7 +215,7 @@ def add_test_gen(net):
 
     b3 = pp.create_bus(net, zone="test_gen", vn_kv=.4)
     pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
 
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
     pp.create_gen(net, b3, p_kw=ps, vm_pu=u_set)
@@ -236,7 +236,7 @@ def add_test_enforce_qlims(net):
 
     b3 = pp.create_bus(net, zone="test_enforce_qlims", vn_kv=.4)
     pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
 
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
     pp.create_gen(net, b3, p_kw=ps, vm_pu=u_set, max_q_kvar=qmax)
@@ -350,11 +350,11 @@ def add_test_oos_bus_with_is_element(net):
     b5 = pp.create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
 
     pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
     pp.create_line_from_parameters(net, b2, b4, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
     pp.create_line_from_parameters(net, b2, b5, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                   c_nf_per_km=300, imax_ka=.2, df=.8)
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
 
     # in service elements
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)

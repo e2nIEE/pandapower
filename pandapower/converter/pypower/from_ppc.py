@@ -149,7 +149,7 @@ def from_ppc(ppc, f_hz=50):
                 net, from_bus=from_bus, to_bus=to_bus, length_km=1,
                 r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
                 c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                imax_ka=i_max_ka, type='ol',
+                max_i_ka=i_max_ka, type='ol',
                 in_service=bool(ppc['branch'][i, 10]))
 
         else:

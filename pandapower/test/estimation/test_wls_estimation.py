@@ -14,7 +14,7 @@ def test_2bus():
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1,x_ohm_per_km=0.5, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "p", "line", 0.0111e3, 0.05e3, 0, element=0)  # p12
     pp.create_measurement(net, "q", "line", 0.06e3, 0.05e3, 0, element=0)  # q12
@@ -46,11 +46,11 @@ def test_3bus():
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0)  # p12
     pp.create_measurement(net, "q", "line", 0.024e3, 0.01e3, bus=0, element=0)    # q12
@@ -84,11 +84,11 @@ def test_3bus_with_bad_data():
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     
     pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0)  # Pline (bus 1 -> bus 2) at bus 1  
     pp.create_measurement(net, "q", "line", 0.024e3, 0.01e3, bus=0, element=0)    # Qline (bus 1 -> bus 2) at bus 1
@@ -138,11 +138,11 @@ def test_3bus_with_out_of_service_bus():
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
     pp.create_measurement(net, "v", "bus", .968, .004, bus=1)   # V at bus 2
@@ -179,11 +179,11 @@ def test_3bus_with_transformer():
     pp.create_bus(net, name="bus3", vn_kv=10.)
     pp.create_bus(net, name="bus4", vn_kv=110.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV")
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
@@ -227,11 +227,11 @@ def test_3bus_with_2_slacks():
     pp.create_bus(net, name="bus7", vn_kv=1., index=7)
 
     pp.create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 6, 7, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus=5)  # V at bus 5
     pp.create_measurement(net, "v", "bus", .968, .004, bus=6)   # V at bus 6
