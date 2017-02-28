@@ -12,7 +12,7 @@ from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
-def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
+def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
 
@@ -107,6 +107,7 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                   ("tp_min", "i4"),
                   ("tp_max", "i4"),
                   ("tp_st_percent", "f8"),
+                  ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
                   ("parallel", "u4"),
                   ("in_service", 'bool')],
@@ -276,7 +277,8 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
         "version": 1.1,
         "converged": False,
         "name": name,
-        "f_hz": f_hz
+        "f_hz": f_hz,
+        "sn_kva": sn_kva
     })
     for s in net:
         if isinstance(net[s], list):
@@ -1177,8 +1179,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
-    })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
+        })
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
@@ -1208,8 +1210,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, vscr_percent,
                                        vsc_percent, pfe_kw, i0_percent, shift_degree=0,
                                        tp_side=None, tp_mid=np.nan, tp_max=np.nan,
-                                       tp_min=np.nan, tp_st_percent=np.nan, tp_pos=np.nan,
-                                       in_service=True, name=None, index=None,
+                                       tp_min=np.nan, tp_st_percent=np.nan, tp_st_degree=np.nan,
+                                       tp_pos=np.nan, in_service=True, name=None, index=None,
                                        max_loading_percent=np.nan, parallel=1, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
@@ -1289,7 +1291,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
-        "tp_side": tp_side, "tp_st_percent": tp_st_percent, "parallel": parallel
+        "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
+        "parallel": parallel
     }
 
     if ("tp_mid" in v) and (tp_pos is np.nan):
@@ -1948,13 +1951,3 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     net.measurement.loc[index] = [name, type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
     return index
-
-
-if __name__ == "__main__":
-    net = create_empty_network()
-    create_bus(net, vn_kv=10)
-    create_bus(net, vn_kv=0.4)
-    create_line(net, 0, 1, length_km=1.23, std_type="NAYY 4x50 SE")
-    create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3.2)
-    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
-    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)

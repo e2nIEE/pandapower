@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.run import _pd2ppc, _select_is_elements, reset_results
+from pandapower.run import _pd2ppc, _select_is_elements
 try:
     import pplog as logging
 except:
@@ -13,7 +13,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def to_ppc(net):
+def to_ppc(net, calculate_voltage_angles=False, trafo_model = "t"):
     """
      This function converts a pandapower net to a pypower case file.
 
@@ -40,12 +40,6 @@ def to_ppc(net):
     # always convert results if available
     init_results = True
 
-    # matpower and pypower uses pi trafo model
-    trafo_model = "pi"
-
-    # copy the voltage angles from pandapower to the ppc
-    calculate_voltage_angles = True
-
     # select elements in service
     net["_is_elems"] = _select_is_elements(net)
 
@@ -55,5 +49,4 @@ def to_ppc(net):
                                     copy_constraints_to_ppc=True)
     ppc['branch'] = ppc['branch'].real
     ppc.pop('internal')
-
     return ppc

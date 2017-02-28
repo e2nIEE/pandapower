@@ -5,8 +5,9 @@
 # BSD-style license that can be found in the LICENSE file.
 
 from math import pi
-from numpy import sign, nan, append, zeros, max, array
+from numpy import sign, nan, append, zeros, max, array, delete, insert
 from pandas import Series, DataFrame
+from copy import deepcopy
 
 from pypower import runpf
 from pypower import ppoption
@@ -235,7 +236,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
         cv.validate_from_ppc(ppc_net, pp_net)
     """
-    # --- run a pypower power flow
+    # --- run a pypower power flow without print output
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
     ppc_res = runpf.runpf(ppc_net, ppopt)[0]
 
@@ -267,13 +268,14 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
     # --- prepare power flow result comparison by reordering pp results as they are in ppc results
     if (ppc_res['success'] == 1) & (pp_net.converged):
-        # pandapower bus result table
+        # --- pandapower bus result table
         pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
+
+        # --- pandapower gen result table
+        pp_res_gen = zeros([1, 2])
         # consideration of parallel generators
         GEN = DataFrame(ppc_res['gen'][:, [0]])
         GEN_uniq = GEN.drop_duplicates(subset=[0])
-        # pandapower gen result table
-        pp_res_gen = zeros([1, 2])
         change_q_compare = []
         for i in GEN_uniq.index:
             current_bus_idx = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['gen'][i, 0]))
@@ -300,42 +302,55 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
             if current_bus_type == 1:
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
                     pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
-        pp_res_gen = pp_res_gen[1:, :]
-        # consideration of parallel branches
-        BRANCHES = DataFrame(ppc_res['branch'][:, [0, 1]])
-        BRANCHES_uniq = BRANCHES.drop_duplicates()
-        # pandapower branch result table
+        pp_res_gen = pp_res_gen[1:, :]  # delete initial zero row
+        # sort duplicated generators
+        GEN_dupl = GEN.loc[GEN.duplicated()]
+        pp_res_gen = _sort_duplicates(pp_res_gen, GEN_dupl, GEN_uniq)
+
+        # --- pandapower branch result table
         pp_res_branch = zeros([1, 4])
+        # consideration of parallel branches with consideration of line-trafo-classification
+        BRANCHES = DataFrame(ppc_res['branch'][:, [0, 1, 8, 9]])
+        BRANCHES[2].loc[(BRANCHES[2] != 0) & (BRANCHES[2] != 1)] = 0.55
+        BRANCHES[2].loc[(BRANCHES[2] == 0) | (BRANCHES[2] == 1)] = 0
+        BRANCHES[3] = BRANCHES[3].astype(bool).astype(int)
+        BRANCHES_uniq = BRANCHES.drop_duplicates()
         for i in BRANCHES_uniq.index:
             from_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 0]))
             to_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 1]))
             from_vn_kv = ppc_res['bus'][from_bus, 9]
             to_vn_kv = ppc_res['bus'][to_bus, 9]
+            # from line results
             if (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
                (ppc_res['branch'][i, 8] == 1)) & (ppc_res['branch'][i, 9] == 0):
                 pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
                     (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
                         [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
-            else:
+            # from trafo results
+            if not (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
+               (ppc_res['branch'][i, 8] == 1)) & (ppc_res['branch'][i, 9] == 0):
                 if from_vn_kv >= to_vn_kv:
                     hv_bus = from_bus
                     lv_bus = to_bus
                     pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
                         (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
                             [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']]), 0)
-                else:
+                else:  # elif from_vn_kv == to_vn_kv
                     hv_bus = to_bus
                     lv_bus = from_bus
                     pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
                         (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
                             [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']]), 0)
-        pp_res_branch = pp_res_branch[1:, :]
+        pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
+        # sort duplicated branches
+        BRANCHES_dupl = BRANCHES.loc[BRANCHES.duplicated()]
+        pp_res_branch = _sort_duplicates(pp_res_branch, BRANCHES_dupl, BRANCHES_uniq)
 
         # --- do the power flow result comparison
         diff_res_bus = ppc_res_bus - pp_res_bus
         diff_res_branch = ppc_res_branch - pp_res_branch*1e-3
         diff_res_gen = ppc_res_gen + pp_res_gen*1e-3
-        # only compare q of buses with several generation units as sum
+        # comparison of buses with several generator units only as q sum
         for i in GEN_uniq.index[GEN_uniq.index.isin(change_q_compare)]:
             next_is = GEN_uniq.index[GEN_uniq.index > i]
             if len(next_is) > 0:
@@ -363,8 +378,8 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
            (max(abs(diff_res_gen)) > 1e-1).any():
                 logger.debug("The active/reactive power generation difference possibly results "
                              "because of a pypower fault. If you have an access, please validate "
-                             "the results via matpower loadflow.")  # this occurs e.g. at case9
-
+                             "the results via matpower loadflow.")  # this occurs e.g. at ppc case9
+        # give a return
         if type(max_diff_values) == dict:
             if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
                        'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
@@ -381,6 +396,40 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                 logger.debug('Not all requried dict keys are provided.')
         else:
             logger.debug("'max_diff_values' must be a dict.")
+
+
+def _sort_duplicates(pp_res, DUPL, UNIQ):
+    """
+    This rearrangement is needed if duplicated generators or branches do not follow directly the
+    unique one.
+    """
+    # dupl_uniq gives the uniq item related to every duplicated
+    dupl_uniq = DataFrame([], index=DUPL.index, columns=[0])
+    for i in DUPL.index:
+        for j in UNIQ.index:
+            if (DUPL.loc[i] == UNIQ.loc[j]).all():
+                dupl_uniq.loc[i] = j
+                break
+    # after all changes, dupl_target gives the target row where a duplicated item must be inserted
+    dupl_target = deepcopy(dupl_uniq)
+    while sum(dupl_target.duplicated()) > 0:
+        dupl_target.loc[dupl_target.duplicated()] += 1
+    dupl_target += 1
+    dupl_target = dupl_target.loc[dupl_target[0] != dupl_target.index]
+    for i in dupl_target.index:
+        if i > dupl_target.index[0]:
+            idx_smaller = dupl_target.index[dupl_target.index < i]
+            n_add = sum(((dupl_uniq.loc[i] >= dupl_target.loc[idx_smaller]).values) &
+                        (dupl_uniq.loc[i][0] < idx_smaller))[0]
+            dupl_target.loc[i] += n_add
+        if dupl_target.loc[i][0] < i:
+            # execute the rearrangement
+            to_insert = pp_res[dupl_target.loc[i][0]]
+            pp_res = delete(pp_res, dupl_target.loc[i][0], 0)
+            pp_res = insert(pp_res, i, to_insert, axis=0)
+        else:
+            dupl_target = dupl_target.drop(i)
+    return pp_res
 
 if __name__ == '__main__':
     pass

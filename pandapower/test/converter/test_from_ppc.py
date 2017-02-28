@@ -16,7 +16,6 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3,
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
 
@@ -56,7 +55,7 @@ def test_ppc_testgrids():
 
 def test_pypower_cases():
     # check pypower cases
-    name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case30pwl', 'case30Q', 'case39',
+    name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
             'case118', 'case300']
     for i in name:
         module = __import__('pypower.' + i)
@@ -74,10 +73,6 @@ def test_pypower_cases():
     net = from_ppc(ppc, f_hz=60)
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')
-    ppc = case9Q.case9Q()
-    net = from_ppc(ppc, f_hz=60)
-    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
-    logger.debug('case9Q has been checked successfully.')
 
 
 if __name__ == '__main__':

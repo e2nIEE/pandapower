@@ -49,16 +49,6 @@ def test_case14():
     assert net.converged is True
 
 
-def test_case9Q():
-    net = pn.case9Q()
-    assert net.converged is True
-    pp.runpp(net)
-    assert len(net.bus) == 9
-    assert len(net.line) + len(net.trafo) == 9
-    assert len(net.gen) + len(net.ext_grid) == 3
-    assert net.converged is True
-
-
 def test_case24_ieee_rts():
     net = pn.case24_ieee_rts()
     assert net.converged is True
@@ -69,26 +59,6 @@ def test_case24_ieee_rts():
 
 def test_case30():
     net = pn.case30()
-    assert net.converged is True
-    pp.runpp(net)
-    assert len(net.bus) == 30
-    assert len(net.line) + len(net.trafo) == 41
-    assert len(net.gen) + len(net.ext_grid) == 6
-    assert net.converged is True
-
-
-def test_case30pwl():
-    net = pn.case30pwl()
-    assert net.converged is True
-    pp.runpp(net)
-    assert len(net.bus) == 30
-    assert len(net.line) + len(net.trafo) == 41
-    assert len(net.gen) + len(net.ext_grid) == 6
-    assert net.converged is True
-
-
-def test_case30Q():
-    net = pn.case30Q()
     assert net.converged is True
     pp.runpp(net)
     assert len(net.bus) == 30

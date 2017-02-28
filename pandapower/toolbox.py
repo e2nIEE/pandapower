@@ -8,16 +8,16 @@ import numpy as np
 import pandas as pd
 import copy
 from collections import defaultdict
+
+from pandapower.auxiliary import get_indices, PandapowerNet
+from pandapower.create import create_empty_network
+from pandapower.topology import unsupplied_buses
 try:
     import pplog as logging
 except:
     import logging
 
 logger = logging.getLogger(__name__)
-
-from pandapower.auxiliary import get_indices, PandapowerNet
-from pandapower.create import create_empty_network
-from pandapower.topology import unsupplied_buses
 
 # --- Information
 
@@ -216,16 +216,16 @@ def switch_info(net, sidx):
     eidx = net.switch.at[sidx, "element"]
     if switch_type == "b":
         bus2_name = net.bus.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                         bus2_name))
+        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name,
+                                                                         eidx, bus2_name))
     elif switch_type == "l":
         line_name = net.line.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                          line_name))
+        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name,
+                                                                          eidx, line_name))
     elif switch_type == "t":
         trafo_name = net.trafo.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                           trafo_name))
+        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name,
+                                                                           eidx, trafo_name))
 
 
 def overloaded_lines(net, max_load=100):
@@ -311,6 +311,8 @@ def convert_format(net):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     _pre_release_changes(net)
+    if not "sn_kva" in net:
+        net.sn_kva = 1e3
     # unsymmetric impedance
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
@@ -365,6 +367,8 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
+    if not "tp_st_degree" in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
     net.version = 1.1
     return net
 

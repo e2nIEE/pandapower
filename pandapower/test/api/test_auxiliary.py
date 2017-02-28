@@ -31,6 +31,3 @@ def test_get_indices():
     # before fuse
     result = get_indices([2, 7], lookup, fused_indices=False)
     assert np.array_equal(result, [102, 107])
-    
-if __name__=="__main__":
-    test_get_indices()

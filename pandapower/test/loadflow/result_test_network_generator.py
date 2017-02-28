@@ -7,12 +7,12 @@
 import pandapower as pp
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 
-def result_test_network_generator():
+def result_test_network_generator(sn_kva=1e3):
     """ This is a generator for the result_test_network
         It is structured like this so it can be tested for consistency at
         different stages of adding elements
     """
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_kva=sn_kva)
     yield add_test_line(net)
     yield add_test_load_sgen(net)
     yield add_test_load_sgen_split(net)
@@ -395,9 +395,44 @@ def add_test_two_open_switches_on_deactive_line(net):
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
     return net
-
+    
 
 if __name__ == '__main__':     
-     net = pp.create_empty_network()
-     add_test_trafo(net)
-     pp.runpp(net, "dc", True, trafo_model="t")
+    net1 = pp.create_empty_network()
+    net2 = pp.create_empty_network(sn_kva=2e3)
+    for net in [net1, net2]:
+        add_test_line(net)
+        add_test_trafo(net)
+        add_test_load_sgen(net)
+        add_test_load_sgen_split(net)
+        add_test_single_load_single_eg(net)
+        add_test_ward(net)
+        add_test_xward(net)
+        add_test_shunt_split(net)
+        add_test_impedance(net)
+
+    pp.runpp(net1)
+    pp.runpp(net2)
+    print(net1.res_trafo.values - net2.res_trafo.values)
+    assert_net_equal(net1, net2)
+#    print(net1._ppc["branch"][:,3] / net2._ppc["branch"][:,3])
+    
+#    add_test_load_sgen(net)
+#    add_test_load_sgen_split(net)
+#    yield add_test_ext_grid(net)
+#    yield add_test_trafo(net)
+#    yield add_test_single_load_single_eg(net)
+#    yield add_test_ward(net)
+#    yield add_test_ward_split(net)
+#    yield add_test_xward(net)
+#    yield add_test_xward_combination(net)
+#    yield add_test_gen(net)
+#    yield add_test_ext_grid_gen_switch(net)
+#    yield add_test_enforce_qlims(net)
+#    yield add_test_trafo3w(net)
+#    yield add_test_impedance(net)
+#    yield add_test_bus_bus_switch(net)
+#    yield add_test_oos_bus_with_is_element(net)
+#    yield add_test_shunt(net)
+#    yield add_test_shunt_split(net)
+#    yield add_test_two_open_switches_on_deactive_line(net)
