@@ -257,13 +257,13 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
             except:
                 if (ppc_res['success'] == 1) & (~pp_net.converged):
                     logger.debug('The validation of ppc conversion fails because the pandapower net'
-                                 ' power flow do not convert.')
+                                 ' power flow do not converge.')
                 elif (ppc_res['success'] != 1) & (pp_net.converged):
                     logger.debug('The validation of ppc conversion fails because the power flow of '
-                                 'the pypower case do not convert.')
+                                 'the pypower case do not converge.')
                 elif (ppc_res['success'] != 1) & (~pp_net.converged):
                     logger.debug('The power flow of both, the pypower case and the pandapower net, '
-                                 'do not convert.')
+                                 'do not converge.')
                 return False
 
     # --- prepare power flow result comparison by reordering pp results as they are in ppc results
@@ -433,3 +433,6 @@ def _sort_duplicates(pp_res, DUPL, UNIQ):
 
 if __name__ == '__main__':
     pass
+#    pp_res=pp_res_gen
+#    DUPL= GEN_dupl
+#    UNIQ= GEN_uniq
