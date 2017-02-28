@@ -183,9 +183,6 @@ def test_opf_gen_voltage():
 
     # run OPF
     pp.runopp(net, verbose=False)
-
-    print(net.res_gen)
-    print(net.res_bus)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -341,21 +338,47 @@ def test_opf_sgen_loading():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
+def test_unconstrained_line():
+    """ Testing a very simple network without transformer for voltage
+    constraints with OPF """
+
+    # boundaries:
+    vm_max = 1.05
+    vm_min = 0.95
+
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+                  min_q_kvar=-50)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876)
+    pp.create_polynomial_cost(net, 0, "gen", array([-1, 0]))
+    # run OPF
+    pp.runopp(net, verbose=False)
+    assert net["OPF_converged"]
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert max(net.res_bus.vm_pu) < vm_max
+    assert min(net.res_bus.vm_pu) > vm_min
+
 def test_dc_opf():
     return True
 
 
 def test_trafo3w_loading():
     return True
-
-def test_baseMVA_OPF():
-    # dasselbe netz mit 1 mw basemva runopf
-    # dann einmal mit 2mw
-    # gucken, ob alles gleich
-    return True
-
 #
 if __name__ == "__main__":
-    pytest.main(["test_basic.py", "-xs"])
+    # test_unconstrained_line()
+    pytest.main(["-xs"])
+    # pytest.main(["test_basic.py", "-xs"])
     # test_opf_gen_voltage()
 #     test_convert_format()

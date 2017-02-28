@@ -112,7 +112,7 @@ def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
     t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
     t[:, 5] = line["in_service"]
     if copy_constraints_to_ppc:
-        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 1000
+        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
         vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
         t[:, 6] = max_load / 100. * line.imax_ka.values * line.df.values * parallel * vr
     return t

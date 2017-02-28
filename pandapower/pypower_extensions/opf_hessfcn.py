@@ -170,9 +170,12 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     muF = lmbda["ineqnonlin"][:nmu]
     muT = lmbda["ineqnonlin"][nmu:nmu + nmu]
     if ppopt['OPF_FLOW_LIM'] == 2:       ## current
-        dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V) #TypeError: dIbr_dV() missing 1 required positional argument: 'V' >> branch was missing
-        Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
-        Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
+        if Yf.size:
+            dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V) #TypeError: dIbr_dV() missing 1 required positional argument: 'V' >> branch was missing
+            Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
+            Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
+        else:
+            Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
     else:
         f = branch[il, F_BUS].astype(int)    ## list of "from" buses
         t = branch[il, T_BUS].astype(int)    ## list of "to" buses
@@ -195,9 +198,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
 
     d2H = vstack([
             hstack([
-                vstack([hstack([Hfaa, Hfav]),
-                        hstack([Hfva, Hfvv])]) +
-                vstack([hstack([Htaa, Htav]),
+                vstack([hstack([Hfaa, Hfav]), hstack([Hfva, Hfvv])]) + vstack([hstack([Htaa, Htav]),
                         hstack([Htva, Htvv])]),
                 sparse((2 * nb, nxtra))
             ]),
