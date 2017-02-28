@@ -1,5 +1,14 @@
 Change Log
 =============
+
+unreleased
+--------------------
+- [CHANGED] net.line.imax_ka to net.line.max_i_ka for consistency reasons
+- [ADDED] net.line.tp_st_degree for phase shift in trafo tap changers
+- [ADDED] sn_kva parameter in create_empty network for per unit system reference power
+- [ADDED] connectivity check for power flow to deal with disconnected network areas
+- [ADDED] generator lookup to allow multiple generators at one bus
+- [ADDED] bad data detection for state estimation
 - [CHANGED] from_ppc: no detect_trafo anymore, several gen at each node possible
 - [ADDED] networks: case118, case300, cigre_network_mv with_der='all' der
 
