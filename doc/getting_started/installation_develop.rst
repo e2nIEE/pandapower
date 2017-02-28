@@ -15,6 +15,6 @@ This guide assumes that there is already a working python environment (preferabl
        
 3. Set your python path to the outer pandapower folder (/pandapower, NOT pandapower/pandapower). 
 
-4. Install dependencies if missing via pip install:
+4. Install dependencies if missing via pip install: ::
 
     pip install pypower

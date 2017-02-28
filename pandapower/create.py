@@ -85,7 +85,7 @@ def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
                  ("r_ohm_per_km", "f8"),
                  ("x_ohm_per_km", "f8"),
                  ("c_nf_per_km", "f8"),
-                 ("imax_ka", "f8"),
+                 ("max_i_ka", "f8"),
                  ("df", "f8"),
                  ("parallel", "u4"),
                  ("type", np.dtype(object)),
@@ -999,7 +999,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         "r_ohm_per_km": lineparam["r_ohm_per_km"],
         "x_ohm_per_km": lineparam["x_ohm_per_km"],
         "c_nf_per_km": lineparam["c_nf_per_km"],
-        "imax_ka": lineparam["imax_ka"]
+        "max_i_ka": lineparam["max_i_ka"]
     })
     if "type" in lineparam:
         v.update({"type": lineparam["type"]})
@@ -1025,7 +1025,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
-                                c_nf_per_km, imax_ka, name=None, index=None, type=None,
+                                c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1,
                                 max_loading_percent=np.nan, **kwargs):
     """
@@ -1046,7 +1046,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **c_nf_per_km** (float) - line capacitance in nF per km
 
-        **imax_ka** (float) - maximum thermal current in kA
+        **max_i_ka** (float) - maximum thermal current in kA
 
 
     OPTIONAL:
@@ -1076,7 +1076,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     EXAMPLE:
         create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
         r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
-        imax_ka = 0.4)
+        max_i_ka = 0.4)
 
     """
 
@@ -1096,7 +1096,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
         "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km, "imax_ka": imax_ka, "parallel": parallel, "type": type
+        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type
     }
 
     # store dtypes

@@ -83,13 +83,14 @@ The state estimation class allows additionally the removal of bad data, especial
 For detecting bad data the Chi-squared distribution is used to identify the presence of them.
 Afterwards follows the largest normalized residual test that identifys the actual measurements which will be removed at the end.
 Both methods are combined in the *perform_rn_max_test* function that is part of the state estimation class.
+To access it, the following wrapper function *remove_bad_data* has been created.
 
-.. automethod:: pandapower.estimation.state_estimation.state_estimation.perform_rn_max_test
+.. autofunction:: pandapower.estimation.remove_bad_data
 
-Nevertheless the Chi-squared test function is available as well to allow a identification of topology errors or, as explained, false measurements.
-It is named as *perform_chi2_test*.
+Nevertheless the Chi-squared test is available as well to allow a identification of topology errors or, as explained, false measurements.
+It is named as *chi2_analysis*. The detection's result of present bad data of the Chi-squared test is stored internally as *bad_data_present* (boolean, class member variable).
 
-.. automethod:: pandapower.estimation.state_estimation.state_estimation.perform_chi2_test
+.. autofunction:: pandapower.estimation.chi2_analysis
 
 Background information about this topic can be sourced from the following literature:
 
@@ -129,23 +130,11 @@ The resulting variables now contain the voltage absolute values in *V*, the volt
 The bus power injections can be accessed similarly with *net.res_bus_est.p_kw* and *net.res_bus_est.q_kvar*. Line data is also available in the same format as defined in *res_line*.
 
 
-If we like to check our data for fault measurements, and exclude them, we use the following code:
-
-At first initialize the *state_estimation* class with your network.
-
-::
-
-    wls = state_estimation(net = net)
-
-
-Then perform the *perform_chi2_test* function with the initial values of the included state estimation (voltage magnitudes *v_start* and angles *delta_start* for each bus).
+If we like to check our data for fault measurements, and exclude them in in our state estimation, we use the following code:
 
 ::
     
-    v_start = np.array([1.0, 1.0, 1.0, NaN])
-    delta_start = np.array([0., 0., 0., NaN])
-
-    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    success_rn_max = remove_bad_data(net, init="flat")
     V_rn_max, delta_rn_max = net.res_bus_est.vm_pu, net.res_bus_est.va_degree
 
 In the case that we only like to know if there is a likelihood of fault measurements (probabilty of fault can be adjusted), the Chi-squared test should be performed separatly.
@@ -153,7 +142,7 @@ If the test detects the possibility of fault data, the value of the added class 
 
 ::
 
-    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
+    success_chi2 = chi2_analysis(net, init="flat")
     
 
 .. Class state_estimation

@@ -313,6 +313,10 @@ def convert_format(net):
     _pre_release_changes(net)
     if not "sn_kva" in net:
         net.sn_kva = 1e3
+    net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
+    for typ, data in net.std_types["line"].items():
+        if "imax_ka" in data:
+            net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
     # unsymmetric impedance
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
@@ -369,7 +373,7 @@ def convert_format(net):
                 net.gen["max_p_kw"] = pmin
     if not "tp_st_degree" in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
-    net.version = 1.1
+    net.version = 1.2
     return net
 
 

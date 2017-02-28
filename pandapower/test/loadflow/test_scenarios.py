@@ -77,7 +77,7 @@ def test_0gen_2ext_grid_decoupled():
     net.trafo.shift_degree = 150
     pp.create_std_type(net, {"type": "cs", "r_ohm_per_km": 0.876,  "q_mm2": 35.0,
                              "endtmp_deg": 160.0, "c_nf_per_km": 260.0,
-                             "imax_ka": 0.123, "x_ohm_per_km": 0.1159876}, 
+                             "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876}, 
                              name="NAYSEY 3x35rm/16 6/10kV" , element="line")
     pp.create_line(net, 0, auxbus, 1, name="line_to_decoupled_grid",
                    std_type="NAYSEY 3x35rm/16 6/10kV") #NAYSEY 3x35rm/16 6/10kV

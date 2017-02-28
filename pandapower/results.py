@@ -322,7 +322,7 @@ def _get_line_results(net, ppc, i_ft, f, t, ac=True):
     i_ka = np.max(i_ft[f:t], axis=1)
     net["res_line"]["i_from_ka"] = i_ft[f:t][:,0]
     net["res_line"]["i_to_ka"] = i_ft[f:t][:,1]
-    i_max = net["line"]["imax_ka"].values * net["line"]["df"].values * \
+    i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
         net["line"]["parallel"].values
 
     net["res_line"]["i_ka"] = i_ka

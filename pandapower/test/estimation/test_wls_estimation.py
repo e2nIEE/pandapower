@@ -1,4 +1,5 @@
-from pandapower.estimation import estimate, state_estimation
+from pandapower.estimation import state_estimation, estimate
+from pandapower.estimation import chi2_analysis, remove_bad_data
 import pandapower as pp
 import numpy as np
 import pytest
@@ -13,7 +14,7 @@ def test_2bus():
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1,x_ohm_per_km=0.5, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "p", "line", 0.0111e3, 0.05e3, 0, element=0)  # p12
     pp.create_measurement(net, "q", "line", 0.06e3, 0.05e3, 0, element=0)  # q12
@@ -45,11 +46,11 @@ def test_3bus():
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0)  # p12
     pp.create_measurement(net, "q", "line", 0.024e3, 0.01e3, bus=0, element=0)    # q12
@@ -83,11 +84,11 @@ def test_3bus_with_bad_data():
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     
     pp.create_measurement(net, "p", "line", -0.0011e3, 0.01e3, bus=0, element=0)  # Pline (bus 1 -> bus 2) at bus 1  
     pp.create_measurement(net, "q", "line", 0.024e3, 0.01e3, bus=0, element=0)    # Qline (bus 1 -> bus 2) at bus 1
@@ -101,18 +102,11 @@ def test_3bus_with_bad_data():
     # create false voltage measurement for testing bad data detection (-> should be removed)
     pp.create_measurement(net, "v", "bus", 1.3, 0.05, bus=1)   # V at bus 2
     
-    # initial state values
-    v_start = np.array([1.0, 1.0, 1.0])
-    delta_start = np.array([0., 0., 0.])
+    # 2. Do chi2-test
+    success_chi2 = chi2_analysis(net, init='flat')
     
-    # 2. Initialize state estimation
-    wls = state_estimation(net = net)
-
-    # 3. Do chi2-test
-    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
-    
-    # 4. Perform rn_max_test
-    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    # 3. Perform rn_max_test
+    success_rn_max = remove_bad_data(net, init='flat')
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
     
@@ -144,11 +138,11 @@ def test_3bus_with_out_of_service_bus():
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
     pp.create_measurement(net, "v", "bus", .968, .004, bus=1)   # V at bus 2
@@ -185,11 +179,11 @@ def test_3bus_with_transformer():
     pp.create_bus(net, name="bus3", vn_kv=10.)
     pp.create_bus(net, name="bus4", vn_kv=110.)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV")
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
@@ -233,11 +227,11 @@ def test_3bus_with_2_slacks():
     pp.create_bus(net, name="bus7", vn_kv=1., index=7)
 
     pp.create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
     pp.create_line_from_parameters(net, 6, 7, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   imax_ka=1)
+                                   max_i_ka=1)
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus=5)  # V at bus 5
     pp.create_measurement(net, "v", "bus", .968, .004, bus=6)   # V at bus 6
@@ -402,26 +396,20 @@ def test_IEEE_case_9_with_bad_data():
     pp.create_measurement(net, "q", "bus", 0., 1., bus=7)   # Q at bus 7
     pp.create_measurement(net, "q", "bus", -49673., 1000., bus=8)   # Q at bus 8
     
-    success_SE = estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10)
+    # 2. Do state estimation
+    success_SE = estimate(net, init='flat')
     v_est_SE = net.res_bus_est.vm_pu.values
     delta_SE = net.res_bus_est.va_degree.values
     
-    # 3. Create false P-bus-measurements
-    pp.create_measurement(net, "p", "bus", 300000., 1000., bus=1)   # P at bus 1
-    pp.create_measurement(net, "p", "bus", -20000., 1000., bus=4)   # P at bus 4
-    
-    # 2. Initialize state estimation
-    wls = state_estimation(net = net)
-    
-    # initial state values ('flat'-start)
-    v_start = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    delta_start = np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])
-    
-    # 5. Do chi2-test
-    success_chi2 = wls.perform_chi2_test(v_start, delta_start)
-    
-    # 6. Perform rn_max_test
-    success_rn_max = wls.perform_rn_max_test(v_start, delta_start)
+    # 3. Create false measurements
+    pp.create_measurement(net, "p", "bus", 3000., 1000., bus=1)   # P at bus 1
+    pp.create_measurement(net, "p", "bus", -2000., 1000., bus=4)   # P at bus 4
+
+    # 4. Do chi2-test
+    success_chi2 = chi2_analysis(net, init='flat')
+
+    # 5. Perform rn_max_test
+    success_rn_max = remove_bad_data(net, init='flat')
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
     
@@ -431,8 +419,8 @@ def test_IEEE_case_9_with_bad_data():
     assert success_SE
     assert success_chi2
     assert success_rn_max
-    assert (np.nanmax(abs(diff_v)) < 1e-8)
-    assert (np.nanmax(abs(diff_delta)) < 1e-8)
+    assert (np.nanmax(abs(diff_v)) < 1e-5)
+    assert (np.nanmax(abs(diff_delta)) < 1e-5)
     
 
 def test_init_slack_with_multiple_transformers():
