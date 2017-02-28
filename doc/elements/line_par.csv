@@ -7,9 +7,9 @@ length_km*;float;:math:`>` 0;length of the line [km]
 r_ohm_per_km*;float;:math:`\geq` 0   ;resistance of the line [Ohm per km]
 x_ohm_per_km*;float;:math:`\geq` 0   ;inductance of the line [Ohm per km]
 c_nf_per_km*;float;:math:`\geq` 0   ;capacitance of the line [nF per km]
-imax_ka*;float;:math:`>` 0   ;maximal thermal current [kA]
+max_i_ka*;float;:math:`>` 0   ;maximal thermal current [kA]
 parallel*;integer;:math:`\geq` 1;number of parallel line systems
-df*;float;0...1 ;derating factor (scaling) for imax_ka
+df*;float;0...1 ;derating factor (scaling) for max_i_ka
 type;string;"| Naming conventions:
 
 | *""ol""* - overhead line 

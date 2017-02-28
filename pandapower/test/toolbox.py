@@ -213,11 +213,11 @@ def create_test_network():
 #0.016 MVA 10/0.4 kV ET 16/23  SGB
 
     pp.create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km= 0.2067,
-                   ices= 0.389985, c_nf_per_km= 720.0, imax_ka= 0.328, 
+                   ices= 0.389985, c_nf_per_km= 720.0, max_i_ka= 0.328, 
                    x_ohm_per_km= 0.1897522, geodata=np.array([[1, 2], [3, 4]]))
 #NAYY 1x150RM 0.6/1kV ir
     pp.create_line_from_parameters(net, b1, b4, 1, name="line2", r_ohm_per_km= 0.876,
-                  c_nf_per_km= 260.0, imax_ka= 0.123, x_ohm_per_km= 0.1159876) 
+                  c_nf_per_km= 260.0, max_i_ka= 0.123, x_ohm_per_km= 0.1159876) 
 
 
 #NAYSEY 3x35rm/16 6/10kV
@@ -253,7 +253,7 @@ def add_grid_connection(net, vn_kv=20., zone=None):
 
 def create_test_line(net, b1, b2, in_service=True):
     return pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                          c_nf_per_km=300, imax_ka=.2, df=.8,
+                                          c_nf_per_km=300, max_i_ka=.2, df=.8,
                                           in_service=in_service,index=pp.get_free_id(net.line) + 1)
 
 if __name__ == "__main__":

@@ -30,7 +30,7 @@ def test_simplest_voltage():
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
     # run OPF
     pp.runopp(net, verbose=False)
@@ -63,7 +63,7 @@ def test_eg_voltage():
     pp.create_ext_grid(net, 0, vm_pu=1.01)
     pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
     # run OPF
     pp.runopp(net, verbose=False)
@@ -94,7 +94,7 @@ def test_simplest_dispatch():
     pp.create_ext_grid(net, 0, cost_per_kw=101)
     pp.create_load(net, 1, p_kw=20, controllable = False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100*690)
     # run OPF
     pp.runopp(net, verbose=False)
@@ -136,10 +136,10 @@ def test_opf_gen_voltage():
                   min_q_kvar=-50, cost_per_kw = -100)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100000)
     pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100000)
 
     # run OPF
@@ -180,10 +180,10 @@ def test_opf_sgen_voltage():
                    min_q_kvar=-25, cost_per_kw = -100)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=1000000)
     pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=1000000)
 
     # run OPF
@@ -225,10 +225,10 @@ def test_opf_gen_loading():
                   min_q_kvar=-50, cost_per_kw=-10)
     pp.create_ext_grid(net, 0, cost_per_kw=0.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
     pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
 
     # run OPF
@@ -274,10 +274,10 @@ def test_opf_sgen_loading():
                    min_q_kvar=-25, cost_per_kw=-10)
     pp.create_ext_grid(net, 0, cost_per_kw=0.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
     pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
 
     # run OPF

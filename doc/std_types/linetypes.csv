@@ -1,4 +1,4 @@
-;r_ohm_per_km;x_ohm_per_km;c_nf_per_km;imax_ka;type;q_mm2
+;r_ohm_per_km;x_ohm_per_km;c_nf_per_km;max_i_ka;type;q_mm2
 149-AL1/24-ST1A 10.0;0.194;0.315;11.25;0.47;ol;149
 149-AL1/24-ST1A 110.0;0.194;0.41;8.75;0.47;ol;149
 149-AL1/24-ST1A 20.0;0.194;0.337;10.5;0.47;ol;149

@@ -18,14 +18,14 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     # Linedata
     # Line220kV
     line_data = {'c_nf_per_km': 9.08, 'r_ohm_per_km': 0.0653,
-                 'x_ohm_per_km': 0.398, 'imax_ka': 1.14,
+                 'x_ohm_per_km': 0.398, 'max_i_ka': 1.14,
                  'type': 'ol'}
 
     pp.create_std_type(net_cigre_hv, line_data, 'Line220kV', element='line')
 
     # Line380kV
     line_data = {'c_nf_per_km': 11.5, 'r_ohm_per_km': 0.0328,
-                 'x_ohm_per_km': 0.312, 'imax_ka': 1.32,
+                 'x_ohm_per_km': 0.312, 'max_i_ka': 1.32,
                  'type': 'ol'}
 
     pp.create_std_type(net_cigre_hv, line_data, 'Line380kV', element='line')
@@ -126,12 +126,12 @@ def create_cigre_network_mv(with_der=False):
 
     # Linedata
     line_data = {'c_nf_per_km': 151.1749, 'r_ohm_per_km': 0.501,
-                 'x_ohm_per_km': 0.716, 'imax_ka': 0.145,
+                 'x_ohm_per_km': 0.716, 'max_i_ka': 0.145,
                  'type': 'cs'}
     pp.create_std_type(net_cigre_mv, line_data, name='CABLE_CIGRE_MV', element='line')
 
     line_data = {'c_nf_per_km': 10.09679, 'r_ohm_per_km': 0.510,
-                 'x_ohm_per_km': 0.366, 'imax_ka': 0.195,
+                 'x_ohm_per_km': 0.366, 'max_i_ka': 0.195,
                  'type': 'ol'}
     pp.create_std_type(net_cigre_mv, line_data, name='OHL_CIGRE_MV', element='line')
 
@@ -270,37 +270,37 @@ def create_cigre_network_lv():
     # Linedata
     # UG1
     line_data = {'c_nf_per_km': 0.0, 'r_ohm_per_km': 0.162,
-                 'x_ohm_per_km': 0.0832, 'imax_ka': 1.0,
+                 'x_ohm_per_km': 0.0832, 'max_i_ka': 1.0,
                  'type': 'cs'}
     pp.create_std_type(net_cigre_lv, line_data, name='UG1', element='line')
 
     # UG2
     line_data = {'c_nf_per_km': 0.0, 'r_ohm_per_km': 0.2647,
-                 'x_ohm_per_km': 0.0823, 'imax_ka': 1.0,
+                 'x_ohm_per_km': 0.0823, 'max_i_ka': 1.0,
                  'type': 'cs'}
     pp.create_std_type(net_cigre_lv, line_data, name='UG2', element='line')
 
     # UG3
     line_data = {'c_nf_per_km': 0.0, 'r_ohm_per_km': 0.822,
-                 'x_ohm_per_km': 0.0847, 'imax_ka': 1.0,
+                 'x_ohm_per_km': 0.0847, 'max_i_ka': 1.0,
                  'type': 'cs'}
     pp.create_std_type(net_cigre_lv, line_data, name='UG3', element='line')
 
     # OH1
     line_data = {'c_nf_per_km': 0.0, 'r_ohm_per_km': 0.4917,
-                 'x_ohm_per_km': 0.2847, 'imax_ka': 1.0,
+                 'x_ohm_per_km': 0.2847, 'max_i_ka': 1.0,
                  'type': 'ol'}
     pp.create_std_type(net_cigre_lv, line_data, name='OH1', element='line')
 
     # OH2
     line_data = {'c_nf_per_km': 0.0, 'r_ohm_per_km': 1.3207,
-                 'x_ohm_per_km': 0.321, 'imax_ka': 1.0,
+                 'x_ohm_per_km': 0.321, 'max_i_ka': 1.0,
                  'type': 'ol'}
     pp.create_std_type(net_cigre_lv, line_data, name='OH2', element='line')
 
     # OH3
     line_data = {'c_nf_per_km': 0.0, 'r_ohm_per_km': 2.0167,
-                 'x_ohm_per_km': 0.3343, 'imax_ka': 1.0,
+                 'x_ohm_per_km': 0.3343, 'max_i_ka': 1.0,
                  'type': 'ol'}
     pp.create_std_type(net_cigre_lv, line_data, name='OH3', element='line')
 
