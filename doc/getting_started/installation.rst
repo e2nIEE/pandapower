@@ -18,7 +18,7 @@ Here are the installation instructions depending on what your system looks like 
     installation_without_pip
     installation_develop
     
-The easiest way to test your installation is to import all pandapower submodules to see if all dependencies are available:
+The easiest way to test your installation is to import all pandapower submodules to see if all dependencies are available: ::
 
     import pandapower
     import pandapower.networks
