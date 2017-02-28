@@ -170,9 +170,9 @@ def test_opf_gen_voltage():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=200)
-    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=-5, min_p_kw=-25, max_q_kvar=50,
-                  min_q_kvar=-50)
-    pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
+    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=0, min_p_kw=-25, max_q_kvar=500,
+                  min_q_kvar=-500)
+    pp.create_polynomial_cost(net, 0, "gen", array([-10, 0]))
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
@@ -183,6 +183,9 @@ def test_opf_gen_voltage():
 
     # run OPF
     pp.runopp(net, verbose=False)
+
+    print(net.res_gen)
+    print(net.res_bus)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -354,4 +357,5 @@ def test_baseMVA_OPF():
 #
 if __name__ == "__main__":
     pytest.main(["test_basic.py", "-xs"])
+    # test_opf_gen_voltage()
 #     test_convert_format()

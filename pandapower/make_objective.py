@@ -118,16 +118,22 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
 
 
                 egel = p_costs.element[p_costs.element_type == "ext_grid"].values
-                genel = p_costs.element[p_costs.element_type=="gen"].values + nref
+                eg_index = p_costs.element[p_costs.element_type == "ext_grid"].index
+                genel = p_costs.element[p_costs.element_type == "gen"].values + nref
+                gen_index = p_costs.element[p_costs.element_type == "gen"].index
                 sgenel = p_costs.element[p_costs.element_type == "sgen"].values + nref + ngen
-                loadel = p_costs.element[p_costs.element_type=="load"].values + nref + ngen + nsgen
+                sgen_index = p_costs.element[p_costs.element_type == "sgen"].index
+                loadel = p_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen
+                load_index = p_costs.element[p_costs.element_type == "load"].index
 
                 elements = np.append(egel, genel)
                 elements = np.append(elements, sgenel)
                 elements = pd.to_numeric(np.append(elements, loadel))
 
-                ppci["gencost"][elements, 4::2] = p * 1e-3
-                ppci["gencost"][elements, 5::2] = f
+                el_index= np.concatenate((eg_index,gen_index, sgen_index, load_index))
+
+                ppci["gencost"][elements, 4::2] = p[el_index] * 1e-3
+                ppci["gencost"][elements, 5::2] = f[el_index]
                 ppci["gencost"][pd.to_numeric(loadel), 5::2] *=-1
 
             if (net.piecewise_linear_cost.type == "q").any():
@@ -137,16 +143,23 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
                 f = np.concatenate(q_costs.f)
 
                 egel = q_costs.element[q_costs.element_type == "ext_grid"].values + ng
-                genel = q_costs.element[q_costs.element_type=="gen"].values + nref + ng
+                eg_index = q_costs.element[q_costs.element_type == "ext_grid"].index
+                genel = q_costs.element[q_costs.element_type == "gen"].values + nref + ng
+                gen_index = q_costs.element[q_costs.element_type == "gen"].index
                 sgenel = q_costs.element[q_costs.element_type == "sgen"].values + nref + ngen + ng
-                loadel = q_costs.element[q_costs.element_type=="load"].values + nref + ngen + nsgen + ng
+                sgen_index = q_costs.element[q_costs.element_type == "sgen"].index
+                loadel = q_costs.element[q_costs.element_type == "load"].values + nref + ngen + nsgen + ng
+                load_index = q_costs.element[q_costs.element_type == "load"].index
+
 
                 elements = np.append(egel, genel)
                 elements = np.append(elements, sgenel)
                 elements = pd.to_numeric(np.append(elements, loadel))
 
-                ppci["gencost"][elements, 4::2] = p * 1e-3
-                ppci["gencost"][elements, 5::2] = f
+                el_index= np.concatenate((eg_index,gen_index, sgen_index, load_index))
+
+                ppci["gencost"][elements, 4::2] = p[el_index] * 1e-3
+                ppci["gencost"][elements, 5::2] = f[el_index]
                 ppci["gencost"][pd.to_numeric(loadel), 5::2] *= -1
 
 
@@ -159,13 +172,19 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
                 c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
 
                 egel = p_costs.element[p_costs.element_type == "ext_grid"].values
+                eg_index = p_costs.element[p_costs.element_type == "ext_grid"].index
                 genel = p_costs.element[p_costs.element_type == "gen"].values + nref
+                gen_index = p_costs.element[p_costs.element_type == "gen"].index
                 sgenel = p_costs.element[p_costs.element_type == "sgen"].values + nref + ngen
+                sgen_index = p_costs.element[p_costs.element_type == "sgen"].index
                 loadel = p_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen
+                load_index = p_costs.element[p_costs.element_type == "load"].index
 
                 elements = np.append(egel, genel)
                 elements = np.append(elements, sgenel)
                 elements = pd.to_numeric(np.append(elements, loadel))
+
+                el_index= np.concatenate((eg_index,gen_index, sgen_index, load_index))
 
                 gap = n_coefficients - c.shape[1]
 
@@ -173,7 +192,7 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
                     c = np.append(np.zeros(gap), c)
 
                 ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
-                ppci["gencost"][elements, 4::] = c
+                ppci["gencost"][elements, 4::] = c[el_index]
                 ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
 
             if (net.polynomial_cost.type == "q").any():
@@ -182,21 +201,27 @@ def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
                 c = np.concatenate(q_costs.c)
                 c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
 
-                egel = q_costs.element[p_costs.element_type == "ext_grid"].values + ng
-                genel = q_costs.element[p_costs.element_type == "gen"].values + nref + ng
-                sgenel = q_costs.element[p_costs.element_type == "sgen"].values + nref + ngen + ng
-                loadel = q_costs.element[p_costs.element_type == "load"].values + nref + ngen + nsgen + ng
+                egel = q_costs.element[q_costs.element_type == "ext_grid"].values  + ng
+                eg_index = q_costs.element[q_costs.element_type == "ext_grid"].index
+                genel = q_costs.element[q_costs.element_type == "gen"].values + nref + ng
+                gen_index = q_costs.element[q_costs.element_type == "gen"].index
+                sgenel = q_costs.element[q_costs.element_type == "sgen"].values + nref +  + ng
+                sgen_index = q_costs.element[q_costs.element_type == "sgen"].index
+                loadel = q_costs.element[q_costs.element_type == "load"].values + nref + ngen + nsgen + ng
+                load_index = q_costs.element[q_costs.element_type == "load"].index
 
                 elements = np.append(egel, genel)
                 elements = np.append(elements, sgenel)
                 elements = pd.to_numeric(np.append(elements, loadel))
+
+                el_index= np.concatenate((eg_index,gen_index, sgen_index, load_index))
 
                 gap = n_coefficients - len(c)
                 if gap:
                     c = np.append(np.zeros(gap), c)
 
                 ppci["gencost"][elements, 0:4] = np.array([2, 0, 0, n_coefficients])  # initializing gencost array for eg
-                ppci["gencost"][elements, 4::] = c
+                ppci["gencost"][elements, 4::] = c[el_index]
                 ppci["gencost"][pd.to_numeric(loadel), 4::] *= -1
     else:
         ppci["gencost"] = np.zeros((nconst, 8), dtype=float)

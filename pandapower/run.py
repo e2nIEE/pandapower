@@ -225,7 +225,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 #    _clean_up(net)
 
 
-def runopp(net, cost_function=None, verbose=False, calculate_voltage_angles=True, suppress_warnings=True, **kwargs):
+def runopp(net, cost_function=None, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.

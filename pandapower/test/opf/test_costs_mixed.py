@@ -41,12 +41,12 @@ def test_cost_pol_gen():
     assert net["OPF_converged"]
     assert net.res_cost == - net.res_gen.p_kw.values
 
-    net.polynomial_cost.c.at[0] = np.array([1, 0 , 0])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0 , 0]])
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost - net.res_gen.p_kw.values**2 < 1e-5
 
-    net.polynomial_cost.c.at[0] = np.array([1, 0 , 1])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0 , 1]])
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost - net.res_gen.p_kw.values**2  -1 < 1e-5
@@ -54,15 +54,12 @@ def test_cost_pol_gen():
     net.load.controllable.at[0] =True
     pp.runopp(net, verbose=False)
     assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 < 1e-5
-    print(net.res_cost)
 
     pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [100, 100]]), type="p")
     pp.runopp(net, verbose=False)
-    print(net.res_cost)
-    print(net.res_load)
     assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 - net.res_load.p_kw.values < 1e-5
 
 
 if __name__ == "__main__":
-    # pytest.main(["test_costs_pwl.py", "-xs"])
-    test_cost_pol_gen()
+    pytest.main(["test_costs_mixed.py", "-xs"])
+    # test_cost_pol_gen()

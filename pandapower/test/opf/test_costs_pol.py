@@ -41,13 +41,11 @@ def test_cost_pol_gen():
     assert net["OPF_converged"]
     assert net.res_cost == - net.res_gen.p_kw.values
 
-    net.polynomial_cost.c.at[0] = np.array([1, 0 , 0])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0 , 0]])
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    print(net.res_cost)
-    print(net.res_gen.p_kw.values)
     assert abs(net.res_cost - net.res_gen.p_kw.values**2) < 1e-5
 
 
