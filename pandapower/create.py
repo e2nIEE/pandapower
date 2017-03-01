@@ -1720,7 +1720,7 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
                   index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan,
                   min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan,
-                  cost_per_kw=np.nan, in_service=True):
+                  in_service=True):
     """
     Creates a dc line.
 
@@ -1748,9 +1748,6 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
         **index** (int) - Force a specified ID if it is available
 
         **name** (str, None) - A custom name for this dc line
-
-        **cost_per_kw** (float, NaN) - Defines operation cost of the dc line for active power.
-            Is only considered, if you run an optimal powerflow
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -1783,11 +1780,9 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
     net.dcline.loc[index, ["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
                            "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
-                           "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "cost_per_kw",
-                           "in_service"]]\
+                           "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "in_service"]]\
         = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
-           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, cost_per_kw,
-           in_service]
+           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar,  in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.dcline, dtypes)
