@@ -318,40 +318,53 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         pp_res_branch = zeros([1, 4])
         # consideration of parallel branches with consideration of line-trafo-classification
         BRANCHES = DataFrame(ppc_res['branch'][:, [0, 1, 8, 9]])
-        BRANCHES[2].loc[(BRANCHES[2] != 0) & (BRANCHES[2] != 1)] = 0.55
-        BRANCHES[2].loc[(BRANCHES[2] == 0) | (BRANCHES[2] == 1)] = 0
-        BRANCHES[3] = BRANCHES[3].astype(bool).astype(int)
+        BRANCHES['trafo_required'] = True
+        BRANCHES.trafo_required.loc[((BRANCHES[2] == 0) | (BRANCHES[2] == 1)) &
+                                    (BRANCHES[3] == 0)] = False  # provisional requirement of trafo
+        del BRANCHES[2]
+        del BRANCHES[3]
         BRANCHES_uniq = BRANCHES.drop_duplicates()
+        BRANCHES_uniq['from_bus'] = nan
+        BRANCHES_uniq['to_bus'] = nan
+        BRANCHES_uniq['switch_connection'] = False
         for i in BRANCHES_uniq.index:
             from_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 0]))
             to_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 1]))
             from_vn_kv = ppc_res['bus'][from_bus, 9]
             to_vn_kv = ppc_res['bus'][to_bus, 9]
+            BRANCHES_uniq.from_bus.at[i] = from_bus
+            BRANCHES_uniq.to_bus.at[i] = to_bus
+            if (from_vn_kv != to_vn_kv) | (BRANCHES_uniq.trafo_required[i]):  # all trafos
+                if not BRANCHES_uniq.trafo_required[i]:
+                    BRANCHES_uniq.trafo_required.at[i] = True  # fix trafo requirement
+                if from_vn_kv < to_vn_kv:
+                    BRANCHES_uniq.switch_connection.at[i] = True
+        del BRANCHES_uniq[0]
+        del BRANCHES_uniq[1]
+        BRANCHES_uniq = BRANCHES_uniq.drop_duplicates()
+        for i in BRANCHES_uniq.index:
             # from line results
-            if (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
-               (ppc_res['branch'][i, 8] == 1)) & (ppc_res['branch'][i, 9] == 0):
+            if not BRANCHES_uniq.trafo_required[i]:
                 pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
-                    (pp_net.line.from_bus == from_bus) & (pp_net.line.to_bus == to_bus)]
+                    (pp_net.line.from_bus == BRANCHES_uniq.from_bus[i]) &
+                    (pp_net.line.to_bus == BRANCHES_uniq.to_bus[i])]
                     [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
             # from trafo results
-            if not (from_vn_kv == to_vn_kv) & ((ppc_res['branch'][i, 8] == 0) |
-               (ppc_res['branch'][i, 8] == 1)) & (ppc_res['branch'][i, 9] == 0):
-                if from_vn_kv >= to_vn_kv:
-                    hv_bus = from_bus
-                    lv_bus = to_bus
+            else:
+                if not BRANCHES_uniq.switch_connection[i]:
                     pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                        (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
+                        (pp_net.trafo.hv_bus == BRANCHES_uniq.from_bus[i]) &
+                        (pp_net.trafo.lv_bus == BRANCHES_uniq.to_bus[i])]
                         [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']]), 0)
-                else:  # elif from_vn_kv == to_vn_kv
-                    hv_bus = to_bus
-                    lv_bus = from_bus
+                else:
                     pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                        (pp_net.trafo.hv_bus == hv_bus) & (pp_net.trafo.lv_bus == lv_bus)]
+                        (pp_net.trafo.hv_bus == BRANCHES_uniq.to_bus[i]) &
+                        (pp_net.trafo.lv_bus == BRANCHES_uniq.from_bus[i])]
                         [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']]), 0)
         pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
         # sort duplicated branches
-        BRANCHES_dupl = BRANCHES.loc[BRANCHES.duplicated()]
-        pp_res_branch = _sort_duplicates(pp_res_branch, BRANCHES_dupl, BRANCHES_uniq)
+        pp_res_branch = _sort_duplicates(pp_res_branch, BRANCHES.loc[BRANCHES.duplicated()],
+                                         BRANCHES.drop_duplicates())
 
         # --- do the power flow result comparison
         diff_res_bus = ppc_res_bus - pp_res_bus
@@ -455,8 +468,8 @@ def _sort_duplicates(pp_res, DUPL, UNIQ):
 if __name__ == '__main__':
     pass
 #    pp_res=pp_res_branch
-#    DUPL= BRANCHES_dupl
-#    UNIQ= BRANCHES_uniq
+#    DUPL= BRANCHES.loc[BRANCHES.duplicated()]
+#    UNIQ= BRANCHES.drop_duplicates()
 #
 #    pp_res=pp_res_gen
 #    DUPL= GEN_dupl
