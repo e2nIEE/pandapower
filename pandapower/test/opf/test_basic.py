@@ -332,7 +332,7 @@ def test_opf_sgen_loading():
     logger.debug("test_opf_sgen_loading")
     logger.debug("res_sgen:\n%s" % net.res_sgen)
     logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
-    assert max(net.res_line.loading_percent) < max_line_loading
+    assert max(net.res_line.loading_percent) - max_line_loading < 1e-2
     logger.debug("res_trafo.loading_percent:\n%s" % net.res_trafo.loading_percent)
     assert max(net.res_trafo.loading_percent) < max_trafo_loading
     assert max(net.res_bus.vm_pu) < vm_max
@@ -382,3 +382,4 @@ if __name__ == "__main__":
     # pytest.main(["test_basic.py", "-xs"])
     # test_opf_gen_voltage()
 #     test_convert_format()
+#     test_simplest_dispatch()

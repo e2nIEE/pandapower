@@ -78,7 +78,7 @@ def test_cost_pol_all_elements():
     pp.runopp(net ,verbose=False)
 
     assert net["OPF_converged"]
-    assert abs(net.res_cost + (net.res_gen.p_kw.values + net.res_sgen.p_kw.values) ) < 1e-5
+    assert abs(net.res_cost + (net.res_gen.p_kw.values + net.res_sgen.p_kw.values) ) < 1e-2
 
     net.polynomial_cost.c.at[0] = np.array([[1, 0 , 0]])
     # run OPF
@@ -89,5 +89,5 @@ def test_cost_pol_all_elements():
 
 if __name__ == "__main__":
 #    pytest.main(["test_costs_pol.py", "-xs"])
-    # test_cost_pol_all_elements()
-    test_cost_pol_gen()
+    test_cost_pol_all_elements()
+    # test_cost_pol_gen()
