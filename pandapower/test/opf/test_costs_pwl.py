@@ -46,7 +46,7 @@ def test_cost_piecewise_linear_gen():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_gen.p_kw.values/1.5 < 1e-5
+    assert net.res_cost - net.res_gen.p_kw.values/1.5 < 1e-3
 
 def test_cost_piecewise_linear_eg():
     """ Testing a very simple network for the resulting cost value
@@ -137,7 +137,7 @@ def test_cost_piecewise_linear_sgen():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_sgen.p_kw.values/1.5 < 1e-5
+    assert net.res_cost - net.res_sgen.p_kw.values/1.5 < 1e-3
 
 
 def test_cost_piecewise_linear_load():
@@ -171,7 +171,7 @@ def test_cost_piecewise_linear_load():
     pp.runopp(net,verbose=False)
 
     assert net["OPF_converged"]
-    assert abs(net.res_cost - net.res_load.p_kw.values/1.5) < 1e-5
+    assert abs(net.res_cost - net.res_load.p_kw.values/1.5) < 1e-3
 
 
 
@@ -179,8 +179,8 @@ def test_cost_piecewise_linear_load():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_costs_pwl.py", "-xs"])
+    # pytest.main(["test_costs_pwl.py", "-xs"])
     # test_cost_piecewise_linear_eg()
     # test_cost_piecewise_linear_sgen()
-    # test_cost_piecewise_linear_gen()
+    test_cost_piecewise_linear_gen()
     # test_get_costs()

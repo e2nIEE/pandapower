@@ -15,7 +15,7 @@ except:
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
 
-def test_cost_pol_gen():
+def test_cost_mixed():
     """ Testing a very simple network for the resulting cost value
     constraints with OPF """
     # boundaries:

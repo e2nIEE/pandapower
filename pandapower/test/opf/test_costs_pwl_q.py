@@ -46,7 +46,7 @@ def test_cost_piecewise_linear_gen_q():
     pp.runopp(net,verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_gen.q_kvar.values <1e-5
+    assert net.res_cost - net.res_gen.q_kvar.values <1e-3
 
 def test_cost_piecewise_linear_sgen_q():
     """ Testing a very simple network for the resulting cost value
@@ -73,7 +73,7 @@ def test_cost_piecewise_linear_sgen_q():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_sgen.q_kvar.values <1e-5
+    assert net.res_cost - net.res_sgen.q_kvar.values <1e-3
 
 
 def test_cost_piecewise_linear_load_q():
@@ -100,7 +100,7 @@ def test_cost_piecewise_linear_load_q():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_load.q_kvar.values <1e-5
+    assert net.res_cost - net.res_load.q_kvar.values <1e-3
 
 def test_cost_piecewise_linear_eg_q():
     """ Testing a very simple network for the resulting cost value

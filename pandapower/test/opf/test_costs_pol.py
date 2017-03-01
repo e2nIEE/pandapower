@@ -88,5 +88,6 @@ def test_cost_pol_all_elements():
     assert abs(net.res_cost - net.res_gen.p_kw.values**2  + net.res_sgen.p_kw.values) < 1e-5
 
 if __name__ == "__main__":
-    pytest.main(["test_costs_pol.py", "-xs"])
+#    pytest.main(["test_costs_pol.py", "-xs"])
     # test_cost_pol_all_elements()
+    test_cost_pol_gen()
