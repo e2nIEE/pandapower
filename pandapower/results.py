@@ -180,17 +180,15 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus, ac=True):
     pq_bus[b, 1] += q_sum
 
 def _get_ext_grid_results(net, ppc, ac):
-
+    # get results for external grids
     eg_is = net["_is_elems"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
-    # get results for external grids
-    # bus index of in service egs
-    gidx = eg_is.bus.values
+
     n_res_eg = len(net['ext_grid'])
     # indices of in service gens in the ppc
     gen_idx_ppc = ext_grid_lookup[eg_is.index]
     # mask for indices of in service gens in net['res_gen']
-    idx_eg = np.in1d(net['ext_grid'].bus, gidx)
+    idx_eg = np.in1d(net['ext_grid'].index.values, eg_is.index.values)
     # read results from ppc for these buses
     p = np.zeros(n_res_eg)
     q = np.zeros(n_res_eg)
@@ -218,7 +216,6 @@ def _get_pp_gen_results(net, ppc, ac, b, p, q):
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # bus index of in service gens
-    gidx = gen_is.bus.values
     n_res_gen = len(net['gen'])
 
     b = np.hstack([b, net['gen'].bus.values])
@@ -228,16 +225,17 @@ def _get_pp_gen_results(net, ppc, ac, b, p, q):
         gen_idx_ppc = gen_lookup[gen_is.index]
     else:
         gen_idx_ppc = []
-    bus_idx_ppc = bus_lookup[gen_is["bus"].values]
-    # mask for indices of in service gens in net['res_gen']
-    idx_gen = np.in1d(net['gen'].bus, gidx)
 
+    # mask for indices of in service gens in net['gen']
+    idx_gen = np.in1d(net['gen'].index.values, gen_is.index.values)
     # read results from ppc for these buses
     p_gen = np.zeros(n_res_gen)
     p_gen[idx_gen] = -ppc["gen"][gen_idx_ppc, PG] * 1e3
     if ac:
         q_gen = np.zeros(n_res_gen)
         q_gen[idx_gen] = -ppc["gen"][gen_idx_ppc, QG] * 1e3
+
+    bus_idx_ppc = bus_lookup[gen_is["bus"].values]
 
     v_pu = np.zeros(n_res_gen)
     v_pu[idx_gen] = ppc["bus"][bus_idx_ppc][:, VM]
