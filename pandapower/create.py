@@ -1901,10 +1901,10 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
         raise ValueError("Piecewise linear costs need to be defined in ascending order: p0 < p1 < ... < pn")
 
     if type == "p":
-        if not ( hasattr(net[element_type],"max_p_kw") or hasattr(net[element_type],"min_p_kw")) :
-            raise AttributeError("No operational constraints defined!")
-        if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
-            raise ValueError("Cost function must be defined for whole power range of the generator")
+        if not ( hasattr(net[element_type],"max_p_kw") and hasattr(net[element_type],"min_p_kw")) :
+            raise AttributeError("No operational constraints defined for controllable element!")
+        # if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
+        #     raise ValueError("Cost function must be defined for whole power range of the generator")
 
     if type == "q":
         if not ( hasattr(net[element_type],"max_q_kvar") or hasattr(net[element_type],"min_q_kvar")) :
@@ -1917,8 +1917,8 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
     net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
 
-    net.piecewise_linear_cost.p.loc[0] = p.reshape((1,-1))
-    net.piecewise_linear_cost.f.loc[0] = f.reshape((1,-1))
+    net.piecewise_linear_cost.p.loc[index] = p.reshape((1,-1))
+    net.piecewise_linear_cost.f.loc[index] = f.reshape((1,-1))
 
 
 
