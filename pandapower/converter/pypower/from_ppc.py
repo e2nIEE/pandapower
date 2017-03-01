@@ -140,16 +140,16 @@ def from_ppc(ppc, f_hz=50):
         if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
            (ppc['branch'][i, 9] == 0):
             Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-            i_max_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]
-            if i_max_ka == 0.0:
-                i_max_ka = MAX_VAL
+            max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]
+            if max_i_ka == 0.0:
+                max_i_ka = MAX_VAL
                 logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                              "maximum branch flow")
             pp.create_line_from_parameters(
                 net, from_bus=from_bus, to_bus=to_bus, length_km=1,
                 r_ohm_per_km=ppc['branch'][i, 2]*Zni, x_ohm_per_km=ppc['branch'][i, 3]*Zni,
                 c_nf_per_km=ppc['branch'][i, 4]/Zni/omega*1e9/2,
-                max_i_ka=i_max_ka, type='ol',
+                max_i_ka=max_i_ka, type='ol',
                 in_service=bool(ppc['branch'][i, 10]))
 
         else:
