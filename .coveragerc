@@ -2,3 +2,6 @@
 omit = 
     pandapower/test/*
     pandapower/plotting/*
+    pandapower/pypower_extensions/create_J.py
+    pandapower/pypower_extensions/dSbus_dV.py
+    pandapower/pypower_extensions/makeYbus.py
