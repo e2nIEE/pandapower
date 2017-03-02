@@ -13,13 +13,12 @@ from pandapower.pypower_extensions.makeYbus import makeYbus
 
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.auxiliary import _select_is_elements
-from pandapower.build_branch import _calc_tap_from_dataframe
+from pandapower.build_branch import _calc_nominal_ratio_from_dataframe
 
 from pypower.idx_bus import GS, BS
 
 def calc_equiv_sc_impedance(net, case):
-    is_elems = _select_is_elements(net)
-    net["_is_elems"] = is_elems
+    net["_is_elems"] = _select_is_elements(net, None)
     ppc, ppci = _pd2ppc(net)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     correct_branch_impedances(net, case, ppci, bus_lookup)
@@ -31,8 +30,8 @@ def calc_equiv_sc_impedance(net, case):
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
     net.bus["z_equiv"] = np.nan + np.nan *1j
-    ppc_index = bus_lookup[is_elems["bus"].index]
-    net.bus["z_equiv"].loc[is_elems["bus"].index] = z_equiv[ppc_index]
+    ppc_index = bus_lookup[net._is_elems["bus"].index]
+    net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv[ppc_index]
 
 
 def consider_line_end_temperature(net, ppc):
@@ -50,8 +49,8 @@ def correct_branch_impedances(net, case, ppc, bus_lookup):
     kt = transformer_correction_factor(net)
     ppc["branch"][len(net.line):, 3] *= kt
     ppc["branch"][len(net.line):, 2] *= kt
-    ratio = _calc_tap_from_dataframe(ppc, net.trafo, net.trafo.vn_hv_kv, net.trafo.vn_lv_kv,
-                                     bus_lookup)
+    ratio = _calc_nominal_ratio_from_dataframe(ppc, net.trafo, net.trafo.vn_hv_kv, 
+                                               net.trafo.vn_lv_kv, bus_lookup)
     ppc["branch"][len(net.line):, 3] /= (ratio**2)
     ppc["branch"][len(net.line):, 2] /= (ratio**2)
 

@@ -16,7 +16,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc'):
+def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False):
     """
     This function converts a matpower case file (.mat) version 2 to a pandapower net.
     Note: python is 0-based while Matlab is 1-based.
@@ -44,7 +44,7 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc'):
 
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
-    net = from_ppc(ppc, f_hz)
+    net = from_ppc(ppc, f_hz, validate_conversion)
 
     return net
 
@@ -68,6 +68,9 @@ def _adjust_ppc_indices(ppc):
     ppc["bus"][:, 0] -= 1
     ppc["branch"][:, 0] -= 1
     ppc["branch"][:, 1] -= 1
+    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+    if len(ppc["gen"].shape) == 1:
+        ppc["gen"] = np.array(ppc["gen"], ndmin=2)
     ppc["gen"][:, 0] -= 1
 
 
@@ -81,7 +84,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         ppc["branch"] = mpc[casename_mpc_file].branch
 
         try:
-            ppc['gencost'] = mpc[casename_mpc_file].gencost
+            ppc['gencost'] = mpc[casename_mpc_file].mpc.gencost
         except:
             logger.info('gencost is not in mpc')
 
@@ -98,9 +101,9 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         ppc["gen"] = mpc['gen']
         ppc["branch"] = mpc['branch']
 
-        if 'gencost' in mpc:
+        try:
             ppc['gencost'] = mpc['gencost']
-        else:
+        except:
             logger.info('gencost is not in mpc')
 
     else:

@@ -29,7 +29,7 @@ class TestInvalidValues:
         net = copy.deepcopy(test_net)
         net.bus.loc[42, 'vn_kv'] = '-1'
         net.line.loc[7, 'length_km'] = -1
-        net.line.loc[8, 'imax_ka'] = 0
+        net.line.loc[8, 'max_i_ka'] = 0
         net.trafo.loc[0, 'vsc_percent'] = 0.0
         net.trafo.loc[0, 'sn_kva'] = None
         net.trafo.loc[0, 'vn_hv_kv'] = -1.5
@@ -47,7 +47,7 @@ class TestInvalidValues:
         assert pp.invalid_values(net) == \
         {'bus': [(42, 'vn_kv', '-1', '>0')],
          'ext_grid': [(0, 'vm_pu', True, '>0')],
-         'line': [(7, 'length_km', -1.0, '>0'), (8, 'imax_ka', 0.0, '>0')],
+         'line': [(7, 'length_km', -1.0, '>0'), (8, 'max_i_ka', 0.0, '>0')],
          'trafo': [(0, 'sn_kva', 'nan', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
                    (0, 'vn_lv_kv', False, '>0'), (0, 'vsc_percent', 0.0, '>0')],
          'trafo3w': [(0, 'sn_mv_kva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
@@ -378,7 +378,7 @@ def test_deviation_from_std_type(test_net):
     net.line.r_ohm_per_km.loc[0] += 1
     net.line.x_ohm_per_km.loc[6] -= 1
     net.line.c_nf_per_km.loc[14] *= -1
-    net.line.imax_ka.loc[21] = '5'
+    net.line.max_i_ka.loc[21] = '5'
     pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
     net.trafo.vsc_percent.loc[0] *= 2
 
@@ -389,7 +389,7 @@ def test_deviation_from_std_type(test_net):
                   'std_type_value': 0.117},
               14: {'e_value': -264.0, 'param': 'c_nf_per_km', 'std_type_in_lib': True,
                    'std_type_value': 264},
-              21: {'e_value': '5', 'param': 'imax_ka', 'std_type_in_lib': True,
+              21: {'e_value': '5', 'param': 'max_i_ka', 'std_type_in_lib': True,
                    'std_type_value': 0.105}},
     'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
                   'std_type_value': 12.2},

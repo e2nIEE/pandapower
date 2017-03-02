@@ -63,7 +63,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                                               "capacity": float(imax), "path": 1})
                              for fb, tb, l, idx, inservice, imax in
                              list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
-                                 net.line.index, net.line.in_service, net.line.imax_ka))
+                                 net.line.index, net.line.in_service, net.line.max_i_ka))
                              if inservice == 1 and not idx in nogolines)
         mg.add_edges_from((int(fb), int(tb), {"weight": 0, "key": int(idx), "type": "i",
                                               "path": 1})

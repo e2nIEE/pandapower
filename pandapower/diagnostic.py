@@ -244,7 +244,7 @@ def invalid_values(net):
                                  ('to_bus', 'positive_integer'),
                                  ('length_km', '>0'), ('r_ohm_per_km', '>=0'),
                                  ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
-                                 ('imax_ka', '>0'), ('df', '0to1'), ('in_service', 'boolean')],
+                                 ('max_i_ka', '>0'), ('df', '0to1'), ('in_service', 'boolean')],
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
                                   ('sn_kva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
                                   ('vscr_percent', '>=0'),

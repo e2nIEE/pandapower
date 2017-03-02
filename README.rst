@@ -1,8 +1,34 @@
-﻿pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
+=============
+pandapower
+=============
+
+.. image:: https://img.shields.io/pypi/v/pandapower.svg
+   :target: https://pypi.python.org/pypi/pandapower
+
+.. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
+    :target: https://pypi.python.org/pypi/pandapower
+
+.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
+    :target: https://travis-ci.org/lthurner/pandapower
+
+.. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
+    :target: https://coveralls.io/github/lthurner/pandapower?branch=master
+
+.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE  
+
+pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Wind Energy and Energy System Technology (IWES), Kassel.
+
+.. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
+    :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
+
+.. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
+   :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
+    
 
 For more information, go to `<http://www.uni-kassel.de/go/pandapower>`_.
 
@@ -87,9 +113,4 @@ The results are then processed and written back into pandapower:
 For the 3-bus example network, the result tables look like this:
 
 .. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_results.png
-		:width: 30em      
-
-License
-=========
-
-pandapower is licensed under a 3-clause BSD-License that can be found in the LICENSE file.
+		:width: 30em

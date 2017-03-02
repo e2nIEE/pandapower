@@ -400,7 +400,7 @@ def calculate_line_results(net, use_res_bus_est=False):
     res_line.i_from_ka = np.abs(line_currents_from) / 1e3
     res_line.i_to_ka = np.abs(line_currents_to) / 1e3
     res_line.i_ka = np.fmax(res_line.i_from_ka, res_line.i_to_ka)
-    res_line.loading_percent = res_line.i_ka * 100. / net.line.imax_ka.values \
+    res_line.loading_percent = res_line.i_ka * 100. / net.line.max_i_ka.values \
                                        / net.line.df.values / net.line.parallel.values
     res_line.p_from_kw = line_powers_from.real
     res_line.q_from_kvar = line_powers_from.imag

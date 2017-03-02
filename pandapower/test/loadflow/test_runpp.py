@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 
 import pandapower as pp
-from pandapower.test.toolbox import add_grid_connection, create_test_line
+from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
@@ -57,11 +57,12 @@ def test_runpp_init_auxiliary_buses():
 
 def test_result_iter():
     for net in result_test_network_generator():
-#        try:
-        runpp_with_consistency_checks(net, enforce_q_lims=True)
-#        except (AssertionError, pp.LoadflowNotConverged) :
-#            pytest.fail(["Error after adding_", net.last_added_case])
-#            raise UserWarning(")
+        try:
+            runpp_with_consistency_checks(net, enforce_q_lims=True)
+        except (AssertionError):
+            raise UserWarning("Consistency Error after adding %s"%net.last_added_case)
+        except(pp.LoadflowNotConverged):
+            raise UserWarning("Power flow did not converge after adding %s"%net.last_added_case)
 
 def test_bus_bus_switches():
     net = pp.create_empty_network()
@@ -167,6 +168,16 @@ def test_makeYbus():
 
     assert runpp_with_consistency_checks(net)
 
+def test_test_sn_kva():
+    test_net_gen1 = result_test_network_generator(sn_kva=1e3)
+    test_net_gen2 = result_test_network_generator(sn_kva=2e3)
+    for net1, net2 in zip(test_net_gen1, test_net_gen2):
+        pp.runpp(net1)
+        pp.runpp(net2)
+        try:
+            assert_net_equal(net1, net2)
+        except:
+            raise UserWarning("Result difference due to sn_kva after adding %s"%net1.last_added_case)
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])

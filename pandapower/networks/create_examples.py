@@ -414,8 +414,3 @@ def example_multivoltage():
     pp.runpp(net, init='dc', calculate_voltage_angles=True, Numba=False)
 
     return net
-
-if __name__ == '__main__':
-    net = example_simple()
-    pp.runpp(net, calculate_voltage_angles=True, init="dc")
-    pp.runpp(net, calculate_voltage_angles=True, init="results")

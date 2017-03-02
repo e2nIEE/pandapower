@@ -249,7 +249,7 @@ This is a small extension for the example network:
 	In: net.line
 	
 	Out: 
-	     name  std_type  from_bus  to_bus  length_km  r_ohm_per_km  x_ohm_per_km  c_nf_per_km  imax_ka  df type in_service is_stich
+	     name  std_type  from_bus  to_bus  length_km  r_ohm_per_km  x_ohm_per_km  c_nf_per_km  max_i_ka  df type in_service is_stich
 	0  line 0  NAYY 150         1       2          1         0.206         0.091   		0    0.284   1   cs       True    False
 	1  line 1  NAYY 150         2       3          1         0.206         0.091   		0    0.284   1   cs       True    False
 	2  line 2  NAYY 150         3       4          1         0.206         0.091   		0    0.284   1   cs       True    False

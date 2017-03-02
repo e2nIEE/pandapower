@@ -32,7 +32,7 @@ def test_cost_pol_gen():
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
@@ -68,7 +68,7 @@ def test_cost_pol_all_elements():
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))

@@ -76,4 +76,4 @@ def test_min_6_one_line_one_transformer(one_line_one_transformer):
     assert (abs(net.res_bus_sc.ith_min_ka.at[2] - 0.6459119) <1e-5) 
 
 if __name__ == '__main__':   
-    pytest.main(['-xs'])
+    pytest.main(["test_line_transformer.py"])

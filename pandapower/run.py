@@ -5,7 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import warnings
-from functools import partial
 
 from pypower.ppoption import ppoption
 from pypower.idx_bus import VM
@@ -60,7 +59,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             voltage shift), the difference between starting and end angle value is very large.
             In this case, the loadflow might be slow or it might not converge at all. That is why
             the possibility of neglecting the voltage angles of transformers and ext_grids is
-            provided to allow and/or accelarate convergence for networks where calculation of
+            provided to allow and/or accelerate convergence for networks where calculation of
             voltage angles is not necessary. Note that if calculate_voltage_angles is True the
             loadflow is initialized with a DC power flow (init = "dc")
 
@@ -90,17 +89,17 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             violated at any generator, so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
 
-        **numba** (bool, True) - Usage numba JIT compiler
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
             speed improvements are likely.
 
-        **recycle** (dict, none) - Reuse of internal powerflow variables
+        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
             Contains a dict with the following parameters:
             is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
-            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
         **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
 
@@ -118,7 +117,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
              trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None,
+def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=False,
             **kwargs):
     """
     Runs PANDAPOWER DC Flow
@@ -148,17 +147,22 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
             suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
 
-        **numba** (bool, True) - Usage numba JIT compiler
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
             speed improvements are likely.
 
-        **recycle** (dict, none) - Reuse of internal powerflow variables
+        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
             Contains a dict with the following parameters:
             is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
-            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of regenerated entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not regenerated
+            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
+
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
@@ -173,7 +177,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
@@ -221,7 +225,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         net["_ppc"] = result
         net["converged"] = True
 
-    _extract_results(net, result, trafo_loading=trafo_loading, return_voltage_angles=True, ac=ac)
+    _extract_results(net, result, trafo_loading=trafo_loading, ac=ac)
 #    _clean_up(net)
 
 
@@ -348,7 +352,7 @@ def _runopp(net, verbose, suppress_warnings, calculate_voltage_angles=False, ac=
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
-    _extract_results_opf(net, result, "current", True, ac)
+    _extract_results_opf(net, result, "current", ac)
     _clean_up(net)
 
 
@@ -403,7 +407,7 @@ def _add_dcline_gens(net):
                    in_service=dctab.in_service)
 
 def add_dcline_constraints(om, net):
-    from numpy import hstack, diag, eye, zeros
+    # from numpy import hstack, diag, eye, zeros
     from scipy.sparse import csr_matrix as sparse
     ppc = om.get_ppc()
     ndc = len(net.dcline)              ## number of in-service DC lines
