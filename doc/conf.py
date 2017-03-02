@@ -13,13 +13,10 @@
 
 import sys, os
 import mock
-try:
-    MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core', 'numpy.core.numeric', 'scipy.io', 'numpy.linalg',
-                    'matplotlib.collections', 'matplotlib.patches', 'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats']
-    for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = mock.Mock()
-except:
-    pass
+MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core', 'numpy.core.numeric', 'scipy.io', 'numpy.linalg',
+                'matplotlib.collections', 'matplotlib.patches', 'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
