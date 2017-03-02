@@ -484,8 +484,8 @@ def _switch_branches(net, ppc):
         from_bus = lines_is.ix[sw_elem[~m]].from_bus
         to_bus = lines_is.ix[sw_elem[~m]].to_bus
         # check if branch is already out of service -> ignore switch
-        from_bus = from_bus[~np.isnan(from_bus)].values
-        to_bus = to_bus[~np.isnan(to_bus)].values
+        from_bus = from_bus[~np.isnan(from_bus)].values.astype(int)
+        to_bus = to_bus[~np.isnan(to_bus)].values.astype(int)
 
         # set branch in ppc out of service if from and to bus are at a line which is in service
         if from_bus.size and to_bus.size:
