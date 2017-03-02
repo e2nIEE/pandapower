@@ -117,7 +117,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
              trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None,
+def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=False,
             **kwargs):
     """
     Runs PANDAPOWER DC Flow
@@ -159,6 +159,11 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
@@ -172,7 +177,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,

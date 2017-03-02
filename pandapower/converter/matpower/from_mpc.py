@@ -101,9 +101,9 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         ppc["gen"] = mpc['gen']
         ppc["branch"] = mpc['branch']
 
-        if 'gencost' in mpc:
+        try:
             ppc['gencost'] = mpc['gencost']
-        else:
+        except:
             logger.info('gencost is not in mpc')
 
     else:
