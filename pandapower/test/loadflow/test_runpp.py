@@ -180,5 +180,5 @@ def test_test_sn_kva():
             raise UserWarning("Result difference due to sn_kva after adding %s"%net1.last_added_case)
 
 if __name__ == "__main__":
-    pytest.main(["test_runpp.py"])
+    pytest.main(["test_runpp.py", "-xs"])
 

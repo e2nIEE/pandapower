@@ -32,7 +32,7 @@ def test_cost_piecewise_linear_gen():
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, 100], [-75, 50], [0, 0]]))
@@ -60,7 +60,7 @@ def test_cost_piecewise_linear_eg():
     # pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[-50, -500], [0, 0]]))
@@ -89,7 +89,7 @@ def test_get_costs():
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, 300], [0, 0]]))
@@ -119,7 +119,7 @@ def test_cost_piecewise_linear_sgen():
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, 100], [-75, 50], [0, 0]]))
@@ -146,7 +146,7 @@ def test_cost_piecewise_linear_load():
                    min_q_kvar=0)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
     pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))

@@ -271,7 +271,7 @@ def test_opf_gen_loading():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
     pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, v=0.123, x_ohm_per_km=0.1159876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
 
     # run OPF

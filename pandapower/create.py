@@ -109,6 +109,7 @@ def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
                   ("tp_st_percent", "f8"),
                   ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
+                  ("parallel", "u4"),
                   ("in_service", 'bool')],
         "trafo3w": [("name", dtype(object)),
                     ("std_type", dtype(object)),
@@ -1125,6 +1126,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "vscr_percent": ti["vscr_percent"],
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
+        "parallel" : parallel,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
         })
     for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
@@ -1351,7 +1353,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
-    if not np.isnan(max_loading_percent):
+    if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
             net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
 
@@ -1478,7 +1480,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
 
-    if not np.isnan(max_loading_percent):
+    if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
             net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
 
