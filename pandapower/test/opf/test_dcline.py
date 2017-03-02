@@ -41,8 +41,6 @@ def dcline_net():
     
 def test_dispatch1(dcline_net):
     net = dcline_net
-    # pp.create_polynomial_cost(net, 0, "ext_grid", array([.1, 0]))
-    # pp.create_polynomial_cost(net, 1, "ext_grid", array([0.08, 0]))
     pp.create_piecewise_linear_cost(net, 0, "ext_grid", array([[0, 0], [1, .1]]))
     pp.create_piecewise_linear_cost(net, 1, "ext_grid", array([[0, 0], [1, .08]]))
     # net.ext_grid["cost_per_kw"] = [0.10, 0.08]
@@ -78,8 +76,39 @@ def test_dcline_dispatch2(dcline_net):
     pp.create_polynomial_cost(net, 1, "ext_grid", array([0.1, 0]))
     # pp.create_piecewise_linear_cost(net, 0, "ext_grid", array([[0, 0], [1, .08]]))
     # pp.create_piecewise_linear_cost(net, 1, "ext_grid", array([[0, 0], [1, .1]]))
-    # net.ext_grid["cost_per_kw"] = [0.08, 0.10]
+    net.bus["max_vm_pu"] = 2 # needs to be constrained more than default
+    net.line["max_loading_percent"] = 1000 # does not converge if unconstrained
+    pp.runopp(net)
+    consistency_checks(net, rtol=1e-3)
+    consistency_checks(net, rtol=1e-3)
+    rel_loss_expect = (net.res_dcline.pl_kw - net.dcline.loss_kw) / \
+                      (net.res_dcline.p_from_kw - net.res_dcline.pl_kw) * 100
+    assert allclose(rel_loss_expect.values, net.dcline.loss_percent.values)
 
+    p_eg_expect = array([ -8.21525358e+05,  -5.43498903e-02])
+    q_eg_expect = array([  7787.55852923,  21048.59213887])
+    assert allclose(net.res_ext_grid.p_kw.values, p_eg_expect)
+    assert allclose(net.res_ext_grid.q_kvar.values, q_eg_expect)
+
+    p_from_expect = array([ 813573.88366999])
+    q_from_expect = array([-26446.0473644])
+
+    assert allclose(net.res_dcline.p_from_kw.values, p_from_expect)
+    assert allclose(net.res_dcline.q_from_kvar.values, q_from_expect)
+
+    p_to_expect = array([-805023.64719801])
+    q_to_expect = array([-21736.31196315])
+
+    assert allclose(net.res_dcline.p_to_kw.values, p_to_expect)
+    assert allclose(net.res_dcline.q_to_kvar.values, q_to_expect)
+
+def test_dcline_dispatch3(dcline_net):
+    net = dcline_net
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([.08, 0]))
+    pp.create_polynomial_cost(net, 1, "ext_grid", array([0.1, 0]))
+    pp.create_polynomial_cost(net, 1, "dcline", array([0, 1]))
+    # pp.create_piecewise_linear_cost(net, 0, "ext_grid", array([[0, 0], [1, .08]]))
+    # pp.create_piecewise_linear_cost(net, 1, "ext_grid", array([[0, 0], [1, .1]]))
     net.bus["max_vm_pu"] = 2 # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000 # does not converge if unconstrained
     pp.runopp(net)

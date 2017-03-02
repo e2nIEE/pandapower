@@ -53,8 +53,8 @@ def _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model,
             _calc_trafo_parameter(net, ppc, calculate_voltage_angles,
                                   trafo_model, copy_constraints_to_ppc)
     if trafo3w_end > trafo_end:
-        ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
-            _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles,  trafo_model)
+        ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A]] = \
+            _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles,  trafo_model, copy_constraints_to_ppc)
     if impedance_end > trafo3w_end:
         ppc["branch"][trafo3w_end:impedance_end, [F_BUS, T_BUS, BR_R, BR_X, 17, 18, BR_STATUS]] = \
             _calc_impedance_parameter(net)
@@ -63,11 +63,11 @@ def _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model,
             _calc_xward_parameter(net, ppc)
 
 
-def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model):
+def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model, copy_constraints_to_ppc = False):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     trafo_df = _trafo_df_from_trafo3w(net)
 
-    temp_para = np.zeros(shape=(len(trafo_df), 8), dtype=np.complex128)
+    temp_para = np.zeros(shape=(len(trafo_df), 9), dtype=np.complex128)
     temp_para[:, 0] = bus_lookup[(trafo_df["hv_bus"].values).astype(int)]
     temp_para[:, 1] = bus_lookup[(trafo_df["lv_bus"].values).astype(int)]
     temp_para[:, 2:6] = _calc_branch_values_from_trafo_df(
@@ -77,6 +77,9 @@ def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model):
     else:
         temp_para[:, 6] = np.zeros(shape=(len(trafo_df.index),), dtype=np.complex128)
     temp_para[:, 7] = trafo_df["in_service"].values
+    if copy_constraints_to_ppc:
+        max_load = trafo_df.max_loading_percent if "max_loading_percent" in trafo_df else 0
+        temp_para[:, 8] = max_load / 100. * trafo_df.sn_kva / 1000.
     return temp_para
 
 
@@ -374,7 +377,7 @@ def _trafo_df_from_trafo3w(net):
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
                        "tp_st_percent": taps[0]["tp_st_percent"],
-                       "in_service": ttab.in_service, "shift_degree": 0}
+                       "in_service": ttab.in_service, "shift_degree": 0, "max_loading_percent": ttab.max_loading_percent}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
                                    "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
                                    "vscr_percent": ur_2w[1], "vsc_percent": uk_2w[1], "pfe_kw": 0,
@@ -382,7 +385,7 @@ def _trafo_df_from_trafo3w(net):
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
                                    "tp_st_percent": taps[1]["tp_st_percent"],
-                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree}
+                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree, "max_loading_percent": ttab.max_loading_percent}
         trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
                                        "sn_kva": ttab.sn_lv_kva,
                                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": ur_2w[2],
@@ -390,11 +393,11 @@ def _trafo_df_from_trafo3w(net):
                                        "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
                                        "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
                                        "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],
-                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree}
+                                       "in_service": ttab.in_service, "shift_degree":  ttab.shift_lv_degree, "max_loading_percent": ttab.max_loading_percent}
         i += 1
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
-                                      "vn_hv_kv", "vn_lv_kv", "pfe_kw"]:
+                                      "vn_hv_kv", "vn_lv_kv", "pfe_kw", "max_loading_percent"]:
         trafo_df[var] = pd.to_numeric(trafo_df[var])
     return trafo_df
 

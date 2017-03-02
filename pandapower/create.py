@@ -159,7 +159,6 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                 ("min_q_to_kvar", "f8"),
                 ("max_q_from_kvar", "f8"),
                 ("max_q_to_kvar", "f8"),
-                ("cost_per_kw", 'f8'),
                 ("in_service", 'bool')],
         "ward": [("name", np.dtype(object)),
                  ("bus", "u4"),
@@ -197,6 +196,7 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
         # geodata
         "line_geodata": [("coords", np.dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
+
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
@@ -866,7 +866,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
-                df=1., parallel=1, in_service=True, max_loading_percent=np.nan):
+                df=1., parallel=1, in_service=True, max_loading_percent=0):
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -899,6 +899,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **df** (float) - derating factor: maximal current of line in relation to nominal current of line (from 0 to 1)
 
         **parallel** (integer) - number of parallel line systems
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
         **line_id** - The unique line_id of the created line
@@ -959,7 +961,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, imax_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1,
-                                max_loading_percent=np.nan, **kwargs):
+                                max_loading_percent=0, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1001,6 +1003,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         in the middle represent the bending points of the line
 
         **kwargs** - nothing to see here, go along
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
         **line_id** - The unique line_id of the created line
@@ -1052,7 +1056,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, in_service=True,
-                       index=None, max_loading_percent=np.nan):
+                       index=None, max_loading_percent=0):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1074,6 +1078,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
         **index** (int) - Force a specified ID if it is available
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created transformer
@@ -1192,6 +1198,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created transformer
 
@@ -1246,7 +1254,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=np.nan,
-                         in_service=True, index=None):
+                         in_service=True, index=None, max_loading_percent= 0):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -1270,6 +1278,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         **in_service** (boolean) - True for in_service or False for out of service
 
         **index** (int) - Force a specified ID if it is available
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created transformer
@@ -1327,6 +1337,13 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     dd = pd.DataFrame(v, index=[index])
     net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
+    if not np.isnan(max_loading_percent):
+        if "max_loading_percent" not in net.trafo3w.columns:
+            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
+
+        net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+
     return index
 
 
@@ -1336,7 +1353,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree=0.,
                                          shift_lv_degree=0., tp_side=None, tp_st_percent=np.nan,
                                          tp_pos=np.nan, tp_mid=np.nan, tp_max=np.nan,
-                                         tp_min=np.nan, name=None, in_service=True, index=None):
+                                         tp_min=np.nan, name=None, in_service=True, index=None, max_loading_percent=0):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -1377,7 +1394,6 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **i0_percent** (float) - open loop losses
 
-
     OPTIONAL:
         **shift_mv_degree** (float, 0) - angle shift to medium voltage side*
 
@@ -1401,6 +1417,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         \* only considered in loadflow if calculate_voltage_angles = True
         \**The model currently only supports one tap-changer per 3W Transformer.
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
         **trafo_id** - The unique trafo_id of the created 3W transformer
@@ -1445,6 +1463,12 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
+
+    if not np.isnan(max_loading_percent):
+        if "max_loading_percent" not in net.trafo3w.columns:
+            net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
+
+        net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
     return index
 
@@ -1876,16 +1900,30 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
 
 def create_piecewise_linear_cost(net, element, element_type, data_points, type = "p", index = None):
     """
+    Creates an entry for piecewise linear costs for an element. The currently supported elements are
+     - Generator
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
 
-    :param net:
-    :param type:
-    :param element_type:
-    :param value:
-    :param std_dev:
-    :param bus:
-    :param element:
-    :param index:
-    :return:
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] are possible
+
+        **data_points** - (numpy array) Numpy array containing n data points (see example)
+
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+    OPTIONAL:
+        **index** (int) - Force a specified ID if it is available
+
+    OUTPUT:
+        (int) Index of cost entry
+
+    EXAMPLE:
+        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
     """
     hallo=1
     if index is None:
@@ -1920,26 +1958,36 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
     net.piecewise_linear_cost.p.loc[index] = p.reshape((1,-1))
     net.piecewise_linear_cost.f.loc[index] = f.reshape((1,-1))
 
-
-
-
-
     #TODO  check if full range of generator is covered by cost function!
 
     return index
 
 def create_polynomial_cost(net, element, element_type, coefficients, type = "p", index = None):
     """
+    Creates an entry for polynomial costs for an element. The currently supported elements are
+     - Generator
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
 
-    :param net:
-    :param type:
-    :param element_type:
-    :param value:
-    :param std_dev:
-    :param bus:
-    :param element:
-    :param index:
-    :return:
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] are possible
+
+        **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
+
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+    OPTIONAL:
+        **index** (int) - Force a specified ID if it is available
+
+    OUTPUT:
+        (int) Index of cost entry
+
+    EXAMPLE:
+        create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
     """
     hallo=1
     if index is None:

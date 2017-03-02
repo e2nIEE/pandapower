@@ -6,8 +6,9 @@
 
 import pandapower as pp
 import pytest
-from numpy import array
+from numpy import array, allclose
 from pandapower.toolbox import convert_format
+from pandapower.test.toolbox import add_grid_connection
 try:
     import pplog as logging
 except:
@@ -369,16 +370,29 @@ def test_unconstrained_line():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
-def test_dc_opf():
-    return True
-
-
 def test_trafo3w_loading():
-    return True
-#
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    b3 = pp.create_bus(net, vn_kv=20.)
+    b4 = pp.create_bus(net, vn_kv=10.)
+    tidx = pp.create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV', max_loading_percent=120)
+    pp.create_load(net, b3, 5e3, controllable=False)
+    id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0)
+    pp.create_polynomial_cost(net, id, "load", array([-1, 0]))
+    #pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
+    net.trafo3w.shift_lv_degree.at[tidx] = 120
+    net.trafo3w.shift_mv_degree.at[tidx] = 80
+
+    #pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
+    pp.runopp(net, calculate_voltage_angles = False)
+    assert abs(net.res_trafo3w.loading_percent.values - 120 ) < 1e-3
+
+
+
 if __name__ == "__main__":
     # test_unconstrained_line()
     pytest.main(["-xs"])
+    # test_trafo3w_loading()
     # pytest.main(["test_basic.py", "-xs"])
     # test_opf_gen_voltage()
 #     test_convert_format()
