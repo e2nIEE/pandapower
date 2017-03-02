@@ -4,226 +4,144 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
-import warnings
-
-from pypower.idx_brch import T_BUS, F_BUS
-from pypower.idx_bus import BUS_TYPE, REF
-from pandas import DataFrame
-from scipy import sparse
-import pandas as pd
-
-from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
+from numpy import zeros, array, concatenate, power
+from pypower.idx_cost import MODEL, NCOST, COST
 
 
-def _make_objective(ppci, net, lambda_opf=1, p_nominal=None, **kwargs):
+def _make_objective(ppci, net):
     """
-    Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
-    C{H} and C{Cw}
+    Implementaton of objective functions for the OPF
+
+    Limitations:
+    - Polynomial reactive power costs can only be quadratic, linear or constant
 
     INPUT:
-        **ppci** - Matpower case of the net
+        **net** - The Pandapower format network
+        **ppci** - The "internal" pypower format network for PF calculations
 
-    OPTIONAL:
-
-        **objectivetype** (string, "linear") - string with name of objective function
-
-            - **"linear"** - Linear costs of the form  :math:`I\\cdot P_G`. :math:`P_G` represents
-              the active power values of the generators. Target of this objectivefunction is to
-              maximize the generator output.
-              This then basically is this:
-
-                  .. math::
-                      max\{P_G\}
-
-            - **"linear_minloss"** - Quadratic costs of the form
-              :math:`I\\cdot P_G - dV_m^T Y_L dV_m`.
-              :math:`P_G` represents the active power values of the generators,
-              :math:`dV_m` the voltage drop for each line and :math:`Y_L` the line admittance
-              matrix.
-              Target of this objectivefunction is to maximize the generator output but minimize the
-              linelosses.
-              This then basically is this:
-
-                  .. math::
-                      max\{P_G - dVm^TY_{L}dVm\}
-
-            .. note:: Both objective functions have the following constraints:
-
-                .. math::
-                    V_{m,min} < &V_m < V_{m,max}\\\\
-                    P_{G,min} < &P_G < P_{G,max}\\\\
-                    Q_{G,min} < &Q_G < Q_{G,max}\\\\
-                    I < &I_{max}
-
-        **net** (attrdict, None) - Pandapower network
-
+    OUTPUT:
+        **ppci** - The "internal" pypower format network for PF calculations
     """
 
     ng = len(ppci["gen"])
 
-    if (net.piecewise_linear_cost.type == "q").any() or (net.polynomial_cost.type == "q").any() :
-        nconst = 2 * ng
+    # Determine length of gencost array
+    if (net.piecewise_linear_cost.type == "q").any() or (net.polynomial_cost.type == "q").any():
+        len_gencost = 2 * ng
     else:
-        nconst = 1 * ng
+        len_gencost = 1 * ng
 
-
+    # get indices
     eg_idx = net._pd2ppc_lookups["ext_grid"] if "ext_grid" in net._pd2ppc_lookups else None
     gen_idx = net._pd2ppc_lookups["gen"] if "gen" in net._pd2ppc_lookups else None
     sgen_idx = net._pd2ppc_lookups["sgen_controllable"] if "sgen_controllable" in \
-                    net._pd2ppc_lookups else None
+        net._pd2ppc_lookups else None
     load_idx = net._pd2ppc_lookups["load_controllable"] if "load_controllable" in \
-                    net._pd2ppc_lookups else None
-
-
-    nref = sum(ppci["bus"][:, BUS_TYPE] == REF)
+        net._pd2ppc_lookups else None
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
+    from_gens = net.gen.loc[dc_gens[1::2]]
     if gen_idx is not None:
-        ngen = len(gen_idx)
-    else:
-        ngen = 0
+        dcline_idx = gen_idx[from_gens.index]
 
-    if sgen_idx is not None:
-        nsgen= len(sgen_idx)
-    else:
-        nsgen = 0
-
-    if load_idx is not None:
-        nload= len(load_idx)
-    else:
-        nload = 0
-
-
-    # calculate lenght of gencost array
+    # calculate size of gencost array
     if len(net.piecewise_linear_cost):
-        n_coefficients = net.piecewise_linear_cost.p.values[0].shape[1]*2
+        n_coefficients = net.piecewise_linear_cost.p.values[0].shape[1] * 2
     else:
         n_coefficients = 0
     if len(net.polynomial_cost):
-       n_coefficients = max(n_coefficients,  net.polynomial_cost.c.values[0].shape[1],4)
+        n_coefficients = max(n_coefficients,  net.polynomial_cost.c.values[0].shape[1], 4)
 
     if n_coefficients:
-        ppci["gencost"] = np.zeros((nconst, 4 + n_coefficients), dtype=float)
-        ppci["gencost"][:, 0:8] = np.array([1, 0, 0, 2, 0, 0, 1, 0 ])  # initialize as pol cost - otherwise we will get a user warning from pypower for unspecified costs.
-        #ppci["gencost"][eg_idx, -2:] = 1# initializing gencost array for eg
+        # initialize array
+        ppci["gencost"] = zeros((len_gencost, 4 + n_coefficients), dtype=float)
+        ppci["gencost"][:, MODEL:COST + 4] = array([1, 0, 0, 2, 0, 0, 1, 0])
 
         if len(net.piecewise_linear_cost):
 
+            for type in ["p", "q"]:
+                if (net.piecewise_linear_cost.type == type).any():
+                    costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == type]
+                    p = concatenate(costs.p)
+                    f = concatenate(costs.f)
 
-            if (net.piecewise_linear_cost.type == "p").any():
-                p_costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == "p"]
-                p=np.concatenate(p_costs.p)
-                f = np.concatenate(p_costs.f)
+                    if type == "q":
+                        shift_idx = ng
+                    else:
+                        shift_idx = 0
 
-                if not p_costs.element[p_costs.element_type == "gen"].empty:
-                    elements = gen_idx[p_costs.element[p_costs.element_type == "gen"].astype(int)]
-                    ppci["gencost"][elements, 4::2] = p[p_costs.index[p_costs.element_type == "gen"]]
-                    ppci["gencost"][elements, 5::2] = f[p_costs.index[p_costs.element_type == "gen"]] * 1e3
-                    # ppci["gencost"][elements, 3] = np.ceil(n_coefficients/2)
-                if not p_costs.element[p_costs.element_type == "sgen"].empty:
-                    elements = sgen_idx[p_costs.element[p_costs.element_type == "sgen"].astype(int)]
-                    ppci["gencost"][elements, 4::2] = p[p_costs.index[p_costs.element_type == "sgen"]]# * 1e-3
-                    ppci["gencost"][elements, 5::2] = f[p_costs.index[p_costs.element_type == "sgen"]] * 1e3
-                    # ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
-                if not p_costs.element[p_costs.element_type == "load"].empty:
-                    elements = load_idx[p_costs.element[p_costs.element_type == "load"].astype(int)]
-                    ppci["gencost"][elements, 4::2] = p[p_costs.index[p_costs.element_type == "load"]]# * 1e-3
-                    ppci["gencost"][elements, 5::2] = - f[p_costs.index[p_costs.element_type == "load"]] * 1e3
-                    ppci["gencost"][elements, 0] = 1
-                    # ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
-                if not p_costs.element[p_costs.element_type == "ext_grid"].empty:
-                    elements = eg_idx[p_costs.element[p_costs.element_type == "ext_grid"].astype(int)]
-                    ppci["gencost"][elements, 4::2] = p[p_costs.index[p_costs.element_type == "ext_grid"]]#* 1e-3
-                    ppci["gencost"][elements, 5::2] = f[p_costs.index[p_costs.element_type == "ext_grid"]] * 1e3
-                    ppci["gencost"][elements, 0] = 1
-                    # ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
+                    for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
 
+                        if not costs.element[costs.element_type == el].empty:
+                            if el == "gen":
+                                idx = gen_idx
+                            if el == "sgen":
+                                idx = sgen_idx
+                            if el == "ext_grid":
+                                idx = eg_idx
+                            if el == "load":
+                                idx = load_idx
+                            if el == "dcline":
+                                idx = dcline_idx
 
-            if (net.piecewise_linear_cost.type == "q").any():
-                q_costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == "q"]
-                p = np.concatenate(q_costs.p)
-                f = np.concatenate(q_costs.f)
+                        if not costs.element[costs.element_type == el].empty:
+                            elements = idx[costs.element[costs.element_type ==
+                                                         el].values.astype(int)] + shift_idx
+                            ppci["gencost"][elements, COST::2] = p[
+                                costs.index[costs.element_type == el]]
+                            if el in ["load", "dcline"]:
+                                ppci["gencost"][elements, COST + 1::2] = - \
+                                    f[costs.index[costs.element_type == el]] * 1e3
+                            else:
+                                ppci["gencost"][elements, COST + 1::2] = f[
+                                    costs.index[costs.element_type == el]] * 1e3
 
-                if not q_costs.element[q_costs.element_type == "gen"].empty:
-                    elements = gen_idx[q_costs.element[q_costs.element_type == "gen"].astype(int)] +ng
-                    ppci["gencost"][elements, 4::2] = p[q_costs.index[q_costs.element_type == "gen"]] * 1e-3
-                    ppci["gencost"][elements, 5::2] = f[q_costs.index[q_costs.element_type == "gen"]]
-                    ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
-                if not q_costs.element[q_costs.element_type == "sgen"].empty:
-                    elements = sgen_idx[q_costs.element[q_costs.element_type == "sgen"].astype(int)] +ng
-                    ppci["gencost"][elements, 4::2] = p[q_costs.index[q_costs.element_type == "sgen"]] * 1e-3
-                    ppci["gencost"][elements, 5::2] = f[q_costs.index[q_costs.element_type == "sgen"]]
-                    ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
-                if not q_costs.element[q_costs.element_type == "load"].empty:
-                    elements = load_idx[q_costs.element[q_costs.element_type == "load"].astype(int)] +ng
-                    ppci["gencost"][elements, 4::2] = p[q_costs.index[q_costs.element_type == "load"]] * 1e-3
-                    ppci["gencost"][elements, 5::2] = - f[q_costs.index[q_costs.element_type == "load"]]
-                    ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
-                if not q_costs.element[q_costs.element_type == "ext_grid"].empty:
-                    elements = eg_idx[q_costs.element[q_costs.element_type == "ext_grid"].astype(int)] +ng
-                    ppci["gencost"][elements, 4::2] = p[q_costs.index[q_costs.element_type == "ext_grid"]] * 1e-3
-                    ppci["gencost"][elements, 5::2] = f[q_costs.index[q_costs.element_type == "ext_grid"]]
-                    ppci["gencost"][elements, 3] = np.ceil(n_coefficients / 2)
-
+                            ppci["gencost"][elements, NCOST] = n_coefficients / 2
+                            ppci["gencost"][elements, MODEL] = 1
 
         if len(net.polynomial_cost):
 
-            if (net.polynomial_cost.type == "p").any():
-                p_costs = net.polynomial_cost[net.polynomial_cost.type == "p"]
+            for type in ["p", "q"]:
+                if (net.polynomial_cost.type == type).any():
+                    costs = net.polynomial_cost[net.polynomial_cost.type == type]
+                    c = concatenate(costs.c)
+                    n_c = c.shape[1]
+                    c = c * power(1e3, array(range(n_c))[::-1])
 
-                c = np.concatenate(p_costs.c)
-                c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
+                    if type == "q":
+                        shift_idx = ng
+                    else:
+                        shift_idx = 0
 
-                gap = n_coefficients - c.shape[1]
+                    for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
 
-                if gap:
-                    c = np.reshape(np.hstack((np.zeros((len(p_costs),gap)), c)),(len(p_costs),n_coefficients))
+                        if not costs.element[costs.element_type == el].empty:
+                            if el == "gen":
+                                idx = gen_idx
+                            if el == "sgen":
+                                idx = sgen_idx
+                            if el == "ext_grid":
+                                idx = eg_idx
+                            if el == "load":
+                                idx = load_idx
+                            if el == "dcline":
+                                idx = dcline_idx
 
-                if not p_costs.element[p_costs.element_type == "gen"].empty:
-                    elements = gen_idx[p_costs.element[p_costs.element_type == "gen"].values.astype(int)]
-                    ppci["gencost"][elements, 4::] = c[p_costs.index[p_costs.element_type == "gen"]]
-                    ppci["gencost"][elements, 3] = n_coefficients
-                    ppci["gencost"][elements, 0] = 2
-                if not p_costs.element[p_costs.element_type == "sgen"].empty:
-                    elements = sgen_idx[p_costs.element[p_costs.element_type == "sgen"].values.astype(int)]
-                    ppci["gencost"][elements, 4::] = c[p_costs.index[p_costs.element_type == "sgen"]]
-                    ppci["gencost"][elements, 3] = n_coefficients
-                    ppci["gencost"][elements, 0] = 2
-                if not p_costs.element[p_costs.element_type == "load"].empty:
-                    elements = load_idx[p_costs.element[p_costs.element_type == "load"].values.astype(int)]
-                    ppci["gencost"][elements, 4::] = - c[p_costs.index[p_costs.element_type == "load"]]
-                    ppci["gencost"][elements, 3] = n_coefficients
-                    ppci["gencost"][elements, 0] = 2
-                if not p_costs.element[p_costs.element_type == "ext_grid"].empty:
-                    elements = eg_idx[p_costs.element[p_costs.element_type == "ext_grid"].values.astype(int)]
-                    ppci["gencost"][elements, 4::] = c[p_costs.index[p_costs.element_type == "ext_grid"]]
-                    ppci["gencost"][elements, 3] = n_coefficients
-                    ppci["gencost"][elements, 0] = 2
+                            elements = idx[costs.element[costs.element_type ==
+                                                         el].values.astype(int)] + shift_idx
+                            if el in ["load", "dcline"]:
+                                ppci["gencost"][elements, COST:(COST + n_c):] = - \
+                                    c[costs.index[costs.element_type == el]]
+                            else:
+                                ppci["gencost"][elements, COST:(
+                                    COST + n_c):] = c[costs.index[costs.element_type == el]]
 
-            if (net.polynomial_cost.type == "q").any():
-                q_costs = net.polynomial_cost[net.polynomial_cost.type == "q"]
+                            ppci["gencost"][elements, NCOST] = n_c
+                            ppci["gencost"][elements, MODEL] = 2
 
-                c = np.concatenate(q_costs.c)
-                c = c * np.power(1e3, np.array(range(c.shape[1]))[::-1])
-                gap = n_coefficients - len(c)
-                if gap:
-                    c = np.append(np.zeros(gap), c)
-
-                if not q_costs.element[q_costs.element_type == "gen"].empty:
-                    elements = gen_idx[q_costs.element[q_costs.element_type == "gen"].values.astype(int)] +ng
-                    ppci["gencost"][elements, 4::] = c[q_costs.index[q_costs.element_type == "gen"]]
-                    ppci["gencost"][elements, 0] = 2
-                if not q_costs.element[q_costs.element_type == "sgen"].empty:
-                    elements = sgen_idx[q_costs.element[q_costs.element_type == "sgen"].values.astype(int)] +ng
-                    ppci["gencost"][elements, 4::] = c[q_costs.index[q_costs.element_type == "sgen"]]
-                if not q_costs.element[q_costs.element_type == "load"].empty:
-                    elements = load_idx[q_costs.element[q_costs.element_type == "load"].values.astype(int)] +ng
-                    ppci["gencost"][elements, 4::] = - c[q_costs.index[q_costs.element_type == "load"]]
-                if not q_costs.element[q_costs.element_type == "ext_grid"].empty:
-                    elements = eg_idx[q_costs.element[q_costs.element_type == "ext_grid"].values.astype(int)] +ng
-                    ppci["gencost"][elements, 4::] = c[q_costs.index[q_costs.element_type == "ext_grid"]]
     else:
-        ppci["gencost"] = np.zeros((nconst, 8), dtype=float)
-        ppci["gencost"][:,:] = np.array([1, 0, 0, 2, 0, 0, 1, 1000])  # initialize as pwl cost - otherwise we will get a user warning from pypower for unspecified costs.
-
+        ppci["gencost"] = zeros((len_gencost, 8), dtype=float)
+        # initialize as pwl cost - otherwise we will get a user warning from
+        # pypower for unspecified costs.
+        ppci["gencost"][:, :] = array([1, 0, 0, 2, 0, 0, 1, 1000])
 
     return ppci

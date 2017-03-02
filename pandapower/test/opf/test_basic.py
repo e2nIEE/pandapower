@@ -6,7 +6,7 @@
 
 import pandapower as pp
 import pytest
-from numpy import array, allclose
+from numpy import array
 from pandapower.toolbox import convert_format
 from pandapower.test.toolbox import add_grid_connection
 try:
@@ -15,6 +15,7 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
+
 
 def test_convert_format():
     """ Testing a very simple network without transformer for voltage
@@ -32,13 +33,13 @@ def test_convert_format():
                   min_q_kvar=-50)
     net.gen["cost_per_kw"] = 100
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20, controllable = False)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100*690)
+                                   max_loading_percent=100 * 690)
     # run OPF
     convert_format(net)
-    pp.runopp(net, cost_function="linear", verbose=False)
+    pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -48,6 +49,7 @@ def test_convert_format():
     logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
+
 
 def test_simplest_voltage():
     """ Testing a very simple network without transformer for voltage
@@ -82,7 +84,6 @@ def test_simplest_voltage():
     assert min(net.res_bus.vm_pu) > vm_min
 
 
-
 def test_eg_voltage():
     """ Testing a very simple network without transformer for voltage
     constraints with OPF """
@@ -98,7 +99,7 @@ def test_eg_voltage():
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0, vm_pu=1.01)
-    pp.create_load(net, 1, p_kw=20, controllable = False)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100)
@@ -131,10 +132,10 @@ def test_simplest_dispatch():
     pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     pp.create_ext_grid(net, 0)
     pp.create_polynomial_cost(net, 0, "ext_grid", array([-101, 0]))
-    pp.create_load(net, 1, p_kw=20, controllable = False)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100*690)
+                                   max_loading_percent=100 * 690)
     # run OPF
     pp.runopp(net, cost_function="linear", verbose=False)
     assert net["OPF_converged"]
@@ -146,7 +147,6 @@ def test_simplest_dispatch():
     logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
-
 
 
 def test_opf_gen_voltage():
@@ -277,7 +277,7 @@ def test_opf_gen_loading():
     # run OPF
 
     pp.runopp(net, verbose=False, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
-                              PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
+              PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
     assert net["OPF_converged"]
 
     # assert and check result
@@ -339,6 +339,7 @@ def test_opf_sgen_loading():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
+
 def test_unconstrained_line():
     """ Testing a very simple network without transformer for voltage
     constraints with OPF """
@@ -370,12 +371,14 @@ def test_unconstrained_line():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
+
 def test_trafo3w_loading():
     net = pp.create_empty_network()
     b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
     b3 = pp.create_bus(net, vn_kv=20.)
     b4 = pp.create_bus(net, vn_kv=10.)
-    tidx = pp.create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV', max_loading_percent=120)
+    tidx = pp.create_transformer3w(
+        net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV', max_loading_percent=120)
     pp.create_load(net, b3, 5e3, controllable=False)
     id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0)
     pp.create_polynomial_cost(net, id, "load", array([-1, 0]))
@@ -383,17 +386,35 @@ def test_trafo3w_loading():
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
 
-    #pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
-    pp.runopp(net, calculate_voltage_angles = False)
-    assert abs(net.res_trafo3w.loading_percent.values - 120 ) < 1e-3
+    # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
+    pp.runopp(net, calculate_voltage_angles=False)
+    assert abs(net.res_trafo3w.loading_percent.values - 120) < 1e-3
 
 
+def test_dcopf():
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, vn_kv=10.)
+    pp.create_bus(net, vn_kv=.4)
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+                  min_q_kvar=-50)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100)
+    pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
+    # run OPF
+    pp.rundcopp(net, verbose=False)
+    assert net["OPF_converged"]
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
 
 if __name__ == "__main__":
-    # test_unconstrained_line()
     pytest.main(["-xs"])
-    # test_trafo3w_loading()
     # pytest.main(["test_basic.py", "-xs"])
-    # test_opf_gen_voltage()
-#     test_convert_format()
-#     test_simplest_dispatch()

@@ -113,7 +113,7 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
 
     if opf:
         # make opf objective
-        ppci = _make_objective(ppci, net, **kwargs)
+        ppci = _make_objective(ppci, net)
 
     return ppc, ppci
 

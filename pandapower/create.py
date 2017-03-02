@@ -1958,8 +1958,6 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
     net.piecewise_linear_cost.p.loc[index] = p.reshape((1,-1))
     net.piecewise_linear_cost.f.loc[index] = f.reshape((1,-1))
 
-    #TODO  check if full range of generator is covered by cost function!
-
     return index
 
 def create_polynomial_cost(net, element, element_type, coefficients, type = "p", index = None):

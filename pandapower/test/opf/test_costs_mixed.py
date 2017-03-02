@@ -15,6 +15,7 @@ except:
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
 
+
 def test_cost_mixed():
     """ Testing a very simple network for the resulting cost value
     constraints with OPF """
@@ -29,29 +30,29 @@ def test_cost_mixed():
     pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20, controllable = False, max_q_kvar=50, max_p_kw=100, min_p_kw=50,
-                  min_q_kvar=-50)
+    pp.create_load(net, 1, p_kw=20, controllable=False, max_q_kvar=50, max_p_kw=100, min_p_kw=50,
+                   min_q_kvar=-50)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, imax_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100*690)
+                                   max_loading_percent=100 * 690)
 
     # testing some combinations
     pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-    pp.runopp(net ,verbose=False)
+    pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost == - net.res_gen.p_kw.values
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0 , 0]])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost - net.res_gen.p_kw.values**2 < 1e-5
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0 , 1]])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0, 1]])
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_gen.p_kw.values**2  -1 < 1e-5
+    assert net.res_cost - net.res_gen.p_kw.values**2 - 1 < 1e-5
 
-    net.load.controllable.at[0] =True
+    net.load.controllable.at[0] = True
     pp.runopp(net, verbose=False)
     assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 < 1e-5
 
