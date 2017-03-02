@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
+from numpy import nan, isnan, arange, dtype, zeros, array
 import pandas as pd
 
 from pandapower.std_types import add_basic_std_types, load_std_type
@@ -12,7 +12,7 @@ from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
-def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
+def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
 
@@ -30,28 +30,28 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
     """
     net = PandapowerNet({
         # structure data
-        "bus": [('name', np.dtype(object)),
+        "bus": [('name', dtype(object)),
                 ('vn_kv', 'f8'),
-                ('type', np.dtype(object)),
-                ('zone', np.dtype(object)),
+                ('type', dtype(object)),
+                ('zone', dtype(object)),
                 ('in_service', 'bool'), ],
-        "load": [("name", np.dtype(object)),
+        "load": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("p_kw", "f8"),
                  ("q_kvar", "f8"),
                  ("sn_kva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
-                 ("type", np.dtype(object))],
-        "sgen": [("name", np.dtype(object)),
+                 ("type", dtype(object))],
+        "sgen": [("name", dtype(object)),
                  ("bus", "i8"),
                  ("p_kw", "f8"),
                  ("q_kvar", "f8"),
                  ("sn_kva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
-                 ("type", np.dtype(object))],
-        "gen": [("name", np.dtype(object)),
+                 ("type", dtype(object))],
+        "gen": [("name", dtype(object)),
                 ("bus", "u4"),
                 ("p_kw", "f8"),
                 ("vm_pu", "f8"),
@@ -60,38 +60,38 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                 ("max_q_kvar", "f8"),
                 ("scaling", "f8"),
                 ("in_service", 'bool'),
-                ("type", np.dtype(object))],
+                ("type", dtype(object))],
         "switch": [("bus", "i8"),
                    ("element", "i8"),
-                   ("et", np.dtype(object)),
-                   ("type", np.dtype(object)),
+                   ("et", dtype(object)),
+                   ("type", dtype(object)),
                    ("closed", "bool"),
-                   ("name", np.dtype(object))],
+                   ("name", dtype(object))],
         "shunt": [("bus", "u4"),
-                  ("name", np.dtype(object)),
+                  ("name", dtype(object)),
                   ("q_kvar", "f8"),
                   ("p_kw", "f8"),
                   ("in_service", "bool")],
-        "ext_grid": [("name", np.dtype(object)),
+        "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
                      ("va_degree", "f8"),
                      ("in_service", 'bool')],
-        "line": [("name", np.dtype(object)),
-                 ("std_type", np.dtype(object)),
+        "line": [("name", dtype(object)),
+                 ("std_type", dtype(object)),
                  ("from_bus", "u4"),
                  ("to_bus", "u4"),
                  ("length_km", "f8"),
                  ("r_ohm_per_km", "f8"),
                  ("x_ohm_per_km", "f8"),
                  ("c_nf_per_km", "f8"),
-                 ("imax_ka", "f8"),
+                 ("max_i_ka", "f8"),
                  ("df", "f8"),
                  ("parallel", "u4"),
-                 ("type", np.dtype(object)),
+                 ("type", dtype(object)),
                  ("in_service", 'bool')],
-        "trafo": [("name", np.dtype(object)),
-                  ("std_type", np.dtype(object)),
+        "trafo": [("name", dtype(object)),
+                  ("std_type", dtype(object)),
                   ("hv_bus", "u4"),
                   ("lv_bus", "u4"),
                   ("sn_kva", "f8"),
@@ -102,15 +102,16 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                   ("pfe_kw", "f8"),
                   ("i0_percent", "f8"),
                   ("shift_degree", "f8"),
-                  ("tp_side", np.dtype(object)),
+                  ("tp_side", dtype(object)),
                   ("tp_mid", "i4"),
                   ("tp_min", "i4"),
                   ("tp_max", "i4"),
                   ("tp_st_percent", "f8"),
+                  ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
                   ("in_service", 'bool')],
-        "trafo3w": [("name", np.dtype(object)),
-                    ("std_type", np.dtype(object)),
+        "trafo3w": [("name", dtype(object)),
+                    ("std_type", dtype(object)),
                     ("hv_bus", "u4"),
                     ("mv_bus", "u4"),
                     ("lv_bus", "u4"),
@@ -130,14 +131,14 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                     ("i0_percent", "f8"),
                     ("shift_mv_degree", "f8"),
                     ("shift_lv_degree", "f8"),
-                    ("tp_side", np.dtype(object)),
+                    ("tp_side", dtype(object)),
                     ("tp_mid", "i4"),
                     ("tp_min", "i4"),
                     ("tp_max", "i4"),
                     ("tp_st_percent", "f8"),
                     ("tp_pos", "i4"),
                     ("in_service", 'bool')],
-        "impedance": [("name", np.dtype(object)),
+        "impedance": [("name", dtype(object)),
                       ("from_bus", "u4"),
                       ("to_bus", "u4"),
                       ("rft_pu", "f8"),
@@ -146,7 +147,7 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                       ("xtf_pu", "f8"),
                       ("sn_kva", "f8"),
                       ("in_service", 'bool')],
-        "dcline": [("name", np.dtype(object)),
+        "dcline": [("name", dtype(object)),
                 ("from_bus", "u4"),
                 ("to_bus", "u4"),
                 ("p_kw", "f8"),
@@ -160,14 +161,14 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                 ("max_q_from_kvar", "f8"),
                 ("max_q_to_kvar", "f8"),
                 ("in_service", 'bool')],
-        "ward": [("name", np.dtype(object)),
+        "ward": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("ps_kw", "f8"),
                  ("qs_kvar", "f8"),
                  ("qz_kvar", "f8"),
                  ("pz_kw", "f8"),
                  ("in_service", "bool")],
-        "xward": [("name", np.dtype(object)),
+        "xward": [("name", dtype(object)),
                   ("bus", "u4"),
                   ("ps_kw", "f8"),
                   ("qs_kvar", "f8"),
@@ -177,24 +178,24 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
                   ("x_ohm", "f8"),
                   ("vm_pu", "f8"),
                   ("in_service", "bool")],
-        "measurement": [("name", np.dtype(object)),
-                        ("type", np.dtype(object)),
-                        ("element_type", np.dtype(object)),
+        "measurement": [("name", dtype(object)),
+                        ("type", dtype(object)),
+                        ("element_type", dtype(object)),
                         ("value", "f8"),
                         ("std_dev", "f8"),
                         ("bus", "u4"),
-                        ("element", np.dtype(object))],
-        "piecewise_linear_cost": [("type", np.dtype(object)),
-                        ("element", np.dtype(object)),
-                        ("element_type", np.dtype(object)),
-                        ("p", np.dtype(object)),
-                        ("f", np.dtype(object))],
-        "polynomial_cost": [("type", np.dtype(object)),
-                                  ("element", np.dtype(object)),
-                                  ("element_type", np.dtype(object)),
-                                  ("c", np.dtype(object))],
+                        ("element", dtype(object))],
+        "piecewise_linear_cost": [("type", dtype(object)),
+                        ("element", dtype(object)),
+                        ("element_type", dtype(object)),
+                        ("p", dtype(object)),
+                        ("f", dtype(object))],
+        "polynomial_cost": [("type", dtype(object)),
+                                  ("element", dtype(object)),
+                                  ("element_type", dtype(object)),
+                                  ("c", dtype(object))],
         # geodata
-        "line_geodata": [("coords", np.dtype(object))],
+        "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
 
 
@@ -283,19 +284,20 @@ def create_empty_network(name: object = None, f_hz: object = 50.) -> object:
         "version": 1.1,
         "converged": False,
         "name": name,
-        "f_hz": f_hz
+        "f_hz": f_hz,
+        "sn_kva": sn_kva
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(np.zeros(0, dtype=net[s]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]))
     add_basic_std_types(net)
     reset_results(net)
     return net
 
 
 def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
-               zone=None, in_service=True, max_vm_pu=np.nan,
-               min_vm_pu=np.nan, **kwargs):
+               zone=None, in_service=True, max_vm_pu=nan,
+               min_vm_pu=nan, **kwargs):
     """
     Adds one bus in table net["bus"].
 
@@ -346,13 +348,13 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
             raise UserWarning("geodata must be given as (x, y) tupel")
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
 
-    if not np.isnan(min_vm_pu):
+    if not isnan(min_vm_pu):
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
 
         net.bus.loc[index, "min_vm_pu"] = float(min_vm_pu)
 
-    if not np.isnan(max_vm_pu):
+    if not isnan(max_vm_pu):
         if "max_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "max_vm_pu"] = pd.Series()
 
@@ -362,7 +364,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True):
+                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan):
     """
     Adds several buses in table net["bus"] at once.
 
@@ -401,7 +403,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                 raise UserWarning("A bus with index %s already exists" % index)
     else:
         bid = get_free_id(net["bus"])
-        index = np.arange(bid, bid + nr_buses, 1)
+        index = arange(bid, bid + nr_buses, 1)
 
     # TODO: not needed when concating anyways?
     # store dtypes
@@ -422,13 +424,24 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         if len(geodata) != 2:
             raise UserWarning("geodata must be given as (x, y) tupel")
         net["bus_geodata"].loc[bid, ["x", "y"]] = geodata
+    if not isnan(min_vm_pu):
+        if "min_vm_pu" not in net.bus.columns:
+            net.bus.loc[:, "min_vm_pu"] = pd.Series()
+
+        net.bus.loc[index, "min_vm_pu"] = float(min_vm_pu)
+
+    if not isnan(max_vm_pu):
+        if "max_vm_pu" not in net.bus.columns:
+            net.bus.loc[:, "max_vm_pu"] = pd.Series()
+
+        net.bus.loc[index, "max_vm_pu"] = float(max_vm_pu)
 
     return index
 
 
-def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., index=None,
-                in_service=True, type=None, max_p_kw=np.nan, min_p_kw=np.nan,
-                max_q_kvar=np.nan, min_q_kvar=np.nan, controllable=np.nan):
+def create_load(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, scaling=1., index=None,
+                in_service=True, type=None, max_p_kw=nan, min_p_kw=nan,
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
     """
     Adds one load in table net["load"].
 
@@ -486,31 +499,31 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
     # and preserve dtypes
     _preserve_dtypes(net.load, dtypes)
 
-    if not np.isnan(min_p_kw):
+    if not isnan(min_p_kw):
         if "min_p_kw" not in net.load.columns:
             net.load.loc[:, "min_p_kw"] = pd.Series()
 
         net.load.loc[index, "min_p_kw"] = float(min_p_kw)
 
-    if not np.isnan(max_p_kw):
+    if not isnan(max_p_kw):
         if "max_p_kw" not in net.load.columns:
             net.load.loc[:, "max_p_kw"] = pd.Series()
 
         net.load.loc[index, "max_p_kw"] = float(max_p_kw)
 
-    if not np.isnan(min_q_kvar):
+    if not isnan(min_q_kvar):
         if "min_q_kvar" not in net.load.columns:
             net.load.loc[:, "min_q_kvar"] = pd.Series()
 
         net.load.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
-    if not np.isnan(max_q_kvar):
+    if not isnan(max_q_kvar):
         if "max_q_kvar" not in net.load.columns:
             net.load.loc[:, "max_q_kvar"] = pd.Series()
 
         net.load.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
-    if not np.isnan(controllable):
+    if not isnan(controllable):
         if "controllable" not in net.load.columns:
             net.load.loc[:, "controllable"] = pd.Series()
 
@@ -521,10 +534,9 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, scaling=1., 
 
     return index
 
-
-def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
-                scaling=1., type=None, in_service=True, max_p_kw=np.nan, min_p_kw=np.nan,
-                max_q_kvar=np.nan, min_q_kvar=np.nan, controllable=np.nan):
+def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
+                scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
     """
     Adds one static generator in table net["sgen"].
 
@@ -590,31 +602,31 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
     # and preserve dtypes
     _preserve_dtypes(net.sgen, dtypes)
 
-    if not np.isnan(min_p_kw):
+    if not isnan(min_p_kw):
         if "min_p_kw" not in net.sgen.columns:
             net.sgen.loc[:, "min_p_kw"] = pd.Series()
 
         net.sgen.loc[index, "min_p_kw"] = float(min_p_kw)
 
-    if not np.isnan(max_p_kw):
+    if not isnan(max_p_kw):
         if "max_p_kw" not in net.sgen.columns:
             net.sgen.loc[:, "max_p_kw"] = pd.Series()
 
         net.sgen.loc[index, "max_p_kw"] = float(max_p_kw)
 
-    if not np.isnan(min_q_kvar):
+    if not isnan(min_q_kvar):
         if "min_q_kvar" not in net.sgen.columns:
             net.sgen.loc[:, "min_q_kvar"] = pd.Series()
 
         net.sgen.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
-    if not np.isnan(max_q_kvar):
+    if not isnan(max_q_kvar):
         if "max_q_kvar" not in net.sgen.columns:
             net.sgen.loc[:, "max_q_kvar"] = pd.Series()
 
         net.sgen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
-    if not np.isnan(controllable):
+    if not isnan(controllable):
         if "controllable" not in net.sgen.columns:
             net.sgen.loc[:, "controllable"] = pd.Series()
 
@@ -626,9 +638,9 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=np.nan, name=None, index=None,
     return index
 
 
-def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, max_q_kvar=np.nan,
-               min_q_kvar=np.nan, min_p_kw=np.nan, max_p_kw=np.nan, scaling=1., type=None,
-               controllable=np.nan, vn_kv=np.nan, xdss=np.nan, rdss=np.nan, cos_phi=np.nan, in_service=True):
+def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan,
+               min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None,
+               controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True):
     """
     Adds a generator to the network.
 
@@ -682,7 +694,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
     if bus in net.ext_grid.bus.values:
         raise UserWarning(
-            "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            "There is already an external grid at bus %u, thus no other voltage controlling element (ext_grid, gen) is allowed at this bus." % bus)
 
 #    if bus in net.gen.bus.values:
 #        raise UserWarning(
@@ -703,49 +715,49 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
     # and preserve dtypes
     _preserve_dtypes(net.gen, dtypes)
 
-    if not np.isnan(min_p_kw):
+    if not isnan(min_p_kw):
         if "min_p_kw" not in net.gen.columns:
             net.gen.loc[:, "min_p_kw"] = pd.Series()
         net.gen.loc[index, "min_p_kw"] = float(min_p_kw)
 
-    if not np.isnan(max_p_kw):
+    if not isnan(max_p_kw):
         if "max_p_kw" not in net.gen.columns:
             net.gen.loc[:, "max_p_kw"] = pd.Series()
         net.gen.loc[index, "max_p_kw"] = float(max_p_kw)
 
-    if not np.isnan(min_q_kvar):
+    if not isnan(min_q_kvar):
         if "min_q_kvar" not in net.gen.columns:
             net.gen.loc[:, "min_q_kvar"] = pd.Series()
         net.gen.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
-    if not np.isnan(max_q_kvar):
+    if not isnan(max_q_kvar):
         if "max_q_kvar" not in net.gen.columns:
             net.gen.loc[:, "max_q_kvar"] = pd.Series()
         net.gen.loc[index, "max_q_kvar"] = float(max_q_kvar)
 
-    if not np.isnan(controllable):
+    if not isnan(controllable):
         if "controllable" not in net.gen.columns:
             net.gen.loc[:, "controllable"] = pd.Series(False)
         net.gen.loc[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
             net.gen.loc[index, "controllable"] = False
 
-    if not np.isnan(vn_kv):
+    if not isnan(vn_kv):
         if "vn_kv" not in net.gen.columns:
             net.gen.loc[:, "vn_kv"] = pd.Series()
         net.gen.loc[index, "vn_kv"] = float(vn_kv)
 
-    if not np.isnan(xdss):
+    if not isnan(xdss):
         if "xdss" not in net.gen.columns:
             net.gen.loc[:, "xdss"] = pd.Series()
         net.gen.loc[index, "xdss"] = float(xdss)
 
-    if not np.isnan(rdss):
+    if not isnan(rdss):
         if "rdss" not in net.gen.columns:
             net.gen.loc[:, "rdss"] = pd.Series()
         net.gen.loc[index, "rdss"] = float(rdss)
 
-    if not np.isnan(cos_phi):
+    if not isnan(cos_phi):
         if "cos_phi" not in net.gen.columns:
             net.gen.loc[:, "cos_phi"] = pd.Series()
         net.gen.loc[index, "cos_phi"] = float(cos_phi)
@@ -754,8 +766,8 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=np.nan, name=None, index=None, m
 
 
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
-                    s_sc_max_mva=np.nan, s_sc_min_mva=np.nan, rx_max=np.nan, rx_min=np.nan,
-                    max_p_kw=np.nan, min_p_kw=np.nan, max_q_kvar=np.nan, min_q_kvar=np.nan,
+                    s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
+                    max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,
                     index=None):
     """
     Creates an external grid connection.
@@ -800,11 +812,11 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
     if bus in net.ext_grid.bus.values:
         raise UserWarning(
-            "There is already an external grid at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            "There is already an external grid at bus %u, thus no other voltage controlling element (ext_grid, gen) is allowed at this bus." % bus)
 
     if bus in net.gen.bus.values:
         raise UserWarning(
-            "There is already a generator at bus %u, only one voltage controlling element (ext_grid, gen) is allowed per bus." % bus)
+            "There is already a generator at bus %u, thus no ext_grid is allowed at this bus." % bus)
 
         # store dtypes
     dtypes = net.ext_grid.dtypes
@@ -812,49 +824,49 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \
         [bus, name, vm_pu, va_degree, bool(in_service)]
 
-    if not np.isnan(s_sc_max_mva):
+    if not isnan(s_sc_max_mva):
         if "s_sc_max_mva" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "s_sc_max_mva"] = pd.Series()
 
         net.ext_grid.at[:, "s_sc_max_mva"] = float(s_sc_max_mva)
 
-    if not np.isnan(s_sc_min_mva):
+    if not isnan(s_sc_min_mva):
         if "s_sc_min_mva" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "s_sc_min_mva"] = pd.Series()
 
         net.ext_grid.at[index, "s_sc_min_mva"] = float(s_sc_min_mva)
 
-    if not np.isnan(rx_min):
+    if not isnan(rx_min):
         if "rx_min" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "rx_min"] = pd.Series()
 
         net.ext_grid.at[index, "rx_min"] = float(rx_min)
 
-    if not np.isnan(rx_max):
+    if not isnan(rx_max):
         if "rx_max" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "rx_max"] = pd.Series()
 
         net.ext_grid.at[index, "rx_max"] = float(rx_max)
 
-    if not np.isnan(min_p_kw):
+    if not isnan(min_p_kw):
         if "min_p_kw" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "min_p_kw"] = pd.Series()
 
         net.ext_grid.loc[index, "min_p_kw"] = float(min_p_kw)
 
-    if not np.isnan(max_p_kw):
+    if not isnan(max_p_kw):
         if "max_p_kw" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "max_p_kw"] = pd.Series()
 
         net.ext_grid.loc[index, "max_p_kw"] = float(max_p_kw)
 
-    if not np.isnan(min_q_kvar):
+    if not isnan(min_q_kvar):
         if "min_q_kvar" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "min_q_kvar"] = pd.Series()
 
         net.ext_grid.loc[index, "min_q_kvar"] = float(min_q_kvar)
 
-    if not np.isnan(max_q_kvar):
+    if not isnan(max_q_kvar):
         if "max_q_kvar" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "max_q_kvar"] = pd.Series()
 
@@ -889,7 +901,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **index** (int) - Force a specified ID if it is available
 
         **geodata**
-        (np.array, default None, shape= (,2L)) -
+        (array, default None, shape= (,2L)) -
         The linegeodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
@@ -933,7 +945,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         "r_ohm_per_km": lineparam["r_ohm_per_km"],
         "x_ohm_per_km": lineparam["x_ohm_per_km"],
         "c_nf_per_km": lineparam["c_nf_per_km"],
-        "imax_ka": lineparam["imax_ka"]
+        "max_i_ka": lineparam["max_i_ka"]
     })
     if "type" in lineparam:
         v.update({"type": lineparam["type"]})
@@ -949,7 +961,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if geodata is not None:
         net["line_geodata"].loc[index, "coords"] = geodata
 
-    if not np.isnan(max_loading_percent):
+    if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
@@ -959,9 +971,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
-                                c_nf_per_km, imax_ka, name=None, index=None, type=None,
+                                c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1,
                                 max_loading_percent=0, **kwargs):
+
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -980,7 +993,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **c_nf_per_km** (float) - line capacitance in nF per km
 
-        **imax_ka** (float) - maximum thermal current in kA
+        **max_i_ka** (float) - maximum thermal current in kA
 
 
     OPTIONAL:
@@ -997,7 +1010,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **parallel** (integer) - number of parallel line systems
 
         **geodata**
-        (np.array, default None, shape= (,2L)) -
+        (array, default None, shape= (,2L)) -
         The linegeodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
@@ -1012,7 +1025,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     EXAMPLE:
         create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
         r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
-        imax_ka = 0.4)
+        max_i_ka = 0.4)
 
     """
 
@@ -1032,7 +1045,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
         "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km, "imax_ka": imax_ka, "parallel": parallel, "type": type
+        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type
     }
 
     # store dtypes
@@ -1046,7 +1059,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     if geodata is not None:
         net["line_geodata"].loc[index, "coords"] = geodata
 
-    if not np.isnan(max_loading_percent):
+    if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.line.columns:
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
@@ -1054,9 +1067,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     return index
 
-
-def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, in_service=True,
-                       index=None, max_loading_percent=0):
+def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
+                       index=None, max_loading_percent=0, parallel=1):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1114,12 +1126,12 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
-    })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
+        })
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and (tp_pos is np.nan):
+    if ("tp_mid" in v) and (tp_pos is nan):
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
@@ -1130,7 +1142,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
     net.trafo.loc[index, list(v.keys())] = list(v.values())
 
-    if not np.isnan(max_loading_percent):
+    if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo.columns:
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
@@ -1144,10 +1156,11 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=np.nan, 
 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, vscr_percent,
                                        vsc_percent, pfe_kw, i0_percent, shift_degree=0,
-                                       tp_side=None, tp_mid=np.nan, tp_max=np.nan,
-                                       tp_min=np.nan, tp_st_percent=np.nan, tp_pos=np.nan,
-                                       in_service=True, name=None, index=None,
-                                       max_loading_percent=np.nan, **kwargs):
+                                       tp_side=None, tp_mid=nan, tp_max=nan,
+                                       tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
+                                       tp_pos=nan, in_service=True, name=None, index=None,
+                                       max_loading_percent=0, parallel=1, **kwargs):
+
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1218,7 +1231,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     if index in net["trafo"].index:
         raise UserWarning("A transformer with index %s already exists" % index)
 
-    if tp_pos is np.nan:
+    if tp_pos is nan:
         tp_pos = tp_mid
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
@@ -1226,10 +1239,11 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
-        "tp_side": tp_side, "tp_st_percent": tp_st_percent
+        "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
+        "parallel": parallel
     }
 
-    if ("tp_mid" in v) and (tp_pos is np.nan):
+    if ("tp_mid" in v) and (tp_pos is nan):
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
@@ -1244,7 +1258,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
 
-    if not np.isnan(max_loading_percent):
+    if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo.columns:
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
@@ -1253,7 +1267,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     return index
 
 
-def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=np.nan,
+def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan,
                          in_service=True, index=None, max_loading_percent= 0):
     """
     Creates a three-winding transformer in table net["trafo3w"].
@@ -1327,7 +1341,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and (tp_pos is np.nan):
+    if ("tp_mid" in v) and (tp_pos is nan):
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
@@ -1351,9 +1365,9 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
                                          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent,
                                          vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree=0.,
-                                         shift_lv_degree=0., tp_side=None, tp_st_percent=np.nan,
-                                         tp_pos=np.nan, tp_mid=np.nan, tp_max=np.nan,
-                                         tp_min=np.nan, name=None, in_service=True, index=None, max_loading_percent=0):
+                                         shift_lv_degree=0., tp_side=None, tp_st_percent=nan,
+                                         tp_pos=nan, tp_mid=nan, tp_max=nan, tp_min=nan, name=None,
+                                         in_service=True, index=None, max_loading_percent=0):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -1409,7 +1423,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **tp_max** (int, nan) - Maximum tap position
 
-        **tp_pos** (int, np.nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
+        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tp_mid)
 
         **name** (string, None) - Name of the 3-winding transformer
 
@@ -1442,7 +1456,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     if index in net["trafo3w"].index:
         raise UserWarning("A three winding transformer with index %s already exists" % index)
 
-    if tp_pos is np.nan:
+    if tp_pos is nan:
         tp_pos = tp_mid
 
     # store dtypes
@@ -1742,8 +1756,8 @@ def create_xward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, r_ohm, x_ohm, vm_pu, 
 
 
 def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
-                  index=None, name=None, max_p_kw=np.nan, min_q_from_kvar=np.nan,
-                  min_q_to_kvar=np.nan, max_q_from_kvar=np.nan, max_q_to_kvar=np.nan,
+                  index=None, name=None, max_p_kw=nan, min_q_from_kvar=nan,
+                  min_q_to_kvar=nan, max_q_from_kvar=nan, max_q_to_kvar=nan,
                   in_service=True):
     """
     Creates a dc line.

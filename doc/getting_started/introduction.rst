@@ -55,7 +55,7 @@ The same applies to the line, which can either be created by parameters: ::
 
     pp.create_line_from_parameters(net, from_bus=b2, to_bus=b3, 
                                    r_ohm_per_km=0.642, x_ohm_per_km=0.083,
-                                   c_nf_per_km=210, imax_ka=0.142, name="Line")
+                                   c_nf_per_km=210, max_i_ka=0.142, name="Line")
 
 or from the standard type library: ::    
 

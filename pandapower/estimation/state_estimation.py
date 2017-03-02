@@ -14,10 +14,11 @@ from pandapower.results import _set_buses_out_of_service
 from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results
 from pandapower.toolbox import convert_format
 from pandapower.topology import estimate_voltage_vector
-from pypower.ext2int import ext2int
+from pandapower.pypower_extensions.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
+from scipy.stats import chi2
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -31,17 +32,18 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
-
+        
+    OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6.
 
-        **maximum_iterations** - (int) - Maximum number of iterations. Default is 10.
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
 
-        **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and phase
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True.
 
     OUTPUT:
-        (bool) Was the state estimation successful?
+        **successful** (boolean) - Was the state estimation successful?
     """
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
@@ -57,7 +59,98 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
     return wls.estimate(v_start, delta_start, calculate_voltage_angles)
+    
+    
+def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
+             calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
+    """
+    Wrapper function for bad data removal.
+    
+    INPUT:
+        **net** - The net within this line should be created.
+    
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+    
+    OPTIONAL:
+        **tolerance** - (float) - When the maximum state change between iterations is less than
+        tolerance, the process stops. Default is 1e-6.
 
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        shifts in transformers, if init is 'slack'. Default is True.        
+        
+        **rn_max_threshold** (float) - Identification threshold to determine
+        if the largest normalized residual reflects a bad measurement
+        (default value of 3.0)
+    
+        **chi2_prob_false** (float) - probability of error / false alarms
+        (default value: 0.05)
+    
+    OUTPUT:
+        **successful** (boolean) - Was the state estimation successful?
+    """
+    wls = state_estimation(tolerance, maximum_iterations, net)
+    v_start = None
+    delta_start = None
+    if init == 'results':
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
+                                   rn_max_threshold, chi2_prob_false)
+
+def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
+             calculate_voltage_angles=True, chi2_prob_false=0.05):
+    """
+    Wrapper function for the chi-squared test.
+    
+    INPUT:
+        **net** - The net within this line should be created.
+    
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+    
+    OPTIONAL:
+        **tolerance** - (float) - When the maximum state change between iterations is less than
+        tolerance, the process stops. Default is 1e-6.
+
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        shifts in transformers, if init is 'slack'. Default is True.        
+    
+        **chi2_prob_false** (float) - probability of error / false alarms
+        (default value: 0.05)
+    
+    OUTPUT:
+        **successful** (boolean) - Was the state estimation successful?
+    """
+    wls = state_estimation(tolerance, maximum_iterations, net)
+    v_start = None
+    delta_start = None
+    if init == 'results':
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return wls.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
+                                 chi2_prob_false)
+    
 
 class state_estimation(object):
     """
@@ -70,6 +163,7 @@ class state_estimation(object):
         self.logger = logger
         if self.logger is None:
             self.logger = logging.getLogger("wls_se")
+            self.logger.setLevel(logging.INFO)
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
@@ -112,7 +206,8 @@ class state_estimation(object):
 
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
-
+        
+        OPTIONAL:
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
             phase shifts in transformers Default is True.
 
@@ -123,7 +218,7 @@ class state_estimation(object):
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
 
-        Example:
+        EXAMPLE:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
 
         """
@@ -443,6 +538,207 @@ class state_estimation(object):
         self.delta = delta
 
         return successful
+
+    def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
+                          calculate_voltage_angles=True, chi2_prob_false=0.05):
+        """
+        The function perform_chi2_test performs a Chi^2 test for bad data and topology error
+        detection. The function can be called with the optional input arguments v_in_out and
+        delta_in_out. Then, the Chi^2 test is performed after calling the function estimate using
+        them as input arguments. It can also be called without these arguments if it is called
+        from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
+        performed for the states estimated by the funtion estimate and stored internally in a
+        member variable of the class state_estimation. As a optional argument the probability
+        of a false measurement can be provided additionally. For bad data detection, the function
+        perform_rn_max_test is more powerful and should be the function of choice. For topology
+        error detection, however, perform_chi2_test should be used.
+
+        INPUT:
+            **v_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage magnitudes in p.u. (sorted by bus index)
+
+            **delta_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage angles in degrees (sorted by bus index)
+            
+        OPTIONAL:
+            **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+            shifts in transformers, if init is 'slack'. Default is True.
+            
+            **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
+
+        OUTPUT:
+            **successful** (boolean) - True if the estimation process was successful
+
+        EXAMPLE:
+            perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
+
+        """        
+        # 'flat'-start conditions
+        if v_in_out is None:
+            v_in_out = np.ones(self.net.bus.shape[0])
+        if delta_in_out is None:
+            delta_in_out = np.zeros(self.net.bus.shape[0]) 
+        
+        # perform SE
+        successful = self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
+
+        # Performance index J(hx)
+        J = np.dot(self.r.T, np.dot(self.R_inv, self.r))
+
+        # Number of measurements
+        m = len(self.net.measurement)
+
+        # Number of state variables (the -1 is due to the reference bus)
+        n = len(self.V) + len(self.delta) - 1
+
+        # Chi^2 test threshold
+        test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
+
+        # Print results
+        self.logger.info("-----------------------")
+        self.logger.info("Result of Chi^2 test:")
+        self.logger.info("Number of measurements:")
+        self.logger.info(m)
+        self.logger.info("Number of state variables:")
+        self.logger.info(n)
+        self.logger.info("Performance index:")
+        self.logger.info(J)
+        self.logger.info("Chi^2 test threshold:")
+        self.logger.info(test_thresh)
+
+        if J <= test_thresh:
+            self.bad_data_present = False
+            self.logger.info("Chi^2 test passed --> no bad data or topology error detected.")
+        else:
+            self.bad_data_present = True
+            self.logger.info("Chi^2 test failed --> bad data or topology error detected.")
+
+        if (v_in_out is not None) and (delta_in_out is not None):
+            return successful
+
+    def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
+                            calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
+        """
+        The function perform_rn_max_test performs a largest normalized residual test for bad data
+        identification and removal. It takes two input arguments: v_in_out and delta_in_out.
+        These are the initial state variables for the combined estimation and bad data
+        identification and removal process. They can be initialized as described above, e.g.,
+        using a "flat" start. In an iterative process, the function performs a state estimation,
+        identifies a bad data measurement, removes it from the set of measurements
+        (only if the rn_max threshold is violated by the largest residual of all measurements,
+        which can be modified), performs the state estimation again,
+        and so on and so forth until no further bad data measurements are detected.
+
+        INPUT:
+            **v_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage magnitudes in p.u. (sorted by bus index)
+
+            **delta_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage angles in degrees (sorted by bus index)
+        
+        OPTIONAL:        
+            **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+            shifts in transformers, if init is 'slack'. Default is True.
+        
+            **rn_max_threshold** (float) - Identification threshold to determine
+            if the largest normalized residual reflects a bad measurement
+            (standard value of 3.0)
+            
+            **chi2_prob_false** (float) - probability of error / false alarms
+            (standard value: 0.05)
+
+        OUTPUT:
+            **successful** (boolean) - True if the estimation process was successful
+
+        EXAMPLE:
+            perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
+
+        """
+        # 'flat'-start conditions
+        if v_in_out is None:
+            v_in_out = np.ones(self.net.bus.shape[0])
+        if delta_in_out is None:
+            delta_in_out = np.zeros(self.net.bus.shape[0])        
+        
+        num_iterations = 0
+
+        v_in = v_in_out
+        delta_in = delta_in_out
+
+        self.bad_data_present = True
+
+        while self.bad_data_present and (num_iterations < 11):
+            # Estimate the state with bad data identified in previous iteration
+            # removed from set of measurements:
+            successful = self.estimate(v_in, delta_in, calculate_voltage_angles)
+            v_in_out = self.net.res_bus_est.vm_pu.values
+            delta_in_out = self.net.res_bus_est.va_degree.values
+
+            # Perform a Chi^2 test to determine whether bad data is to be removed.
+            self.perform_chi2_test(v_in_out, delta_in_out, calculate_voltage_angles=calculate_voltage_angles,
+                                   chi2_prob_false=chi2_prob_false)
+
+            # Error covariance matrix:
+            R = np.linalg.inv(self.R_inv)
+
+            # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
+            # (S is the sensitivity matrix: r = S*e):
+            Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
+
+            # Diagonalize \Omega:
+            Omega = np.diag(np.diag(Omega))
+
+            # Compute squareroot (|.| since some -0.0 produced nans):
+            Omega = np.sqrt(np.absolute(Omega))
+
+            OmegaInv = np.linalg.inv(Omega)
+
+            # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
+            rN = np.dot(OmegaInv, np.absolute(self.r))
+
+            if max(rN) <= rn_max_threshold:
+                self.logger.info("Largest normalized residual test passed "
+                                 "--> no bad data detected.")
+            else:
+                self.logger.info("Largest normalized residual test failed --> bad data identified.")
+
+                if self.bad_data_present:
+                    # Identify bad data: Determine index corresponding to max(rN):
+                    idx_rN = np.argsort(rN, axis=0)[len(rN) - 1]
+    
+                    # Sort measurement indexes:
+                    sorted_meas_idxs = np.concatenate(
+                        (self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
+                            self.net.measurement['element_type'] == 'bus')].index,
+                         self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
+                             self.net.measurement['element_type'] == 'line')].index,
+                         self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
+                             self.net.measurement['element_type'] == 'bus')].index,
+                         self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
+                             self.net.measurement['element_type'] == 'line')].index,
+                         self.net.measurement.loc[(self.net.measurement['type'] == 'v') & (
+                             self.net.measurement['element_type'] == 'bus')].index,
+                         self.net.measurement.loc[(self.net.measurement['type'] == 'i') & (
+                             self.net.measurement['element_type'] == 'line')].index))
+    
+                    # Determine index of measurement to be removed:
+                    meas_idx = sorted_meas_idxs[idx_rN]
+    
+                    # Remove bad measurement:
+                    self.net.measurement.drop(meas_idx, inplace=True)
+                    self.logger.info("Bad data removed from the set of measurements.")
+                    self.logger.info("----------------------------------------------")
+                else:
+                    self.logger.info("No bad data removed from the set of measurements.")
+                    self.logger.info("Finished, successful.")
+                
+            self.logger.info("rn_max identification threshold:")
+            self.logger.info(rn_max_threshold)
+            
+            num_iterations += 1
+
+        return successful
+
 
 if __name__ == "__main__":
     from pandapower.test.estimation.test_wls_estimation import test_3bus

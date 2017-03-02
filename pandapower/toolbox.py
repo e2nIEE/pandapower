@@ -9,17 +9,19 @@ import pandas as pd
 import copy
 import numbers
 from collections import defaultdict
+
+from pandapower.auxiliary import get_indices, PandapowerNet
+from pandapower.create import create_empty_network
+from pandapower.topology import unsupplied_buses
 try:
     import pplog as logging
 except:
     import logging
 
 logger = logging.getLogger(__name__)
-
 from pandapower.auxiliary import get_indices, PandapowerNet
 from pandapower.create import create_empty_network, create_piecewise_linear_cost
 from pandapower.topology import unsupplied_buses
-
 # --- Information
 
 
@@ -220,16 +222,16 @@ def switch_info(net, sidx):
     eidx = net.switch.at[sidx, "element"]
     if switch_type == "b":
         bus2_name = net.bus.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                         bus2_name))
+        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name,
+                                                                         eidx, bus2_name))
     elif switch_type == "l":
         line_name = net.line.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                          line_name))
+        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name,
+                                                                          eidx, line_name))
     elif switch_type == "t":
         trafo_name = net.trafo.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                           trafo_name))
+        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name,
+                                                                           eidx, trafo_name))
 
 
 def overloaded_lines(net, max_load=100):
@@ -315,6 +317,12 @@ def convert_format(net):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     _pre_release_changes(net)
+    if not "sn_kva" in net:
+        net.sn_kva = 1e3
+    net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
+    for typ, data in net.std_types["line"].items():
+        if "imax_ka" in data:
+            net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
     # unsymmetric impedance
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
@@ -341,15 +349,16 @@ def convert_format(net):
                                                         ("from_bus", "u4"),
                                                         ("to_bus", "u4"),
                                                         ("p_kw", "f8"),
-                                                        ("loss_percent", 'bool'),
-                                                        ("loss_kw", 'bool'),
+                                                        ("loss_percent", 'f8'),
+                                                        ("loss_kw", 'f8'),
                                                         ("vm_from_pu", "f8"),
                                                         ("vm_to_pu", "f8"),
+                                                        ("max_p_kw", "f8"),
                                                         ("min_q_from_kvar", "f8"),
                                                         ("min_q_to_kvar", "f8"),
                                                         ("max_q_from_kvar", "f8"),
                                                         ("max_q_to_kvar", "f8"),
-                                                        ("forward", 'bool'),
+                                                        ("cost_per_kw", 'f8'),
                                                         ("in_service", 'bool')]))
     if "_empty_res_dcline" not in net:
         net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
@@ -368,7 +377,6 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
-
     if not "piecewise_linear_cost" in net:
         net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
                               ("element", np.dtype(object)),
@@ -422,8 +430,9 @@ def convert_format(net):
                 qmax = net.ext_grid.max_q_kvar.at[index]
                 create_piecewise_linear_cost(net, index, "ext_grid", np.array([[qmin,cost*qmin],[0, 0],[qmax,cost*qmax]]), type = "q")
 
-
-    net.version = 1.1
+    if not "tp_st_degree" in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
+    net.version = 1.2
     return net
 
 

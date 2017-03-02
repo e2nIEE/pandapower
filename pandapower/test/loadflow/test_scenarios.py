@@ -77,7 +77,7 @@ def test_0gen_2ext_grid_decoupled():
     net.trafo.shift_degree = 150
     pp.create_std_type(net, {"type": "cs", "r_ohm_per_km": 0.876,  "q_mm2": 35.0,
                              "endtmp_deg": 160.0, "c_nf_per_km": 260.0,
-                             "imax_ka": 0.123, "x_ohm_per_km": 0.1159876}, 
+                             "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876}, 
                              name="NAYSEY 3x35rm/16 6/10kV" , element="line")
     pp.create_line(net, 0, auxbus, 1, name="line_to_decoupled_grid",
                    std_type="NAYSEY 3x35rm/16 6/10kV") #NAYSEY 3x35rm/16 6/10kV
@@ -141,5 +141,29 @@ def test_two_gens_at_one_bus():
     assert net.res_gen.p_kw.at[g1] == p1
     assert net.res_gen.p_kw.at[g2] == p2
 
+def test_transformer_phase_shift():
+    net = pp.create_empty_network()
+    for side in ["hv", "lv"]:
+        b1 = pp.create_bus(net, vn_kv=110.)
+        b2 = pp.create_bus(net, vn_kv=20.)
+        b3 = pp.create_bus(net, vn_kv=0.4)
+        pp.create_ext_grid(net, b1)
+        pp.create_transformer_from_parameters(net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, side,
+                                              0, 2, -2, 1.25, 10, 0)
+        pp.create_transformer_from_parameters(net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
+    pp.runpp(net, "dc", True)
+    b2a_angle = net.res_bus.va_degree.at[1]
+    b3a_angle = net.res_bus.va_degree.at[2]
+    b2b_angle = net.res_bus.va_degree.at[4]
+    b3b_angle = net.res_bus.va_degree.at[5]   
+    
+    net.trafo.tp_pos.at[0] = 1
+    net.trafo.tp_pos.at[2] = 1
+    pp.runpp(net, "dc", True)
+    assert np.isclose(b2a_angle - net.res_bus.va_degree.at[1], 10)
+    assert np.isclose(b3a_angle - net.res_bus.va_degree.at[2], 10)
+    assert np.isclose(b2b_angle - net.res_bus.va_degree.at[4], -10)
+    assert np.isclose(b3b_angle - net.res_bus.va_degree.at[5], -10)
+    
 if __name__ == "__main__":
     pytest.main(["test_scenarios.py"])

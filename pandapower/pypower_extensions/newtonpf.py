@@ -5,8 +5,6 @@
 """Solves the power flow using a full Newton's method.
 """
 
-import sys
-
 from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int64
 
 from scipy.sparse import issparse, csr_matrix as sparse
@@ -49,7 +47,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
     ## options
     tol     = ppopt['PF_TOL']
     max_it  = ppopt['PF_MAX_IT']
-    verbose = ppopt['VERBOSE']
 
     ## initialize
     converged = 0
@@ -91,16 +88,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
              mis[pq].real,
              mis[pq].imag  ]
 
-    ## check tolerance
-    normF = linalg.norm(F, Inf)
-    if verbose > 1:
-        sys.stdout.write('\n it    max P & Q mismatch (p.u.)')
-        sys.stdout.write('\n----  ---------------------------')
-        sys.stdout.write('\n%3d        %10.3e' % (i, normF))
-    if normF < tol:
-        converged = 1
-        if verbose > 1:
-            sys.stdout.write('\nConverged!\n')
 
     Ybus = Ybus.tocsr()
     ## do Newton iterations
@@ -167,17 +154,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
 
         ## check for convergence
         normF = linalg.norm(F, Inf)
-        if verbose > 1:
-            sys.stdout.write('\n%3d        %10.3e' % (i, normF))
+
         if normF < tol:
             converged = 1
-            if verbose:
-                sys.stdout.write("\nNewton's method power flow converged in "
-                                 "%d iterations.\n" % i)
-
-    if verbose:
-        if not converged:
-            sys.stdout.write("\nNewton's method power did not converge in %d "
-                             "iterations.\n" % i)
 
     return V, converged, i
