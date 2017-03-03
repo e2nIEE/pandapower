@@ -14,9 +14,7 @@ from pypower.idx_gen import PG, QG
 from pandapower.auxiliary import _sum_by_group
 
 def _extract_results(net, ppc, trafo_loading, ac=True):
-
     _set_buses_out_of_service(ppc)
-
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
     bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
@@ -130,32 +128,12 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
 
     """
-    line_end = len(net["line"])
-    trafo_end = line_end + len(net["trafo"])
-    trafo3w_end = trafo_end + len(net["trafo3w"]) * 3
-    impedance_end = trafo3w_end + len(net["impedance"])
-    xward_end = impedance_end + len(net["xward"])
-
     i_ft, s_ft = _get_branch_flows(net, ppc)
-    if line_end > 0:
-        _get_line_results(net, ppc, i_ft, 0, line_end, ac)
-        net["res_line"].index = net["line"].index
-
-    if trafo_end > line_end:
-        _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, line_end, trafo_end, ac)
-        net["res_trafo"].index = net["trafo"].index
-
-    if trafo3w_end > trafo_end:
-        _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, trafo_end, trafo3w_end, ac)
-        net["res_trafo3w"].index = net["trafo3w"].index
-
-    if impedance_end > trafo3w_end:
-        _get_impedance_results(net, ppc, i_ft, trafo3w_end, impedance_end, ac)
-        net["res_impedance"].index = net["impedance"].index
-
-    if xward_end > impedance_end:
-        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, impedance_end, xward_end,
-                                  ac)
+    _get_line_results(net, ppc, i_ft, ac)
+    _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac)
+    _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac)
+    _get_impedance_results(net, ppc, i_ft, ac)
+    _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac)
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus, ac=True):
     eg_end = len(net['ext_grid'])
@@ -278,7 +256,11 @@ def _get_dcline_results(net):
     
     net.res_dcline.index = net.dcline.index
 
-def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, f, t, ac=True):
+def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac=True):
+    if "xward" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["xward"]
+    else:
+        return
     p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
     net["res_xward"]["p_kw"] += p_branch_xward
     if ac:
@@ -291,6 +273,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, f, t, ac=T
 
     pq_buses[b_ppc, 0] += p
     pq_buses[b_ppc, 1] += q
+    net["res_xward"].index = net["xward"].index
 
 
 def _get_branch_flows(net, ppc):
@@ -301,7 +284,11 @@ def _get_branch_flows(net, ppc):
     i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
     return i_ft, s_ft
 
-def _get_line_results(net, ppc, i_ft, f, t, ac=True):
+def _get_line_results(net, ppc, i_ft, ac=True):
+    if "line" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["line"]
+    else:
+        return
     pf_kw = ppc["branch"][f:t, PF].real * 1e3
     qf_kvar = ppc["branch"][f:t, QF].real * 1e3
     net["res_line"]["p_from_kw"] = pf_kw
@@ -326,8 +313,14 @@ def _get_line_results(net, ppc, i_ft, f, t, ac=True):
 
     net["res_line"]["i_ka"] = i_ka
     net["res_line"]["loading_percent"] = i_ka / i_max * 100
+    net["res_line"].index = net["line"].index
 
-def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
+
+def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
+    if "trafo" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["trafo"]
+    else:
+        return
     phv_kw = ppc["branch"][f:t, PF].real * 1e3
     plv_kw = ppc["branch"][f:t, PT].real * 1e3
     net["res_trafo"]["p_hv_kw"] = phv_kw
@@ -353,9 +346,14 @@ def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     net["res_trafo"]["loading_percent"] = ld_trafo
+    net["res_trafo"].index = net["trafo"].index
 
 
-def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
+def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
+    if "trafo3w" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
+    else:
+        return
     hv = int(f + (t - f) / 3)
     mv = int(f + 2 * (t - f) / 3)
     lv = t
@@ -400,9 +398,14 @@ def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     net["res_trafo3w"]["loading_percent"] = ld_trafo
+    net["res_trafo3w"].index = net["trafo3w"].index
 
 
-def _get_impedance_results(net, ppc, i_ft, f, t, ac=True):
+def _get_impedance_results(net, ppc, i_ft, ac=True):
+    if "impedance" in net._pd2ppc_lookups["branch"]:
+        f, t = net._pd2ppc_lookups["branch"]["impedance"]
+    else:
+        return
     pf_kw = ppc["branch"][f:t, (PF)].real * 1e3
     pt_kw = ppc["branch"][f:t, (PT)].real * 1e3
     net["res_impedance"]["p_from_kw"] = pf_kw
@@ -418,6 +421,7 @@ def _get_impedance_results(net, ppc, i_ft, f, t, ac=True):
 
     net["res_impedance"]["i_from_ka"] = i_ft[f:t][:, 0]
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
+    net["res_impedance"].index = net["impedance"].index
 
 
 def _get_p_q_results(net, bus_lookup_aranged, ac=True):
@@ -540,7 +544,6 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac=True):
             net["res_xward"]["q_kvar"] += q_xward
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
-        net["res_xward"].index = net["xward"].index
 
     if not ac:
         q = np.zeros(len(p))
