@@ -12,15 +12,12 @@
 # serve to show the default.
 
 import sys, os
-try:
-    import mock
-     
-    MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core', 'numpy.core.numeric', 'scipy.io', 'numpy.linalg',
-                    'matplotlib.collections', 'matplotlib.patches', 'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats']
-    for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = mock.Mock()
-except:
-    pass
+import mock
+MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core', 
+                  'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches', 
+                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats']
+for mod_name in MOCK_MODULES:
+  sys.modules[mod_name] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -55,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pandapower'
-copyright = u'2017 by Fraunhofer IWES and University of Kassel'
+copyright = u'2016 by Fraunhofer IWES and University of Kassel'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

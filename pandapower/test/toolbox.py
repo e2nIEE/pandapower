@@ -12,19 +12,12 @@ import numpy as np
 from math import isnan
 import pytest
 import os
-try:
-    import pplog as logging
-except:
-    import logging
+
 
 def run_all_tests():
+    """ function exdecuting all tests
     """
-    function exdecuting all tests
-    """
-    logger = logging.getLogger()
-    logger.setLevel(logging.ERROR)
-    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
-    logger.setLevel(logging.INFO)
+    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)),"-s"])
 
 def assert_mpc_equal(mpc1, mpc2):
 
@@ -47,9 +40,8 @@ def assert_net_equal(a_net, b_net):
     Raises AssertionError if grids are not equal.
     """
     status = True
-    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata',
-                'trafo', 'switch', 'trafo3w', 'gen', 'ext_grid', 'res_line', 'res_bus', 'res_sgen',
-                'res_gen', 'res_shunt', 'res_load', 'res_ext_grid', 'res_trafo']
+    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata', 'trafo', 'switch', 'trafo3w',
+                'gen', 'ext_grid', 'res_line', 'res_bus', 'res_sgen', 'res_gen', 'res_shunt', 'res_load', 'res_ext_grid', 'res_trafo']
 
     for name in namelist:
         if name in a_net or name in b_net:

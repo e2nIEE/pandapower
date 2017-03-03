@@ -5,11 +5,6 @@ DC Optimal Power Flow
 
 The dc optimal power flow is a linearized optimization of the grid state. It offers two cost function options, that are fitting special use cases. 
 To understand the usage, the OPF tutorial is recommended (see :ref:`tutorial`).
-
-.. image:: /pics/pandapower_dc_optimal_powerflow.png
-		:width: 40em
-		:alt: alternate Text
-		:align: center
     
 .. autofunction:: pandapower.rundcopp
 

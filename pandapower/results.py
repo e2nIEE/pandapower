@@ -40,7 +40,8 @@ def _extract_results_opf(net, ppc, trafo_loading, ac):
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
     _get_bus_results(net, ppc, bus_pq, ac)
-    _get_costs(net)
+    _get_costs(net, ppc)
+
 
 
 def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
@@ -344,13 +345,10 @@ def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, f, t, ac=True):
     net["res_trafo"]["i_lv_ka"] = i_ft[:, 1][f:t]
     if trafo_loading == "current":
         lds_trafo = i_ft[f:t] * net["trafo"][["vn_hv_kv", "vn_lv_kv"]].values * 1000. * np.sqrt(3) \
-                    / (net["trafo"]["sn_kva"].values[:, np.newaxis] *
-                       net["trafo"]["parallel"].values[:, np.newaxis])
-        ld_trafo = np.max(lds_trafo, axis=1) * 100.
+            / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100.
+        ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
-        ld_trafo = np.max(s_ft[f:t] / (net["trafo"]["sn_kva"].values[:, np.newaxis]
-                                       * net["trafo"]["parallel"].values[:, np.newaxis]) * 100.,
-                          axis=1)
+        ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100., axis=1)
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
@@ -553,15 +551,8 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac=True):
     if ac:
         bus_pq[b_ppc, 1] += vq
 
-def _get_costs(net):
-    cost = 0
-    if "cost_per_kw" in net.gen:
-        cost += (-net.res_gen.p_kw * net.gen.cost_per_kw).sum()
-    if "cost_per_kw" in net.sgen:
-        cost += (-net.res_sgen.p_kw * net.sgen.cost_per_kw).sum()
-    if "cost_per_kw" in net.ext_grid:
-        cost += (-net.res_ext_grid.p_kw * net.ext_grid.cost_per_kw).sum()
-    net.res_cost = cost
+def _get_costs(net, ppc):
+    net.res_cost = ppc['obj']
 
 
 def reset_results(net):
@@ -579,8 +570,7 @@ def reset_results(net):
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
     net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
     
-    
-def _copy_results_ppci_to_ppc(result, ppc):
+def _copy_results_ppci_to_ppc(result, ppc, opf = False):
     '''
     result contains results for all in service elements
     ppc shall get the results for in- and out of service elements
@@ -613,6 +603,10 @@ def _copy_results_ppci_to_ppc(result, ppc):
 
     ppc['success'] = result['success']
     ppc['et'] = result['et']
+
+    if opf:
+        ppc['obj'] = result['f']
+        ppc['internal_gencost'] = result['gencost']
 
     result = ppc
     return result

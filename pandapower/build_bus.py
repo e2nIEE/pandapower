@@ -139,7 +139,7 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 2
+            ppc["bus"][:n_bus, VMAX] = 10
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:

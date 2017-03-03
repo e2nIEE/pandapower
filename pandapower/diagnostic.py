@@ -815,9 +815,8 @@ def deviation_from_std_type(net):
     check_results = {}
     for key in net.std_types.keys():
         for i, element in net[key].iterrows():
-            std_type = element.std_type
-            if std_type in net.std_types[key].keys():
-                std_type_values = net.std_types[key][std_type]
+            if element.std_type in net.std_types[key].keys():
+                std_type_values = net.std_types[key][element.std_type]
                 for param in std_type_values.keys():
                     if param == "tp_pos":
                         continue
@@ -828,7 +827,7 @@ def deviation_from_std_type(net):
                             check_results[key][i] = {'param': param, 'e_value': element[param],
                                                      'std_type_value': std_type_values[param],
                                                      'std_type_in_lib': True}
-            elif std_type is not None:
+            else:
                 if key not in check_results.keys():
                                 check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}

@@ -117,7 +117,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
              trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None,
+def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=False,
             **kwargs):
     """
     Runs PANDAPOWER DC Flow
@@ -159,6 +159,11 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
             ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
@@ -172,7 +177,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=Tru
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
@@ -224,7 +229,7 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
 #    _clean_up(net)
 
 
-def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
+def runopp(net, cost_function=None, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -237,16 +242,13 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to generation units in the following columns:
-        - net.gen.cost_per_kw
-        - net.sgen.cost_per_kw
-        - net.ext_grid.cost_per_kw
+        - net.trafo3w.max_loading_percent
 
     How these costs are combined into a cost function depends on the cost_function parameter.
 
@@ -254,10 +256,6 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         **net** - The Pandapower format network
 
     OPTIONAL:
-        **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs
-            - "linear_minloss" - minimizes weighted generator cost and line losses
-
         **verbose** (bool, False) - If True, some basic information is printed
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
@@ -267,10 +265,10 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, cost_function, True, **kwargs)
+    _runopp(net, verbose, suppress_warnings, calculate_voltage_angles, True, **kwargs)
 
 
-def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
+def rundcopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -283,26 +281,17 @@ def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True,
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to generation units in the following columns:
-        - net.gen.cost_per_kw
-        - net.sgen.cost_per_kw
-        - net.ext_grid.cost_per_kw
-
-    How these costs are combined into a cost function depends on the cost_function parameter.
+        - net.trafo3w.max_loading_percent
 
     INPUT:
         **net** - The Pandapower format network
 
     OPTIONAL:
-        **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs
-            - "linear_minloss" - minimizes weighted generator cost and line losses
-
         **verbose** (bool, False) - If True, some basic information is printed
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
@@ -312,10 +301,10 @@ def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True,
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, cost_function, False, **kwargs)
+    _runopp(net, verbose, suppress_warnings, calculate_voltage_angles, False, **kwargs)
 
 
-def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
+def _runopp(net, verbose, suppress_warnings, calculate_voltage_angles=False, ac=True, **kwargs):
     ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
     net["OPF_converged"] = False
     _add_auxiliary_elements(net, False)
@@ -324,8 +313,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
     net["_is_elems"] = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net, copy_constraints_to_ppc=True, trafo_model="t",
-                                    opf=True, cost_function=cost_function,
-                                    calculate_voltage_angles=False, **kwargs)
+                                    opf=True, calculate_voltage_angles=calculate_voltage_angles, **kwargs)
     if not ac:
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppc
@@ -344,7 +332,7 @@ def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    result = _copy_results_ppci_to_ppc(result, ppc)
+    result = _copy_results_ppci_to_ppc(result, ppc, opf = True)
 
     net["_ppc_opf"] = result
     net["OPF_converged"] = True
@@ -396,11 +384,11 @@ def _add_dcline_gens(net):
         create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu,
                    min_p_kw=-pmax, max_p_kw=0.,
                    max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
-                   in_service=dctab.in_service, cost_per_kw=0.)
+                   in_service=dctab.in_service)
         create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu,
                    min_p_kw=0, max_p_kw=pmax,
                    max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar,
-                   in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
+                   in_service=dctab.in_service)
 
 def add_dcline_constraints(om, net):
     # from numpy import hstack, diag, eye, zeros

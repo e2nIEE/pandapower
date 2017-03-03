@@ -14,6 +14,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
+
 def test_minimize_active_power_curtailment():
     net = pp.create_empty_network()
 
@@ -32,16 +33,16 @@ def test_minimize_active_power_curtailment():
     pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
 
     # create loads
-    pp.create_load(net, bus2, p_kw=60e3, controllable = False)
-    pp.create_load(net, bus3, p_kw=70e3, controllable = False)
-    pp.create_load(net, bus4, p_kw=10e3, controllable = False)
+    pp.create_load(net, bus2, p_kw=60e3, controllable=False)
+    pp.create_load(net, bus3, p_kw=70e3, controllable=False)
+    pp.create_load(net, bus4, p_kw=10e3, controllable=False)
 
     # create generators
     pp.create_ext_grid(net, bus1)
-    pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01, 
-                       controllable=True)
-    pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01, 
-                       controllable=True)
+    pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01,
+                  controllable=True)
+    pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01,
+                  controllable=True)
 
     net.trafo["max_loading_percent"] = 50
     net.line["max_loading_percent"] = 50
@@ -49,17 +50,19 @@ def test_minimize_active_power_curtailment():
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    net.ext_grid["cost_per_kw"] = 0
-    net.gen["cost_per_kw"] = -1e-5
+    pp.create_polynomial_cost(net, 0, "gen", array([-1e-5, 0]))
+    pp.create_polynomial_cost(net, 1, "gen", array([-1e-5, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
 
-    pp.runopp(net)
+
+
+    pp.runopp(net, calculate_voltage_angles=True)
     assert net["OPF_converged"]
-    assert allclose(net.res_bus.vm_pu.values, array([ 1. , 1.00000149,  1.01998544,  1.01999628]),
+    assert allclose(net.res_bus.vm_pu.values, array([1., 1.00000149,  1.01998544,  1.01999628]),
                     atol=1e-5)
-    assert allclose(net.res_bus.va_degree.values, array([ 0., -0.7055226, 0.85974768, 2.24584537]),
+    assert allclose(net.res_bus.va_degree.values, array([0., -0.7055226, 0.85974768, 2.24584537]),
                     atol=1e-5)
-
 
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main(["test_curtailment.py", "-xs"])

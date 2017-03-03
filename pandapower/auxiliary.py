@@ -376,7 +376,7 @@ def calculate_line_results(net, use_res_bus_est=False):
     tb = net.line.to_bus
     # calculate line currents of from bus side
     line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
-                          * Zcbij)
+                          * Zcbij).values
     open_lines_from = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
     line_currents_from[open_lines_from.values] = 0.
     charging_from = open_lines_from[open_lines_from.index[
@@ -386,14 +386,14 @@ def calculate_line_results(net, use_res_bus_est=False):
                                         * Zcbij[charging_from] * (1 + Zij[charging_from])
     # calculate line currents on to bus side
     line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
-                        * Zcbij)
+                        * Zcbij).values
     open_lines_to = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
     line_currents_to[open_lines_to.values] = 0.
     charging_to = open_lines_to[open_lines_to.index[
         net.line.from_bus.loc[open_lines_to].values ==
         net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
-    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus].values \
-                                    * Zcbij[charging_to]  * (1 + Zij[charging_to])
+    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus] * Zcbij[charging_to] \
+                                    * (1 + Zij[charging_to])
     # derive other values
     line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
     line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3

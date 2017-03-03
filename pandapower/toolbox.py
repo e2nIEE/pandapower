@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 import copy
+import numbers
 from collections import defaultdict
 
 from pandapower.auxiliary import get_indices, PandapowerNet
@@ -18,7 +19,9 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
-
+from pandapower.auxiliary import get_indices, PandapowerNet
+from pandapower.create import create_empty_network, create_piecewise_linear_cost
+from pandapower.topology import unsupplied_buses
 # --- Information
 
 
@@ -90,8 +93,8 @@ def opf_task(net):
         logger.info("  Generator Constraints")
         for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
             c_gen[i] = np.nan
-        if (c_gen.max_p_kw <= c_gen.min_p_kw).any():
-            logger.warn("The value of min_p_kw must be less than max_p_kw for all generators. " +
+        if (c_gen.max_p_kw >= c_gen.min_p_kw).any():
+            logger.warn("The value of max_p_kw must be less than min_p_kw for all generators. " +
                         "Please observe the pandapower signing system.")
         if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. "+
@@ -122,7 +125,7 @@ def opf_task(net):
         for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
             c_sgen[i] = np.nan
         if (c_sgen.max_p_kw >= c_sgen.min_p_kw).any():
-            logger.warn("The value of min_p_kw must be less than max_p_kw for all static " +
+            logger.warn("The value of max_p_kw must be less than min_p_kw for all static " +
                         "generators. Please observe the pandapower signing system.")
         if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
@@ -204,6 +207,9 @@ def opf_task(net):
 
     if not c_exist:
         logger.info("  There are no constraints.")
+
+
+    # check if full range of generator is covered by pwl cost function!
 
 
 def switch_info(net, sidx):
@@ -371,8 +377,62 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
+    if not "piecewise_linear_cost" in net:
+        net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                              ("element", np.dtype(object)),
+                              ("element_type", np.dtype(object)),
+                              ("p", np.dtype(object)),
+                              ("f", np.dtype(object))]))
+
+    if not "polynomial_cost" in net:
+        net["polynomial_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                              ("element", np.dtype(object)),
+                              ("element_type", np.dtype(object)),
+                              ("c", np.dtype(object))]))
+
+    if "cost_per_kw" in net.gen:
+        for index, cost in net.gen.cost_per_kw.items():
+            if not np.isnan(cost):
+                p = net.gen.min_p_kw.at[index]
+                create_piecewise_linear_cost(net, index, "gen", np.array([[p,cost*p],[0, 0]]))
+
+    if "cost_per_kw" in net.sgen:
+        for index, cost in net.sgen.cost_per_kw.items():
+            if not np.isnan(cost):
+                p = net.sgen.min_p_kw.at[index]
+                create_piecewise_linear_cost(net, index, "sgen", np.array([[p,cost*p],[0, 0]]))
+
+    if "cost_per_kw" in net.ext_grid:
+        for index, cost in net.ext_grid.cost_per_kw.items():
+            if not np.isnan(cost):
+                p = net.ext_grid.min_p_kw.at[index]
+                create_piecewise_linear_cost(net, index, "ext_grid", np.array([[p,cost*p],[0, 0]]))
+
+
+    if "cost_per_kvar" in net.gen:
+        for index, cost in net.gen.cost_per_kvar.items():
+            if not np.isnan(cost):
+                qmin = net.gen.min_q_kvar.at[index]
+                qmax = net.gen.max_q_kvar.at[index]
+                create_piecewise_linear_cost(net, index, "gen", np.array([[qmin,cost*qmin],[0, 0],[qmax,cost*qmax]]), type = "q")
+
+    if "cost_per_kvar" in net.sgen:
+        for index, cost in net.sgen.cost_per_kvar.items():
+            if not np.isnan(cost):
+                qmin = net.sgen.min_q_kvar.at[index]
+                qmax = net.sgen.max_q_kvar.at[index]
+                create_piecewise_linear_cost(net, index, "sgen", np.array([[qmin,cost*qmin],[0, 0],[qmax,cost*qmax]]), type = "q")
+
+    if "cost_per_kvar" in net.ext_grid:
+        for index, cost in net.ext_grid.cost_per_kvar.items():
+            if not np.isnan(cost):
+                qmin = net.ext_grid.min_q_kvar.at[index]
+                qmax = net.ext_grid.max_q_kvar.at[index]
+                create_piecewise_linear_cost(net, index, "ext_grid", np.array([[qmin,cost*qmin],[0, 0],[qmax,cost*qmax]]), type = "q")
+
     if not "tp_st_degree" in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
+
     net.version = 1.2
     return net
 
@@ -445,9 +505,9 @@ def _pre_release_changes(net):
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kv": "sn_hv_kv",
                                                     "snm_kv": "sn_mv_kv", "snl_kv": "sn_lv_kv"})
-#    net["switch"]["type"].replace("LS", "CB", inplace=True)
-#    net["switch"]["type"].replace("LTS", "LBS", inplace=True)
-#    net["switch"]["type"].replace("TS", "DS", inplace=True)
+    net["switch"]["type"].replace("LS", "CB", inplace=True)
+    net["switch"]["type"].replace("LTS", "LBS", inplace=True)
+    net["switch"]["type"].replace("TS", "DS", inplace=True)
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
@@ -625,10 +685,9 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] if not np.isnan(scale[t]) else s
-                         for t, s in zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [scale[t] or s for t, s in zip(et.type.values, et.scaling.values)]
 
-    scale = defaultdict(lambda: np.nan, scalings)
+    scale = defaultdict(lambda: None, scalings)
     if scale_load:
         scaleit("load")
     if scale_sgen:
