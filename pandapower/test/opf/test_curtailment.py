@@ -54,6 +54,8 @@ def test_minimize_active_power_curtailment():
     pp.create_polynomial_cost(net, 1, "gen", array([-1e-5, 0]))
     pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
 
+
+
     pp.runopp(net, calculate_voltage_angles=True)
     assert net["OPF_converged"]
     assert allclose(net.res_bus.vm_pu.values, array([1., 1.00000149,  1.01998544,  1.01999628]),

@@ -242,16 +242,13 @@ def runopp(net, cost_function=None, verbose=False, calculate_voltage_angles=Fals
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to generation units in the following columns:
-        - net.gen.cost_per_kw
-        - net.sgen.cost_per_kw
-        - net.ext_grid.cost_per_kw
+        - net.trafo3w.max_loading_percent
 
     How these costs are combined into a cost function depends on the cost_function parameter.
 
@@ -259,10 +256,6 @@ def runopp(net, cost_function=None, verbose=False, calculate_voltage_angles=Fals
         **net** - The Pandapower format network
 
     OPTIONAL:
-        **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs
-            - "linear_minloss" - minimizes weighted generator cost and line losses
-
         **verbose** (bool, False) - If True, some basic information is printed
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
@@ -288,26 +281,17 @@ def rundcopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnin
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to generation units in the following columns:
-        - net.gen.cost_per_kw
-        - net.sgen.cost_per_kw
-        - net.ext_grid.cost_per_kw
-
-    How these costs are combined into a cost function depends on the cost_function parameter.
+        - net.trafo3w.max_loading_percent
 
     INPUT:
         **net** - The Pandapower format network
 
     OPTIONAL:
-        **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs
-            - "linear_minloss" - minimizes weighted generator cost and line losses
-
         **verbose** (bool, False) - If True, some basic information is printed
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower

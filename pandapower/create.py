@@ -1940,6 +1940,9 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
 
     EXAMPLE:
         create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
+        
+    NOTE: 
+      costs for reactive power can only be quadratic, linear or constant. No higher grades supported.
     """
     hallo=1
     if index is None:
