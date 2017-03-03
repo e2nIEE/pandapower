@@ -116,11 +116,10 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
 
 
 def create_cigre_network_mv(with_der=False):
-    if with_der not in [False, True, "pv_wind", "all"]:
-        logger.error("'with_der' is unknown. It should be in [False, 'pv_wind', 'all'].")
     if with_der is True:
-        logger.info("'with_der' should be in [False, 'pv_wind', 'all']. with_der=True is replaced "
-                    "by with_der='pv_wind'.")
+        raise ValueError("'with_der=True' is deprecated. Please use 'with_der=pv_wind'")
+    if with_der not in [False, "pv_wind", "all"]:
+        raise ValueError("'with_der' is unknown. It should be in [False, 'pv_wind', 'all'].")
 
     net_cigre_mv = pp.create_empty_network()
 
