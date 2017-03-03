@@ -76,8 +76,6 @@ def _initialize_branch_lookup(net):
             start = end
     return end
     
-
-
 def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model, copy_constraints_to_ppc = False):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     trafo_df = _trafo_df_from_trafo3w(net)
@@ -92,7 +90,6 @@ def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model, cop
         max_load = trafo_df.max_loading_percent if "max_loading_percent" in trafo_df else 0
         temp_para[:, 8] = max_load / 100. * trafo_df.sn_kva / 1000.
     return temp_para
-
 
 def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
     """
