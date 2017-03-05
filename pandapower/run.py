@@ -35,7 +35,7 @@ class OPFNotConverged(ppException):
 
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
           , trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-          check_connectivity=False, **kwargs):
+          check_connectivity=False, r_switch=0, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -114,7 +114,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, r_switch, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=False,
@@ -181,7 +181,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs):
+             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, r_switch, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -203,7 +203,8 @@ def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model
         # convert pandapower net to ppc
         ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims,
                                         trafo_model,  init_results=init_results,
-                                        check_connectivity = check_connectivity)
+                                        check_connectivity = check_connectivity,
+                                        r_switch=r_switch)
 
     # store variables
     net["_ppc"] = ppc

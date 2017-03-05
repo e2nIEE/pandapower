@@ -26,6 +26,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
     _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac)
     _get_impedance_results(net, ppc, i_ft, ac)
     _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac)
+    _get_switch_results(net, ppc, i_ft, ac)
     
 def _get_branch_flows(net, ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
@@ -36,10 +37,9 @@ def _get_branch_flows(net, ppc):
     return i_ft, s_ft
     
 def _get_line_results(net, ppc, i_ft, ac=True):
-    if "line" in net._pd2ppc_lookups["branch"]:
-        f, t = net._pd2ppc_lookups["branch"]["line"]
-    else:
+    if not "line" in net._pd2ppc_lookups["branch"]:
         return
+    f, t = net._pd2ppc_lookups["branch"]["line"]
     pf_kw = ppc["branch"][f:t, PF].real * 1e3
     qf_kvar = ppc["branch"][f:t, QF].real * 1e3
     net["res_line"]["p_from_kw"] = pf_kw
@@ -68,10 +68,9 @@ def _get_line_results(net, ppc, i_ft, ac=True):
 
 
 def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
-    if "trafo" in net._pd2ppc_lookups["branch"]:
-        f, t = net._pd2ppc_lookups["branch"]["trafo"]
-    else:
+    if not "trafo" in net._pd2ppc_lookups["branch"]:
         return
+    f, t = net._pd2ppc_lookups["branch"]["trafo"]
     phv_kw = ppc["branch"][f:t, PF].real * 1e3
     plv_kw = ppc["branch"][f:t, PT].real * 1e3
     net["res_trafo"]["p_hv_kw"] = phv_kw
@@ -101,10 +100,9 @@ def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
 
 
 def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
-    if "trafo3w" in net._pd2ppc_lookups["branch"]:
-        f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
-    else:
+    if not "trafo3w" in net._pd2ppc_lookups["branch"]:
         return
+    f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
     hv = int(f + (t - f) / 3)
     mv = int(f + 2 * (t - f) / 3)
     lv = t
@@ -153,10 +151,9 @@ def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
 
 
 def _get_impedance_results(net, ppc, i_ft, ac=True):
-    if "impedance" in net._pd2ppc_lookups["branch"]:
-        f, t = net._pd2ppc_lookups["branch"]["impedance"]
-    else:
+    if not "impedance" in net._pd2ppc_lookups["branch"]:
         return
+    f, t = net._pd2ppc_lookups["branch"]["impedance"]
     pf_kw = ppc["branch"][f:t, (PF)].real * 1e3
     pt_kw = ppc["branch"][f:t, (PT)].real * 1e3
     net["res_impedance"]["p_from_kw"] = pf_kw
@@ -175,10 +172,9 @@ def _get_impedance_results(net, ppc, i_ft, ac=True):
     net["res_impedance"].index = net["impedance"].index
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac=True):
-    if "xward" in net._pd2ppc_lookups["branch"]:
-        f, t = net._pd2ppc_lookups["branch"]["xward"]
-    else:
+    if not "xward" in net._pd2ppc_lookups["branch"]:
         return
+    f, t = net._pd2ppc_lookups["branch"]["xward"]
     p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
     net["res_xward"]["p_kw"] += p_branch_xward
     if ac:
@@ -192,3 +188,11 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac=True):
     pq_buses[b_ppc, 0] += p
     pq_buses[b_ppc, 1] += q
     net["res_xward"].index = net["xward"].index
+
+def _get_switch_results(net, ppc, i_ft, ac=True):
+    if not "switch" in net._pd2ppc_lookups["branch"]:
+        return
+    f, t = net._pd2ppc_lookups["branch"]["switch"]
+    import pandas as pd
+    net["res_switch"] = pd.DataFrame(data=np.max(i_ft[f:t], axis=1), columns = ["i_ka"],
+                                     index=net.switch[net._closed_bb_switches].index)
