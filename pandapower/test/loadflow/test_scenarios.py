@@ -164,6 +164,10 @@ def test_transformer_phase_shift():
     assert np.isclose(b3a_angle - net.res_bus.va_degree.at[2], 10)
     assert np.isclose(b2b_angle - net.res_bus.va_degree.at[4], -10)
     assert np.isclose(b3b_angle - net.res_bus.va_degree.at[5], -10)
-    
+
 if __name__ == "__main__":
-    pytest.main(["test_scenarios.py"])
+    net = pp.create_empty_network()
+    net = add_test_bus_bus_switch(net)
+    pp.runpp(net, r_switch=0.1)    
+    
+#    pytest.main(["test_scenarios.py"])

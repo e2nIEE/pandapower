@@ -7,6 +7,7 @@
 from scipy.sparse.linalg import inv
 import numpy as np
 import warnings
+import pandas as pd
 
 
 from pandapower.pypower_extensions.makeYbus import makeYbus
@@ -26,6 +27,8 @@ def calc_equiv_sc_impedance(net, case):
         add_ext_grid_admittance_to_ppc(net, case, ppci, bus_lookup)
     if len(net.gen) > 0:
         add_generator_admittance_to_ppc(net, ppci, bus_lookup)
+    if len(net.sgen) > 0:
+        add_sgen_admittance_to_ppc(net, ppci, bus_lookup)
 
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
@@ -36,7 +39,7 @@ def calc_equiv_sc_impedance(net, case):
 
 def consider_line_end_temperature(net, ppc):
     if "endtemp_degree" not in net.line:
-        raise UserWarning("Specify end temperature for lines in net.endtemp")
+        raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
     endtemp = net.line.endtemp_degree.values.astype(float)
     ppc["branch"][:len(net.line), 2] *= (1 + .004 * (endtemp - 20)) #formula from standard
 
@@ -95,6 +98,20 @@ def add_generator_admittance_to_ppc(net, ppc, bus_lookup):
     gen_bus_idx = bus_lookup[gen_buses]
     ppc["bus"][gen_bus_idx, GS] = y_gen.real
     ppc["bus"][gen_bus_idx, BS] = y_gen.imag
+
+def add_sgen_admittance_to_ppc(net, ppc, bus_lookup):
+    if any(pd.isnull(net.sgen.sn_kva)):
+        raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
+    sgen_buses = net.sgen.bus.values
+
+    z_sgen = 1 / (net.sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
+    x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
+    r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
+    y_sgen = 1 / (r_sgen + x_sgen*1j)
+   
+    gen_bus_idx = bus_lookup[sgen_buses]
+    ppc["bus"][gen_bus_idx, GS] = y_sgen.real
+    ppc["bus"][gen_bus_idx, BS] = y_sgen.imag
 
 def transformer_correction_factor(net):
     uk = net.trafo.vsc_percent.values

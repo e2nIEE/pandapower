@@ -9,7 +9,8 @@ import pytest
 from numpy import in1d
 
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, add_test_gen
+from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
+    add_test_gen, add_test_bus_bus_switch
 
 
 def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -517,4 +518,7 @@ def test_open(result_test_network):
 
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    net = pp.create_empty_network()
+    net = add_test_bus_bus_switch(net)
+    pp.runpp(net, r_switch=0.1)
+#    pytest.main(["-xs"])
