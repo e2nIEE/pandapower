@@ -164,6 +164,7 @@ class state_estimation(object):
         if self.logger is None:
             self.logger = logging.getLogger("wls_se")
             self.logger.setLevel(logging.INFO)
+            self.logger.addHandler(logging.StreamHandler())
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
