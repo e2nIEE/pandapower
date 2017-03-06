@@ -49,7 +49,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
     max_it  = ppopt['PF_MAX_IT']
 
     ## initialize
-    converged = 0
     i = 0
     V = V0
     Va = angle(V)
@@ -88,6 +87,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
              mis[pq].real,
              mis[pq].imag  ]
 
+    # check for convergence
+    converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
     ## do Newton iterations
@@ -153,9 +154,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
                  mis[pq].imag  ]
 
         ## check for convergence
-        normF = linalg.norm(F, Inf)
-
-        if normF < tol:
-            converged = 1
+        converged = _check_for_convergence(F, tol)
 
     return V, converged, i
+
+def _check_for_convergence(F, tol):
+    # calc infinity norm
+    normF = linalg.norm(F, Inf)
+
+    if normF < tol:
+        return True
+    else:
+        return False
