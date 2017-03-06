@@ -205,7 +205,7 @@ def from_json(filename, convert=True):
     """
     Load a Pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
-    Keep in mind that the index columns of all pandas DataFrames are now sorted in ascending order.
+    Index columns of all pandas DataFrames are sorted in ascending order.
 
     INPUT:
         **filename** (string) - The absolute or relative path to the input file.
@@ -217,7 +217,7 @@ def from_json(filename, convert=True):
 
     EXAMPLE:
 
-        net = pp.from_json("example.json")
+        >>> net = pp.from_json("example.json")
 
     """
     with open(filename) as data_file:
