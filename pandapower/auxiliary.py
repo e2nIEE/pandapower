@@ -504,9 +504,10 @@ def _create_ppc2pd_bus_lookup(net):
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
     is_elems = net["_is_elems"]
-    isolated_nodes_pp = pcc2pd_bus_lookup[list(isolated_nodes)]
+    pp_nodes = [n for n in isolated_nodes if not(n > len(pcc2pd_bus_lookup))]
+    isolated_nodes_pp = pcc2pd_bus_lookup[pp_nodes]
     # remove isolated buses from is_elems["bus"]
-    is_elems["bus"] = is_elems["bus"].drop(isolated_nodes_pp)
+    is_elems["bus"] = is_elems["bus"].drop(set(isolated_nodes_pp) & set(is_elems["bus"].index))
     bus_is_ind = is_elems["bus"].index
     # check if in service elements are at in service buses
 
