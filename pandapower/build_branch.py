@@ -95,7 +95,7 @@ def _calc_trafo3w_parameter(net, ppc):
         temp_para[:, 8] = max_load / 100. * trafo_df.sn_kva / 1000.
     return temp_para
 
-def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
+def _calc_line_parameter(net, ppc):
     """
     calculates the line parameter in per unit.
 
@@ -107,6 +107,7 @@ def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
                 Nunmpy array. with the following order:
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
+    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # baseR converts Ohm to p.u. Formula is U^2/Sref. Sref is 1 MVA and vn_kv is
     # in kV U^2* ((10^3 V)^2/10^6 VA) = U^2

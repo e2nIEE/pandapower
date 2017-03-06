@@ -153,12 +153,13 @@ def _build_bus_ppc(net, ppc):
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_loads_and_add_on_ppc(net, ppc, opf=False):
+def _calc_loads_and_add_on_ppc(net, ppc):
     '''
     wrapper function to call either the PF or the OPF version
     '''
+    mode = net["_options"]["mode"]
 
-    if opf:
+    if mode=="opf":
         _calc_loads_and_add_on_ppc_opf(net, ppc)
     else:
         _calc_loads_and_add_on_ppc_pf(net, ppc)
