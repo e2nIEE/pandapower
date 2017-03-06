@@ -84,6 +84,50 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
+def to_json(net, filename):
+    """
+        Saves a Pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        be saved in ascending order. net elements which name begins with "_" (internal elements)
+        will not be saved. Std types will also not be saved.
+
+        INPUT:
+            **net** (dict) - The Pandapower format network
+
+            **filename** (string) - The absolute or relative path to the input file.
+
+        EXAMPLE:
+
+             >>> pp.to_pickle(net, "example.json")
+
+    """
+    json_string = "{"
+    for k in sorted(net.keys()):
+        if k[0] == "_":
+            continue
+        if k in ["std_types"]:
+            continue
+        if isinstance(net[k], pd.DataFrame):
+            if len(net[k]) == 0:  # do not bother saving empty data frames
+                continue
+            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
+        elif isinstance(net[k], numpy.ndarray):
+            json_string += k + ":" + json.dumps(net[k].tolist()) + ","
+        elif isinstance(net[k], dict):
+            json_string += json.dumps(net[k])
+        elif isinstance(net[k], bool):
+            json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
+        elif isinstance(net[k], str):
+            json_string += '"%s":"%s",' % (k, net[k])
+        elif isinstance(net[k], numbers.Number):
+            json_string += '"%s":%s,' % (k, net[k])
+        elif net[k] is None:
+            json_string += '"%s":null,' % k
+        else:
+            raise UserWarning("could not detect type of %s" % k)
+    with open(filename, "w") as text_file:
+        text_file.write(json_string[:-1] + "}\n")
+
+
 def from_pickle(filename, convert=True):
     """
     Load a Pandapower format Network from pickle file
@@ -100,14 +144,13 @@ def from_pickle(filename, convert=True):
         >>> net2 = pp.from_pickle("example2.p") #relative path
 
     """
-
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     with open(filename, "rb") as f:
         if sys.version_info >= (3,0):
-            net = pickle.load(f, encoding='latin1') #with encoding in python 3
+            net = pickle.load(f, encoding='latin1')  # with encoding in python 3
         else:
-            net = pickle.load(f) #without encoding in python 2
+            net = pickle.load(f)  # without encoding in python 2
     net = PandapowerNet(net)
     if convert:
         convert_format(net)
@@ -158,36 +201,25 @@ def from_excel(filename, convert=True):
     return net
 
 
-def to_json(net, filename):
-    json_string = "{"
-    for k in sorted(net.keys()):
-        if k[:6] == "_empty":
-            continue
-        if k in ["std_types", "_mpc_last_cycle", "_is_elems", "_pd2ppc_lookups", "_ppc"]:
-            continue
-        if isinstance(net[k], pd.DataFrame):
-            if len(net[k]) == 0:  # do not bother saving empty data frames
-                continue
-            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
-        elif isinstance(net[k], numpy.ndarray):
-            json_string += json.dumps(net[k].tolist())
-        elif isinstance(net[k], dict):
-            json_string += json.dumps(net[k])
-        elif isinstance(net[k], bool):
-            json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
-        elif isinstance(net[k], str):
-            json_string += '"%s":"%s",' % (k, net[k])
-        elif isinstance(net[k], numbers.Number):
-            json_string += '"%s":%s,' % (k, net[k])
-        elif net[k] is None:
-            json_string += '"%s":null,' % k
-        else:
-            raise UserWarning("could not detect type of %s" % k)
-    with open(filename, "w") as text_file:
-        text_file.write(json_string[:-1] + "}\n")
+def from_json(filename, convert=True):
+    """
+    Load a Pandapower network from a JSON file.
+    The index of the returned network is not necessarily in the same order as the original network.
+    Keep in mind that the index columns of all pandas DataFrames are now sorted in ascending order.
 
+    INPUT:
+        **filename** (string) - The absolute or relative path to the input file.
 
-def from_json(filename):
+    OUTPUT:
+        **convert** (bool) - use the convert format function to
+
+        **net** (dict) - The pandapower format network
+
+    EXAMPLE:
+
+        net = pp.from_json("example.json")
+
+    """
     with open(filename) as data_file:
         data = json.load(data_file)
     net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
@@ -213,4 +245,6 @@ def from_json(filename):
             net[k] = net[k][columns]
         else:
             net[k] = data[k]
+    if convert:
+        convert_format(net)
     return net
