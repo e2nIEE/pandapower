@@ -30,10 +30,14 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False, r_switch=0):
+def _build_bus_ppc(net, ppc):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
+    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
+    r_switch = net["_options"]["r_switch"]
+    init = net["_options"]["init"]
+
     # get bus indices
     bus_index = net["bus"].index.values
     n_bus = len(bus_index)
@@ -131,7 +135,7 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False, 
     # set buses out of service (BUS_TYPE == 4)
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]], BUS_TYPE] = NONE
 
-    if init_results is True and len(net["res_bus"]) > 0:
+    if init=="results" and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
         ppc["bus"][:n_bus, 7] = net["res_bus"]["vm_pu"].values
         ppc["bus"][:n_bus, 8] = net["res_bus"].va_degree.values

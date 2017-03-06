@@ -321,7 +321,36 @@ def _select_is_elements(net, recycle=None):
         }
 
     return is_elems
-    
+
+def _create_options_dict(init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
+                         trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
+                         check_connectivity=False, ac=True, copy_constraints_to_ppc=False, mode="pf", r_switch=0.0):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+
+    # recycle parameters
+    if recycle == None:
+        recycle = dict(is_elems=False, ppc=False, Ybus=False)
+
+    options = {
+        "init": init
+        , "calculate_voltage_angles": calculate_voltage_angles
+        , "copy_constraints_to_ppc": copy_constraints_to_ppc
+        , "tolerance_kva": tolerance_kva
+        , "trafo_model": trafo_model
+        , "trafo_loading": trafo_loading
+        , "enforce_q_lims": enforce_q_lims
+        , "numba": numba
+        , "recycle": recycle
+        , "check_connectivity": check_connectivity
+        , "ac": ac
+        , "mode": mode
+        , "r_switch": r_switch
+    }
+
+    return options
+
 def _clean_up(net):
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values

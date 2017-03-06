@@ -71,7 +71,9 @@ def _set_buses_out_of_service(ppc):
     ppc["bus"][disco, QD] = 0
 
 
-def _get_bus_results(net, ppc, bus_pq, ac=True):
+def _get_bus_results(net, ppc, bus_pq):
+    ac = net["_options"]["ac"]
+
     net["res_bus"]["p_kw"] = bus_pq[:, 0]
     if ac:
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
@@ -86,7 +88,8 @@ def _get_bus_results(net, ppc, bus_pq, ac=True):
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
-def _get_p_q_results(net, bus_lookup_aranged, ac=True):
+def _get_p_q_results(net, bus_lookup_aranged):
+    ac = net["_options"]["ac"]
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 
@@ -152,7 +155,9 @@ def _get_p_q_results(net, bus_lookup_aranged, ac=True):
     return bus_pq
 
 
-def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac=True):
+def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
+    ac = net["_options"]["ac"]
+
     b, p, q = np.array([]), np.array([]), np.array([])
     is_elems = net["_is_elems"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]

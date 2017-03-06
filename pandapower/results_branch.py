@@ -9,7 +9,7 @@ from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _sum_by_group
 
-def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, ac=True):
+def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     """
     Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
 
@@ -20,15 +20,15 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, trafo_loading, a
         **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
 
     """
-    i_ft, s_ft = _get_branch_flows(net, ppc)
-    _get_line_results(net, ppc, i_ft, ac)
-    _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac)
-    _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac)
-    _get_impedance_results(net, ppc, i_ft, ac)
-    _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac)
-    _get_switch_results(net, ppc, i_ft, ac)
+    i_ft, s_ft = _get_branch_flows(ppc)
+    _get_line_results(net, ppc, i_ft)
+    _get_trafo_results(net, ppc, s_ft, i_ft)
+    _get_trafo3w_results(net, ppc, s_ft, i_ft)
+    _get_impedance_results(net, ppc, i_ft)
+    _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
+    _get_switch_results(net, i_ft)
     
-def _get_branch_flows(net, ppc):
+def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
     u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
     s_ft = (np.sqrt(ppc["branch"][:, (PF, PT)].real**2 +
@@ -36,7 +36,9 @@ def _get_branch_flows(net, ppc):
     i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
     return i_ft, s_ft
     
-def _get_line_results(net, ppc, i_ft, ac=True):
+def _get_line_results(net, ppc, i_ft):
+    ac = net["_options"]["ac"]
+
     if not "line" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["line"]
@@ -67,7 +69,10 @@ def _get_line_results(net, ppc, i_ft, ac=True):
     net["res_line"].index = net["line"].index
 
 
-def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
+def _get_trafo_results(net, ppc, s_ft, i_ft):
+    ac = net["_options"]["ac"]
+    trafo_loading = net["_options"]["trafo_loading"]
+
     if not "trafo" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
@@ -99,7 +104,10 @@ def _get_trafo_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
     net["res_trafo"].index = net["trafo"].index
 
 
-def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
+def _get_trafo3w_results(net, ppc, s_ft, i_ft):
+    trafo_loading = net["_options"]["trafo_loading"]
+    ac = net["_options"]["ac"]
+
     if not "trafo3w" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
@@ -150,7 +158,9 @@ def _get_trafo3w_results(net, ppc, trafo_loading, s_ft, i_ft, ac=True):
     net["res_trafo3w"].index = net["trafo3w"].index
 
 
-def _get_impedance_results(net, ppc, i_ft, ac=True):
+def _get_impedance_results(net, ppc, i_ft):
+    ac = net["_options"]["ac"]
+
     if not "impedance" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["impedance"]
@@ -171,7 +181,9 @@ def _get_impedance_results(net, ppc, i_ft, ac=True):
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
     net["res_impedance"].index = net["impedance"].index
 
-def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac=True):
+def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
+    ac = net["_options"]["ac"]
+
     if not "xward" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["xward"]
@@ -189,7 +201,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, ac=True):
     pq_buses[b_ppc, 1] += q
     net["res_xward"].index = net["xward"].index
 
-def _get_switch_results(net, ppc, i_ft, ac=True):
+def _get_switch_results(net, i_ft):
     if not "switch" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["switch"]

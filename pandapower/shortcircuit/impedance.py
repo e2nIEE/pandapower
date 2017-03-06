@@ -13,13 +13,14 @@ import pandas as pd
 from pandapower.pypower_extensions.makeYbus import makeYbus
 
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.auxiliary import _select_is_elements
+from pandapower.auxiliary import _select_is_elements, _create_options_dict
 from pandapower.build_branch import _calc_nominal_ratio_from_dataframe
 
 from pypower.idx_bus import GS, BS
 
 def calc_equiv_sc_impedance(net, case):
     net["_is_elems"] = _select_is_elements(net, None)
+    net["_options"] = _create_options_dict()
     ppc, ppci = _pd2ppc(net)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     correct_branch_impedances(net, case, ppci, bus_lookup)

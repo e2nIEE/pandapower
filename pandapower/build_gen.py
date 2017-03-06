@@ -12,21 +12,21 @@ from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG,
 from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from numpy import array,  zeros, isnan
 
-def _build_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles,
-                   copy_constraints_to_ppc=False, opf=False):
+def _build_gen_ppc(net, ppc):
     '''
     wrapper function to call either the PF or the OPF version
     '''
+    # options
+    mode = net["_options"]["mode"]
+    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
-    if opf:
-        _build_gen_opf(net, ppc, calculate_voltage_angles, delta=1e-10)
+    if mode == "opf":
+        _build_gen_opf(net, ppc, delta=1e-10)
     else:
-        _build_gen_pf(net, ppc, enforce_q_lims, calculate_voltage_angles,
-                   copy_constraints_to_ppc)
+        _build_gen_pf(net, ppc)
 
 
-def _build_gen_pf(net, ppc, enforce_q_lims, calculate_voltage_angles,
-                   copy_constraints_to_ppc):
+def _build_gen_pf(net, ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -36,7 +36,7 @@ def _build_gen_pf(net, ppc, enforce_q_lims, calculate_voltage_angles,
 
         **ppc** - The PYPOWER format network to fill in values
     '''
-    
+
 
     # get in service elements
     is_elems = net["_is_elems"]
@@ -52,12 +52,11 @@ def _build_gen_pf(net, ppc, enforce_q_lims, calculate_voltage_angles,
     p_lim_default = 1e9
 
     _init_ppc_gen(ppc, xw_end, q_lim_default)
-    _build_pp_ext_grid(net, ppc, eg_is, eg_end, calculate_voltage_angles)
+    _build_pp_ext_grid(net, ppc, eg_is, eg_end)
 
     # add generator / pv data
     if gen_end > eg_end:
-        _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, enforce_q_lims,
-                      copy_constraints_to_ppc, q_lim_default, p_lim_default)
+        _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, q_lim_default, p_lim_default)
 
     # add extended ward pv node data
     if xw_end > gen_end:
@@ -71,7 +70,8 @@ def _init_ppc_gen(ppc, xw_end, q_lim_default):
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
 
-def _build_pp_ext_grid(net, ppc, eg_is, eg_end, calculate_voltage_angles):
+def _build_pp_ext_grid(net, ppc, eg_is, eg_end):
+    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # add ext grid / slack data
     eg_buses = bus_lookup[eg_is["bus"].values]
@@ -86,9 +86,12 @@ def _build_pp_ext_grid(net, ppc, eg_is, eg_end, calculate_voltage_angles):
     # _build_gen_lookups(net, "ext_grid", 0, eg_end)
 
 
-def _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, enforce_q_lims,
-                  copy_constraints_to_ppc, q_lim_default, p_lim_default):
+def _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, q_lim_default, p_lim_default):
+
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    enforce_q_lims = net["_options"]["enforce_q_lims"]
+    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
+
     ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
     ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
     ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
@@ -128,7 +131,7 @@ def _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default, update_lookup=True
 
 
         
-def _update_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles):
+def _update_gen_ppc(net, ppc):
     '''
     Takes the ppc network and updates the gen values from the values in net.
 
@@ -137,6 +140,9 @@ def _update_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles):
 
         **ppc** - The PYPOWER format network to fill in values
     '''
+    # get options from net
+    calculate_voltage_angles = net["_options"]["calculat_voltage_angles"]
+    enforce_q_lims = net["_options"]["enforce_q_lims"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     is_elems = net["_is_elems"]
@@ -177,7 +183,7 @@ def _update_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles):
                                   update_lookup=False)
 
 
-def _build_gen_opf(net, ppc, calculate_voltage_angles, delta=1e-10):
+def _build_gen_opf(net, ppc, delta=1e-10):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -188,6 +194,7 @@ def _build_gen_opf(net, ppc, calculate_voltage_angles, delta=1e-10):
         **ppc** - The PYPOWER format network to fill in values
     '''
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
     if len(net.dcline) > 0:
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values

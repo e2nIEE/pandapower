@@ -11,8 +11,7 @@ import warnings
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _set_buses_out_of_service
-from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results
-from pandapower.toolbox import convert_format
+from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results, _create_options_dict
 from pandapower.topology import estimate_voltage_vector
 from pandapower.pypower_extensions.ext2int import ext2int
 from pypower.int2ext import int2ext
@@ -242,8 +241,9 @@ class state_estimation(object):
 
         # select elements in service and convert pandapower ppc to ppc
         self.net["_is_elems"] = _select_is_elements(self.net)
-        ppc, _ = _pd2ppc(self.net, init_results=True,
+        self.net["_options"] = _create_options_dict(init="results",
                                         calculate_voltage_angles=calculate_voltage_angles)
+        ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
         bs_cols = ppc["bus"].shape[1]

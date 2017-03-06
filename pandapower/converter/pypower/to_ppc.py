@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.run import _pd2ppc, _select_is_elements
+from pandapower.run import _pd2ppc, _select_is_elements, _create_options_dict
 try:
     import pplog as logging
 except:
@@ -38,15 +38,15 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model = "t"):
     """
 
     # always convert results if available
-    init_results = True
+    init = "results"
 
     # select elements in service
     net["_is_elems"] = _select_is_elements(net)
-
-    #  do the conversion
-    ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims=False,
-                                    trafo_model=trafo_model, init_results=init_results,
+    net["_options"] = _create_options_dict(calculate_voltage_angles=calculate_voltage_angles, enforce_q_lims=False,
+                                    trafo_model=trafo_model, init=init,
                                     copy_constraints_to_ppc=True)
+    #  do the conversion
+    ppc, ppci = _pd2ppc(net)
     ppc['branch'] = ppc['branch'].real
     ppc.pop('internal')
     return ppc

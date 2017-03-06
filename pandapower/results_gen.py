@@ -10,15 +10,17 @@ from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
-def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus, ac=True):
+def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
+    ac = net["_options"]["ac"]
+
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])
 
-    b, p, q = _get_ext_grid_results(net, ppc, ac)
+    b, p, q = _get_ext_grid_results(net, ppc)
 
     # get results for gens
     if gen_end > eg_end:
-        b, p, q = _get_pp_gen_results(net, ppc, ac, b, p, q)
+        b, p, q = _get_pp_gen_results(net, ppc, b, p, q)
 
     if len(net.dcline) > 0:
         _get_dcline_results(net)
@@ -34,7 +36,9 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus, ac=True):
     pq_bus[b, 1] += q_sum
 
 
-def _get_ext_grid_results(net, ppc, ac):
+def _get_ext_grid_results(net, ppc):
+    ac = net["_options"]["ac"]
+
     # get results for external grids
     eg_is = net["_is_elems"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
@@ -64,7 +68,9 @@ def _get_ext_grid_results(net, ppc, ac):
     return b, p, q
 
 
-def _get_pp_gen_results(net, ppc, ac, b, p, q):
+def _get_pp_gen_results(net, ppc, b, p, q):
+    ac = net["_options"]["ac"]
+
     is_elems = net["_is_elems"]
 
     gen_is = is_elems['gen']

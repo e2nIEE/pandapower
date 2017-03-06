@@ -6,42 +6,44 @@
 
 import numpy as np
 import copy
-from numpy import ones, arange
 from pandapower.results_branch import _get_branch_results
 from pandapower.results_gen import _get_gen_results
 from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buses_out_of_service, \
                                    _get_shunt_results, _get_p_q_results_opf
 
-def _extract_results(net, ppc, trafo_loading, ac=True):
+def _extract_results(net, ppc):
+
     _set_buses_out_of_service(ppc)
-    # generate bus_lookup net -> consecutive ordering
-    maxBus = max(net["bus"].index.values)
-    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
-    bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
+    bus_lookup_aranged = _get_aranged_lookup(net)
 
-    bus_pq = _get_p_q_results(net, bus_lookup_aranged, ac)
-    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
-    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
-    _get_bus_results(net, ppc, bus_pq, ac)
+    bus_pq = _get_p_q_results(net, bus_lookup_aranged)
+    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_bus_results(net, ppc, bus_pq)
 
-def _extract_results_opf(net, ppc, trafo_loading, ac):
-    # generate bus_lookup net -> consecutive ordering
-    maxBus = max(net["bus"].index.values)
-    bus_lookup_aranged = -ones(maxBus + 1, dtype=int)
-    bus_lookup_aranged[net["bus"].index.values] = arange(len(net["bus"].index.values))
+def _extract_results_opf(net, ppc):
+    # get options
+    bus_lookup_aranged = _get_aranged_lookup(net)
 
     _set_buses_out_of_service(ppc)
     bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
-    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
-    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, trafo_loading, ac)
-    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq, ac)
-    _get_bus_results(net, ppc, bus_pq, ac)
+    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_bus_results(net, ppc, bus_pq)
     _get_costs(net, ppc)
 
 def _get_costs(net, ppc):
     net.res_cost = ppc['obj']
 
+def _get_aranged_lookup(net):
+    # generate bus_lookup net -> consecutive ordering
+    maxBus = max(net["bus"].index.values)
+    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
+    bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
+
+    return bus_lookup_aranged
 
 def reset_results(net):
     net["res_bus"] = copy.copy(net["_empty_res_bus"])
@@ -58,7 +60,7 @@ def reset_results(net):
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
     net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
     
-def _copy_results_ppci_to_ppc(result, ppc, opf = False):
+def _copy_results_ppci_to_ppc(result, ppc, mode):
     '''
     result contains results for all in service elements
     ppc shall get the results for in- and out of service elements
@@ -92,7 +94,7 @@ def _copy_results_ppci_to_ppc(result, ppc, opf = False):
     ppc['success'] = result['success']
     ppc['et'] = result['et']
 
-    if opf:
+    if mode == 'opf':
         ppc['obj'] = result['f']
         ppc['internal_gencost'] = result['gencost']
 

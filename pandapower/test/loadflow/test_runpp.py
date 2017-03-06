@@ -15,7 +15,7 @@ from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
 from pandapower.auxiliary import _check_connectivity
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.run import _select_is_elements
+from pandapower.run import _select_is_elements, _create_options_dict
 from pandapower.networks import create_cigre_network_mv
 
 def test_runpp_init():
@@ -114,6 +114,7 @@ def test_oos_bus():
 
 def get_isolated(net):
     net["_is_elems"] = _select_is_elements(net)
+    net["_options"] = _create_options_dict()
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)
 
