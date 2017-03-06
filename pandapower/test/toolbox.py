@@ -43,7 +43,7 @@ def assert_mpc_equal(mpc1, mpc2):
             mpc2['version'], mpc1['version']))
 
 
-def assert_net_equal(a_net, b_net):
+def assert_net_equal(a_net, b_net, reindex=False):
     """Returns True if the given pandapower networks are equal.
     Raises AssertionError if grids are not equal.
     """
@@ -56,7 +56,7 @@ def assert_net_equal(a_net, b_net):
             if not (a_net[name] is None and b_net[name] is None):
                 try:
                     pdt.assert_frame_equal(
-                        a_net[name], b_net[name], check_dtype=False)
+                        a_net[name], b_net[name], check_dtype=False, check_like=reindex)
                 except AssertionError:
                     pytest.fail("Tables are not equal: %s" % name)
                     status = False

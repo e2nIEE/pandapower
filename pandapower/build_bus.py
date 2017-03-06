@@ -30,7 +30,7 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
+def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False, r_switch=0):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
@@ -52,12 +52,13 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
     bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
     bus_lookup[bus_index] = consec_buses
 
-    # if there are any opened bus-bus switches update those entries
+    # if there are any closed bus-bus switches update those entries
     slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") & \
             (net["switch"]["bus"].isin(bus_is.index).values) & (
                 net["switch"]["element"].isin(bus_is.index).values)
-
-    if slidx.any():
+    net._closed_bb_switches = slidx
+    
+    if r_switch == 0 and slidx.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
         # mapping at once) would require to determine how to fuse busses and which busses

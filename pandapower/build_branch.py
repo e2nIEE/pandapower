@@ -16,7 +16,7 @@ from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import get_values
 
 
-def _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model,
+def _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model, r_switch,
                       copy_constraints_to_ppc=False):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
@@ -35,34 +35,53 @@ def _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model,
         **ppc** - The PYPOWER format network to fill in values
 
     """
-    line_end = len(net["line"])
-    trafo_end = line_end + len(net["trafo"])
-    trafo3w_end = trafo_end + len(net["trafo3w"]) * 3
-    impedance_end = trafo3w_end + len(net["impedance"])
-    xward_end = impedance_end + len(net["xward"])
-
-    ppc["branch"] = np.zeros(shape=(xward_end, QT + 3), dtype=np.complex128)
+    length = _initialize_branch_lookup(net, r_switch)
+    lookup = net._pd2ppc_lookups["branch"]
+    ppc["branch"] = np.zeros(shape=(length, QT + 3), dtype=np.complex128)
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
-    if line_end > 0:
-        ppc["branch"][:line_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, RATE_A]] = \
-            _calc_line_parameter(net, ppc, copy_constraints_to_ppc)
-    if trafo_end > line_end:
-        ppc["branch"][line_end:trafo_end,
-                      [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  RATE_A]] = \
-            _calc_trafo_parameter(net, ppc, calculate_voltage_angles,
-                                  trafo_model, copy_constraints_to_ppc)
-    if trafo3w_end > trafo_end:
-        ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A]] = \
-            _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles,  trafo_model, copy_constraints_to_ppc)
-    if impedance_end > trafo3w_end:
-        ppc["branch"][trafo3w_end:impedance_end, [F_BUS, T_BUS, BR_R, BR_X, 17, 18, BR_STATUS]] = \
-            _calc_impedance_parameter(net)
-    if xward_end > impedance_end:
-        ppc["branch"][impedance_end:xward_end, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = \
-            _calc_xward_parameter(net, ppc)
+    if "line" in lookup:
+        f, t = lookup["line"]
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_B,
+                    BR_STATUS, RATE_A]] = _calc_line_parameter(net, ppc, copy_constraints_to_ppc)
+    if "trafo" in lookup:
+        f, t = lookup["trafo"]
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS,  
+            RATE_A]] = _calc_trafo_parameter(net, ppc, calculate_voltage_angles, trafo_model, 
+                                             copy_constraints_to_ppc)
+    if "trafo3w" in lookup:
+        f, t = lookup["trafo3w"]
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A]] = \
+                         _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model, 
+                                                copy_constraints_to_ppc)
+    if "impedance" in lookup:
+        f, t = lookup["impedance"]
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, 17, 18, BR_STATUS]] = \
+                        _calc_impedance_parameter(net)
+    if "xward" in lookup:
+        f,t = lookup["xward"]
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = _calc_xward_parameter(net, ppc)
 
-
+    if "switch" in lookup:
+        f, t = lookup["switch"]
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R]] = _calc_switch_parameter(net, ppc, r_switch)
+            
+def _initialize_branch_lookup(net, r_switch):
+    start = 0
+    net._pd2ppc_lookups["branch"] = {}
+    for element in ["line", "trafo", "trafo3w", "impedance", "xward"]:
+        if len(net[element]) > 0:
+            if element == "trafo3w":
+                end = start + len(net[element]) * 3
+            else:
+                end = start + len(net[element])
+            net._pd2ppc_lookups["branch"][element] = (start, end)
+            start = end
+    if r_switch > 0 and len(net._closed_bb_switches) > 0:
+        end = start + len(net._closed_bb_switches)
+        net._pd2ppc_lookups["branch"]["switch"] = (start, end)
+    return end
+    
 def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model, copy_constraints_to_ppc = False):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     trafo_df = _trafo_df_from_trafo3w(net)
@@ -77,7 +96,6 @@ def _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles, trafo_model, cop
         max_load = trafo_df.max_loading_percent if "max_loading_percent" in trafo_df else 0
         temp_para[:, 8] = max_load / 100. * trafo_df.sn_kva / 1000.
     return temp_para
-
 
 def _calc_line_parameter(net, ppc, copy_constraints_to_ppc=False):
     """
@@ -723,3 +741,28 @@ def _update_trafo_trafo3w_ppc(net, ppc, calculate_voltage_angles, trafo_model,co
     if trafo3w_end > trafo_end:
         ppc["branch"][trafo_end:trafo3w_end, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS]] = \
             _calc_trafo3w_parameter(net, ppc, calculate_voltage_angles,  trafo_model)
+
+def _calc_switch_parameter(net, ppc, r_switch):
+    """
+    calculates the line parameter in per unit.
+
+    **INPUT**:
+        **net** -The Pandapower format network
+
+    **RETURN**:
+        **t** - Temporary line parameter. Which is a complex128
+                Nunmpy array. with the following order:
+                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
+    """
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    switch = net.switch[net._closed_bb_switches]
+    fb = bus_lookup[switch["bus"].values]
+    tb = bus_lookup[switch["element"].values]
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    t = np.zeros(shape=(len(switch), 3), dtype=np.complex128)
+
+    t[:, 0] = fb
+    t[:, 1] = tb
+
+    t[:, 2] = r_switch / baseR
+    return t

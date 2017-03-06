@@ -25,7 +25,7 @@ from pandapower.make_objective import _make_objective
 
 def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
             trafo_model="pi", init_results=False, copy_constraints_to_ppc=False,
-            opf=False, check_connectivity=False, **kwargs):
+            opf=False, check_connectivity=False, r_switch=0, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -82,12 +82,13 @@ def _pd2ppc(net, calculate_voltage_angles=False, enforce_q_lims=False,
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
-    _build_bus_ppc(net, ppc, init_results, copy_constraints_to_ppc=copy_constraints_to_ppc)
+    _build_bus_ppc(net, ppc, init_results, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                   r_switch=r_switch)
     # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
     _build_gen_ppc(net, ppc, enforce_q_lims, calculate_voltage_angles,
                    copy_constraints_to_ppc=False, opf=opf)
     # generate ppc['branch'] and directly generates branch values
-    _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model,
+    _build_branch_ppc(net, ppc, calculate_voltage_angles, trafo_model, r_switch,
                       copy_constraints_to_ppc=copy_constraints_to_ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_loads_and_add_on_ppc(net, ppc, opf=opf)
