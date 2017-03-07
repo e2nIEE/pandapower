@@ -208,6 +208,7 @@ def _runpppf(net, **kwargs):
 
     net["converged"] = False
     _add_auxiliary_elements(net)
+
     if (ac and not init == "results") or not ac:
         reset_results(net)
 

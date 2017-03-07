@@ -206,8 +206,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 5), dtype=np.complex128)
-    vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(trafo_df, vn_lv, 
-                                                               calculate_voltage_angles)
+    vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(trafo_df, calculate_voltage_angles)
     r, x, y = _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model, net.sn_kva)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
@@ -280,7 +279,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
         return y
 
 
-def _calc_tap_from_dataframe(trafo_df, vn_lv, calculate_voltage_angles):
+def _calc_tap_from_dataframe(trafo_df, calculate_voltage_angles):
     """
     Adjust the nominal voltage vnh and vnl to the active tab position "tp_pos".
     If "side" is 1 (high-voltage side) the high voltage vnh is adjusted.

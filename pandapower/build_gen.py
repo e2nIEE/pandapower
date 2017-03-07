@@ -141,7 +141,7 @@ def _update_gen_ppc(net, ppc):
         **ppc** - The PYPOWER format network to fill in values
     '''
     # get options from net
-    calculate_voltage_angles = net["_options"]["calculat_voltage_angles"]
+    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
     enforce_q_lims = net["_options"]["enforce_q_lims"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
