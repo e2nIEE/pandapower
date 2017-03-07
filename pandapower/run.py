@@ -201,9 +201,6 @@ def _runpppf(net, **kwargs):
     init = net["_options"]["init"]
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
-    numba = net["_options"]["numba"]
-    enforce_q_lims = net["_options"]["enforce_q_lims"]
-    tolerance_kva = net["_options"]["tolerance_kva"]
     mode = net["_options"]["mode"]
 
     net["converged"] = False
@@ -229,8 +226,7 @@ def _runpppf(net, **kwargs):
         kwargs["VERBOSE"] = 0
 
     # run the powerflow
-    result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                                   PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
+    result = _runpf(ppci, net["_options"], **kwargs)[0]
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
     result = _copy_results_ppci_to_ppc(result, ppc, mode)

@@ -10,6 +10,7 @@ from time import time
 from numpy import r_, zeros, pi, ones, exp, argmax, real
 from numpy import flatnonzero as find
 
+from pypower.ppoption import ppoption
 from pypower.makeSbus import makeSbus
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
@@ -32,7 +33,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None):
+def _runpf(ppci, options, **kwargs):
     """Runs a power flow.
 
     Similar to runpf() from pypower. See Pypower documentation for more information.
@@ -44,6 +45,8 @@ def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None
 
     ##-----  run the power flow  -----
     t0 = time()
+    # ToDo: Options should be extracted in every subfunction not here...
+    init, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
 
     if ac:  # AC formulation
         if init == "dc":
@@ -57,6 +60,18 @@ def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None
     ppci["success"] = success
 
     return ppci, success
+
+
+def _get_options(options, **kwargs):
+    init = options["init"]
+    ac = options["ac"]
+    recycle = options["recycle"]
+    numba = options["numba"]
+    enforce_q_lims = options["enforce_q_lims"]
+    tolerance_kva = options["tolerance_kva"]
+
+    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_kva * 1e-3, **kwargs)
+    return init, ac, numba, recycle, ppopt
 
 
 def _dc_runpf(ppci, ppopt):
