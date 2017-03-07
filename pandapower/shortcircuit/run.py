@@ -5,11 +5,17 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
+import warnings
+import numpy as np
+from scipy.sparse.linalg import inv
+
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
-from pandapower.shortcircuit.impedance import calc_equiv_sc_impedance
 from pandapower.shortcircuit.kappa import calc_kappa
 from pandapower.run import _add_auxiliary_elements
 from pandapower.auxiliary import _select_is_elements, _create_options_dict, _clean_up
+from pandapower.pypower_extensions.makeYbus import makeYbus
+from pandapower.pd2ppc import _pd2ppc
+
 try:
     import pplog as logging
 except:
@@ -78,37 +84,51 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
         if  not "rx_%s"%case in net.ext_grid or any(pd.isnull(net.ext_grid["rx_%s"%case])):
             raise ValueError("rx_%s is not defined for all ext_grids" %case)
     net["_options"] = _create_options_dict(trafo_model="pi", mode="sc")
-    net["_options"]["sc_case"] = case
+    net["_options_sc"] = {"case": case, "lv_tol_percent": lv_tol_percent, "tk_s": tk_s,
+                         "network_structure": network_structure}
     net["_is_elems"] = _select_is_elements(net, None)
     _add_auxiliary_elements(net)
-    setup_sc(net, lv_tol_percent)
-    calc_equiv_sc_impedance(net, case)
+    _add_c_to_net(net)
+    calc_equiv_sc_impedance(net)
     calc_ikss(net, case)
     
     if ip or ith:
-        calc_kappa(net, network_structure)
-
+        calc_kappa(net)
     if ip:
-        calc_ip(net, case, network_structure)
-
+        calc_ip(net)
     if ith:
-        calc_ith(net, case, tk_s, network_structure)
-    
+        calc_ith(net)    
     _clean_up(net)
 
-def setup_sc(net, lv_tol_percent):
-    if lv_tol_percent==10:
-        c_ns = 1.1
-    elif lv_tol_percent==6:
-        c_ns = 1.05
-    else:
-        raise ValueError("Voltage tolerance in the low voltage grid has" \
-                                    " to be either 6% or 10% according to IEC 60909")
-
-    lv_buses = net.bus[net.bus.vn_kv < 1.].index
+def _add_c_to_net(net):
     net.bus["c_max"] = 1.1
-    net.bus.c_max.loc[lv_buses] = c_ns
     net.bus["c_min"] = 1.
-    net.bus.c_min.loc[lv_buses] = .95
     net.bus["kappa_max"] = 2.
-    net.bus.kappa_max.loc[lv_buses] = 1.8
+    if net.bus.vn_kv.min() < 1.:
+        lv_tol_percent = net["_options_sc"]["lv_tol_percent"]
+        if lv_tol_percent==10:
+            c_ns = 1.1
+        elif lv_tol_percent==6:
+            c_ns = 1.05
+        else:
+            raise ValueError("Voltage tolerance in the low voltage grid has" \
+                                        " to be either 6% or 10% according to IEC 60909")
+        lv_buses = net.bus[net.bus.vn_kv < 1.].index
+        net.bus.c_max.loc[lv_buses] = c_ns
+        net.bus.c_min.loc[lv_buses] = .95
+        net.bus.kappa_max.loc[lv_buses] = 1.8
+
+def calc_equiv_sc_impedance(net):
+    ppc, ppci = _pd2ppc(net)
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    zbus = calc_zbus(ppci)
+    z_equiv = np.diag(zbus.toarray())
+    net.bus["z_equiv"] = np.nan + np.nan *1j
+    ppc_index = bus_lookup[net._is_elems["bus"].index]
+    net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv[ppc_index]
+
+def calc_zbus(ppc):
+    Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return inv(Ybus)

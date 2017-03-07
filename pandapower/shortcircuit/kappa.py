@@ -10,7 +10,8 @@ import networkx as nx
 import pandapower.topology as top
 
 
-def calc_kappa(net, network_structure):
+def calc_kappa(net):
+    network_structure = net._options_sc["network_structure"]
     net.bus["kappa_max"] = 2.
     net.bus["kappa_korr"] = 1.
     if network_structure == "meshed":

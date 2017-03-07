@@ -72,8 +72,8 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         Pandapower provides two equivalent circuit models for the transformer:
 
-            - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+            - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
@@ -139,8 +139,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         Pandapower provides two equivalent circuit models for the transformer:
 
-            - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+            - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
@@ -208,6 +208,7 @@ def _runpppf(net, **kwargs):
 
     net["converged"] = False
     _add_auxiliary_elements(net)
+
     if (ac and not init == "results") or not ac:
         reset_results(net)
 

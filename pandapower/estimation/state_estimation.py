@@ -5,7 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-import logging
 import pandas as pd
 import warnings
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
@@ -18,6 +17,11 @@ from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
+try:
+    import pplog as logging
+except:
+    import logging
+std_logger = logging.getLogger(__name__)
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -161,9 +165,7 @@ class state_estimation(object):
     def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
         self.logger = logger
         if self.logger is None:
-            self.logger = logging.getLogger("wls_se")
-            self.logger.setLevel(logging.INFO)
-            self.logger.addHandler(logging.StreamHandler())
+            self.logger = std_logger
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
@@ -241,8 +243,8 @@ class state_estimation(object):
 
         # select elements in service and convert pandapower ppc to ppc
         self.net["_is_elems"] = _select_is_elements(self.net)
-        self.net["_options"] = _create_options_dict(init="results",
-                                        calculate_voltage_angles=calculate_voltage_angles)
+        self.net["_options"] = _create_options_dict(init="results", trafo_model="t",
+                               calculate_voltage_angles=calculate_voltage_angles)
         ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
@@ -596,16 +598,16 @@ class state_estimation(object):
         test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
 
         # Print results
-        self.logger.info("-----------------------")
-        self.logger.info("Result of Chi^2 test:")
-        self.logger.info("Number of measurements:")
-        self.logger.info(m)
-        self.logger.info("Number of state variables:")
-        self.logger.info(n)
-        self.logger.info("Performance index:")
-        self.logger.info(J)
-        self.logger.info("Chi^2 test threshold:")
-        self.logger.info(test_thresh)
+        self.logger.debug("-----------------------")
+        self.logger.debug("Result of Chi^2 test:")
+        self.logger.debug("Number of measurements:")
+        self.logger.debug(m)
+        self.logger.debug("Number of state variables:")
+        self.logger.debug(n)
+        self.logger.debug("Performance index:")
+        self.logger.debug(J)
+        self.logger.debug("Chi^2 test threshold:")
+        self.logger.debug(test_thresh)
 
         if J <= test_thresh:
             self.bad_data_present = False
@@ -733,8 +735,8 @@ class state_estimation(object):
                     self.logger.info("No bad data removed from the set of measurements.")
                     self.logger.info("Finished, successful.")
                 
-            self.logger.info("rn_max identification threshold:")
-            self.logger.info(rn_max_threshold)
+            self.logger.debug("rn_max identification threshold:")
+            self.logger.debug(rn_max_threshold)
             
             num_iterations += 1
 

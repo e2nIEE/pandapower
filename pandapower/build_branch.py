@@ -128,9 +128,8 @@ def _calc_line_parameter(net, ppc):
     t[:, 3] = line["x_ohm_per_km"] * length / baseR / parallel
     if mode == "sc":
         t[:, 4] == 0
-        if net["_options"]["sc_case"] == "min":
-            from pandapower.shortcircuit.impedance import end_temperature_correction_factor
-            t[:, 2] *= end_temperature_correction_factor(net)
+        if net["_options_sc"]["case"] == "min":
+            t[:, 2] *= _end_temperature_correction_factor(net)
     else:
         t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
     t[:, 5] = line["in_service"]
@@ -791,6 +790,11 @@ def _calc_switch_parameter(net, ppc):
     t[:, 2] = r_switch / baseR
     return t
 
+def _end_temperature_correction_factor(net):
+    if "endtemp_degree" not in net.line:
+        raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
+    return (1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20)) #formula from standard
+    
 def _transformer_correction_factor(vsc, vscr, sn, cmax):
     sn = sn / 1000.
     zt = vsc / 100 / sn

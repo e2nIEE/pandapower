@@ -296,7 +296,7 @@ def _add_gen_impedances_ppc(net, ppc):
 
 def _add_ext_grid_sc_impedance(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    case = net._options["sc_case"]
+    case = net._options_sc["case"]
     eg = net._is_elems["ext_grid"]
     if len(eg) == 0:
         return
