@@ -8,10 +8,13 @@ import pandas as pd
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
 from pandapower.shortcircuit.impedance import calc_equiv_sc_impedance
 from pandapower.shortcircuit.kappa import calc_kappa
+from pandapower.run import _add_auxiliary_elements
+from pandapower.auxiliary import _select_is_elements, _create_options_dict, _clean_up
 try:
     import pplog as logging
 except:
     import logging
+
 logger = logging.getLogger(__name__)
 
 def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False, ith=False, 
@@ -74,7 +77,10 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
             raise ValueError("s_sc_%s is not defined for all ext_grids" %case)
         if  not "rx_%s"%case in net.ext_grid or any(pd.isnull(net.ext_grid["rx_%s"%case])):
             raise ValueError("rx_%s is not defined for all ext_grids" %case)
-
+    net["_options"] = _create_options_dict(trafo_model="pi", mode="sc")
+    net["_options"]["sc_case"] = case
+    net["_is_elems"] = _select_is_elements(net, None)
+    _add_auxiliary_elements(net)
     setup_sc(net, lv_tol_percent)
     calc_equiv_sc_impedance(net, case)
     calc_ikss(net, case)
@@ -88,7 +94,7 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     if ith:
         calc_ith(net, case, tk_s, network_structure)
     
-    clean_up(net)
+    _clean_up(net)
 
 def setup_sc(net, lv_tol_percent):
     if lv_tol_percent==10:
@@ -106,9 +112,3 @@ def setup_sc(net, lv_tol_percent):
     net.bus.c_min.loc[lv_buses] = .95
     net.bus["kappa_max"] = 2.
     net.bus.kappa_max.loc[lv_buses] = 1.8
-    
-def clean_up(net):
-    for var in ["kappa_max", "z_equiv", "kappa_korr", "kappa", "c_max", "c_min", "x", "r"]:
-        for element in "line", "ext_grid", "trafo":
-            if var in net[element]:            
-                net[element].drop(var, axis=1, inplace=True)

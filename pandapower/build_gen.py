@@ -18,8 +18,6 @@ def _build_gen_ppc(net, ppc):
     '''
     # options
     mode = net["_options"]["mode"]
-    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
-
     if mode == "opf":
         _build_gen_opf(net, ppc, delta=1e-10)
     else:
@@ -382,5 +380,3 @@ def _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_defau
     min_p_kw = ppc["gen"][eg_end:gen_end, [PMAX]]
     ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
     ppc["gen"][eg_end:gen_end, [PMAX]] = min_p_kw
-
-

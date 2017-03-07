@@ -13,24 +13,17 @@ import pandas as pd
 from pandapower.pypower_extensions.makeYbus import makeYbus
 
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.auxiliary import _select_is_elements, _create_options_dict
-from pandapower.build_branch import _calc_nominal_ratio_from_dataframe
-
 from pypower.idx_bus import GS, BS
 
 def calc_equiv_sc_impedance(net, case):
-    net["_is_elems"] = _select_is_elements(net, None)
-    net["_options"] = _create_options_dict()
     ppc, ppci = _pd2ppc(net)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    correct_branch_impedances(net, case, ppci, bus_lookup)
-    if len(net.ext_grid) > 0:
-        add_ext_grid_admittance_to_ppc(net, case, ppci, bus_lookup)
-    if len(net.gen) > 0:
-        add_generator_admittance_to_ppc(net, ppci, bus_lookup)
-    if len(net.sgen) > 0:
-        add_sgen_admittance_to_ppc(net, ppci, bus_lookup)
-
+#    if len(net._is_elems["ext_grid"]) > 0:
+#        add_ext_grid_admittance_to_ppc(net, ppci, bus_lookup)
+#    if len(net._is_elems["gen"]) > 0:
+#        add_generator_admittance_to_ppc(net, ppci, bus_lookup)
+#    if len(net._is_elems["sgen"]) > 0:
+#        add_sgen_admittance_to_ppc(net, ppci, bus_lookup)
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
     net.bus["z_equiv"] = np.nan + np.nan *1j
@@ -38,42 +31,24 @@ def calc_equiv_sc_impedance(net, case):
     net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv[ppc_index]
 
 
-def consider_line_end_temperature(net, ppc):
+def end_temperature_correction_factor(net):
     if "endtemp_degree" not in net.line:
         raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
-    endtemp = net.line.endtemp_degree.values.astype(float)
-    ppc["branch"][:len(net.line), 2] *= (1 + .004 * (endtemp - 20)) #formula from standard
+    return (1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20)) #formula from standard
 
-
-def correct_branch_impedances(net, case, ppc, bus_lookup):
-    ppc["branch"][:, 4] = 0
-    if case == "min":
-        consider_line_end_temperature(net, ppc)
-
-    kt = transformer_correction_factor(net)
-    ppc["branch"][len(net.line):, 3] *= kt
-    ppc["branch"][len(net.line):, 2] *= kt
-    ratio = _calc_nominal_ratio_from_dataframe(ppc, net.trafo, net.trafo.vn_hv_kv, 
-                                               net.trafo.vn_lv_kv, bus_lookup)
-    ppc["branch"][len(net.line):, 3] /= (ratio**2)
-    ppc["branch"][len(net.line):, 2] /= (ratio**2)
-
-    net.line["r"] = ppc["branch"][:len(net.line), 2].real
-    net.line["x"] = ppc["branch"][:len(net.line):, 3].real
-    net.trafo["r"] = ppc["branch"][len(net.line):, 2].real
-    net.trafo["x"] = ppc["branch"][len(net.line):, 3].real
-
-def add_ext_grid_admittance_to_ppc(net, case, ppc, bus_lookup):
-    eg_buses = net.ext_grid.bus.values
+def add_ext_grid_admittance_to_ppc(net, ppc, bus_lookup):
+    case = net._options["sc_case"]
+    eg = net._is_elems["ext_grid"]
+    eg_buses = eg.bus.values
     c_grid = net.bus["c_%s"%case].loc[eg_buses].values
-    s_sc = net.ext_grid["s_sc_%s_mva"%case].values
-    rx = net.ext_grid["rx_%s"%case].values
+    s_sc = eg["s_sc_%s_mva"%case].values
+    rx = eg["rx_%s"%case].values
 
     z_grid = c_grid / s_sc
     x_grid = np.sqrt(z_grid**2 / (rx**2 + 1))
     r_grid = np.sqrt(z_grid**2 - x_grid**2)
-    net.ext_grid["r"] = r_grid
-    net.ext_grid["x"] = x_grid
+    eg["r"] = r_grid
+    eg["x"] = x_grid
 
     y_grid = 1 / (r_grid + x_grid*1j)
     eg_bus_idx = bus_lookup[eg_buses]
@@ -81,19 +56,20 @@ def add_ext_grid_admittance_to_ppc(net, case, ppc, bus_lookup):
     ppc["bus"][eg_bus_idx, BS] = y_grid.imag
 
 def add_generator_admittance_to_ppc(net, ppc, bus_lookup):
-    gen_buses = net.gen.bus.values
+    gen = net._is_elems["gen"]
+    gen_buses = gen.bus.values
     vn_net = net.bus.vn_kv.loc[gen_buses].values
     cmax = net.bus["c_max"].loc[gen_buses].values
-    phi_gen = np.arccos(net.gen.cos_phi)
+    phi_gen = np.arccos(gen.cos_phi)
 
-    vn_gen = net.gen.vn_kv.values
-    sn_gen = net.gen.sn_kva.values
+    vn_gen = gen.vn_kv.values
+    sn_gen = gen.sn_kva.values
 
     z_r = vn_net**2 / sn_gen * 1e3
-    x_gen = net.gen.xdss.values / 100 * z_r
-    r_gen = net.gen.rdss.values / 100 * z_r
+    x_gen = gen.xdss.values / 100 * z_r
+    r_gen = gen.rdss.values / 100 * z_r
 
-    kg = generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, net.gen.xdss)
+    kg = generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
     y_gen = 1 / ((r_gen + x_gen*1j) * kg)
 
     gen_bus_idx = bus_lookup[gen_buses]
@@ -101,11 +77,12 @@ def add_generator_admittance_to_ppc(net, ppc, bus_lookup):
     ppc["bus"][gen_bus_idx, BS] = y_gen.imag
 
 def add_sgen_admittance_to_ppc(net, ppc, bus_lookup):
-    if any(pd.isnull(net.sgen.sn_kva)):
+    sgen = net._is_elems["sgen"]
+    if any(pd.isnull(sgen.sn_kva)):
         raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
-    sgen_buses = net.sgen.bus.values
+    sgen_buses = sgen.bus.values
 
-    z_sgen = 1 / (net.sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
+    z_sgen = 1 / (sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
     x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
     r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
     y_sgen = 1 / (r_sgen + x_sgen*1j)
@@ -114,14 +91,12 @@ def add_sgen_admittance_to_ppc(net, ppc, bus_lookup):
     ppc["bus"][gen_bus_idx, GS] = y_sgen.real
     ppc["bus"][gen_bus_idx, BS] = y_sgen.imag
 
-def transformer_correction_factor(net):
-    uk = net.trafo.vsc_percent.values
-    ukr = net.trafo.vscr_percent.values
-    sn = net.trafo.sn_kva.values/1000        
-    zt = uk / 100 / sn
-    rt = ukr / 100 / sn
+def transformer_correction_factor(vsc, vscr, sn, cmax):
+    sn = sn / 1000.
+    zt = vsc / 100 / sn
+    rt = vscr / 100 / sn
     xt = np.sqrt(zt**2 - rt**2)
-    kt = 0.95 * net.bus.c_max.loc[net.trafo.lv_bus.values] / (1 + .6 * xt * sn)
+    kt = 0.95 * cmax / (1 + .6 * xt * sn)
     return kt
 
 def generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):

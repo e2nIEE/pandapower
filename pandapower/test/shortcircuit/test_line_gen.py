@@ -30,4 +30,12 @@ def test_min_gen(one_line_one_generator):
     assert abs(net.res_bus_sc.ikss_min_ka.at[1] - 1.3697407) < 1e-7    
 
 if __name__ == '__main__':   
-    pytest.main(['-xs'])
+#    folder = os.path.abspath(os.path.dirname(pp.__file__))
+#    net = pp.from_pickle(os.path.join(folder, "test", "shortcircuit", "sc_test_gen.p"))
+#    bid = pp.create_bus(net, vn_kv=10.)
+#    pp.create_switch(net, bid, net.gen.bus.iloc[0], et="b")
+#    net.gen.bus.iloc[0] = bid
+#    pp.create_bus(net, vn_kv=0.4, in_service=False)
+#    sc.runsc(net, case="min")
+    
+        pytest.main(['-xs'])

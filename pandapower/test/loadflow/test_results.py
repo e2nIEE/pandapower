@@ -518,7 +518,4 @@ def test_open(result_test_network):
 
 
 if __name__ == "__main__":
-    net = pp.create_empty_network()
-    net = add_test_bus_bus_switch(net)
-    pp.runpp(net, r_switch=0.1)
-#    pytest.main(["-xs"])
+    pytest.main(["test_results.py"])

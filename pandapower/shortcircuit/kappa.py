@@ -24,9 +24,10 @@ def calc_kappa(net, network_structure):
                     paths.append((i,p))
             if len(paths) > 1:
                 net.bus.kappa_korr.at[bus] = 1.15
+                get_branch_impedances(net)
                 for eg, path in paths:
-                    r = net.ext_grid.r.at[eg]
-                    x = net.ext_grid.x.at[eg]
+                    r = net._is_elems["ext_grid"].r.at[eg]
+                    x = net._is_elems["ext_grid"].x.at[eg]
                     lines = top.elements_on_path(mg, path, "l", multi=False)
                     r += net.line.r.loc[lines].sum()
                     x += net.line.x.loc[lines].sum()
@@ -39,3 +40,21 @@ def calc_kappa(net, network_structure):
     rx_equiv = np.real(net.bus.z_equiv) / np.imag(net.bus.z_equiv)
     kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
     net.bus["kappa"] = np.clip(net.bus.kappa_korr * kappa, 1, net.bus.kappa_max)
+    
+    
+def get_branch_impedances(net):
+    ppc = net._ppc
+    if len(net.line) > 0:
+        f, t = net._pd2ppc_lookups["branch"]["line"]
+        net.line["r"] = ppc["branch"][f:t, 2].real
+        net.line["x"] = ppc["branch"][f:t, 3].real
+            
+    if len(net.trafo) > 0:
+        f, t = net._pd2ppc_lookups["branch"]["trafo"]
+        net.trafo["r"] = ppc["branch"][f:t, 2].real
+        net.trafo["x"] = ppc["branch"][f:t, 3].real
+
+#    if len(net.trafo3w) > 0:
+#        f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
+#        trafo3w_df["r"] = ppc["branch"][f:t, 2].real
+#        trafo3w_df["x"] = ppc["branch"][f:t, 3].real

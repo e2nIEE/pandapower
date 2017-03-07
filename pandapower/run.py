@@ -242,9 +242,7 @@ def _runpppf(net, **kwargs):
         net["converged"] = True
 
     _extract_results(net, result)
-
-
-#    _clean_up(net)
+    _clean_up(net)
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
@@ -381,9 +379,6 @@ def _runopp(net, verbose, suppress_warnings, **kwargs):
 
 def _add_auxiliary_elements(net):
     # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
-    init = net["_options"]["init"]
-
-    init_results = init == "results"
     if len(net["trafo3w"]) > 0:
         _create_trafo3w_buses(net)
     if len(net.dcline) > 0:
