@@ -110,9 +110,6 @@ def _calc_line_parameter(net, ppc):
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # baseR converts Ohm to p.u. Formula is U^2/Sref. Sref is 1 MVA and vn_kv is
-    # in kV U^2* ((10^3 V)^2/10^6 VA) = U^2
-    # Therefore division by 1 MVA is not necessary.
     line = net["line"]
     fb = bus_lookup[line["from_bus"].values]
     tb = bus_lookup[line["to_bus"].values]

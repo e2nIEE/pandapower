@@ -16,6 +16,8 @@ from pandapower.auxiliary import _select_is_elements, _create_options_dict, _cle
 from pandapower.pypower_extensions.makeYbus import makeYbus
 from pandapower.pd2ppc import _pd2ppc
 
+from pypower.idx_bus import BASE_KV
+
 try:
     import pplog as logging
 except:
@@ -24,7 +26,7 @@ except:
 logger = logging.getLogger(__name__)
 
 def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False, ith=False, 
-          tk_s=1.):
+          tk_s=1., r_fault_ohm=0., x_fault_ohm=0.):
     
     """
     Calculates minimal or maximal symmetrical short-circuit currents.  
@@ -57,7 +59,7 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
             
             "auto" - topology check for each bus is performed to see if it is supplied over multiple paths (might be computationally expensive)
 
-        **Tk_s** (float) failure clearing time in seconds (only relevant for ith)
+        **tk_s** (float) failure clearing time in seconds (only relevant for ith)
 
     OUTPUT:
     
@@ -84,14 +86,14 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
         if  not "rx_%s"%case in net.ext_grid or any(pd.isnull(net.ext_grid["rx_%s"%case])):
             raise ValueError("rx_%s is not defined for all ext_grids" %case)
     net["_options"] = _create_options_dict(trafo_model="pi", mode="sc")
-    net["_options_sc"] = {"case": case, "lv_tol_percent": lv_tol_percent, "tk_s": tk_s,
-                         "network_structure": network_structure}
+    net["_options_sc"] = {"case": case, "lv_tol_percent": lv_tol_percent, "tk_s": tk_s, 
+                         "network_structure": network_structure, "r_fault_ohm": r_fault_ohm,
+                         "x_fault_ohm": x_fault_ohm}
     net["_is_elems"] = _select_is_elements(net, None)
     _add_auxiliary_elements(net)
     _add_c_to_net(net)
     calc_equiv_sc_impedance(net)
     calc_ikss(net, case)
-    
     if ip or ith:
         calc_kappa(net)
     if ip:
@@ -119,13 +121,17 @@ def _add_c_to_net(net):
         net.bus.kappa_max.loc[lv_buses] = 1.8
 
 def calc_equiv_sc_impedance(net):
+    z_fault = net["_options_sc"]["r_fault_ohm"] + net["_options_sc"]["x_fault_ohm"] * 1j
     ppc, ppci = _pd2ppc(net)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
-    net.bus["z_equiv"] = np.nan + np.nan *1j
+    net.bus["z_equiv"] = np.nan
     ppc_index = bus_lookup[net._is_elems["bus"].index]
-    net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv[ppc_index]
+    z_equiv_pp = z_equiv[ppc_index]
+    if abs(z_fault) > 0:
+        z_equiv_pp += z_fault / np.square(ppc["bus"][ppc_index, BASE_KV]) / net.sn_kva * 1e3
+    net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv_pp
 
 def calc_zbus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
