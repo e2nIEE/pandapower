@@ -5,13 +5,13 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
+import pandas as pd
 from itertools import chain
 from collections import defaultdict
 
 from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE
 
 from pandapower.auxiliary import _sum_by_group
-
 
 class DisjointSet(dict):
     def add(self, item):
@@ -133,7 +133,8 @@ def _build_bus_ppc(net, ppc):
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]], BUS_TYPE] = NONE
+    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
+        BUS_TYPE] = NONE
 
     if init=="results" and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
@@ -288,5 +289,75 @@ def _controllable_to_bool(ctrl):
         ctrl_bool.append(val if not np.isnan(val) else False)
     return np.array(ctrl_bool, dtype=bool)
         
+def _add_gen_impedances_ppc(net, ppc):
+    _add_ext_grid_sc_impedance(net, ppc)
+    _add_gen_sc_impedance(net, ppc)
+    _add_sgen_sc_impedance(net, ppc)
 
+def _add_ext_grid_sc_impedance(net, ppc):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    case = net._options_sc["case"]
+    eg = net._is_elems["ext_grid"]
+    if len(eg) == 0:
+        return
+    eg_buses = eg.bus.values
+    c_grid = net.bus["c_%s"%case].loc[eg_buses].values
+    s_sc = eg["s_sc_%s_mva"%case].values
+    rx = eg["rx_%s"%case].values
 
+    z_grid = c_grid / s_sc
+    x_grid = np.sqrt(z_grid**2 / (rx**2 + 1))
+    r_grid = np.sqrt(z_grid**2 - x_grid**2)
+    eg["r"] = r_grid
+    eg["x"] = x_grid
+
+    y_grid = 1 / (r_grid + x_grid*1j)
+    eg_bus_idx = bus_lookup[eg_buses]
+    ppc["bus"][eg_bus_idx, GS] = y_grid.real
+    ppc["bus"][eg_bus_idx, BS] = y_grid.imag
+
+def _add_gen_sc_impedance(net, ppc):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    gen = net._is_elems["gen"]
+    if len(gen) == 0:
+        return
+    gen_buses = gen.bus.values
+    vn_net = net.bus.vn_kv.loc[gen_buses].values
+    cmax = net.bus["c_max"].loc[gen_buses].values
+    phi_gen = np.arccos(gen.cos_phi)
+
+    vn_gen = gen.vn_kv.values
+    sn_gen = gen.sn_kva.values
+
+    z_r = vn_net**2 / sn_gen * 1e3
+    x_gen = gen.xdss.values / 100 * z_r
+    r_gen = gen.rdss.values / 100 * z_r
+
+    kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
+    y_gen = 1 / ((r_gen + x_gen*1j) * kg)
+
+    gen_bus_idx = bus_lookup[gen_buses]
+    ppc["bus"][gen_bus_idx, GS] = y_gen.real
+    ppc["bus"][gen_bus_idx, BS] = y_gen.imag
+
+def _add_sgen_sc_impedance(net, ppc):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    sgen = net.sgen[net._is_elems["sgen"]]
+    if len(sgen) == 0:
+        return
+    if any(pd.isnull(sgen.sn_kva)):
+        raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
+    sgen_buses = sgen.bus.values
+
+    z_sgen = 1 / (sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
+    x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
+    r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
+    y_sgen = 1 / (r_sgen + x_sgen*1j)
+   
+    gen_bus_idx = bus_lookup[sgen_buses]
+    ppc["bus"][gen_bus_idx, GS] = y_sgen.real
+    ppc["bus"][gen_bus_idx, BS] = y_sgen.imag
+
+def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
+    kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))
+    return kg

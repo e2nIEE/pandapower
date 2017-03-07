@@ -15,7 +15,6 @@ from pypower.idx_bus import BASE_KV
 
 from pandapower.auxiliary import get_values
 
-
 def _build_branch_ppc(net, ppc):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
@@ -84,6 +83,7 @@ def _calc_trafo3w_parameter(net, ppc):
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     trafo_df = _trafo_df_from_trafo3w(net)
+    net._equiv_trafo3w = trafo_df
 
     temp_para = np.zeros(shape=(len(trafo_df), 9), dtype=np.complex128)
     temp_para[:, 0] = bus_lookup[(trafo_df["hv_bus"].values).astype(int)]
@@ -108,6 +108,7 @@ def _calc_line_parameter(net, ppc):
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
+    mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # baseR converts Ohm to p.u. Formula is U^2/Sref. Sref is 1 MVA and vn_kv is
     # in kV U^2* ((10^3 V)^2/10^6 VA) = U^2
@@ -125,7 +126,12 @@ def _calc_line_parameter(net, ppc):
 
     t[:, 2] = line["r_ohm_per_km"] * length / baseR / parallel
     t[:, 3] = line["x_ohm_per_km"] * length / baseR / parallel
-    t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
+    if mode == "sc":
+        t[:, 4] == 0
+        if net["_options_sc"]["case"] == "min":
+            t[:, 2] *= _end_temperature_correction_factor(net)
+    else:
+        t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
     t[:, 5] = line["in_service"]
     if copy_constraints_to_ppc:
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
@@ -195,10 +201,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
                         0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
 
     """
-    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
-    trafo_model = net["_options"]["trafo_model"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-
     if trafo_df is None:
         trafo_df = net["trafo"]
     parallel = trafo_df["parallel"].values
@@ -206,20 +209,33 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     temp_para = np.zeros(shape=(len(trafo_df), 5), dtype=np.complex128)
-    vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(trafo_df, calculate_voltage_angles)
-    r, x, y = _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model, net.sn_kva)
+    vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df, vn_lv)
+    ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, 
+                    bus_lookup)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_kva, ratio)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
-    temp_para[:, 3] = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, 
-                    bus_lookup)
+    temp_para[:, 3] = ratio
     temp_para[:, 4] = shift
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(trafo_df, vn_trafo_lv, vn_lv, trafo_model, sn_kva):
-    y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva, ratio):
+    mode = net["_options"]["mode"]
+    trafo_model = net["_options"]["trafo_model"]
+
     r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+    if mode == "sc":
+        y = 0
+        if trafo_df.equals(net.trafo):
+            cmax = net.bus.c_max.loc[net.trafo.lv_bus.values].values
+            kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
+                                               trafo_df.sn_kva, cmax)
+            r *= (kt / ratio**2)
+            x *= (kt / ratio**2)
+    else:
+        y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
@@ -279,7 +295,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
         return y
 
 
-def _calc_tap_from_dataframe(trafo_df, calculate_voltage_angles):
+def _calc_tap_from_dataframe(net, trafo_df, vn_lv):
     """
     Adjust the nominal voltage vnh and vnl to the active tab position "tp_pos".
     If "side" is 1 (high-voltage side) the high voltage vnh is adjusted.
@@ -295,6 +311,7 @@ def _calc_tap_from_dataframe(trafo_df, calculate_voltage_angles):
         **vn_lv_kv** (1d array, float) - The adjusted low voltages
 
     """
+    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
     # Changing Voltage on high-voltage side
     trafo_shift = trafo_df["shift_degree"].values.astype(float) if calculate_voltage_angles else \
                     np.zeros(len(trafo_df))
@@ -359,25 +376,33 @@ def _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lo
 
 
 def z_br_to_bus(z, s):
-    zbr_n = s[0] * np.array([z[0] / min(s[0], s[1]), z[1] /
+    return s[0] * np.array([z[0] / min(s[0], s[1]), z[1] /
                              min(s[1], s[2]), z[2] / min(s[0], s[2])])
 
+def wye_delta(zbr_n, s):
     return .5 * s / s[0] * np.array([(zbr_n[0] + zbr_n[2] - zbr_n[1]),
                                      (zbr_n[1] + zbr_n[0] - zbr_n[2]),
                                      (zbr_n[2] + zbr_n[1] - zbr_n[0])])
 
 
 def _trafo_df_from_trafo3w(net):
+    mode = net._options["mode"]
     trafos2w = {}
     nr_trafos = len(net["trafo3w"])
     tap_variables = ("tp_pos", "tp_mid", "tp_max", "tp_min", "tp_st_percent")
     i = 0
     for _, ttab in net["trafo3w"].iterrows():
-        uk = np.array([ttab.vsc_hv_percent, ttab.vsc_mv_percent, ttab.vsc_lv_percent])
-        ur = np.array([ttab.vscr_hv_percent, ttab.vscr_mv_percent, ttab.vscr_lv_percent])
+        vsc = np.array([ttab.vsc_hv_percent, ttab.vsc_mv_percent, ttab.vsc_lv_percent], dtype=float)
+        vscr = np.array([ttab.vscr_hv_percent, ttab.vscr_mv_percent, ttab.vscr_lv_percent], dtype=float)
         sn = np.array([ttab.sn_hv_kva, ttab.sn_mv_kva, ttab.sn_lv_kva])
-        uk_2w = z_br_to_bus(uk, sn)
-        ur_2w = z_br_to_bus(ur, sn)
+        vsc_2w_delta = z_br_to_bus(vsc, sn)
+        vscr_2w_delta = z_br_to_bus(vscr, sn)
+        if mode == "sc":
+            kt = _transformer_correction_factor(vsc, vscr, sn, 1.1)
+            vsc_2w_delta *= kt
+            vscr_2w_delta *= kt
+        vsc_2w = wye_delta(vsc_2w_delta, sn)
+        vscr_2w = wye_delta(vscr_2w_delta, sn)
         taps = [dict((tv, np.nan) for tv in tap_variables) for _ in range(3)]
         for k in range(3):
             taps[k]["tp_side"] = None
@@ -396,8 +421,8 @@ def _trafo_df_from_trafo3w(net):
         max_load = ttab.max_loading_percent if "max_loading_percent" in ttab else 0
 
         trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
-                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv, "vscr_percent": ur_2w[0],
-                       "vsc_percent": uk_2w[0], "pfe_kw": ttab.pfe_kw,
+                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv, "vscr_percent": vscr_2w[0],
+                       "vsc_percent": vsc_2w[0], "pfe_kw": ttab.pfe_kw,
                        "i0_percent": ttab.i0_percent, "tp_side": taps[0]["tp_side"],
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
@@ -405,7 +430,7 @@ def _trafo_df_from_trafo3w(net):
                        "in_service": ttab.in_service, "shift_degree": 0, "max_loading_percent": max_load}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
                                    "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
-                                   "vscr_percent": ur_2w[1], "vsc_percent": uk_2w[1], "pfe_kw": 0,
+                                   "vscr_percent": vscr_2w[1], "vsc_percent": vsc_2w[1], "pfe_kw": 0,
                                    "i0_percent": 0, "tp_side": taps[1]["tp_side"],
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
@@ -413,8 +438,8 @@ def _trafo_df_from_trafo3w(net):
                                    "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree, "max_loading_percent": max_load}
         trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
                                        "sn_kva": ttab.sn_lv_kva,
-                                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": ur_2w[2],
-                                       "vsc_percent": uk_2w[2], "pfe_kw": 0, "i0_percent": 0,
+                                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": vscr_2w[2],
+                                       "vsc_percent": vsc_2w[2], "pfe_kw": 0, "i0_percent": 0,
                                        "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
                                        "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
                                        "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],"parallel": 1,
@@ -423,11 +448,7 @@ def _trafo_df_from_trafo3w(net):
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
                                       "vn_hv_kv", "vn_lv_kv", "pfe_kw", "max_loading_percent"]:
-        try:
-            trafo_df[var] = pd.to_numeric(trafo_df[var])
-        except:
-            #legacy support for pandas versions < 0.17
-            trafo_df[var] = trafo_df[var].convert_objects(convert_numeric=True)
+        trafo_df[var] = pd.to_numeric(trafo_df[var])
     return trafo_df
 
 
@@ -768,3 +789,16 @@ def _calc_switch_parameter(net, ppc):
 
     t[:, 2] = r_switch / baseR
     return t
+
+def _end_temperature_correction_factor(net):
+    if "endtemp_degree" not in net.line:
+        raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
+    return (1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20)) #formula from standard
+    
+def _transformer_correction_factor(vsc, vscr, sn, cmax):
+    sn = sn / 1000.
+    zt = vsc / 100 / sn
+    rt = vscr / 100 / sn
+    xt = np.sqrt(zt**2 - rt**2)
+    kt = 0.95 * cmax / (1 + .6 * xt * sn)
+    return kt
