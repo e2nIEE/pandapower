@@ -209,7 +209,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df, vn_lv)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv, 
                     bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_kva, ratio)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_kva)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
@@ -218,7 +218,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva, ratio):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
@@ -229,8 +229,8 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva, ratio)
             cmax = net.bus.c_max.loc[net.trafo.lv_bus.values].values
             kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
                                                trafo_df.sn_kva, cmax)
-            r *= (kt / ratio**2)
-            x *= (kt / ratio**2)
+            r *= kt
+            x *= kt
     else:
         y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
     if trafo_model == "pi":
@@ -309,11 +309,14 @@ def _calc_tap_from_dataframe(net, trafo_df, vn_lv):
 
     """
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
+    mode = net["_options"]["mode"]
     # Changing Voltage on high-voltage side
     trafo_shift = trafo_df["shift_degree"].values.astype(float) if calculate_voltage_angles else \
                     np.zeros(len(trafo_df))
     vnh = copy.copy(trafo_df["vn_hv_kv"].values.astype(float))
     vnl = copy.copy(trafo_df["vn_lv_kv"].values.astype(float))
+    if mode == "sc":
+        return vnh, vnl, trafo_shift
 
     tp_diff = trafo_df["tp_pos"].values - trafo_df["tp_mid"].values
 

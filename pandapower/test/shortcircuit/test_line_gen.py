@@ -42,6 +42,5 @@ def test_max_gen_fault_impedance(one_line_one_generator):
     assert abs(net.res_bus_sc.ikss_max_ka.at[2] - 0.4450868) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_max_ka.at[3])
 
-
 if __name__ == '__main__':
     pytest.main(['-xs'])
