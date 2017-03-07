@@ -241,8 +241,8 @@ class state_estimation(object):
 
         # select elements in service and convert pandapower ppc to ppc
         self.net["_is_elems"] = _select_is_elements(self.net)
-        self.net["_options"] = _create_options_dict(init="results",
-                                        calculate_voltage_angles=calculate_voltage_angles)
+        self.net["_options"] = _create_options_dict(init="results", trafo_model="t",
+                               calculate_voltage_angles=calculate_voltage_angles)
         ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
