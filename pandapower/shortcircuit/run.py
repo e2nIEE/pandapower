@@ -106,6 +106,8 @@ def _add_c_to_net(net):
     net.bus["c_max"] = 1.1
     net.bus["c_min"] = 1.
     net.bus["kappa_max"] = 2.
+    lv_buses = net.bus[net.bus.vn_kv < 1.].index
+    if len(lv_buses) > 0:
         lv_tol_percent = net["_options_sc"]["lv_tol_percent"]
         if lv_tol_percent==10:
             c_ns = 1.1
@@ -114,7 +116,6 @@ def _add_c_to_net(net):
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" \
                                         " to be either 6% or 10% according to IEC 60909")
-        lv_buses = net.bus[net.bus.vn_kv < 1.].index
         net.bus.c_max.loc[lv_buses] = c_ns
         net.bus.c_min.loc[lv_buses] = .95
         net.bus.kappa_max.loc[lv_buses] = 1.8
