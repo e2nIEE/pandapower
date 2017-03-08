@@ -376,11 +376,10 @@ def _clean_up(net):
         net.gen.drop(dc_gens, inplace=True)
         net.res_gen.drop(dc_gens, inplace=True)
     if mode == "sc":
-        for var in ["kappa_max", "z_equiv", "kappa_korr", "kappa", "c_max", "c_min", "x", "r",
-                    "z_equiv", "kappa_max"]:
-            for element in ["bus", "line", "ext_grid", "trafo"]:
-                if var in net[element]:            
-                    net[element].drop(var, axis=1, inplace=True)
+        for var in ["kappa_max", "z_equiv", "kappa_korr", "kappa", "c_max", "c_min", "z_equiv",
+                    "kappa_max"]:
+            if var in net["bus"]:            
+                net["bus"].drop(var, axis=1, inplace=True)
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
