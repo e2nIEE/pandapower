@@ -12,7 +12,6 @@ import pandapower.topology as top
 
 def calc_kappa(net):
     network_structure = net._options_sc["network_structure"]
-    net.bus["kappa_max"] = 2.
     net.bus["kappa_korr"] = 1.
     if network_structure == "meshed":
         net.bus["kappa_korr"] = 1.15
@@ -59,3 +58,9 @@ def get_branch_impedances(net):
 #        f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
 #        trafo3w_df["r"] = ppc["branch"][f:t, 2].real
 #        trafo3w_df["x"] = ppc["branch"][f:t, 3].real
+
+
+#def nxgraph_from_ppc(ppc):
+#    mg.add_nodes_from(ppc["bus"][0])
+
+    

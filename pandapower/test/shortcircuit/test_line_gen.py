@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+o# -*- coding: utf-8 -*-
 
 __author__ = 'lthurner'
 

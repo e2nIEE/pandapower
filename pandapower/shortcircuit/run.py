@@ -106,7 +106,6 @@ def _add_c_to_net(net):
     net.bus["c_max"] = 1.1
     net.bus["c_min"] = 1.
     net.bus["kappa_max"] = 2.
-    if net.bus.vn_kv.min() < 1.:
         lv_tol_percent = net["_options_sc"]["lv_tol_percent"]
         if lv_tol_percent==10:
             c_ns = 1.1
