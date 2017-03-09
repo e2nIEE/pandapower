@@ -10,28 +10,28 @@ import networkx as nx
 from pypower.idx_bus import BUS_I, GS, BS
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 
-
 def calc_kappa(net):
     network_structure = net._options_sc["network_structure"]
-    net.bus["kappa_korr"] = 1.
+    bus = net._is_elems["bus"]
+    bus["kappa_korr"] = 1.
     if network_structure == "meshed":
-        net.bus["kappa_korr"] = 1.15
+        bus["kappa_korr"] = 1.15
     elif network_structure == "auto":
         mg = nxgraph_from_ppc(net._ppc)
-        for bus in net._is_elems["bus"].index:
-            ppc_index = net._pd2ppc_lookups["bus"][bus]
+        for bidx in net._is_elems["bus"].index:
+            ppc_index = net._pd2ppc_lookups["bus"][bidx]
             paths = list(nx.all_simple_paths(mg, ppc_index, "earth"))
             if len(paths) > 1:
-                net.bus.kappa_korr.at[bus] = 1.15
+                bus.kappa_korr.at[bidx] = 1.15
                 for path in paths:
                     r = sum([mg[b1][b2][0]["r"] for b1, b2 in zip(path, path[1:])])
                     x = sum([mg[b1][b2][0]["x"] for b1, b2 in zip(path, path[1:])])
                     if r / x < .3:                                     
-                        net.bus.kappa_korr.at[bus] = 1.
+                        bus.kappa_korr.at[bidx] = 1.
                         break           
-    rx_equiv = np.real(net.bus.z_equiv) / np.imag(net.bus.z_equiv)
+    rx_equiv = np.real(bus.z_equiv) / np.imag(bus.z_equiv)
     kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
-    net.bus["kappa"] = np.clip(net.bus.kappa_korr * kappa, 1, net.bus.kappa_max)
+    bus["kappa"] = np.clip(bus.kappa_korr * kappa, 1, bus.kappa_max)
     
 def nxgraph_from_ppc(ppc):
     mg = nx.MultiGraph()
@@ -44,4 +44,3 @@ def nxgraph_from_ppc(ppc):
     mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 
                         for bus, z in zip(voltage_sources[BUS_I], z))
     return mg
-

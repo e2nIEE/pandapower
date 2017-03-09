@@ -295,13 +295,14 @@ def _add_gen_impedances_ppc(net, ppc):
     _add_sgen_sc_impedance(net, ppc)
 
 def _add_ext_grid_sc_impedance(net, ppc):
+    bus = net._is_elems["bus"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     case = net._options_sc["case"]
     eg = net._is_elems["ext_grid"]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
-    c_grid = net.bus["c_%s"%case].loc[eg_buses].values
+    c_grid = bus["c_%s"%case].loc[eg_buses].values
     s_sc = eg["s_sc_%s_mva"%case].values
     rx = eg["rx_%s"%case].values
 
@@ -318,12 +319,13 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
 def _add_gen_sc_impedance(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    bus = net._is_elems["bus"]
     gen = net._is_elems["gen"]
     if len(gen) == 0:
         return
     gen_buses = gen.bus.values
-    vn_net = net.bus.vn_kv.loc[gen_buses].values
-    cmax = net.bus["c_max"].loc[gen_buses].values
+    vn_net = bus.vn_kv.loc[gen_buses].values
+    cmax = bus["c_max"].loc[gen_buses].values
     phi_gen = np.arccos(gen.cos_phi)
 
     vn_gen = gen.vn_kv.values

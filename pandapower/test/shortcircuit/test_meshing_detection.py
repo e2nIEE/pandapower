@@ -164,5 +164,5 @@ def test_min_6_meshed_grid(meshed_grid):
     assert (abs(net.res_bus_sc.ith_min_ka.at[8] - 1.058954) <1e-5)  
     assert (abs(net.res_bus_sc.ith_min_ka.at[9] - 0.9327717) <1e-5)  
 
-if __name__ == '__main__':   
+if __name__ == '__main__':
     pytest.main(['-xs'])
