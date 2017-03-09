@@ -7,7 +7,7 @@
 import numpy as np
 import networkx as nx
 
-from pypower.idx_bus import BUS_I, GS, BS
+from pypower.idx_bus import GS, BS
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 
 def calc_kappa(net):
@@ -33,14 +33,15 @@ def calc_kappa(net):
     kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
     bus["kappa"] = np.clip(bus.kappa_korr * kappa, 1, bus.kappa_max)
     
-def nxgraph_from_ppc(ppc):
+def nxgraph_from_ppc(net, ppc):
+    bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
     mg.add_nodes_from(ppc["bus"][:, 0].astype(int))
     mg.add_edges_from((int(branch[T_BUS]), int(branch[F_BUS]),
                        {"r": branch[BR_R], "x": branch[BR_X]}) for branch in ppc["branch"].real)
     mg.add_node("earth")
-    voltage_sources = ppc["bus"][(ppc["bus"][:, GS] > 0) | (ppc["bus"][:, BS] > 0)]
-    z = 1 / (voltage_sources[:, GS] + voltage_sources[:, BS] * 1j)
+    vs_buses = bus_lookup[set(net._is_elems["ext_grid"].bus.values) | set(net._is_elems["gen"].bus)]
+    z = 1 / (vs_buses[:, GS] + vs_buses[:, BS] * 1j)
     mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 
-                        for bus, z in zip(voltage_sources[BUS_I], z))
+                        for bus, z in zip(vs_buses, z))
     return mg
