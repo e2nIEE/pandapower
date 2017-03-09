@@ -249,7 +249,7 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
     V_iter = V0[mask_root].copy()  # initial voltage vector without root bus
     V = V0.copy()
-    Iinj = np.conj(Sbus[mask_root] / V_iter) - Ysh[mask_root] * V_iter  # Initial current injections
+    Iinj = np.conj(Sbus / V) - Ysh * V  # Initial current injections
 
     n_iter = 0
     converged = 0
@@ -261,20 +261,20 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
         n_iter_inner = 0
         n_iter += 1
 
-        deltaV = DLF * Iinj
-        V_new = np.ones(nbus - 1) * Vref + deltaV
+        deltaV = DLF * Iinj[mask_root]
+        V_iter = np.ones(nbus - 1) * Vref + deltaV
 
         # ##
         # inner loop for considering PV buses
         inner_loop_converged = False
-        V_inner = V_new.copy()
+        # V_inner = V_new.copy()
 
         success_inner = 1
         while not inner_loop_converged and len(pv) > 0:
 
             pvi = pv - 1  # internal PV buses indices, assuming reference node is always 0
 
-            Vmis = (np.abs(gen[gen_pv, VG])) ** 2 - (np.abs(V_inner[pvi])) ** 2
+            Vmis = (np.abs(gen[gen_pv, VG])) ** 2 - (np.abs(V_iter[pvi])) ** 2
             dQ = (Vmis / (2 * DLF[pvi, pvi].A1.imag)).flatten()
 
             gen[gen_pv, QG] += dQ
@@ -305,26 +305,25 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
 
             Sbus = makeSbus(baseMVA, bus, gen)
-            Iinj = np.conj(Sbus[mask_root] / V_inner) - Ysh[mask_root] * V_inner
-            deltaV = DLF * Iinj
-            V_inner = np.ones(nbus - 1) * V0[root_bus_i] + deltaV
+            V = np.insert(V_iter, root_bus_i, Vref)
+            Iinj = np.conj(Sbus / V) - Ysh * V
+            deltaV = DLF * Iinj[mask_root]
+            V_iter = np.ones(nbus - 1) * V0[root_bus_i] + deltaV
 
-            if n_iter_inner > 20 or np.any(np.abs(V_inner[pvi]) > 2):
+            if n_iter_inner > 20 :
                 success_inner = 0
                 break   # TODO: special notice for divergence due to inner iterations for PV nodes
-
 
             n_iter_inner += 1
 
             if np.all(np.abs(dQ) < tol_mva_inner):  # inner loop termination criterion
                 inner_loop_converged = True
-                V_new = V_inner.copy()
 
         if not success_inner:
             break
 
         # testing termination criterion -
-        V = np.insert(V_new, root_bus_i, Vref)
+        V = np.insert(V_iter, root_bus_i, Vref)
         mis = V * np.conj(Ybus * V) - Sbus
         F = np.r_[mis[pv].real,
                   mis[pq].real,
@@ -333,18 +332,14 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
         # check tolerance
         normF = np.linalg.norm(F, np.Inf)
 
-        # deltaVmax = np.max(np.abs(V_new - V_iter))
-
         if normF < tolerance_mva:
             converged = 1
             if verbose:
                 print("\nFwd-back sweep power flow converged in "
                                  "{0} iterations.\n".format(n_iter))
 
-        V_iter = V_new.copy()  # update iterating complex voltage vector
-
         # updating injected currents
-        Iinj = np.conj(Sbus[mask_root] / V_iter) - Ysh[mask_root] * V_iter
+        Iinj = np.conj(Sbus / V) - Ysh * V
 
     return V, converged
 
@@ -361,6 +356,8 @@ def _run_bfswpf(ppc, enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
     :param ppc: matpower-style case data
     :return: results (pypower style), success (flag about PF convergence)
     """
+    time_start = time()  # starting pf calculation timing
+
     ppci = ppc
 
     baseMVA, bus, gen, branch = \
@@ -377,7 +374,7 @@ def _run_bfswpf(ppc, enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
     baseMVA_bfsw, bus_bfsw, gen_bfsw, branch_bfsw = \
         ppc_bfsw["baseMVA"], ppc_bfsw["bus"], ppc_bfsw["gen"], ppc_bfsw["branch"]
 
-    time_start = time() # starting pf calculation timing
+    # time_start = time() # starting pf calculation timing
 
     # initialize voltages to flat start and buses with gens to their setpoint voltage magnitudes
     V0 = np.ones(nbus, dtype=complex)
