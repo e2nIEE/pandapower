@@ -1,40 +1,7 @@
 Known Problems and Caveats
 ==========================
 
-Disconnected Buses
--------------------------------
-
-It is possible to have multiple galvanically seperated network in one pandapower network:
-
-.. image:: /pics/caveats/disconnected_yes.png
-	:width: 20em
-	:alt: alternate Text
-	:align: center
-
-However, if there are in service buses that are not connected to any slack bus, the power flow will not converge:
-    
-.. image:: /pics/caveats/disconnected.png
-	:width: 20em
-	:alt: alternate Text
-	:align: center
-
-The only exception are buses which are not connected to any branch. These buses are ignored in the power flow and therefore do not cause convergence problems:
-    
-.. image:: /pics/caveats/disconnected_yes2.png
-	:width: 20em
-	:alt: alternate Text
-	:align: center
-
-The reason is that buses which are not connected to any branch can be easily identified, while buses which form an isolated group can only be found with a topology search.
-The pandapower topology package includes a function to find disconnected buses. For the power flow to converge, they have to be set out of service: ::
-
-    import pandapower.topology as top
-    unsupplied_buses = top.unsupplied_buses(net)
-    net.bus.loc[unsupplied_buses, "in_service"] = False
-    pp.runpp(net)
-
-    
-
+  
 Voltage Controlling Elements
 -------------------------------
 
@@ -45,7 +12,7 @@ It is generally possible to have several generators and external grids in one ne
 	:alt: alternate Text
 	:align: center
    
-It is however not possible to connect multiple voltage controllable element (ext_grid, gen) at one bus, since this would convergence problems in PYPOWER:
+It is however not possible to connect multiple ext_grids and gens at one bus, since this would convergence problems in PYPOWER:
 
 .. image:: /pics/caveats/voltage_no.png
 	:width: 42em

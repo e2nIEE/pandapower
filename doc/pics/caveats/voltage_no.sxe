@@ -4,10 +4,10 @@
 <PrintReportSettings PaperSize="9" FormName="???" SheetSizeX="0" SheetSizeY="0"/>
 <PrinterSettings PaperSizeX="2098" PaperSizeY="2970" PhysicalOffestTenthMm_X="0" PhysicalOffestTenthMm_Y="0"/>
 <tb use="1" name="C:\Users\Public\Documents\ProfiCAD Library\_TB\standard7.ptb"/>
-<PageSettings bgColor="FFFFFF" pgsHor="1" pgsVer="1" pgsMrgn="0, 0, 0, 0" pageMargins="10, 10, 10, 10" zoom="1000" frame="NO" rastr="20" showT="YES" showV="YES" includeMargins="YES"/>
+<PageSettings bgColor="FFFFFF" pgsHor="1" pgsVer="1" pgsMrgn="0, 0, 0, 0" pageMargins="10, 10, 10, 10" zoom="300" frame="NO" rastr="20" showT="YES" showV="YES" includeMargins="YES"/>
 <RefGridSettings FieldSize="50"/>
 <NumberingWire Digits="3" TypeRenumbering="0" ShowWireName="1" WireLabelDist_a="6" WireLabelDist_b="7" WireLabelDist_c="7"/>
-<summary rev="" Titel="" Spr="" Genehmigt="" DokArt="" Abteilung="" _po="" author="" Sachnummer="" date="19.07.2016" techRef="" TitelZusatz="" DocStatus=""/>
+<summary rev="" DokArt="" Genehmigt="" Spr="" Titel="" Abteilung="" _po="" Sachnummer="" author="" date="19.07.2016" DocStatus="" TitelZusatz="" techRef=""/>
 <BillColumns/>
 <repo id="26962">
 <ppd name="elektrische Netze (statisch)\.\Transformator.ppd" t="" v="" n="ÈSN EN 60617: 06-13-01A" m="" fG="f0fc1837-f6f4-439a-89c9-398e8e5b3c18" lG="2355cc17-8f7f-48f3-90e7-9cdc70416aa1">
@@ -212,8 +212,8 @@
 <polyline op-lw="6" op-lc="255" pts="660,500,720,440,"/>
 <polyline op-lw="6" op-lc="255" pts="1160,440,1220,500,"/>
 <polyline op-lw="6" op-lc="255" pts="1160,500,1220,440,"/>
-<polyline op-lw="6" op-lc="255" pts="1660,440,1720,500,"/>
-<polyline op-lw="6" op-lc="255" pts="1660,500,1720,440,"/>
+<polyline op-lw="6" op-lc="6723891" pts="1660,480,1680,499,"/>
+<polyline op-lw="6" op-lc="6723891" pts="1680,500,1720,440,"/>
 </layer>
 </layers>
 </page>
