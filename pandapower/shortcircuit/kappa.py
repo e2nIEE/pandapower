@@ -17,7 +17,7 @@ def calc_kappa(net):
     if network_structure == "meshed":
         bus["kappa_korr"] = 1.15
     elif network_structure == "auto":
-        mg = nxgraph_from_ppc(net._ppc)
+        mg = nxgraph_from_ppc(net)
         for bidx in net._is_elems["bus"].index:
             ppc_index = net._pd2ppc_lookups["bus"][bidx]
             paths = list(nx.all_simple_paths(mg, ppc_index, "earth"))
@@ -33,15 +33,17 @@ def calc_kappa(net):
     kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
     bus["kappa"] = np.clip(bus.kappa_korr * kappa, 1, bus.kappa_max)
     
-def nxgraph_from_ppc(net, ppc):
+def nxgraph_from_ppc(net):
+    ppc = net._ppc
     bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
     mg.add_nodes_from(ppc["bus"][:, 0].astype(int))
     mg.add_edges_from((int(branch[T_BUS]), int(branch[F_BUS]),
                        {"r": branch[BR_R], "x": branch[BR_X]}) for branch in ppc["branch"].real)
     mg.add_node("earth")
-    vs_buses = bus_lookup[set(net._is_elems["ext_grid"].bus.values) | set(net._is_elems["gen"].bus)]
-    z = 1 / (vs_buses[:, GS] + vs_buses[:, BS] * 1j)
+    vs_buses_pp = list(set(net._is_elems["ext_grid"].bus.values) | set(net._is_elems["gen"].bus))
+    vs_buses = bus_lookup[vs_buses_pp]
+    z = 1 / (ppc["bus"][vs_buses, GS] + ppc["bus"][vs_buses, BS] * 1j)
     mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 
                         for bus, z in zip(vs_buses, z))
     return mg

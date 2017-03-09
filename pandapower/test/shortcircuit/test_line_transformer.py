@@ -83,6 +83,4 @@ def test_min_6_one_line_one_transformer(net_transformer):
     assert (abs(net.res_bus_sc.ith_min_ka.at[2] - 13.649789214) <1e-5)
 
 if __name__ == '__main__':
-#    net = net_transformer()
-#    sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent= 10.)
     pytest.main(["test_line_transformer.py"])
