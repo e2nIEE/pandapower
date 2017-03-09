@@ -18,7 +18,7 @@ from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, rese
     _extract_results_opf
 from pandapower.create import create_gen
 
-from run_bfsw_sp_dense import _run_bfsw_ppc
+from pandapower.run_bfswpf import _run_bfswpf
 
 class LoadflowNotConverged(ppException):
     """
@@ -246,9 +246,7 @@ def _runpppf(net, **kwargs):
     algorithm_pypower_dict = {'nr': 1, 'fdBX': 2, 'fdXB': 3, 'gs': 4}
 
     if algorithm == 'bfsw': # foreward/backward sweep power flow algorithm
-        result = _run_bfsw_ppc(ppci, ppopt=ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                    PF_TOL=tolerance_kva * 1e-3,
-                                                    PF_MAX_IT_GS=max_iteration, **kwargs))[0]
+        result = _run_bfswpf(ppci, enforce_q_lims, tolerance_kva, max_iteration, **kwargs)[0]
 
     elif algorithm in algorithm_pypower_dict:
         ppopt = ppoption(**kwargs)
@@ -267,7 +265,7 @@ def _runpppf(net, **kwargs):
                                                                        PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
 
     else:
-        AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
+        raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
 
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
