@@ -11,7 +11,8 @@ unreleased
 - [ADDED] generator lookup to allow multiple generators at one bus
 - [ADDED] bad data detection for state estimation
 - [CHANGED] from_ppc: no detect_trafo anymore, several gen at each node possible
-- [ADDED] networks: case118, case300, cigre_network_mv with_der='all' der
+- [CHANGED] validate_from_ppc: improved validation behaviour by means of duplicated gen and branch rearangement
+- [ADDED] networks: case33bw, case118, case300, case1354pegase, case2869pegase, case9241pegase, GBreducednetwork, GBnetwork, iceland, cigre_network_mv with_der='all' der
 
 [1.1.1] - 2017-01-12
 ----------------------
