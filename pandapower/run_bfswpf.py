@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 import scipy as sp
 import networkx as nx
@@ -332,7 +331,6 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
         # check tolerance
         normF = np.linalg.norm(F, np.Inf)
-#        print(F)
         if normF < tolerance_mva:
             converged = 1
             if verbose:
