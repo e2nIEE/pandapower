@@ -88,25 +88,29 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     net["_options"] = _create_options_dict(trafo_model="pi", mode="sc")
     net["_options_sc"] = {"case": case, "lv_tol_percent": lv_tol_percent, "tk_s": tk_s, 
                          "network_structure": network_structure, "r_fault_ohm": r_fault_ohm,
-                         "x_fault_ohm": x_fault_ohm}
+                         "x_fault_ohm": x_fault_ohm, "currents": []}
     net["_is_elems"] = _select_is_elements(net, None)
     _add_auxiliary_elements(net)
     _add_c_to_net(net)
     calc_equiv_sc_impedance(net)
-    calc_ikss(net, case)
+    calc_ikss(net)
     if ip or ith:
         calc_kappa(net)
     if ip:
         calc_ip(net)
     if ith:
         calc_ith(net)    
+    net.res_bus_sc = pd.DataFrame(index=net.bus.index,
+                                  data=net._is_elems["bus"][net._options_sc["currents"]])
     _clean_up(net)
 
 def _add_c_to_net(net):
-    net.bus["c_max"] = 1.1
-    net.bus["c_min"] = 1.
-    net.bus["kappa_max"] = 2.
-    if net.bus.vn_kv.min() < 1.:
+    bus = net._is_elems["bus"]
+    bus["c_max"] = 1.1
+    bus["c_min"] = 1.
+    bus["kappa_max"] = 2.
+    lv_buses = bus[bus.vn_kv < 1.].index
+    if len(lv_buses) > 0:
         lv_tol_percent = net["_options_sc"]["lv_tol_percent"]
         if lv_tol_percent==10:
             c_ns = 1.1
@@ -115,23 +119,23 @@ def _add_c_to_net(net):
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" \
                                         " to be either 6% or 10% according to IEC 60909")
-        lv_buses = net.bus[net.bus.vn_kv < 1.].index
-        net.bus.c_max.loc[lv_buses] = c_ns
-        net.bus.c_min.loc[lv_buses] = .95
-        net.bus.kappa_max.loc[lv_buses] = 1.8
+        bus.c_max.loc[lv_buses] = c_ns
+        bus.c_min.loc[lv_buses] = .95
+        bus.kappa_max.loc[lv_buses] = 1.8
 
 def calc_equiv_sc_impedance(net):
+    bus = net._is_elems["bus"]
     z_fault = net["_options_sc"]["r_fault_ohm"] + net["_options_sc"]["x_fault_ohm"] * 1j
     ppc, ppci = _pd2ppc(net)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
-    net.bus["z_equiv"] = np.nan
+    bus["z_equiv"] = np.nan
     ppc_index = bus_lookup[net._is_elems["bus"].index]
     z_equiv_pp = z_equiv[ppc_index]
     if abs(z_fault) > 0:
         z_equiv_pp += z_fault / np.square(ppc["bus"][ppc_index, BASE_KV]) / net.sn_kva * 1e3
-    net.bus["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv_pp
+    bus["z_equiv"].loc[bus.index] = z_equiv_pp
 
 def calc_zbus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])

@@ -210,12 +210,8 @@ def _runpppf(net, **kwargs):
     init = net["_options"]["init"]
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
-    numba = net["_options"]["numba"]
-    enforce_q_lims = net["_options"]["enforce_q_lims"]
-    tolerance_kva = net["_options"]["tolerance_kva"]
     mode = net["_options"]["mode"]
     algorithm = net["_options"]["algorithm"]
-    max_iteration = net["_options"]["max_iteration"]
 
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -242,27 +238,11 @@ def _runpppf(net, **kwargs):
 
     # ----- run the powerflow -----
 
-    # algorithms implemented within pypower
-    algorithm_pypower_dict = {'nr': 1, 'fdBX': 2, 'fdXB': 3, 'gs': 4}
+    if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
+        result = _run_bfswpf(ppci, net["_options"], **kwargs)[0]
 
-    if algorithm == 'bfsw': # foreward/backward sweep power flow algorithm
-        result = _run_bfswpf(ppci, enforce_q_lims, tolerance_kva, max_iteration, **kwargs)[0]
-
-    elif algorithm in algorithm_pypower_dict:
-        ppopt = ppoption(**kwargs)
-        ppopt['PF_ALG'] = algorithm_pypower_dict[algorithm]
-        ppopt['ENFORCE_Q_LIMS'] = enforce_q_lims
-        ppopt['PF_TOL'] = tolerance_kva
-        if max_iteration is not None:
-            if algorithm == 'nr':
-                ppopt['PF_MAX_IT'] = max_iteration
-            elif algorithm == 'gs':
-                ppopt['PF_MAX_IT_GS'] = max_iteration
-            else:
-                ppopt['PF_MAX_IT_FD'] = max_iteration
-
-        result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                                       PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
+    elif algorithm in ['nr', 'fdBX', 'fdXB', 'gs']:  # algorithms existing within pypower
+        result = _runpf(ppci, net["_options"], **kwargs)[0]
 
     else:
         raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))

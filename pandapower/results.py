@@ -12,7 +12,6 @@ from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buse
                                    _get_shunt_results, _get_p_q_results_opf
 
 def _extract_results(net, ppc):
-
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
 

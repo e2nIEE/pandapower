@@ -345,9 +345,14 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
 
 
+def _get_options(options):
+    enforce_q_lims = options['enforce_q_lims']
+    tolerance_kva = options['tolerance_kva']
+    max_iteration = options['max_iteration']
 
+    return enforce_q_lims, tolerance_kva, max_iteration
 
-def _run_bfswpf(ppc, enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
+def _run_bfswpf(ppc, options, **kwargs):
     """
     SPARSE version of distribution power flow solution according to [1]
     :References:
@@ -357,6 +362,8 @@ def _run_bfswpf(ppc, enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
     :return: results (pypower style), success (flag about PF convergence)
     """
     time_start = time()  # starting pf calculation timing
+
+    enforce_q_lims, tolerance_kva, max_iteration = _get_options(options)    # retrieving options for bfswpf
 
     ppci = ppc
 

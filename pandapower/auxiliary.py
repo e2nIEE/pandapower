@@ -358,34 +358,23 @@ def _create_options_dict(init="flat", calculate_voltage_angles=False, tolerance_
 
 def _clean_up(net):
     mode = net._options["mode"]
+    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
-        if mode == "sc":
-            net["res_bus_sc"].drop(buses_3w, inplace=True)
-        else:
-            net["res_bus"].drop(buses_3w, inplace=True)
+        res_bus.drop(buses_3w, inplace=True)
         net["bus"].drop(buses_3w, inplace=True)
         net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
 
     if len(net["xward"]) > 0:
         xward_buses = net["xward"]["ad_bus"].values
         net["bus"].drop(xward_buses, inplace=True)
-        if mode == "sc":
-            net["res_bus_sc"].drop(xward_buses, inplace=True)
-        else:
-            net["res_bus"].drop(xward_buses, inplace=True)
+        res_bus.drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
     
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
         net.gen.drop(dc_gens, inplace=True)
         net.res_gen.drop(dc_gens, inplace=True)
-    if mode == "sc":
-        for var in ["kappa_max", "z_equiv", "kappa_korr", "kappa", "c_max", "c_min", "x", "r",
-                    "z_equiv", "kappa_max"]:
-            for element in ["bus", "line", "ext_grid", "trafo"]:
-                if var in net[element]:            
-                    net[element].drop(var, axis=1, inplace=True)
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
