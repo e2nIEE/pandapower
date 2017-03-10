@@ -324,7 +324,8 @@ def _select_is_elements(net, recycle=None):
 
 def _create_options_dict(init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
                          trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-                         check_connectivity=False, ac=True, copy_constraints_to_ppc=False, mode="pf", r_switch=0.0):
+                         check_connectivity=False, ac=True, copy_constraints_to_ppc=False, mode="pf", r_switch=0.0,
+                         algorithm='nr', max_iteration=10, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -347,7 +348,11 @@ def _create_options_dict(init="flat", calculate_voltage_angles=False, tolerance_
         , "ac": ac
         , "mode": mode
         , "r_switch": r_switch
+        , "algorithm": algorithm
+        , "max_iteration": max_iteration
     }
+
+    options.update(kwargs)  # update options with some algorithm-specific parameters
 
     return options
 

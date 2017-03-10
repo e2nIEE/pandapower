@@ -69,8 +69,22 @@ def _get_options(options, **kwargs):
     numba = options["numba"]
     enforce_q_lims = options["enforce_q_lims"]
     tolerance_kva = options["tolerance_kva"]
+    algorithm = options["algorithm"]
+    max_iteration = options["max_iteration"]
 
-    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_kva * 1e-3, **kwargs)
+    # algorithms implemented within pypower
+    algorithm_pypower_dict = {'nr': 1, 'fdBX': 2, 'fdXB': 3, 'gs': 4}
+
+    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_kva * 1e-3,
+                     PF_ALG=algorithm_pypower_dict[algorithm], **kwargs)
+    # ToDo: this algorithm-specific parameters setting will be avoided once Options are extracted in every subfunction
+    if max_iteration is not None:
+        if algorithm == 'nr':
+            ppopt['PF_MAX_IT'] = max_iteration
+        elif algorithm == 'gs':
+            ppopt['PF_MAX_IT_GS'] = max_iteration
+        else:
+            ppopt['PF_MAX_IT_FD'] = max_iteration
     return init, ac, numba, recycle, ppopt
 
 
