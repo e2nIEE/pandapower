@@ -9,14 +9,14 @@ The pandapower networks modul contains simple test networks, randomly generated 
 
 You can find documentation for the individual modules here:
 
-.. toctree:: 
+.. toctree::
     :maxdepth: 2
 
     networks/example
     networks/test
     networks/cigre
     networks/mv_oberrhein
-    networks/ieee
+    networks/power_system_test_cases
     networks/kerber
-	
-	
+
+
