@@ -18,6 +18,7 @@ from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, rese
     _extract_results_opf
 from pandapower.create import create_gen
 
+from pandapower.run_bfswpf import _run_bfswpf
 
 class LoadflowNotConverged(ppException):
     """
@@ -33,9 +34,16 @@ class OPFNotConverged(ppException):
     pass
 
 
+class AlgorithmUnknown(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
+
+
 def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-          check_connectivity=False, r_switch=0.0, **kwargs):
+          check_connectivity=False, r_switch=0.0, algorithm='nr', max_iteration=10, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -121,7 +129,8 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
     net["_options"] = _create_options_dict(init=init, ac=ac, calculate_voltage_angles=calculate_voltage_angles,
                                    tolerance_kva=tolerance_kva, trafo_model=trafo_model, trafo_loading=trafo_loading,
                                    enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle,
-                                   check_connectivity=check_connectivity, mode=mode, r_switch=r_switch)
+                                   check_connectivity=check_connectivity, mode=mode, r_switch=r_switch,
+                                           algorithm=algorithm, max_iteration=max_iteration)
     _runpppf(net, **kwargs)
 
 
@@ -202,6 +211,7 @@ def _runpppf(net, **kwargs):
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
     mode = net["_options"]["mode"]
+    algorithm = net["_options"]["algorithm"]
 
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -225,15 +235,22 @@ def _runpppf(net, **kwargs):
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
-    # run the powerflow
-    result = _runpf(ppci, net["_options"], **kwargs)[0]
+    # ----- run the powerflow -----
+    if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
+        result = _run_bfswpf(ppci, net["_options"], **kwargs)[0]
+
+    elif algorithm in ['nr', 'fdBX', 'fdXB', 'gs']:  # algorithms existing within pypower
+        result = _runpf(ppci, net["_options"], **kwargs)[0]
+
+    else:
+        raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
     result = _copy_results_ppci_to_ppc(result, ppc, mode)
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
-        raise LoadflowNotConverged("Loadflow did not converge!")
+        raise LoadflowNotConverged("Power Flow did not converge!")
     else:
         net["_ppc"] = result
         net["converged"] = True
