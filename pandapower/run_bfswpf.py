@@ -7,24 +7,25 @@ from time import time  # alternatively use import timeit.default_timer as time
 
 from scipy.sparse import csr_matrix
 
-from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, VM, VA, REF, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, TAP, BR_STATUS
-from pypower.idx_gen import GEN_BUS, PG, QG, PMAX, PMIN, QMAX, QMIN, GEN_STATUS, VG
+from pandapower.auxiliary import ppException
 
 from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.bustypes import bustypes
 
 from pypower.makeSbus import makeSbus
+from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, VM, VA, REF, GS, BS
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, TAP, BR_STATUS
+from pypower.idx_gen import GEN_BUS, PG, QG, PMAX, PMIN, QMAX, QMIN, GEN_STATUS, VG
 
-
-
-class ConvergenceError(Exception):
+class LoadflowNotConverged(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
     pass
 
-# TODO: make an external _run_bfsw(net, **kwargs) in order to enable defining specific parameters for each PF
 
-def reindex_bus_ppc(ppc, bus_ind_dict):
+def _reindex_bus_ppc(ppc, bus_ind_dict):
     """
     reindexing buses according to dictionary old_bus_index -> new_bus_index
     :param ppc: matpower-type power system
@@ -52,7 +53,7 @@ def reindex_bus_ppc(ppc, bus_ind_dict):
     return ppc_bfs
 
 
-def bibc_bcbv(ppc):
+def _bibc_bcbv(ppc):
     """
     performs depth-first-search bus ordering and creates Direct Load Flow (DLF) matrix
     which establishes direct relation between bus current injections and voltage drops from each bus to the root bus
@@ -89,7 +90,7 @@ def bibc_bcbv(ppc):
     # renaming buses in graph and in ppc
     G = nx.relabel_nodes(G, buses_bfs_dict)
     root_bus = buses_bfs_dict[root_bus]
-    ppc_bfs = reindex_bus_ppc(ppci, buses_bfs_dict)
+    ppc_bfs = _reindex_bus_ppc(ppci, buses_bfs_dict)
     # ordered list of branches
     branches_ord = zip(ppc_bfs['branch'][:, F_BUS].real.astype(int), ppc_bfs['branch'][:, T_BUS].real.astype(int))
 
@@ -187,7 +188,7 @@ def bibc_bcbv(ppc):
 
 
 
-def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
+def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
          enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
     """
     distribution power flow solution according to [1]
@@ -218,6 +219,11 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
         tol_mva_inner = kwargs['tolerance_kva_pv'] * 1e-3
     else:
         tol_mva_inner = 1.e-2
+
+    if 'max_iter_pv' in kwargs:
+        max_iter_pv = kwargs['max_iter_pv']
+    else:
+        max_iter_pv = 20
 
     nbus = bus.shape[0]
     ngen = gen.shape[0]
@@ -310,17 +316,14 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
             deltaV = DLF * Iinj[mask_root]
             V_iter = np.ones(nbus - 1) * V0[root_bus_i] + deltaV
 
-            if n_iter_inner > 20 :
-                success_inner = 0
-                break   # TODO: special notice for divergence due to inner iterations for PV nodes
+            if n_iter_inner > max_iter_pv:
+                raise LoadflowNotConverged(" FBSW Power Flow did not converge - inner iterations for PV nodes "
+                                           "reached maximum value of {0}!".format(max_iter_pv))
 
             n_iter_inner += 1
 
             if np.all(np.abs(dQ) < tol_mva_inner):  # inner loop termination criterion
                 inner_loop_converged = True
-
-        if not success_inner:
-            break
 
         # testing termination criterion -
         V = np.insert(V_iter, root_bus_i, Vref)
@@ -336,6 +339,9 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
             if verbose:
                 print("\nFwd-back sweep power flow converged in "
                                  "{0} iterations.\n".format(n_iter))
+        elif n_iter == max_it:
+            raise LoadflowNotConverged(" FBSW Power Flow did not converge - "
+                                       "reached maximum iterations = {0}!".format(max_it))
 
         # updating injected currents
         Iinj = np.conj(Sbus / V) - Ysh * V
@@ -374,7 +380,7 @@ def _run_bfswpf(ppc, options, **kwargs):
     ref, pv, pq = bustypes(bus, gen)
 
     # depth-first-search bus ordering and generating Direct Load Flow matrix DLF = BCBV * BIBC
-    DLF, ppc_bfsw, buses_ordered_bfsw = bibc_bcbv(ppci)
+    DLF, ppc_bfsw, buses_ordered_bfsw = _bibc_bcbv(ppci)
 
 
     baseMVA_bfsw, bus_bfsw, gen_bfsw, branch_bfsw = \
@@ -394,7 +400,7 @@ def _run_bfswpf(ppc, options, **kwargs):
     ref_bfsw, pv_bfsw, pq_bfsw = bustypes(bus_bfsw, gen_bfsw)
 
     # #-----  run the power flow  -----
-    V_final, success = bfswpf(DLF, bus_bfsw, gen_bfsw, branch_bfsw, baseMVA_bfsw, Ybus_bfsw, Sbus_bfsw, V0,
+    V_final, success = _bfswpf(DLF, bus_bfsw, gen_bfsw, branch_bfsw, baseMVA_bfsw, Ybus_bfsw, Sbus_bfsw, V0,
                                    ref_bfsw, pv_bfsw, pq_bfsw, enforce_q_lims, tolerance_kva, max_iteration, **kwargs)
 
     V_final = V_final[np.argsort(buses_ordered_bfsw)]  # return bus voltages in original bus order
