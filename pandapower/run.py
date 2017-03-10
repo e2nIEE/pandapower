@@ -114,12 +114,6 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
-        **mode** (str, "pf") - Determines if PF, OPF or short circuit calculations are performed
-
-            pf: Powerflow calculations
-            opf: Optimal power flow calculations
-            sc: Short circuit calculations
-
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = True

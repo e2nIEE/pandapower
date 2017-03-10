@@ -1,4 +1,4 @@
-
+from __future__ import division
 import numpy as np
 import scipy as sp
 import networkx as nx
@@ -117,11 +117,14 @@ def bibc_bcbv(ppc):
     # dictionary with impedance values keyed by branch tuple (frombus, tobus)
     Z_brch_dict = dict(zip(branches_ord, ppc_bfs['branch'][:, BR_R].real + 1j * ppc_bfs['branch'][:, BR_X].real))
 
-
+    #branches_ord zip has to be  initialized again since it is a generator object in py3 and is 
+    #otherwise empty after iterating over it once
+    #TODO: find more elegant solution that is py2/py3 compatible
+    branches_ord = zip(ppc_bfs['branch'][:, F_BUS].real.astype(int), ppc_bfs['branch'][:, T_BUS].real.astype(int))
     # #------ building BIBC and BCBV martrices ------
 
     # order branches for BIBC and BCBV matrices and set loop-closing branches to the end
-    branches_ord_radial = list(branches_ord)
+    branches_ord_radial = [(i,j) for (i, j) in branches_ord]
     for brch in branches_loops:  # TODO eliminated this for loop
         branches_ord_radial.remove(brch)
     branches_ind_dict = dict(zip(branches_ord_radial, range(0, nbr_rad)))
@@ -181,7 +184,6 @@ def bibc_bcbv(ppc):
         DLF = A - M.T * csr_matrix(sp.linalg.inv(N)) * M  # Kron's Reduction
     else:  # no loops -> radial network
         DLF = BCBV * BIBC
-
     return DLF, ppc_bfs, buses_ordered_bfs
 
 
@@ -263,7 +265,6 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
         deltaV = DLF * Iinj[mask_root]
         V_iter = np.ones(nbus - 1) * Vref + deltaV
-
         # ##
         # inner loop for considering PV buses
         inner_loop_converged = False
@@ -331,7 +332,7 @@ def bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
         # check tolerance
         normF = np.linalg.norm(F, np.Inf)
-
+#        print(F)
         if normF < tolerance_mva:
             converged = 1
             if verbose:
