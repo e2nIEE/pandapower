@@ -1,3 +1,4 @@
+
 ==============
 CIGRE Networks
 ==============
@@ -177,6 +178,3 @@ Low voltage distribution network
 	:width: 42em
 	:alt: alternate Text
 	:align: center
-
-
----------------------------
