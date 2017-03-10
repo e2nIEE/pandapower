@@ -194,7 +194,7 @@ def test_bfswpf():
     assert np.allclose(vm, vm_bfsw)
     assert np.allclose(va, va_bfsw)
 
-def test_bfswpf_der():
+    # testing with a network which contains DERs
     net = create_cigre_network_mv()
 
     pp.runpp(net)
