@@ -235,9 +235,7 @@ def _runpppf(net, **kwargs):
     if not "VERBOSE" in kwargs:
         kwargs["VERBOSE"] = 0
 
-
     # ----- run the powerflow -----
-
     if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
         result = _run_bfswpf(ppci, net["_options"], **kwargs)[0]
 
@@ -246,7 +244,6 @@ def _runpppf(net, **kwargs):
 
     else:
         raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
-
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
     result = _copy_results_ppci_to_ppc(result, ppc, mode)

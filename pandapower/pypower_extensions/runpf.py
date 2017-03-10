@@ -85,7 +85,6 @@ def _get_options(options, **kwargs):
             ppopt['PF_MAX_IT_GS'] = max_iteration
         else:
             ppopt['PF_MAX_IT_FD'] = max_iteration
-
     return init, ac, numba, recycle, ppopt
 
 
