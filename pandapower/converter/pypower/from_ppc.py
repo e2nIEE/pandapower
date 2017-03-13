@@ -6,7 +6,7 @@
 
 from math import pi
 from numpy import sign, nan, append, zeros, max, array, delete, insert
-from pandas import Series, DataFrame
+from pandas import Series, DataFrame, concat
 from copy import deepcopy
 
 from pypower import runpf
@@ -280,103 +280,110 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
         # --- pandapower gen result table
         pp_res_gen = zeros([1, 2])
-        # consideration of parallel generators
-        GEN = DataFrame(ppc_res['gen'][:, [0]])
-        GEN_uniq = GEN.drop_duplicates(subset=[0])
+        # consideration of parallel generators via storing how much generators have been considered
+        # each node
+        already_used_gen = Series(zeros([pp_net.bus.shape[0]]), index=pp_net.bus.index).astype(int)
+        GENS = DataFrame(ppc_res['gen'][:, [0]].astype(int))
         change_q_compare = []
-        for i in GEN_uniq.index:
-            current_bus_idx = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['gen'][i, 0]))
+        for i, j in GENS.iterrows():
+            current_bus_idx = pp.get_element_index(pp_net, 'bus', name=j[0])
             current_bus_type = int(ppc_res['bus'][current_bus_idx, 1])
             # ext_grid
             if current_bus_type == 3:
-                len_start = len(pp_res_gen)
-                pp_res_gen = append(pp_res_gen, array(pp_net.res_ext_grid[
-                    pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
-                pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
-                    pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
-                len_end = len(pp_res_gen)
-                if len_end - len_start > 1:
-                    change_q_compare += list(range(len_start - 1, len_end - 1))
+                if already_used_gen.at[current_bus_idx] == 0:
+                    pp_res_gen = append(pp_res_gen, array(pp_net.res_ext_grid[
+                        pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+                        already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
+                    already_used_gen.at[current_bus_idx] += 1
+                else:
+                    pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
+                        pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+                        already_used_gen.at[current_bus_idx]-1].reshape((1, 2)), 0)
+                    already_used_gen.at[current_bus_idx] += 1
+                    change_q_compare += [j[0]]
             # gen
             elif current_bus_type == 2:
-                len_start = len(pp_res_gen)
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_gen[
-                    pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
-                len_end = len(pp_res_gen)
-                if len_end - len_start > 1:
-                    change_q_compare += list(range(len_start - 1, len_end - 1))
+                    pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+                    already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
+                if already_used_gen.at[current_bus_idx] > 0:
+                    change_q_compare += [j[0]]
+                already_used_gen.at[current_bus_idx] += 1
             # sgen
-            if current_bus_type == 1:
+            elif current_bus_type == 1:
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
-                    pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']]), 0)
+                    pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+                    already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
+                already_used_gen.at[current_bus_idx] += 1
         pp_res_gen = pp_res_gen[1:, :]  # delete initial zero row
-        # sort duplicated generators
-        GEN_dupl = GEN.loc[GEN.duplicated()]
-        pp_res_gen = _sort_duplicates(pp_res_gen, GEN_dupl, GEN_uniq)
 
         # --- pandapower branch result table
         pp_res_branch = zeros([1, 4])
-        # consideration of parallel branches with consideration of line-trafo-classification
+        # consideration of parallel branches via storing how much branches have been considered
+        # each node-to-node-connection
+        init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1).drop_duplicates()
+        init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1).drop_duplicates()
+        init1['hv_bus'] = nan
+        init1['lv_bus'] = nan
+        init2['from_bus'] = nan
+        init2['to_bus'] = nan
+        already_used_branches = concat([init1, init2], axis=0)
+        already_used_branches['number'] = zeros([already_used_branches.shape[0], 1]).astype(int)
         BRANCHES = DataFrame(ppc_res['branch'][:, [0, 1, 8, 9]])
-        BRANCHES['trafo_required'] = True
-        BRANCHES.trafo_required.loc[((BRANCHES[2] == 0) | (BRANCHES[2] == 1)) &
-                                    (BRANCHES[3] == 0)] = False  # provisional requirement of trafo
-        del BRANCHES[2]
-        del BRANCHES[3]
-        BRANCHES_uniq = BRANCHES.drop_duplicates()
-        BRANCHES_uniq['from_bus'] = nan
-        BRANCHES_uniq['to_bus'] = nan
-        BRANCHES_uniq['switch_connection'] = False
-        for i in BRANCHES_uniq.index:
+        for i in BRANCHES.index:
             from_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 0]))
             to_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_res['branch'][i, 1]))
             from_vn_kv = ppc_res['bus'][from_bus, 9]
             to_vn_kv = ppc_res['bus'][to_bus, 9]
-            BRANCHES_uniq.from_bus.at[i] = from_bus
-            BRANCHES_uniq.to_bus.at[i] = to_bus
-            if (from_vn_kv != to_vn_kv) | (BRANCHES_uniq.trafo_required[i]):  # all trafos
-                if not BRANCHES_uniq.trafo_required[i]:
-                    BRANCHES_uniq.trafo_required.at[i] = True  # fix trafo requirement
-                if from_vn_kv < to_vn_kv:
-                    BRANCHES_uniq.switch_connection.at[i] = True
-        del BRANCHES_uniq[0]
-        del BRANCHES_uniq[1]
-        BRANCHES_uniq = BRANCHES_uniq.drop_duplicates()
-        for i in BRANCHES_uniq.index:
+            ratio = BRANCHES[2].at[i]
+            angle = BRANCHES[3].at[i]
             # from line results
-            if not BRANCHES_uniq.trafo_required[i]:
+            if (from_vn_kv == to_vn_kv) & ((ratio == 0) | (ratio == 1)) & (angle == 0):
                 pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
-                    (pp_net.line.from_bus == BRANCHES_uniq.from_bus[i]) &
-                    (pp_net.line.to_bus == BRANCHES_uniq.to_bus[i])]
-                    [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']]), 0)
+                    (pp_net.line.from_bus == from_bus) &
+                    (pp_net.line.to_bus == to_bus)]
+                    [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']])[
+                    int(already_used_branches.number.loc[
+                       (already_used_branches.from_bus == from_bus) &
+                       (already_used_branches.to_bus == to_bus)].values)].reshape(1, 4), 0)
+                already_used_branches.number.loc[(already_used_branches.from_bus == from_bus) &
+                                                 (already_used_branches.to_bus == to_bus)] += 1
             # from trafo results
             else:
-                if not BRANCHES_uniq.switch_connection[i]:
+                if from_vn_kv >= to_vn_kv:
                     pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                        (pp_net.trafo.hv_bus == BRANCHES_uniq.from_bus[i]) &
-                        (pp_net.trafo.lv_bus == BRANCHES_uniq.to_bus[i])]
-                        [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']]), 0)
-                else:
+                        (pp_net.trafo.hv_bus == from_bus) &
+                        (pp_net.trafo.lv_bus == to_bus)]
+                        [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']])[
+                        int(already_used_branches.number.loc[
+                            (already_used_branches.hv_bus == from_bus) &
+                            (already_used_branches.lv_bus == to_bus)].values)].reshape(1, 4), 0)
+                    already_used_branches.number.loc[(already_used_branches.hv_bus == from_bus) &
+                                                     (already_used_branches.lv_bus == to_bus)] += 1
+                else:  # switch hv-lv-connection of pypower connection buses
                     pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                        (pp_net.trafo.hv_bus == BRANCHES_uniq.to_bus[i]) &
-                        (pp_net.trafo.lv_bus == BRANCHES_uniq.from_bus[i])]
-                        [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']]), 0)
+                        (pp_net.trafo.hv_bus == to_bus) &
+                        (pp_net.trafo.lv_bus == from_bus)]
+                        [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']])[
+                        int(already_used_branches.number.loc[
+                            (already_used_branches.hv_bus == to_bus) &
+                            (already_used_branches.lv_bus == from_bus)].values)].reshape(1, 4), 0)
+                    already_used_branches.number.loc[(already_used_branches.hv_bus == to_bus) &
+                                                     (already_used_branches.lv_bus == from_bus)] += 1
         pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
-        # sort duplicated branches
-        pp_res_branch = _sort_duplicates(pp_res_branch, BRANCHES.loc[BRANCHES.duplicated()],
-                                         BRANCHES.drop_duplicates())
 
         # --- do the power flow result comparison
         diff_res_bus = ppc_res_bus - pp_res_bus
         diff_res_branch = ppc_res_branch - pp_res_branch * 1e-3
         diff_res_gen = ppc_res_gen + pp_res_gen * 1e-3
         # comparison of buses with several generator units only as q sum
-        for i in GEN_uniq.index[GEN_uniq.index.isin(change_q_compare)]:
+        GEN_uniq = GENS.drop_duplicates()
+        for i in GEN_uniq.loc[GEN_uniq[0].isin(change_q_compare)].index:
             next_is = GEN_uniq.index[GEN_uniq.index > i]
             if len(next_is) > 0:
                 next_i = next_is[0]
             else:
-                next_i = GEN.index[-1] + 1
+                next_i = GENS.index[-1] + 1
             if (next_i - i) > 1:
                 diff_res_gen[i:next_i, 1] = sum(diff_res_gen[i:next_i, 1])
         # logger info
@@ -398,7 +405,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                 (max(abs(diff_res_gen)) > 1e-1).any():
             logger.debug("The active/reactive power generation difference possibly results "
                          "because of a pypower error. Please validate "
-                         "the results via matpower loadflow.")  # this occurs e.g. at ppc case9
+                         "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
         # give a return
         if type(max_diff_values) == dict:
             if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
@@ -420,57 +427,5 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
             logger.debug("'max_diff_values' must be a dict.")
 
 
-def _sort_duplicates(pp_res, DUPL, UNIQ):
-    """
-    This rearrangement is needed if duplicated generators or branches do not follow directly the
-    unique one.
-    """
-    # dupl_uniq gives the uniq item related to every duplicated
-    dupl_uniq = DataFrame([], index=DUPL.index, columns=[0])
-    if UNIQ.shape[1] == 1:  # for generators
-        DUPL = DUPL.astype(int)
-        UNIQ = DataFrame(UNIQ.index, index=list(array(UNIQ.values).astype(int).flatten()))
-        for i in dupl_uniq.index:
-            dupl_uniq.at[i] = UNIQ.at[DUPL.at[i, 0], 0]
-    else:  # for branches
-        for i in dupl_uniq.index:
-            for j in UNIQ.loc[UNIQ.index < i].index[::-1]:
-                if (DUPL.loc[i] == UNIQ.loc[j]).all():
-                    dupl_uniq.at[i] = j
-                    break
-    # after all changes, dupl_target gives the target row where a duplicated item must be inserted
-    if dupl_uniq.isnull().any().any():
-        logger.debug('There are nan in dupl_uniq.')
-        dupl_uniq = dupl_uniq.dropna()
-    dupl_target = deepcopy(dupl_uniq)
-    dupl_target_dupl = dupl_target.duplicated()
-    while sum(dupl_target_dupl) > 0:
-        dupl_target.loc[dupl_target_dupl] += 1
-        dupl_target_dupl = dupl_target.duplicated()
-    dupl_target += 1
-    dupl_target = dupl_target.loc[dupl_target[0] != dupl_target.index]
-    for i in dupl_target.index:
-        if i > dupl_target.index[0]:
-            idx_smaller = dupl_target.index[dupl_target.index < i]
-            n_add = sum(((dupl_uniq.loc[i] >= dupl_target.loc[idx_smaller]).values) &
-                        (dupl_uniq.loc[i][0] < idx_smaller))[0]
-            dupl_target.loc[i] += n_add
-        if dupl_target.loc[i][0] < i:
-            # execute the rearrangement
-            to_insert = pp_res[dupl_target.loc[i][0]]
-            pp_res = delete(pp_res, dupl_target.loc[i][0], 0)
-            pp_res = insert(pp_res, i, to_insert, axis=0)
-        else:
-            dupl_target = dupl_target.drop(i)
-    return pp_res
-
-
 if __name__ == '__main__':
     pass
-#    pp_res=pp_res_branch
-#    DUPL= BRANCHES.loc[BRANCHES.duplicated()]
-#    UNIQ= BRANCHES.drop_duplicates()
-#
-#    pp_res=pp_res_gen
-#    DUPL= GEN_dupl
-#    UNIQ= GEN_uniq
