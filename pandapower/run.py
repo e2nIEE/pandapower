@@ -44,7 +44,7 @@ class AlgorithmUnknown(ppException):
 
 def runpp(net, init="auto", calculate_voltage_angles="auto", tolerance_kva=1e-5, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-          check_connectivity=True, r_switch=0.0, algorithm='nr', max_iteration=10, **kwargs):
+          check_connectivity=True, r_switch=0.0, algorithm='nr', max_iteration="auto", **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
