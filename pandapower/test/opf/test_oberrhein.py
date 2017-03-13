@@ -6,6 +6,7 @@
 
 import pandapower as pp
 import pytest
+import pandapower.networks as nw
 try:
     import pplog as logging
 except:
@@ -17,7 +18,6 @@ logger = logging.getLogger(__name__)
 def test_opf_oberrhein():
     """ Testing a  simple network with transformer for loading
     constraints with OPF using a generator """
-    import pandapower.networks as nw
     # create net
     net = nw.mv_oberrhein()
 
@@ -36,4 +36,6 @@ def test_opf_oberrhein():
     assert net["OPF_converged"]
 
 if __name__ == "__main__":
-    pytest.main(["test_oberrhein.py", "-xs"])
+    net = nw.mv_oberrhein()
+
+#    pytest.main(["test_oberrhein.py", "-xs"])

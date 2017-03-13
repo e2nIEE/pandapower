@@ -322,40 +322,80 @@ def _select_is_elements(net, recycle=None):
 
     return is_elems
 
-def _create_options_dict(init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
-                         trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-                         check_connectivity=False, ac=True, copy_constraints_to_ppc=False, mode="pf", r_switch=0.0,
-                         algorithm='nr', max_iteration=10, **kwargs):
+def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode, 
+                             copy_constraints_to_ppc, r_switch, init, enforce_q_lims):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
-    # recycle parameters
-    if recycle == None:
-        recycle = dict(is_elems=False, ppc=False, Ybus=False)
+    options = {
+          "calculate_voltage_angles": calculate_voltage_angles
+        , "trafo_model": trafo_model
+        , "check_connectivity": check_connectivity
+        , "mode": mode
+        , "copy_constraints_to_ppc": copy_constraints_to_ppc
+        , "r_switch": r_switch
+        ,  "init": init
+        , "enforce_q_lims": enforce_q_lims
+        }
+    _add_options(net, options)
+    
+def _add_pf_options(net, tolerance_kva, trafo_loading, numba, recycle, ac,
+                    algorithm, max_iteration, **kwargs):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
 
     options = {
-        "init": init
-        , "calculate_voltage_angles": calculate_voltage_angles
-        , "copy_constraints_to_ppc": copy_constraints_to_ppc
-        , "tolerance_kva": tolerance_kva
-        , "trafo_model": trafo_model
+          "tolerance_kva": tolerance_kva
         , "trafo_loading": trafo_loading
-        , "enforce_q_lims": enforce_q_lims
         , "numba": numba
         , "recycle": recycle
-        , "check_connectivity": check_connectivity
         , "ac": ac
-        , "mode": mode
-        , "r_switch": r_switch
         , "algorithm": algorithm
         , "max_iteration": max_iteration
     }
 
     options.update(kwargs)  # update options with some algorithm-specific parameters
+    _add_options(net, options)
+    
+def _add_opf_options(net, trafo_loading, ac, **kwargs):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    options = {
+        "trafo_loading": trafo_loading
+        , "ac": ac
+    }
 
-    return options
+    options.update(kwargs)  # update options with some algorithm-specific parameters
+    _add_options(net, options)
 
+    
+def     _add_sc_options(net, case, lv_tol_percent, tk_s, network_structure, r_fault_ohm, 
+                    x_fault_ohm, current):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    options = {
+                   "case": case
+                   , "lv_tol_percent": lv_tol_percent
+                   , "tk_s": tk_s
+                   , "network_structure": network_structure
+                   , "r_fault_ohm": r_fault_ohm
+                   , "x_fault_ohm": x_fault_ohm
+                   , "currents": current
+                   }
+    _add_options(net, options)
+    
+    
+def _add_options(net, options):
+    double_parameters = net._options.keys() & options.keys()
+    if len(double_parameters) > 0:
+        raise UserWarning("Parameters always have to be unique! The following parameters where specified twice: %s"%double_parameters)
+    net._options.update(options)
+                
+    
 def _clean_up(net):
     mode = net._options["mode"]
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
@@ -468,7 +508,7 @@ def _check_connectivity(ppc):
 
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
-    all_nodes = set(ppc['bus'][:, BUS_I].astype(int))
+    all_nodes = set(ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int))
 
     visited_nodes = set()
 
@@ -526,3 +566,6 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
                           & net["gen"]["in_service"].values.astype(bool)]
 
     net["_is_elems"] = is_elems
+    
+def _get_voltage_level(net):
+    return 50

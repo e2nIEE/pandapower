@@ -11,7 +11,7 @@ from pypower.idx_bus import GS, BS
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 
 def calc_kappa(net):
-    network_structure = net._options_sc["network_structure"]
+    network_structure = net._options["network_structure"]
     bus = net._is_elems["bus"]
     bus["kappa_korr"] = 1.
     if network_structure == "meshed":

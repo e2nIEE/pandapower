@@ -11,7 +11,8 @@ from pypower.idx_bus import VM
 from pypower.add_userfcn import add_userfcn
 
 from pandapower.pypower_extensions.runpf import _runpf
-from pandapower.auxiliary import ppException, _select_is_elements, _create_options_dict, _clean_up
+from pandapower.auxiliary import ppException, _select_is_elements, _clean_up, _add_pf_options,\
+                                _get_voltage_level, _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
@@ -41,9 +42,9 @@ class AlgorithmUnknown(ppException):
     pass
 
 
-def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t",
+def runpp(net, init="auto", calculate_voltage_angles="auto", tolerance_kva=1e-5, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-          check_connectivity=False, r_switch=0.0, algorithm='nr', max_iteration=10, **kwargs):
+          check_connectivity=True, r_switch=0.0, algorithm='nr', max_iteration=10, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -118,18 +119,29 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
     """
     ac = True
     mode = "pf"
-
+    copy_constraints_to_ppc = False
+    if calculate_voltage_angles == "auto":
+        voltage_level = _get_voltage_level(net)
+        calculate_voltage_angles = True if voltage_level > 70 else False
+    if init == "auto":
+        init = "dc" if calculate_voltage_angles else "flat"
+    # recycle parameters
+    if recycle == None:
+        recycle = dict(is_elems=False, ppc=False, Ybus=False)
     # init options
-    net["_options"] = _create_options_dict(init=init, ac=ac, calculate_voltage_angles=calculate_voltage_angles,
-                                   tolerance_kva=tolerance_kva, trafo_model=trafo_model, trafo_loading=trafo_loading,
-                                   enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle,
-                                   check_connectivity=check_connectivity, mode=mode, r_switch=r_switch,
-                                           algorithm=algorithm, max_iteration=max_iteration)
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+                     numba=numba, recycle=recycle, ac=ac, 
+                    algorithm=algorithm, max_iteration=max_iteration)
     _runpppf(net, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=False,
-            **kwargs):
+def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
+            r_switch = 0.0, **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -178,19 +190,26 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
-    # the following parameters have no effect if ac = False
-    calculate_voltage_angles = True
-    enforce_q_lims = False
-    init = ''
-    tolerance_kva = 1e-5
     numba = True
     mode = "pf"
+    init = 'flat'
 
-    net["_options"] = _create_options_dict(init=init, ac=ac, calculate_voltage_angles=calculate_voltage_angles,
-                                           tolerance_kva=tolerance_kva, trafo_model=trafo_model,
-                                           trafo_loading=trafo_loading,
-                                           enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle,
-                                           check_connectivity=check_connectivity, mode=mode)
+    # the following parameters have no effect if ac = False
+    calculate_voltage_angles = True
+    copy_constraints_to_ppc = False
+    enforce_q_lims = False
+    algorithm = None
+    max_iteration = None
+    tolerance_kva = None
+    
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init)
+    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+                    enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle, ac=ac, 
+                    algorithm=algorithm, max_iteration=max_iteration)
 
     _runpppf(net, **kwargs)
 
@@ -253,7 +272,8 @@ def _runpppf(net, **kwargs):
     _clean_up(net)
 
 
-def runopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
+def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
+           suppress_warnings=True, r_switch=0.0, **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -294,14 +314,20 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnings
     copy_constraints_to_ppc = True
     trafo_model = "t"
     trafo_loading = 'current'
+    init = "flat"
+    enforce_q_lims = True
 
-    net["_options"] = _create_options_dict(ac=ac, calculate_voltage_angles=calculate_voltage_angles,
-                                           mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                                           trafo_model=trafo_model, trafo_loading=trafo_loading)
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _runopp(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnings=True, **kwargs):
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
+             **kwargs):
     """
     Runs the  Pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -336,13 +362,19 @@ def rundcopp(net, verbose=False, calculate_voltage_angles=False, suppress_warnin
     """
     mode = "opf"
     ac = False
+    init = "flat"
     copy_constraints_to_ppc = True
     trafo_model = "t"
     trafo_loading = 'current'
+    calculate_voltage_angles = True
+    enforce_q_lims = True
 
-    net["_options"] = _create_options_dict(ac=ac, calculate_voltage_angles=calculate_voltage_angles,
-                                           mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                                           trafo_model=trafo_model, trafo_loading=trafo_loading)
+    net._options = {}   
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _runopp(net, verbose, suppress_warnings, **kwargs)
 
 

@@ -10,7 +10,7 @@ from numpy import in1d
 
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
-    add_test_gen, add_test_bus_bus_switch
+                                                                   add_test_gen
 
 
 def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):

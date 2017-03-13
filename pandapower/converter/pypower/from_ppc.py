@@ -5,9 +5,8 @@
 # BSD-style license that can be found in the LICENSE file.
 
 from math import pi
-from numpy import sign, nan, append, zeros, max, array, delete, insert
+from numpy import sign, nan, append, zeros, max, array
 from pandas import Series, DataFrame, concat
-from copy import deepcopy
 
 from pypower import runpf
 from pypower import ppoption
@@ -257,7 +256,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         pp.runpp(pp_net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
     except:
         try:
-            pp.runpp(pp_net, calculate_voltage_angles=True, trafo_model="pi")
+            pp.runpp(pp_net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
         except:
             try:
                 pp.runpp(pp_net, trafo_model="pi")

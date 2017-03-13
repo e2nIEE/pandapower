@@ -427,8 +427,15 @@ def convert_format(net):
 
     if not "tp_st_degree" in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
-
     net.version = 1.2
+    if not "_pd2ppc_lookups"in net:
+        net._pd2ppc_lookups = {"bus": None,
+                            "ext_grid": None,
+                            "gen": None}
+    if not "_ppc2pd_lookups" in net:
+        net._ppc2pd_lookups = {"bus": None,
+                            "ext_grid": None,
+                            "gen": None}
     return net
 
 

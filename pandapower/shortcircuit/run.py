@@ -12,7 +12,7 @@ from scipy.sparse.linalg import inv
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
 from pandapower.shortcircuit.kappa import calc_kappa
 from pandapower.run import _add_auxiliary_elements
-from pandapower.auxiliary import _select_is_elements, _create_options_dict, _clean_up
+from pandapower.auxiliary import _select_is_elements, _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pypower_extensions.makeYbus import makeYbus
 from pandapower.pd2ppc import _pd2ppc
 
@@ -26,7 +26,7 @@ except:
 logger = logging.getLogger(__name__)
 
 def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False, ith=False, 
-          tk_s=1., r_fault_ohm=0., x_fault_ohm=0.):
+          tk_s=1., r_fault_ohm=0., x_fault_ohm=0., r_switch=0.0):
     
     """
     Calculates minimal or maximal symmetrical short-circuit currents.  
@@ -85,10 +85,14 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
             raise ValueError("s_sc_%s is not defined for all ext_grids" %case)
         if  not "rx_%s"%case in net.ext_grid or any(pd.isnull(net.ext_grid["rx_%s"%case])):
             raise ValueError("rx_%s is not defined for all ext_grids" %case)
-    net["_options"] = _create_options_dict(trafo_model="pi", mode="sc")
-    net["_options_sc"] = {"case": case, "lv_tol_percent": lv_tol_percent, "tk_s": tk_s, 
-                         "network_structure": network_structure, "r_fault_ohm": r_fault_ohm,
-                         "x_fault_ohm": x_fault_ohm, "currents": []}
+    net["_options"] = {}
+    _add_ppc_options(net, calculate_voltage_angles=False, 
+                             trafo_model="pi", check_connectivity=False,
+                             mode="sc", copy_constraints_to_ppc=False,
+                             r_switch=r_switch, init="flat", enforce_q_lims=False)
+    _add_sc_options(net, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, 
+                    network_structure=network_structure, r_fault_ohm=r_fault_ohm, 
+                    x_fault_ohm=x_fault_ohm, current=[])
     net["_is_elems"] = _select_is_elements(net, None)
     _add_auxiliary_elements(net)
     _add_c_to_net(net)
@@ -101,7 +105,7 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     if ith:
         calc_ith(net)    
     net.res_bus_sc = pd.DataFrame(index=net.bus.index,
-                                  data=net._is_elems["bus"][net._options_sc["currents"]])
+                                  data=net._is_elems["bus"][net._options["currents"]])
     _clean_up(net)
 
 def _add_c_to_net(net):
@@ -111,7 +115,7 @@ def _add_c_to_net(net):
     bus["kappa_max"] = 2.
     lv_buses = bus[bus.vn_kv < 1.].index
     if len(lv_buses) > 0:
-        lv_tol_percent = net["_options_sc"]["lv_tol_percent"]
+        lv_tol_percent = net["_options"]["lv_tol_percent"]
         if lv_tol_percent==10:
             c_ns = 1.1
         elif lv_tol_percent==6:
@@ -124,18 +128,16 @@ def _add_c_to_net(net):
         bus.kappa_max.loc[lv_buses] = 1.8
 
 def calc_equiv_sc_impedance(net):
-    bus = net._is_elems["bus"]
-    z_fault = net["_options_sc"]["r_fault_ohm"] + net["_options_sc"]["x_fault_ohm"] * 1j
+    z_fault = net["_options"]["r_fault_ohm"] + net["_options"]["x_fault_ohm"] * 1j
     ppc, ppci = _pd2ppc(net)
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     zbus = calc_zbus(ppci)
     z_equiv = np.diag(zbus.toarray())
-    bus["z_equiv"] = np.nan
-    ppc_index = bus_lookup[net._is_elems["bus"].index]
+    net._is_elems["bus"]["z_equiv"] = np.nan
+    ppc_index = net["_pd2ppc_lookups"]["bus"][net._is_elems["bus"].index]
     z_equiv_pp = z_equiv[ppc_index]
     if abs(z_fault) > 0:
         z_equiv_pp += z_fault / np.square(ppc["bus"][ppc_index, BASE_KV]) / net.sn_kva * 1e3
-    bus["z_equiv"].loc[bus.index] = z_equiv_pp
+    net._is_elems["bus"]["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv_pp
 
 def calc_zbus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])

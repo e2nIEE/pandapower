@@ -125,7 +125,7 @@ def _calc_line_parameter(net, ppc):
     t[:, 3] = line["x_ohm_per_km"] * length / baseR / parallel
     if mode == "sc":
         t[:, 4] == 0
-        if net["_options_sc"]["case"] == "min":
+        if net["_options"]["case"] == "min":
             t[:, 2] *= _end_temperature_correction_factor(net)
     else:
         t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel

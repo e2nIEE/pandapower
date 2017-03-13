@@ -33,5 +33,7 @@ def test_min_sgen(one_line_one_static_generator):
     sc.runsc(net, case="min")
     np.isclose(net.res_bus_sc.ikss_min_ka.at[1], 0.05773139511)
     
-if __name__ == '__main__':   
+if __name__ == '__main__':
+#    net = one_line_one_static_generator()
+#    sc.runsc(net)
     pytest.main(['test_sgen.py'])    
