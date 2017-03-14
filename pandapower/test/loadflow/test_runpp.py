@@ -194,10 +194,7 @@ def test_pf_algorithms():
         vm_nr = net.res_bus.vm_pu
         va_nr = net.res_bus.va_degree
 
-        if alg == 'bfsw':
-            pp.runpp(net, algorithm=alg, max_iteration=20)
-        else:
-            pp.runpp(net, algorithm=alg)
+        pp.runpp(net, algorithm=alg)
         vm_alg = net.res_bus.vm_pu
         va_alg = net.res_bus.va_degree
 
@@ -211,10 +208,7 @@ def test_pf_algorithms():
         vm_nr = net.res_bus.vm_pu
         va_nr = net.res_bus.va_degree
 
-        if alg == 'bfsw':
-            pp.runpp(net, algorithm=alg, max_iteration=20)
-        else:
-            pp.runpp(net, algorithm=alg)
+        pp.runpp(net, algorithm=alg)
         vm_alg = net.res_bus.vm_pu
         va_alg = net.res_bus.va_degree
 
