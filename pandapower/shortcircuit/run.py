@@ -11,7 +11,7 @@ from scipy.sparse.linalg import inv
 
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
 from pandapower.shortcircuit.kappa import calc_kappa
-from pandapower.run import _add_auxiliary_elements
+from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.auxiliary import _select_is_elements, _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pypower_extensions.makeYbus import makeYbus
 from pandapower.pd2ppc import _pd2ppc

@@ -27,7 +27,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def _run_newton_raphson(ppci, options):
+def _run_newton_raphson_pf(ppci, options):
     """Runs a newton raphson power flow.
     """
 

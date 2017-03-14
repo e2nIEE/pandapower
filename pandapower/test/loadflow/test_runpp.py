@@ -15,7 +15,7 @@ from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.run import _select_is_elements
+from pandapower.powerflow import _select_is_elements
 from pandapower.networks import create_cigre_network_mv
 
 def test_runpp_init():
