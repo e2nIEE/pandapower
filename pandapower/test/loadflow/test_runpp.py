@@ -186,7 +186,7 @@ def test_test_sn_kva():
 
 
 def test_pf_algorithms():
-    alg_to_test = ['bfsw', 'fdBX', 'fdXB', 'gs']
+    alg_to_test = ['bfsw', 'fdbx', 'fdxb', 'gs']
     for alg in alg_to_test:
         net = create_cigre_network_mv(with_der=False)
 
