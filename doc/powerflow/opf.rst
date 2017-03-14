@@ -77,7 +77,7 @@ Polynomial cost functions can be speciefied using create_polynomial_cost():
 .. autofunction:: pandapower.create_polynomial_cost 
 
 Please note, that polynomial costs for reactive power can only be quadratic, linear or constant.
-Reactive and reactive power costs are calculted seperately. The costs of all types are summed up to determine the overall costs for a grid state.
+Active and reactive power costs are calculted seperately. The costs of all types are summed up to determine the overall costs for a grid state.
 
 Parametrisation of the calculation
 -----------------------------------
