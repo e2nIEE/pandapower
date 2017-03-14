@@ -4,7 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from numpy import nan, isnan, arange, dtype, zeros, array
+from numpy import nan, isnan, arange, dtype, zeros
 import pandas as pd
 
 from pandapower.std_types import add_basic_std_types, load_std_type
@@ -12,7 +12,7 @@ from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
-def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
+def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
 
@@ -149,19 +149,19 @@ def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
                       ("sn_kva", "f8"),
                       ("in_service", 'bool')],
         "dcline": [("name", dtype(object)),
-                ("from_bus", "u4"),
-                ("to_bus", "u4"),
-                ("p_kw", "f8"),
-                ("loss_percent", 'f8'),
-                ("loss_kw", 'f8'),
-                ("vm_from_pu", "f8"),
-                ("vm_to_pu", "f8"),
-                ("max_p_kw", "f8"),
-                ("min_q_from_kvar", "f8"),
-                ("min_q_to_kvar", "f8"),
-                ("max_q_from_kvar", "f8"),
-                ("max_q_to_kvar", "f8"),
-                ("in_service", 'bool')],
+                   ("from_bus", "u4"),
+                   ("to_bus", "u4"),
+                   ("p_kw", "f8"),
+                   ("loss_percent", 'f8'),
+                   ("loss_kw", 'f8'),
+                   ("vm_from_pu", "f8"),
+                   ("vm_to_pu", "f8"),
+                   ("max_p_kw", "f8"),
+                   ("min_q_from_kvar", "f8"),
+                   ("min_q_to_kvar", "f8"),
+                   ("max_q_from_kvar", "f8"),
+                   ("max_q_to_kvar", "f8"),
+                   ("in_service", 'bool')],
         "ward": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("ps_kw", "f8"),
@@ -187,14 +187,14 @@ def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
                         ("bus", "u4"),
                         ("element", dtype(object))],
         "piecewise_linear_cost": [("type", dtype(object)),
-                        ("element", dtype(object)),
-                        ("element_type", dtype(object)),
-                        ("p", dtype(object)),
-                        ("f", dtype(object))],
-        "polynomial_cost": [("type", dtype(object)),
                                   ("element", dtype(object)),
                                   ("element_type", dtype(object)),
-                                  ("c", dtype(object))],
+                                  ("p", dtype(object)),
+                                  ("f", dtype(object))],
+        "polynomial_cost": [("type", dtype(object)),
+                            ("element", dtype(object)),
+                            ("element_type", dtype(object)),
+                            ("c", dtype(object))],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
@@ -258,14 +258,14 @@ def create_empty_network(name = None, f_hz = 50., sn_kva=1e3):
                                  ("i_from_ka", "f8"),
                                  ("i_to_ka", "f8")],
         "_empty_res_dcline": [("p_from_kw", "f8"),
-                            ("q_from_kvar", "f8"),
-                            ("p_to_kw", "f8"),
-                            ("q_to_kvar", "f8"),
-                            ("pl_kw", "f8"),
-                            ("vm_from_pu", "f8"),
-                            ("va_from_degree", "f8"),
-                            ("vm_to_pu", "f8"),
-                            ("va_to_degree", "f8")],
+                              ("q_from_kvar", "f8"),
+                              ("p_to_kw", "f8"),
+                              ("q_to_kvar", "f8"),
+                              ("pl_kw", "f8"),
+                              ("vm_from_pu", "f8"),
+                              ("va_from_degree", "f8"),
+                              ("vm_to_pu", "f8"),
+                              ("va_to_degree", "f8")],
         "_empty_res_ward": [("p_kw", "f8"),
                             ("q_kvar", "f8"),
                             ("vm_pu", "f8")],
@@ -535,6 +535,7 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, scaling=1., ind
 
     return index
 
+
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
                 max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
@@ -710,8 +711,9 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     # store dtypes
     dtypes = net.gen.dtypes
 
-    net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva",  "type", "in_service", "scaling"]]\
-        = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service), scaling]
+    net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva",  "type", "in_service",
+                        "scaling"]] = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service),
+                                       scaling]
 
     # and preserve dtypes
     _preserve_dtypes(net.gen, dtypes)
@@ -1068,6 +1070,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     return index
 
+
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1):
     """
@@ -1126,7 +1129,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "vscr_percent": ti["vscr_percent"],
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
-        "parallel" : parallel,
+        "parallel": parallel,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
         })
     for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
@@ -1156,9 +1159,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
     return index
 
 
-def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, vscr_percent,
-                                       vsc_percent, pfe_kw, i0_percent, shift_degree=0,
-                                       tp_side=None, tp_mid=nan, tp_max=nan,
+def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv,
+                                       vscr_percent, vsc_percent, pfe_kw, i0_percent,
+                                       shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
                                        tp_pos=nan, in_service=True, name=None, index=None,
                                        max_loading_percent=nan, parallel=1, **kwargs):
@@ -1359,17 +1362,17 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
         net.trafo3w.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
-
     return index
 
 
 def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
-                                         sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
-                                         vsc_lv_percent, vscr_hv_percent, vscr_mv_percent,
-                                         vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree=0.,
-                                         shift_lv_degree=0., tp_side=None, tp_st_percent=nan,
-                                         tp_pos=nan, tp_mid=nan, tp_max=nan, tp_min=nan, name=None,
-                                         in_service=True, index=None, max_loading_percent=nan):
+                                         sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent,
+                                         vsc_mv_percent, vsc_lv_percent, vscr_hv_percent,
+                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,
+                                         shift_mv_degree=0., shift_lv_degree=0., tp_side=None,
+                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan,
+                                         tp_min=nan, name=None, in_service=True, index=None,
+                                         max_loading_percent=nan):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -1465,11 +1468,11 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     dtypes = net.trafo3w.dtypes
 
     net.trafo3w.loc[index, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                            "sn_hv_kva", "sn_mv_kva", "sn_lv_kva", "vsc_hv_percent", "vsc_mv_percent",
-                            "vsc_lv_percent", "vscr_hv_percent", "vscr_mv_percent", "vscr_lv_percent",
-                            "pfe_kw", "i0_percent", "shift_mv_degree", "shift_lv_degree",
-                            "tp_side", "tp_st_percent", "tp_pos", "tp_mid", "tp_max",
-                            "tp_min", "in_service", "name"]] = \
+                            "sn_hv_kva", "sn_mv_kva", "sn_lv_kva", "vsc_hv_percent",
+                            "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
+                            "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent",
+                            "shift_mv_degree", "shift_lv_degree", "tp_side", "tp_st_percent",
+                            "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service", "name"]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
@@ -1914,7 +1917,7 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     return index
 
 
-def create_piecewise_linear_cost(net, element, element_type, data_points, type = "p", index = None):
+def create_piecewise_linear_cost(net, element, element_type, data_points, type="p", index=None):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -1930,9 +1933,9 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
 
         **data_points** - (numpy array) Numpy array containing n data points (see example)
 
+    OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
 
-    OPTIONAL:
         **index** (int) - Force a specified ID if it is available
 
     OUTPUT:
@@ -1940,46 +1943,48 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type =
 
     EXAMPLE:
         create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
-        
-    NOTE: 
+
+    NOTE:
       costs for reactive power can only be quadratic, linear or constant. No higher grades supported.
     """
-    hallo=1
+
     if index is None:
         index = get_free_id(net["piecewise_linear_cost"])
 
     if index in net["piecewise_linear_cost"].index:
         raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
 
-    p=data_points[:,0]
-    f=data_points[:,1]
+    p = data_points[:, 0]
+    f = data_points[:, 1]
 
     if not (p[:-1] < p[1:]).all():
-        raise ValueError("Piecewise linear costs need to be defined in ascending order: p0 < p1 < ... < pn")
+        raise ValueError("Piecewise linear costs need to be defined in ascending order: " +
+                         "p0 < p1 < ... < pn")
 
     if type == "p":
-        if not ( hasattr(net[element_type],"max_p_kw") and hasattr(net[element_type],"min_p_kw")) :
+        if not (hasattr(net[element_type], "max_p_kw") and hasattr(net[element_type], "min_p_kw")):
             raise AttributeError("No operational constraints defined for controllable element!")
         # if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
         #     raise ValueError("Cost function must be defined for whole power range of the generator")
 
     if type == "q":
-        if not ( hasattr(net[element_type],"max_q_kvar") or hasattr(net[element_type],"min_q_kvar")) :
+        if not (hasattr(net[element_type], "max_q_kvar") or hasattr(net[element_type],
+                                                                    "min_q_kvar")):
             raise AttributeError("No operational constraints defined!")
-        if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[element_type].min_q_kvar.at[element] >= min(p)):
+        if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
+                element_type].min_q_kvar.at[element] >= min(p)):
             raise ValueError("Cost function must be defined for whole power range of the generator")
-
-
 
     net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
 
-    net.piecewise_linear_cost.p.loc[index] = p.reshape((1,-1))
-    net.piecewise_linear_cost.f.loc[index] = f.reshape((1,-1))
+    net.piecewise_linear_cost.p.loc[index] = p.reshape((1, -1))
+    net.piecewise_linear_cost.f.loc[index] = f.reshape((1, -1))
 
     return index
 
-def create_polynomial_cost(net, element, element_type, coefficients, type = "p", index = None):
+
+def create_polynomial_cost(net, element, element_type, coefficients, type="p", index=None):
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are
      - Generator
@@ -1995,9 +2000,9 @@ def create_polynomial_cost(net, element, element_type, coefficients, type = "p",
 
         **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
 
+    OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
 
-    OPTIONAL:
         **index** (int) - Force a specified ID if it is available
 
     OUTPUT:
@@ -2006,20 +2011,21 @@ def create_polynomial_cost(net, element, element_type, coefficients, type = "p",
     EXAMPLE:
         create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
     """
-    hallo=1
+
     if index is None:
         index = get_free_id(net["polynomial_cost"])
 
     if index in net["polynomial_cost"].index:
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
 
-    if not net["polynomial_cost"][net["polynomial_cost"].element_type == element_type].loc[net["polynomial_cost"].element == element].empty:
+    if not net["polynomial_cost"][net["polynomial_cost"].element_type == element_type].loc[
+           net["polynomial_cost"].element == element].empty:
         raise UserWarning("A polynomial_cost for this element already exists")
 
     net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
 
-    net.polynomial_cost.c.loc[index] = coefficients.reshape((1,-1))
+    net.polynomial_cost.c.loc[index] = coefficients.reshape((1, -1))
 
     return index
 
@@ -2031,4 +2037,3 @@ if __name__ == "__main__":
     create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3.2)
     create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
     create_measurement(net, "p", "line", 888, 8, bus=0, element=0)
-
