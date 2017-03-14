@@ -4,12 +4,43 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import warnings
 from numpy import where
 
-from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
-from pandapower.powerflow import _powerflow
-from pandapower.optimal_powerflow import _optimal_powerflow
+from pypower.ppoption import ppoption
+from pypower.idx_bus import VM
+from pypower.add_userfcn import add_userfcn
 
+from pandapower.pypower_extensions.runpf import _runpf
+from pandapower.auxiliary import ppException, _select_is_elements, _clean_up, _add_pf_options,\
+                                _add_ppc_options, _add_opf_options
+from pandapower.pd2ppc import _pd2ppc, _update_ppc
+from pandapower.pypower_extensions.opf import opf
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
+    _extract_results_opf
+from pandapower.create import create_gen
+
+from pandapower.run_bfswpf import _run_bfswpf
+
+class LoadflowNotConverged(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
+    pass
+
+
+class OPFNotConverged(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
+
+
+class AlgorithmUnknown(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
@@ -31,8 +62,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 - "nr" newton-raphson (pypower implementation with numba accelerations)
                 - "bfsw" backward/ sweep (only works for radial networks)
                 - "gs" gauss-seidel (pypower implementation)
-                - "fdBX" (pypower implementation)
-                - "fdXB"(pypower implementation)
+                - "fdbx" (pypower implementation)
+                - "fdxb"(pypower implementation)
                 
         **calculate_voltage_angles** (bool, "auto") - consider voltage angles in loadflow calculation
 
@@ -64,8 +95,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 - 10 for "nr"
                 - 100 for "bfsw"
                 - 1000 for "gs"
-                - 30 for "fdBX" 
-                - 30 for "fdXB" 
+                - 30 for "fdbx" 
+                - 30 for "fdxb" 
         
         **tolerance_kva** (float, 1e-5) - loadflow termination condition referring to P / Q mismatch of node power in kva
 
@@ -125,20 +156,22 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     # recycle parameters
     if recycle == None:
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
-    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdXB": 30, "fdBX": 30}
+    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 1000, "fdxb": 30, "fdbx": 30}
+    if not algorithm in default_max_iteration.keys():
+        raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
-
+        
     # init options
     net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, recycle=recycle, ac=ac,
+                     numba=numba, recycle=recycle, ac=ac, 
                     algorithm=algorithm, max_iteration=max_iteration)
-    _powerflow(net, **kwargs)
+    _runpppf(net, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
@@ -193,17 +226,75 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     algorithm = None
     max_iteration = None
     tolerance_kva = None
-
+    
     net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init)
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle, ac=ac,
+                    enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle, ac=ac, 
                     algorithm=algorithm, max_iteration=max_iteration)
 
-    _powerflow(net, **kwargs)
+    _runpppf(net, **kwargs)
+
+
+def _runpppf(net, **kwargs):
+    """
+    Gets called by runpp or rundcpp with different arguments.
+    """
+
+    # get infos from options
+    init = net["_options"]["init"]
+    ac = net["_options"]["ac"]
+    recycle = net["_options"]["recycle"]
+    mode = net["_options"]["mode"]
+    algorithm = net["_options"]["algorithm"]
+
+    net["converged"] = False
+    _add_auxiliary_elements(net)
+
+    if (ac and not init == "results") or not ac:
+        reset_results(net)
+
+    # select elements in service (time consuming, so we do it once)
+    net["_is_elems"] = _select_is_elements(net, recycle)
+
+    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
+        # update the ppc from last cycle
+        ppc, ppci = _update_ppc(net, recycle)
+    else:
+        # convert pandapower net to ppc
+        ppc, ppci = _pd2ppc(net)
+
+    # store variables
+    net["_ppc"] = ppc
+
+    if not "VERBOSE" in kwargs:
+        kwargs["VERBOSE"] = 0
+
+    # ----- run the powerflow -----
+    if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
+        result = _run_bfswpf(ppci, net["_options"], **kwargs)[0]
+
+    elif algorithm in ['nr', 'fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
+        result = _runpf(ppci, net["_options"], **kwargs)[0]
+
+    else:
+        raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
+
+    # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    result = _copy_results_ppci_to_ppc(result, ppc, mode)
+
+    # raise if PF was not successful. If DC -> success is always 1
+    if result["success"] != 1:
+        raise LoadflowNotConverged("Power Flow did not converge!")
+    else:
+        net["_ppc"] = result
+        net["converged"] = True
+
+    _extract_results(net, result)
+    _clean_up(net)
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
@@ -252,12 +343,12 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     enforce_q_lims = True
 
     net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
-    _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
+    _runopp(net, verbose, suppress_warnings, **kwargs)
 
 
 def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
@@ -303,10 +394,133 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     calculate_voltage_angles = True
     enforce_q_lims = True
 
-    net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    net._options = {}   
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                             r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
-    _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
+    _runopp(net, verbose, suppress_warnings, **kwargs)
+
+
+def _runopp(net, verbose, suppress_warnings, **kwargs):
+    ac = net["_options"]["ac"]
+
+    ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
+    net["OPF_converged"] = False
+    _add_auxiliary_elements(net)
+    reset_results(net)
+    # select elements in service (time consuming, so we do it once)
+    net["_is_elems"] = _select_is_elements(net)
+
+    ppc, ppci = _pd2ppc(net)
+    if not ac:
+        ppci["bus"][:, VM] = 1.0
+    net["_ppc_opf"] = ppc
+    if len(net.dcline) > 0:
+        ppci = add_userfcn(ppci, 'formulation', add_dcline_constraints, args=net)
+
+    if suppress_warnings:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result = opf(ppci, ppopt)
+    else:
+        result = opf(ppci, ppopt)
+    net["_ppc_opf"] = result
+
+    if not result["success"]:
+        raise OPFNotConverged("Optimal Power Flow did not converge!")
+
+    # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    mode = net["_options"]["mode"]
+    result = _copy_results_ppci_to_ppc(result, ppc, mode=mode)
+
+    net["_ppc_opf"] = result
+    net["OPF_converged"] = True
+    _extract_results_opf(net, result)
+    _clean_up(net)
+
+
+
+def _add_auxiliary_elements(net):
+    # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
+    if len(net["trafo3w"]) > 0:
+        _create_trafo3w_buses(net)
+    if len(net.dcline) > 0:
+        _add_dcline_gens(net)
+    if len(net["xward"]) > 0:
+        _create_xward_buses(net)
+
+
+def _create_xward_buses(net):
+    from pandapower.create import create_buses
+    init = net["_options"]["init"]
+
+    init_results = init == "results"
+    main_buses = net.bus.loc[net.xward.bus.values]
+    bid = create_buses(net, nr_buses=len(main_buses),
+                       vn_kv=main_buses.vn_kv.values,
+                       in_service=net["xward"]["in_service"].values)
+    net.xward["ad_bus"] = bid
+    if init_results:
+        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
+        #      pd2ppc anyways. LT
+        for hv_bus, aux_bus in zip(main_buses.index, bid):
+            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+
+
+def _create_trafo3w_buses(net):
+    from pandapower.create import create_buses
+    init = net["_options"]["init"]
+
+    init_results = init == "results"
+    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
+    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
+                       vn_kv=hv_buses.vn_kv.values,
+                       in_service=net.trafo3w.in_service.values)
+    net.trafo3w["ad_bus"] = bid
+    if init_results:
+        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
+        #      pd2ppc anyways. LT
+        for hv_bus, aux_bus in zip(hv_buses.index, bid):
+            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+
+
+def _add_dcline_gens(net):
+    for _, dctab in net.dcline.iterrows():
+        pfrom = dctab.p_kw
+        pto = - (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_kw)
+        pmax = dctab.max_p_kw
+        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu,
+                   min_p_kw=-pmax, max_p_kw=0.,
+                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
+                   in_service=dctab.in_service)
+        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu,
+                   min_p_kw=0, max_p_kw=pmax,
+                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar,
+                   in_service=dctab.in_service)
+
+
+def add_dcline_constraints(om, net):
+    # from numpy import hstack, diag, eye, zeros
+    from scipy.sparse import csr_matrix as sparse
+    ppc = om.get_ppc()
+    ndc = len(net.dcline)  ## number of in-service DC lines
+    ng = ppc['gen'].shape[0]  ## number of total gens
+    Adc = sparse((ndc, ng))
+    gen_lookup = net._pd2ppc_lookups["gen"]
+
+    dcline_gens_from = net.gen.index[-2 * ndc::2]
+    dcline_gens_to = net.gen.index[-2 * ndc + 1::2]
+    for i, (f, t, loss) in enumerate(zip(dcline_gens_from, dcline_gens_to,
+                                         net.dcline.loss_percent.values)):
+        Adc[i, gen_lookup[f]] = 1. + loss * 1e-2
+        Adc[i, gen_lookup[t]] = 1.
+
+    ## constraints
+    nL0 = -net.dcline.loss_kw.values * 1e-3  # absolute losses
+    #    L1  = -net.dcline.loss_percent.values * 1e-2 #relative losses
+    #    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
+
+    ## add them to the model
+    om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])
