@@ -127,7 +127,7 @@ def test_3bus_with_out_of_service_bus():
     # V_ref = 1 kV
     # Z_ref = 1 Ohm
 
-    # The example only had per unit values, but Pandapower expects kV, MVA, kW, kVar
+    # The example only had per unit values, but pandapower expects kV, MVA, kW, kVar
     # Measurements should be in kW/kVar/A - Voltage in p.u.
 
     # 1. Create network

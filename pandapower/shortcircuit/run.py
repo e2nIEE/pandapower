@@ -41,7 +41,7 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     for each bus.
 
     INPUT:
-        **net** (PandaPowerNet) Pandapower Network
+        **net** (pandapowerNet) pandapower Network
         
         **case** (str) 'max' / 'min' for maximal / minimal current calculation
         

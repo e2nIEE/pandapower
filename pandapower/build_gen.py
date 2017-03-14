@@ -30,7 +30,7 @@ def _build_gen_pf(net, ppc):
     datatype will be float afterwards.
 
     **INPUT**:
-        **net** -The Pandapower format network
+        **net** -The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
     '''
@@ -134,7 +134,7 @@ def _update_gen_ppc(net, ppc):
     Takes the ppc network and updates the gen values from the values in net.
 
     **INPUT**:
-        **net** -The Pandapower format network
+        **net** -The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
     '''
@@ -187,7 +187,7 @@ def _build_gen_opf(net, ppc, delta=1e-10):
     datatype will be float afterwards.
 
     **INPUT**:
-        **net** -The Pandapower format network
+        **net** -The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
     '''

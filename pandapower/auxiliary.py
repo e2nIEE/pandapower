@@ -149,10 +149,10 @@ class ADict(dict, MutableMapping):
         )
 
 
-class PandapowerNet(ADict):
+class pandapowerNet(ADict):
 
     def __init__(self, *args, **kwargs):
-        super(PandapowerNet, self).__init__(*args, **kwargs)
+        super(pandapowerNet, self).__init__(*args, **kwargs)
 
     def __repr__(self):
         r = "This pandapower network includes the following parameter tables:"
@@ -249,7 +249,7 @@ def _select_is_elements(net, recycle=None):
     This is quite time consuming so it is done once at the beginning
 
 
-    @param net: Pandapower Network
+    @param net: pandapower Network
     @return: is_elems Certain in service elements
     :rtype: object
     """
@@ -390,7 +390,7 @@ def     _add_sc_options(net, case, lv_tol_percent, tk_s, network_structure, r_fa
     
     
 def _add_options(net, options):
-    double_parameters = net._options.keys() & options.keys()
+    double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning("Parameters always have to be unique! The following parameters where specified twice: %s"%double_parameters)
     net._options.update(options)
@@ -566,6 +566,3 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
                           & net["gen"]["in_service"].values.astype(bool)]
 
     net["_is_elems"] = is_elems
-    
-def _get_voltage_level(net):
-    return 50

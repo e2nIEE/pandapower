@@ -16,7 +16,7 @@ def _make_objective(ppci, net):
     - Polynomial reactive power costs can only be quadratic, linear or constant
 
     INPUT:
-        **net** - The Pandapower format network
+        **net** - The pandapower format network
         **ppci** - The "internal" pypower format network for PF calculations
 
     OUTPUT:

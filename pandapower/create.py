@@ -8,7 +8,7 @@ from numpy import nan, isnan, arange, dtype, zeros
 import pandas as pd
 
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.auxiliary import PandapowerNet, get_free_id, _preserve_dtypes
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 
 
@@ -28,7 +28,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
         net = create_empty_network()
 
     """
-    net = PandapowerNet({
+    net = pandapowerNet({
         # structure data
         "bus": [('name', dtype(object)),
                 ('vn_kv', 'f8'),
@@ -305,7 +305,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     Busses are the nodes of the network that all other elements connect to.
 
     INPUT:
-        **net** (PandapowerNet) - The pandapower network in which the element is created
+        **net** (pandapowerNet) - The pandapower network in which the element is created
 
     OPTIONAL:
         **name** (string, default None) - the name for this bus
@@ -372,7 +372,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     Busses are the nodal points of the network that all other elements connect to.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network in which the element is created
+        **net** (pandapowerNet) - The pandapower network in which the element is created
 
         **nr_buses** (int) - The number of buses that is created
 
@@ -1377,7 +1377,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     Adds a three-winding transformer in table net["trafo3w"].
 
     Input:
-        **net** (PandapowerNet) - The net within this transformer should be created
+        **net** (pandapowerNet) - The net within this transformer should be created
 
         **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be connected to
 
@@ -1506,7 +1506,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     if the switch is closed or disconnected if the switch is open.
 
     INPUT:
-        **net** (PandapowerNet) - The net within this transformer should be created
+        **net** (pandapowerNet) - The net within this transformer should be created
 
         **bus** - The bus that the switch is connected to
 
@@ -1584,7 +1584,7 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
     Creates a shunt element
 
     INPUT:
-        **net** (PandapowerNet) - The pandapower network in which the element is created
+        **net** (pandapowerNet) - The pandapower network in which the element is created
 
         **bus** - bus number of bus to whom the shunt is connected to
 
@@ -1630,7 +1630,7 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None,
     Creates an per unit impedance element
 
     INPUT:
-        **net** (PandapowerNet) - The pandapower network in which the element is created
+        **net** (pandapowerNet) - The pandapower network in which the element is created
 
         **from_bus** (int) - starting bus of the impedance
 
@@ -1676,7 +1676,7 @@ def create_ward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, name=None, in_service=
     A ward equivalent is a combination of an impedance load and a PQ load.
 
     INPUT:
-        **net** (Pandapowernet) - The pandapower net within the element should be created
+        **net** (pandapowernet) - The pandapower net within the element should be created
 
         **bus** (int) -  bus of the ward equivalent
 

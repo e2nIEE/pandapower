@@ -36,7 +36,7 @@ def _pd2ppc(net):
         6. convert internal ppci format for pypower powerflow / opf without out of service elements and rearanged buses
 
     INPUT:
-        **net** - The Pandapower format network
+        **net** - The pandapower format network
 
     OUTPUT:
         **ppc** - The simple matpower format network. Which consists of:

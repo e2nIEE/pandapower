@@ -17,7 +17,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     Creates a matplotlib patch collection of pandapower buses.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network
+        **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
         **buses** (list, None) - The buses for which the collections are created.
@@ -97,7 +97,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
     Creates a matplotlib line collection of pandapower lines.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network
+        **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
         **lines** (list, None) - The lines for which the collections are created. If None, all lines in the network are considered.
@@ -144,7 +144,7 @@ def create_trafo_collection(net, trafos=None, **kwargs):
     Creates a matplotlib line collection of pandapower transformers.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network
+        **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created. If None, all transformers in the network are considered.
