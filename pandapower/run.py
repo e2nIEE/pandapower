@@ -145,8 +145,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     if recycle == None:
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
     default_max_iteration = {"nr": 10, "bfsw": 20, "gs": 10000, "fdXB": 30, "fdBX": 30}
-    if not algorithm in default_max_iteration.keys():
-        raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
 
