@@ -6,3 +6,4 @@ q_kvar*;float;;reactive power of the load [kVar]
 sn_kva;float;:math:`>` 0;rated power of the load [kVA]
 scaling *;float;:math:`\geq` 0;scaling factor for active and reactive power
 in_service*;boolean;True / False;specifies if the load is in service.
+controllable**;bool;;States if load is controllable or not, load will not be used as a flexibilty if it is not controllable

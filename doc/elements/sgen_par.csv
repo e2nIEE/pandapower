@@ -14,6 +14,4 @@ min_p_kw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
 controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable
-cost_per_kw**;float;;Cost per kW
-cost_per_kvar**;float;;Cost per kvar
 in_service*;boolean;True / False;specifies if the generator is in service.
