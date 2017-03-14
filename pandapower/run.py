@@ -29,7 +29,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             The following algorithms are available:
                 
                 - "nr" newton-raphson (pypower implementation with numba accelerations)
-                - "bfsw" backward/ sweep (only works for radial networks)
+                - "bfsw" backward/forward sweep (only works for radial networks)
                 - "gs" gauss-seidel (pypower implementation)
                 - "fdbx" (pypower implementation)
                 - "fdxb"(pypower implementation)
