@@ -441,7 +441,7 @@ def convert_format(net):
 
 def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
-    from pandapower.run import reset_results
+    from pandapower.powerflow import reset_results
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
         add_basic_std_types(net)

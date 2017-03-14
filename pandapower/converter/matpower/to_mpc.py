@@ -7,7 +7,7 @@
 import numpy as np
 from scipy.io import savemat
 
-from pandapower.run import reset_results, _select_is_elements, _pd2ppc
+from pandapower.powerflow import reset_results, _select_is_elements, _pd2ppc
 try:
     import pplog as logging
 except:

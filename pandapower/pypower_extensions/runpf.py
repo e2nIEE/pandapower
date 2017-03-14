@@ -21,7 +21,6 @@ from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 
 from pandapower.pypower_extensions.makeBdc import makeBdc
 from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
 
@@ -333,9 +332,8 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
 
 def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt, numba):
     alg = ppopt["PF_ALG"]
-    if alg == 1:
-        V, success, _ = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt, numba)
-    elif alg == 2 or alg == 3:
+    # alg == 1 was deleted = nr -> moved as own pandapower solver
+    if alg == 2 or alg == 3:
         Bp, Bpp = makeB(baseMVA, bus, branch, alg)
         V, success, _ = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
     elif alg == 4:

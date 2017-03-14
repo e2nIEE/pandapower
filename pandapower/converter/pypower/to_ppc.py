@@ -4,7 +4,8 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.run import _pd2ppc, _select_is_elements, _add_ppc_options
+from pandapower.powerflow import _pd2ppc, _select_is_elements
+from pandapower.auxiliary import _add_ppc_options
 try:
     import pplog as logging
 except:

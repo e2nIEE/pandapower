@@ -15,7 +15,7 @@ from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.run import _select_is_elements
+from pandapower.powerflow import _select_is_elements
 from pandapower.networks import create_cigre_network_mv
 
 def test_runpp_init():
@@ -184,33 +184,36 @@ def test_test_sn_kva():
         except:
             raise UserWarning("Result difference due to sn_kva after adding %s"%net1.last_added_case)
 
-def test_bfswpf():
-    net = create_cigre_network_mv(with_der=False)
 
-    pp.runpp(net)
-    vm = net.res_bus.vm_pu
-    va = net.res_bus.va_degree
+def test_pf_algorithms():
+    alg_to_test = ['bfsw', 'fdBX', 'fdXB', 'gs']
+    for alg in alg_to_test:
+        net = create_cigre_network_mv(with_der=False)
 
-    pp.runpp(net, algorithm='bfsw', max_iteration=20)
-    vm_bfsw = net.res_bus.vm_pu
-    va_bfsw = net.res_bus.va_degree
+        pp.runpp(net, algorithm='nr')
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
 
-    assert np.allclose(vm, vm_bfsw)
-    assert np.allclose(va, va_bfsw)
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
 
-    # testing with a network which contains DERs
-    net = create_cigre_network_mv()
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
 
-    pp.runpp(net)
-    vm = net.res_bus.vm_pu
-    va = net.res_bus.va_degree
+        # testing with a network which contains DERs
+        net = create_cigre_network_mv()
 
-    pp.runpp(net, algorithm='bfsw', max_iteration=20)
-    vm_bfsw = net.res_bus.vm_pu
-    va_bfsw = net.res_bus.va_degree
+        pp.runpp(net)
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
 
-    assert np.allclose(vm, vm_bfsw)
-    assert np.allclose(va, va_bfsw)
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
+
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])
