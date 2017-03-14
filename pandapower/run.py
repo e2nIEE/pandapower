@@ -5,6 +5,7 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import warnings
+from numpy import where
 
 from pypower.ppoption import ppoption
 from pypower.idx_bus import VM
@@ -12,7 +13,7 @@ from pypower.add_userfcn import add_userfcn
 
 from pandapower.pypower_extensions.runpf import _runpf
 from pandapower.auxiliary import ppException, _select_is_elements, _clean_up, _add_pf_options,\
-                                _get_voltage_level, _add_ppc_options, _add_opf_options
+                                _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
@@ -59,7 +60,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             The following algorithms are available:
                 
                 - "nr" newton-raphson (pypower implementation with numba accelerations)
-                - "bfsw" forward-backward sweep (only works for radial networks)
+                - "bfsw" backward/ sweep (only works for radial networks)
                 - "gs" gauss-seidel (pypower implementation)
                 - "fdBX" (pypower implementation)
                 - "fdXB"(pypower implementation)
@@ -92,7 +93,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             In "auto" mode, the default value depends on the power flow solver:
                 
                 - 10 for "nr"
-                - 10 for "bfsw"
+                - 100 for "bfsw"
                 - 1000 for "gs"
                 - 30 for "fdBX" 
                 - 30 for "fdXB" 
@@ -144,19 +145,23 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     mode = "pf"
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
-        voltage_level = _get_voltage_level(net)
-        calculate_voltage_angles = True if voltage_level > 70 else False
+        calculate_voltage_angles = False
+        hv_buses = where(net.bus.vn_kv.values > 70)[0]
+        if len(hv_buses) > 0:
+            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
+            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
+                calculate_voltage_angles = True
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
     # recycle parameters
     if recycle == None:
         recycle = dict(is_elems=False, ppc=False, Ybus=False)
-    default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 1000, "fdXB": 30, "fdBX": 30}
+    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 1000, "fdXB": 30, "fdBX": 30}
     if not algorithm in default_max_iteration.keys():
         raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
-
+        
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
