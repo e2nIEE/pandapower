@@ -333,9 +333,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
 
 def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt, numba):
     alg = ppopt["PF_ALG"]
-    if alg == 1:
-        V, success, _ = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt, numba)
-    elif alg == 2 or alg == 3:
+    if alg == 2 or alg == 3:
         Bp, Bpp = makeB(baseMVA, bus, branch, alg)
         V, success, _ = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
     elif alg == 4:

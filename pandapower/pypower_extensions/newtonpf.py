@@ -11,10 +11,8 @@ from scipy.sparse import issparse, csr_matrix as sparse
 from scipy.sparse import hstack, vstack
 from scipy.sparse.linalg import spsolve
 
-from pypower.ppoption import ppoption
 
-
-def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
+def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
     """Solves the power flow using a full Newton's method.
 
     Solves for bus voltages given the full system admittance matrix (for
@@ -41,12 +39,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None, numba=True):
 
     ## default arguments
     global dSbus_dV_calc, dSbus_dV_calc
-    if ppopt is None:
-        ppopt = ppoption()
 
     ## options
-    tol     = ppopt['PF_TOL']
-    max_it  = ppopt['PF_MAX_IT']
+    tol     = options['tolerance_kva'] * 1e-3
+    max_it  = options["max_iteration"]
 
     ## initialize
     i = 0

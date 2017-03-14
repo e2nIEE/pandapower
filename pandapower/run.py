@@ -10,7 +10,7 @@ from pypower.ppoption import ppoption
 from pypower.idx_bus import VM
 from pypower.add_userfcn import add_userfcn
 
-from pandapower.pypower_extensions.runpf import _runpf
+
 from pandapower.auxiliary import ppException, _select_is_elements, _clean_up, _add_pf_options,\
                                 _get_voltage_level, _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
@@ -18,8 +18,8 @@ from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
     _extract_results_opf
 from pandapower.create import create_gen
+from pandapower.run_pf_algorithm import _run_pf_algorithm
 
-from pandapower.run_bfswpf import _run_bfswpf
 
 class LoadflowNotConverged(ppException):
     """
@@ -29,13 +29,6 @@ class LoadflowNotConverged(ppException):
 
 
 class OPFNotConverged(ppException):
-    """
-    Exception being raised in case optimal powerflow did not converge.
-    """
-    pass
-
-
-class AlgorithmUnknown(ppException):
     """
     Exception being raised in case optimal powerflow did not converge.
     """
@@ -244,7 +237,6 @@ def _runpppf(net, **kwargs):
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
     mode = net["_options"]["mode"]
-    algorithm = net["_options"]["algorithm"]
 
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -269,14 +261,7 @@ def _runpppf(net, **kwargs):
         kwargs["VERBOSE"] = 0
 
     # ----- run the powerflow -----
-    if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
-        result = _run_bfswpf(ppci, net["_options"], **kwargs)[0]
-
-    elif algorithm in ['nr', 'fdBX', 'fdXB', 'gs']:  # algorithms existing within pypower
-        result = _runpf(ppci, net["_options"], **kwargs)[0]
-
-    else:
-        raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
+    result = _run_pf_algorithm(ppci, net["_options"], **kwargs)
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
     result = _copy_results_ppci_to_ppc(result, ppc, mode)
