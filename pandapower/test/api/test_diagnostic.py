@@ -205,8 +205,7 @@ def test_multiple_voltage_controlling_elements_per_bus(test_net):
 
     assert pp.multiple_voltage_controlling_elements_per_bus(net) == \
     {'buses_with_gens_and_ext_grids': [0],
-     'buses_with_mult_ext_grids': [0],
-     'buses_with_mult_gens': [36]}
+     'buses_with_mult_ext_grids': [0]}
 
 
 def test_overload(test_net):
@@ -266,13 +265,6 @@ def test_lines_with_impedance_close_to_zero(test_net):
     net.line.r_ohm_per_km.at[4] = 0.001
     net.line.x_ohm_per_km.at[4] = 0.001
     assert pp.lines_with_impedance_close_to_zero(net, 0.01, 0.01) == [0, 1, 4]
-
-
-def test_closed_switches_between_oos_and_is_buses(test_net):
-    net = copy.deepcopy(test_net)
-    net.bus.in_service.loc[1] = False
-
-    assert pp.closed_switches_between_oos_and_is_buses(net) == [0, 2, 4, 6, 8]
 
 
 def test_nominal_voltages_dont_match(test_net):
@@ -404,6 +396,33 @@ def test_numba_comparison(test_net):
         for result_type in check_results[element_type]:
             for result in check_results[element_type][result_type]:
                 assert result > numba_tolerance
+
+
+def test_parallel_switches(test_net):
+    net = copy.deepcopy(test_net)
+    pp.create_switch(net, 1, 2, et='b')
+    pp.create_switch(net, 13, 0, et='t', closed=False)
+    pp.create_switch(net, 13, 0, et='t')
+    pp.create_switch(net, 47, 16, et='l')
+    check_results = pp.parallel_switches(net)
+    assert check_results == [[0, 88], [84, 89, 90], [66, 91]]
+                             
+                             
+def test_missing_bus_indeces(test_net):
+    net = copy.deepcopy(test_net)
+    net.line.from_bus.iloc[0] = 10000
+    net.trafo.lv_bus.iloc[0] = 10001
+    net.trafo3w.mv_bus.iloc[0] = 10002
+    net.switch.bus.iloc[0] = 10003
+    net.switch.element.iloc[0] = 10004
+    net.ext_grid.bus.iloc[0] = 10005
+    check_results = pp.missing_bus_indeces(net)
+    assert check_results == {'ext_grid': [(0, 'bus', 10005)],
+                            'line': [(0, 'from_bus', 10000)],
+                            'switch': [(0, 'bus', 10003), (0, 'element', 10004)],
+                            'trafo': [(0, 'lv_bus', 10001)],
+                            'trafo3w': [(0, 'mv_bus', 10002)]}
+    
 
 #def test_mixed():
 #    net = networks.mv_network("ring")
