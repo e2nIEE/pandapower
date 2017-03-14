@@ -94,7 +94,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
         Calculates the shortest distance between a source bus and all buses connected to it.
 
      INPUT:
-        **net** (PandapowerNet) - Variable that contains a pandapower network.
+        **net** (pandapowerNet) - Variable that contains a pandapower network.
 
         **bus** (integer) - Index of the source bus.
 
@@ -130,7 +130,7 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
      Finds buses, that are not connected to an external grid.
 
      INPUT:
-        **net** (PandapowerNet) - variable that contains a pandapower network
+        **net** (pandapowerNet) - variable that contains a pandapower network
 
      OPTIONAL:
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
@@ -216,7 +216,7 @@ def determine_stubs(net, roots=None, mg=None):
 
 
      INPUT:
-        **net** (PandapowerNet) - Variable that contains a pandapower network.
+        **net** (pandapowerNet) - Variable that contains a pandapower network.
 
      OPTIONAL:
         **roots** (integer/list, None) - Indeces of buses that should be excluded (by default, the

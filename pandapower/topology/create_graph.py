@@ -16,7 +16,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
      connections between buses (typically lines or trafos).
 
      INPUT:
-        **net** (PandapowerNet) - variable that contains a pandapower network
+        **net** (pandapowerNet) - variable that contains a pandapower network
 
 
      OPTIONAL:

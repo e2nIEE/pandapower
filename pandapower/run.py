@@ -4,76 +4,76 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-import warnings
+from numpy import where
 
-from pypower.ppoption import ppoption
-from pypower.idx_bus import VM
-from pypower.add_userfcn import add_userfcn
-
-from pandapower.pypower_extensions.runpf import _runpf
-from pandapower.auxiliary import ppException, _select_is_elements, _clean_up
-from pandapower.pd2ppc import _pd2ppc, _update_ppc
-from pandapower.pypower_extensions.opf import opf
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, \
-    _extract_results_opf
-from pandapower.create import create_gen
+from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
+from pandapower.powerflow import _powerflow
+from pandapower.optimal_powerflow import _optimal_powerflow
 
 
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
-
-class OPFNotConverged(ppException):
-    """
-    Exception being raised in case optimal powerflow did not converge.
-    """
-    pass
-
-
-def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, trafo_model="t"
-          , trafo_loading="current", enforce_q_lims=False, numba=True, recycle=None,
-          check_connectivity=False, **kwargs):
+def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
+          tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
     Note: May raise pandapower.api.run["load"]flowNotConverged
 
     INPUT:
-        **net** - The Pandapower format network
+        **net** - The pandapower format network
 
     OPTIONAL:
-        **init** (str, "flat") - initialization method of the loadflow
-        Pandapower supports three methods for initializing the loadflow:
+        **algorithm** (str, "nr"): algorithm that is used to solve the power flow problem.
+                
+            The following algorithms are available:
+                
+                - "nr" newton-raphson (pypower implementation with numba accelerations)
+                - "bfsw" backward/ sweep (only works for radial networks)
+                - "gs" gauss-seidel (pypower implementation)
+                - "fdbx" (pypower implementation)
+                - "fdxb"(pypower implementation)
+                
+        **calculate_voltage_angles** (bool, "auto") - consider voltage angles in loadflow calculation
+
+            If True, voltage angles of ext_grids and transformer shifts are considered in the 
+            loadflow calculation. Considering the voltage angles is only necessary in meshed 
+            networks that are usually found in higher networks. Thats why calculate_voltage_angles
+            in "auto" mode defaults to:
+                
+                - True, if the network voltage level is above 70 kV
+                - False otherwise
+                
+            The network voltage level is defined as the maximum rated voltage in the network that
+            is connected to a line.            
+
+        **init** (str, "auto") - initialization method of the loadflow
+        pandapower supports four methods for initializing the loadflow:
 
             - "flat"- flat start with voltage of 1.0pu and angle of 0° at all buses as initial solution
             - "dc" - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow.
             - "results" - voltage vector of last loadflow from net.res_bus is used as initial solution. This can be useful to accelerate convergence in iterative loadflows like time series calculations.
+            
+        Considering the voltage angles might lead to non-convergence of the power flow in flat start.
+        That is why in "auto" mode, init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
 
-        **calculate_voltage_angles** (bool, False) - consider voltage angles in loadflow calculation
-
-            If True, voltage angles are considered in the  loadflow calculation. In some cases with
-            large differences in voltage angles (for example in case of transformers with high
-            voltage shift), the difference between starting and end angle value is very large.
-            In this case, the loadflow might be slow or it might not converge at all. That is why
-            the possibility of neglecting the voltage angles of transformers and ext_grids is
-            provided to allow and/or accelerate convergence for networks where calculation of
-            voltage angles is not necessary. Note that if calculate_voltage_angles is True the
-            loadflow is initialized with a DC power flow (init = "dc")
-
-            The default value is False because pandapower was developed for distribution networks.
-            Please be aware that this parameter has to be set to True in meshed network for correct
-            results!
-
+        **max_iteration** (int, "auto"): maximum number of iterations carried out in the power flow algorithm.
+                
+            In "auto" mode, the default value depends on the power flow solver:
+                
+                - 10 for "nr"
+                - 100 for "bfsw"
+                - 1000 for "gs"
+                - 30 for "fdbx" 
+                - 30 for "fdxb" 
+        
         **tolerance_kva** (float, 1e-5) - loadflow termination condition referring to P / Q mismatch of node power in kva
 
         **trafo_model** (str, "t")  - transformer equivalent circuit model
-        Pandapower provides two equivalent circuit models for the transformer:
+        pandapower provides two equivalent circuit models for the transformer:
 
-            - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+            - "t" - transformer is modeled as equivalent with the T-model. 
+            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than the T-model. It is only recommended for valdiation with other software that uses the pi-model.
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
@@ -82,7 +82,7 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
             - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
 
-        **enforce_q_lims** (bool, False) - respect generator reactive power limits
+        **enforce_q_lims** (bool, True) - respect generator reactive power limits
 
             If True, the reactive power limits in net.gen.max_q_kvar/min_q_kvar are respected in the
             loadflow. This is done by running a second loadflow if reactive power limits are
@@ -91,8 +91,79 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
 
         **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
-            speed improvements are likely.
+            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+            which leads to significant speed improvements.
+
+        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
+
+            Contains a dict with the following parameters:
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            ppc: If True the ppc is taken from net["_ppc"] and gets updated instead of reconstructed entirely
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
+
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are set out of service in the ppc
+            
+        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
+       
+        ****kwargs** - options to use for PYPOWER.runpf
+    """
+    ac = True
+    mode = "pf"
+    copy_constraints_to_ppc = False
+    if calculate_voltage_angles == "auto":
+        calculate_voltage_angles = False
+        hv_buses = where(net.bus.vn_kv.values > 70)[0]
+        if len(hv_buses) > 0:
+            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
+            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
+                calculate_voltage_angles = True
+    if init == "auto":
+        init = "dc" if calculate_voltage_angles else "flat"
+    # recycle parameters
+    if recycle == None:
+        recycle = dict(is_elems=False, ppc=False, Ybus=False)
+    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+    if max_iteration == "auto":
+        max_iteration = default_max_iteration[algorithm]
+
+    # init options
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+                    numba=numba, recycle=recycle, ac=ac,
+                    algorithm=algorithm, max_iteration=max_iteration)
+    _powerflow(net, **kwargs)
+
+
+def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
+            r_switch=0.0, **kwargs):
+    """
+    Runs PANDAPOWER DC Flow
+
+    Note: May raise pandapower.api.run["load"]flowNotConverged
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        pandapower provides two equivalent circuit models for the transformer:
+
+            - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+
+        **trafo_loading** (str, "current") - mode of calculation for transformer loading
+
+            Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
+
+            - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
+            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
 
         **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
@@ -106,127 +177,39 @@ def runpp(net, init="flat", calculate_voltage_angles=False, tolerance_kva=1e-5, 
             If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
-        ****kwargs** - options to use for PYPOWER.runpf
-    """
-    ac = True
-    # recycle parameters
-    if recycle == None:
-        recycle = dict(is_elems=False, ppc=False, Ybus=False)
-
-    _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs)
-
-
-def rundcpp(net, trafo_model="t", trafo_loading="current", suppress_warnings=True, recycle=None,
-            **kwargs):
-    """
-    Runs PANDAPOWER DC Flow
-
-    Note: May raise pandapower.api.run["load"]flowNotConverged
-
-    INPUT:
-        **net** - The Pandapower format network
-
-    OPTIONAL:
-        **trafo_model** (str, "t")  - transformer equivalent circuit model
-        Pandapower provides two equivalent circuit models for the transformer:
-
-            - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
-
-        **trafo_loading** (str, "current") - mode of calculation for transformer loading
-
-            Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
-
-            - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
-            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
-
-        **suppress_warnings** (bool, True) - suppress warnings in pypower
-
-            If set to True, warnings are disabled during the loadflow. Because of the way data is
-            processed in pypower, ComplexWarnings are raised during the loadflow. These warnings are
-            suppressed by this option, however keep in mind all other pypower warnings are also suppressed.
-
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
-
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow. Massive
-            speed improvements are likely.
-
-        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
-
-            Contains a dict with the following parameters:
-            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
-            ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
+        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
     ac = False
+    numba = True
+    mode = "pf"
+    init = 'flat'
+
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
+    copy_constraints_to_ppc = False
     enforce_q_lims = False
-    init = ''
-    tolerance_kva = 1e-5
-    numba = True
-    if recycle == None:
-        recycle = dict(is_elems=False, ppc=False, Ybus=False)
+    algorithm = None
+    max_iteration = None
+    tolerance_kva = None
 
-    _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, **kwargs)
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     r_switch=r_switch, init=init)
+    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+                    enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle, ac=ac,
+                    algorithm=algorithm, max_iteration=max_iteration)
+
+    _powerflow(net, **kwargs)
 
 
-def _runpppf(net, init, ac, calculate_voltage_angles, tolerance_kva, trafo_model,
-             trafo_loading, enforce_q_lims, numba, recycle, check_connectivity, **kwargs):
+def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
+           suppress_warnings=True, r_switch=0.0, **kwargs):
     """
-    Gets called by runpp or rundcpp with different arguments.
-    """
-
-    net["converged"] = False
-    init_results = (init == "results")
-    _add_auxiliary_elements(net, init_results)
-    if (ac and not init_results) or not ac:
-        reset_results(net)
-
-    # select elements in service (time consuming, so we do it once)
-    net["_is_elems"] = _select_is_elements(net, recycle)
-
-    if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
-        # update the ppc from last cycle
-        ppc, ppci = _update_ppc(net, recycle, calculate_voltage_angles, enforce_q_lims,
-                                            trafo_model)
-    else:
-        # convert pandapower net to ppc
-        ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims,
-                                        trafo_model,  init_results=init_results,
-                                        check_connectivity = check_connectivity)
-
-    # store variables
-    net["_ppc"] = ppc
-
-    if not "VERBOSE" in kwargs:
-        kwargs["VERBOSE"] = 0
-
-    # run the powerflow
-    result = _runpf(ppci, init, ac, numba, recycle, ppopt=ppoption(ENFORCE_Q_LIMS=enforce_q_lims,
-                                                                   PF_TOL=tolerance_kva * 1e-3, **kwargs))[0]
-
-    # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    result = _copy_results_ppci_to_ppc(result, ppc)
-
-    # raise if PF was not successful. If DC -> success is always 1
-    if result["success"] != 1:
-        raise LoadflowNotConverged("Loadflow did not converge!")
-    else:
-        net["_ppc"] = result
-        net["converged"] = True
-
-    _extract_results(net, result, trafo_loading=trafo_loading, ac=ac)
-#    _clean_up(net)
-
-
-def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
-    """
-    Runs the  Pandapower Optimal Power Flow.
+    Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities for generators can be defined in net.sgen / net.gen.
@@ -237,27 +220,20 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to generation units in the following columns:
-        - net.gen.cost_per_kw
-        - net.sgen.cost_per_kw
-        - net.ext_grid.cost_per_kw
+        - net.trafo3w.max_loading_percent
 
     How these costs are combined into a cost function depends on the cost_function parameter.
 
     INPUT:
-        **net** - The Pandapower format network
+        **net** - The pandapower format network
 
     OPTIONAL:
-        **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs
-            - "linear_minloss" - minimizes weighted generator cost and line losses
-
         **verbose** (bool, False) - If True, some basic information is printed
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
@@ -267,12 +243,27 @@ def runopp(net, cost_function="linear", verbose=False, suppress_warnings=True, *
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, cost_function, True, **kwargs)
+    mode = "opf"
+    ac = True
+    copy_constraints_to_ppc = True
+    trafo_model = "t"
+    trafo_loading = 'current'
+    init = "flat"
+    enforce_q_lims = True
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
+    _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True, **kwargs):
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
+             **kwargs):
     """
-    Runs the  Pandapower Optimal Power Flow.
+    Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities for generators can be defined in net.sgen / net.gen.
@@ -283,26 +274,17 @@ def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True,
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
-
-    Costs can be assigned to generation units in the following columns:
-        - net.gen.cost_per_kw
-        - net.sgen.cost_per_kw
-        - net.ext_grid.cost_per_kw
-
-    How these costs are combined into a cost function depends on the cost_function parameter.
+        - net.trafo3w.max_loading_percent
 
     INPUT:
-        **net** - The Pandapower format network
+        **net** - The pandapower format network
 
     OPTIONAL:
-        **cost_function** (str,"linear")- cost function
-            - "linear" - minimizes weighted generator costs
-            - "linear_minloss" - minimizes weighted generator cost and line losses
-
         **verbose** (bool, False) - If True, some basic information is printed
 
         **suppress_warnings** (bool, True) - suppress warnings in pypower
@@ -312,116 +294,19 @@ def rundcopp(net, cost_function="linear", verbose=False, suppress_warnings=True,
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-    _runopp(net, verbose, suppress_warnings, cost_function, False, **kwargs)
+    mode = "opf"
+    ac = False
+    init = "flat"
+    copy_constraints_to_ppc = True
+    trafo_model = "t"
+    trafo_loading = 'current'
+    calculate_voltage_angles = True
+    enforce_q_lims = True
 
-
-def _runopp(net, verbose, suppress_warnings, cost_function, ac=True, **kwargs):
-    ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
-    net["OPF_converged"] = False
-    _add_auxiliary_elements(net, False)
-    reset_results(net)
-    # select elements in service (time consuming, so we do it once)
-    net["_is_elems"] = _select_is_elements(net)
-
-    ppc, ppci = _pd2ppc(net, copy_constraints_to_ppc=True, trafo_model="t",
-                                    opf=True, cost_function=cost_function,
-                                    calculate_voltage_angles=False, **kwargs)
-    if not ac:
-        ppci["bus"][:, VM] = 1.0
-    net["_ppc_opf"] = ppc
-    if len(net.dcline) > 0:
-        ppci = add_userfcn(ppci, 'formulation', add_dcline_constraints, args=net)
-
-    if suppress_warnings:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            result = opf(ppci, ppopt)
-    else:
-        result = opf(ppci, ppopt)
-    net["_ppc_opf"] = result
-
-    if not result["success"]:
-        raise OPFNotConverged("Optimal Power Flow did not converge!")
-
-    # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
-    result = _copy_results_ppci_to_ppc(result, ppc)
-
-    net["_ppc_opf"] = result
-    net["OPF_converged"] = True
-    _extract_results_opf(net, result, "current", ac)
-    _clean_up(net)
-
-
-def _add_auxiliary_elements(net, init_results):
-    # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
-    if len(net["trafo3w"]) > 0:
-        _create_trafo3w_buses(net, init_results)
-    if len(net.dcline) > 0:
-        _add_dcline_gens(net)
-    if len(net["xward"]) > 0:
-        _create_xward_buses(net, init_results)
-
-def _create_xward_buses(net, init_results):
-    from pandapower.create import create_buses
-    main_buses = net.bus.loc[net.xward.bus.values]
-    bid = create_buses(net, nr_buses=len(main_buses),
-                       vn_kv=main_buses.vn_kv.values,
-                       in_service=net["xward"]["in_service"].values)
-    net.xward["ad_bus"] = bid
-    if init_results:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(main_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
-
-
-def _create_trafo3w_buses(net, init_results):
-    from pandapower.create import create_buses
-    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
-    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
-                       vn_kv=hv_buses.vn_kv.values,
-                       in_service=net.trafo3w.in_service.values)
-    net.trafo3w["ad_bus"] = bid
-    if init_results:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(hv_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
-
-def _add_dcline_gens(net):
-    for _, dctab in net.dcline.iterrows():
-        pfrom = dctab.p_kw
-        pto = - (pfrom* (1 - dctab.loss_percent / 100) - dctab.loss_kw)
-        pmax = dctab.max_p_kw
-        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_kw=-pmax, max_p_kw=0.,
-                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
-                   in_service=dctab.in_service, cost_per_kw=0.)
-        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_kw=0, max_p_kw=pmax,
-                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar,
-                   in_service=dctab.in_service, cost_per_kw=-dctab.cost_per_kw)
-
-def add_dcline_constraints(om, net):
-    # from numpy import hstack, diag, eye, zeros
-    from scipy.sparse import csr_matrix as sparse
-    ppc = om.get_ppc()
-    ndc = len(net.dcline)              ## number of in-service DC lines
-    ng  = ppc['gen'].shape[0]          ## number of total gens
-    Adc = sparse((ndc,ng))
-    gen_lookup = net._pd2ppc_lookups["gen"]
-
-    dcline_gens_from = net.gen.index[-2*ndc::2]
-    dcline_gens_to = net.gen.index[-2*ndc+1::2]
-    for i, (f, t, loss) in enumerate(zip(dcline_gens_from, dcline_gens_to,
-                                       net.dcline.loss_percent.values)):
-        Adc[i, gen_lookup[f]] = 1. + loss*1e-2
-        Adc[i, gen_lookup[t]] = 1.
-
-    ## constraints
-    nL0 = -net.dcline.loss_kw.values * 1e-3 #absolute losses
-#    L1  = -net.dcline.loss_percent.values * 1e-2 #relative losses
-#    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
-
-    ## add them to the model
-    om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
+    _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

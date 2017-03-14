@@ -26,7 +26,7 @@ def test_cigre_hv():
     assert len(net.trafo) == 6
     assert len(net.load) == 5
     assert len(net.ext_grid) == 1
-    assert net.converged is True
+    assert net.converged
 
     net = pn.create_cigre_network_hv(length_km_6a_6b=80)
     assert net.line.length_km[8] == 80
@@ -47,7 +47,7 @@ def test_cigre_mv():
     assert len(net.load) == 18
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 8
-    assert net.converged is True
+    assert net.converged
 
     net = pn.create_cigre_network_mv(with_der="pv_wind")
     pp.runpp(net)
@@ -63,7 +63,7 @@ def test_cigre_mv():
     assert len(net.load) == 18
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 8
-    assert net.converged is True
+    assert net.converged
 
     net = pn.create_cigre_network_mv(with_der="all")
     pp.runpp(net)
@@ -79,7 +79,7 @@ def test_cigre_mv():
     assert len(net.load) == 18
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 8
-    assert net.converged is True
+    assert net.converged
 
 
 def test_cigre_lv():
@@ -97,7 +97,7 @@ def test_cigre_lv():
     assert len(net.load) == 15
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 3
-    assert net.converged is True
+    assert net.converged
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_cigre_networks.py"])

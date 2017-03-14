@@ -10,6 +10,7 @@ from time import time
 from numpy import r_, zeros, pi, ones, exp, argmax, real
 from numpy import flatnonzero as find
 
+from pypower.ppoption import ppoption
 from pypower.makeSbus import makeSbus
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
@@ -20,7 +21,6 @@ from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 
 from pandapower.pypower_extensions.makeBdc import makeBdc
 from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.bustypes import bustypes
 
@@ -32,7 +32,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None):
+def _runpf(ppci, options, **kwargs):
     """Runs a power flow.
 
     Similar to runpf() from pypower. See Pypower documentation for more information.
@@ -44,6 +44,8 @@ def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None
 
     ##-----  run the power flow  -----
     t0 = time()
+    # ToDo: Options should be extracted in every subfunction not here...
+    init, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
 
     if ac:  # AC formulation
         if init == "dc":
@@ -57,6 +59,27 @@ def _runpf(ppci=None, init='flat', ac=True, numba=True, recycle=None, ppopt=None
     ppci["success"] = success
 
     return ppci, success
+
+
+def _get_options(options, **kwargs):
+    init = options["init"]
+    ac = options["ac"]
+    recycle = options["recycle"]
+    numba = options["numba"]
+    enforce_q_lims = options["enforce_q_lims"]
+    tolerance_kva = options["tolerance_kva"]
+    algorithm = options["algorithm"]
+    max_iteration = options["max_iteration"]
+
+    # algorithms implemented within pypower
+    algorithm_pypower_dict = {'nr': 1, 'fdbx': 2, 'fdxb': 3, 'gs': 4}
+
+    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_kva * 1e-3,
+                     PF_ALG=algorithm_pypower_dict[algorithm], **kwargs)
+    ppopt['PF_MAX_IT'] = max_iteration
+    ppopt['PF_MAX_IT_GS'] = max_iteration
+    ppopt['PF_MAX_IT_FD'] = max_iteration
+    return init, ac, numba, recycle, ppopt
 
 
 def _dc_runpf(ppci, ppopt):
@@ -309,9 +332,8 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
 
 def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt, numba):
     alg = ppopt["PF_ALG"]
-    if alg == 1:
-        V, success, _ = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt, numba)
-    elif alg == 2 or alg == 3:
+    # alg == 1 was deleted = nr -> moved as own pandapower solver
+    if alg == 2 or alg == 3:
         Bp, Bpp = makeB(baseMVA, bus, branch, alg)
         V, success, _ = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
     elif alg == 4:

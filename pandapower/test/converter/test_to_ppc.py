@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import pandapower.converter as cv
-from pandapower.run import LoadflowNotConverged, reset_results
+from pandapower.powerflow import LoadflowNotConverged, reset_results
 
 from pypower.runpf import runpf
 from pypower.ppoption import ppoption

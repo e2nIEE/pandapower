@@ -128,7 +128,7 @@ def test_two_gens_at_one_bus():
     b2 = pp.create_bus(net, 380)
     b3 = pp.create_bus(net, 380)
     
-    pp.create_ext_grid(net, b1, 1.02, max_p_kw=0., cost_per_kw=0.1)
+    pp.create_ext_grid(net, b1, 1.02, max_p_kw=0.)
     p1 = 800
     p2 = 500
     
@@ -151,7 +151,7 @@ def test_transformer_phase_shift():
         pp.create_transformer_from_parameters(net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, side,
                                               0, 2, -2, 1.25, 10, 0)
         pp.create_transformer_from_parameters(net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
-    pp.runpp(net, "dc", True)
+    pp.runpp(net, init="dc", calculate_voltage_angles=True)
     b2a_angle = net.res_bus.va_degree.at[1]
     b3a_angle = net.res_bus.va_degree.at[2]
     b2b_angle = net.res_bus.va_degree.at[4]
@@ -159,11 +159,11 @@ def test_transformer_phase_shift():
     
     net.trafo.tp_pos.at[0] = 1
     net.trafo.tp_pos.at[2] = 1
-    pp.runpp(net, "dc", True)
+    pp.runpp(net, init="dc", calculate_voltage_angles=True)
     assert np.isclose(b2a_angle - net.res_bus.va_degree.at[1], 10)
     assert np.isclose(b3a_angle - net.res_bus.va_degree.at[2], 10)
     assert np.isclose(b2b_angle - net.res_bus.va_degree.at[4], -10)
     assert np.isclose(b3b_angle - net.res_bus.va_degree.at[5], -10)
-    
-if __name__ == "__main__":
+
+if __name__ == "__main__":   
     pytest.main(["test_scenarios.py"])

@@ -127,7 +127,7 @@ def test_3bus_with_out_of_service_bus():
     # V_ref = 1 kV
     # Z_ref = 1 Ohm
 
-    # The example only had per unit values, but Pandapower expects kV, MVA, kW, kVar
+    # The example only had per unit values, but pandapower expects kV, MVA, kW, kVar
     # Measurements should be in kW/kVar/A - Voltage in p.u.
 
     # 1. Create network
@@ -462,16 +462,13 @@ def test_init_slack_with_multiple_transformers():
     pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[3], 10., bus=5, element=3)
     success = estimate(net, init='slack')
 
-    diff_v = net.res_bus_est.vm_pu.values - np.asarray([1.0448604704566395, 1.0425606589461645,
-                                                        1.0423765877669349, 1.04251108234121,
-                                                        1.0412160511510784, 1.0294819012758345,
-                                                        1.0244679352505268, np.nan])
-    diff_delta = net.res_bus_est.va_degree.values - np.asarray([10.0, 9.5805024081206831,
-                                                                9.5764483439591146,
-                                                                9.5785814051482667,
-                                                                -140.55720540400534,
-                                                                -140.52486543974723,
-                                                                -140.52805104375585, np.nan])
+    diff_v = net.res_bus_est.vm_pu.values - np.asarray([1.044860374, 1.0425606695, 1.0423765983,
+                                                        1.0425110929, 1.0412160717, 1.0294819221,
+                                                        1.0244679562, np.nan])
+    diff_delta = net.res_bus_est.va_degree.values - np.asarray([10., 9.5804972667, 9.5764432027,
+                                                                9.5785762652, -140.5572134472,
+                                                                -140.5248734844, -140.5280590882,
+                                                                np.nan])
     assert success
     assert (np.nanmax(abs(diff_v)) < 1e-8)
     assert (np.nanmax(abs(diff_delta)) < 1e-8)

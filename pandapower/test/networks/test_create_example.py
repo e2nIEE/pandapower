@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import pytest
@@ -24,7 +24,7 @@ def test_create_simple():
     assert len(net.ext_grid) >= 1
     assert len(net.switch[net.switch.et == 'l']) >= 1
     assert len(net.switch[net.switch.et == 'b']) >= 1
-    assert net.converged is True
+    assert net.converged
 
 
 def test_create_realistic():
@@ -52,7 +52,7 @@ def test_create_realistic():
     assert len(net.switch[net.switch.closed == False]) >= 1
     assert len(net.impedance) >= 1
     assert len(net.xward) >= 1
-    assert net.converged is True
+    assert net.converged
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_create_example.py"])

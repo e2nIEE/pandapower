@@ -13,9 +13,9 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
-from pandapower.auxiliary import _check_connectivity
+from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.run import _select_is_elements
+from pandapower.powerflow import _select_is_elements
 from pandapower.networks import create_cigre_network_mv
 
 def test_runpp_init():
@@ -113,7 +113,12 @@ def test_oos_bus():
     assert runpp_with_consistency_checks(net)
 
 def get_isolated(net):
-    net["_is_elems"] = _select_is_elements(net)
+    net["_is_elems"] = _select_is_elements(net, None)
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=False, 
+                             trafo_model="t", check_connectivity=False,
+                             mode="pf", copy_constraints_to_ppc=False,
+                             r_switch=0.0, init="flat", enforce_q_lims=False)
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)
 
@@ -179,6 +184,37 @@ def test_test_sn_kva():
         except:
             raise UserWarning("Result difference due to sn_kva after adding %s"%net1.last_added_case)
 
+
+def test_pf_algorithms():
+    alg_to_test = ['bfsw', 'fdbx', 'fdxb', 'gs']
+    for alg in alg_to_test:
+        net = create_cigre_network_mv(with_der=False)
+
+        pp.runpp(net, algorithm='nr')
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
+
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
+
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
+
+        # testing with a network which contains DERs
+        net = create_cigre_network_mv()
+
+        pp.runpp(net)
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
+
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
+
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
+
 if __name__ == "__main__":
-    pytest.main(["test_runpp.py"])
+    pytest.main(["test_runpp.py", "-xs"])
 

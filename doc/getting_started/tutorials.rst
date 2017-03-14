@@ -23,6 +23,9 @@ Data analysis and modelling error diagnostic:
 Configure and run a state estimation:
     - `state estimation <https://github.com/panda-power/pandapower/blob/master/tutorials/state_estimation.ipynb>`_
 
+Run a short-circuit calculation according to IEC 60909:
+    - `short-circuit calculation <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit.ipynb>`_
+    
 Working with the pandapower standard type library:
     - `standard types <https://github.com/panda-power/pandapower/blob/master/tutorials/std_types.ipynb>`_ 
 

@@ -17,7 +17,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     Creates a matplotlib patch collection of pandapower buses.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network
+        **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
         **buses** (list, None) - The buses for which the collections are created.
@@ -44,7 +44,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         **kwargs - key word arguments are passed to the patch function
 
     """
-    buses = net.bus_geodata.index.tolist() if buses is None else list(buses)
+    buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
         return None
     patches = []
@@ -91,12 +91,13 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     return pc
 
 def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, cmap=None,
-                           norm=None, picker=False, z=None, cbar_title="Line Loading [%]",**kwargs):
+                           norm=None, picker=False, z=None,
+                           cbar_title="Line Loading [%]", **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network
+        **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
         **lines** (list, None) - The lines for which the collections are created. If None, all lines in the network are considered.
@@ -108,7 +109,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
         **kwargs - key word arguments are passed to the patch function
 
     """
-    lines = net.line_geodata.index.tolist() if lines is None else list(lines)
+    lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return None
     if use_line_geodata:
@@ -128,14 +129,13 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
     lc = LineCollection(data, picker=picker, **kwargs)
     lc.line_indices = np.array(lines)
     if cmap:
+        if z is None:
+            z = net.res_line.loading_percent.loc[lines]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
-        if z is None:
-            lc.set_array(net.res_line.loading_percent.loc[lines])
-        else:
-            lc.set_array(z)
+        lc.set_array(z)
         lc.has_colormap = True
-        lc.cbar_title = cbar_title or "Line Loading [%]"
+        lc.cbar_title = "Line Loading [%]"
     lc.info = info
     return lc
 
@@ -144,7 +144,7 @@ def create_trafo_collection(net, trafos=None, **kwargs):
     Creates a matplotlib line collection of pandapower transformers.
 
     Input:
-        **net** (PandapowerNet) - The pandapower network
+        **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created. If None, all transformers in the network are considered.

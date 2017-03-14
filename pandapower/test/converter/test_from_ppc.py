@@ -76,5 +76,4 @@ def test_pypower_cases():
 
 
 if __name__ == '__main__':
-#    test_pypower_cases()
-    pytest.main(["test_from_ppc.py", "-s"])
+    pytest.main(["-s"])

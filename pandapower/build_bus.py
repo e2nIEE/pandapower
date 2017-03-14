@@ -5,13 +5,13 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
+import pandas as pd
 from itertools import chain
 from collections import defaultdict
 
 from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE
 
 from pandapower.auxiliary import _sum_by_group
-
 
 class DisjointSet(dict):
     def add(self, item):
@@ -30,10 +30,14 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
+def _build_bus_ppc(net, ppc):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
+    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
+    r_switch = net["_options"]["r_switch"]
+    init = net["_options"]["init"]
+
     # get bus indices
     bus_index = net["bus"].index.values
     n_bus = len(bus_index)
@@ -52,12 +56,13 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
     bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
     bus_lookup[bus_index] = consec_buses
 
-    # if there are any opened bus-bus switches update those entries
+    # if there are any closed bus-bus switches update those entries
     slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") & \
             (net["switch"]["bus"].isin(bus_is.index).values) & (
                 net["switch"]["element"].isin(bus_is.index).values)
-
-    if slidx.any():
+    net._closed_bb_switches = slidx
+    
+    if r_switch == 0 and slidx.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
         # mapping at once) would require to determine how to fuse busses and which busses
@@ -128,9 +133,10 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]], BUS_TYPE] = NONE
+    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
+        BUS_TYPE] = NONE
 
-    if init_results is True and len(net["res_bus"]) > 0:
+    if init=="results" and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
         ppc["bus"][:n_bus, 7] = net["res_bus"]["vm_pu"].values
         ppc["bus"][:n_bus, 8] = net["res_bus"].va_degree.values
@@ -139,7 +145,7 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 2
+            ppc["bus"][:n_bus, VMAX] = 10
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
@@ -148,12 +154,13 @@ def _build_bus_ppc(net, ppc, init_results=False, copy_constraints_to_ppc=False):
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_loads_and_add_on_ppc(net, ppc, opf=False):
+def _calc_loads_and_add_on_ppc(net, ppc):
     '''
     wrapper function to call either the PF or the OPF version
     '''
+    mode = net["_options"]["mode"]
 
-    if opf:
+    if mode=="opf":
         _calc_loads_and_add_on_ppc_opf(net, ppc)
     else:
         _calc_loads_and_add_on_ppc_pf(net, ppc)
@@ -282,5 +289,77 @@ def _controllable_to_bool(ctrl):
         ctrl_bool.append(val if not np.isnan(val) else False)
     return np.array(ctrl_bool, dtype=bool)
         
+def _add_gen_impedances_ppc(net, ppc):
+    _add_ext_grid_sc_impedance(net, ppc)
+    _add_gen_sc_impedance(net, ppc)
+    _add_sgen_sc_impedance(net, ppc)
 
+def _add_ext_grid_sc_impedance(net, ppc):
+    bus = net._is_elems["bus"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    case = net._options["case"]
+    eg = net._is_elems["ext_grid"]
+    if len(eg) == 0:
+        return
+    eg_buses = eg.bus.values
+    c_grid = bus["c_%s"%case].loc[eg_buses].values
+    s_sc = eg["s_sc_%s_mva"%case].values
+    rx = eg["rx_%s"%case].values
 
+    z_grid = c_grid / s_sc
+    x_grid = np.sqrt(z_grid**2 / (rx**2 + 1))
+    r_grid = np.sqrt(z_grid**2 - x_grid**2)
+    eg["r"] = r_grid
+    eg["x"] = x_grid
+
+    y_grid = 1 / (r_grid + x_grid*1j)
+    eg_bus_idx = bus_lookup[eg_buses]
+    ppc["bus"][eg_bus_idx, GS] = y_grid.real
+    ppc["bus"][eg_bus_idx, BS] = y_grid.imag
+
+def _add_gen_sc_impedance(net, ppc):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    bus = net._is_elems["bus"]
+    gen = net._is_elems["gen"]
+    if len(gen) == 0:
+        return
+    gen_buses = gen.bus.values
+    vn_net = bus.vn_kv.loc[gen_buses].values
+    cmax = bus["c_max"].loc[gen_buses].values
+    phi_gen = np.arccos(gen.cos_phi)
+
+    vn_gen = gen.vn_kv.values
+    sn_gen = gen.sn_kva.values
+
+    z_r = vn_net**2 / sn_gen * 1e3
+    x_gen = gen.xdss.values / 100 * z_r
+    r_gen = gen.rdss.values / 100 * z_r
+
+    kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
+    y_gen = 1 / ((r_gen + x_gen*1j) * kg)
+
+    gen_bus_idx = bus_lookup[gen_buses]
+    ppc["bus"][gen_bus_idx, GS] = y_gen.real
+    ppc["bus"][gen_bus_idx, BS] = y_gen.imag
+
+def _add_sgen_sc_impedance(net, ppc):
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    sgen = net.sgen[net._is_elems["sgen"]]
+    if len(sgen) == 0:
+        return
+    if any(pd.isnull(sgen.sn_kva)):
+        raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
+    sgen_buses = sgen.bus.values
+
+    z_sgen = 1 / (sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
+    x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
+    r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
+    y_sgen = 1 / (r_sgen + x_sgen*1j)
+   
+    gen_bus_idx = bus_lookup[sgen_buses]
+    ppc["bus"][gen_bus_idx, GS] = y_sgen.real
+    ppc["bus"][gen_bus_idx, BS] = y_sgen.imag
+
+def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
+    kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))
+    return kg

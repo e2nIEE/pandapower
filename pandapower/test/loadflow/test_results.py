@@ -9,7 +9,8 @@ import pytest
 from numpy import in1d
 
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, add_test_gen
+from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
+                                                                   add_test_gen
 
 
 def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -107,7 +108,7 @@ def test_load_sgen_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3
      assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
 
 
-def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
+def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3, va_tol=1e-2):
      net = result_test_network
      buses = net.bus[net.bus.zone == "test_trafo"]
      trafos = [x for x in net.trafo.index if net.trafo.hv_bus[x] in buses.index]
@@ -120,13 +121,13 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
      runpp_with_consistency_checks(net, trafo_model="t", trafo_loading="current", init="dc",
                                    calculate_voltage_angles=True)
 
-     load1 = 28.7842
+     load1 = 57.6376
      load2 = 0.4830
      
-     ph1 = 204.756
+     ph1 = 204.2477
      ph2 = 1.7741
 
-     qh1 = 52.848
+     qh1 = 55.7460
      qh2 = 0.0038
 
      pl1 = -200.0000
@@ -135,26 +136,19 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
      ql1 = -50.0000
      ql2 = 0.0
 
-     ih1 = 0.006043
+     ih1 = 0.006050
      ih2 = 0.000051
 
-     il1 = 0.303631
+     il1 = 0.306518
      il2 = 0
 
-     v2 = 1.010159155
-     v3 = 0.980003098
+     v2 = 1.010149880
+     v3 = 0.970773165
 
-     va2 = -0.06736233
-     va3 = -150.73914408
-
-     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
-     assert abs(net.res_bus.vm_pu.at[b3] - v3) < v_tol
-        
-     assert abs(net.res_bus.va_degree.at[b2] - va2) < va_tol
-     assert abs(net.res_bus.va_degree.at[b3] - va3) < va_tol
+     va2 = -0.06686076
+     va3 = -151.41662111
 
 
-                
      assert abs(net.res_trafo.loading_percent.at[t1] - load1) < l_tol
      assert abs(net.res_trafo.p_hv_kw.at[t1] - ph1) < s_tol
      assert abs(net.res_trafo.q_hv_kvar.at[t1] - qh1) < s_tol
@@ -179,12 +173,14 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
      assert abs(net.res_trafo.i_hv_ka.at[t3] - 0) < i_tol
      assert abs(net.res_trafo.i_lv_ka.at[t3] - 0) < i_tol
 
+     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
+     assert abs(net.res_bus.vm_pu.at[b3] - v3) < v_tol
 
-
+     assert abs(net.res_bus.va_degree.at[b2] - va2) < va_tol
+     assert abs(net.res_bus.va_degree.at[b3] - va3) < va_tol
 
                 
      # sincal results to check pi-equivalent circuit model
-     net.trafo.parallel.loc[trafos] = 1 #sincal is tested without parallel transformers
      runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current")
 
      load1 = 57.637
@@ -522,4 +518,4 @@ def test_open(result_test_network):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_results.py", "-xs"])
+    pytest.main(["test_results.py"])

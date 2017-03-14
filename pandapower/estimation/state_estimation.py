@@ -5,20 +5,24 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-import logging
 import pandas as pd
 import warnings
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _set_buses_out_of_service
-from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results
-from pandapower.toolbox import convert_format
+from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results, \
+                        _add_ppc_options
 from pandapower.topology import estimate_voltage_vector
 from pandapower.pypower_extensions.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+std_logger = logging.getLogger(__name__)
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -108,6 +112,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
                                    rn_max_threshold, chi2_prob_false)
 
+
 def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
              calculate_voltage_angles=True, chi2_prob_false=0.05):
     """
@@ -162,7 +167,7 @@ class state_estimation(object):
     def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
         self.logger = logger
         if self.logger is None:
-            self.logger = logging.getLogger("wls_se")
+            self.logger = std_logger
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
@@ -222,7 +227,7 @@ class state_estimation(object):
 
         """
         if self.net is None:
-            raise Exception("Component was not initialized with a network.")
+            raise UserWarning("Component was not initialized with a network.")
 
         # add initial values for V and delta
         # node voltages
@@ -240,8 +245,11 @@ class state_estimation(object):
 
         # select elements in service and convert pandapower ppc to ppc
         self.net["_is_elems"] = _select_is_elements(self.net)
-        ppc, _ = _pd2ppc(self.net, init_results=True,
-                                        calculate_voltage_angles=calculate_voltage_angles)
+        self.net._options = {}
+        _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
+                                 copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
+                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0)
+        ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
         bs_cols = ppc["bus"].shape[1]
@@ -448,7 +456,7 @@ class state_estimation(object):
         current_iterations = 0
 
         while current_error > self.tolerance and current_iterations < self.max_iterations:
-            self.logger.debug("Iteration %d" % (1 + current_iterations))
+            self.logger.debug(" Starting iteration %d" % (1 + current_iterations))
 
             # create h(x) for the current iteration
             h_x = sem.create_hx(v_m, delta)
@@ -477,18 +485,16 @@ class state_estimation(object):
 
             current_iterations += 1
             current_error = np.max(np.abs(d_E))
-            self.logger.debug("Error: " + str(current_error))
+            self.logger.debug("Current error: %.4f" % current_error)
 
         # Print output for results
-        self.logger.debug("Finished (" + str(current_iterations) + "/" + str(self.max_iterations) +
-                          " iterations)")
-
         if current_error <= self.tolerance:
             successful = True
-            self.logger.debug("==> Successful")
+            self.logger.info("WLS State Estimation successful (%d iterations)" % current_iterations)
         else:
             successful = False
-            self.logger.debug("==> Not successful")
+            self.logger.info("WLS State Estimation not successful (%d/%d iterations" %
+                             (current_iterations, self.max_iterations))
 
         # write voltage into ppc
         ppc_i["bus"][:, 7] = v_m
@@ -594,23 +600,18 @@ class state_estimation(object):
         test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
 
         # Print results
-        self.logger.info("-----------------------")
-        self.logger.info("Result of Chi^2 test:")
-        self.logger.info("Number of measurements:")
-        self.logger.info(m)
-        self.logger.info("Number of state variables:")
-        self.logger.info(n)
-        self.logger.info("Performance index:")
-        self.logger.info(J)
-        self.logger.info("Chi^2 test threshold:")
-        self.logger.info(test_thresh)
+        self.logger.debug("Result of Chi^2 test:")
+        self.logger.debug("Number of measurements: %d" % m)
+        self.logger.debug("Number of state variables: %d" % n)
+        self.logger.debug("Performance index: %.2f" % J)
+        self.logger.debug("Chi^2 test threshold: %.2f" % test_thresh)
 
         if J <= test_thresh:
             self.bad_data_present = False
-            self.logger.info("Chi^2 test passed --> no bad data or topology error detected.")
+            self.logger.info("Chi^2 test passed. No bad data or topology error detected.")
         else:
             self.bad_data_present = True
-            self.logger.info("Chi^2 test failed --> bad data or topology error detected.")
+            self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
 
         if (v_in_out is not None) and (delta_in_out is not None):
             return successful
@@ -696,10 +697,9 @@ class state_estimation(object):
             rN = np.dot(OmegaInv, np.absolute(self.r))
 
             if max(rN) <= rn_max_threshold:
-                self.logger.info("Largest normalized residual test passed "
-                                 "--> no bad data detected.")
+                self.logger.info("Largest normalized residual test passed. No bad data detected.")
             else:
-                self.logger.info("Largest normalized residual test failed --> bad data identified.")
+                self.logger.info("Largest normalized residual test failed. Bad data identified.")
 
                 if self.bad_data_present:
                     # Identify bad data: Determine index corresponding to max(rN):
@@ -725,14 +725,11 @@ class state_estimation(object):
     
                     # Remove bad measurement:
                     self.net.measurement.drop(meas_idx, inplace=True)
-                    self.logger.info("Bad data removed from the set of measurements.")
-                    self.logger.info("----------------------------------------------")
+                    self.logger.debug("Bad data removed from the set of measurements.")
                 else:
-                    self.logger.info("No bad data removed from the set of measurements.")
-                    self.logger.info("Finished, successful.")
+                    self.logger.debug("No bad data removed from the set of measurements.")
                 
-            self.logger.info("rn_max identification threshold:")
-            self.logger.info(rn_max_threshold)
+            self.logger.debug("rn_max identification threshold: %.2f" % rn_max_threshold)
             
             num_iterations += 1
 

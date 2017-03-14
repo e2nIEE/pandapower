@@ -17,7 +17,7 @@ def build_igraph_from_pp(net, respect_switches=False):
 
     Input:
 
-        **net** - Pandapower network
+        **net** - pandapower network
 
     Example:
 
@@ -67,7 +67,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
     using networkx library.
 
     INPUT:
-        **net** - Pandapower network
+        **net** - pandapower network
 
     OPTIONAL:
         **mg** - Existing networkx multigraph, if available. Convenience to save computation time.
@@ -75,7 +75,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         **library** - "igraph" to use igraph package or "networkx" to use networkx package
 
     OUTPUT:
-        **net** - Pandapower network with added geo coordinates for the buses
+        **net** - pandapower network with added geo coordinates for the buses
 
     EXAMPLE:
         net = create_generic_coordinates(net)

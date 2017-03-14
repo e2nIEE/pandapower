@@ -34,7 +34,7 @@ def test_mv_oberrhein():
 
             assert len(net.line) == 181
             assert len(net.switch) == 322
-            assert net.converged is True
+            assert net.converged
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_mv_oberrhein.py"])

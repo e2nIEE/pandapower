@@ -4,7 +4,8 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-from pandapower.run import _pd2ppc, _select_is_elements
+from pandapower.powerflow import _pd2ppc, _select_is_elements
+from pandapower.auxiliary import _add_ppc_options
 try:
     import pplog as logging
 except:
@@ -13,7 +14,8 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def to_ppc(net, calculate_voltage_angles=False, trafo_model = "t"):
+def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0,
+           check_connectivity=True):
     """
      This function converts a pandapower net to a pypower case file.
 
@@ -37,16 +39,15 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model = "t"):
 
     """
 
-    # always convert results if available
-    init_results = True
-
     # select elements in service
     net["_is_elems"] = _select_is_elements(net)
-
+    net["_options"] = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
+                             trafo_model=trafo_model, check_connectivity=check_connectivity,
+                             mode="pf", copy_constraints_to_ppc=True,
+                             r_switch=r_switch, init="results", enforce_q_lims=True)
     #  do the conversion
-    ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims=False,
-                                    trafo_model=trafo_model, init_results=init_results,
-                                    copy_constraints_to_ppc=True)
+    ppc, ppci = _pd2ppc(net)
     ppc['branch'] = ppc['branch'].real
     ppc.pop('internal')
     return ppc

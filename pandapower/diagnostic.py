@@ -29,7 +29,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
     INPUT:
-     **net** (PandapowerNet) : pandapower network
+     **net** (pandapowerNet) : pandapower network
 
     OPTIONAL:
      - **report_style** (string, 'detailed') : style of the report, that gets ouput in the console
@@ -229,7 +229,7 @@ def invalid_values(net):
     Applies type check functions to find violations of input type restrictions.
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
         **detailed_report** (boolean)   - True: detailed report of input type restriction violations
                                           False: summary only
@@ -323,7 +323,7 @@ def no_ext_grid(net):
     Checks, if at least one external grid exists.
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
     """
 
@@ -336,7 +336,7 @@ def multiple_voltage_controlling_elements_per_bus(net):
     Checks, if there are buses with more than one generator and/or more than one external grid.
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
         **detailed_report** (boolean)   - True: detailed report of errors found
                                       l    False: summary only
@@ -366,7 +366,7 @@ def overload(net, overload_scaling_factor):
     that by scaling down the loads, gens and sgens to 0.1%.
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
 
      OUTPUT:
@@ -415,7 +415,7 @@ def wrong_switch_configuration(net):
     the reason for that by closing all switches
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
      OUTPUT:
         **check_result** (boolean)
@@ -460,7 +460,7 @@ def different_voltage_levels_connected(net):
     Checks, if there are lines or switches that connect different voltage levels.
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
      OUTPUT:
         **check_results** (dict)        - dict that contains all lines and switches that connect
@@ -494,7 +494,7 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     Checks, if there are lines with an impedance value of zero
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
 
      OUTPUT:
@@ -519,7 +519,7 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     Also checks for trafos with swapped hv and lv connectors.
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
      OUTPUT:
         **check_results** (dict)        - dict that contains all components whose nominal voltages
@@ -630,7 +630,7 @@ def disconnected_elements(net):
     The same stands for lines 4, 5.)
 
      INPUT:
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
      OUTPUT:
         **disc_elements** (dict)        - list that contains all network elements, without a
@@ -718,7 +718,7 @@ def wrong_reference_system(net):
     Checks usage of wrong reference system for loads, sgens and gens.
 
      INPUT:
-        **net** (PandapowerNet)    - pandapower network
+        **net** (pandapowerNet)    - pandapower network
 
      OUTPUT:
         **check_results** (dict)        - dict that contains the indeces of all components where the
@@ -748,7 +748,7 @@ def numba_comparison(net, numba_tolerance):
         Compares the results of loadflows with numba=True vs. numba=False.
 
          INPUT:
-            **net** (PandapowerNet)    - pandapower network
+            **net** (pandapowerNet)    - pandapower network
 
          OPTIONAL:
             **tol** (float, 1e-5)      - Maximum absolute deviation allowed between
@@ -796,7 +796,7 @@ def deviation_from_std_type(net):
         Checks, if element parameters match the values in the standard type library.
 
          INPUT:
-            **net** (PandapowerNet)    - pandapower network
+            **net** (pandapowerNet)    - pandapower network
 
 
          OUTPUT:
@@ -810,9 +810,8 @@ def deviation_from_std_type(net):
     check_results = {}
     for key in net.std_types.keys():
         for i, element in net[key].iterrows():
-            std_type = element.std_type
-            if std_type in net.std_types[key].keys():
-                std_type_values = net.std_types[key][std_type]
+            if element.std_type in net.std_types[key].keys():
+                std_type_values = net.std_types[key][element.std_type]
                 for param in std_type_values.keys():
                     if param == "tp_pos":
                         continue
@@ -823,7 +822,7 @@ def deviation_from_std_type(net):
                             check_results[key][i] = {'param': param, 'e_value': element[param],
                                                      'std_type_value': std_type_values[param],
                                                      'std_type_in_lib': True}
-            elif std_type is not None:
+            else:
                 if key not in check_results.keys():
                                 check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}

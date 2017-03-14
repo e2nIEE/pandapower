@@ -149,10 +149,10 @@ class ADict(dict, MutableMapping):
         )
 
 
-class PandapowerNet(ADict):
+class pandapowerNet(ADict):
 
     def __init__(self, *args, **kwargs):
-        super(PandapowerNet, self).__init__(*args, **kwargs)
+        super(pandapowerNet, self).__init__(*args, **kwargs)
 
     def __repr__(self):
         r = "This pandapower network includes the following parameter tables:"
@@ -249,7 +249,7 @@ def _select_is_elements(net, recycle=None):
     This is quite time consuming so it is done once at the beginning
 
 
-    @param net: Pandapower Network
+    @param net: pandapower Network
     @return: is_elems Certain in service elements
     :rtype: object
     """
@@ -321,25 +321,100 @@ def _select_is_elements(net, recycle=None):
         }
 
     return is_elems
+
+def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode, 
+                             copy_constraints_to_ppc, r_switch, init, enforce_q_lims):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+
+    options = {
+          "calculate_voltage_angles": calculate_voltage_angles
+        , "trafo_model": trafo_model
+        , "check_connectivity": check_connectivity
+        , "mode": mode
+        , "copy_constraints_to_ppc": copy_constraints_to_ppc
+        , "r_switch": r_switch
+        ,  "init": init
+        , "enforce_q_lims": enforce_q_lims
+        }
+    _add_options(net, options)
+    
+def _add_pf_options(net, tolerance_kva, trafo_loading, numba, recycle, ac,
+                    algorithm, max_iteration, **kwargs):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+
+    options = {
+          "tolerance_kva": tolerance_kva
+        , "trafo_loading": trafo_loading
+        , "numba": numba
+        , "recycle": recycle
+        , "ac": ac
+        , "algorithm": algorithm
+        , "max_iteration": max_iteration
+    }
+
+    options.update(kwargs)  # update options with some algorithm-specific parameters
+    _add_options(net, options)
+    
+def _add_opf_options(net, trafo_loading, ac, **kwargs):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    options = {
+        "trafo_loading": trafo_loading
+        , "ac": ac
+    }
+
+    options.update(kwargs)  # update options with some algorithm-specific parameters
+    _add_options(net, options)
+
+    
+def _add_sc_options(net, case, lv_tol_percent, tk_s, network_structure, r_fault_ohm,
+                    x_fault_ohm, current):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    options = {
+                   "case": case
+                   , "lv_tol_percent": lv_tol_percent
+                   , "tk_s": tk_s
+                   , "network_structure": network_structure
+                   , "r_fault_ohm": r_fault_ohm
+                   , "x_fault_ohm": x_fault_ohm
+                   , "currents": current
+                   }
+    _add_options(net, options)
+    
+    
+def _add_options(net, options):
+    double_parameters = set(net._options.keys()) & set(options.keys())
+    if len(double_parameters) > 0:
+        raise UserWarning("Parameters always have to be unique! The following parameters where specified twice: %s"%double_parameters)
+    net._options.update(options)
+                
     
 def _clean_up(net):
+    mode = net._options["mode"]
+    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
-        net["res_bus"].drop(buses_3w, inplace=True)
+        res_bus.drop(buses_3w, inplace=True)
         net["bus"].drop(buses_3w, inplace=True)
         net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
 
     if len(net["xward"]) > 0:
         xward_buses = net["xward"]["ad_bus"].values
         net["bus"].drop(xward_buses, inplace=True)
-        net["res_bus"].drop(xward_buses, inplace=True)
+        res_bus.drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
     
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
         net.gen.drop(dc_gens, inplace=True)
         net.res_gen.drop(dc_gens, inplace=True)
-
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
@@ -376,7 +451,7 @@ def calculate_line_results(net, use_res_bus_est=False):
     tb = net.line.to_bus
     # calculate line currents of from bus side
     line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
-                          * Zcbij)
+                          * Zcbij).values
     open_lines_from = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
     line_currents_from[open_lines_from.values] = 0.
     charging_from = open_lines_from[open_lines_from.index[
@@ -386,14 +461,14 @@ def calculate_line_results(net, use_res_bus_est=False):
                                         * Zcbij[charging_from] * (1 + Zij[charging_from])
     # calculate line currents on to bus side
     line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
-                        * Zcbij)
+                        * Zcbij).values
     open_lines_to = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
     line_currents_to[open_lines_to.values] = 0.
     charging_to = open_lines_to[open_lines_to.index[
         net.line.from_bus.loc[open_lines_to].values ==
         net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
-    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus].values \
-                                    * Zcbij[charging_to]  * (1 + Zij[charging_to])
+    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus] * Zcbij[charging_to] \
+                                    * (1 + Zij[charging_to])
     # derive other values
     line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
     line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
@@ -433,7 +508,7 @@ def _check_connectivity(ppc):
 
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
-    all_nodes = set(ppc['bus'][:, BUS_I].astype(int))
+    all_nodes = set(ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int))
 
     visited_nodes = set()
 
@@ -475,9 +550,10 @@ def _create_ppc2pd_bus_lookup(net):
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
     is_elems = net["_is_elems"]
-    isolated_nodes_pp = pcc2pd_bus_lookup[list(isolated_nodes)]
+    pp_nodes = [n for n in isolated_nodes if not(n > len(pcc2pd_bus_lookup))]
+    isolated_nodes_pp = pcc2pd_bus_lookup[pp_nodes]
     # remove isolated buses from is_elems["bus"]
-    is_elems["bus"] = is_elems["bus"].drop(isolated_nodes_pp)
+    is_elems["bus"] = is_elems["bus"].drop(set(isolated_nodes_pp) & set(is_elems["bus"].index))
     bus_is_ind = is_elems["bus"].index
     # check if in service elements are at in service buses
 
