@@ -149,10 +149,10 @@ class ADict(dict, MutableMapping):
         )
 
 
-class PandapowerNet(ADict):
+class pandapowerNet(ADict):
 
     def __init__(self, *args, **kwargs):
-        super(PandapowerNet, self).__init__(*args, **kwargs)
+        super(pandapowerNet, self).__init__(*args, **kwargs)
 
     def __repr__(self):
         r = "This pandapower network includes the following parameter tables:"
@@ -249,7 +249,7 @@ def _select_is_elements(net, recycle=None):
     This is quite time consuming so it is done once at the beginning
 
 
-    @param net: Pandapower Network
+    @param net: pandapower Network
     @return: is_elems Certain in service elements
     :rtype: object
     """

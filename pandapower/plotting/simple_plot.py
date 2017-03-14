@@ -58,7 +58,7 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
         """
     if net is None:
         import pandapower.networks as nw
-        logger.warning("No Pandapower network provided -> Plotting mv_oberrhein")
+        logger.warning("No pandapower network provided -> Plotting mv_oberrhein")
         net = nw.mv_oberrhein()
 
     # create geocoord if none are available

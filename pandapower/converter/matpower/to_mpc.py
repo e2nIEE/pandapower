@@ -49,7 +49,7 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
             results!
 
         **trafo_model** (str, "t")  - transformer equivalent circuit model
-        Pandapower provides two equivalent circuit models for the transformer:
+        pandapower provides two equivalent circuit models for the transformer:
 
             - "t" - transformer is modelled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
             - "pi" - transformer is modelled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
@@ -90,7 +90,7 @@ def _ppc_to_mpc(ppc):
     Convert 0-based python to 1-based Matlab
 
     **INPUT**:
-        * net - The Pandapower format network
+        * net - The pandapower format network
         * filename - File path + name of the mat file which is created
     """
 

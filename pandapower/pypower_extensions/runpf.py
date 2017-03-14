@@ -77,14 +77,9 @@ def _get_options(options, **kwargs):
 
     ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_kva * 1e-3,
                      PF_ALG=algorithm_pypower_dict[algorithm], **kwargs)
-    # ToDo: this algorithm-specific parameters setting will be avoided once Options are extracted in every subfunction
-    if max_iteration is not "auto":
-        if algorithm == 'nr':
-            ppopt['PF_MAX_IT'] = max_iteration
-        elif algorithm == 'gs':
-            ppopt['PF_MAX_IT_GS'] = max_iteration
-        else:
-            ppopt['PF_MAX_IT_FD'] = max_iteration
+    ppopt['PF_MAX_IT'] = max_iteration
+    ppopt['PF_MAX_IT_GS'] = max_iteration
+    ppopt['PF_MAX_IT_FD'] = max_iteration
     return init, ac, numba, recycle, ppopt
 
 

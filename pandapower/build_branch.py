@@ -28,7 +28,7 @@ def _build_branch_ppc(net, ppc):
             5. Internal branch for extended ward
 
     **INPUT**:
-        **net** -The Pandapower format network
+        **net** -The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
 
@@ -100,7 +100,7 @@ def _calc_line_parameter(net, ppc):
     calculates the line parameter in per unit.
 
     **INPUT**:
-        **net** -The Pandapower format network
+        **net** -The pandapower format network
 
     **RETURN**:
         **t** - Temporary line parameter. Which is a complex128
@@ -142,7 +142,7 @@ def _calc_trafo_parameter(net, ppc):
     Calculates the transformer parameter in per unit.
 
     **INPUT**:
-        **net** - The Pandapower format network
+        **net** - The pandapower format network
 
     **RETURN**:
         **temp_para** -
@@ -189,7 +189,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
 
 
     **INPUT**:
-        **pd_trafo** - The Pandapower format Transformer Dataframe.
+        **pd_trafo** - The pandapower format Transformer Dataframe.
                         The Transformer modell will only readfrom pd_net
 
     **RETURN**:
@@ -505,7 +505,7 @@ def _switch_branches(net, ppc):
     according of the status of switches
 
     **INPUT**:
-        **pd_net** - The Pandapower format network
+        **pd_net** - The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
     """
@@ -665,7 +665,7 @@ def _branches_with_oos_buses(net, ppc):
     Sets branch out of service if connected to two out of service buses
 
     **INPUT**:
-        **n** - The Pandapower format network
+        **n** - The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
         **bus_is** - The in service buses
@@ -769,7 +769,7 @@ def _calc_switch_parameter(net, ppc):
     calculates the line parameter in per unit.
 
     **INPUT**:
-        **net** -The Pandapower format network
+        **net** -The pandapower format network
 
     **RETURN**:
         **t** - Temporary line parameter. Which is a complex128

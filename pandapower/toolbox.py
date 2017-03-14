@@ -9,7 +9,7 @@ import pandas as pd
 import copy
 from collections import defaultdict
 
-from pandapower.auxiliary import get_indices, PandapowerNet
+from pandapower.auxiliary import get_indices, pandapowerNet
 from pandapower.create import create_empty_network, create_piecewise_linear_cost
 from pandapower.topology import unsupplied_buses
 try:
@@ -262,7 +262,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     eq = True
     not_equal = []
 
-    if isinstance(x, PandapowerNet) and isinstance(y, PandapowerNet):
+    if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
         # for two networks make sure both have the same keys ...
         if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
             logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
@@ -922,13 +922,13 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
            (s["et"] == "l" and s["element"] in p2["line"].index) or
            (s["et"] == "t" and s["element"] in p2["trafo"].index))]
     p2["switch"] = net["switch"].loc[si]
-    # return a PandapowerNet
+    # return a pandapowerNet
     if keep_everything_else:
         newnet = copy.deepcopy(net)
         newnet.update(p2)
-        return PandapowerNet(newnet)
+        return pandapowerNet(newnet)
     p2["std_types"] = copy.deepcopy(net["std_types"])
-    return PandapowerNet(p2)
+    return pandapowerNet(p2)
 
 
 # --- item/element selections
@@ -990,7 +990,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
      Returns elements connected to a given bus.
 
      INPUT:
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **element** (string, name of the element table)
 
@@ -1073,7 +1073,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
      Returns buses connected to given buses. The source buses will NOT be returned.
 
      INPUT:
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
@@ -1125,7 +1125,7 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
      will be returned, else one.
 
      INPUT:
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **element** (integer)
 
@@ -1167,7 +1167,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     Returns switches connected to given buses.
 
     INPUT:
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **buses** (single integer or iterable of ints)
 

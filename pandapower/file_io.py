@@ -13,15 +13,15 @@ import json
 import numpy
 from pandapower.toolbox import convert_format
 from pandapower.create import create_empty_network
-from pandapower.auxiliary import PandapowerNet
+from pandapower.auxiliary import pandapowerNet
 
 
 def to_pickle(net, filename):
     """
-    Saves a Pandapower Network with the pickle library.
+    Saves a pandapower Network with the pickle library.
 
     INPUT:
-        **net** (dict) - The Pandapower format network
+        **net** (dict) - The pandapower format network
 
         **filename** (string) - The absolute or relative path to the input file.
 
@@ -39,10 +39,10 @@ def to_pickle(net, filename):
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
-    Saves a Pandapower Network to an excel file.
+    Saves a pandapower Network to an excel file.
 
     INPUT:
-        **net** (dict) - The Pandapower format network
+        **net** (dict) - The pandapower format network
 
         **filename** (string) - The absolute or relative path to the input file.
 
@@ -86,12 +86,12 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
 def to_json(net, filename):
     """
-        Saves a Pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
         will not be saved. Std types will also not be saved.
 
         INPUT:
-            **net** (dict) - The Pandapower format network
+            **net** (dict) - The pandapower format network
 
             **filename** (string) - The absolute or relative path to the input file.
 
@@ -130,7 +130,7 @@ def to_json(net, filename):
 
 def from_pickle(filename, convert=True):
     """
-    Load a Pandapower format Network from pickle file
+    Load a pandapower format Network from pickle file
 
     INPUT:
         **filename** (string) - The absolute or relative path to the input file.
@@ -151,7 +151,7 @@ def from_pickle(filename, convert=True):
             net = pickle.load(f, encoding='latin1')  # with encoding in python 3
         else:
             net = pickle.load(f)  # without encoding in python 2
-    net = PandapowerNet(net)
+    net = pandapowerNet(net)
     if convert:
         convert_format(net)
     return net
@@ -159,7 +159,7 @@ def from_pickle(filename, convert=True):
 
 def from_excel(filename, convert=True):
     """
-    Load a Pandapower network from an excel file
+    Load a pandapower network from an excel file
 
     INPUT:
         **filename** (string) - The absolute or relative path to the input file.
@@ -203,7 +203,7 @@ def from_excel(filename, convert=True):
 
 def from_json(filename, convert=True):
     """
-    Load a Pandapower network from a JSON file.
+    Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
     Index columns of all pandas DataFrames are sorted in ascending order.
 

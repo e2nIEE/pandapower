@@ -125,7 +125,7 @@ def std_type_exists(net, name, element="line"):
     Checks if a standard type exists.
 
     INPUT:
-        **net** - Pandapower Network
+        **net** - pandapower Network
 
         **name** - name of the standard type as string
 
@@ -143,7 +143,7 @@ def delete_std_type(net, name, element="line"):
     Deletes standard type parameters from database.
 
     INPUT:
-        **net** - Pandapower Network
+        **net** - pandapower Network
 
         **name** - name of the standard type as string
 
@@ -162,7 +162,7 @@ def available_std_types(net, element="line"):
     Returns all standard types available for this network as a table.
 
     INPUT:
-        **net** - Pandapower Network
+        **net** - pandapower Network
 
         **element** - type of element ("line" or "trafo")
 
