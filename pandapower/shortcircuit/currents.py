@@ -12,6 +12,7 @@ def calc_ikss(net, ppc):
     c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
     z_equiv = abs(ppc["bus"][:, R_EQUIV] + ppc["bus"][:, X_EQUIV] *1j)
     ppc["bus"][:, IKSS] = c / z_equiv / np.sqrt(3) / ppc["bus"][:, BASE_KV] * ppc["baseMVA"]
+#    print(ppc["internal"]["zbus"].dot(np.diag(ppc["bus"][:, IKSS])))
     
 def calc_ip(ppc):
     ppc["bus"][:, IP] = ppc["bus"][:, KAPPA] * np.sqrt(2) * ppc["bus"][:, IKSS]

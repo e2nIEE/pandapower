@@ -8,6 +8,7 @@ import pandas as pd
 import warnings
 import numpy as np
 from scipy.sparse.linalg import inv
+from scipy.sparse import diags
 
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
 #from pandapower.shortcircuit.kappa import calc_kappa
@@ -118,13 +119,15 @@ def calc_equiv_sc_impedance(net, ppc):
     r_fault = net["_options"]["r_fault_ohm"]
     x_fault = net["_options"]["x_fault_ohm"]
     zbus = calc_zbus(ppc)
-    z_equiv = np.diag(zbus.toarray())
-    ppc["bus"][:, R_EQUIV] = z_equiv.real 
-    ppc["bus"][:, X_EQUIV] = z_equiv.imag
     if r_fault > 0 or x_fault > 0:
         base_r = np.square(ppc["bus"][:, BASE_KV]) / ppc["baseMVA"]
-        ppc["bus"][:, R_EQUIV] += r_fault / base_r
-        ppc["bus"][:, X_EQUIV] += x_fault / base_r
+        fault = diags((r_fault + x_fault * 1j) / base_r)
+        zbus += fault
+    zbus = zbus.toarray()
+    z_equiv = np.diag(zbus)
+    ppc["bus"][:, R_EQUIV] = z_equiv.real 
+    ppc["bus"][:, X_EQUIV] = z_equiv.imag
+    ppc["internal"]["zbus"] = zbus
 
 def calc_zbus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
