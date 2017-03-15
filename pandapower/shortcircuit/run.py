@@ -97,18 +97,17 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith)
     net["_is_elems"] = _select_is_elements(net, None)
     _add_auxiliary_elements(net)
-#    _add_c_to_net(net)
     ppc, ppci = _pd2ppc(net)
-    _add_c_to_ppc(net, ppci)
     calc_equiv_sc_impedance(net, ppci)
     _add_kappa_to_ppc(net, ppci)
     calc_ikss(net, ppci)
-#    if ip or ith:
-#        calc_kappa(net)
     if ip:
-        calc_ip(ppc)
+        calc_ip(ppci)
     if ith:
-        calc_ith(net, ppc)    
+        calc_ith(net, ppci)
+    ppc["bus"][:, IKSS] = np.nan
+    ppc["bus"][:, IP] = np.nan
+    ppc["bus"][:, ITH] = np.nan
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc)
     _clean_up(net)
@@ -126,7 +125,6 @@ def calc_equiv_sc_impedance(net, ppc):
         base_r = np.square(ppc["bus"][:, BASE_KV]) / ppc["baseMVA"]
         ppc["bus"][:, R_EQUIV] += r_fault / base_r
         ppc["bus"][:, X_EQUIV] += x_fault / base_r
-    ppc["bus"][:, Z_EQUIV] = abs(ppc["bus"][:, R_EQUIV] + ppc["bus"][:, X_EQUIV] * 1j)
 
 def calc_zbus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
@@ -143,7 +141,7 @@ def _extract_results(net, ppc):
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
     if net._options["ith"]:
-        net.res_bus_sc["ith_ka"] = ppc["bus"][ppc_index, IP]
+        net.res_bus_sc["ith_ka"] = ppc["bus"][ppc_index, ITH]
 
 if __name__ == '__main__':
     import pandapower as pp

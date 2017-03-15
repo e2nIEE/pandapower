@@ -35,6 +35,7 @@ def _build_gen_pf(net, ppc):
         **ppc** - The PYPOWER format network to fill in values
     '''
 
+    mode = net["_options"]["mode"]
 
     # get in service elements
     is_elems = net["_is_elems"]
@@ -50,6 +51,8 @@ def _build_gen_pf(net, ppc):
     p_lim_default = 1e9
 
     _init_ppc_gen(ppc, xw_end, q_lim_default)
+    if mode == "sc":
+        return
     _build_pp_ext_grid(net, ppc, eg_is, eg_end)
 
     # add generator / pv data

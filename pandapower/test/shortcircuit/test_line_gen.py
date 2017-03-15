@@ -21,26 +21,26 @@ def one_line_one_generator():
 def test_max_gen(one_line_one_generator):
     net = one_line_one_generator
     sc.runsc(net, case="max")
-    assert abs(net.res_bus_sc.ikss_max_ka.at[0] - 1.5395815) < 1e-7
-    assert abs(net.res_bus_sc.ikss_max_ka.at[2] - 1.5395815) < 1e-7
-    assert abs(net.res_bus_sc.ikss_max_ka.at[1] - 1.5083952) < 1e-7
-    assert pd.isnull(net.res_bus_sc.ikss_max_ka.at[3])
+    assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.5395815) < 1e-7
+    assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.5395815) < 1e-7
+    assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.5083952) < 1e-7
+    assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
 def test_min_gen(one_line_one_generator):
     net = one_line_one_generator
     sc.runsc(net, case="min")
-    assert abs(net.res_bus_sc.ikss_min_ka.at[0] - 1.3996195) < 1e-7
-    assert abs(net.res_bus_sc.ikss_min_ka.at[2] - 1.3996195) < 1e-7
-    assert abs(net.res_bus_sc.ikss_min_ka.at[1] - 1.3697407) < 1e-7    
-    assert pd.isnull(net.res_bus_sc.ikss_min_ka.at[3])
+    assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.3996195) < 1e-7
+    assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.3996195) < 1e-7
+    assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7    
+    assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
 def test_max_gen_fault_impedance(one_line_one_generator):
     net = one_line_one_generator
     sc.runsc(net, case="max", r_fault_ohm=2, x_fault_ohm=10)
-    assert abs(net.res_bus_sc.ikss_max_ka.at[0] - 0.4450868) < 1e-7
-    assert abs(net.res_bus_sc.ikss_max_ka.at[1] - 0.4418823) < 1e-7
-    assert abs(net.res_bus_sc.ikss_max_ka.at[2] - 0.4450868) < 1e-7
-    assert pd.isnull(net.res_bus_sc.ikss_max_ka.at[3])
+    assert abs(net.res_bus_sc.ikss_ka.at[0] - 0.4450868) < 1e-7
+    assert abs(net.res_bus_sc.ikss_ka.at[1] - 0.4418823) < 1e-7
+    assert abs(net.res_bus_sc.ikss_ka.at[2] - 0.4450868) < 1e-7
+    assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
 if __name__ == '__main__':
     pytest.main(['-xs'])

@@ -126,8 +126,8 @@ def _build_bus_ppc(net, ppc):
                     bus_lookup[bus] = map_to
 
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus, 14), dtype=float)
-    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0])
+    ppc["bus"] = np.zeros(shape=(n_bus, 13), dtype=float)
+    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = consec_buses
 
@@ -326,7 +326,6 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
 def _add_gen_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX
-    bus = net._is_elems["bus"]
     gen = net._is_elems["gen"]
     if len(gen) == 0:
         return
@@ -334,7 +333,7 @@ def _add_gen_sc_impedance(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_bus_ppc = bus_lookup[gen_buses]
     
-    vn_net = bus.vn_kv.loc[gen_buses].values
+    vn_net = ppc["bus"][gen_bus_ppc, BASE_KV]
     cmax = ppc["bus"][gen_bus_ppc, C_MAX]
     phi_gen = np.arccos(gen.cos_phi)
 

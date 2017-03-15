@@ -3,14 +3,15 @@
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
-from pandapower.shortcircuit.idx_bus import BASE_KV, C_MIN, C_MAX, KAPPA, Z_EQUIV, IKSS, IP, ITH
+from pandapower.shortcircuit.idx_bus import BASE_KV, C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS, IP, ITH,\
+                                            X_EQUIV
 import numpy as np
 
 def calc_ikss(net, ppc):
     case = net._options["case"]
     c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
-    ppc["bus"][:, IKSS] = c / ppc["bus"][:, Z_EQUIV] / np.sqrt(3) / ppc["bus"][:, BASE_KV] *\
-                        ppc["baseMVA"]
+    z_equiv = abs(ppc["bus"][:, R_EQUIV] + ppc["bus"][:, X_EQUIV] *1j)
+    ppc["bus"][:, IKSS] = c / z_equiv / np.sqrt(3) / ppc["bus"][:, BASE_KV] * ppc["baseMVA"]
     
 def calc_ip(ppc):
     ppc["bus"][:, IP] = ppc["bus"][:, KAPPA] * np.sqrt(2) * ppc["bus"][:, IKSS]
