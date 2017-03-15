@@ -26,12 +26,12 @@ def one_line_one_static_generator():
 def test_max_sgen(one_line_one_static_generator):
     net = one_line_one_static_generator
     sc.runsc(net, case="max")
-    np.isclose(net.res_bus_sc.ikss_max_ka.at[1], 0.069801849155)
+    np.isclose(net.res_bus_sc.ikss_ka.at[1], 0.069801849155)
     
 def test_min_sgen(one_line_one_static_generator):
     net = one_line_one_static_generator
     sc.runsc(net, case="min")
-    np.isclose(net.res_bus_sc.ikss_min_ka.at[1], 0.05773139511)
+    np.isclose(net.res_bus_sc.ikss_ka.at[1], 0.05773139511)
     
 if __name__ == '__main__':
 #    net = one_line_one_static_generator()

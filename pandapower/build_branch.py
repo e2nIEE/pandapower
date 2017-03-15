@@ -226,7 +226,9 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
     if mode == "sc":
         y = 0
         if trafo_df.equals(net.trafo):
-            cmax = net._is_elems["bus"].c_max.loc[net.trafo.lv_bus.values].values
+            from pandapower.shortcircuit.idx_bus import C_MAX
+            bus_lookup = net._pd2ppc_lookups["bus"]
+            cmax = net._ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
                                                trafo_df.sn_kva, cmax)
             r *= kt

@@ -3,39 +3,27 @@
 # Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
-
+from pandapower.shortcircuit.idx_bus import BASE_KV, C_MIN, C_MAX, KAPPA, Z_EQUIV, IKSS, IP, ITH
 import numpy as np
 
-def calc_ikss(net):
-    bus = net._is_elems["bus"]
-    case = net["_options"]["case"]
-    name = "ikss_%s_ka"%case
-    ikss_pu = bus["c_%s"%case] / abs(bus.z_equiv)
-    ikss_ka = pu_to_ka(ikss_pu, bus.vn_kv, net.sn_kva)
-    bus[name] = ikss_ka
-    net._options["currents"].append(name)
+def calc_ikss(net, ppc):
+    case = net._options["case"]
+    c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
+    ppc["bus"][:, IKSS] = c / ppc["bus"][:, Z_EQUIV] / np.sqrt(3) / ppc["bus"][:, BASE_KV] *\
+                        ppc["baseMVA"]
     
-def calc_ip(net):
-    bus = net._is_elems["bus"]
-    case = net["_options"]["case"]
-    name = "ip_%s_ka"%case
-    ikss = bus["ikss_%s_ka"%case]
-    bus[name] = bus.kappa * np.sqrt(2) * ikss
-    net._options["currents"].append(name)
+def calc_ip(ppc):
+    ppc["bus"][:, IP] = ppc["bus"][:, KAPPA] * np.sqrt(2) * ppc["bus"][:, IKSS]
     
-def calc_ith(net):
-    bus = net._is_elems["bus"]
-    case = net["_options"]["case"]
-    name = "ith_%s_ka"%case
+def calc_ith(net, ppc):
     tk_s = net["_options"]["tk_s"]
+    kappa = ppc["bus"][:, KAPPA]
     f = 50
     n = 1
-    m = (np.exp(4 * f * tk_s * np.log(bus.kappa.values - 1)) - 1) / \
-             (2 * f * tk_s * np.log(bus.kappa.values - 1))
-    m[np.where(bus.kappa > 1.99)] = 0
-    bus[name] = bus["ikss_%s_ka"%case]*np.sqrt(m + n)
-    net._options["currents"].append(name)
+    m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
+    m[np.where(kappa > 1.99)] = 0
+    ppc["bus"][:, ITH] = ppc["bus"][:, IKSS] * np.sqrt(m + n)
     
-def pu_to_ka(i_pu, vn_kv, sn_kva):
-    in_ka = sn_kva / vn_kv / np.sqrt(3) * 1e-3
-    return i_pu * in_ka
+#def pu_to_ka(i_pu, vn_kv, sn_kva):
+#    in_ka = sn_kva / vn_kv 
+#    return i_pu * in_ka

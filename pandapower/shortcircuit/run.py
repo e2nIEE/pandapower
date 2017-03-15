@@ -10,14 +10,15 @@ import numpy as np
 from scipy.sparse.linalg import inv
 
 from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
-from pandapower.shortcircuit.kappa import calc_kappa
+#from pandapower.shortcircuit.kappa import calc_kappa
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.auxiliary import _select_is_elements, _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pypower_extensions.makeYbus import makeYbus
 from pandapower.pd2ppc import _pd2ppc
 
-from pypower.idx_bus import BASE_KV
-
+from pandapower.shortcircuit.idx_bus import *
+from pandapower.shortcircuit.kappa import _add_kappa_to_ppc, _add_c_to_ppc
+from pandapower.results import _copy_results_ppci_to_ppc
 try:
     import pplog as logging
 except:
@@ -85,6 +86,7 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
             raise ValueError("s_sc_%s is not defined for all ext_grids" %case)
         if  not "rx_%s"%case in net.ext_grid or any(pd.isnull(net.ext_grid["rx_%s"%case])):
             raise ValueError("rx_%s is not defined for all ext_grids" %case)
+    kappa = ith or ip
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=False, 
                              trafo_model="pi", check_connectivity=False,
@@ -92,55 +94,67 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
                              r_switch=r_switch, init="flat", enforce_q_lims=False)
     _add_sc_options(net, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, 
                     network_structure=network_structure, r_fault_ohm=r_fault_ohm, 
-                    x_fault_ohm=x_fault_ohm, current=[])
+                    x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith)
     net["_is_elems"] = _select_is_elements(net, None)
     _add_auxiliary_elements(net)
-    _add_c_to_net(net)
-    calc_equiv_sc_impedance(net)
-    calc_ikss(net)
-    if ip or ith:
-        calc_kappa(net)
+#    _add_c_to_net(net)
+    ppc, ppci = _pd2ppc(net)
+    _add_c_to_ppc(net, ppci)
+    calc_equiv_sc_impedance(net, ppci)
+    _add_kappa_to_ppc(net, ppci)
+    calc_ikss(net, ppci)
+#    if ip or ith:
+#        calc_kappa(net)
     if ip:
-        calc_ip(net)
+        calc_ip(ppc)
     if ith:
-        calc_ith(net)    
-    net.res_bus_sc = pd.DataFrame(index=net.bus.index,
-                                  data=net._is_elems["bus"][net._options["currents"]])
+        calc_ith(net, ppc)    
+    ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
+    _extract_results(net, ppc)
     _clean_up(net)
 
-def _add_c_to_net(net):
-    bus = net._is_elems["bus"]
-    bus["c_max"] = 1.1
-    bus["c_min"] = 1.
-    bus["kappa_max"] = 2.
-    lv_buses = bus[bus.vn_kv < 1.].index
-    if len(lv_buses) > 0:
-        lv_tol_percent = net["_options"]["lv_tol_percent"]
-        if lv_tol_percent==10:
-            c_ns = 1.1
-        elif lv_tol_percent==6:
-            c_ns = 1.05
-        else:
-            raise ValueError("Voltage tolerance in the low voltage grid has" \
-                                        " to be either 6% or 10% according to IEC 60909")
-        bus.c_max.loc[lv_buses] = c_ns
-        bus.c_min.loc[lv_buses] = .95
-        bus.kappa_max.loc[lv_buses] = 1.8
 
-def calc_equiv_sc_impedance(net):
-    z_fault = net["_options"]["r_fault_ohm"] + net["_options"]["x_fault_ohm"] * 1j
-    ppc, ppci = _pd2ppc(net)
-    zbus = calc_zbus(ppci)
+        
+def calc_equiv_sc_impedance(net, ppc):
+    r_fault = net["_options"]["r_fault_ohm"]
+    x_fault = net["_options"]["x_fault_ohm"]
+    zbus = calc_zbus(ppc)
     z_equiv = np.diag(zbus.toarray())
-    net._is_elems["bus"]["z_equiv"] = np.nan
-    ppc_index = net["_pd2ppc_lookups"]["bus"][net._is_elems["bus"].index]
-    z_equiv_pp = z_equiv[ppc_index]
-    if abs(z_fault) > 0:
-        z_equiv_pp += z_fault / np.square(ppc["bus"][ppc_index, BASE_KV]) / net.sn_kva * 1e3
-    net._is_elems["bus"]["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv_pp
+    ppc["bus"][:, R_EQUIV] = z_equiv.real 
+    ppc["bus"][:, X_EQUIV] = z_equiv.imag
+    if r_fault > 0 or x_fault > 0:
+        base_r = np.square(ppc["bus"][:, BASE_KV]) / ppc["baseMVA"]
+        ppc["bus"][:, R_EQUIV] += r_fault / base_r
+        ppc["bus"][:, X_EQUIV] += x_fault / base_r
+    ppc["bus"][:, Z_EQUIV] = abs(ppc["bus"][:, R_EQUIV] + ppc["bus"][:, X_EQUIV] * 1j)
 
 def calc_zbus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return inv(Ybus)
+
+        
+def _extract_results(net, ppc):
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    net.res_bus_sc = pd.DataFrame(index=net.bus.index)
+    ppc_index = bus_lookup[net.bus.index]
+    net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS]
+    if net._options["ip"]:
+        net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
+    if net._options["ith"]:
+        net.res_bus_sc["ith_ka"] = ppc["bus"][ppc_index, IP]
+
+if __name__ == '__main__':
+    import pandapower as pp
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    
+    pp.create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.1, rx_max=0.1)
+    l1 = pp.create_line_from_parameters(net, b1, b2, c_nf_per_km=190, max_i_ka=0.829,
+                                        r_ohm_per_km=0.0306, x_ohm_per_km=0.1256637, length_km=1.)
+    net.line.loc[l1, "endtemp_degree"] = 250
+    runsc(net, network_structure="auto")
+#    pp.create_sgen(net, b2, p_kw=0, sn_kva=1000.)
+

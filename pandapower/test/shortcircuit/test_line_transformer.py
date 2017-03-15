@@ -25,62 +25,62 @@ def net_transformer():
 def test_max_10_one_line_one_transformer(net_transformer):
     net = net_transformer
     sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent= 10.)
-    assert (abs(net.res_bus_sc.ikss_max_ka.at[0] - 5.77350301940194) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_max_ka.at[1] - 5.77350301940194) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_max_ka.at[2] - 16.992258758) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.992258758) <1e-5)
      
-    assert (abs(net.res_bus_sc.ip_max_ka.at[0] - 14.25605) <1e-5)
-    assert (abs(net.res_bus_sc.ip_max_ka.at[1] - 14.25605) <1e-5)
-    assert (abs(net.res_bus_sc.ip_max_ka.at[2] - 42.739927153) <1e-5)    
+    assert (abs(net.res_bus_sc.ip_ka.at[0] - 14.25605) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[1] - 14.25605) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 42.739927153) <1e-5)    
     
-    assert (abs(net.res_bus_sc.ith_max_ka.at[0] - 5.8711913689) <1e-5)
-    assert (abs(net.res_bus_sc.ith_max_ka.at[1] - 5.8711913689) <1e-5)
-    assert (abs(net.res_bus_sc.ith_max_ka.at[2] - 17.328354145) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[0] - 5.8711913689) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[1] - 5.8711913689) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 17.328354145) <1e-5)
 
 def test_max_6_one_line_one_transformer(net_transformer):
     net = net_transformer
     sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent = 6.)
-    assert (abs(net.res_bus_sc.ikss_max_ka.at[0] - 5.77350301940194) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_max_ka.at[1] - 5.77350301940194) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_max_ka.at[2] - 16.905912296) <1e-5)  
+    assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.905912296) <1e-5)  
       
-    assert (abs(net.res_bus_sc.ip_max_ka.at[0] - 14.256046241) <1e-5)
-    assert (abs(net.res_bus_sc.ip_max_ka.at[1] - 14.256046241) <1e-5)
-    assert (abs(net.res_bus_sc.ip_max_ka.at[2] - 42.518706441) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[0] - 14.256046241) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[1] - 14.256046241) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 42.518706441) <1e-5)
     
-    assert (abs(net.res_bus_sc.ith_max_ka.at[0] - 5.8711913689) <1e-5)
-    assert (abs(net.res_bus_sc.ith_max_ka.at[1] - 5.8711913689) <1e-5)
-    assert (abs(net.res_bus_sc.ith_max_ka.at[2] - 17.240013111) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[0] - 5.8711913689) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[1] - 5.8711913689) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 17.240013111) <1e-5)
     
 def test_min_10_one_line_one_transformer(net_transformer):
     net = net_transformer
     sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent= 10.)
-    assert (abs(net.res_bus_sc.ikss_min_ka.at[0] - 2.309401) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_min_ka.at[1] - 2.309401) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_min_ka.at[2] - 12.912468695) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[1] - 2.309401) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 12.912468695) <1e-5)
         
-    assert (abs(net.res_bus_sc.ip_min_ka.at[0] - 5.702418) <1e-5)
-    assert (abs(net.res_bus_sc.ip_min_ka.at[1] - 5.702418) <1e-5)
-    assert (abs(net.res_bus_sc.ip_min_ka.at[2] - 32.405489528) <1e-5)    
+    assert (abs(net.res_bus_sc.ip_ka.at[0] - 5.702418) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[1] - 5.702418) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 32.405489528) <1e-5)    
     
-    assert (abs(net.res_bus_sc.ith_min_ka.at[0] - 2.348476) <1e-5)
-    assert (abs(net.res_bus_sc.ith_min_ka.at[1] - 2.348476) <1e-5)
-    assert (abs(net.res_bus_sc.ith_min_ka.at[2] - 13.162790807) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[0] - 2.348476) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[1] - 2.348476) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 13.162790807) <1e-5)
 
 def test_min_6_one_line_one_transformer(net_transformer):
     net = net_transformer
     sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent = 6.)
-    assert (abs(net.res_bus_sc.ikss_min_ka.at[0] - 2.309401) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_min_ka.at[1] - 2.309401) <1e-5)
-    assert (abs(net.res_bus_sc.ikss_min_ka.at[2] - 13.39058012) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[1] - 2.309401) <1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 13.39058012) <1e-5)
         
-    assert (abs(net.res_bus_sc.ip_min_ka.at[0] - 5.702418) <1e-5)
-    assert (abs(net.res_bus_sc.ip_min_ka.at[1] - 5.702418) <1e-5)
-    assert (abs(net.res_bus_sc.ip_min_ka.at[2] - 33.599801499) <1e-5)    
+    assert (abs(net.res_bus_sc.ip_ka.at[0] - 5.702418) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[1] - 5.702418) <1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 33.599801499) <1e-5)    
     
-    assert (abs(net.res_bus_sc.ith_min_ka.at[0] - 2.348476) <1e-5)
-    assert (abs(net.res_bus_sc.ith_min_ka.at[1] - 2.348476) <1e-5)
-    assert (abs(net.res_bus_sc.ith_min_ka.at[2] - 13.649789214) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[0] - 2.348476) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[1] - 2.348476) <1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 13.649789214) <1e-5)
 
 if __name__ == '__main__':
     pytest.main(["test_line_transformer.py"])

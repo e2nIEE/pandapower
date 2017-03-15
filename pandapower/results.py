@@ -87,11 +87,12 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
     n_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :n_cols] = result['branch'][:, :n_cols]
     n_cols = np.shape(ppc['gen'])[1]
-    ppc['gen'][result["internal"]['gen_is'], :n_cols] = result['gen'][:, :n_cols]
-    ppc['internal'] = result['internal']
-
-    ppc['success'] = result['success']
-    ppc['et'] = result['et']
+    if mode != "sc":
+        ppc['gen'][result["internal"]['gen_is'], :n_cols] = result['gen'][:, :n_cols]
+        ppc['internal'] = result['internal']
+    
+        ppc['success'] = result['success']
+        ppc['et'] = result['et']
 
     if mode == 'opf':
         ppc['obj'] = result['f']

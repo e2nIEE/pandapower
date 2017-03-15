@@ -9,7 +9,7 @@ import pandas as pd
 from itertools import chain
 from collections import defaultdict
 
-from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE
+from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA
 
 from pandapower.auxiliary import _sum_by_group
 
@@ -37,6 +37,7 @@ def _build_bus_ppc(net, ppc):
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     r_switch = net["_options"]["r_switch"]
     init = net["_options"]["init"]
+    mode = net["_options"]["mode"]
 
     # get bus indices
     bus_index = net["bus"].index.values
@@ -125,8 +126,8 @@ def _build_bus_ppc(net, ppc):
                     bus_lookup[bus] = map_to
 
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus, 13), dtype=float)
-    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
+    ppc["bus"] = np.zeros(shape=(n_bus, 14), dtype=float)
+    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0])
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = consec_buses
 
@@ -136,10 +137,15 @@ def _build_bus_ppc(net, ppc):
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
         BUS_TYPE] = NONE
 
-    if init=="results" and len(net["res_bus"]) > 0:
+    if init == "results" and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
-        ppc["bus"][:n_bus, 7] = net["res_bus"]["vm_pu"].values
-        ppc["bus"][:n_bus, 8] = net["res_bus"].va_degree.values
+        ppc["bus"][:n_bus, VM] = net["res_bus"]["vm_pu"].values
+        ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
+        
+    if mode == "sc":
+        from pandapower.shortcircuit.kappa import _add_c_to_ppc
+        _add_c_to_ppc(net, ppc)
+        
 
     if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
@@ -295,37 +301,41 @@ def _add_gen_impedances_ppc(net, ppc):
     _add_sgen_sc_impedance(net, ppc)
 
 def _add_ext_grid_sc_impedance(net, ppc):
-    bus = net._is_elems["bus"]
+    from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     case = net._options["case"]
     eg = net._is_elems["ext_grid"]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
-    c_grid = bus["c_%s"%case].loc[eg_buses].values
+    eg_buses_ppc  = bus_lookup[eg_buses]
+
+    c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     s_sc = eg["s_sc_%s_mva"%case].values
     rx = eg["rx_%s"%case].values
 
-    z_grid = c_grid / s_sc
+    z_grid = c / s_sc
     x_grid = np.sqrt(z_grid**2 / (rx**2 + 1))
     r_grid = np.sqrt(z_grid**2 - x_grid**2)
     eg["r"] = r_grid
     eg["x"] = x_grid
 
     y_grid = 1 / (r_grid + x_grid*1j)
-    eg_bus_idx = bus_lookup[eg_buses]
-    ppc["bus"][eg_bus_idx, GS] = y_grid.real
-    ppc["bus"][eg_bus_idx, BS] = y_grid.imag
+    ppc["bus"][eg_buses_ppc, GS] = y_grid.real
+    ppc["bus"][eg_buses_ppc, BS] = y_grid.imag
 
 def _add_gen_sc_impedance(net, ppc):
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    from pandapower.shortcircuit.idx_bus import C_MAX
     bus = net._is_elems["bus"]
     gen = net._is_elems["gen"]
     if len(gen) == 0:
         return
     gen_buses = gen.bus.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    gen_bus_ppc = bus_lookup[gen_buses]
+    
     vn_net = bus.vn_kv.loc[gen_buses].values
-    cmax = bus["c_max"].loc[gen_buses].values
+    cmax = ppc["bus"][gen_bus_ppc, C_MAX]
     phi_gen = np.arccos(gen.cos_phi)
 
     vn_gen = gen.vn_kv.values
@@ -338,9 +348,8 @@ def _add_gen_sc_impedance(net, ppc):
     kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
     y_gen = 1 / ((r_gen + x_gen*1j) * kg)
 
-    gen_bus_idx = bus_lookup[gen_buses]
-    ppc["bus"][gen_bus_idx, GS] = y_gen.real
-    ppc["bus"][gen_bus_idx, BS] = y_gen.imag
+    ppc["bus"][gen_bus_ppc, GS] = y_gen.real
+    ppc["bus"][gen_bus_ppc, BS] = y_gen.imag
 
 def _add_sgen_sc_impedance(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
