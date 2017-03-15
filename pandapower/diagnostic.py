@@ -74,7 +74,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-    diag_functions = ["disconnected_elements(net)",
+    diag_functions = ["missing_bus_indeces(net)",
+                      "disconnected_elements(net)",
                       "different_voltage_levels_connected(net)",
                       "lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm)",
                       "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
@@ -85,10 +86,18 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                       "no_ext_grid(net)",
                       "wrong_reference_system(net)",
                       "deviation_from_std_type(net)",
-                      "numba_comparison(net, numba_tolerance)"]
+                      "numba_comparison(net, numba_tolerance)",
+                      "parallel_switches(net)"]
+    bus_index_dependent_checks = ["disconnected_elements(net)",
+                                  "different_voltage_levels_connected(net)",
+                                  "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
+                                  "multiple_voltage_controlling_elements_per_bus(net)"]
     diag_results = {}
     for diag_function in diag_functions:
-        diag_result = eval(diag_function)
+        if (diag_function in bus_index_dependent_checks) and ("missing_bus_indeces" in diag_results.keys()):
+            diag_result = "check skipped"
+        else:
+            diag_result = eval(diag_function)
         if diag_result:
             diag_results[diag_function.split("(")[0]] = diag_result
 
@@ -96,7 +105,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "overload_scaling_factor": overload_scaling_factor,
         "lines_min_length_km": lines_min_length_km,
         "lines_min_z_ohm": lines_min_z_ohm,
-        "nom_voltage_tolerance": nom_voltage_tolerance
+        "nom_voltage_tolerance": nom_voltage_tolerance,
+        "numba_tolerance": numba_tolerance
     }
     if warnings_only:
         logger.setLevel(logging.WARNING)
@@ -319,7 +329,7 @@ def no_ext_grid(net):
 
     if not len(net.ext_grid) > 0:
         return True
-
+        
 
 def multiple_voltage_controlling_elements_per_bus(net):
     """
@@ -342,9 +352,6 @@ def multiple_voltage_controlling_elements_per_bus(net):
     buses_with_mult_ext_grids = list(net.ext_grid.groupby("bus").count().query("vm_pu > 1").index)
     if buses_with_mult_ext_grids:
         check_results['buses_with_mult_ext_grids'] = buses_with_mult_ext_grids
-    buses_with_mult_gens = list(net.gen.groupby("bus").count().query("p_kw > 1").index)
-    if buses_with_mult_gens:
-        check_results['buses_with_mult_gens'] = buses_with_mult_gens
     buses_with_gens_and_ext_grids = set(net.ext_grid.bus).intersection(set(net.gen.bus))
     if buses_with_gens_and_ext_grids:
         check_results['buses_with_gens_and_ext_grids'] = list(buses_with_gens_and_ext_grids)
@@ -428,7 +435,26 @@ def wrong_switch_configuration(net):
             net.switch.closed = switch_configuration
             return 'uncertain'
 
-
+def missing_bus_indeces(net):
+    check_results = {}
+    bus_indeces = set(net.bus.index)
+    element_bus_names = {"ext_grid": ["bus"], "load": ["bus"], "gen": ["bus"], "sgen": ["bus"],
+                         "trafo": ["lv_bus", "hv_bus"], "trafo3w": ["lv_bus", "mv_bus", "hv_bus"],
+                         "switch": ["bus", "element"], "line": ["from_bus", "to_bus"]}
+    for element in element_bus_names.keys():
+        element_check = []
+        for i, row in net[element].iterrows():
+            for bus_name in element_bus_names[element]:
+                if row[bus_name] not in bus_indeces:
+                    if not ((element == "switch") and (bus_name == "element") and (row.et in ['l', 't'])):
+                        element_check.append((i, bus_name, row[bus_name]))
+        if element_check:
+            check_results[element] = element_check
+                    
+    if check_results:
+        return check_results
+                    
+    
 def different_voltage_levels_connected(net):
     """
     Checks, if there are lines or switches that connect different voltage levels.
@@ -484,32 +510,6 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     if len(implausible_lines) > 0:
 
         return list(implausible_lines.index)
-
-
-def closed_switches_between_oos_and_is_buses(net):
-    """
-    Checks, if there are switches connecting an out-of-service and an in-service bus.
-
-     INPUT:
-        **net** (pandapowerNet)         - pandapower network
-
-     OUTPUT:
-        **problematic_switches** (list)  - list that contains the indeces of all switches
-                                           connecting an out-of-service and an in-service bus.
-
-
-    """
-
-    problematic_switches = []
-    for i, switch in net.switch.iterrows():
-        if (switch.et == 'b') & (switch.closed == 1):
-            buses = net.bus.loc[[switch.bus, switch.element]]
-            if (not (all(buses.in_service.values)) and any(buses.in_service.values)):
-                problematic_switches.append(i)
-
-    if len(problematic_switches) > 0:
-
-        return problematic_switches
 
 
 def nominal_voltages_dont_match(net, nom_voltage_tolerance):
@@ -694,14 +694,6 @@ def disconnected_elements(net):
             if any(section_dict.values()):
                 disc_elements.append(section_dict)
 
-    open_line_switches = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
-    isolated_lines = set(
-        (open_line_switches.groupby("element").count().query("bus > 1").index))
-    isolated_lines_is = isolated_lines.intersection((set(net.line[net.line.in_service == True]
-                                                         .index)))
-    if isolated_lines_is:
-        disc_elements.append({'isolated_lines': list(isolated_lines_is)})
-
     open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
     isolated_trafos = set(
         (open_trafo_switches.groupby("element").count().query("bus > 1").index))
@@ -771,26 +763,29 @@ def numba_comparison(net, numba_tolerance):
     except:
         pass
     if net.converged:
-        result_numba_true = copy.deepcopy(net)
-        runpp(net, numba=False)
-        result_numba_false = copy.deepcopy(net)
-        res_keys = [key for key in result_numba_true.keys() if (key in ['res_bus', 'res_ext_grid',
-                                                                        'res_gen', 'res_impedance',
-                                                                        'res_line', 'res_load',
-                                                                        'res_sgen', 'res_shunt',
-                                                                        'res_trafo', 'res_trafo3w',
-                                                                        'res_ward', 'res_xward'])]
-        for key in res_keys:
-            diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
-            if any(diffs.any()):
-                if (key not in check_results.keys()):
-                    check_results[key] = {}
-                for col in diffs.columns:
-                    if (col not in check_results[key].keys()) and (diffs.any()[col]):
-                        check_results[key][col] = {}
-                        numba_true = result_numba_true[key][col][diffs[col]]
-                        numba_false = result_numba_false[key][col][diffs[col]]
-                        check_results[key][col] = abs(numba_true - numba_false)
+        try:
+            result_numba_true = copy.deepcopy(net)
+            runpp(net, numba=False)
+            result_numba_false = copy.deepcopy(net)
+            res_keys = [key for key in result_numba_true.keys() if (key in ['res_bus', 'res_ext_grid',
+                                                                            'res_gen', 'res_impedance',
+                                                                            'res_line', 'res_load',
+                                                                            'res_sgen', 'res_shunt',
+                                                                            'res_trafo', 'res_trafo3w',
+                                                                            'res_ward', 'res_xward'])]
+            for key in res_keys:
+                diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
+                if any(diffs.any()):
+                    if (key not in check_results.keys()):
+                        check_results[key] = {}
+                    for col in diffs.columns:
+                        if (col not in check_results[key].keys()) and (diffs.any()[col]):
+                            check_results[key][col] = {}
+                            numba_true = result_numba_true[key][col][diffs[col]]
+                            numba_false = result_numba_false[key][col][diffs[col]]
+                            check_results[key][col] = abs(numba_true - numba_false)
+        except:
+            pass
 
     if check_results:
         return check_results
@@ -811,7 +806,7 @@ def deviation_from_std_type(net):
                                          Format: (element_type, element_index, parameter)
 
 
-        """
+    """
     check_results = {}
     for key in net.std_types.keys():
         for i, element in net[key].iterrows():
@@ -834,3 +829,29 @@ def deviation_from_std_type(net):
 
     if check_results:
         return check_results
+        
+        
+def parallel_switches(net):
+    """
+        Checks for parallel switches.
+
+         INPUT:
+            **net** (PandapowerNet)    - pandapower network
+
+
+         OUTPUT:
+            **parallel_switches** (list)   - List of tuples each containing parallel switches.
+
+                                        
+
+
+    """
+    parallel_switches = []
+    compare_parameters = ['bus', 'element']
+    parallels_bus_and_element = list(net.switch.groupby(compare_parameters).count().query('et > 1').index)
+    for bus, element in parallels_bus_and_element:
+        parallel_switches.append(list(net.switch[(net.switch.bus == bus) 
+                                       & (net.switch.element == element)].index))
+
+    if parallel_switches:
+        return parallel_switches
