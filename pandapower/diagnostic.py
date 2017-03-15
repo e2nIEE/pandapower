@@ -436,6 +436,19 @@ def wrong_switch_configuration(net):
             return 'uncertain'
 
 def missing_bus_indeces(net):
+    """
+        Checks for missing bus indeces.
+
+         INPUT:
+            **net** (PandapowerNet)    - pandapower network
+
+
+         OUTPUT:
+            **check_results** (list)   - List of tuples each containing missing bus indeces.
+                                         Format: 
+                                         [(element_index, bus_name (e.g. "from_bus"),  bus_index]
+
+    """
     check_results = {}
     bus_indeces = set(net.bus.index)
     element_bus_names = {"ext_grid": ["bus"], "load": ["bus"], "gen": ["bus"], "sgen": ["bus"],
