@@ -7,10 +7,9 @@
 import numpy as np
 import networkx as nx
 
-from pandapower.shortcircuit.idx_bus import GS, BS, BUS_I, KAPPA, C_MAX, C_MIN, BASE_KV, R_EQUIV, X_EQUIV
+from pandapower.shortcircuit.idx_bus import KAPPA, C_MAX, C_MIN, R_EQUIV, X_EQUIV
+from pypower.idx_bus import BUS_I, BASE_KV, GS, BS
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
-#from pandapower.shortcircuit.idx_bus import *
-
 
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
@@ -38,14 +37,14 @@ def _add_kappa_to_ppc(net, ppc):
                     if r / x < .3:                                     
                         kappa_korr[bidx] = 1.
                         break           
-    rx_equiv = ppc["bus"][:, R_EQUIV] / ppc["bus"][:, X_EQUIV]
+    rx_equiv = ppc["bus_sc"][:, R_EQUIV] / ppc["bus_sc"][:, X_EQUIV]
     kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
-    ppc["bus"][:, KAPPA] = np.clip(kappa_korr * kappa, 1, kappa_max)
+    ppc["bus_sc"][:, KAPPA] = np.clip(kappa_korr * kappa, 1, kappa_max)
    
 def nxgraph_from_ppc(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
-    mg.add_nodes_from(ppc["bus"][:, 0].astype(int))
+    mg.add_nodes_from(ppc["bus"][:, BUS_I].astype(int))
     mg.add_edges_from((int(branch[T_BUS]), int(branch[F_BUS]),
                        {"r": branch[BR_R], "x": branch[BR_X]}) for branch in ppc["branch"].real)
     mg.add_node("earth")
@@ -58,8 +57,8 @@ def nxgraph_from_ppc(net, ppc):
     
    
 def _add_c_to_ppc(net, ppc):
-    ppc["bus"][:, C_MAX] = 1.1
-    ppc["bus"][:, C_MIN] = 1.
+    ppc["bus_sc"][:, C_MAX] = 1.1
+    ppc["bus_sc"][:, C_MIN] = 1.
     lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
@@ -70,5 +69,5 @@ def _add_c_to_ppc(net, ppc):
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" \
                                         " to be either 6% or 10% according to IEC 60909")
-        ppc["bus"][lv_buses, C_MAX] = c_ns
-        ppc["bus"][lv_buses, C_MIN] = .95
+        ppc["bus_sc"][lv_buses, C_MAX] = c_ns
+        ppc["bus_sc"][lv_buses, C_MIN] = .95

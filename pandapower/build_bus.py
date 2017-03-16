@@ -144,6 +144,8 @@ def _build_bus_ppc(net, ppc):
         
     if mode == "sc":
         from pandapower.shortcircuit.kappa import _add_c_to_ppc
+        ppc["bus_sc"] = np.empty(shape=(n_bus, 10), dtype=float)
+        ppc["bus_sc"].fill(np.nan)
         _add_c_to_ppc(net, ppc)
         
 
@@ -310,7 +312,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     eg_buses = eg.bus.values
     eg_buses_ppc  = bus_lookup[eg_buses]
 
-    c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    c = ppc["bus_sc"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus_sc"][eg_buses_ppc, C_MIN]
     s_sc = eg["s_sc_%s_mva"%case].values
     rx = eg["rx_%s"%case].values
 
@@ -334,7 +336,7 @@ def _add_gen_sc_impedance(net, ppc):
     gen_bus_ppc = bus_lookup[gen_buses]
     
     vn_net = ppc["bus"][gen_bus_ppc, BASE_KV]
-    cmax = ppc["bus"][gen_bus_ppc, C_MAX]
+    cmax = ppc["bus_sc"][gen_bus_ppc, C_MAX]
     phi_gen = np.arccos(gen.cos_phi)
 
     vn_gen = gen.vn_kv.values

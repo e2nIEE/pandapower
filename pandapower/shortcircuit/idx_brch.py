@@ -5,13 +5,15 @@
 # BSD-style license that can be found in the LICENSE file.
 
 # define the indices
-R_EQUIV     = 0    # 
-X_EQUIV     = 1    # 
-KAPPA       = 2    # 
-C_MIN       = 3    # 
-C_MAX       = 4    # 
-IKSS        = 5    # 
-IP          = 6   # 
-IB          = 7   #
-ITH         = 8   # 
-IK          = 9   #
+IKSS_F    = 0
+IKSS_T    = 1 
+ITH_F     = 2   
+ITH_T     = 3  
+IP_F      = 4   
+IP_T      = 5
+IK_F      = 6   
+IK_T      = 7
+IB_F      = 8
+IB_T      = 9
+
+
