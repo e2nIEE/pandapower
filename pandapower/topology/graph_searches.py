@@ -336,4 +336,7 @@ def estimate_voltage_vector(net):
                                       "transformer. Please set the transformer out of service or"
                                       "put the bus into service. Treat results with caution!")
                 trafo_index.remove(tix)
+            elif pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]):
+                # parallel transformer, lv buses are already set from previous transformer
+                trafo_index.remove(tix)
     return res_bus
