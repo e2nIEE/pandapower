@@ -293,7 +293,6 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, bus_ord_bfsw, Sbus, V0, ref, p
         # inner loop for considering PV buses
         inner_loop_converged = False
 
-        success_inner = 1
         while not inner_loop_converged and len(pv) > 0:
 
             pvi = pv - 1  # internal PV buses indices, assuming reference node is always 0
@@ -447,7 +446,7 @@ def _run_bfswpf(ppc, options, **kwargs):
         if calculate_voltage_angles:
             predecessors = nx.bfs_predecessors(G, ref[subi])
             branches = list(zip(branch[:, F_BUS].real, branch[:, T_BUS].real))
-            for bus_start in predecessors.iterkeys():
+            for bus_start in predecessors:
                 bus_pred = bus_start
                 bus_next = bus_start
                 while predecessors.get(bus_next) is not None:
