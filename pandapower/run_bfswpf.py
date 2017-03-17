@@ -246,7 +246,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     converged = 0
 
     if verbose:
-        print(' -- AC Power Flow Backward/Forward sweep\n')
+        print(' -- AC Power Flow (Backward/Forward sweep)\n')
 
     while not converged and n_iter < max_it:
         n_iter_inner = 0
@@ -379,6 +379,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     G = csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
                                       shape=(nobus, nobus))
     # create spanning trees using breadth-first-search
+    # TODO add efficiency warning if a network is heavy-meshed
     G_trees = []
     for refbus in ref:
         G_trees.append(csgraph.breadth_first_tree(G, refbus, directed=False))
