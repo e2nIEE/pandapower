@@ -2,6 +2,10 @@
 pandapower
 =============
 
+.. image:: https://api.codacy.com/project/badge/Grade/6770beaed39546f8bc4942abcbfa0d37
+   :alt: Codacy Badge
+   :target: https://www.codacy.com/app/jhmenke/pandapower?utm_source=github.com&utm_medium=referral&utm_content=lthurner/pandapower&utm_campaign=badger
+
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
 
