@@ -89,11 +89,11 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     _add_ppc_options(net, calculate_voltage_angles=False, 
                              trafo_model="pi", check_connectivity=False,
                              mode="sc", copy_constraints_to_ppc=False,
-                             r_switch=r_switch, init="flat", enforce_q_lims=False)
+                             r_switch=r_switch, init="flat", enforce_q_lims=False, recycle=None)
     _add_sc_options(net, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, 
                     network_structure=network_structure, r_fault_ohm=r_fault_ohm, 
                     x_fault_ohm=x_fault_ohm, current=[])
-    net["_is_elems"] = _select_is_elements(net, None)
+    net["_is_elems"] = _select_is_elements(net)
     _add_auxiliary_elements(net)
     _add_c_to_net(net)
     calc_equiv_sc_impedance(net)

@@ -244,11 +244,12 @@ class state_estimation(object):
         self.net.res_bus.va_degree = delta_start
 
         # select elements in service and convert pandapower ppc to ppc
-        self.net["_is_elems"] = _select_is_elements(self.net)
         self.net._options = {}
         _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
                                  copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
-                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0)
+                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                                 recycle=dict(is_elems=False, ppc=False, Ybus=False))
+        self.net["_is_elems"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
