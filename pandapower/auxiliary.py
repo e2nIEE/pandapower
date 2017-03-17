@@ -242,7 +242,7 @@ def get_values(source, selection, lookup):
     """
     return np.array([source[lookup[k]] for k in selection])
     
-def _select_is_elements(net, recycle=None):
+def _select_is_elements(net):
 
     """
     Selects certain "in_service" elements from net.
@@ -253,6 +253,7 @@ def _select_is_elements(net, recycle=None):
     @return: is_elems Certain in service elements
     :rtype: object
     """
+    recycle = net["_options"]["recycle"]
 
     if recycle is not None and recycle["is_elems"]:
         if "_is_elems" not in net or net["_is_elems"] is None:
@@ -323,7 +324,7 @@ def _select_is_elements(net, recycle=None):
     return is_elems
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode, 
-                             copy_constraints_to_ppc, r_switch, init, enforce_q_lims):
+                             copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -337,10 +338,11 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         , "r_switch": r_switch
         ,  "init": init
         , "enforce_q_lims": enforce_q_lims
+        , "recycle": recycle
         }
     _add_options(net, options)
     
-def _add_pf_options(net, tolerance_kva, trafo_loading, numba, recycle, ac,
+def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
                     algorithm, max_iteration, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
@@ -350,7 +352,6 @@ def _add_pf_options(net, tolerance_kva, trafo_loading, numba, recycle, ac,
           "tolerance_kva": tolerance_kva
         , "trafo_loading": trafo_loading
         , "numba": numba
-        , "recycle": recycle
         , "ac": ac
         , "algorithm": algorithm
         , "max_iteration": max_iteration

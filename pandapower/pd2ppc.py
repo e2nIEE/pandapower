@@ -272,13 +272,14 @@ def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     _write_lookup_to_net(net, element, lookup)
 
 
-def _update_ppc(net, recycle):
+def _update_ppc(net):
     """
     Updates P, Q values of the ppc with changed values from net
 
     @param is_elems:
     @return:
     """
+    recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
     ppc = net["_ppc"]
     ppci = copy.deepcopy(ppc)
