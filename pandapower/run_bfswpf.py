@@ -1,21 +1,21 @@
 import numpy as np
 import scipy as sp
-import networkx as nx
 
 from time import time  # alternatively use import timeit.default_timer as time
 
+from six import iteritems
 
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, csgraph
 
 from pandapower.auxiliary import ppException
 
-from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
 from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pypower_extensions.runpf import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
 
 from pypower.makeSbus import makeSbus
 from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, VM, VA, REF, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, TAP, BR_STATUS
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, TAP, BR_STATUS, SHIFT
 from pypower.idx_gen import GEN_BUS, PG, QG, PMAX, PMIN, QMAX, QMIN, GEN_STATUS, VG
 
 class LoadflowNotConverged(ppException):
@@ -25,35 +25,9 @@ class LoadflowNotConverged(ppException):
     pass
 
 
-def _reindex_bus_ppc(ppc, bus_ind_dict):
-    """
-    reindexing buses according to dictionary old_bus_index -> new_bus_index
-    :param ppc: matpower-type power system
-    :param bus_ind_dict:  dictionary for bus reindexing
-    :return: ppc with bus indices updated
-    """
-    ppc_bfs = ppc.copy()
-    buses = ppc_bfs['bus'].copy()
-    branches = ppc_bfs['branch'].copy()
-    generators = ppc_bfs['gen'].copy()
-
-    buses[:, BUS_I] = [bus_ind_dict[bus] for bus in buses[:, BUS_I]]
-
-    branches[:, F_BUS] = [bus_ind_dict[bus] for bus in branches[:, F_BUS]]
-    branches[:, T_BUS] = [bus_ind_dict[bus] for bus in branches[:, T_BUS]]
-    branches[:, F_BUS:T_BUS + 1] = np.sort(branches[:, F_BUS:T_BUS + 1], axis=1)  # sort in order to T_BUS > F_BUS
-
-    generators[:, GEN_BUS] = [bus_ind_dict[bus] for bus in generators[:, GEN_BUS]]
-
-    # sort buses, branches and generators according to new numbering
-    ppc_bfs['bus'] = buses[np.argsort(buses[:, BUS_I])]
-    ppc_bfs['branch'] = branches[np.lexsort((branches[:, T_BUS], branches[:, F_BUS]))]
-    ppc_bfs['gen'] = generators[np.argsort(generators[:, GEN_BUS])]
-
-    return ppc_bfs
 
 
-def _bibc_bcbv(ppc):
+def _bibc_bcbv(bus, branch, graph):
     """
     performs depth-first-search bus ordering and creates Direct Load Flow (DLF) matrix
     which establishes direct relation between bus current injections and voltage drops from each bus to the root bus
@@ -66,129 +40,131 @@ def _bibc_bcbv(ppc):
             original bus names bfs ordered (used to convert voltage array back to normal)
     """
 
-    ppci = ppc
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-    nbus = bus.shape[0]
+    nobus = bus.shape[0]
+    nobranch = branch.shape[0]
 
-    # get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
+    # reference bus is assumed as root bus for a radial network
+    refs = bus[bus[:, BUS_TYPE]==3, BUS_I]
+    norefs = len(refs)
 
-    root_bus = ref[0]  # reference bus is assumed as root bus for a radial network
-
-    branches = branch[:, F_BUS:T_BUS + 1].real.astype(int)
-
-    # creating networkx graph from list of branches
-    G = nx.Graph()
-    G.add_edges_from(branches)
-
-    # ordering buses according to breadth-first-search (bfs)
-    edges_ordered_bfs = list(nx.bfs_edges(G, root_bus))
-    indices = np.unique(np.array(edges_ordered_bfs).flatten(), return_index=True)[1]
-    buses_ordered_bfs = np.array(edges_ordered_bfs).flatten()[sorted(indices)]
-    buses_bfs_dict = dict(zip(buses_ordered_bfs, range(0, nbus)))  # old to new bus names dictionary
-    # renaming buses in graph and in ppc
-    G = nx.relabel_nodes(G, buses_bfs_dict)
-    root_bus = buses_bfs_dict[root_bus]
-    ppc_bfs = _reindex_bus_ppc(ppci, buses_bfs_dict)
-    # ordered list of branches
-    branches_ord = zip(ppc_bfs['branch'][:, F_BUS].real.astype(int), ppc_bfs['branch'][:, T_BUS].real.astype(int))
-
-    # searching loops in the graph if it is not a tree
-    loops = []
-    branches_loops = []
-    if not nx.is_tree(G):  # network is meshed, i.e. has loops
-        G_bfs_tree = nx.bfs_tree(G, root_bus)
-        branches_loops = list(set(G.edges()) - set(G_bfs_tree.edges()))
-        G.remove_edges_from(branches_loops)
-        # finding loops
-        for i, j in branches_loops:
-            G.add_edge(i, j)
-            loops.append(nx.find_cycle(G))
-            G.remove_edge(i, j)
-
-    nloops = len(loops)
-    nbr_rad = len(G.edges())  # number of edges in the radial network
-
-    # searching leaves of the tree
-    succ = nx.bfs_successors(G, root_bus)
-    leaves = set(G.nodes()) - set(succ.keys())
+    G = graph.copy()  # network graph
 
     # dictionary with impedance values keyed by branch tuple (frombus, tobus)
-    Z_brch_dict = dict(zip(branches_ord, ppc_bfs['branch'][:, BR_R].real + 1j * ppc_bfs['branch'][:, BR_X].real))
+    # TODO use list or array, not both
+    branches_lst = list(zip(branch[:, F_BUS].real.astype(int), branch[:, T_BUS].real.astype(int)))
+    branches_arr = branch[:, F_BUS:T_BUS+1].real.astype(int)
+    branches_ind_dict = dict(zip(zip(branches_arr[:, 0], branches_arr[:, 1]), range(0, nobranch)))
+    branches_ind_dict.update(dict(zip(zip(branches_arr[:, 1], branches_arr[:, 0]), range(0, nobranch))))
 
-    #branches_ord zip has to be  initialized again since it is a generator object in py3 and is 
-    #otherwise empty after iterating over it once
-    #TODO: find more elegant solution that is py2/py3 compatible
-    branches_ord = zip(ppc_bfs['branch'][:, F_BUS].real.astype(int), ppc_bfs['branch'][:, T_BUS].real.astype(int))
-    # #------ building BIBC and BCBV martrices ------
+    tap = branch[:, TAP]     # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
+    z_ser = (branch[:, BR_R].real + 1j * branch[:, BR_X].real) * tap  # series impedance
+    z_brch_dict = dict(zip(branches_lst, z_ser))
 
-    # order branches for BIBC and BCBV matrices and set loop-closing branches to the end
-    branches_ord_radial = [(i,j) for (i, j) in branches_ord]
-    for brch in branches_loops:  # TODO eliminated this for loop
-        branches_ord_radial.remove(brch)
-    branches_ind_dict = dict(zip(branches_ord_radial, range(0, nbr_rad)))
-    branches_ind_dict.update(dict(zip(branches_loops, range(nbr_rad, nbr_rad + nloops))))  # add loop-closing branches
-
+    # initialization of lists for building sparse BIBC and BCBV matrices
     rowi_BIBC = []
     coli_BIBC = []
     data_BIBC = []
     data_BCBV = []
-    for bri, (i, j) in enumerate(branches_ord_radial):
-        G.remove_edge(i, j)
-        buses_down = set()
-        for leaf in leaves:
-            try:
-                buses_down.update(nx.shortest_path(G, leaf, j))
-            except:
+
+    buses_ordered_bfs_nets = []
+    for ref in refs:
+        # ordering buses according to breadth-first-search (bfs)
+        buses_ordered_bfs, predecs_bfs = csgraph.breadth_first_order(G, ref, directed=False, return_predecessors=True)
+        buses_ordered_bfs_nets.append(buses_ordered_bfs)
+        branches_ordered_bfs = zip(predecs_bfs[buses_ordered_bfs[1:]], buses_ordered_bfs[1:])
+        G_tree = csgraph.breadth_first_tree(G, ref, directed=False)
+
+        # if multiple networks get subnetwork branches
+        if norefs > 1:
+            branches_sub_mask = (np.in1d(branches_arr[:, 0], buses_ordered_bfs) &
+                                 np.in1d(branches_arr[:, 1], buses_ordered_bfs) )
+            branches = np.sort(branches_arr[branches_sub_mask, :], axis=1)
+        else:
+            branches = np.sort(branches_arr, axis=1)
+
+        # identify loops if graph is not a tree
+        branches_loops = []
+        if G_tree.nnz < branches.shape[0]:
+            G_tree_nnzs = G_tree.nonzero()
+            branches_tree = np.sort(np.array([G_tree_nnzs[0],G_tree_nnzs[1]]).T, axis=1)
+            branches_loops = (set(zip(branches[:, 0], branches[:, 1])) -
+                              set(zip(branches_tree[:, 0], branches_tree[:, 1])))
+
+
+        # #------ building BIBC and BCBV martrices ------
+        # branches in trees
+        brchi = 0
+        for brch in branches_ordered_bfs:
+            tree_down, predecs = csgraph.breadth_first_order(G_tree, brch[1], directed=True, return_predecessors=True)
+            if len(tree_down) == 1:  # If at leaf
                 pass
-        rowi_BIBC += [bri] * len(buses_down)
-        coli_BIBC += list(buses_down)
-        data_BCBV += [Z_brch_dict[(i, j)]] * len(buses_down)
-        data_BIBC += [1] * len(buses_down)
-        G.add_edge(i, j)
-
-    for loop_i, loop in enumerate(loops):
-        loop_size = len(loop)
-        coli_BIBC += [nbus + loop_i] * loop_size
-        for brch in loop:
-            if brch[0] < brch[1]:
-                i, j = brch
-                brch_direct = 1
-                data_BIBC.append(brch_direct)
+            if brch in z_brch_dict:
+                z_br = z_brch_dict[brch]
             else:
-                j, i = brch
-                brch_direct = -1
-                data_BIBC.append(brch_direct)
-            rowi_BIBC.append(branches_ind_dict[(i, j)])
+                z_br = z_brch_dict[brch[::-1]]
+            rowi_BIBC += [branches_ind_dict[brch]] * len(tree_down)
+            coli_BIBC += list(tree_down)
+            data_BCBV += [z_br] * len(tree_down)
+            data_BIBC += [1] * len(tree_down)
 
-            data_BCBV.append(Z_brch_dict[(i, j)] * brch_direct)
+        # branches from loops
+        for loop_i, brch_loop in enumerate(branches_loops):
+            path_lens, path_preds = csgraph.shortest_path(G_tree, directed=False,
+                                                          indices=brch_loop, return_predecessors=True)
+            init, end = brch_loop
+            loop = [end]
+            while init != end:
+                end = path_preds[0, end]
+                loop.append(end)
+
+            loop_size = len(loop)
+            coli_BIBC += [nobus + loop_i] * loop_size
+            for i in range(len(loop)):
+                brch = (loop[i-1], loop[i])
+                if np.argwhere(buses_ordered_bfs == brch[0]) < np.argwhere(buses_ordered_bfs == brch[1]):
+                    brch_direct = 1
+                else:
+                    brch_direct = -1
+                data_BIBC.append(brch_direct)
+
+                if brch in branches_ind_dict:
+                    rowi_BIBC.append(branches_ind_dict[brch])
+                else:
+                    rowi_BIBC.append(branches_ind_dict[brch[::-1]])
+
+                if brch in z_brch_dict:
+                    data_BCBV.append(z_brch_dict[brch] * brch_direct)
+                else:
+                    data_BCBV.append(z_brch_dict[brch[::-1]] * brch_direct)
+
+                brchi += 1
 
     # construction of the BIBC matrix
     # column indices correspond to buses: assuming root bus is always 0 after ordering indices are subtracted by 1
-    BIBC = csr_matrix((data_BIBC, (rowi_BIBC, np.array(coli_BIBC) - 1)),
-                  shape=(nbus - 1 + nloops, nbus - 1 + nloops))
-    BCBV = csr_matrix((data_BCBV, (rowi_BIBC, np.array(coli_BIBC) - 1)),
-                  shape=(nbus - 1 + nloops, nbus - 1 + nloops)).transpose()
+    BIBC = csr_matrix((data_BIBC, (rowi_BIBC, np.array(coli_BIBC) - norefs)),
+                  shape=(nobranch, nobranch))
+    BCBV = csr_matrix((data_BCBV, (rowi_BIBC, np.array(coli_BIBC) - norefs)),
+                  shape=(nobranch, nobranch)).transpose()
 
-    if BCBV.shape[0] > nbus - 1:  # if nbrch > nbus - 1 -> network has loops
+    if BCBV.shape[0] > nobus - 1:  # if nbrch > nobus - 1 -> network has loops
         DLF_loop = BCBV * BIBC
         # DLF = [A  M.T ]
         #       [M  N   ]
-        A = DLF_loop[0:nbus - 1, 0:nbus - 1]
-        M = DLF_loop[nbus - 1:, 0:nbus - 1]
-        N = DLF_loop[nbus - 1:, nbus - 1:].A
+        A = DLF_loop[0:nobus - 1, 0:nobus - 1]
+        M = DLF_loop[nobus - 1:, 0:nobus - 1]
+        N = DLF_loop[nobus - 1:, nobus - 1:].A
         # considering the fact that number of loops is relatively small, N matrix is expected to be small and dense
         # ...in that case dense version is more efficient, i.e. N is transformed to dense and
         # inverted using sp.linalg.inv(N)
         DLF = A - M.T * csr_matrix(sp.linalg.inv(N)) * M  # Kron's Reduction
     else:  # no loops -> radial network
         DLF = BCBV * BIBC
-    return DLF, ppc_bfs, buses_ordered_bfs
+
+    return DLF, buses_ordered_bfs_nets
 
 
 
-def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
+def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
          enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
     """
     distribution power flow solution according to [1]
@@ -206,14 +182,13 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
     :param pq: PQ buses indices
 
     :return: power flow result
-
-    :References:
-    [1] Jen-Hao Teng, "A Direct Approach for Distribution System Load Flow Solutions", IEEE Transactions on Power Delivery, vol. 18, no. 3, pp. 882-887, July 2003.
     """
+
     # setting options
     tolerance_mva = tolerance_kva * 1e-3
     max_it = max_iteration  # maximum iterations
     verbose = kwargs["VERBOSE"]     # verbose is set in run._runpppf() #
+
     # tolerance for the inner loop for PV nodes
     if 'tolerance_kva_pv' in kwargs:
         tol_mva_inner = kwargs['tolerance_kva_pv'] * 1e-3
@@ -225,15 +200,11 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
     else:
         max_iter_pv = 20
 
-    nbus = bus.shape[0]
+    nobus = bus.shape[0]
     ngen = gen.shape[0]
 
     mask_root = ~ (bus[:, BUS_TYPE] == 3)  # mask for eliminating root bus
-    root_bus_i = ref
-    Vref = V0[ref]
-
-    bus_ind_mask_dict = dict(zip(bus[mask_root, BUS_I], range(nbus - 1)))
-
+    norefs = len(ref)
 
     # compute shunt admittance
     # if Psh is the real power consumed by the shunt at V = 1.0 p.u. and Qsh is the reactive power injected by
@@ -243,44 +214,57 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
 
     # Line charging susceptance BR_B is also added as shunt admittance:
     # summation of charging susceptances per each bus
-    Gch_f = - np.bincount(branch[:, F_BUS].real.astype(int), weights=branch[:, BR_B].imag / 2, minlength=nbus)
-    Bch_f = np.bincount(branch[:, F_BUS].real.astype(int), weights=branch[:, BR_B].real / 2, minlength=nbus)
-    Gch_t = - np.bincount(branch[:, T_BUS].real.astype(int), weights=branch[:, BR_B].imag / 2, minlength=nbus)
-    Bch_t = np.bincount(branch[:, T_BUS].real.astype(int), weights=branch[:, BR_B].real / 2, minlength=nbus)
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])
+    ysh = (- branch[:, BR_B].imag + 1j*(branch[:, BR_B].real)) / 2
+    tap = branch[:, TAP]    # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
 
-    Ysh += (Gch_f + Gch_t) + 1j * (Bch_f + Bch_t)  # adding line charging to shunt impedance vector
+    ysh_f = Ys * (1-tap)/(tap * np.conj(tap)) + ysh/(tap * np.conj(tap))
+    ysh_t = Ys * (tap-1)/tap + ysh
+
+    Gch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.real, minlength=nobus) +
+           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.real, minlength=nobus))
+    Bch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.imag, minlength=nobus) +
+           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.imag, minlength=nobus))
+
+    Ysh += Gch + 1j * Bch
+
 
     # detect generators on PV buses which have status ON
     gen_pv = np.in1d(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
     qg_lim = np.zeros(ngen, dtype=bool)   #initialize generators which violated Q limits
 
-    V_iter = V0[mask_root].copy()  # initial voltage vector without root bus
+    Iinj = np.conj(Sbus / V0) - Ysh * V0  # Initial current injections
+
+    # initiate reference voltage vector
+    V_ref = np.ones(nobus, dtype=complex)
+    for neti, buses_ordered_bfs in enumerate(buses_ordered_bfs_nets):
+        V_ref[buses_ordered_bfs] *= V0[ref[neti]]
     V = V0.copy()
-    Iinj = np.conj(Sbus / V) - Ysh * V  # Initial current injections
 
     n_iter = 0
     converged = 0
 
     if verbose:
-        print(' -- AC Power Flow Backward/Forward sweep\n')
+        print(' -- AC Power Flow (Backward/Forward sweep)\n')
 
     while not converged and n_iter < max_it:
         n_iter_inner = 0
         n_iter += 1
 
         deltaV = DLF * Iinj[mask_root]
-        V_iter = np.ones(nbus - 1) * Vref + deltaV
+        V[mask_root] = V_ref[mask_root] + deltaV
+
         # ##
         # inner loop for considering PV buses
+        # TODO improve PV buses inner loop
         inner_loop_converged = False
-        # V_inner = V_new.copy()
-
-        success_inner = 1
         while not inner_loop_converged and len(pv) > 0:
 
-            pvi = pv - 1  # internal PV buses indices, assuming reference node is always 0
+            pvi = pv - norefs  # internal PV buses indices, assuming reference node is always 0
 
-            Vmis = (np.abs(gen[gen_pv, VG])) ** 2 - (np.abs(V_iter[pvi])) ** 2
+            Vmis = (np.abs(gen[gen_pv, VG])) ** 2 - (np.abs(V[pv])) ** 2
+            # TODO improve getting values from sparse DLF matrix - DLF[pvi, pvi] is unefficient
             dQ = (Vmis / (2 * DLF[pvi, pvi].A1.imag)).flatten()
 
             gen[gen_pv, QG] += dQ
@@ -309,12 +293,11 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
                     qg_lim = qg_lim_new.copy()
                     ref, pv, pq = bustypes(bus, gen)
 
-
+            # avoid calling makeSbus, update only Sbus for pv nodes
             Sbus = makeSbus(baseMVA, bus, gen)
-            V = np.insert(V_iter, root_bus_i, Vref)
             Iinj = np.conj(Sbus / V) - Ysh * V
             deltaV = DLF * Iinj[mask_root]
-            V_iter = np.ones(nbus - 1) * V0[root_bus_i] + deltaV
+            V[mask_root] = V_ref[mask_root] + deltaV
 
             if n_iter_inner > max_iter_pv:
                 raise LoadflowNotConverged(" FBSW Power Flow did not converge - inner iterations for PV nodes "
@@ -325,8 +308,8 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq,
             if np.all(np.abs(dQ) < tol_mva_inner):  # inner loop termination criterion
                 inner_loop_converged = True
 
+
         # testing termination criterion -
-        V = np.insert(V_iter, root_bus_i, Vref)
         mis = V * np.conj(Ybus * V) - Sbus
         F = np.r_[mis[pv].real,
                   mis[pq].real,
@@ -354,63 +337,100 @@ def _get_options(options):
     enforce_q_lims = options['enforce_q_lims']
     tolerance_kva = options['tolerance_kva']
     max_iteration = options['max_iteration']
+    calculate_voltage_angles = options['calculate_voltage_angles']
+    numba = options["numba"]
 
-    return enforce_q_lims, tolerance_kva, max_iteration
+    return enforce_q_lims, tolerance_kva, max_iteration, calculate_voltage_angles, numba
 
-def _run_bfswpf(ppc, options, **kwargs):
+
+def _run_bfswpf(ppci, options, **kwargs):
     """
     SPARSE version of distribution power flow solution according to [1]
     :References:
-    [1] Jen-Hao Teng, "A Direct Approach for Distribution System Load Flow Solutions", IEEE Transactions on Power Delivery, vol. 18, no. 3, pp. 882-887, July 2003.
+    [1] Jen-Hao Teng, "A Direct Approach for Distribution System Load Flow Solutions",
+    IEEE Transactions on Power Delivery, vol. 18, no. 3, pp. 882-887, July 2003.
 
-    :param ppc: matpower-style case data
+    :param ppci: matpower-style case data
+    :param options: pf options
     :return: results (pypower style), success (flag about PF convergence)
     """
     time_start = time()  # starting pf calculation timing
 
-    enforce_q_lims, tolerance_kva, max_iteration = _get_options(options)    # retrieving options for bfswpf
+    baseMVA, bus, gen, branch, ref, pv, pq,\
+    on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
-    ppci = ppc
 
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-    nbus = bus.shape[0]
+    enforce_q_lims, tolerance_kva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
 
-    # get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
+    numba, makeYbus = _import_numba_extensions_if_flag_is_true(numba)
+
+    nobus = bus.shape[0]
+    nobranch = branch.shape[0]
+
+    # generate Sbus
+    Sbus = makeSbus(baseMVA, bus, gen)
+    # generate results for original bus ordering
+    Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+
+
+    # creating network graph from list of branches
+    bus_from = branch[:, F_BUS].real.astype(int)
+    bus_to = branch[:, T_BUS].real.astype(int)
+    G = csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
+                                      shape=(nobus, nobus))
+    # create spanning trees using breadth-first-search
+    # TODO add efficiency warning if a network is heavy-meshed
+    G_trees = []
+    for refbus in ref:
+        G_trees.append(csgraph.breadth_first_tree(G, refbus, directed=False))
 
     # depth-first-search bus ordering and generating Direct Load Flow matrix DLF = BCBV * BIBC
-    DLF, ppc_bfsw, buses_ordered_bfsw = _bibc_bcbv(ppci)
+    # TODO include recycling of the DLF matrix for repeated power flows with the same net topology
+    DLF, buses_ordered_bfs_nets = _bibc_bcbv(bus, branch, G)
 
-
-    baseMVA_bfsw, bus_bfsw, gen_bfsw, branch_bfsw = \
-        ppc_bfsw["baseMVA"], ppc_bfsw["bus"], ppc_bfsw["gen"], ppc_bfsw["branch"]
-
-    # time_start = time() # starting pf calculation timing
-
-    # initialize voltages to flat start and buses with gens to their setpoint voltage magnitudes
-    V0 = np.ones(nbus, dtype=complex)
-    V0[gen[:, GEN_BUS].astype(int)] = gen[:, VG]
-
-    Sbus_bfsw = makeSbus(baseMVA_bfsw, bus_bfsw, gen_bfsw)
-
-    # update data matrices with solution
-    Ybus_bfsw, Yf_bfsw, Yt_bfsw = makeYbus(baseMVA_bfsw, bus_bfsw, branch_bfsw)
-    ## get bus index lists of each type of bus
-    ref_bfsw, pv_bfsw, pq_bfsw = bustypes(bus_bfsw, gen_bfsw)
+    # if there are trafos with phase-shift calculate Ybus without phase-shift for bfswpf
+    any_trafo_shift = (branch[:, SHIFT] != 0).any()
+    if any_trafo_shift:
+        branch_noshift = branch.copy()
+        branch_noshift[:, SHIFT] = 0
+        Ybus_noshift, Yf_noshift, Yt_noshift = makeYbus(baseMVA, bus, branch_noshift)
+    else:
+        Ybus_noshift = Ybus.copy()
 
     # #-----  run the power flow  -----
-    V_final, success = _bfswpf(DLF, bus_bfsw, gen_bfsw, branch_bfsw, baseMVA_bfsw, Ybus_bfsw, Sbus_bfsw, V0,
-                                   ref_bfsw, pv_bfsw, pq_bfsw, enforce_q_lims, tolerance_kva, max_iteration, **kwargs)
+    V_final, success = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
+                               Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
+                               enforce_q_lims, tolerance_kva, max_iteration, **kwargs)
 
-    V_final = V_final[np.argsort(buses_ordered_bfsw)]  # return bus voltages in original bus order
+    # if phase-shifting trafos are present adjust final state vector angles accordingly
+    if calculate_voltage_angles and any_trafo_shift:
+        brch_shift_mask = branch[:, SHIFT]!=0
+        trafos_shift = dict(list(zip(list(zip(branch[brch_shift_mask, F_BUS].real.astype(int),
+                                              branch[brch_shift_mask, T_BUS].real.astype(int))),
+                                     branch[brch_shift_mask, SHIFT].real)))
+        for trafo_ind, shift_degree in iteritems(trafos_shift):
+            neti = 0
+            # if multiple reference nodes, find in which network trafo is located
+            if len(ref) > 0:
+                for refbusi in range(len(ref)):
+                    if trafo_ind[0] in buses_ordered_bfs_nets[refbusi]:
+                        neti = refbusi
+                        break
+            G_tree = G_trees[neti]
+            buses_ordered_bfs = buses_ordered_bfs_nets[neti]
+            if (np.argwhere(buses_ordered_bfs == trafo_ind[0]) <
+                    np.argwhere(buses_ordered_bfs == trafo_ind[1])):
+                lv_bus = trafo_ind[1]
+                shift_degree *= -1
+            else:
+                lv_bus = trafo_ind[0]
 
+            buses_shifted_from_root = csgraph.breadth_first_order(G_tree, lv_bus,
+                                                                  directed=True, return_predecessors=False)
+            V_final[buses_shifted_from_root] *= np.exp(1j * np.pi / 180 * shift_degree)
 
     # #----- output results to ppc ------
     ppci["et"] = time() - time_start    # pf time end
-
-    # generate results for original bus ordering
-    Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
 
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V_final, ref, pv, pq)
 
