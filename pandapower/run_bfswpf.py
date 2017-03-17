@@ -3,6 +3,8 @@ import scipy as sp
 
 from time import time  # alternatively use import timeit.default_timer as time
 
+from six import iteritems
+
 from scipy.sparse import csr_matrix, csgraph
 
 from pandapower.auxiliary import ppException
@@ -405,7 +407,7 @@ def _run_bfswpf(ppci, options, **kwargs):
         trafos_shift = dict(list(zip(list(zip(branch[brch_shift_mask, F_BUS].real.astype(int),
                                               branch[brch_shift_mask, T_BUS].real.astype(int))),
                                      branch[brch_shift_mask, SHIFT].real)))
-        for trafo_ind, shift_degree in trafos_shift.iteritems():
+        for trafo_ind, shift_degree in iteritems(trafos_shift):
             neti = 0
             # if multiple reference nodes, find in which network trafo is located
             if len(ref) > 0:
