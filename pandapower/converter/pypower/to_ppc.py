@@ -40,12 +40,12 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0,
     """
 
     # select elements in service
-    net["_is_elems"] = _select_is_elements(net)
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles, 
                              trafo_model=trafo_model, check_connectivity=check_connectivity,
                              mode="pf", copy_constraints_to_ppc=True,
-                             r_switch=r_switch, init="results", enforce_q_lims=True)
+                             r_switch=r_switch, init="results", enforce_q_lims=True, recycle=None)
+    net["_is_elems"] = _select_is_elements(net)
     #  do the conversion
     ppc, ppci = _pd2ppc(net)
     ppc['branch'] = ppc['branch'].real

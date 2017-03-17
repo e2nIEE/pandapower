@@ -134,10 +134,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
+                     recycle=recycle)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, recycle=recycle, ac=ac,
-                    algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _powerflow(net, **kwargs)
 
 
@@ -198,10 +198,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, recycle=recycle, ac=ac,
-                    algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
 
     _powerflow(net, **kwargs)
 
@@ -250,12 +249,13 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     trafo_loading = 'current'
     init = "flat"
     enforce_q_lims = True
+    recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
@@ -302,11 +302,12 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     trafo_loading = 'current'
     calculate_voltage_angles = True
     enforce_q_lims = True
+    recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
