@@ -8,19 +8,23 @@ from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T
 from pypower.idx_bus import BASE_KV
 import numpy as np
 
-def calc_ikss(net, ppc):
+def _calc_ikss(net, ppc):
+    sc_type = net._options["sc_type"]
     case = net._options["case"]
     c = ppc["bus_sc"][:, C_MIN] if case == "min" else ppc["bus_sc"][:, C_MAX]
     ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
     z_equiv = abs(ppc["bus_sc"][:, R_EQUIV] + ppc["bus_sc"][:, X_EQUIV] *1j)
-    ikss_pu = c / z_equiv
-    ppc["bus_sc"][:, IKSS] = ikss_pu / ppc["internal"]["baseI"]
-    ppc["branch_sc"][:, [IKSS_F, IKSS_T]] = branch_currents_from_bus(ppc, ppc["bus_sc"][:, IKSS])
+    if sc_type == "3ph":
+        ikss = c / z_equiv  / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
+    elif sc_type == "2ph":
+        ikss = c / z_equiv / ppc["bus"][:, BASE_KV] / 2 * ppc["baseMVA"]
+    ppc["bus_sc"][:, IKSS] = ikss
+    ppc["branch_sc"][:, [IKSS_F, IKSS_T]] = _branch_currents_from_bus(ppc, ikss)
     
-def calc_ip(ppc):
+def _calc_ip(ppc):
     ppc["bus_sc"][:, IP] = ppc["bus_sc"][:, KAPPA] * np.sqrt(2) * ppc["bus_sc"][:, IKSS]
     
-def calc_ith(net, ppc):
+def _calc_ith(net, ppc):
     tk_s = net["_options"]["tk_s"]
     kappa = ppc["bus_sc"][:, KAPPA]
     f = 50
@@ -29,7 +33,7 @@ def calc_ith(net, ppc):
     m[np.where(kappa > 1.99)] = 0
     ppc["bus_sc"][:, ITH] = ppc["bus_sc"][:, IKSS] * np.sqrt(m + n)
 
-def branch_currents_from_bus(ppc, current):
+def _branch_currents_from_bus(ppc, current):
     zbus = ppc["internal"]["zbus"]
     Yf = ppc["internal"]["Yf"]
     Yt = ppc["internal"]["Yf"]
@@ -43,19 +47,3 @@ def branch_currents_from_bus(ppc, current):
     current_from = np.max(i_all_f, axis=1) / baseI[fb] 
     current_to = np.max(i_all_t, axis=1) / baseI[tb]
     return np.c_[current_from, current_to]
-    
-#def branch_currents_from_bus(ppc, current):
-#    zbus = ppc["internal"]["zbus"]
-#    Yf = ppc["internal"]["Yf"]
-#    Yt = ppc["internal"]["Yf"]
-#    baseI = ppc["internal"]["baseI"]
-#    V = np.dot(zbus, np.diag(1 / (current * baseI)))
-#    fb = np.real(ppc["branch"][:,0]).astype(int)
-#    tb = np.real(ppc["branch"][:,1]).astype(int)
-#    ppc["internal"]["V"] = V
-#
-#    i_all_f = abs(np.conj(Yf.dot(V)))
-#    i_all_t = abs(np.conj(Yt.dot(V)))
-#    current_from = np.max(i_all_f, axis=1) / baseI[fb] 
-#    current_to = np.max(i_all_t, axis=1) / baseI[tb]
-#    return np.c_[current_from, current_to]

@@ -300,7 +300,8 @@ def _controllable_to_bool(ctrl):
 def _add_gen_impedances_ppc(net, ppc):
     _add_ext_grid_sc_impedance(net, ppc)
     _add_gen_sc_impedance(net, ppc)
-    _add_sgen_sc_impedance(net, ppc)
+    if net._options["sc_type"] != "2ph":
+        _add_sgen_sc_impedance(net, ppc)
 
 def _add_ext_grid_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN

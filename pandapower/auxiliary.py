@@ -372,16 +372,17 @@ def _add_opf_options(net, trafo_loading, ac, **kwargs):
     _add_options(net, options)
 
     
-def _add_sc_options(net, case, lv_tol_percent, tk_s, network_structure, r_fault_ohm,
+def _add_sc_options(net, sc_type, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
                     x_fault_ohm, kappa, ip, ith):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     options = {
-                   "case": case
+                   "sc_type": sc_type
+                   ,"case": case
                    , "lv_tol_percent": lv_tol_percent
                    , "tk_s": tk_s
-                   , "network_structure": network_structure
+                   , "topology": topology
                    , "r_fault_ohm": r_fault_ohm
                    , "x_fault_ohm": x_fault_ohm
                    , "kappa": kappa

@@ -14,17 +14,17 @@ from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
         return
-    network_structure = net._options["network_structure"]
+    topology = net._options["topology"]
     kappa_max = np.full(ppc["bus"].shape[0], 2.)
     lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
     if len(lv_buses) > 0:
         kappa_max[lv_buses] = 1.8
 
-    if network_structure == "meshed":
+    if topology == "meshed":
         kappa_korr = np.full(ppc["bus"].shape[0], 1.15)
     else:
         kappa_korr = np.full(ppc["bus"].shape[0], 1.)
-    if network_structure == "auto":
+    if topology == "auto":
         kappa_korr = np.full(ppc["bus"].shape[0], 1.)
         mg = nxgraph_from_ppc(net, ppc)
         for bidx in ppc["bus"][:, BUS_I].astype(int):
