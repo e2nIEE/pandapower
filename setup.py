@@ -25,8 +25,7 @@ setup(
     license='BSD',
     install_requires=["pypower>=5.0.1",
                       "pandas>=0.17.0",
-                      "networkx",
-                      "numpydoc"],
+                      "networkx"],
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
