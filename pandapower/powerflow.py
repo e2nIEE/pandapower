@@ -41,11 +41,11 @@ def _powerflow(net, **kwargs):
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    net["_is_elems"] = _select_is_elements(net, recycle)
+    net["_is_elems"] = _select_is_elements(net)
 
     if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
-        ppc, ppci = _update_ppc(net, recycle)
+        ppc, ppci = _update_ppc(net)
     else:
         # convert pandapower net to ppc
         ppc, ppci = _pd2ppc(net)

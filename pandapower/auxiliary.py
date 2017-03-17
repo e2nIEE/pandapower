@@ -242,7 +242,7 @@ def get_values(source, selection, lookup):
     """
     return np.array([source[lookup[k]] for k in selection])
     
-def _select_is_elements(net, recycle=None):
+def _select_is_elements(net):
 
     """
     Selects certain "in_service" elements from net.
@@ -253,6 +253,7 @@ def _select_is_elements(net, recycle=None):
     @return: is_elems Certain in service elements
     :rtype: object
     """
+    recycle = net["_options"]["recycle"]
 
     if recycle is not None and recycle["is_elems"]:
         if "_is_elems" not in net or net["_is_elems"] is None:

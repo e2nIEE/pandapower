@@ -4,6 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import copy
 import numpy as np
 from scipy.io import savemat
 
@@ -79,9 +80,9 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
                                     trafo_model=trafo_model, init_results=init_results)
 
     # convert ppc to mpc
-    _ppc_to_mpc(ppc)
+    mpc = _ppc_to_mpc(ppc)
     # savemat
-    savemat(filename, ppc)
+    savemat(filename, mpc)
 
 
 def _ppc_to_mpc(ppc):
@@ -96,11 +97,13 @@ def _ppc_to_mpc(ppc):
 
     # convert to matpower
     # Matlab is one-based, so all entries (buses, lines, gens) have to start with 1 instead of 0
-    if len(np.where(ppc["bus"][:, 0] == 0)[0]):
-        ppc["bus"][:, 0] = ppc["bus"][:, 0] + 1
-        ppc["gen"][:, 0] = ppc["gen"][:, 0] + 1
-        ppc["branch"][:, 0:2] = ppc["branch"][:, 0:2] + 1
+    mpc = copy.deepcopy(ppc)
+    if len(np.where(mpc["bus"][:, 0] == 0)[0]):
+        mpc["bus"][:, 0] = mpc["bus"][:, 0] + 1
+        mpc["gen"][:, 0] = mpc["gen"][:, 0] + 1
+        mpc["branch"][:, 0:2] = mpc["branch"][:, 0:2] + 1
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
-    ppc["branch"][np.where(ppc["branch"][:, 8] == 1), 8] = 0
+    mpc["branch"][np.where(mpc["branch"][:, 8] == 1), 8] = 0
     # version is a string
-    ppc["version"] = str(ppc["version"])
+    mpc["version"] = str(mpc["version"])
+    return mpc

@@ -198,9 +198,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    enforce_q_lims=enforce_q_lims, numba=numba, recycle=recycle, ac=ac,
+                    numba=numba, recycle=recycle, ac=ac,
                     algorithm=algorithm, max_iteration=max_iteration)
 
     _powerflow(net, **kwargs)
