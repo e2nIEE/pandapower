@@ -7,7 +7,7 @@
 import copy
 import numpy as np
 from scipy.io import savemat
-
+from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import reset_results, _select_is_elements, _pd2ppc
 try:
     import pplog as logging
@@ -16,7 +16,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
-def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_model="t"):
+def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, trafo_model="t"):
     """
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.
@@ -25,9 +25,9 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
 
         **net** - The pandapower net.
 
-        **filename** - File path + name of the mat file which will be created.
-
     OPTIONAL:
+
+        **filename** (None) - File path + name of the mat file which will be created. If None the mpc will only be returned
 
         **init** (str, "results") - initialization method of the loadflow
         For the conversion to a mpc, the following options can be chosen:
@@ -72,17 +72,19 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
+    _get_std_options(net, init, calculate_voltage_angles, trafo_model)
     net["_is_elems"] = _select_is_elements(net)
 
-    init_results = True if init == "results" else False
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims=False,
-                                    trafo_model=trafo_model, init_results=init_results)
+    ppc, ppci = _pd2ppc(net)
 
     # convert ppc to mpc
     mpc = _ppc_to_mpc(ppc)
-    # savemat
-    savemat(filename, mpc)
+    if filename is not None:
+        # savemat
+        savemat(filename, mpc)
+
+    return mpc
 
 
 def _ppc_to_mpc(ppc):
@@ -107,3 +109,16 @@ def _ppc_to_mpc(ppc):
     # version is a string
     mpc["version"] = str(mpc["version"])
     return mpc
+
+
+def _get_std_options(net, init, calculate_voltage_angles, trafo_model):
+    mode = "pf"
+    copy_constraints_to_ppc = False
+
+    # init options
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=False,
+                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     r_switch=0.0, init=init, enforce_q_lims=False,
+                     recycle=None)

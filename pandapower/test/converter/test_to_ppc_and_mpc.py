@@ -17,7 +17,7 @@ from pypower.idx_bus import VM, BUS_I, VA
 # from pypower.idx_gen import PG, QG, GEN_BUS
 
 
-def test_to_ppc():
+def test_to_ppc_and_mpc():
     # pypower cases to validate
     functions = ['case4gs', 'case6ww', 'case14', 'case30', 'case24_ieee_rts', 'case39']
     for fn in functions:
@@ -37,6 +37,9 @@ def test_to_ppc():
 
         # convert to ppc
         ppc = cv.to_ppc(net)
+        # convert to mpc
+        mpc = cv.to_mpc(net)
+
         # runpf from converted ppc
         res_converted_pp, status_converted_pp = runpf(ppc, ppopt=ppoption(VERBOSE=0, OUT_ALL=0))
 
@@ -56,4 +59,4 @@ def test_to_ppc():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_to_ppc.py", "-s"])
+    pytest.main(["test_to_ppc_and_mpc.py", "-s"])
