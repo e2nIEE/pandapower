@@ -436,60 +436,62 @@ class DiagnosticReports:
 
         # message body
             diag_result = self.diag_results["wrong_reference_system"]
-
-            for element_type in diag_result:
-                if element_type is "loads":
-                    if self.compact_report:
-                        logger.warning("loads %s: wrong reference system."
-                                       % (diag_result[element_type]))
-                    else:
-                        for load in diag_result[element_type]:
-                            logger.warning("Found load %s: '%s' with p_kw = %s. In load reference "
-                                           "system p_kw should be positive."
-                                           % (load, self.net.load.name.at[load],
-                                             self.net.load.p_kw.at[load]))
-
-                elif element_type is "gens":
-                    if self.compact_report:
-                        logger.warning("gens %s: wrong reference system."
-                                       % (diag_result[element_type]))
-                    else:
-                        for gen in diag_result[element_type]:
-                            logger.warning("Found gen %s: '%s' with p_kw = %s. In load reference "
-                            "system p_kw should be negative."
-                            % (gen, self.net.gen.name.at[gen], self.net.gen.p_kw.at[gen]))
-
-                elif element_type is "sgens":
-                    if self.compact_report:
-                        logger.warning("sgens %s: wrong reference system."
-                                       % (diag_result[element_type]))
-                    else:
-                        for sgen in diag_result[element_type]:
-                            logger.warning("Found sgen %s: '%s' with p_kw = %s. In load reference "
-                            "system p_kw should be negative."
-                            % (sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
-
-        # message summary
-            if not self.compact_report:
-                logger.warning("")
-                if 'loads' in diag_result:
-                    logger.warning("SUMMARY: Found %s load(s) with negative p_kw. In load "
-                                   "reference system, p_kw should be positive. If the intention "
-                                   "was to model a constant generation, please use an sgen instead."
-                                   % (len(diag_result['loads'])))
-                if 'gens' in diag_result:
-                    logger.warning("SUMMARY: Found %s gen(s) with positive p_kw. In load "
-                                   "reference system, p_kw should be negative. If the intention "
-                                   "was to model a load, please use a load instead."
-                                   % (len(diag_result['gens'])))
-                if 'sgens' in diag_result:
-                    logger.warning("SUMMARY: Found %s sgen(s) with positive p_kw. In load "
-                                   "reference system, p_kw should be negative. If the intention "
-                                   "was to model a load, please use a load instead."
-                                   % (len(diag_result['sgens'])))
-
-        else:
-            logger.info("PASSED: power flow converges. No overload found.")
+            if diag_result == "check skipped":
+                logger.warning("check skipped due to possible bus index errors (see bus index check)")
+            else:
+                for element_type in diag_result:
+                    if element_type is "loads":
+                        if self.compact_report:
+                            logger.warning("loads %s: wrong reference system."
+                                           % (diag_result[element_type]))
+                        else:
+                            for load in diag_result[element_type]:
+                                logger.warning("Found load %s: '%s' with p_kw = %s. In load reference "
+                                               "system p_kw should be positive."
+                                               % (load, self.net.load.name.at[load],
+                                                 self.net.load.p_kw.at[load]))
+    
+                    elif element_type is "gens":
+                        if self.compact_report:
+                            logger.warning("gens %s: wrong reference system."
+                                           % (diag_result[element_type]))
+                        else:
+                            for gen in diag_result[element_type]:
+                                logger.warning("Found gen %s: '%s' with p_kw = %s. In load reference "
+                                "system p_kw should be negative."
+                                % (gen, self.net.gen.name.at[gen], self.net.gen.p_kw.at[gen]))
+    
+                    elif element_type is "sgens":
+                        if self.compact_report:
+                            logger.warning("sgens %s: wrong reference system."
+                                           % (diag_result[element_type]))
+                        else:
+                            for sgen in diag_result[element_type]:
+                                logger.warning("Found sgen %s: '%s' with p_kw = %s. In load reference "
+                                "system p_kw should be negative."
+                                % (sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
+    
+            # message summary
+                if not self.compact_report:
+                    logger.warning("")
+                    if 'loads' in diag_result:
+                        logger.warning("SUMMARY: Found %s load(s) with negative p_kw. In load "
+                                       "reference system, p_kw should be positive. If the intention "
+                                       "was to model a constant generation, please use an sgen instead."
+                                       % (len(diag_result['loads'])))
+                    if 'gens' in diag_result:
+                        logger.warning("SUMMARY: Found %s gen(s) with positive p_kw. In load "
+                                       "reference system, p_kw should be negative. If the intention "
+                                       "was to model a load, please use a load instead."
+                                       % (len(diag_result['gens'])))
+                    if 'sgens' in diag_result:
+                        logger.warning("SUMMARY: Found %s sgen(s) with positive p_kw. In load "
+                                       "reference system, p_kw should be negative. If the intention "
+                                       "was to model a load, please use a load instead."
+                                       % (len(diag_result['sgens'])))
+    
+                else:
+                    logger.info("PASSED: power flow converges. No overload found.")
 
 
     def report_deviation_from_std_type(self):
@@ -579,7 +581,8 @@ class DiagnosticReports:
         # message summary
             if not self.compact_report:
                 logger.warning("")
-                logger.warning("SUMMARY: %s occurences of parallel switches found.")
+                logger.warning("SUMMARY: %s occurences of parallel switches found." 
+                               % len(diag_result))
         else:
             logger.info("PASSED: No parallel switches found.")
             

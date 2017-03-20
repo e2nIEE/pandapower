@@ -92,14 +92,24 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                                   "different_voltage_levels_connected(net)",
                                   "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
                                   "multiple_voltage_controlling_elements_per_bus(net)"]
+    invalid_value_dependent_checks = ["wrong_reference_system(net)"]
+
     diag_results = {}
     for diag_function in diag_functions:
         if (diag_function in bus_index_dependent_checks) and ("missing_bus_indeces" in diag_results.keys()):
             diag_result = "check skipped"
+        elif 'invalid_values' in diag_results.keys(): 
+            if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen']) 
+                                                                      & set(diag_results['invalid_values'].keys())):
+                diag_result = "check skipped"
+            else:
+                diag_result = eval(diag_function)
+                if diag_result:
+                    diag_results[diag_function.split("(")[0]] = diag_result
         else:
             diag_result = eval(diag_function)
-        if diag_result:
-            diag_results[diag_function.split("(")[0]] = diag_result
+            if diag_result:
+                diag_results[diag_function.split("(")[0]] = diag_result
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
@@ -630,8 +640,9 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         trafo3w_results['connectors_swapped_3w'] = connectors_swapped_3w
     if trafo3w_results:
         results['trafo3w'] = trafo3w_results
-
-    return results
+    
+    if len(results) > 0:
+        return results
 
 
 def disconnected_elements(net):
