@@ -1,1 +1,4 @@
 numpydoc
+pypower
+pandas
+networkx
