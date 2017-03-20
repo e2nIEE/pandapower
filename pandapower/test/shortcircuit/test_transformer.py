@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-__author__ = 'lthurner'
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
 
 import pytest
 import pandapower.shortcircuit as sc
@@ -19,7 +21,7 @@ def net_transformer():
                                           vscr_percent=0.5, pfe_kw=1.4, shift_degree=0.0,
                                           tp_side="hv", tp_mid=0, tp_min=-2, tp_max=2, tp_pos=2,
                                           tp_st_percent=2.5, parallel=2, sn_kva=400, i0_percent=0.5)
-#    pp.create_shunt(net, b2, q_kvar=500, p_kw=500) #adding a shunt shouldn't change the result
+    pp.create_shunt(net, b2, q_kvar=500, p_kw=500) #adding a shunt shouldn't change the result
     return net
   
 def test_max_10_trafo(net_transformer):

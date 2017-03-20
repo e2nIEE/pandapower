@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Mar  5 17:21:05 2017
 
-@author: thurner
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
 import pandapower.shortcircuit as sc
@@ -53,5 +52,5 @@ def test_min_sgen_2ph(one_line_one_static_generator):
     assert np.isclose(net.res_bus_sc.ith_ka.at[1], 0.036975579276)    
 
 if __name__ == '__main__':
-    net = one_line_one_static_generator()
+#    net = one_line_one_static_generator()
     pytest.main(['test_sgen.py'])    

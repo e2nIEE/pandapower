@@ -41,26 +41,42 @@ def runsc(net, sc_type="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     INPUT:
         **net** (pandapowerNet) pandapower Network
         
-        ***sc_type** (str) "3ph" three-phase or "2ph" for two-phase short-circuits
+        ***fault_type** (str, 3ph) type of fault
         
-        **case** (str) 'max' / 'min' for maximal / minimal current calculation
-        
-        **lv_tol_percent** (int) voltage tolerance band in the low voltage grid,  can be either 6% or 10% according to IEC 60909
+            - "3ph" for three-phase
             
-        **ip** (bool) if True, calculate aperiodic short-circuit current 
+            - "2ph" for two-phase short-circuits
         
-        **Ith** (bool) if True, calculate equivalent thermical short-circuit current Ith
-
-        **meshing** (str) define option for meshing (only relevant for ip and ith)
+        **case** (str, "max")
         
-            "meshed" - it is assumed all buses are supplied over multiple paths
+            - "max" for maximal current calculation
             
-            "radial" - it is assumed all buses are supplied over exactly one path
+            - "min" for minimal current calculation
+        
+        **lv_tol_percent** (int, 10) voltage tolerance in low voltage grids
+        
+            - 6 for 6% voltage tolerance
             
-            "auto" - topology check for each bus is performed to see if it is supplied over multiple paths (might be computationally expensive)
+            - 10 for 10% voltage olerance
+            
+        **ip** (bool, False) if True, calculate aperiodic short-circuit current 
+        
+        **Ith** (bool, False) if True, calculate equivalent thermical short-circuit current Ith
 
-        **tk_s** (float) failure clearing time in seconds (only relevant for ith)
+        **topology** (str, "auto") define option for meshing (only relevant for ip and ith)
+        
+            - "meshed" - it is assumed all buses are supplied over multiple paths
+            
+            - "radial" - it is assumed all buses are supplied over exactly one path
+            
+            - "auto" - topology check for each bus is performed to see if it is supplied over multiple paths
 
+        **tk_s** (float, 1) failure clearing time in seconds (only relevant for ith)
+
+        **r_fault_ohm** (float, 0) fault resistance in Ohm
+        
+        **x_fault_ohm** (float, 0) fault reactance in Ohm
+       
     OUTPUT:
     
     EXAMPLE:
