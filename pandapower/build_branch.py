@@ -35,8 +35,12 @@ def _build_branch_ppc(net, ppc):
     """
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
+    mode = net._options["mode"]
     ppc["branch"] = np.zeros(shape=(length, QT + 3), dtype=np.complex128)
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    if mode == "sc":
+        ppc["branch_sc"] = np.empty(shape=(length, 10), dtype=float)
+        ppc["branch_sc"].fill(np.nan)
 
     if "line" in lookup:
         f, t = lookup["line"]
@@ -75,7 +79,7 @@ def _initialize_branch_lookup(net):
             net._pd2ppc_lookups["branch"][element] = (start, end)
             start = end
     if r_switch > 0 and len(net._closed_bb_switches) > 0:
-        end = start + len(net._closed_bb_switches)
+        end = start + net._closed_bb_switches.sum()
         net._pd2ppc_lookups["branch"]["switch"] = (start, end)
     return end
     
@@ -226,7 +230,9 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
     if mode == "sc":
         y = 0
         if trafo_df.equals(net.trafo):
-            cmax = net._is_elems["bus"].c_max.loc[net.trafo.lv_bus.values].values
+            from pandapower.shortcircuit.idx_bus import C_MAX
+            bus_lookup = net._pd2ppc_lookups["bus"]
+            cmax = net._ppc["bus_sc"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
                                                trafo_df.sn_kva, cmax)
             r *= kt
@@ -510,6 +516,7 @@ def _switch_branches(net, ppc):
         **ppc** - The PYPOWER format network to fill in values
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    mode = net._options["mode"]
     # get in service elements
     is_elems = net["_is_elems"]
     lines_is = is_elems['line']
@@ -592,6 +599,8 @@ def _switch_branches(net, ppc):
                 new_ls_buses[ix, 8] = ppc["bus"][from_buses, 8]
 
             future_buses.append(new_ls_buses)
+            if mode == "sc":
+                ppc["bus_sc"] = np.vstack([ppc["bus_sc"], np.zeros(shape=(nlo, 10), dtype=float)])
 
             # re-route the end of lines to a new bus
             ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \

@@ -5,19 +5,6 @@
 # BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
-import warnings
-import numpy as np
-from scipy.sparse.linalg import inv
-
-from pandapower.shortcircuit.currents import calc_ikss, calc_ip, calc_ith
-from pandapower.shortcircuit.kappa import calc_kappa
-from pandapower.powerflow import _add_auxiliary_elements
-from pandapower.auxiliary import _select_is_elements, _clean_up, _add_ppc_options, _add_sc_options
-from pandapower.pypower_extensions.makeYbus import makeYbus
-from pandapower.pd2ppc import _pd2ppc
-
-from pypower.idx_bus import BASE_KV
-
 try:
     import pplog as logging
 except:
@@ -25,8 +12,19 @@ except:
 
 logger = logging.getLogger(__name__)
 
-def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False, ith=False, 
-          tk_s=1., r_fault_ohm=0., x_fault_ohm=0., r_switch=0.0):
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith
+from pandapower.shortcircuit.results import _extract_results
+from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
+from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
+
+from pandapower.powerflow import _add_auxiliary_elements
+from pandapower.auxiliary import _select_is_elements, _clean_up, _add_ppc_options, _add_sc_options
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.results import _copy_results_ppci_to_ppc
+
+
+def runsc(net, sc_type="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
+          ith=False, tk_s=1., r_fault_ohm=0., x_fault_ohm=0.):
     
     """
     Calculates minimal or maximal symmetrical short-circuit currents.  
@@ -43,24 +41,42 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     INPUT:
         **net** (pandapowerNet) pandapower Network
         
-        **case** (str) 'max' / 'min' for maximal / minimal current calculation
+        ***fault_type** (str, 3ph) type of fault
         
-        **lv_tol_percent** (int) voltage tolerance band in the low voltage grid,  can be either 6% or 10% according to IEC 60909
+            - "3ph" for three-phase
             
-        **ip** (bool) if True, calculate aperiodic short-circuit current 
+            - "2ph" for two-phase short-circuits
         
-        **Ith** (bool) if True, calculate equivalent thermical short-circuit current Ith
-
-        **meshing** (str) define option for meshing (only relevant for ip and ith)
+        **case** (str, "max")
         
-            "meshed" - it is assumed all buses are supplied over multiple paths
+            - "max" for maximal current calculation
             
-            "radial" - it is assumed all buses are supplied over exactly one path
+            - "min" for minimal current calculation
+        
+        **lv_tol_percent** (int, 10) voltage tolerance in low voltage grids
+        
+            - 6 for 6% voltage tolerance
             
-            "auto" - topology check for each bus is performed to see if it is supplied over multiple paths (might be computationally expensive)
+            - 10 for 10% voltage olerance
+            
+        **ip** (bool, False) if True, calculate aperiodic short-circuit current 
+        
+        **Ith** (bool, False) if True, calculate equivalent thermical short-circuit current Ith
 
-        **tk_s** (float) failure clearing time in seconds (only relevant for ith)
+        **topology** (str, "auto") define option for meshing (only relevant for ip and ith)
+        
+            - "meshed" - it is assumed all buses are supplied over multiple paths
+            
+            - "radial" - it is assumed all buses are supplied over exactly one path
+            
+            - "auto" - topology check for each bus is performed to see if it is supplied over multiple paths
 
+        **tk_s** (float, 1) failure clearing time in seconds (only relevant for ith)
+
+        **r_fault_ohm** (float, 0) fault resistance in Ohm
+        
+        **x_fault_ohm** (float, 0) fault reactance in Ohm
+       
     OUTPUT:
     
     EXAMPLE:
@@ -68,6 +84,9 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
 
         print(net.res_bus_sc)
     """
+    if sc_type not in ["3ph", "2ph"]:
+        raise NotImplementedError("Only 3ph and 2ph short-circuit currents implemented")
+
     if ip and len(net.gen) > 0:
         raise NotImplementedError("aperiodic short-circuit current not implemented for short circuits close to generators")
 
@@ -77,7 +96,7 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
     if case not in ['max', 'min']:
         raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
                                 "circuit current')
-    if network_structure not in ["meshed", "radial", "auto"]:
+    if topology not in ["meshed", "radial", "auto"]:
         raise ValueError('specify network structure as "meshed", "radial" or "auto"')        
             
     if len(net.ext_grid) > 0:
@@ -85,62 +104,52 @@ def runsc(net, case='max', lv_tol_percent=10, network_structure="auto", ip=False
             raise ValueError("s_sc_%s is not defined for all ext_grids" %case)
         if  not "rx_%s"%case in net.ext_grid or any(pd.isnull(net.ext_grid["rx_%s"%case])):
             raise ValueError("rx_%s is not defined for all ext_grids" %case)
+    kappa = ith or ip
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=False, 
                              trafo_model="pi", check_connectivity=False,
                              mode="sc", copy_constraints_to_ppc=False,
-                             r_switch=r_switch, init="flat", enforce_q_lims=False)
-    _add_sc_options(net, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, 
-                    network_structure=network_structure, r_fault_ohm=r_fault_ohm, 
-                    x_fault_ohm=x_fault_ohm, current=[])
-    net["_is_elems"] = _select_is_elements(net, None)
+                             r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
+    _add_sc_options(net, sc_type=sc_type, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, 
+                    topology=topology, r_fault_ohm=r_fault_ohm, 
+                    x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith)
+    _runsc(net)
+
+def _runsc(net):
+    net["_is_elems"] = _select_is_elements(net)
     _add_auxiliary_elements(net)
-    _add_c_to_net(net)
-    calc_equiv_sc_impedance(net)
-    calc_ikss(net)
-    if ip or ith:
-        calc_kappa(net)
-    if ip:
-        calc_ip(net)
-    if ith:
-        calc_ith(net)    
-    net.res_bus_sc = pd.DataFrame(index=net.bus.index,
-                                  data=net._is_elems["bus"][net._options["currents"]])
-    _clean_up(net)
-
-def _add_c_to_net(net):
-    bus = net._is_elems["bus"]
-    bus["c_max"] = 1.1
-    bus["c_min"] = 1.
-    bus["kappa_max"] = 2.
-    lv_buses = bus[bus.vn_kv < 1.].index
-    if len(lv_buses) > 0:
-        lv_tol_percent = net["_options"]["lv_tol_percent"]
-        if lv_tol_percent==10:
-            c_ns = 1.1
-        elif lv_tol_percent==6:
-            c_ns = 1.05
-        else:
-            raise ValueError("Voltage tolerance in the low voltage grid has" \
-                                        " to be either 6% or 10% according to IEC 60909")
-        bus.c_max.loc[lv_buses] = c_ns
-        bus.c_min.loc[lv_buses] = .95
-        bus.kappa_max.loc[lv_buses] = 1.8
-
-def calc_equiv_sc_impedance(net):
-    z_fault = net["_options"]["r_fault_ohm"] + net["_options"]["x_fault_ohm"] * 1j
     ppc, ppci = _pd2ppc(net)
-    zbus = calc_zbus(ppci)
-    z_equiv = np.diag(zbus.toarray())
-    net._is_elems["bus"]["z_equiv"] = np.nan
-    ppc_index = net["_pd2ppc_lookups"]["bus"][net._is_elems["bus"].index]
-    z_equiv_pp = z_equiv[ppc_index]
-    if abs(z_fault) > 0:
-        z_equiv_pp += z_fault / np.square(ppc["bus"][ppc_index, BASE_KV]) / net.sn_kva * 1e3
-    net._is_elems["bus"]["z_equiv"].loc[net._is_elems["bus"].index] = z_equiv_pp
+    _calc_equiv_sc_impedance(net, ppci)
+    _add_kappa_to_ppc(net, ppci)
+    _calc_ikss(net, ppci)
+    _calc_ip(ppci)
+    _calc_ith(net, ppci)
+    ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
+    _extract_results(net, ppc)
+    _clean_up(net)
+          
+if __name__ == '__main__':
+    import pandapower as pp
+    net = pp.create_empty_network()
+    b0 = pp.create_bus(net, 220)
+    b1 = pp.create_bus(net, 110)
+    b1a = pp.create_bus(net, 110)
+    b1b = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
 
-def calc_zbus(ppc):
-    Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return inv(Ybus)
+    pp.create_switch(net, b1, b1a, et="b")
+    pp.create_switch(net, b1, b1b, et="b")
+    pp.create_ext_grid(net, b0, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.1, rx_max=0.1)
+    pp.create_transformer(net, b0, b1, "100 MVA 220/110 kV")
+    pp.create_std_type(net, {"c_nf_per_km": 190, "max_i_ka": 0.829, "r_ohm_per_km": 0.0306, \
+                            "x_ohm_per_km": 0.1256637}, "PF")
+    l1 = pp.create_line(net, b1a, b2, std_type="PF" , length_km=20.)
+    l2 = pp.create_line(net, b2, b3, std_type="PF" , length_km=15., in_service=True)
+    l3 = pp.create_line(net, b3, b1b, std_type="PF" , length_km=10.)
+    pp.create_switch(net, b3, l2, closed=True, et="l")
+
+    net.line["endtemp_degree"] = 250
+    runsc(net, sc_type="2ph", topology="auto", ip=False, ith=False, r_fault_ohm=0., x_fault_ohm=0.)
+    print(net.res_bus_sc)
+    print(net.res_line_sc)

@@ -23,7 +23,8 @@ Input Parameters
 
 \*necessary for executing a power flow calculation.
 
-   
+.. _impedance_model:
+
 Electric Model
 =================
 

@@ -136,12 +136,13 @@ def _init_lookups(net):
 
 def _ppc2ppci(ppc, ppci, net):
     # BUS Sorting and lookups
-
+    mode = net._options["mode"]
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
     ppc_buses = ppc["bus"]
-    ppc['bus'] = ppc_buses[ppc_buses[:, BUS_TYPE].argsort(axis=0)[::-1][:],]
+    sort = ppc_buses[:, BUS_TYPE].argsort(axis=0)[::-1]
+    ppc['bus'] = ppc_buses[sort[:],]
     # get OOS busses and place them at the end of the bus array (so that: 3
     # (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
@@ -149,6 +150,12 @@ def _ppc2ppci(ppc, ppci, net):
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
     ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
+
+    if mode == "sc":
+        ppc['bus_sc'] = ppc["bus_sc"][sort[:],]
+        ppci['bus_sc'] = ppc['bus_sc'][~oos_busses]
+        ppc['bus_sc'] = np.r_[ppc['bus_sc'][~oos_busses], ppc['bus_sc'][oos_busses]]
+
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
     aranged_buses = np.arange(len(ppc_buses))
@@ -230,6 +237,9 @@ def _ppc2ppci(ppc, ppci, net):
 
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
+    if mode == "sc":
+        ppci["branch_sc"] = ppc["branch_sc"][brs]
+
     ppci["gen"] = ppc["gen"][gs]
 
     if 'dcline' in ppc:
@@ -262,13 +272,14 @@ def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     _write_lookup_to_net(net, element, lookup)
 
 
-def _update_ppc(net, recycle):
+def _update_ppc(net):
     """
     Updates P, Q values of the ppc with changed values from net
 
     @param is_elems:
     @return:
     """
+    recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
     ppc = net["_ppc"]
     ppci = copy.deepcopy(ppc)

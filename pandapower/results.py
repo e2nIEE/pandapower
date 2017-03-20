@@ -83,15 +83,22 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
     # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
     n_cols = np.shape(ppc['bus'])[1]
     ppc['bus'][:len(result['bus']), :n_cols] = result['bus'][:len(result['bus']), :n_cols]
+    if mode == "sc":
+        ppc['bus_sc'][:len(result['bus']), :n_cols] = result['bus_sc'][:len(result['bus']), :n_cols]
     # in service branches and gens are taken from 'internal'
     n_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :n_cols] = result['branch'][:, :n_cols]
+    if mode == "sc":
+        ppc['branch_sc'][result["internal"]['branch_is'], :n_cols] = result['branch_sc'][:, :n_cols]
+        
     n_cols = np.shape(ppc['gen'])[1]
     ppc['gen'][result["internal"]['gen_is'], :n_cols] = result['gen'][:, :n_cols]
+    
     ppc['internal'] = result['internal']
-
-    ppc['success'] = result['success']
-    ppc['et'] = result['et']
+    
+    if mode != "sc":
+        ppc['success'] = result['success']
+        ppc['et'] = result['et']
 
     if mode == 'opf':
         ppc['obj'] = result['f']
