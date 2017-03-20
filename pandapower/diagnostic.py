@@ -19,10 +19,6 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
-from pandapower.auxiliary import _identify_isolated_nodes, _get_adj_matrix, _add_ppc_options, _create_ppc2pd_bus_lookup
-from pandapower.pypower_extensions.bustypes import bustypes
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.powerflow import _select_is_elements
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
@@ -881,64 +877,3 @@ def parallel_switches(net):
 
     if parallel_switches:
         return parallel_switches
-
-# # Note: This test
-# def _identify_single_pv_nodes_in_islands(net):
-#     # get the ppc
-#
-#     net._options = {}
-#     _add_ppc_options(net, calculate_voltage_angles=False,
-#                      trafo_model="t", check_connectivity=False,
-#                      mode="pf", copy_constraints_to_ppc=False,
-#                      r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
-#     net["_is_elems"] = _select_is_elements(net)
-#
-#     ppc, ppci = _pd2ppc(net)
-#     _create_ppc2pd_bus_lookup(net)
-#
-#     adj_matrix = _get_adj_matrix(ppc)
-#     # ppc types
-#     ref, pv, pq = bustypes(ppc["bus"], ppc["gen"])
-#     in_service_nodes = set(np.r_[ref, pv, pq])
-#
-#     isolated_nodes = _identify_isolated_nodes(adj_matrix, ref, in_service_nodes)
-#
-#     pv_nodes_in_isolated_nodes = set(pv.astype(int)) & isolated_nodes
-#
-#     visited_nodes = set()
-#     pv_nodes_changed_to_slack = []
-#     for pv in pv_nodes_in_isolated_nodes:
-#         nodes_connected_to_pv = set(sp.sparse.csgraph.depth_first_order(adj_matrix, pv, False, False))
-#         visited_nodes = visited_nodes.union(nodes_connected_to_pv)
-#
-#         remaining_pv_nodes = copy.copy(pv_nodes_in_isolated_nodes)
-#         remaining_pv_nodes.remove(pv)
-#         if len(remaining_pv_nodes):
-#             additional_pv_nodes_in_visted_nodes = remaining_pv_nodes & visited_nodes
-#             if len(additional_pv_nodes_in_visted_nodes):
-#                 raise ValueError(
-#                     "Connectivity Error: Multiple PV buses in island network. Please define a slack node. Aborting power flow")
-#             else:
-#                 # store pv nodes which must be changed to slacks
-#                 pv_nodes_changed_to_slack.append(pv)
-#                 logger.warning(
-#                     "PV node %i was changed to a slack node, since it was the only generator in an island"
-#                     % (pv))
-#         else:
-#             pv_nodes_changed_to_slack.append(pv)
-#             logger.warning(
-#                 "PV node %i was changed to a slack node, since it was the only generator in an island"
-#                 % (pv))
-#         isolated_nodes -= visited_nodes
-#
-#         # if len(pv_nodes_changed_to_slack):
-#         # change if pv nodes were found
-#         # ppc['bus'][pv_nodes_changed_to_slack, BUS_TYPE] = REF
-#
-#     # return ppc, isolated_nodes
-#     # get pandapower gens from ppc
-#     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
-#     pp_nodes = [n for n in pv_nodes_changed_to_slack if not (n > len(pcc2pd_bus_lookup))]
-#     isolated_gens_pp = pcc2pd_bus_lookup[pp_nodes]
-#
-#     return isolated_gens_pp
