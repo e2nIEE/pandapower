@@ -4,6 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import scipy as sp
 import numpy as np
 import copy
 
@@ -18,6 +19,11 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
+from pandapower.auxiliary import _identify_isolated_nodes, _get_adj_matrix, _add_ppc_options, _create_ppc2pd_bus_lookup
+from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.powerflow import _select_is_elements
+
 # separator between log messages
 log_message_sep = ("\n --------\n")
 
@@ -162,7 +168,6 @@ def check_greater_zero(element, element_index, column):
 
 
 def check_greater_equal_zero(element, element_index, column):
-
     if check_number(element, element_index, column) is None:
 
         if (element[column] < 0):
@@ -208,7 +213,6 @@ def check_pos_int(element, element_index, column):
 
 
 def check_number(element, element_index, column):
-
     try:
         nan_check = np.isnan(element[column])
         if nan_check or type(element[column]) == bool:
@@ -339,7 +343,7 @@ def no_ext_grid(net):
 
     if not len(net.ext_grid) > 0:
         return True
-        
+
 
 def multiple_voltage_controlling_elements_per_bus(net):
     """
@@ -445,6 +449,7 @@ def wrong_switch_configuration(net):
             net.switch.closed = switch_configuration
             return 'uncertain'
 
+
 def missing_bus_indeces(net):
     """
         Checks for missing bus indeces.
@@ -455,7 +460,7 @@ def missing_bus_indeces(net):
 
          OUTPUT:
             **check_results** (list)   - List of tuples each containing missing bus indeces.
-                                         Format: 
+                                         Format:
                                          [(element_index, bus_name (e.g. "from_bus"),  bus_index]
 
     """
@@ -473,11 +478,11 @@ def missing_bus_indeces(net):
                         element_check.append((i, bus_name, row[bus_name]))
         if element_check:
             check_results[element] = element_check
-                    
+
     if check_results:
         return check_results
-                    
-    
+
+
 def different_voltage_levels_connected(net):
     """
     Checks, if there are lines or switches that connect different voltage levels.
@@ -528,10 +533,9 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     """
     implausible_lines = net.line[(net.line.length_km <= lines_min_length_km)
                                  | ((net.line.r_ohm_per_km + net.line.x_ohm_per_km)
-                                     <= lines_min_z_ohm)]
+                                    <= lines_min_z_ohm)]
 
     if len(implausible_lines) > 0:
-
         return list(implausible_lines.index)
 
 
@@ -581,16 +585,15 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         if ((trafo.vn_hv_kv > lv_bus_vn_kv * min_v_pu)
             and ((trafo.vn_hv_kv < lv_bus_vn_kv * max_v_pu))
             and ((trafo.vn_lv_kv > hv_bus_vn_kv * min_v_pu))
-                and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
-
+            and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
             hv_lv_swapped.append(i)
 
         if (((trafo.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-                and (i not in hv_lv_swapped)):
+            and (i not in hv_lv_swapped)):
             hv_bus.append(i)
 
         if (((trafo.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-                and (i not in hv_lv_swapped)):
+            and (i not in hv_lv_swapped)):
             lv_bus.append(i)
 
     if hv_bus:
@@ -610,24 +613,23 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         if ((((trafo3w.vn_hv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < mv_bus_vn_kv * max_v_pu))
              or ((trafo3w.vn_hv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < lv_bus_vn_kv * max_v_pu)))
             and
-            (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
+                (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
+                 or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
             and
-            (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
-
+                (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
+                 or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
             connectors_swapped_3w.append(i)
 
         if (((trafo3w.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo3w.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
+            and (i not in connectors_swapped_3w)):
             hv_bus_3w.append(i)
 
         if (((trafo3w.vn_mv_kv > mv_bus_vn_kv * max_v_pu) or (trafo3w.vn_mv_kv < mv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
+            and (i not in connectors_swapped_3w)):
             mv_bus_3w.append(i)
 
         if (((trafo3w.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo3w.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
+            and (i not in connectors_swapped_3w)):
             lv_bus_3w.append(i)
 
     if hv_bus_3w:
@@ -848,13 +850,13 @@ def deviation_from_std_type(net):
                                                      'std_type_in_lib': True}
             else:
                 if key not in check_results.keys():
-                                check_results[key] = {}
+                    check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}
 
     if check_results:
         return check_results
-        
-        
+
+
 def parallel_switches(net):
     """
         Checks for parallel switches.
@@ -874,8 +876,69 @@ def parallel_switches(net):
     compare_parameters = ['bus', 'element']
     parallels_bus_and_element = list(net.switch.groupby(compare_parameters).count().query('et > 1').index)
     for bus, element in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch[(net.switch.bus == bus) 
-                                       & (net.switch.element == element)].index))
+        parallel_switches.append(list(net.switch[(net.switch.bus == bus)
+                                                 & (net.switch.element == element)].index))
 
     if parallel_switches:
         return parallel_switches
+
+# # Note: This test
+# def _identify_single_pv_nodes_in_islands(net):
+#     # get the ppc
+#
+#     net._options = {}
+#     _add_ppc_options(net, calculate_voltage_angles=False,
+#                      trafo_model="t", check_connectivity=False,
+#                      mode="pf", copy_constraints_to_ppc=False,
+#                      r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
+#     net["_is_elems"] = _select_is_elements(net)
+#
+#     ppc, ppci = _pd2ppc(net)
+#     _create_ppc2pd_bus_lookup(net)
+#
+#     adj_matrix = _get_adj_matrix(ppc)
+#     # ppc types
+#     ref, pv, pq = bustypes(ppc["bus"], ppc["gen"])
+#     in_service_nodes = set(np.r_[ref, pv, pq])
+#
+#     isolated_nodes = _identify_isolated_nodes(adj_matrix, ref, in_service_nodes)
+#
+#     pv_nodes_in_isolated_nodes = set(pv.astype(int)) & isolated_nodes
+#
+#     visited_nodes = set()
+#     pv_nodes_changed_to_slack = []
+#     for pv in pv_nodes_in_isolated_nodes:
+#         nodes_connected_to_pv = set(sp.sparse.csgraph.depth_first_order(adj_matrix, pv, False, False))
+#         visited_nodes = visited_nodes.union(nodes_connected_to_pv)
+#
+#         remaining_pv_nodes = copy.copy(pv_nodes_in_isolated_nodes)
+#         remaining_pv_nodes.remove(pv)
+#         if len(remaining_pv_nodes):
+#             additional_pv_nodes_in_visted_nodes = remaining_pv_nodes & visited_nodes
+#             if len(additional_pv_nodes_in_visted_nodes):
+#                 raise ValueError(
+#                     "Connectivity Error: Multiple PV buses in island network. Please define a slack node. Aborting power flow")
+#             else:
+#                 # store pv nodes which must be changed to slacks
+#                 pv_nodes_changed_to_slack.append(pv)
+#                 logger.warning(
+#                     "PV node %i was changed to a slack node, since it was the only generator in an island"
+#                     % (pv))
+#         else:
+#             pv_nodes_changed_to_slack.append(pv)
+#             logger.warning(
+#                 "PV node %i was changed to a slack node, since it was the only generator in an island"
+#                 % (pv))
+#         isolated_nodes -= visited_nodes
+#
+#         # if len(pv_nodes_changed_to_slack):
+#         # change if pv nodes were found
+#         # ppc['bus'][pv_nodes_changed_to_slack, BUS_TYPE] = REF
+#
+#     # return ppc, isolated_nodes
+#     # get pandapower gens from ppc
+#     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
+#     pp_nodes = [n for n in pv_nodes_changed_to_slack if not (n > len(pcc2pd_bus_lookup))]
+#     isolated_gens_pp = pcc2pd_bus_lookup[pp_nodes]
+#
+#     return isolated_gens_pp
