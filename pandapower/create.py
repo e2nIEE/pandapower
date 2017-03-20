@@ -282,7 +282,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
         "_ppc2pd_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": 1.1,
+        "version": 1.2,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
