@@ -581,7 +581,8 @@ class DiagnosticReports:
         # message summary
             if not self.compact_report:
                 logger.warning("")
-                logger.warning("SUMMARY: %s occurences of parallel switches found.")
+                logger.warning("SUMMARY: %s occurences of parallel switches found." 
+                               % len(diag_result))
         else:
             logger.info("PASSED: No parallel switches found.")
             
