@@ -222,7 +222,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
-    # with pytest.warns(UserWarning):
+    # ToDo with pytest.warns(UserWarning):
     iso_buses, iso_p, iso_q = get_isolated(net)
 
 
