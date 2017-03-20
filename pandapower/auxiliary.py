@@ -8,11 +8,10 @@ import pandas as pd
 import numpy as np
 from collections import MutableMapping
 import six
-import warnings
 
 import scipy as sp
 from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_bus import BUS_TYPE, NONE, PD, QD, REF
+from pypower.idx_bus import BUS_TYPE, NONE, PD, QD, BUS_I
 from pandapower.pypower_extensions.bustypes import bustypes
 
 try:
@@ -511,8 +510,8 @@ def _check_connectivity(ppc):
 
     adj_matrix = _get_adj_matrix(ppc)
     # ppc types
-    ref, pv, pq = bustypes(ppc["bus"], ppc["gen"])
-    in_service_nodes = set(np.r_[ref, pv, pq])
+    ref, pv, _ = bustypes(ppc["bus"], ppc["gen"])
+    in_service_nodes = set(ppc['bus'][ppc['bus'][:, BUS_TYPE] != NONE, BUS_I].astype(int))
 
     isolated_nodes = _identify_isolated_nodes(adj_matrix, ref, in_service_nodes)
     # ppc, isolated_nodes = _identify_single_pv_nodes_in_islands_and_change_them_to_slacks(adj_matrix,
@@ -528,14 +527,14 @@ def _check_connectivity(ppc):
         iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
         iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
         if iso_p > 0 or iso_q > 0:
-            warnings.warn(
+            logger.warning(
                 "Connectivity Check found that %.0f kW active and %.0f kVar reactive power are unsupplied"
                 % (iso_p, iso_q))
 
         # check if unsupplied buses have gens
         pv_buses_in_islands = set(pv) & isolated_nodes
         if len(pv_buses_in_islands):
-            warnings.warn(
+            logger.warning(
                 "Some of the isolated buses are gens. Run diagnostic to identify islands with possible reference buses."
             )
 

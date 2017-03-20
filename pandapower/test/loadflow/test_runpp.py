@@ -152,13 +152,13 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_load(net, isolated_bus1, p_kw=200., q_kvar=20)
     pp.create_sgen(net, isolated_bus2, p_kw=-150., q_kvar=-10)
 
-    with pytest.warns(UserWarning):
-        iso_buses, iso_p, iso_q = get_isolated(net)
+    # with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
-    with pytest.warns(UserWarning):
-        runpp_with_consistency_checks(net, check_connectivity=True)
+    # with pytest.warns(UserWarning):
+    runpp_with_consistency_checks(net, check_connectivity=True)
 
 def test_connectivity_check_island_with_one_pv_bus():
     # Network with islands with one PV bus -> PV bus should be converted to the reference bus
@@ -178,8 +178,8 @@ def test_connectivity_check_island_with_one_pv_bus():
     pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLineToGen")
-    with pytest.warns(UserWarning):
-        iso_buses, iso_p, iso_q = get_isolated(net)
+    # with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q = get_isolated(net)
 
     # assert len(iso_buses) == 0
     # assert np.isclose(iso_p, 0)
@@ -193,8 +193,8 @@ def test_connectivity_check_island_with_one_pv_bus():
     # assert np.isclose(iso_p, 0)
     # assert np.isclose(iso_q, 0)
 
-    with pytest.warns(UserWarning):
-        runpp_with_consistency_checks(net, check_connectivity=True)
+    # with pytest.warns(UserWarning):
+    runpp_with_consistency_checks(net, check_connectivity=True)
 
 
 def test_connectivity_check_island_with_multiple_pv_buses():
@@ -222,8 +222,8 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
-    with pytest.warns(UserWarning):
-        iso_buses, iso_p, iso_q = get_isolated(net)
+    # with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q = get_isolated(net)
 
 
 def test_makeYbus():
