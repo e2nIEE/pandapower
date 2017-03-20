@@ -324,8 +324,9 @@ def _add_ext_grid_sc_impedance(net, ppc):
     eg["x"] = x_grid
 
     y_grid = 1 / (r_grid + x_grid*1j)
-    ppc["bus"][eg_buses_ppc, GS] = y_grid.real
-    ppc["bus"][eg_buses_ppc, BS] = y_grid.imag
+    buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
+    ppc["bus"][buses, GS] = gs
+    ppc["bus"][buses, BS] = bs
 
 def _add_gen_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX
@@ -334,10 +335,10 @@ def _add_gen_sc_impedance(net, ppc):
         return
     gen_buses = gen.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    gen_bus_ppc = bus_lookup[gen_buses]
+    gen_buses_ppc = bus_lookup[gen_buses]
     
-    vn_net = ppc["bus"][gen_bus_ppc, BASE_KV]
-    cmax = ppc["bus_sc"][gen_bus_ppc, C_MAX]
+    vn_net = ppc["bus"][gen_buses_ppc, BASE_KV]
+    cmax = ppc["bus_sc"][gen_buses_ppc, C_MAX]
     phi_gen = np.arccos(gen.cos_phi)
 
     vn_gen = gen.vn_kv.values
@@ -350,8 +351,9 @@ def _add_gen_sc_impedance(net, ppc):
     kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
     y_gen = 1 / ((r_gen + x_gen*1j) * kg)
 
-    ppc["bus"][gen_bus_ppc, GS] = y_gen.real
-    ppc["bus"][gen_bus_ppc, BS] = y_gen.imag
+    buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen.real, y_gen.imag)
+    ppc["bus"][buses, GS] = gs
+    ppc["bus"][buses, BS] = bs
 
 def _add_sgen_sc_impedance(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -361,15 +363,16 @@ def _add_sgen_sc_impedance(net, ppc):
     if any(pd.isnull(sgen.sn_kva)):
         raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
     sgen_buses = sgen.bus.values
+    sgen_buses_ppc = bus_lookup[sgen_buses]
 
     z_sgen = 1 / (sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
     x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
     r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
     y_sgen = 1 / (r_sgen + x_sgen*1j)
    
-    gen_bus_idx = bus_lookup[sgen_buses]
-    ppc["bus"][gen_bus_idx, GS] = y_sgen.real
-    ppc["bus"][gen_bus_idx, BS] = y_sgen.imag
+    buses, gs, bs = _sum_by_group(sgen_buses_ppc, y_sgen.real, y_sgen.imag)
+    ppc["bus"][buses, GS] = gs
+    ppc["bus"][buses, BS] = bs
 
 def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
     kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))

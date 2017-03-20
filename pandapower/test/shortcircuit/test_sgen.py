@@ -19,7 +19,8 @@ def one_line_one_static_generator():
     l1 = pp.create_line_from_parameters(net, b1, b2, c_nf_per_km=190, max_i_ka=0.829,
                                         r_ohm_per_km=0.0306, x_ohm_per_km=0.1256637, length_km=1.)
     net.line.loc[l1, "endtemp_degree"] = 250
-    pp.create_sgen(net, b2, p_kw=0, sn_kva=1000.)
+    pp.create_sgen(net, b2, p_kw=0, sn_kva=500.)
+    pp.create_sgen(net, b2, p_kw=0, sn_kva=500.)
     return net
 
 def test_max_sgen_3ph(one_line_one_static_generator):

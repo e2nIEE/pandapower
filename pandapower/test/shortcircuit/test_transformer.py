@@ -98,4 +98,4 @@ def test_min_10_trafo_2ph(net_transformer):
     
 if __name__ == '__main__':
     net = net_transformer()
-    pytest.main(["test_line_transformer.py"])
+    pytest.main(["test_transformer.py"])
