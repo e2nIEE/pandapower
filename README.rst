@@ -2,17 +2,21 @@
 pandapower
 =============
 
+.. image:: https://readthedocs.org/projects/pandapower/badge/?version=develop
+   :target: http://pandapower.readthedocs.io/en/develop/?badge=develop
+   :alt: Documentation Status
+
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
 
 .. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
     :target: https://pypi.python.org/pypi/pandapower
 
-.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
+.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=develop
     :target: https://travis-ci.org/lthurner/pandapower
 
-.. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
-    :target: https://coveralls.io/github/lthurner/pandapower?branch=master
+.. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=develop
+    :target: https://coveralls.io/github/lthurner/pandapower?branch=develop
 
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
     :target: https://github.com/lthurner/pandapower/blob/master/LICENSE
