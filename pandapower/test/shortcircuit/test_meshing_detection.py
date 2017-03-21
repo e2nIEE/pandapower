@@ -22,7 +22,7 @@ def meshed_grid():
 
 def test_max_10_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent= 10.)
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent= 10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.773503) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 14.82619) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 4.606440) <1e-5)  
@@ -59,7 +59,7 @@ def test_max_10_meshed_grid(meshed_grid):
     
 def test_max_6_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent = 6.)
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent = 6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.773503) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 14.75419) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 4.437882) <1e-5)  
@@ -96,7 +96,7 @@ def test_max_6_meshed_grid(meshed_grid):
 
 def test_min_10_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent= 10.)
+    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent= 10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 11.3267) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 2.879343) <1e-5)  
@@ -132,7 +132,7 @@ def test_min_10_meshed_grid(meshed_grid):
 
 def test_min_6_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent = 6.)
+    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent = 6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 11.75072) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 2.895465) <1e-5)  
@@ -167,6 +167,4 @@ def test_min_6_meshed_grid(meshed_grid):
     assert (abs(net.res_bus_sc.ith_ka.at[9] - 0.9327717) <1e-5)  
 
 if __name__ == '__main__':
-#    net = meshed_grid()
-#    sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent = 6.)
     pytest.main(['-xs'])

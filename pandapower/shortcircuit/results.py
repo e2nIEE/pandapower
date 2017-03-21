@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 12 13:21:26 2017
 
-@author: thurner
-"""
+# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
+# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
 import pandas as pd
-from numpy import real, conj, max, dot, diag
+import numpy as np
 
-from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH, R_EQUIV, X_EQUIV
+from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 
 def _extract_results(net, ppc):
@@ -36,14 +36,18 @@ def _get_line_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
-        net.res_line_sc["ikss_ka"] = ppc["branch_sc"][f:t, IKSS_F].real
+        net.res_line_sc["ikss_ka"] = np.max(ppc["branch_sc"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+        if net._options["ip"]:
+            net.res_line_sc["ip_ka"] = np.max(ppc["branch_sc"][f:t, [IP_F, IP_T]].real, axis=1)
+        if net._options["ith"]:
+            net.res_line_sc["ith_ka"] = np.max(ppc["branch_sc"][f:t, [ITH_F, ITH_T]].real, axis=1)            
         
 def _get_trafo_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
-        net.res_trafo_sc["ikss_lv_ka"] = ppc["branch_sc"][f:t, IKSS_F].real
-        net.res_trafo_sc["ikss_hv_ka"] = ppc["branch_sc"][f:t, IKSS_T].real
+        net.res_trafo_sc["ikss_hv_ka"] = ppc["branch_sc"][f:t, IKSS_F].real
+        net.res_trafo_sc["ikss_lv_ka"] = ppc["branch_sc"][f:t, IKSS_T].real
         
 def _get_trafo3w_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]

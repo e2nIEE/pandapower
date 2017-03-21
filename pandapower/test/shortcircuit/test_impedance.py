@@ -22,14 +22,14 @@ def impedance_net():
 
 def test_impedance_max(impedance_net):
     net = impedance_net
-    sc.runsc(net, case="max", ip=True, ith=True)
+    sc.calc_sc(net, case="max", ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.38042409891, 2.0550304761])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.88029252774, 4.3947194836])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.38460749284, 2.0703298078])
 
 def test_impedance_min(impedance_net):
     net = impedance_net
-    sc.runsc(net, case="min", ip=True, ith=True)
+    sc.calc_sc(net, case="min", ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.19991981619, 0.86978512768])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.50118698745, 1.755888097])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.20375890703, 0.87488745362])

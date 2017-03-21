@@ -28,14 +28,14 @@ def trafo3w_net():
 
 def test_trafo3w_max(trafo3w_net):
     net = trafo3w_net
-    sc.runsc(net, case="max", lv_tol_percent=6., ip=True, ith=True)
+    sc.calc_sc(net, case="max", lv_tol_percent=6., ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.26243195543, 1.2151357496, 3.2407820253])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.64800210157, 3.0086118915, 8.0313060686])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.26687233494, 1.2361480166, 3.2972358704])
 
 def test_trafo3w_min(trafo3w_net):
     net = trafo3w_net
-    sc.runsc(net, case="min", lv_tol_percent=6., ip=True, ith=True)
+    sc.calc_sc(net, case="min", lv_tol_percent=6., ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.1049727799, 0.56507157823, 1.5934473235])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.25920083485, 1.3972274925, 3.9422963436])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.10674893166, 0.57473904595, 1.6208335668])

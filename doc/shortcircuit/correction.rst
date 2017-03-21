@@ -20,11 +20,11 @@ In the low voltage level, there is an additional distinction between networks wi
 +--------------+---------------+--------+--------+
 |Voltage Level                 | |cmin| | |cmax| |
 +==============+===============+========+========+
-|              | Tolerance 6%  |        | 1.05   |
+|              | Tolerance 6%  |        |  1.05  |
 |< 1 kV        +---------------+  0.95  +--------+
-|              | Tolerance 10% |        | 1.10   |
-+--------------+---------------+--------+--------+
-|> 1 kV                        |  1.00  | 1.10   |
+|              | Tolerance 10% |        |        |
++--------------+---------------+--------+  1.10  +
+|> 1 kV                        |  1.00  |        |
 +--------------+---------------+--------+--------+
 
 .. _kappa:
@@ -45,11 +45,9 @@ where :math:`R/X` is the R/X ratio of the equivalent short-circuit impedance :ma
 
 In meshed networks, the standard defines three possibilities for the definition of  :math:`\kappa`:
 
-a ) Uniform Ratio R/X 
-
-b) Ratio R/X at short-circuit location
-
-c) Equivalent frequency 
+    a ) Uniform Ratio R/X 
+    b ) Ratio R/X at short-circuit location
+    c ) Equivalent frequency 
 
 pandapower implements version b), in which the factor :math:`\kappa` is given as:
 

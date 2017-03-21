@@ -11,8 +11,8 @@ import six
 
 import scipy as sp
 from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_bus import BUS_TYPE, NONE, PD, QD, BUS_I
-from pandapower.pypower_extensions.bustypes import bustypes
+from pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+
 
 try:
     import pplog as logging
@@ -21,8 +21,8 @@ except:
 
 logger = logging.getLogger(__name__)
 
-
 class ADict(dict, MutableMapping):
+
     def __init__(self, *args, **kwargs):
         super(ADict, self).__init__(*args, **kwargs)
 
@@ -150,6 +150,7 @@ class ADict(dict, MutableMapping):
 
 
 class pandapowerNet(ADict):
+
     def __init__(self, *args, **kwargs):
         super(pandapowerNet, self).__init__(*args, **kwargs)
 
@@ -240,9 +241,9 @@ def get_values(source, selection, lookup):
     :return:
     """
     return np.array([source[lookup[k]] for k in selection])
-
-
+    
 def _select_is_elements(net):
+
     """
     Selects certain "in_service" elements from net.
     This is quite time consuming so it is done once at the beginning
@@ -280,7 +281,7 @@ def _select_is_elements(net):
                 , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
                            & net["shunt"].in_service.values.astype(bool)
                 , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                                              & net["ext_grid"]["in_service"].values.astype(bool)]
+                                        & net["ext_grid"]["in_service"].values.astype(bool)]
                 , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
                 , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
             }
@@ -289,11 +290,11 @@ def _select_is_elements(net):
             is_elems = net['_is_elems']
 
             bus_is_ind = is_elems['bus'].index
-            # update elements
+            #update elements
             elems = ['gen', 'ext_grid']
             for elm in elems:
                 is_elems[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
-                                         & net[elm]["in_service"].values.astype(bool)]
+                                     & net[elm]["in_service"].values.astype(bool)]
 
     else:
         # select in service buses. needed for the other elements to be selected
@@ -302,47 +303,45 @@ def _select_is_elements(net):
         bus_is_ind = net["bus"][bus_is].index
         # check if in service elements are at in service buses
         is_elems = {
-            "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                              & net["gen"]["in_service"].values.astype(bool)]
-            , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
-                      & net["load"].in_service.values.astype(bool)
-            , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
-                      & net["sgen"].in_service.values.astype(bool)
-            , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
-                      & net["ward"].in_service.values.astype(bool)
-            , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
-                       & net["xward"].in_service.values.astype(bool)
-            , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
-                       & net["shunt"].in_service.values.astype(bool)
-            , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                                          & net["ext_grid"]["in_service"].values.astype(bool)]
+            "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+                    & net["gen"]["in_service"].values.astype(bool)]
+            , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
+                    & net["load"].in_service.values.astype(bool)
+            , "sgen" : np.in1d(net["sgen"].bus.values, bus_is_ind) \
+                    & net["sgen"].in_service.values.astype(bool)
+            , "ward" : np.in1d(net["ward"].bus.values, bus_is_ind) \
+                    & net["ward"].in_service.values.astype(bool)
+            , "xward" : np.in1d(net["xward"].bus.values, bus_is_ind) \
+                    & net["xward"].in_service.values.astype(bool)
+            , "shunt" : np.in1d(net["shunt"].bus.values, bus_is_ind) \
+                    & net["shunt"].in_service.values.astype(bool)
+            , "ext_grid" : net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+                    & net["ext_grid"]["in_service"].values.astype(bool)]
             , 'bus': net['bus'][bus_is]
             , 'line': net['line'][line_is]
         }
 
     return is_elems
 
-
-def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle):
+def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode, 
+                             copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
     options = {
-        "calculate_voltage_angles": calculate_voltage_angles
+          "calculate_voltage_angles": calculate_voltage_angles
         , "trafo_model": trafo_model
         , "check_connectivity": check_connectivity
         , "mode": mode
         , "copy_constraints_to_ppc": copy_constraints_to_ppc
         , "r_switch": r_switch
-        , "init": init
+        ,  "init": init
         , "enforce_q_lims": enforce_q_lims
         , "recycle": recycle
-    }
+        }
     _add_options(net, options)
-
-
+    
 def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
                     algorithm, max_iteration, **kwargs):
     """
@@ -350,7 +349,7 @@ def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
     """
 
     options = {
-        "tolerance_kva": tolerance_kva
+          "tolerance_kva": tolerance_kva
         , "trafo_loading": trafo_loading
         , "numba": numba
         , "ac": ac
@@ -360,8 +359,7 @@ def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
 
     options.update(kwargs)  # update options with some algorithm-specific parameters
     _add_options(net, options)
-
-
+    
 def _add_opf_options(net, trafo_loading, ac, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
@@ -374,35 +372,35 @@ def _add_opf_options(net, trafo_loading, ac, **kwargs):
     options.update(kwargs)  # update options with some algorithm-specific parameters
     _add_options(net, options)
 
-
-def _add_sc_options(net, sc_type, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith):
+    
+def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
+                    x_fault_ohm, kappa, ip, ith, consider_sgens):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     options = {
-        "sc_type": sc_type
-        , "case": case
-        , "lv_tol_percent": lv_tol_percent
-        , "tk_s": tk_s
-        , "topology": topology
-        , "r_fault_ohm": r_fault_ohm
-        , "x_fault_ohm": x_fault_ohm
-        , "kappa": kappa
-        , "ip": ip
-        , "ith": ith
-    }
+                   "fault": fault
+                   ,"case": case
+                   , "lv_tol_percent": lv_tol_percent
+                   , "tk_s": tk_s
+                   , "topology": topology
+                   , "r_fault_ohm": r_fault_ohm
+                   , "x_fault_ohm": x_fault_ohm
+                   , "kappa": kappa
+                   , "ip": ip
+                   , "ith": ith
+                   , "consider_sgens": consider_sgens
+                   }
     _add_options(net, options)
-
-
+    
+    
 def _add_options(net, options):
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
-        raise UserWarning(
-            "Parameters always have to be unique! The following parameters where specified twice: %s" % double_parameters)
+        raise UserWarning("Parameters always have to be unique! The following parameters where specified twice: %s"%double_parameters)
     net._options.update(options)
-
-
+                
+    
 def _clean_up(net):
     mode = net._options["mode"]
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
@@ -417,12 +415,11 @@ def _clean_up(net):
         net["bus"].drop(xward_buses, inplace=True)
         res_bus.drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-
+    
     if len(net["dcline"]) > 0:
-        dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
+        dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
         net.gen.drop(dc_gens, inplace=True)
         net.res_gen.drop(dc_gens, inplace=True)
-
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
@@ -484,7 +481,7 @@ def calculate_line_results(net, use_res_bus_est=False):
     res_line.i_to_ka = np.abs(line_currents_to) / 1e3
     res_line.i_ka = np.fmax(res_line.i_from_ka, res_line.i_to_ka)
     res_line.loading_percent = res_line.i_ka * 100. / net.line.max_i_ka.values \
-                               / net.line.df.values / net.line.parallel.values
+                                       / net.line.df.values / net.line.parallel.values
     res_line.p_from_kw = line_powers_from.real
     res_line.q_from_kvar = line_powers_from.imag
     res_line.p_to_kw = line_powers_to.real
@@ -492,7 +489,6 @@ def calculate_line_results(net, use_res_bus_est=False):
     res_line.pl_kw = res_line.p_from_kw + res_line.p_to_kw
     res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
     return res_line
-
 
 def _write_lookup_to_net(net, element, element_lookup):
     """
@@ -507,15 +503,26 @@ def _check_connectivity(ppc):
     :param ppc: pyPoer matrix
     :return:
     """
+    nobranch = ppc['branch'].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
 
-    adj_matrix = _get_adj_matrix(ppc)
-    # ppc types
-    ref, pv, _ = bustypes(ppc["bus"], ppc["gen"])
-    in_service_nodes = set(ppc['bus'][ppc['bus'][:, BUS_TYPE] != NONE, BUS_I].astype(int))
+    adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
+                                     shape=(nobus, nobus))
 
-    isolated_nodes = _identify_isolated_nodes(adj_matrix, ref, in_service_nodes)
-    # ppc, isolated_nodes = _identify_single_pv_nodes_in_islands_and_change_them_to_slacks(adj_matrix,
-    #                                                                                      pv, isolated_nodes, ppc)
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+
+    all_nodes = set(ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int))
+
+    visited_nodes = set()
+
+    for slack in slacks:
+        node_array = sp.sparse.csgraph.depth_first_order(adj_matrix, slack, False, False)
+        node_set = set(node_array)
+        visited_nodes = visited_nodes.union(node_set)
+
+    isolated_nodes = all_nodes.difference(visited_nodes)
 
     if isolated_nodes:
         logger.debug("There are isolated buses in the network!")
@@ -523,48 +530,14 @@ def _check_connectivity(ppc):
         # set buses in ppc out of service
         ppc['bus'][index_array, BUS_TYPE] = NONE
 
-        # check if unsupplied buses have loads or sgens
         iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
         iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
         if iso_p > 0 or iso_q > 0:
-            logger.warning(
-                "Connectivity Check found that %.0f kW active and %.0f kVar reactive power are unsupplied"
-                % (iso_p, iso_q))
-
-        # check if unsupplied buses have gens
-        pv_buses_in_islands = set(pv) & isolated_nodes
-        if len(pv_buses_in_islands):
-            logger.warning(
-                "Some of the isolated buses are gens. Run diagnostic to identify islands with possible reference buses."
-            )
-
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied"%(iso_p, iso_q))
     else:
         iso_p = iso_q = 0
     return isolated_nodes, iso_p, iso_q
-
-
-def _get_adj_matrix(ppc):
-    nobranch = ppc['branch'].shape[0]
-    nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
-
-    adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
-                                      shape=(nobus, nobus))
-    return adj_matrix
-
-
-def _identify_isolated_nodes(adj_matrix, ref, in_service_nodes):
-    visited_nodes = set()
-
-    for slack in ref:
-        nodes_connected_to_slack = set(sp.sparse.csgraph.depth_first_order(adj_matrix, slack, False, False))
-        visited_nodes = visited_nodes.union(nodes_connected_to_slack)
-
-    isolated_nodes = in_service_nodes.difference(visited_nodes)
-    return isolated_nodes
-
-
+            
 def _create_ppc2pd_bus_lookup(net):
     # pd to ppc lookup
     pd2ppc_bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -579,11 +552,10 @@ def _create_ppc2pd_bus_lookup(net):
     # store reverse lookup innet
     net["_ppc2pd_lookups"]["bus"] = ppc2pd_bus_lookup
 
-
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
     is_elems = net["_is_elems"]
-    pp_nodes = [n for n in isolated_nodes if not (n > len(pcc2pd_bus_lookup))]
+    pp_nodes = [n for n in isolated_nodes if not(n > len(pcc2pd_bus_lookup))]
     isolated_nodes_pp = pcc2pd_bus_lookup[pp_nodes]
     # remove isolated buses from is_elems["bus"]
     is_elems["bus"] = is_elems["bus"].drop(set(isolated_nodes_pp) & set(is_elems["bus"].index))
@@ -593,9 +565,9 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     elems_to_update = ["load", "sgen", "ward", "xward", "shunt"]
     for elem in elems_to_update:
         is_elems[elem] = np.in1d(net[elem].bus.values, bus_is_ind) \
-                         & net[elem].in_service.values.astype(bool)
+                  & net[elem].in_service.values.astype(bool)
 
     is_elems["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                                 & net["gen"]["in_service"].values.astype(bool)]
+                          & net["gen"]["in_service"].values.astype(bool)]
 
     net["_is_elems"] = is_elems
