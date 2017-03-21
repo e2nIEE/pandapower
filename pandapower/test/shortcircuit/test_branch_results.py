@@ -40,22 +40,6 @@ def test_closed_ring(ring_network):
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.4745379023])
     assert np.allclose(net.res_line_sc.ikss_ka.values, [0.26039497, 0.20831598, 0.36590236])
     
-if __name__ == '__main__':
-    net = ring_network()
-    net = pp.create_empty_network()
-    b0 = pp.create_bus(net, 220)
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
-    pp.create_ext_grid(net, b0, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.20, rx_max=0.35)
-    pp.create_transformer(net, b0, b1, "100 MVA 220/110 kV")
-    pp.create_line(net, b2, b1, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV" , length_km=15.)
-    l2 = pp.create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV" , length_km=12.)
-    pp.create_line(net, b3, b1, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV" , length_km=10.)
-    pp.create_switch(net, b3, l2, closed=True, et="l")
-    sc.calc_sc(net, topology="meshed", ip=True, ith=True)
-    print(net.res_bus_sc)
-
-    
-#    pytest.main(['-xs'])
+if __name__ == '__main__':  
+    pytest.main(['-xs'])
 

@@ -45,11 +45,9 @@ where :math:`R/X` is the R/X ratio of the equivalent short-circuit impedance :ma
 
 In meshed networks, the standard defines three possibilities for the definition of  :math:`\kappa`:
 
-a ) Uniform Ratio R/X 
-
-b) Ratio R/X at short-circuit location
-
-c) Equivalent frequency 
+    a ) Uniform Ratio R/X 
+    b ) Ratio R/X at short-circuit location
+    c ) Equivalent frequency 
 
 pandapower implements version b), in which the factor :math:`\kappa` is given as:
 
