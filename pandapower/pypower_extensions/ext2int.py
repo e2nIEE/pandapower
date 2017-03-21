@@ -5,8 +5,6 @@
 """Converts external to internal indexing.
 """
 
-import sys
-
 from warnings import warn
 
 from copy import deepcopy
@@ -105,7 +103,7 @@ def ext2int(ppc, val_or_field=None, ordering=None, dim=0):
             bt = ppc["bus"][:, BUS_TYPE]
             err = find(~((bt == PQ) | (bt == PV) | (bt == REF) | (bt == NONE)))
             if len(err) > 0:
-                sys.stderr.write('ext2int: bus %d has an invalid BUS_TYPE\n' % err)
+                raise TypeError('ext2int: bus %d has an invalid BUS_TYPE\n' % err)
 
             ## determine which buses, branches, gens are connected and
             ## in-service

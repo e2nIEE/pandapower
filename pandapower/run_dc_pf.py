@@ -25,7 +25,7 @@ def _run_dc_pf(ppci):
     Va0 = bus[:, VA] * (pi / 180)
 
     ## build B matrices and phase shift injections
-    B, Bf, Pbusinj, Pfinj = makeBdc(baseMVA, bus, branch)
+    B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
 
     ## compute complex bus power injections [generation - load]
     ## adjusted for phase shifters and real shunts
