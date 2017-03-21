@@ -11,6 +11,7 @@ unreleased
 - [ADDED] backward/forward sweep power flow algorithm specially suited for radial and weakly-meshed networks
 - [ADDED] linear piece wise and polynomial OPF cost functions 
 - [ADDED] possibility to make loads controllable in OPF
+- [ADDED] to_json and from_json functions to save/load networks with a JSON format
 - [ADDED] generator lookup to allow multiple generators at one bus
 - [CHANGED] Initialization of calculate_voltage_angles and init for high voltage networks
 - [ADDED] bad data detection for state estimation
