@@ -46,7 +46,9 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
 .. note:: Three Winding Transformer loading can not yet be constrained with the optimal power flow.
-   
+
+.. _trafo3w_model:
+
 Electric Model
 =================
 

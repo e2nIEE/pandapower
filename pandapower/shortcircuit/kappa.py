@@ -7,7 +7,7 @@
 import numpy as np
 import networkx as nx
 
-from pandapower.shortcircuit.idx_bus import KAPPA, C_MAX, C_MIN, R_EQUIV, X_EQUIV
+from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV
 from pypower.idx_bus import BUS_I, BASE_KV, GS, BS
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 
@@ -54,20 +54,3 @@ def nxgraph_from_ppc(net, ppc):
     mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 
                         for bus, z in zip(vs_buses, z))
     return mg
-    
-   
-def _add_c_to_ppc(net, ppc):
-    ppc["bus_sc"][:, C_MAX] = 1.1
-    ppc["bus_sc"][:, C_MIN] = 1.
-    lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
-    if len(lv_buses) > 0:
-        lv_tol_percent = net["_options"]["lv_tol_percent"]
-        if lv_tol_percent==10:
-            c_ns = 1.1
-        elif lv_tol_percent==6:
-            c_ns = 1.05
-        else:
-            raise ValueError("Voltage tolerance in the low voltage grid has" \
-                                        " to be either 6% or 10% according to IEC 60909")
-        ppc["bus_sc"][lv_buses, C_MAX] = c_ns
-        ppc["bus_sc"][lv_buses, C_MIN] = .95

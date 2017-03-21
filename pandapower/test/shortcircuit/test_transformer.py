@@ -26,7 +26,7 @@ def net_transformer():
   
 def test_max_10_trafo(net_transformer):
     net = net_transformer
-    sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent= 10.)
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent= 10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.992258758) <1e-5)
@@ -41,7 +41,7 @@ def test_max_10_trafo(net_transformer):
 
 def test_max_6_trafo(net_transformer):
     net = net_transformer
-    sc.runsc(net, case='max', ip=True, ith=True, lv_tol_percent = 6.)
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent = 6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.905912296) <1e-5)  
@@ -56,7 +56,7 @@ def test_max_6_trafo(net_transformer):
     
 def test_min_10_trafo(net_transformer):
     net = net_transformer
-    sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent= 10.)
+    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent= 10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 2.309401) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 12.912468695) <1e-5)
@@ -71,7 +71,7 @@ def test_min_10_trafo(net_transformer):
 
 def test_min_6_trafo(net_transformer):
     net = net_transformer
-    sc.runsc(net, case='min', ip=True, ith=True, lv_tol_percent = 6.)
+    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent = 6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 2.309401) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 13.39058012) <1e-5)
@@ -86,7 +86,7 @@ def test_min_6_trafo(net_transformer):
 
 def test_min_10_trafo_2ph(net_transformer):
     net = net_transformer
-    sc.runsc(net, sc_type="2ph", case='min', ip=True, ith=True, lv_tol_percent = 10.)
+    sc.calc_sc(net, fault="2ph", case='min', ip=True, ith=True, lv_tol_percent = 10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.0000000702) <1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 11.182525915) <1e-5)
       

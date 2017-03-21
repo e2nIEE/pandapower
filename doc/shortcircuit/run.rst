@@ -2,7 +2,9 @@
 Running a Short-Circuit Calculation
 ====================================
 
-.. autofunction:: pandapower.shortcircuit.runsc
+The short circuit calculation is carried out with the calc_sc function:
+
+.. autofunction:: pandapower.shortcircuit.calc_sc
 
 
 .. code:: python
@@ -15,6 +17,5 @@ Running a Short-Circuit Calculation
     net.ext_grid["rx_min"] = 0.1
 
     net.line["endtemp_degree"] = 20
-    sc.runsc(net, case="min")
+    sc.calc_sc(net, case="min")
     print(net.res_bus_sc)
-
