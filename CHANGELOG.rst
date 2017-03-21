@@ -1,7 +1,7 @@
 Change Log
 =============
 
-unreleased
+[1.2.0] - 2017-03-21
 --------------------
 - [CHANGED] net.line.imax_ka to net.line.max_i_ka for consistency reasons
 - [ADDED] net.line.tp_st_degree for phase shift in trafo tap changers
