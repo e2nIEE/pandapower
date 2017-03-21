@@ -88,26 +88,8 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         except:
             logger.info('gencost is not in mpc')
 
-    elif 'bus' in mpc \
-            and 'branch' in mpc \
-            and 'gen' in mpc \
-            and 'baseMVA' in mpc \
-            and 'version' in mpc:
-
-        # if struct contains bus, branch, gen, etc. directly
-        ppc['version'] = mpc['version']
-        ppc["baseMVA"] = mpc['baseMVA']
-        ppc["bus"] = mpc['bus']
-        ppc["gen"] = mpc['gen']
-        ppc["branch"] = mpc['branch']
-
-        try:
-            ppc['gencost'] = mpc['gencost']
-        except:
-            logger.info('gencost is not in mpc')
-
     else:
-        logger.error('Matfile does not contain a valid mpc structure')
+        logger.error('Matfile does not contain a valid mpc structure.')
 
 
 def _change_ppc_TAP_value(ppc):
