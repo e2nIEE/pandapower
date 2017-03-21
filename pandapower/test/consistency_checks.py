@@ -89,5 +89,5 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
         bus_p.at[tab.bus] += net.res_xward.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_kvar.at[idx]
 
-    assert allclose(float(net.res_bus.p_kw.values), bus_p.values, equal_nan=True, rtol=rtol)
-    assert allclose(float(net.res_bus.q_kvar.values), bus_q.values, equal_nan=True, rtol=rtol)
+    assert allclose(net.res_bus.p_kw.values, bus_p.values, equal_nan=True, rtol=rtol)
+    assert allclose(net.res_bus.q_kvar.values, bus_q.values, equal_nan=True, rtol=rtol)
