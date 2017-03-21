@@ -58,32 +58,11 @@ pandapower supports the following network analysis functions:
 	- short-circuit calculation according to IEC 60909
 	- topological graph searches
 
-For more information, go to `<http://www.uni-kassel.de/go/pandapower>`_.
+For more information, please referr to the `documentation <https://pandapower.readthedocs.io>`_.
 
-Installation
-==============
-To install pandapower, simply use: ::
+Installation notes can be found `here <http://pandapower.readthedocs.io/en/develop/getting_started/installation.html>`_.
 
-    pip install pandapower
-
-This will install the following dependencies:
-    - pypower>=5.0.1
-    - pandas
-    - networkx
-
-You will also need numpy and scipy, which are dependencies of pypower.
-We recommend the `Anaconda Distribution <https://www.continuum.io/downloads>`_, which already contains a
-numpy and scipy as well as a lot of other modules for scientific computing that are needed for working with 
-pandapower.
-   
-To use all of pandapowers functionalites, you will need the following additional packages:
-    - numba>=0.25.0 (for accelerated loadflow calculation)
-    - matplotlib (for plotting)
-    - python-igraph (for plotting networks without geographical information)
-    - xlrd (for loading/saving files from/to excel)
-    - openpyxl (for loading/saving files from/to excel)
-    
-All of these packages (except python-igraph) are already included in the anaconda distribution.
+Interactive tutorials for a comfortable introducion into pandapower can be found `here <http://pandapower.readthedocs.io/en/develop/getting_started/tutorials.html>`_.
     
 Minimal Example
 =====================
