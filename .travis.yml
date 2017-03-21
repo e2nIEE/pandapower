@@ -26,6 +26,7 @@ install:
 
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
+  - conda install numpy=1.11
   - source activate test-environment
   - pip install pytest pytest-cov
   - pip install coveralls
