@@ -1,3 +1,0 @@
-numpydoc
-pypower
-networkx
