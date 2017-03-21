@@ -677,7 +677,7 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
     E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
 
     :param net:
-    :param scaling: A dictionary containing a mapping from element type to
+    :param scalings: A dictionary containing a mapping from element type to
     :param scale_load:
 	:param scale_sgen:
     """
@@ -687,7 +687,7 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] or s for t, s in zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in zip(et.type.values, et.scaling.values)]
 
     scale = defaultdict(lambda: None, scalings)
     if scale_load:
