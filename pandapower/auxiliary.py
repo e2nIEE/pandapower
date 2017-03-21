@@ -328,6 +328,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
+    if recycle == None:
+        recycle = dict(is_elems=False, ppc=False, Ybus=False)
 
     options = {
           "calculate_voltage_angles": calculate_voltage_angles
