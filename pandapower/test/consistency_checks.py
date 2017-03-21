@@ -38,8 +38,8 @@ def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
     all branches.
     """
     # Active Power
-    bus_surplus_p = -float(net.res_bus.p_kw.sum())
-    bus_surplus_q = -float(net.res_bus.q_kvar.sum())
+    bus_surplus_p = -net.res_bus.p_kw.sum()
+    bus_surplus_q = -net.res_bus.q_kvar.sum()
 
     branch_loss_p = net.res_line.pl_kw.sum() + net.res_trafo.pl_kw.sum() + \
                     net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum() + \
