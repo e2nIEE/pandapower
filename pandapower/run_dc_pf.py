@@ -22,7 +22,7 @@ def _run_dc_pf(ppci):
 
     ppci["bus"][:, VM] = 1.0
     ## initial state
-    Va0 = bus[:, VA] * (pi / 180)
+    Va0 = bus[:, VA] * (pi / 180.)
 
     ## build B matrices and phase shift injections
     B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
@@ -39,7 +39,7 @@ def _run_dc_pf(ppci):
     branch[:, PF] = (Bf * Va + Pfinj) * baseMVA
     branch[:, PT] = -branch[:, PF]
     bus[:, VM] = ones(bus.shape[0])
-    bus[:, VA] = Va * (180 / pi)
+    bus[:, VA] = Va * (180. / pi)
     ## update Pg for slack generator (1st gen at ref bus)
     ## (note: other gens at ref bus are accounted for in Pbus)
     ##      Pg = Pinj + Pload + Gs
@@ -50,7 +50,7 @@ def _run_dc_pf(ppci):
         temp = find(gbus == ref[k])
         refgen[k] = on[temp[0]]
     gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
-    success = 1
+    success = True
 
     # store results from DC powerflow for AC powerflow
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
@@ -80,7 +80,7 @@ def _get_pf_variables_from_ppci(ppci):
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
+    V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
