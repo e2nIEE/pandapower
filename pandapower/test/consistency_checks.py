@@ -55,8 +55,8 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
     """
     The bus feed-in at each node has to be equal to the sum of the element feed ins at each node.
     """
-    bus_p = pd.Series(data=0, index=net.bus.index, dtype=float)
-    bus_q = pd.Series(data=0, index=net.bus.index, dtype=float)
+    bus_p = pd.Series(data=0., index=net.bus.index)
+    bus_q = pd.Series(data=0., index=net.bus.index)
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
