@@ -124,7 +124,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         init = "dc" if calculate_voltage_angles else "flat"
     # recycle parameters
     if recycle == None:
-        recycle = dict(is_elems=False, ppc=False, Ybus=False)
+        recycle = dict(is_elems=False, ppc=False, Ybus=False, bfsw = False)
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
