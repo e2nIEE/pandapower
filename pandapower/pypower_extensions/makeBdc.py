@@ -71,7 +71,7 @@ def makeBdc(bus, branch):
     Bbus = Cft.T * Bf
 
     ## build phase shift injection vectors
-    Pfinj = b * (-branch[:, SHIFT] * pi / 180)  ## injected at the from bus ...
+    Pfinj = b * (-branch[:, SHIFT] * pi / 180.)  ## injected at the from bus ...
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
 

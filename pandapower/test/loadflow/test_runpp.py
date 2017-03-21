@@ -58,7 +58,6 @@ def test_runpp_init_auxiliary_buses():
     assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4],
                        atol=2)
 
-
 def test_result_iter():
     for net in result_test_network_generator():
         try:
