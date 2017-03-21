@@ -4,6 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+import scipy as sp
 import numpy as np
 import copy
 
@@ -18,6 +19,7 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
+
 # separator between log messages
 log_message_sep = ("\n --------\n")
 
@@ -92,14 +94,24 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                                   "different_voltage_levels_connected(net)",
                                   "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
                                   "multiple_voltage_controlling_elements_per_bus(net)"]
+    invalid_value_dependent_checks = ["wrong_reference_system(net)"]
+
     diag_results = {}
     for diag_function in diag_functions:
         if (diag_function in bus_index_dependent_checks) and ("missing_bus_indeces" in diag_results.keys()):
             diag_result = "check skipped"
+        elif 'invalid_values' in diag_results.keys(): 
+            if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen']) 
+                                                                      & set(diag_results['invalid_values'].keys())):
+                diag_result = "check skipped"
+            else:
+                diag_result = eval(diag_function)
+                if diag_result:
+                    diag_results[diag_function.split("(")[0]] = diag_result
         else:
             diag_result = eval(diag_function)
-        if diag_result:
-            diag_results[diag_function.split("(")[0]] = diag_result
+            if diag_result:
+                diag_results[diag_function.split("(")[0]] = diag_result
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
@@ -152,7 +164,6 @@ def check_greater_zero(element, element_index, column):
 
 
 def check_greater_equal_zero(element, element_index, column):
-
     if check_number(element, element_index, column) is None:
 
         if (element[column] < 0):
@@ -198,7 +209,6 @@ def check_pos_int(element, element_index, column):
 
 
 def check_number(element, element_index, column):
-
     try:
         nan_check = np.isnan(element[column])
         if nan_check or type(element[column]) == bool:
@@ -329,7 +339,7 @@ def no_ext_grid(net):
 
     if not len(net.ext_grid) > 0:
         return True
-        
+
 
 def multiple_voltage_controlling_elements_per_bus(net):
     """
@@ -435,6 +445,7 @@ def wrong_switch_configuration(net):
             net.switch.closed = switch_configuration
             return 'uncertain'
 
+
 def missing_bus_indeces(net):
     """
         Checks for missing bus indeces.
@@ -445,7 +456,7 @@ def missing_bus_indeces(net):
 
          OUTPUT:
             **check_results** (list)   - List of tuples each containing missing bus indeces.
-                                         Format: 
+                                         Format:
                                          [(element_index, bus_name (e.g. "from_bus"),  bus_index]
 
     """
@@ -463,11 +474,11 @@ def missing_bus_indeces(net):
                         element_check.append((i, bus_name, row[bus_name]))
         if element_check:
             check_results[element] = element_check
-                    
+
     if check_results:
         return check_results
-                    
-    
+
+
 def different_voltage_levels_connected(net):
     """
     Checks, if there are lines or switches that connect different voltage levels.
@@ -518,10 +529,9 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     """
     implausible_lines = net.line[(net.line.length_km <= lines_min_length_km)
                                  | ((net.line.r_ohm_per_km + net.line.x_ohm_per_km)
-                                     <= lines_min_z_ohm)]
+                                    <= lines_min_z_ohm)]
 
     if len(implausible_lines) > 0:
-
         return list(implausible_lines.index)
 
 
@@ -571,16 +581,15 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         if ((trafo.vn_hv_kv > lv_bus_vn_kv * min_v_pu)
             and ((trafo.vn_hv_kv < lv_bus_vn_kv * max_v_pu))
             and ((trafo.vn_lv_kv > hv_bus_vn_kv * min_v_pu))
-                and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
-
+            and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
             hv_lv_swapped.append(i)
 
         if (((trafo.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-                and (i not in hv_lv_swapped)):
+            and (i not in hv_lv_swapped)):
             hv_bus.append(i)
 
         if (((trafo.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-                and (i not in hv_lv_swapped)):
+            and (i not in hv_lv_swapped)):
             lv_bus.append(i)
 
     if hv_bus:
@@ -600,24 +609,23 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         if ((((trafo3w.vn_hv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < mv_bus_vn_kv * max_v_pu))
              or ((trafo3w.vn_hv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < lv_bus_vn_kv * max_v_pu)))
             and
-            (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
+                (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
+                 or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
             and
-            (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
-
+                (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
+                 or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
             connectors_swapped_3w.append(i)
 
         if (((trafo3w.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo3w.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
+            and (i not in connectors_swapped_3w)):
             hv_bus_3w.append(i)
 
         if (((trafo3w.vn_mv_kv > mv_bus_vn_kv * max_v_pu) or (trafo3w.vn_mv_kv < mv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
+            and (i not in connectors_swapped_3w)):
             mv_bus_3w.append(i)
 
         if (((trafo3w.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo3w.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
+            and (i not in connectors_swapped_3w)):
             lv_bus_3w.append(i)
 
     if hv_bus_3w:
@@ -630,8 +638,9 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         trafo3w_results['connectors_swapped_3w'] = connectors_swapped_3w
     if trafo3w_results:
         results['trafo3w'] = trafo3w_results
-
-    return results
+    
+    if len(results) > 0:
+        return results
 
 
 def disconnected_elements(net):
@@ -837,13 +846,13 @@ def deviation_from_std_type(net):
                                                      'std_type_in_lib': True}
             else:
                 if key not in check_results.keys():
-                                check_results[key] = {}
+                    check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}
 
     if check_results:
         return check_results
-        
-        
+
+
 def parallel_switches(net):
     """
         Checks for parallel switches.
@@ -863,8 +872,8 @@ def parallel_switches(net):
     compare_parameters = ['bus', 'element']
     parallels_bus_and_element = list(net.switch.groupby(compare_parameters).count().query('et > 1').index)
     for bus, element in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch[(net.switch.bus == bus) 
-                                       & (net.switch.element == element)].index))
+        parallel_switches.append(list(net.switch[(net.switch.bus == bus)
+                                                 & (net.switch.element == element)].index))
 
     if parallel_switches:
         return parallel_switches

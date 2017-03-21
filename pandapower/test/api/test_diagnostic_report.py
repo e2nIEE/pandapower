@@ -4,6 +4,7 @@
 # System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
 # BSD-style license that can be found in the LICENSE file.
 
+import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.diagnostic_reports import DiagnosticReports
@@ -68,3 +69,6 @@ def test_diagnostic_report():
         except:
             report_check = False
         assert report_check
+
+if __name__ == "__main__":
+    pytest.main(["test_diagnostic_report.py", "-xs"])

@@ -18,6 +18,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import _select_is_elements
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
 
+
 def test_runpp_init():
     net = pp.create_empty_network()
     b1, b2, l1 = add_grid_connection(net)
@@ -30,6 +31,7 @@ def test_runpp_init():
     assert np.allclose(va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4])
     pp.runpp(net, calculate_voltage_angles=True, init="results")
     assert np.allclose(va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4])
+
 
 def test_runpp_init_auxiliary_buses():
     net = pp.create_empty_network()
@@ -55,14 +57,16 @@ def test_runpp_init_auxiliary_buses():
     assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4],
                        atol=2)
 
+
 def test_result_iter():
     for net in result_test_network_generator():
         try:
             runpp_with_consistency_checks(net, enforce_q_lims=True)
         except (AssertionError):
-            raise UserWarning("Consistency Error after adding %s"%net.last_added_case)
+            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except(pp.LoadflowNotConverged):
-            raise UserWarning("Power flow did not converge after adding %s"%net.last_added_case)
+            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+
 
 def test_bus_bus_switches():
     net = pp.create_empty_network()
@@ -78,7 +82,7 @@ def test_bus_bus_switches():
     pp.create_load(net, 4, p_kw=10)
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
-            net.res_bus.vm_pu.at[6]
+           net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.in_service.at[5] = False
@@ -87,6 +91,7 @@ def test_bus_bus_switches():
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
     assert pd.isnull(net.res_bus.vm_pu.at[5])
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
+
 
 def test_two_open_switches():
     net = pp.create_empty_network()
@@ -99,56 +104,127 @@ def test_two_open_switches():
     pp.runpp(net)
     assert net.res_line.i_ka.at[l2] == 0.
 
+
 def test_oos_bus():
     net = pp.create_empty_network()
     add_test_oos_bus_with_is_element(net)
     assert runpp_with_consistency_checks(net)
 
-#    test for pq-node result
-    pp.create_shunt(net, 6, q_kvar = -800)
+    #    test for pq-node result
+    pp.create_shunt(net, 6, q_kvar=-800)
     assert runpp_with_consistency_checks(net)
 
-#   1test for pv-node result
-    pp.create_gen(net, 4, p_kw = -500)
+    #   1test for pv-node result
+    pp.create_gen(net, 4, p_kw=-500)
     assert runpp_with_consistency_checks(net)
+
 
 def get_isolated(net):
     net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=False, 
-                             trafo_model="t", check_connectivity=False,
-                             mode="pf", copy_constraints_to_ppc=False,
-                             r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
+    _add_ppc_options(net, calculate_voltage_angles=False,
+                     trafo_model="t", check_connectivity=False,
+                     mode="pf", copy_constraints_to_ppc=False,
+                     r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
     net["_is_elems"] = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)
 
-def test_connectivity():
+
+def test_connectivity_check_island_without_pv_bus():
+    # Network with islands without pv bus -> all buses in island should be set out of service
     net = create_cigre_network_mv(with_der=False)
     iso_buses, iso_p, iso_q = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
-    assert np.isclose(iso_q, 0)    
-    
+    assert np.isclose(iso_q, 0)
+
     isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
-    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")   
+    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
-                                             std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                                             name="IsolatedLine")
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLine")
     iso_buses, iso_p, iso_q = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
-    
+
     pp.create_load(net, isolated_bus1, p_kw=200., q_kvar=20)
     pp.create_sgen(net, isolated_bus2, p_kw=-150., q_kvar=-10)
 
+    # with pytest.warns(UserWarning):
     iso_buses, iso_p, iso_q = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
-       
+    # with pytest.warns(UserWarning):
     runpp_with_consistency_checks(net, check_connectivity=True)
+
+def test_connectivity_check_island_with_one_pv_bus():
+    # Network with islands with one PV bus -> PV bus should be converted to the reference bus
+    net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 0
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+
+    isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
+    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")
+    isolated_gen = pp.create_bus(net, vn_kv=20., name="isolated Gen")
+    isolated_pv_bus = pp.create_gen(net, isolated_gen, p_kw=350, vm_pu=1.0, name="isolated PV bus")
+    pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLine")
+    pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLineToGen")
+    # with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q = get_isolated(net)
+
+    # assert len(iso_buses) == 0
+    # assert np.isclose(iso_p, 0)
+    # assert np.isclose(iso_q, 0)
+    #
+    # pp.create_load(net, isolated_bus1, p_kw=200., q_kvar=20)
+    # pp.create_sgen(net, isolated_bus2, p_kw=-150., q_kvar=-10)
+    #
+    # iso_buses, iso_p, iso_q = get_isolated(net)
+    # assert len(iso_buses) == 0
+    # assert np.isclose(iso_p, 0)
+    # assert np.isclose(iso_q, 0)
+
+    # with pytest.warns(UserWarning):
+    runpp_with_consistency_checks(net, check_connectivity=True)
+
+
+def test_connectivity_check_island_with_multiple_pv_buses():
+    # Network with islands an multiple PV buses in the island ->
+    # Error should be thrown since it would be random to choose just some PV bus as the reference bus
+    net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 0
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+
+    isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
+    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")
+    isolated_pv_bus1 = pp.create_bus(net, vn_kv=20., name="isolated PV bus1")
+    isolated_pv_bus2 = pp.create_bus(net, vn_kv=20., name="isolated PV bus2")
+    pp.create_gen(net, isolated_pv_bus1, p_kw=300, vm_pu=1.0, name="isolated PV bus1")
+    pp.create_gen(net, isolated_pv_bus2, p_kw=50, vm_pu=1.0, name="isolated PV bus2")
+
+    pp.create_line(net, isolated_pv_bus1, isolated_bus1, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLineToGen1")
+    pp.create_line(net, isolated_pv_bus2, isolated_bus2, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLineToGen2")
+    pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLine")
+    # ToDo with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q = get_isolated(net)
+
 
 def test_makeYbus():
     # tests if makeYbus fails for nets where every bus is connected to each other
@@ -174,6 +250,7 @@ def test_makeYbus():
 
     assert runpp_with_consistency_checks(net)
 
+
 def test_test_sn_kva():
     test_net_gen1 = result_test_network_generator(sn_kva=1e3)
     test_net_gen2 = result_test_network_generator(sn_kva=2e3)
@@ -183,7 +260,7 @@ def test_test_sn_kva():
         try:
             assert_net_equal(net1, net2)
         except:
-            raise UserWarning("Result difference due to sn_kva after adding %s"%net1.last_added_case)
+            raise UserWarning("Result difference due to sn_kva after adding %s" % net1.last_added_case)
 
 
 def test_pf_algorithms():
@@ -246,6 +323,6 @@ def test_pf_algorithms():
         assert np.allclose(vm_nr, vm_alg)
         assert np.allclose(va_nr, va_alg)
 
+
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])
-

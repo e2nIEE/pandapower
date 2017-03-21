@@ -20,7 +20,7 @@ except:
     import logging
 
 def run_all_tests():
-    """ function exdecuting all tests
+    """ function executing all tests
     """
     logger = logging.getLogger()
     logger.setLevel(logging.ERROR)
