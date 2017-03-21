@@ -38,8 +38,8 @@ def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
     all branches.
     """
     # Active Power
-    bus_surplus_p = -net.res_bus.p_kw.sum()
-    bus_surplus_q = -net.res_bus.q_kvar.sum()
+    bus_surplus_p = -float(net.res_bus.p_kw.sum())
+    bus_surplus_q = -float(net.res_bus.q_kvar.sum())
 
     branch_loss_p = net.res_line.pl_kw.sum() + net.res_trafo.pl_kw.sum() + \
                     net.res_trafo3w.pl_kw.sum() + net.res_impedance.pl_kw.sum() + \
@@ -48,11 +48,7 @@ def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
                     net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() + \
                     net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()
 
-    if not allclose(bus_surplus_p, branch_loss_p, rtol=rtol):
-        type(bus_surplus_p)
-        type(branch_loss_p)
-        type(rtol)
-        raise ValueError("bus p: %s %s branch p: %s %s rtol: %s %s" % (bus_surplus_p, type(bus_surplus_p), branch_loss_p, type(branch_loss_p), rtol, type(rtol)))
+    assert allclose(bus_surplus_p, branch_loss_p, rtol=rtol)
     assert allclose(bus_surplus_q, branch_loss_q, rtol=rtol)
 
 
@@ -93,5 +89,5 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
         bus_p.at[tab.bus] += net.res_xward.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_kvar.at[idx]
 
-    assert allclose(net.res_bus.p_kw.values, bus_p.values, equal_nan=True, rtol=rtol)
-    assert allclose(net.res_bus.q_kvar.values, bus_q.values, equal_nan=True, rtol=rtol)
+    assert allclose(float(net.res_bus.p_kw.values), bus_p.values, equal_nan=True, rtol=rtol)
+    assert allclose(float(net.res_bus.q_kvar.values), bus_q.values, equal_nan=True, rtol=rtol)
