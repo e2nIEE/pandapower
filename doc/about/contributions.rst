@@ -41,8 +41,15 @@ Advantages and Contributions
     - data structure to manage measurements for real-time simulations
     - WLS state estimation generates an exact grid state out of unexact measurements
     - WLS as the industry standard is a good reference for evaluating new state estimation developments
-    - bad data detection and filtering methods improve performance of the state estimator (upcoming)
+    - bad data detection and filtering methods improve performance of the state estimator
 
 7. Powerflow
-    - The implemented powerflow core in pandapower is an advanced version of the pypower powerflow. By integrating the numba JIT-compiler, the pandapower powerflow can be up to :download:`twice as fast  <../getting_started/calc_times.png>` as the standard pypower version
-    - It is possible to deactive the numba JIT-compiler
+    - accelerated with a numba implementation that allows very fast construction of nodal point admittance and jacobian matrices
+    - includes a topology check to allow convergence with unsupplied network areas
+    - different possiblities for initialization of power flow, including from DC power flow or from previous results
+    
+8. Short-Circuit Calculation
+    - pandapower includes a short-circuit calculation with correction factors according to IEC 60909
+    - symmetrical three-phase and unsymmetrical two-phase currents can be calculated
+    - vectorized implementation allows fast calculation of short-circuit currents including branch flow results
+ 

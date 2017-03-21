@@ -32,11 +32,11 @@ pandapower allows
     - topological searches in electric networks
     - plotting of structural and/or geographical network plans
     - configuring and running state estimation
+    - static short circuit calculation according to IEC 60909
 
-pandapower does not yet support:
-    - static short circuit calculation (currently in development)
-    - unbalanced power flow problems (planned, but not currently in development)
-    - RMS simulation (planned, but not currently in development)
+pandapower does not yet support, but might in the future:
+    - unbalanced power flow problems
+    - RMS simulation
     
 pandapower does not, and most likely never will, support:
     - electromagnetic transient simulations

@@ -8,11 +8,23 @@ unreleased
 - [ADDED] sn_kva parameter in create_empty network for per unit system reference power
 - [ADDED] parameter parallel for trafo element
 - [ADDED] connectivity check for power flow to deal with disconnected network areas
+- [ADDED] backward/forward sweep power flow algorithm specially suited for radial and weakly-meshed networks
+- [ADDED] linear piece wise and polynomial OPF cost functions 
+- [ADDED] possibility to make loads controllable in OPF
 - [ADDED] generator lookup to allow multiple generators at one bus
+- [CHANGED] Initialization of calculate_voltage_angles and init for high voltage networks
 - [ADDED] bad data detection for state estimation
 - [CHANGED] from_ppc: no detect_trafo anymore, several gen at each node possible
 - [CHANGED] validate_from_ppc: improved validation behaviour by means of duplicated gen and branch rearangement
 - [ADDED] networks: case33bw, case118, case300, case1354pegase, case2869pegase, case9241pegase, GBreducednetwork, GBnetwork, iceland, cigre_network_mv with_der='all' der
+- [ADDED] possibility to add fault impedance for short-circuit current calculation
+- [ADDED] branch results for short circuits
+- [ADDED] static generator model for short circuits
+- [ADDED] three winding transformer model for short circuits
+- [FIXED] correctly neglecting shunts and tap changer position for short-circuits
+- [ADDED] two phase short-circuit current calculation
+- [ADDED] tests for short circuit currents with validation against DIgSILENT PowerFactory
+
 
 [1.1.1] - 2017-01-12
 ----------------------
