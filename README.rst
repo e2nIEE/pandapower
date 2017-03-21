@@ -33,6 +33,27 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
    :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
     
 
+Functionality
+==============
+pandapower is an element based network calculation tools that supports the following components:
+
+	- lines
+	- two-winding and three-winding transformers
+	- ideal bus-bus and bus-branch switches
+	- static generators, loads and shunts
+	- external grid connections
+	- synchronous generators
+	- DC lines
+	- network equivalents (unsymmetric impedances, ward equivalents)
+
+pandapower supports the following network analysis functions:
+
+	- power flow
+	- optimal power flow
+	- state estimation
+	- short-circuit calculation according to IEC 60909
+	- topological graph searches
+
 For more information, go to `<http://www.uni-kassel.de/go/pandapower>`_.
 
 Installation
@@ -117,3 +138,5 @@ For the 3-bus example network, the result tables look like this:
 
 .. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_results.png
 		:width: 30em
+		
+All other pandapower elements and network analysis functionality (e.g. optimal power flow, state estimation or short-circuit calculation) is also fully integrated into the tabular pandapower datastructure.
