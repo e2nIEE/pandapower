@@ -46,8 +46,13 @@ def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
                     net.res_dcline.pl_kw.sum()
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
                     net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() + \
-                    net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()             
-    assert allclose(bus_surplus_p, branch_loss_p, rtol=rtol)
+                    net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()
+
+    if not allclose(bus_surplus_p, branch_loss_p, rtol=rtol):
+        type(bus_surplus_p)
+        type(branch_loss_p)
+        type(rtol)
+        raise ValueError("bus p: %s %s branch p: %s %s rtol: %s %s" % (bus_surplus_p, type(bus_surplus_p), branch_loss_p, type(branch_loss_p), rtol, type(rtol)))
     assert allclose(bus_surplus_q, branch_loss_q, rtol=rtol)
 
 
