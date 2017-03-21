@@ -11,7 +11,6 @@ from pandapower.powerflow import _powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
 
 
-
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, **kwargs):
@@ -122,9 +121,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 calculate_voltage_angles = True
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
-    # recycle parameters
-    if recycle == None:
-        recycle = dict(is_elems=False, ppc=False, Ybus=False)
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]

@@ -17,6 +17,7 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import _select_is_elements
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
+from pandapower.powerflow import LoadflowNotConverged
 
 
 def test_runpp_init():
@@ -64,7 +65,7 @@ def test_result_iter():
             runpp_with_consistency_checks(net, enforce_q_lims=True)
         except (AssertionError):
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
-        except(pp.LoadflowNotConverged):
+        except(LoadflowNotConverged):
             raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 
