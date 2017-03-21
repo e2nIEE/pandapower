@@ -32,13 +32,11 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 
 .. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
+    :scale: 150 %
 
 .. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
    :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
     
-
-Functionality
-==============
 pandapower is an element based network calculation tools that supports the following components:
 
 	- lines
