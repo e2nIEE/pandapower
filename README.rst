@@ -17,12 +17,12 @@ pandapower
 
 .. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=develop
     :target: https://coveralls.io/github/lthurner/pandapower?branch=develop
-
-.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE
     
 .. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
     :target: https://www.codacy.com/app/lthurner/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lthurner/pandapower&amp;utm_campaign=Badge_Grade
+
+.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE
 
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
@@ -32,13 +32,11 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 
 .. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
-    :scale: 150 %
 
 .. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
    :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
 
-Element Models
----------------
+**Element Models**
 
 pandapower is an element based network calculation tools that supports the following components:
 
@@ -51,8 +49,8 @@ pandapower is an element based network calculation tools that supports the follo
 	- DC lines
 	- network equivalents (unsymmetric impedances, ward equivalents)
 	
-Network Analysis
------------------
+**Network Analysis**
+
 pandapower supports the following network analysis functions:
 
 	- power flow
@@ -68,7 +66,7 @@ Installation notes can be found `here <http://pandapower.readthedocs.io/en/devel
 Interactive tutorials for a comfortable introducion into pandapower can be found `here <http://pandapower.readthedocs.io/en/develop/getting_started/tutorials.html>`_.
     
 Minimal Example
-=====================
+===============
 
 A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
 Each dataframe in a pandapowerNet contains the information about one pandapower element, such as line, load transformer etc.
@@ -79,8 +77,7 @@ We consider the following simple 3-bus example network as a minimal example:
 		:width: 20em
 		:align: center 
 
-Creating a Network
------------------------
+**Creating a Network**
 
 The above network can be created in pandapower as follows: ::
     
@@ -111,8 +108,7 @@ The pandapower representation now looks like this:
 .. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_datastructure.png
 		:width: 40em
 
-Running a Power Flow
------------------------
+**Running a Power Flow**
 
 A powerflow can be carried out with the `runpp function <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/powerflow/ac.html>`_: ::
      
