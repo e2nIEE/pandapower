@@ -111,6 +111,12 @@ def test_scaling_by_type():
     assert net.load.at[0, "scaling"] == 42
     assert net.sgen.at[0, "scaling"] == 12
 
+    tb.set_scaling_by_type(net, {"Household": 0, "PV": 0})
+
+    assert net.load.at[0, "scaling"] == 0
+    assert net.sgen.at[0, "scaling"] == 0
+
+
 def test_drop_inactive_elements():
     net = pp.create_empty_network()
 
