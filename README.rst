@@ -36,7 +36,10 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 
 .. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
    :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
-    
+
+Element Models
+---------------
+
 pandapower is an element based network calculation tools that supports the following components:
 
 	- lines
@@ -47,7 +50,9 @@ pandapower is an element based network calculation tools that supports the follo
 	- synchronous generators
 	- DC lines
 	- network equivalents (unsymmetric impedances, ward equivalents)
-
+	
+Network Analysis
+-----------------
 pandapower supports the following network analysis functions:
 
 	- power flow
@@ -74,7 +79,10 @@ We consider the following simple 3-bus example network as a minimal example:
 		:width: 20em
 		:align: center 
 
-This network can be created in pandapower as follows: ::
+Creating a Network
+-----------------------
+
+The above network can be created in pandapower as follows: ::
     
     import pandapower as pp
     #create empty net
@@ -103,7 +111,8 @@ The pandapower representation now looks like this:
 .. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_datastructure.png
 		:width: 40em
 
-**Running a Power Flow**  
+Running a Power Flow
+-----------------------
 
 A powerflow can be carried out with the `runpp function <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/powerflow/ac.html>`_: ::
      
