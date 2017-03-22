@@ -1194,6 +1194,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     OPTIONAL:
         **in_service** (boolean) - True for in_service or False for out of service
 
+        **parallel** (integer) - number of parallel transformers
+
         **name** (string) - A custom name for this transformer
 
         **shift_degree** (float) - Angle shift over the transformer*

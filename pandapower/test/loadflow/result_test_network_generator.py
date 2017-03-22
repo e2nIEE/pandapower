@@ -144,7 +144,7 @@ def add_test_trafo(net):
                                           i0_percent=.4, pfe_kw=2, sn_kva=400, vn_hv_kv=22,
                                           vn_lv_kv=0.42, tp_max=10, tp_mid=5, tp_min=0,
                                           tp_st_percent=1.25, tp_pos=3, shift_degree=150,
-                                          tp_side="hv")
+                                          tp_side="hv", parallel=2)
     t2 = pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
                                                i0_percent=.4, pfe_kw=2, sn_kva=400, vn_hv_kv=22,
                                                vn_lv_kv=0.42, tp_max=10, tp_mid=5, tp_min=0,
