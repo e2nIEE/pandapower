@@ -2,8 +2,8 @@
 pandapower
 =============
 
-.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.2.0
-   :target: http://pandapower.readthedocs.io/en/develop/?badge=develop
+.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.2.2
+   :target: http://pandapower.readthedocs.io/
    :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
@@ -12,7 +12,7 @@ pandapower
 .. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
     :target: https://pypi.python.org/pypi/pandapower
 
-.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=develop
+.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
     :target: https://travis-ci.org/lthurner/pandapower
 
 .. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=develop

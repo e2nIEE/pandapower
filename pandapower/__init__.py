@@ -9,4 +9,4 @@ from pandapower.diagnostic import *
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
-__version__ = "1.2.0"
+__version__ = "1.2.2"

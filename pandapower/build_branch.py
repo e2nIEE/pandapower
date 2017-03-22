@@ -540,16 +540,16 @@ def _switch_branches(net, ppc):
         to_bus = to_bus[~np.isnan(to_bus)].values.astype(int)
 
         # set branch in ppc out of service if from and to bus are at a line which is in service
-        if from_bus.size and to_bus.size:
-            # get from and to buses of these branches
-            ppc_from = bus_lookup[from_bus]
-            ppc_to = bus_lookup[to_bus]
-            ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
-                & np.in1d(ppc['branch'][:, 1], ppc_to)
-            ppc["branch"][ppc_idx, BR_STATUS] = 0
-
-            # drop from in service lines as well
-            lines_is = lines_is.drop(sw_elem[~m])
+#        if from_bus.size and to_bus.size:
+#            # get from and to buses of these branches
+#            ppc_from = bus_lookup[from_bus]
+#            ppc_to = bus_lookup[to_bus]
+#            ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from)\
+#                & np.in1d(ppc['branch'][:, 1], ppc_to)
+#            ppc["branch"][ppc_idx, BR_STATUS] = 0
+#
+#            # drop from in service lines as well
+#            lines_is = lines_is.drop(sw_elem[~m])
 
     # opened switches at in service lines
     slidx = slidx\

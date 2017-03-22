@@ -1,6 +1,15 @@
 Change Log
 =============
 
+[1.2.2] - 2017-03-22
+--------------------
+- [CHANGED] Minor refactoring in pd2ppc
+- [ADDED] Technical Report
+
+[1.2.1] - 2017-03-21
+--------------------
+- [FIXED] Readme for PyPi
+
 [1.2.0] - 2017-03-21
 --------------------
 - [CHANGED] net.line.imax_ka to net.line.max_i_ka for consistency reasons
