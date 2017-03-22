@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import matplotlib.pyplot as plt
 import pandapower.topology as top
 import numpy as np
 
+
 def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance from Slack [km]",
-                         ylabel="Voltage [pu]", x0=0, trafocolor="r", bus_colors=None, **kwargs):
+                         ylabel="Voltage [pu]", x0=0, trafocolor="r", bus_colors=None,
+                         line_loading_weight=False, **kwargs):
     if ax is None:
         plt.figure(facecolor="white", dpi=120)
         ax = plt.gca()
@@ -17,7 +19,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         raise ValueError("no results in this pandapower network")
     for eg in net.ext_grid[net.ext_grid.in_service==True].bus:
         d = top.calc_distance_to_bus(net, eg)
-        for _, line in net.line[net.line.in_service == True].iterrows():
+        for lix, line in net.line[net.line.in_service == True].iterrows():
             if not line.from_bus in d.index:
                 continue
             if not ((net.switch.element==line.name) & (net.switch.closed==False)
@@ -29,13 +31,15 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                     y = [net.res_bus.vm_pu.at[fbus], net.res_bus.vm_pu.at[tbus]]
                 except:
                     raise UserWarning
-                ax.plot(x, y, **kwargs)
+                lw = 0.4 * np.sqrt(net.res_line.loading_percent.at[lix]) if line_loading_weight \
+                    else 1.5
+                ax.plot(x, y, linewidth=lw, **kwargs)
                 if bus_colors is not None:
                     for bus, x, y in zip((fbus, tbus), x, y):
                         if bus in bus_colors:
                             ax.plot(x, y, 'or', color=bus_colors[bus], ms=3)
 
-                kwargs = {k:v for k,v in kwargs.items() if not k == "label"}
+                kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
         if plot_transformers:
             if hasattr(plot_transformers, "__iter__"):  # if is a list for example
                 trafos = net.trafo.loc[list(plot_transformers)]
@@ -56,7 +60,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
     return ax
 
 
-def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolor="k", ax = None):
+def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolor="k", ax=None):
     if ax is None:
         plt.figure(facecolor="white", dpi=80)
         ax = plt.gca()
@@ -70,3 +74,12 @@ def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolo
             plt.setp(boxplot[l], color=boxcolor)
         else:
             plt.setp(boxplot[l], color=whiskercolor)
+
+if __name__ == "__main__":
+    import pandapower as pp
+    import pandapower.networks as nw
+    net = nw.create_cigre_network_mv()
+    pp.runpp(net)
+    plot_voltage_profile(net, line_loading_weight=True)
+    plot_loading(net)
+    plt.show()
