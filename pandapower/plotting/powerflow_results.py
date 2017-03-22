@@ -17,41 +17,41 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         ax = plt.gca()
     if not net.converged:
         raise ValueError("no results in this pandapower network")
-    for eg in net.ext_grid[net.ext_grid.in_service==True].bus:
+    for eg in net.ext_grid[net.ext_grid.in_service == True].bus:
         d = top.calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service == True].iterrows():
             if not line.from_bus in d.index:
                 continue
-            if not ((net.switch.element==line.name) & (net.switch.closed==False)
-                    & (net.switch.et=='l')).any():
-                fbus = line.from_bus
-                tbus = line.to_bus
-                x = [x0 + d.at[fbus], x0 + d.at[tbus]]
+            if not ((net.switch.element == line.name) & (net.switch.closed == False)
+                    & (net.switch.et == 'l')).any():
+                from_bus = line.from_bus
+                to_bus = line.to_bus
+                x = [x0 + d.at[from_bus], x0 + d.at[to_bus]]
                 try:
-                    y = [net.res_bus.vm_pu.at[fbus], net.res_bus.vm_pu.at[tbus]]
+                    y = [net.res_bus.vm_pu.at[from_bus], net.res_bus.vm_pu.at[to_bus]]
                 except:
                     raise UserWarning
                 lw = 0.4 * np.sqrt(net.res_line.loading_percent.at[lix]) if line_loading_weight \
                     else 1.5
                 ax.plot(x, y, linewidth=lw, **kwargs)
                 if bus_colors is not None:
-                    for bus, x, y in zip((fbus, tbus), x, y):
+                    for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
                             ax.plot(x, y, 'or', color=bus_colors[bus], ms=3)
 
                 kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
         if plot_transformers:
             if hasattr(plot_transformers, "__iter__"):  # if is a list for example
-                trafos = net.trafo.loc[list(plot_transformers)]
+                transformers = net.trafo.loc[list(plot_transformers)]
             else:
-                trafos = net.trafo[net.trafo.in_service == True]
-            for _, trafo in trafos.iterrows():
-                if trafo.hv_bus not in d.index:
+                transformers = net.trafo[net.trafo.in_service == True]
+            for _, transformer in transformers.iterrows():
+                if transformer.hv_bus not in d.index:
                     continue
-                ax.plot([x0 + d.loc[trafo.hv_bus],
-                         x0 + d.loc[trafo.lv_bus]],
-                        [net.res_bus.vm_pu.loc[trafo.hv_bus],
-                         net.res_bus.vm_pu.loc[trafo.lv_bus]], color=trafocolor,
+                ax.plot([x0 + d.loc[transformer.hv_bus],
+                         x0 + d.loc[transformer.lv_bus]],
+                        [net.res_bus.vm_pu.loc[transformer.hv_bus],
+                         net.res_bus.vm_pu.loc[transformer.lv_bus]], color=trafocolor,
                         **{k:v for k,v in kwargs.items() if not k == "color"})
         if xlabel:
             ax.set_xlabel(xlabel, fontweight="bold", color=(.4, .4, .4))
