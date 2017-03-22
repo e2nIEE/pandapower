@@ -26,8 +26,6 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)
     reset_results(net)
-    # select elements in service (time consuming, so we do it once)
-    net["_is_elems"] = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net)
     if not ac:

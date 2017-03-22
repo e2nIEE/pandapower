@@ -48,7 +48,7 @@ def nxgraph_from_ppc(net, ppc):
     mg.add_edges_from((int(branch[T_BUS]), int(branch[F_BUS]),
                        {"r": branch[BR_R], "x": branch[BR_X]}) for branch in ppc["branch"].real)
     mg.add_node("earth")
-    vs_buses_pp = list(set(net._is_elems["ext_grid"].bus.values) | set(net._is_elems["gen"].bus))
+    vs_buses_pp = list(set(net._is_elements["ext_grid"].bus.values) | set(net._is_elements["gen"].bus))
     vs_buses = bus_lookup[vs_buses_pp]
     z = 1 / (ppc["bus"][vs_buses, GS] + ppc["bus"][vs_buses, BS] * 1j)
     mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 

@@ -14,7 +14,7 @@ from pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.run_userfcn import run_userfcn
 
 from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \
-    _check_connectivity, _create_ppc2pd_bus_lookup, _remove_isolated_elements_from_is_elements
+    _check_connectivity, _create_ppc2pd_bus_lookup, _remove_isolated_elements_from_is_elements, _select_is_elements
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
     _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
@@ -56,6 +56,9 @@ def _pd2ppc(net):
                               }
         **ppci** - The "internal" pypower format network for PF calculations
     """
+    # select elements in service (time consuming, so we do it once)
+    net["_is_elements"] = _select_is_elements(net)
+
     # get options
     mode = net["_options"]["mode"]
     check_connectivity = net["_options"]["check_connectivity"]
@@ -201,7 +204,7 @@ def _ppc2ppci(ppc, ppci, net):
     ppc['gen'] = ppc['gen'][sort_gens,]
 
     # update gen lookups
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     eg_end = len(is_elems['ext_grid'])
     gen_end = eg_end + len(is_elems['gen'])
     sgen_end = len(is_elems["sgen_controllable"]) + gen_end if "sgen_controllable" in is_elems else gen_end
@@ -260,7 +263,7 @@ def _update_lookup_entries(net, lookup, e2i, element):
 
 def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     # get buses from pandapower and ppc
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     pandapower_index = is_elems[element].index.values
     ppc_index = sort_gens[ppc_start_index: ppc_end_index]
 
@@ -279,6 +282,9 @@ def _update_ppc(net):
     @param is_elems:
     @return:
     """
+    # select elements in service (time consuming, so we do it once)
+    net["_is_elements"] = _select_is_elements(net)
+
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
     ppc = net["_ppc"]

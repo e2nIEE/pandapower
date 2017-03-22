@@ -111,7 +111,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _calc_sc(net)
 
 def _calc_sc(net):
-    net["_is_elems"] = _select_is_elements(net)
+    # net["_is_elements"] = _select_is_elements(net)
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
     _calc_equiv_sc_impedance(net, ppci)

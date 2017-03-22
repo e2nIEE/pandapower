@@ -38,7 +38,7 @@ def _build_gen_pf(net, ppc):
     mode = net["_options"]["mode"]
 
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
 
@@ -116,7 +116,7 @@ def _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, q_lim_default, p_lim_defaul
 def _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default, update_lookup=True):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     xw = net["xward"]
-    xw_is = net["_is_elems"]['xward']
+    xw_is = net["_is_elements"]['xward']
     if update_lookup:
         ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
     ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
@@ -146,7 +146,7 @@ def _update_gen_ppc(net, ppc):
     enforce_q_lims = net["_options"]["enforce_q_lims"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
 
@@ -200,7 +200,7 @@ def _build_gen_opf(net, ppc, delta=1e-10):
     if len(net.dcline) > 0:
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \

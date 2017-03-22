@@ -12,9 +12,6 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
-from pandapower.powerflow import _select_is_elements
-from pandapower.powerflow import LoadflowNotConverged
 
 
 def test_rundcpp_init():
@@ -74,7 +71,6 @@ def get_isolated(net):
                      trafo_model="t", check_connectivity=False,
                      mode="pf", copy_constraints_to_ppc=False,
                      r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
-    net["_is_elems"] = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)

@@ -125,7 +125,6 @@ def get_isolated(net):
                      trafo_model="t", check_connectivity=False,
                      mode="pf", copy_constraints_to_ppc=False,
                      r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
-    net["_is_elems"] = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)

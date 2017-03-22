@@ -40,7 +40,7 @@ def _get_ext_grid_results(net, ppc):
     ac = net["_options"]["ac"]
 
     # get results for external grids
-    eg_is = net["_is_elems"]['ext_grid']
+    eg_is = net["_is_elements"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
 
     n_res_eg = len(net['ext_grid'])
@@ -71,7 +71,7 @@ def _get_ext_grid_results(net, ppc):
 def _get_pp_gen_results(net, ppc, b, p, q):
     ac = net["_options"]["ac"]
 
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
 
     gen_is = is_elems['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]

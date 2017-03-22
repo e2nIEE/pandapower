@@ -15,7 +15,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
     b, p, q = array([]), array([]), array([])
 
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
 
     l = net["load"]
     if len(l) > 0:
@@ -93,7 +93,7 @@ def _get_p_q_results(net, bus_lookup_aranged):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
 
     l = net["load"]
     if len(l) > 0:
@@ -159,7 +159,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     ac = net["_options"]["ac"]
 
     b, p, q = np.array([]), np.array([]), np.array([])
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     s = net["shunt"]

@@ -482,7 +482,7 @@ def _calc_xward_parameter(net, ppc):
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) /\
                 net.sn_kva * 1e3
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
-    xw_is = net["_is_elems"]["xward"]
+    xw_is = net["_is_elements"]["xward"]
     t[:, 0] = bus_lookup[net["xward"]["bus"].values]
     t[:, 1] = bus_lookup[net["xward"]["ad_bus"].values]
     t[:, 2] = net["xward"]["r_ohm"] / baseR
@@ -518,7 +518,7 @@ def _switch_branches(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net._options["mode"]
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     lines_is = is_elems['line']
     bus_is = is_elems['bus']
 
@@ -681,7 +681,7 @@ def _branches_with_oos_buses(net, ppc):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     bus_is = is_elems['bus']
     line_is = is_elems['line']
 

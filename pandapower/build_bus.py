@@ -43,7 +43,7 @@ def _build_bus_ppc(net, ppc):
     bus_index = net["bus"].index.values
     n_bus = len(bus_index)
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     eg_is = is_elems['ext_grid']
     gen_is = is_elems['gen']
     bus_is = is_elems['bus']
@@ -178,7 +178,7 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
 
     l = net["load"]
     # element_is = check if element is at a bus in service & element is in service
@@ -224,7 +224,7 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
 
     l = net["load"]
     if not l.empty:
@@ -258,7 +258,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     # get in service elements
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
 
     s = net["shunt"]
     if len(s) > 0:
@@ -306,7 +306,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     case = net._options["case"]
-    eg = net._is_elems["ext_grid"]
+    eg = net._is_elements["ext_grid"]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
@@ -329,7 +329,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
 def _add_gen_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX
-    gen = net._is_elems["gen"]
+    gen = net._is_elements["gen"]
     if len(gen) == 0:
         return
     gen_buses = gen.bus.values
@@ -356,7 +356,7 @@ def _add_gen_sc_impedance(net, ppc):
 
 def _add_sgen_sc_impedance(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    sgen = net.sgen[net._is_elems["sgen"]]
+    sgen = net.sgen[net._is_elements["sgen"]]
     if len(sgen) == 0:
         return
     if any(pd.isnull(sgen.sn_kva)):

@@ -249,7 +249,7 @@ class state_estimation(object):
                                  copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
                                  calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                                  recycle=dict(is_elems=False, ppc=False, Ybus=False))
-        self.net["_is_elems"] = _select_is_elements(self.net)
+        self.net["_is_elements"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]

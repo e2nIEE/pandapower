@@ -256,7 +256,7 @@ def _select_is_elements(net):
     recycle = net["_options"]["recycle"]
 
     if recycle is not None and recycle["is_elems"]:
-        if "_is_elems" not in net or net["_is_elems"] is None:
+        if "_is_elements" not in net or net["_is_elements"] is None:
             # sort elements according to their in service status
             elems = ['bus', 'line']
             for elm in elems:
@@ -287,7 +287,7 @@ def _select_is_elements(net):
             }
         else:
             # just update the elements
-            is_elems = net['_is_elems']
+            is_elems = net['_is_elements']
 
             bus_is_ind = is_elems['bus'].index
             #update elements
@@ -556,7 +556,7 @@ def _create_ppc2pd_bus_lookup(net):
 
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
-    is_elems = net["_is_elems"]
+    is_elems = net["_is_elements"]
     pp_nodes = [n for n in isolated_nodes if not(n > len(pcc2pd_bus_lookup))]
     isolated_nodes_pp = pcc2pd_bus_lookup[pp_nodes]
     # remove isolated buses from is_elems["bus"]
@@ -572,4 +572,4 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     is_elems["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
                           & net["gen"]["in_service"].values.astype(bool)]
 
-    net["_is_elems"] = is_elems
+    net["_is_elements"] = is_elems

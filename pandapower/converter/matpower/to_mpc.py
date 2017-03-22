@@ -73,7 +73,6 @@ def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, t
 
     # select elements in service (time consuming, so we do it once)
     _get_std_options(net, init, calculate_voltage_angles, trafo_model)
-    net["_is_elems"] = _select_is_elements(net)
 
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)

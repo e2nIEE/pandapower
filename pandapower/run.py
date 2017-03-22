@@ -96,7 +96,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
             Contains a dict with the following parameters:
-            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elements"]
             ppc: If True the ppc is taken from net["_ppc"] and gets updated instead of reconstructed entirely
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
@@ -164,7 +164,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
         **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
             Contains a dict with the following parameters:
-            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elems"]
+            is_elems: If True in service elements are not filtered again and are taken from the last result in net["_is_elements"]
             ppc: If True the ppc (PYPOWER case file) is taken from net["_ppc"] and gets updated instead of reconstructed entirely
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
