@@ -14,8 +14,6 @@ from pandapower.pypower_extensions.makeBdc import makeBdc
 from pandapower.pypower_extensions.bustypes import bustypes
 
 
-# from pandapower.run_pf_algorithm import _store_results_from_pf_in_ppci, _get_pf_variables_from_ppci
-
 def _run_dc_pf(ppci):
     t0 = time()
     baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _ = _get_pf_variables_from_ppci(ppci)
