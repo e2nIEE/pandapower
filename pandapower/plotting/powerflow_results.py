@@ -52,7 +52,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                          x0 + d.loc[transformer.lv_bus]],
                         [net.res_bus.vm_pu.loc[transformer.hv_bus],
                          net.res_bus.vm_pu.loc[transformer.lv_bus]], color=trafocolor,
-                        **{k:v for k,v in kwargs.items() if not k == "color"})
+                        **{k: v for k, v in kwargs.items() if not k == "color"})
         if xlabel:
             ax.set_xlabel(xlabel, fontweight="bold", color=(.4, .4, .4))
         if ylabel:
