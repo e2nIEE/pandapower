@@ -62,7 +62,7 @@ def test_two_open_switches():
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
     pp.rundcpp(net)
-    assert net.res_line.i_ka.at[l2] == 0.
+    assert np.isnan(net.res_line.i_ka.at[l2])
 
 
 def get_isolated(net):

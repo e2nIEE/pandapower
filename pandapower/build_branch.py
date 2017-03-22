@@ -516,6 +516,7 @@ def _switch_branches(net, ppc):
         **ppc** - The PYPOWER format network to fill in values
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    connectivity_check = net["_options"]["check_connectivity"]
     mode = net._options["mode"]
     # get in service elements
     _is_elements = net["_is_elements"]
@@ -540,7 +541,7 @@ def _switch_branches(net, ppc):
         to_bus = to_bus[~np.isnan(to_bus)].values.astype(int)
 
         # set branch in ppc out of service if from and to bus are at a line which is in service
-        if from_bus.size and to_bus.size:
+        if not connectivity_check and from_bus.size and to_bus.size:
             # get from and to buses of these branches
             ppc_from = bus_lookup[from_bus]
             ppc_to = bus_lookup[to_bus]

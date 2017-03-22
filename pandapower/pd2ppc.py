@@ -88,9 +88,11 @@ def _pd2ppc(net):
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)
+
     # add auxilary buses for out of service buses at in service lines.
     # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
+
     # sets buses out of service, which aren't connected to branches / REF buses
     _set_isolated_buses_out_of_service(net, ppc)
 
