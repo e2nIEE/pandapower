@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import matplotlib.pyplot as plt
-
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
                                             create_trafo_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 try:
     import seaborn
     colors = seaborn.color_palette()
-except:
+except ImportError:
     colors = ["b", "g", "r", "c", "y"]
 
 logger = logging.getLogger(__name__)
@@ -103,7 +102,6 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
 
     draw_collections(collections)
     plt.show()
-
 
 
 if __name__ == "__main__":
