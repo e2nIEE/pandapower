@@ -53,7 +53,7 @@ def test_no_issues(diag_params, report_methods):
     net = nw.example_simple()
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    
+
     diag_results = pp.diagnostic(net, report_style=None)
     assert diag_results == {}
     for bool_value in [True, False]:
@@ -91,13 +91,13 @@ class TestInvalidValues:
         net.trafo3w.loc[0, 'vn_mv_kv'] = -1.5
         net.trafo3w.loc[0, 'vn_lv_kv'] = False
         net.ext_grid.loc[0, 'vm_pu'] = True
-        
+
         check_result = pp.invalid_values(net)
         if check_result:
             diag_results = {check_function: check_result}
         else:
             diag_results = {}
-        
+
         assert diag_results[check_function] == \
         {'bus': [(42, 'vn_kv', '-1', '>0')],
          'ext_grid': [(0, 'vm_pu', True, '>0')],
@@ -107,7 +107,7 @@ class TestInvalidValues:
          'trafo3w': [(0, 'sn_mv_kva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
                      (0, 'vn_mv_kv', -1.5, '>0'), (0, 'vn_lv_kv', False, '>0'),
                      (0, 'vsc_mv_percent', 'nan', '>0'), (0, 'vsc_lv_percent', 0.0, '>0')]}
-    
+
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
             report_check = None
@@ -117,7 +117,7 @@ class TestInvalidValues:
             except:
                 report_check = False
             assert report_check
-    
+
 
     def test_greater_equal_zero(self, test_net, diag_params, report_methods):
         net = copy.deepcopy(test_net)
@@ -157,7 +157,7 @@ class TestInvalidValues:
          'gen': [(0, 'scaling', 'nan', '>=0')],
          'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
          'sgen': [(0, 'scaling', False, '>=0')]}
-         
+
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
             report_check = None
@@ -212,7 +212,7 @@ class TestInvalidValues:
                     (4, 'closed', None, 'boolean'), (5, 'closed', 10, 'boolean')],
          'trafo': [(0, 'in_service', 'True', 'boolean')],
          'trafo3w': [(0, 'in_service', 'nan', 'boolean')]}
-         
+
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
             report_check = None
@@ -260,7 +260,7 @@ class TestInvalidValues:
                    (0, 'lv_bus', 'nan', 'positive_integer')],
          'trafo3w': [(0, 'hv_bus', False, 'positive_integer'),
                      (0, 'mv_bus', 0.5, 'positive_integer')]}
-                     
+
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
             report_check = None
@@ -293,7 +293,7 @@ class TestInvalidValues:
         {'gen': [(0, 'p_kw', False, 'number')],
          'load': [(0, 'p_kw', '1000', 'number'), (1, 'q_kvar', 'nan', 'number')],
          'sgen': [(1, 'q_kvar', 'nan', 'number')]}
-         
+
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
             report_check = None
@@ -319,7 +319,7 @@ class TestInvalidValues:
             diag_results = {}
         assert diag_results[check_function] == \
         {'line': [(0, 'df', 1.5, '0to1')]}
-         
+
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
             report_check = None
@@ -341,7 +341,7 @@ class TestInvalidValues:
         net.switch.loc[2, 'et'] = None
         net.switch.loc[3, 'et'] = True
         net.switch.loc[4, 'et'] = 't'
-        
+
         check_result = pp.invalid_values(net)
         if check_result:
             diag_results = {check_function: check_result}
@@ -352,7 +352,7 @@ class TestInvalidValues:
                     (1, 'et', 1, 'switch_type'),
                     (2, 'et', None, 'switch_type'),
                     (3, 'et', True, 'switch_type')]}
-                    
+
         for bool_value in [True, False]:
                 diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
                 report_check = None
@@ -386,7 +386,7 @@ def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, re
     net.gen.bus.at[0] = 0
     pp.create_ext_grid(net, 1)
     net.ext_grid.bus.at[1] = 0
-    
+
     check_result = pp.multiple_voltage_controlling_elements_per_bus(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -395,7 +395,7 @@ def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, re
     assert diag_results[check_function] == \
     {'buses_with_gens_and_ext_grids': [0],
      'buses_with_mult_ext_grids': [0]}
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -413,7 +413,7 @@ def test_overload(test_net, diag_params, report_methods):
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     net.load.p_kw.at[4] *= 1000
-    
+
     check_result = pp.overload(net, diag_params['overload_scaling_factor'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -421,7 +421,7 @@ def test_overload(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'generation': 'uncertain', 'load': True}
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -438,10 +438,10 @@ def test_overload(test_net, diag_params, report_methods):
     if check_result:
         diag_results = {check_function: check_result}
     else:
-        diag_results = {}                                    
+        diag_results = {}
     assert diag_results[check_function] == \
     {'generation': True, 'load': 'uncertain'}
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -475,7 +475,7 @@ def test_switch_configuration(test_net, diag_params, report_methods):
         except:
             report_check = False
         assert report_check
-    
+
     net.switch.closed.at[0] = 1
     net.switch.closed.at[2] = 1
     net.switch.closed = 0
@@ -529,7 +529,7 @@ def test_different_voltage_levels_connected(test_net, diag_params, report_method
         diag_results = {}
     assert diag_results[check_function] == \
     {'lines': [6, 7], 'switches': [88]}
-     
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -562,7 +562,7 @@ def test_lines_with_impedance_close_to_zero(test_net, diag_params, report_method
     else:
         diag_results = {}
     assert diag_results[check_function] == [0, 1, 4]
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -581,7 +581,7 @@ def test_lines_with_impedance_close_to_zero(test_net, diag_params, report_method
     net.line.length_km.at[4] = 1
     net.line.r_ohm_per_km.at[4] = 0.001
     net.line.x_ohm_per_km.at[4] = 0.001
-    check_result = pp.lines_with_impedance_close_to_zero(net, 
+    check_result = pp.lines_with_impedance_close_to_zero(net,
                                                          diag_params['lines_min_length_km'],
                                                          diag_params['lines_min_z_ohm'])
     if check_result:
@@ -589,7 +589,7 @@ def test_lines_with_impedance_close_to_zero(test_net, diag_params, report_method
     else:
         diag_results = {}
     assert check_function not in diag_results
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -617,7 +617,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'trafo': {'hv_lv_swapped': [0]}}
-               
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -638,7 +638,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'trafo': {'hv_bus': [0], 'lv_bus': [0]}}
-               
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -659,7 +659,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'trafo': {'hv_bus': [0], 'lv_bus': [0]}}
-               
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -679,7 +679,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
     else:
         diag_results = {}
     assert check_function not in diag_results
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -699,7 +699,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
     else:
         diag_results = {}
     assert check_function not in diag_results
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -709,7 +709,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         except:
             report_check = False
         assert report_check
-    
+
     net.trafo = copy.deepcopy(trafo_copy)
 
     net.trafo3w.hv_bus.at[0] = trafo3w_copy.mv_bus.at[0]
@@ -722,7 +722,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'trafo3w': {'connectors_swapped_3w': [0]}}
-                 
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -744,7 +744,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'trafo3w': {'hv_bus': [0], 'lv_bus': [0], 'mv_bus': [0]}}
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -753,8 +753,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
             report_check = True
         except:
             report_check = False
-        assert report_check             
-    
+        assert report_check
+
     net.trafo3w = copy.deepcopy(trafo3w_copy)
     net.trafo3w.vn_hv_kv.at[0] *= 0.69
     net.trafo3w.vn_mv_kv.at[0] *= 0.69
@@ -766,7 +766,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         diag_results = {}
     assert diag_results[check_function] == \
     {'trafo3w': {'hv_bus': [0], 'lv_bus': [0], 'mv_bus': [0]}}
-                 
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -787,7 +787,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
     else:
         diag_results = {}
     assert check_function not in diag_results
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -808,7 +808,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
     else:
         diag_results = {}
     assert check_function not in diag_results
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -836,7 +836,7 @@ def test_wrong_reference_system(test_net, diag_params, report_methods):
     else:
         diag_results = {}
     assert diag_results[check_function] == {'gens': [0], 'loads': [0], 'sgens': [0]}
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -874,7 +874,7 @@ def test_disconnected_elements(test_net, diag_params, report_methods):
                    82, 83]}]
     for area, expected_area in zip(diag_results[check_function], expected_disconnect):
         assert area == expected_area
-        
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -913,10 +913,10 @@ def test_deviation_from_std_type(test_net, diag_params, report_methods):
               21: {'e_value': '5', 'param': 'max_i_ka', 'std_type_in_lib': True,
                    'std_type_value': 0.105}},
     'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
-                  'std_type_value': 12.2},
-              1: {'std_type_in_lib': False}},
+                  'std_type_value': 12.2}},
+
     'trafo3w': {0: {'std_type_in_lib': False}}}
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -944,7 +944,7 @@ def test_numba_comparison(test_net, diag_params, report_methods):
         for result_type in check_results[element_type]:
             for result in check_results[element_type][result_type]:
                 assert result > diag_params['numba_tolerance']
-                
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -972,7 +972,7 @@ def test_parallel_switches(test_net, diag_params, report_methods):
     else:
         diag_results = {}
     assert diag_results[check_function] == [[0, 88], [84, 89, 90], [66, 91]]
-    
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -982,8 +982,8 @@ def test_parallel_switches(test_net, diag_params, report_methods):
         except:
             report_check = False
         assert report_check
-                             
-                             
+
+
 def test_missing_bus_indeces(test_net, diag_params, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'missing_bus_indeces'
@@ -1005,7 +1005,7 @@ def test_missing_bus_indeces(test_net, diag_params, report_methods):
                                             'switch': [(0, 'bus', 10003), (0, 'element', 10004)],
                                             'trafo': [(0, 'lv_bus', 10001)],
                                             'trafo3w': [(0, 'mv_bus', 10002)]}
-                                            
+
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
         report_check = None
@@ -1015,7 +1015,7 @@ def test_missing_bus_indeces(test_net, diag_params, report_methods):
         except:
             report_check = False
         assert report_check
-    
+
 
 #def test_mixed():
 #    net = networks.mv_network("ring")

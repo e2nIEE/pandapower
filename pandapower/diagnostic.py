@@ -100,8 +100,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     for diag_function in diag_functions:
         if (diag_function in bus_index_dependent_checks) and ("missing_bus_indeces" in diag_results.keys()):
             diag_result = "check skipped"
-        elif 'invalid_values' in diag_results.keys(): 
-            if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen']) 
+        elif 'invalid_values' in diag_results.keys():
+            if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen'])
                                                                       & set(diag_results['invalid_values'].keys())):
                 diag_result = "check skipped"
             else:
@@ -638,7 +638,7 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         trafo3w_results['connectors_swapped_3w'] = connectors_swapped_3w
     if trafo3w_results:
         results['trafo3w'] = trafo3w_results
-    
+
     if len(results) > 0:
         return results
 
@@ -832,8 +832,9 @@ def deviation_from_std_type(net):
     check_results = {}
     for key in net.std_types.keys():
         for i, element in net[key].iterrows():
-            if element.std_type in net.std_types[key].keys():
-                std_type_values = net.std_types[key][element.std_type]
+            std_type = element.std_type
+            if std_type in net.std_types[key].keys():
+                std_type_values = net.std_types[key][std_type]
                 for param in std_type_values.keys():
                     if param == "tp_pos":
                         continue
@@ -844,7 +845,7 @@ def deviation_from_std_type(net):
                             check_results[key][i] = {'param': param, 'e_value': element[param],
                                                      'std_type_value': std_type_values[param],
                                                      'std_type_in_lib': True}
-            else:
+            elif std_type is not None:
                 if key not in check_results.keys():
                     check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}
@@ -864,7 +865,7 @@ def parallel_switches(net):
          OUTPUT:
             **parallel_switches** (list)   - List of tuples each containing parallel switches.
 
-                                        
+
 
 
     """
@@ -874,6 +875,5 @@ def parallel_switches(net):
     for bus, element in parallels_bus_and_element:
         parallel_switches.append(list(net.switch[(net.switch.bus == bus)
                                                  & (net.switch.element == element)].index))
-
     if parallel_switches:
         return parallel_switches
