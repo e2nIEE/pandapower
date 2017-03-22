@@ -10,7 +10,6 @@ import os
 import pandapower as pp
 import pandapower.networks as pn
 from pandapower.converter import from_mpc
-from pandapower.toolbox import convert_format
 try:
     import pplog as logging
 except:
@@ -24,7 +23,6 @@ def test_from_mpc():
     this_file_path = os.path.dirname(os.path.realpath(__file__))
     mat_case_path = os.path.join(this_file_path, 'case24_ieee_rts.mat')
     case24_from_mpc = from_mpc(mat_case_path, f_hz=60, casename_mpc_file='mpc')
-    case24 = convert_format(case24)
 
     pp.runpp(case24)
     pp.runpp(case24_from_mpc)
