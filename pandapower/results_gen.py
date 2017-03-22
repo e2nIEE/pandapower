@@ -71,9 +71,9 @@ def _get_ext_grid_results(net, ppc):
 def _get_pp_gen_results(net, ppc, b, p, q):
     ac = net["_options"]["ac"]
 
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
 
-    gen_is = is_elems['gen']
+    gen_is = _is_elements['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # bus index of in service gens
@@ -82,7 +82,7 @@ def _get_pp_gen_results(net, ppc, b, p, q):
     b = np.hstack([b, net['gen'].bus.values])
 
     # indices of in service gens in the ppc
-    if len(is_elems["gen"]):
+    if len(_is_elements["gen"]):
         gen_idx_ppc = gen_lookup[gen_is.index]
     else:
         gen_idx_ppc = []

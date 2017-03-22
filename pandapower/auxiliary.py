@@ -250,12 +250,12 @@ def _select_is_elements(net):
 
 
     @param net: pandapower Network
-    @return: is_elems Certain in service elements
+    @return: _is_elements Certain in service elements
     :rtype: object
     """
     recycle = net["_options"]["recycle"]
 
-    if recycle is not None and recycle["is_elems"]:
+    if recycle is not None and recycle["_is_elements"]:
         if "_is_elements" not in net or net["_is_elements"] is None:
             # sort elements according to their in service status
             elems = ['bus', 'line']
@@ -267,7 +267,7 @@ def _select_is_elements(net):
             line_is = net["line"]["in_service"].values.astype(bool)
             bus_is_ind = net["bus"][bus_is].index
             # check if in service elements are at in service buses
-            is_elems = {
+            _is_elements = {
                 "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
                                   & net["gen"]["in_service"].values.astype(bool)]
                 , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
@@ -287,13 +287,13 @@ def _select_is_elements(net):
             }
         else:
             # just update the elements
-            is_elems = net['_is_elements']
+            _is_elements = net['_is_elements']
 
-            bus_is_ind = is_elems['bus'].index
+            bus_is_ind = _is_elements['bus'].index
             #update elements
             elems = ['gen', 'ext_grid']
             for elm in elems:
-                is_elems[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
+                _is_elements[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
                                      & net[elm]["in_service"].values.astype(bool)]
 
     else:
@@ -302,7 +302,7 @@ def _select_is_elements(net):
         line_is = net["line"]["in_service"].values.astype(bool)
         bus_is_ind = net["bus"][bus_is].index
         # check if in service elements are at in service buses
-        is_elems = {
+        _is_elements = {
             "gen" : net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
                     & net["gen"]["in_service"].values.astype(bool)]
             , "load" : np.in1d(net["load"].bus.values, bus_is_ind) \
@@ -321,7 +321,7 @@ def _select_is_elements(net):
             , 'line': net['line'][line_is]
         }
 
-    return is_elems
+    return _is_elements
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode, 
                              copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle):
@@ -329,7 +329,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     if recycle == None:
-        recycle = dict(is_elems=False, ppc=False, Ybus=False)
+        recycle = dict(_is_elements=False, ppc=False, Ybus=False)
 
     options = {
           "calculate_voltage_angles": calculate_voltage_angles
@@ -556,20 +556,20 @@ def _create_ppc2pd_bus_lookup(net):
 
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pcc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
     pp_nodes = [n for n in isolated_nodes if not(n > len(pcc2pd_bus_lookup))]
     isolated_nodes_pp = pcc2pd_bus_lookup[pp_nodes]
-    # remove isolated buses from is_elems["bus"]
-    is_elems["bus"] = is_elems["bus"].drop(set(isolated_nodes_pp) & set(is_elems["bus"].index))
-    bus_is_ind = is_elems["bus"].index
+    # remove isolated buses from _is_elements["bus"]
+    _is_elements["bus"] = _is_elements["bus"].drop(set(isolated_nodes_pp) & set(_is_elements["bus"].index))
+    bus_is_ind = _is_elements["bus"].index
     # check if in service elements are at in service buses
 
     elems_to_update = ["load", "sgen", "ward", "xward", "shunt"]
     for elem in elems_to_update:
-        is_elems[elem] = np.in1d(net[elem].bus.values, bus_is_ind) \
+        _is_elements[elem] = np.in1d(net[elem].bus.values, bus_is_ind) \
                   & net[elem].in_service.values.astype(bool)
 
-    is_elems["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+    _is_elements["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
                           & net["gen"]["in_service"].values.astype(bool)]
 
-    net["_is_elements"] = is_elems
+    net["_is_elements"] = _is_elements

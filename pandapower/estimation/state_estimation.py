@@ -248,7 +248,7 @@ class state_estimation(object):
         _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
                                  copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
                                  calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
-                                 recycle=dict(is_elems=False, ppc=False, Ybus=False))
+                                 recycle=dict(_is_elements=False, ppc=False, Ybus=False))
         self.net["_is_elements"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]

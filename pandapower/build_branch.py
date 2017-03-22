@@ -518,9 +518,9 @@ def _switch_branches(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net._options["mode"]
     # get in service elements
-    is_elems = net["_is_elements"]
-    lines_is = is_elems['line']
-    bus_is = is_elems['bus']
+    _is_elements = net["_is_elements"]
+    lines_is = _is_elements['line']
+    bus_is = _is_elements['bus']
 
     # opened bus line switches
     slidx = (net["switch"]["closed"].values == 0) \
@@ -681,9 +681,9 @@ def _branches_with_oos_buses(net, ppc):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elements"]
-    bus_is = is_elems['bus']
-    line_is = is_elems['line']
+    _is_elements = net["_is_elements"]
+    bus_is = _is_elements['bus']
+    line_is = _is_elements['line']
 
     n_oos_buses = len(net['bus']) - len(bus_is)
 

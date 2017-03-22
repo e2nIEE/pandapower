@@ -15,18 +15,18 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
     b, p, q = array([]), array([]), array([])
 
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
 
     l = net["load"]
     if len(l) > 0:
-        load_is = is_elems["load"]
+        load_is = _is_elements["load"]
         load_ctrl = l["controllable"].values
         scaling = l["scaling"].values
         pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
         ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
         if any(load_ctrl):
             # get load index in ppc
-            lidx_ppc = net._pd2ppc_lookups["load_controllable"][is_elems["load_controllable"].index]
+            lidx_ppc = net._pd2ppc_lookups["load_controllable"][_is_elements["load_controllable"].index]
             pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
             ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
 
@@ -39,14 +39,14 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
 
     sg = net["sgen"]
     if len(sg) > 0:
-        sgen_is = is_elems["sgen"]
+        sgen_is = _is_elements["sgen"]
         sgen_ctrl = sg["controllable"].values
         scaling = sg["scaling"].values
         psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
         qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
         if any(sgen_ctrl):
             # get gen index in ppc
-            gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][is_elems["sgen_controllable"].index]
+            gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][_is_elements["sgen_controllable"].index]
             psg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, PG] * 1000
             qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, QG] * 1000
 
@@ -93,11 +93,11 @@ def _get_p_q_results(net, bus_lookup_aranged):
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
 
     l = net["load"]
     if len(l) > 0:
-        load_is = is_elems["load"]
+        load_is = _is_elements["load"]
         scaling = l["scaling"].values
         pl = l["p_kw"].values * scaling * load_is
         net["res_load"]["p_kw"] = pl
@@ -111,7 +111,7 @@ def _get_p_q_results(net, bus_lookup_aranged):
 
     sg = net["sgen"]
     if len(sg) > 0:
-        sgen_is =is_elems["sgen"]
+        sgen_is =_is_elements["sgen"]
         scaling = sg["scaling"].values
         psg = sg["p_kw"].values * scaling * sgen_is
         net["res_sgen"]["p_kw"] = psg
@@ -125,7 +125,7 @@ def _get_p_q_results(net, bus_lookup_aranged):
 
     w = net["ward"]
     if len(w) > 0:
-        ward_is = is_elems["ward"]
+        ward_is = _is_elements["ward"]
         pw = w["ps_kw"].values * ward_is
         net["res_ward"]["p_kw"] = pw
         p = np.hstack([p, pw])
@@ -137,7 +137,7 @@ def _get_p_q_results(net, bus_lookup_aranged):
 
     xw = net["xward"]
     if len(xw) > 0:
-        xward_is = is_elems["xward"]
+        xward_is = _is_elements["xward"]
         pxw = xw["ps_kw"].values * xward_is
         p = np.hstack([p, pxw])
         net["res_xward"]["p_kw"] = pxw
@@ -159,13 +159,13 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     ac = net["_options"]["ac"]
 
     b, p, q = np.array([]), np.array([]), np.array([])
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     s = net["shunt"]
     if len(s) > 0:
         sidx = bus_lookup[s["bus"].values]
-        shunt_is = is_elems["shunt"]
+        shunt_is = _is_elements["shunt"]
         u_shunt = ppc["bus"][sidx, VM]
         u_shunt = np.nan_to_num(u_shunt)
         p_shunt = u_shunt**2 * net["shunt"]["p_kw"].values * shunt_is
@@ -182,7 +182,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     w = net["ward"]
     if len(w) > 0:
         widx = bus_lookup[w["bus"].values]
-        ward_is = is_elems["ward"]
+        ward_is = _is_elements["ward"]
         u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
         p_ward = u_ward**2 * net["ward"]["pz_kw"].values * ward_is
@@ -199,7 +199,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     xw = net["xward"]
     if len(xw) > 0:
         widx = bus_lookup[xw["bus"].values]
-        xward_is = is_elems["xward"]
+        xward_is = _is_elements["xward"]
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward**2 * net["xward"]["pz_kw"].values * xward_is

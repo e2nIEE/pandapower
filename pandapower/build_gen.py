@@ -38,9 +38,9 @@ def _build_gen_pf(net, ppc):
     mode = net["_options"]["mode"]
 
     # get in service elements
-    is_elems = net["_is_elements"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -146,9 +146,9 @@ def _update_gen_ppc(net, ppc):
     enforce_q_lims = net["_options"]["enforce_q_lims"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elements"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -200,16 +200,16 @@ def _build_gen_opf(net, ppc, delta=1e-10):
     if len(net.dcline) > 0:
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
     # get in service elements
-    is_elems = net["_is_elements"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
     sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
         if "controllable" in net.sgen.columns else DataFrame()
     l_is = net.load[(net.load.in_service & net.load.controllable) == True] \
         if "controllable" in net.load.columns else DataFrame()
 
-    is_elems["sgen_controllable"] = sg_is
-    is_elems["load_controllable"] = l_is
+    _is_elements["sgen_controllable"] = sg_is
+    _is_elements["load_controllable"] = l_is
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
     sg_end = gen_end + len(sg_is)

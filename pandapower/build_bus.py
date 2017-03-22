@@ -43,10 +43,10 @@ def _build_bus_ppc(net, ppc):
     bus_index = net["bus"].index.values
     n_bus = len(bus_index)
     # get in service elements
-    is_elems = net["_is_elements"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
-    bus_is = is_elems['bus']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
+    bus_is = _is_elements['bus']
 
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     consec_buses = np.arange(n_bus)
@@ -178,33 +178,33 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     # get in service elements
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
 
     l = net["load"]
     # element_is = check if element is at a bus in service & element is in service
     if len(l) > 0:
-        vl = is_elems["load"] * l["scaling"].values.T / np.float64(1000.)
+        vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
         q = np.hstack([q, l["q_kvar"].values * vl])
         p = np.hstack([p, l["p_kw"].values * vl])
         b = np.hstack([b, l["bus"].values])
 
     s = net["sgen"]
     if len(s) > 0:
-        vl = is_elems["sgen"] * s["scaling"].values.T / np.float64(1000.)
+        vl = _is_elements["sgen"] * s["scaling"].values.T / np.float64(1000.)
         q = np.hstack([q, s["q_kvar"].values * vl])
         p = np.hstack([p, s["p_kw"].values * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
     if len(w) > 0:
-        vl = is_elems["ward"] / np.float64(1000.)
+        vl = _is_elements["ward"] / np.float64(1000.)
         q = np.hstack([q, w["qs_kvar"].values * vl])
         p = np.hstack([p, w["ps_kw"].values * vl])
         b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
     if len(xw) > 0:
-        vl = is_elems["xward"] / np.float64(1000.)
+        vl = _is_elements["xward"] / np.float64(1000.)
         q = np.hstack([q, xw["qs_kvar"].values * vl])
         p = np.hstack([p, xw["ps_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
@@ -224,12 +224,12 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
 
     l = net["load"]
     if not l.empty:
         l["controllable"] = _controllable_to_bool(l["controllable"])
-        vl = (is_elems["load"] & ~l["controllable"]) * l["scaling"].values.T / np.float64(1000.)
+        vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / np.float64(1000.)
         lp = l["p_kw"].values * vl
         lq = l["q_kvar"].values * vl
     else: 
@@ -239,7 +239,7 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
     sgen = net["sgen"]
     if not sgen.empty:
         sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
-        vl = (is_elems["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+        vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
              np.float64(1000.)
         sp = sgen["p_kw"].values * vl
         sq = sgen["q_kvar"].values * vl
@@ -258,25 +258,25 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
     # get in service elements
-    is_elems = net["_is_elements"]
+    _is_elements = net["_is_elements"]
 
     s = net["shunt"]
     if len(s) > 0:
-        vl = is_elems["shunt"] / np.float64(1000.)
+        vl = _is_elements["shunt"] / np.float64(1000.)
         q = np.hstack([q, s["q_kvar"].values * vl])
         p = np.hstack([p, s["p_kw"].values * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
     if len(w) > 0:
-        vl = is_elems["ward"] / np.float64(1000.)
+        vl = _is_elements["ward"] / np.float64(1000.)
         q = np.hstack([q, w["qz_kvar"].values * vl])
         p = np.hstack([p, w["pz_kw"].values * vl])
         b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
     if len(xw) > 0:
-        vl = is_elems["xward"] / np.float64(1000.)
+        vl = _is_elements["xward"] / np.float64(1000.)
         q = np.hstack([q, xw["qz_kvar"].values * vl])
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])

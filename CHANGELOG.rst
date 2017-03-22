@@ -56,7 +56,7 @@ Change Log
 
 - [CHANGED] changed in_service dtype from f8 to bool for shunt, ward, xward
 - [CHANGED] included i_from_ka and i_to_ka in net.res_line
-- [ADDED] recycle parameter added. ppc, Ybus, is_elems and bus_lookup can be reused between multiple powerflows if recycle["ppc"] == True, ppc values (P,Q,V) only get updated.
+- [ADDED] recycle parameter added. ppc, Ybus, _is_elements and bus_lookup can be reused between multiple powerflows if recycle["ppc"] == True, ppc values (P,Q,V) only get updated.
 - [FIXED] OPF bugfixes: cost scaling, correct calculation of res_bus.p_kw for sgens
 - [ADDED] loadcase added as pypower_extension since unnecessary deepcopies were removed
 - [CHANGED] supress warnings parameter removed from loadflow, casting warnings are automatically supressed
