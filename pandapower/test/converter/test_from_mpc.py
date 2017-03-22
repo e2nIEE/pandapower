@@ -32,5 +32,4 @@ def test_from_mpc():
 
 
 if __name__ == '__main__':
-#    test_from_mpc()
     pytest.main(["test_from_mpc.py", "-s"])

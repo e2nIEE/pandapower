@@ -439,6 +439,9 @@ def convert_format(net):
     if not "_is_elements" in net and "__is_elements" in net:
         net["_is_elements"] = copy.deepcopy(net["__is_elements"])
         net.pop("__is_elements", None)
+    elif not "_is_elements" in net and "_is_elems" in net:
+        net["_is_elements"] = copy.deepcopy(net["_is_elems"])
+        net.pop("_is_elems", None)
 
     return net
 
