@@ -15,8 +15,8 @@ pandapower
 .. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
     :target: https://travis-ci.org/lthurner/pandapower
 
-.. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=develop
-    :target: https://coveralls.io/github/lthurner/pandapower?branch=develop
+.. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
+    :target: https://coveralls.io/github/lthurner/pandapower?branch=master
     
 .. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
     :target: https://www.codacy.com/app/lthurner/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lthurner/pandapower&amp;utm_campaign=Badge_Grade
