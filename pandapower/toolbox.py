@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 import pandas as pd
@@ -88,8 +88,8 @@ def opf_task(net):
         logger.info("  Generator Constraints")
         for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
             c_gen[i] = np.nan
-        if (c_gen.max_p_kw >= c_gen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all generators. " +
+        if (c_gen.max_p_kw <= c_gen.min_p_kw).any():
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all generators. " +
                         "Please observe the pandapower signing system.")
         if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. "+
@@ -119,8 +119,8 @@ def opf_task(net):
         logger.info("  Static Generator Constraints")
         for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
             c_sgen[i] = np.nan
-        if (c_sgen.max_p_kw >= c_sgen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all static " +
+        if (c_sgen.max_p_kw <= c_sgen.min_p_kw).any():
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all static " +
                         "generators. Please observe the pandapower signing system.")
         if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
@@ -514,9 +514,6 @@ def _pre_release_changes(net):
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kv": "sn_hv_kv",
                                                     "snm_kv": "sn_mv_kv", "snl_kv": "sn_lv_kv"})
-    net["switch"]["type"].replace("LS", "CB", inplace=True)
-    net["switch"]["type"].replace("LTS", "LBS", inplace=True)
-    net["switch"]["type"].replace("TS", "DS", inplace=True)
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})

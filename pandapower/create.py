@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 from numpy import nan, isnan, arange, dtype, zeros
 import pandas as pd
@@ -1193,6 +1193,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
     OPTIONAL:
         **in_service** (boolean) - True for in_service or False for out of service
+
+        **parallel** (integer) - number of parallel transformers
 
         **name** (string) - A custom name for this transformer
 

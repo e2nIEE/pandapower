@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
@@ -21,7 +21,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     OPTIONAL:
         **buses** (list, None) - The buses for which the collections are created.
-                                 If None, all buses in the network are considered.
+        If None, all buses in the network are considered.
 
         **size** (int, 5) - patch size
 
@@ -47,8 +47,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
         return None
-    patches = []
     infos = []
+
     def figmaker(x, y, i):
         if patch_type=="circle":
             if colors:
@@ -89,6 +89,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
     return pc
+
 
 def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, cmap=None,
                            norm=None, picker=False, z=None,
@@ -139,6 +140,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
     lc.info = info
     return lc
 
+
 def create_trafo_collection(net, trafos=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
@@ -147,7 +149,8 @@ def create_trafo_collection(net, trafos=None, **kwargs):
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
-        **trafos** (list, None) - The transformers for which the collections are created. If None, all transformers in the network are considered.
+        **trafos** (list, None) - The transformers for which the collections are created.
+        If None, all transformers in the network are considered.
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -162,6 +165,7 @@ def create_trafo_collection(net, trafos=None, **kwargs):
     tg = list(zip(hv_geo, lv_geo))
 
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
+
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
     """
@@ -190,7 +194,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
                 cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")
                 if hasattr(c, "cbar_title"):
                     cbar_load.ax.set_ylabel(c.cbar_title)
-    ax.set_axis_bgcolor("white")
+    ax.set_facecolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax.set_aspect('equal', 'datalim')

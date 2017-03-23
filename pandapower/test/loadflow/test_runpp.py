@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
 import pandas as pd
@@ -58,6 +58,7 @@ def test_runpp_init_auxiliary_buses():
     assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4],
                        atol=2)
 
+
 def test_result_iter():
     for net in result_test_network_generator():
         try:
@@ -102,7 +103,7 @@ def test_two_open_switches():
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
     pp.runpp(net)
-    assert net.res_line.i_ka.at[l2] == 0.
+    assert np.isnan(net.res_line.i_ka.at[l2])
 
 
 def test_oos_bus():
@@ -158,6 +159,7 @@ def test_connectivity_check_island_without_pv_bus():
     assert np.isclose(iso_q, 30)
     # with pytest.warns(UserWarning):
     runpp_with_consistency_checks(net, check_connectivity=True)
+
 
 def test_connectivity_check_island_with_one_pv_bus():
     # Network with islands with one PV bus -> PV bus should be converted to the reference bus

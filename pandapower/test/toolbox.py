@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 
 import pandas.util.testing as pdt
@@ -48,9 +48,9 @@ def assert_net_equal(a_net, b_net, reindex=False):
     Raises AssertionError if grids are not equal.
     """
     status = True
-    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata', 'trafo', 'switch', 'trafo3w',
-                'gen', 'ext_grid', 'res_line', 'res_bus', 'res_sgen', 'res_gen', 'res_shunt', 'res_load', 'res_ext_grid', 'res_trafo']
-
+    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata',
+                'trafo', 'switch', 'trafo3w', 'gen', 'ext_grid', 'res_line', 'res_bus','res_sgen',
+                'res_gen', 'res_shunt', 'res_load', 'res_ext_grid', 'res_trafo']
     for name in namelist:
         if name in a_net or name in b_net:
             if not (a_net[name] is None and b_net[name] is None):

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 import pandas as pd
@@ -62,7 +62,7 @@ def _build_bus_ppc(net, ppc):
             (net["switch"]["bus"].isin(bus_is.index).values) & (
                 net["switch"]["element"].isin(bus_is.index).values)
     net._closed_bb_switches = slidx
-    
+
     if r_switch == 0 and slidx.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final

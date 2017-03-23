@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import scipy as sp
 import numpy as np
@@ -10,7 +10,7 @@ import copy
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,8 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
+from pandapower.powerflow import LoadflowNotConverged
+
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
