@@ -20,7 +20,7 @@ from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
 from pandapower.powerflow import LoadflowNotConverged
-from ast import literal_eval
+
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
@@ -107,7 +107,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                                                                       & set(diag_results['invalid_values'].keys())):
                 diag_result = "check skipped"
             else:
-                diag_result = literal_eval(diag_function)
+                diag_result = eval(diag_function)
                 if diag_result:
                     diag_results[diag_function.split("(")[0]] = diag_result
         else:
