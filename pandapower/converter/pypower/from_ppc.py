@@ -15,7 +15,7 @@ import pandapower as pp
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -409,20 +409,17 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                          "because of a pypower error. Please validate "
                          "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
         # give a return
-        if type(max_diff_values) == dict:
+        if isinstance(max_diff_values, dict):
             if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
                        'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
-                if (max(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
+                return (max(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
                         (max(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
                         (max(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
                             1e3) & \
                         (max(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
                             1e3) & \
                         (max(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
-                        (max(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3):
-                    return True
-                else:
-                    return False
+                        (max(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
             else:
                 logger.debug('Not all requried dict keys are provided.')
         else:
