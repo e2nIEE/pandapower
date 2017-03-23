@@ -2,7 +2,7 @@
 pandapower
 =============
 
-.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.2.0
+.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.2.2
    :target: http://pandapower.readthedocs.io/
    :alt: Documentation Status
 
