@@ -81,7 +81,7 @@ For now, please acknowledge the use of pandapower in publucations by citing the 
       title =       {pandapower - Convenient Power System Modelling and Analysis based on PYPOWER and pandas},
       institution = {University of Kassel and Fraunhofer Institute for Wind Energy and Energy System Technology},
       year =        {2016},
-      url =         {http://www.uni-kassel.de/go/pp_tr}
+      url =         {http://pandapower.readthedocs.io/en/v1.2.2/_downloads/pandapower.pdf}
     }
 
 Minimal Example
