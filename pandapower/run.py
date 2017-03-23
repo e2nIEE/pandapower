@@ -7,8 +7,8 @@
 from numpy import where
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
-from pandapower.powerflow import _powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
+from pandapower.powerflow import _powerflow
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",

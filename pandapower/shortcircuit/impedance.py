@@ -5,13 +5,15 @@ Created on Fri Mar 17 10:03:45 2017
 @author: thurner
 """
 import warnings
-from pandapower.pypower_extensions.makeYbus import makeYbus
-from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
-from pypower.idx_bus import BASE_KV
 
 import numpy as np
-from scipy.sparse.linalg import inv
+from pypower.idx_bus import BASE_KV
 from scipy.sparse import diags
+from scipy.sparse.linalg import inv
+
+from pandapower.pypower_extensions.makeYbus import makeYbus
+from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
+
 
 def _calc_equiv_sc_impedance(net, ppc):
     r_fault = net["_options"]["r_fault_ohm"]

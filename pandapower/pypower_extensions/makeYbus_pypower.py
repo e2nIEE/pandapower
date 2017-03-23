@@ -8,10 +8,10 @@
 from sys import stderr
 
 from numpy import ones, any, r_, real
+from pypower.idx_brch import F_BUS, T_BUS
+from pypower.idx_bus import BUS_I, GS, BS
 from scipy.sparse import csr_matrix
 
-from pypower.idx_bus import BUS_I, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower_extensions.makeYbus import branch_vectors
 
 def makeYbus(baseMVA, bus, branch):

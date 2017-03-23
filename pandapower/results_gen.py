@@ -10,6 +10,7 @@ from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
+
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 

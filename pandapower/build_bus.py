@@ -4,14 +4,15 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+from collections import defaultdict
+from itertools import chain
+
 import numpy as np
 import pandas as pd
-from itertools import chain
-from collections import defaultdict
-
 from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA
 
 from pandapower.auxiliary import _sum_by_group
+
 
 class DisjointSet(dict):
     def add(self, item):

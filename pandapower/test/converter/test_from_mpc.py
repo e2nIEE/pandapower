@@ -4,12 +4,14 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pytest
 import os
+
+import pytest
 
 import pandapower as pp
 import pandapower.networks as pn
 from pandapower.converter import from_mpc
+
 try:
     import pplog as logging
 except:

@@ -4,8 +4,10 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import networkx as nx
 from itertools import combinations
+
+import networkx as nx
+
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                    nogobuses=None, notravbuses=None, multi=True):

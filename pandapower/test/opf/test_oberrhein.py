@@ -5,7 +5,6 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
-import pytest
 import pandapower.networks as nw
 try:
     import pplog as logging

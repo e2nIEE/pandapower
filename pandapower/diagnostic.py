@@ -4,9 +4,9 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import scipy as sp
-import numpy as np
 import copy
+
+import numpy as np
 
 try:
     import pplog as logging

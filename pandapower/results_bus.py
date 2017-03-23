@@ -11,6 +11,7 @@ from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
+
 def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
     b, p, q = array([]), array([]), array([])

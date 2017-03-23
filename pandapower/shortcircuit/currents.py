@@ -4,10 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS, IP, ITH, X_EQUIV
-from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pypower.idx_bus import BASE_KV
 import numpy as np
+from pypower.idx_bus import BASE_KV
+
+from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
+from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS, IP, ITH, X_EQUIV
+
 
 def _calc_ikss(net, ppc):
     fault = net._options["fault"]

@@ -4,10 +4,11 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import scipy.io
 import numpy as np
+import scipy.io
 
-from pandapower.converter import from_ppc
+from pandapower.converter.pypower import from_ppc
+
 try:
     import pplog as logging
 except:

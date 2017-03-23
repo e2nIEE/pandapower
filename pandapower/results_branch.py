@@ -7,7 +7,9 @@
 import numpy as np
 from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV
+
 from pandapower.auxiliary import _sum_by_group
+
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     """
@@ -205,6 +207,5 @@ def _get_switch_results(net, i_ft):
     if not "switch" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["switch"]
-    import pandas as pd
     net["res_switch"] = pd.DataFrame(data=np.max(i_ft[f:t], axis=1), columns = ["i_ka"],
                                      index=net.switch[net._closed_bb_switches].index)

@@ -4,9 +4,11 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from numpy import allclose
 import pandas as pd
+from numpy import allclose
+
 import pandapower as pp
+
 
 def runpp_with_consistency_checks(net, **kwargs):
     pp.runpp(net, **kwargs)

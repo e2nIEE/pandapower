@@ -4,12 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pandas as pd
-import numpy as np
 from collections import MutableMapping
-import six
 
+import numpy as np
+import pandas as pd
 import scipy as sp
+import six
 from pypower.idx_brch import F_BUS, T_BUS
 from pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 

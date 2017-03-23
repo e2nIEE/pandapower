@@ -5,8 +5,10 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
-import pandapower.shortcircuit as sc
+
 import pandapower as pp
+import pandapower.shortcircuit as sc
+
 
 @pytest.fixture
 def net_transformer():

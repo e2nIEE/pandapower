@@ -4,10 +4,13 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import os
+
+import numpy as np
+
 import pandapower as pp
 import pandapower.networks
-import os
-import numpy as np
+
 
 def _get_networks_path():
     return os.path.abspath(os.path.dirname(pandapower.networks.__file__))

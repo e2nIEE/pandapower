@@ -11,15 +11,14 @@ except:
 
 logger = logging.getLogger(__name__)
 
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith
-from pandapower.shortcircuit.results import _extract_results
-from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
-from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
-
-from pandapower.powerflow import _add_auxiliary_elements
-from pandapower.auxiliary import _select_is_elements, _clean_up, _add_ppc_options, _add_sc_options
+from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith
+from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
+from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
+from pandapower.shortcircuit.results import _extract_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,

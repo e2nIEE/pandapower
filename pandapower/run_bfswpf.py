@@ -1,22 +1,19 @@
-import numpy as np
-import scipy as sp
-
 from time import time  # alternatively use import timeit.default_timer as time
 
+import numpy as np
+import scipy as sp
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, BR_STATUS, SHIFT
+from pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
+from pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
+from pypower.makeSbus import makeSbus
+from scipy.sparse import csr_matrix, csgraph
 from six import iteritems
 
-from scipy.sparse import csr_matrix, csgraph
-
 from pandapower.auxiliary import ppException
-
-from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.runpf import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
 
-from pypower.makeSbus import makeSbus
-from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, VM, VA, REF, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, PF, QF, PT, QT, TAP, BR_STATUS, SHIFT
-from pypower.idx_gen import GEN_BUS, PG, QG, PMAX, PMIN, QMAX, QMIN, GEN_STATUS, VG
 
 class LoadflowNotConverged(ppException):
     """

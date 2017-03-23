@@ -8,20 +8,18 @@
 """
 
 from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
-from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
-
-from pypower.idx_gen import PG, QG
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_cost import MODEL, POLYNOMIAL
-
-from pypower.polycost import polycost
-from pypower.d2Sbus_dV2 import d2Sbus_dV2
-from pypower.dSbr_dV import dSbr_dV
-from pypower.dIbr_dV import dIbr_dV
 from pypower.d2AIbr_dV2 import d2AIbr_dV2
 from pypower.d2ASbr_dV2 import d2ASbr_dV2
-from pypower.opf_costfcn import opf_costfcn
+from pypower.d2Sbus_dV2 import d2Sbus_dV2
+from pypower.dIbr_dV import dIbr_dV
+from pypower.dSbr_dV import dSbr_dV
+from pypower.idx_brch import F_BUS, T_BUS
+from pypower.idx_cost import MODEL, POLYNOMIAL
+from pypower.idx_gen import PG, QG
 from pypower.opf_consfcn import opf_consfcn
+from pypower.opf_costfcn import opf_costfcn
+from pypower.polycost import polycost
+from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
 
 
 def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):

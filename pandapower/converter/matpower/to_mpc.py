@@ -5,10 +5,13 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import copy
+
 import numpy as np
 from scipy.io import savemat
+
 from pandapower.auxiliary import _add_ppc_options
-from pandapower.powerflow import reset_results, _select_is_elements, _pd2ppc
+from pandapower.powerflow import reset_results, _pd2ppc
+
 try:
     import pplog as logging
 except:

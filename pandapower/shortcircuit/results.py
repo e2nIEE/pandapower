@@ -4,11 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
+from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH
+
 
 def _extract_results(net, ppc):
     _initialize_result_tables(net)

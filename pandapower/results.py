@@ -4,12 +4,15 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
 import copy
+
+import numpy as np
+
 from pandapower.results_branch import _get_branch_results
-from pandapower.results_gen import _get_gen_results
 from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buses_out_of_service, \
                                    _get_shunt_results, _get_p_q_results_opf
+from pandapower.results_gen import _get_gen_results
+
 
 def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)

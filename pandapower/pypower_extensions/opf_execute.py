@@ -10,19 +10,18 @@
 from sys import stdout, stderr
 
 from numpy import array, arange, pi, zeros, r_
-
-from pypower.ppver import ppver
 from pypower.dcopf_solver import dcopf_solver
-from pandapower.pypower_extensions.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
+from pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
+from pypower.idx_bus import VM
+from pypower.idx_gen import GEN_BUS, VG
 from pypower.ipoptopf_solver import ipoptopf_solver
-from pypower.update_mupq import update_mupq
 from pypower.makeYbus import makeYbus
 from pypower.opf_consfcn import opf_consfcn
 from pypower.opf_costfcn import opf_costfcn
+from pypower.ppver import ppver
+from pypower.update_mupq import update_mupq
 
-from pypower.idx_bus import VM
-from pypower.idx_gen import GEN_BUS, VG
-from pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
+from pandapower.pypower_extensions.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
 
 
 def opf_execute(om, ppopt):

@@ -6,14 +6,14 @@
 
 import numpy as np
 import pytest
+from pypower.idx_bus import VM, BUS_I, VA
+from pypower.ppoption import ppoption
+from pypower.runpf import runpf
 
 import pandapower.converter as cv
 from pandapower.powerflow import LoadflowNotConverged, reset_results
 
-from pypower.runpf import runpf
-from pypower.ppoption import ppoption
-# from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
-from pypower.idx_bus import VM, BUS_I, VA
+
 # from pypower.idx_gen import PG, QG, GEN_BUS
 
 

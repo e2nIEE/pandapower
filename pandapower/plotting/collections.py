@@ -4,11 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import copy
+
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Rectangle, RegularPolygon
-import matplotlib.pyplot as plt
-import copy
 
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,

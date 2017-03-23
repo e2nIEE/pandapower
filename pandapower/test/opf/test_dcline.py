@@ -4,10 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import pytest
+from numpy import array, allclose
+
 import pandapower as pp
 from pandapower.test.consistency_checks import consistency_checks
-from numpy import array, allclose
-import pytest
+
 try:
     import pplog as logging
 except:
