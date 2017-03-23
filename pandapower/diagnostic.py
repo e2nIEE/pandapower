@@ -784,7 +784,7 @@ def numba_comparison(net, numba_tolerance):
     check_results = {}
     try:
         runpp(net, numba=True)
-    except LoadflowNotConverged:
+    except:
         pass
     if net.converged:
         try:
