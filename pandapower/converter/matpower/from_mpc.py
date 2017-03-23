@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import scipy.io
 import numpy as np
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False):
     """
     This function converts a matpower case file (.mat) version 2 to a pandapower net.
+
     Note: python is 0-based while Matlab is 1-based.
 
     INPUT:
@@ -29,8 +30,8 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
 
         **f_hz** (int, 50) - The frequency of the network.
 
-        **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch" and "bus" it will use the
-            sub-struct casename_mpc_file
+        **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch"
+        and "bus" it will use the sub-struct casename_mpc_file
 
     OUTPUT:
 
