@@ -1,6 +1,6 @@
-====================
+========================================
 Power System Test Cases
-====================
+========================================
 
 .. note::
 
@@ -25,7 +25,6 @@ Case 9
 --------
 
 .. autofunction:: pandapower.networks.case9
-
 
 ---------------------------
 
@@ -75,35 +74,49 @@ Case 118
 
 .. autofunction:: pandapower.networks.case118
 
+---------------------------
+
 Case 300
 ------------------------------------
 
 .. autofunction:: pandapower.networks.case300
+
+---------------------------
 
 Case 1354pegase
 ------------------------------------
 
 .. autofunction:: pandapower.networks.case1354pegase
 
+---------------------------
+
 Case 2869pegase
 ------------------------------------
 
 .. autofunction:: pandapower.networks.case2869pegase
+
+---------------------------
 
 Case 9241pegase
 ------------------------------------
 
 .. autofunction:: pandapower.networks.case9241pegase
 
+---------------------------
+
 Case GB network
 ------------------------------------
 
 .. autofunction:: pandapower.networks.GBnetwork
 
+---------------------------
+
 Case GB reduced network
 ------------------------------------
 
 .. autofunction:: pandapower.networks.GBreducednetwork
+
+---------------------------
 
 Case iceland
 ------------------------------------

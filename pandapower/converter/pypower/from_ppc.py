@@ -27,15 +27,17 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
 
     INPUT:
 
-        **ppc** - The pypower case file.
+        **ppc** : The pypower case file.
 
     OPTIONAL:
 
-        **f_hz** - The frequency of the network.
+        **f_hz** (float, 50) - The frequency of the network.
+
+        **validate_conversion** (bool, False) - If True, validate_from_ppc is run after conversion.
 
     OUTPUT:
 
-        **net**
+        **net** : pandapower net.
 
     EXAMPLE:
 
@@ -195,10 +197,10 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
                 tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
     # unused data of ppc: rateB, rateC
 
-    # ToDo: gencost, areas are currently unconverted
+    # gencost and areas are currently unconverted
+
     if validate_conversion:
-        # set logger level to debug
-        logger.setLevel(10)
+        logger.setLevel(logging.DEBUG)
         if not validate_from_ppc(ppc, net):
             logger.error("Validation failed.")
 
@@ -221,14 +223,14 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     OPTIONAL:
 
         **max_diff_values** - Dict of maximal allowed difference values. The keys must be
-            'vm_pu', 'va_degree', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw' and 'q_gen_kvar' and
-            the values floats.
+        'vm_pu', 'va_degree', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw' and 'q_gen_kvar' and
+        the values floats.
 
     OUTPUT:
 
         **conversion_success** - conversion_success is returned as False if pypower or pandapower
-            cannot calculate a power flow or if the maximum difference values (max_diff_values )
-            cannot be hold.
+        cannot calculate a power flow or if the maximum difference values (max_diff_values )
+        cannot be hold.
 
     EXAMPLE:
 
@@ -240,7 +242,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
         pp_net = cv.from_ppc(ppc_net, f_hz=60)
 
-        cv.validate_from_ppc(ppc_net, pp_net)
+        conversion_success = cv.validate_from_ppc(ppc_net, pp_net)
     """
     # --- run a pypower power flow without print output
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
@@ -367,8 +369,9 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                         int(already_used_branches.number.loc[
                             (already_used_branches.hv_bus == to_bus) &
                             (already_used_branches.lv_bus == from_bus)].values)].reshape(1, 4), 0)
-                    already_used_branches.number.loc[(already_used_branches.hv_bus == to_bus) &
-                                                     (already_used_branches.lv_bus == from_bus)] += 1
+                    already_used_branches.number.loc[
+                        (already_used_branches.hv_bus == to_bus) &
+                        (already_used_branches.lv_bus == from_bus)] += 1
         pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
 
         # --- do the power flow result comparison
