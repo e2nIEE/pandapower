@@ -9,9 +9,7 @@
 
 from sys import stdout, stderr
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, \
-    r_, ones, Inf
-from numpy import flatnonzero as find
+from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
 from pypower.idx_brch import RATE_A
 from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
 from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL

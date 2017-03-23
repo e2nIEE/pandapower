@@ -5,8 +5,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
-from pandapower.estimation import chi2_analysis, remove_bad_data
-from pandapower.estimation import estimate
+from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
 
 
 def test_2bus():

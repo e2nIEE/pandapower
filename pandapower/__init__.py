@@ -1,5 +1,3 @@
-import pandas as pd
-
 from pandapower.auxiliary import *
 from pandapower.create import *
 from pandapower.diagnostic import *
