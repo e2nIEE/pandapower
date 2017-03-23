@@ -20,7 +20,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
     for eg in net.ext_grid[net.ext_grid.in_service == True].bus:
         d = top.calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service == True].iterrows():
-            if not line.from_bus in d.index:
+            if line.from_bus not in d.index:
                 continue
             if not ((net.switch.element == line.name) & (net.switch.closed == False)
                     & (net.switch.et == 'l')).any():
@@ -31,14 +31,15 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                     y = [net.res_bus.vm_pu.at[from_bus], net.res_bus.vm_pu.at[to_bus]]
                 except:
                     raise UserWarning
-                lw = 0.4 * np.sqrt(net.res_line.loading_percent.at[lix]) if line_loading_weight \
-                    else 1.5
-                ax.plot(x, y, linewidth=lw, **kwargs)
+                if "linewidth" in kwargs or not line_loading_weight:
+                    ax.plot(x, y, **kwargs)
+                else:
+                    ax.plot(x, y, linewidth=0.4 * np.sqrt(net.res_line.loading_percent.at[lix]),
+                            **kwargs)
                 if bus_colors is not None:
                     for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
                             ax.plot(x, y, 'or', color=bus_colors[bus], ms=3)
-
                 kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
         if plot_transformers:
             if hasattr(plot_transformers, "__iter__"):  # if is a list for example
