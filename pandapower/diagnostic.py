@@ -572,25 +572,33 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     mv_bus_3w = []
     lv_bus_3w = []
     connectors_swapped_3w = []
-    min_v_pu = 1 - nom_voltage_tolerance
-    max_v_pu = 1 + nom_voltage_tolerance
 
     for i, trafo in net.trafo.iterrows():
+        hv_bus_violation = False
+        lv_bus_violation = False
+        connectors_swapped = False
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo.hv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo.lv_bus]
-        if ((trafo.vn_hv_kv > lv_bus_vn_kv * min_v_pu)
-            and ((trafo.vn_hv_kv < lv_bus_vn_kv * max_v_pu))
-            and ((trafo.vn_lv_kv > hv_bus_vn_kv * min_v_pu))
-            and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
+
+        if abs(1-(trafo.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
+            hv_bus_violation = True
+        if abs(1-(trafo.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
+            lv_bus_violation = True
+        if hv_bus_violation and lv_bus_violation:
+            trafo_voltages = np.array(([trafo.vn_hv_kv, trafo.vn_lv_kv]))
+            bus_voltages = np.array([hv_bus_vn_kv, lv_bus_vn_kv])
+            trafo_voltages.sort()
+            bus_voltages.sort()
+            if all((abs(trafo_voltages - bus_voltages) / bus_voltages) < (nom_voltage_tolerance)):
+                connectors_swapped = True
+
+        if connectors_swapped:
             hv_lv_swapped.append(i)
-
-        if (((trafo.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-            and (i not in hv_lv_swapped)):
-            hv_bus.append(i)
-
-        if (((trafo.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-            and (i not in hv_lv_swapped)):
-            lv_bus.append(i)
+        else:
+            if hv_bus_violation:
+                hv_bus.append(i)
+            if lv_bus_violation:
+                lv_bus.append(i)
 
     if hv_bus:
         trafo_results['hv_bus'] = hv_bus
@@ -602,31 +610,37 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         results['trafo'] = trafo_results
 
     for i, trafo3w in net.trafo3w.iterrows():
+        hv_bus_violation = False
+        mv_bus_violation = False
+        lv_bus_violation = False
+        connectors_swapped = False
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.hv_bus]
         mv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.mv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.lv_bus]
 
-        if ((((trafo3w.vn_hv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < mv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_hv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < lv_bus_vn_kv * max_v_pu)))
-            and
-                (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
-                 or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
-            and
-                (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
-                 or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
+        if abs(1-(trafo3w.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
+            hv_bus_violation = True
+        if abs(1-(trafo3w.vn_mv_kv / mv_bus_vn_kv)) > nom_voltage_tolerance:
+            mv_bus_violation = True
+        if abs(1-(trafo3w.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
+            lv_bus_violation = True
+        if hv_bus_violation and mv_bus_violation and lv_bus_violation:
+            trafo_voltages = np.array(([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv]))
+            bus_voltages = np.array([hv_bus_vn_kv, mv_bus_vn_kv, lv_bus_vn_kv])
+            trafo_voltages.sort()
+            bus_voltages.sort()
+            if all((abs(trafo_voltages - bus_voltages) / bus_voltages) < (nom_voltage_tolerance)):
+                connectors_swapped = True
+
+        if connectors_swapped:
             connectors_swapped_3w.append(i)
-
-        if (((trafo3w.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo3w.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-            and (i not in connectors_swapped_3w)):
-            hv_bus_3w.append(i)
-
-        if (((trafo3w.vn_mv_kv > mv_bus_vn_kv * max_v_pu) or (trafo3w.vn_mv_kv < mv_bus_vn_kv * min_v_pu))
-            and (i not in connectors_swapped_3w)):
-            mv_bus_3w.append(i)
-
-        if (((trafo3w.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo3w.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-            and (i not in connectors_swapped_3w)):
-            lv_bus_3w.append(i)
+        else:
+            if hv_bus_violation:
+                hv_bus_3w.append(i)
+            if mv_bus_violation:
+                mv_bus_3w.append(i)
+            if lv_bus_violation:
+                lv_bus_3w.append(i)
 
     if hv_bus_3w:
         trafo3w_results['hv_bus'] = hv_bus_3w
