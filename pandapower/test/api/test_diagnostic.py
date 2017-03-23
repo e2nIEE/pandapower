@@ -672,8 +672,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         assert report_check
 
     net.trafo = copy.deepcopy(trafo_copy)
-    net.trafo.vn_hv_kv.at[0] *= 1.3
-    net.trafo.vn_lv_kv.at[0] *= 1.3
+    net.trafo.vn_hv_kv.at[0] *= 1.29
+    net.trafo.vn_lv_kv.at[0] *= 1.29
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -692,8 +692,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         assert report_check
 
     net.trafo = copy.deepcopy(trafo_copy)
-    net.trafo.vn_hv_kv.at[0] *= 0.7
-    net.trafo.vn_lv_kv.at[0] *= 0.7
+    net.trafo.vn_hv_kv.at[0] *= 0.71
+    net.trafo.vn_lv_kv.at[0] *= 0.71
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -779,9 +779,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         assert report_check
 
     net.trafo3w = copy.deepcopy(trafo3w_copy)
-    net.trafo3w.vn_hv_kv.at[0] *= 1.3
-    net.trafo3w.vn_mv_kv.at[0] *= 1.3
-    net.trafo3w.vn_lv_kv.at[0] *= 1.3
+    net.trafo3w.vn_hv_kv.at[0] *= 1.29
+    net.trafo3w.vn_mv_kv.at[0] *= 1.29
+    net.trafo3w.vn_lv_kv.at[0] *= 1.29
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -800,9 +800,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
         assert report_check
 
     net.trafo3w = copy.deepcopy(trafo3w_copy)
-    net.trafo3w.vn_hv_kv.at[0] *= 0.7
-    net.trafo3w.vn_mv_kv.at[0] *= 0.7
-    net.trafo3w.vn_lv_kv.at[0] *= 0.7
+    net.trafo3w.vn_hv_kv.at[0] *= 0.71
+    net.trafo3w.vn_mv_kv.at[0] *= 0.71
+    net.trafo3w.vn_lv_kv.at[0] *= 0.71
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}

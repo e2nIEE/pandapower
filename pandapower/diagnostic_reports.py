@@ -363,7 +363,7 @@ class DiagnosticReports:
 
     def report_no_ext_grid(self):
 
-        if "no_external_grid" in self.diag_results:
+        if "no_ext_grid" in self.diag_results:
             # message header
             if self.compact_report:
                 logger.warning("no_external_grid:")
@@ -372,7 +372,7 @@ class DiagnosticReports:
             logger.warning("")
 
             # message body
-            diag_result = self.diag_results["no_external_grid"]
+            diag_result = self.diag_results["no_ext_grid"]
             if diag_result is True:
                 logger.warning("No ext_grid found. There has to be at least one ext_grid!")
 
@@ -451,7 +451,7 @@ class DiagnosticReports:
                                                "system p_kw should be positive."
                                                % (load, self.net.load.name.at[load],
                                                  self.net.load.p_kw.at[load]))
-    
+
                     elif element_type is "gens":
                         if self.compact_report:
                             logger.warning("gens %s: wrong reference system."
@@ -461,7 +461,7 @@ class DiagnosticReports:
                                 logger.warning("Found gen %s: '%s' with p_kw = %s. In load reference "
                                 "system p_kw should be negative."
                                 % (gen, self.net.gen.name.at[gen], self.net.gen.p_kw.at[gen]))
-    
+
                     elif element_type is "sgens":
                         if self.compact_report:
                             logger.warning("sgens %s: wrong reference system."
@@ -471,7 +471,7 @@ class DiagnosticReports:
                                 logger.warning("Found sgen %s: '%s' with p_kw = %s. In load reference "
                                 "system p_kw should be negative."
                                 % (sgen, self.net.sgen.name.at[sgen], self.net.sgen.p_kw.at[sgen]))
-    
+
             # message summary
                 if not self.compact_report:
                     logger.warning("")
@@ -490,7 +490,7 @@ class DiagnosticReports:
                                        "reference system, p_kw should be negative. If the intention "
                                        "was to model a load, please use a load instead."
                                        % (len(diag_result['sgens'])))
-    
+
                 else:
                     logger.info("PASSED: power flow converges. No overload found.")
 
@@ -633,7 +633,7 @@ class DiagnosticReports:
                 # message summary
             if not self.compact_report:
                 logger.warning("")
-                logger.warning("SUMMARY: %s occurences of parallel switches found." 
+                logger.warning("SUMMARY: %s occurences of parallel switches found."
                                % len(diag_result))
         else:
             logger.info("PASSED: No parallel switches found.")
