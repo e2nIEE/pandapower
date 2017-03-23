@@ -8,8 +8,7 @@
 from copy import deepcopy
 from warnings import warn
 
-from numpy import array, zeros, argsort, arange
-from numpy import flatnonzero as find
+from numpy import array, zeros, argsort, arange, flatnonzero as find
 from pypower.e2i_data import e2i_data
 from pypower.e2i_field import e2i_field
 from pypower.idx_area import PRICE_REF_BUS

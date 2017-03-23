@@ -5,15 +5,16 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 
-from numba import jit
 from sys import stderr
 
+from numba import jit
 from numpy import any, r_, argsort, resize, empty, complex128, zeros, int64, array, real
 from pypower.idx_brch import F_BUS, T_BUS
 from pypower.idx_bus import BUS_I, GS, BS
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower_extensions.makeYbus_pypower import branch_vectors
+
 
 @jit(nopython=True, cache=True)
 def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):

@@ -19,8 +19,6 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
-from pandapower.powerflow import LoadflowNotConverged
-
 
 # separator between log messages
 log_message_sep = ("\n --------\n")

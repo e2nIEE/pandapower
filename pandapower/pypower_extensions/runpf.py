@@ -7,8 +7,7 @@
 
 from time import time
 
-from numpy import flatnonzero as find
-from numpy import r_, zeros, pi, ones, exp, argmax, real
+from numpy import flatnonzero as find, r_, zeros, pi, ones, exp, argmax, real
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
 from pypower.idx_brch import PF, PT, QF, QT

@@ -7,8 +7,7 @@
 """Solves AC optimal power flow using PIPS.
 """
 
-from numpy import flatnonzero as find
-from numpy import ones, zeros, Inf, pi, exp, conj, r_
+from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_
 from pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
 from pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
 from pypower.idx_cost import MODEL, PW_LINEAR, NCOST

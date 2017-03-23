@@ -7,9 +7,8 @@
 
 from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int32
 from pypower.dSbus_dV import dSbus_dV
-from scipy.sparse import hstack, vstack
+from scipy.sparse import hstack, vstack, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
-from scipy.sparse import csr_matrix as sparse
 
 try:
     from pandapower.pypower_extensions.create_J import create_J, create_J2

@@ -14,8 +14,8 @@ from pandapower.networks import create_cigre_network_mv, four_loads_with_branche
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
-from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
+from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element, \
+    result_test_network_generator
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 
 

@@ -4,7 +4,6 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from pandapower.powerflow import _pd2ppc
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import _pd2ppc
 
