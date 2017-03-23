@@ -62,7 +62,7 @@ def _build_bus_ppc(net, ppc):
             (net["switch"]["bus"].isin(bus_is.index).values) & (
                 net["switch"]["element"].isin(bus_is.index).values)
     net._closed_bb_switches = slidx
-    
+
     if r_switch == 0 and slidx.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
