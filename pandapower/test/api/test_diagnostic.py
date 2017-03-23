@@ -12,6 +12,7 @@ import copy
 import numpy as np
 import warnings
 
+
 @pytest.fixture(scope='module')
 def test_net():
     net = nw.example_multivoltage()
