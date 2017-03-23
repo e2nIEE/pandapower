@@ -6,7 +6,7 @@
 
 from numba import jit
 from numpy import conj, zeros, complex128, diag, asmatrix, asarray
-from scipy.sparse import issparse, csc_matrix as sparse
+from scipy.sparse import issparse, csr_matrix as sparse
 
 
 #@jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=True)
