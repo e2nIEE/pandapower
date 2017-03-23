@@ -7,12 +7,10 @@
 
 from sys import stderr
 
-from numpy import ones, any, r_, real
-from pypower.idx_brch import F_BUS, T_BUS
+from numpy import ones, conj, nonzero, any, exp, pi, r_, real
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP
 from pypower.idx_bus import BUS_I, GS, BS
 from scipy.sparse import csr_matrix
-
-from pandapower.pypower_extensions.makeYbus import branch_vectors
 
 def makeYbus(baseMVA, bus, branch):
     """Builds the bus admittance matrix and branch admittance matrices.
@@ -73,3 +71,23 @@ def makeYbus(baseMVA, bus, branch):
         csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
 
     return Ybus, Yf, Yt
+
+
+def branch_vectors(branch, nl):
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
+    if any(branch[:, 17]) or any(branch[:, 18]):
+        Yst = stat / ((branch[:, BR_R] + branch[:, 17]) + 1j * (branch[:, BR_X] + branch[:, 18]))  ## series admittance
+    else:
+        Yst = Ysf
+    Bc = stat * branch[:, BR_B]  ## line charging susceptance
+    tap = ones(nl)  ## default tap ratio = 1
+    i = nonzero(real(branch[:, TAP]))  ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+    tap = tap * exp(1j * pi / 180 * branch[:, SHIFT])  ## add phase shifters
+
+    Ytt = Yst + 1j * Bc / 2
+    Yff = (Ysf + 1j * Bc / 2) / (tap * conj(tap))
+    Yft = - Ysf / conj(tap)
+    Ytf = - Yst / tap
+    return Ytt, Yff, Yft, Ytf

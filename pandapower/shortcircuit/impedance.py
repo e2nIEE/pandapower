@@ -11,8 +11,11 @@ from pypower.idx_bus import BASE_KV
 from scipy.sparse import diags
 from scipy.sparse.linalg import inv
 
-from pandapower.pypower_extensions.makeYbus import makeYbus
 from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
+try:
+    from pandapower.pypower_extensions.makeYbus import makeYbus
+except:
+    pass
 
 
 def _calc_equiv_sc_impedance(net, ppc):
