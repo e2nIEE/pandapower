@@ -7,7 +7,7 @@
 
 from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int64
 
-from scipy.sparse import issparse, csr_matrix as sparse
+from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack, vstack
 from scipy.sparse.linalg import spsolve
 

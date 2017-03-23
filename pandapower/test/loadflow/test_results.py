@@ -4,10 +4,10 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pandapower as pp
 import pytest
 from numpy import in1d
 
+import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
                                                                    add_test_gen

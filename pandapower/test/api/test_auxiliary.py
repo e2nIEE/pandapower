@@ -4,8 +4,10 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from pandapower.auxiliary import get_indices
 import numpy as np
+
+from pandapower.auxiliary import get_indices
+
 
 def test_get_indices():
     a = [i+100 for i in range(10)]

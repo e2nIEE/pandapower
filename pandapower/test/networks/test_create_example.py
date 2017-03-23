@@ -4,10 +4,11 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import pandas as pd
 import pytest
+
 import pandapower as pp
 import pandapower.networks as pn
-import pandas as pd
 
 
 def test_create_simple():

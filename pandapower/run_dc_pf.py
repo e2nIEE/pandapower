@@ -1,17 +1,16 @@
 from time import time
 
-from numpy import zeros, ones, real
 from numpy import flatnonzero as find
 from numpy import pi, exp
-
-from pypower.idx_bus import VM, VA, GS
+from numpy import zeros, ones, real
 from pypower.idx_brch import PF, PT, QF, QT
+from pypower.idx_bus import VM, VA, GS
 from pypower.idx_gen import PG, VG, GEN_STATUS, GEN_BUS
 from pypower.makeSbus import makeSbus
 
+from pandapower.pypower_extensions.bustypes import bustypes
 from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.makeBdc import makeBdc
-from pandapower.pypower_extensions.bustypes import bustypes
 
 
 def _run_dc_pf(ppci):
@@ -48,13 +47,12 @@ def _run_dc_pf(ppci):
         temp = find(gbus == ref[k])
         refgen[k] = on[temp[0]]
     gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
-    success = True
 
     # store results from DC powerflow for AC powerflow
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
 
     ppci["et"] = time() - t0
-    ppci["success"] = success
+    ppci["success"] = True
 
     return ppci
 

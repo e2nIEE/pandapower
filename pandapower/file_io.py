@@ -4,16 +4,18 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import json
+import numbers
 import os
 import pickle
-import pandas as pd
 import sys
-import numbers
-import json
+
 import numpy
-from pandapower.toolbox import convert_format
-from pandapower.create import create_empty_network
+import pandas as pd
+
 from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_empty_network
+from pandapower.toolbox import convert_format
 
 
 def to_pickle(net, filename):

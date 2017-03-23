@@ -5,10 +5,12 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 
-import pandapower as pp
-import pandapower.shortcircuit as sc
 import numpy as np
 import pytest
+
+import pandapower as pp
+import pandapower.shortcircuit as sc
+
 
 @pytest.fixture
 def ring_network():

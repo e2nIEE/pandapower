@@ -5,14 +5,15 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 
+import os
+from math import isnan
+
+import numpy as np
 import pandas.util.testing as pdt
+import pytest
+
 import pandapower as pp
 import pandapower.test
-import numpy as np
-from math import isnan
-import pytest
-import os
-
 
 try:
     import pplog as logging

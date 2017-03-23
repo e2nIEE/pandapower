@@ -5,13 +5,13 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 from math import pi
+
 from numpy import sign, nan, append, zeros, max, array
 from pandas import Series, DataFrame, concat
 
-from pypower import runpf
-from pypower import ppoption
-
 import pandapower as pp
+from pypower import ppoption
+from pypower import runpf
 
 try:
     import pplog as logging

@@ -4,9 +4,10 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pytest
-import pandapower as pp
 import numpy as np
+import pytest
+
+import pandapower as pp
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 

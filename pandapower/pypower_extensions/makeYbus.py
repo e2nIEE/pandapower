@@ -7,13 +7,11 @@
 
 from sys import stderr
 
-from numpy import ones, conj, nonzero, any, exp, pi, r_, argsort, resize, empty, complex128, zeros, int64, array, real
-from scipy.sparse import csr_matrix
-
 from numba import jit
-
-from pypower.idx_bus import BUS_I, GS, BS
+from numpy import ones, conj, nonzero, any, exp, pi, r_, argsort, resize, empty, complex128, zeros, int64, array, real
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP
+from pypower.idx_bus import BUS_I, GS, BS
+from scipy.sparse import csr_matrix
 
 @jit(nopython=True, cache=True)
 def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):

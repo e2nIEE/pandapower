@@ -5,9 +5,11 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
+
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.diagnostic_reports import DiagnosticReports
+
 
 def test_diagnostic_report():
     net = nw.example_multivoltage()

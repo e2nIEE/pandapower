@@ -4,18 +4,16 @@
 
 from time import time
 
+from numpy import flatnonzero as find
 from numpy import pi, exp
 from numpy import r_, zeros, argmax
-from numpy import flatnonzero as find
-
-from pypower.makeSbus import makeSbus
 from pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
 from pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
-
-from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.pypower_extensions.newtonpf import newtonpf
+from pypower.makeSbus import makeSbus
 
 from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pypower_extensions.newtonpf import newtonpf
+from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.run_dc_pf import _run_dc_pf
 
 

@@ -12,23 +12,21 @@ from sys import stdout, stderr
 from numpy import array, any, delete, unique, arange, nonzero, pi, \
     r_, ones, Inf
 from numpy import flatnonzero as find
-
+from pypower.idx_brch import RATE_A
+from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
+from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
+from pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
+from pypower.makeAang import makeAang
+from pypower.makeApq import makeApq
+from pypower.makeAvl import makeAvl
+from pypower.makeAy import makeAy
+from pypower.makeBdc import makeBdc
+from pypower.opf_args import opf_args
+from pypower.pqcost import pqcost
+from pypower.run_userfcn import run_userfcn
 from scipy.sparse import hstack, csr_matrix as sparse
 
-from pypower.pqcost import pqcost
-from pypower.opf_args import opf_args
-from pypower.makeBdc import makeBdc
-from pypower.makeAvl import makeAvl
-from pypower.makeApq import makeApq
-from pypower.makeAang import makeAang
-from pypower.makeAy import makeAy
 from pandapower.pypower_extensions.opf_model import opf_model # temporary changed import to match bugfix path
-from pypower.run_userfcn import run_userfcn
-
-from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
-from pypower.idx_brch import RATE_A
 
 
 def opf_setup(ppc, ppopt):

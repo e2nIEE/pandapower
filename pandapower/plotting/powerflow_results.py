@@ -5,8 +5,9 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import matplotlib.pyplot as plt
-import pandapower.topology as top
 import numpy as np
+
+import pandapower.topology as top
 
 
 def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance from Slack [km]",

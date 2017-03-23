@@ -6,7 +6,9 @@
 
 import networkx as nx
 import pandas as pd
+
 from pandapower.topology.create_graph import create_nxgraph
+
 
 def connected_component(mg, bus, notravbuses=[]):
 

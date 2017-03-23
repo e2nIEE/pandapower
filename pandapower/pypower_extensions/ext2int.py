@@ -5,24 +5,19 @@
 """Converts external to internal indexing.
 """
 
+from copy import deepcopy
 from warnings import warn
 
-from copy import deepcopy
-
-from numpy import array, zeros, argsort, arange, concatenate
+from numpy import array, zeros, argsort, arange
 from numpy import flatnonzero as find
-
-from scipy.sparse import issparse, vstack, hstack, csr_matrix as sparse
-
+from pypower.e2i_data import e2i_data
+from pypower.e2i_field import e2i_field
+from pypower.idx_area import PRICE_REF_BUS
+from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pypower.idx_bus import PQ, PV, REF, NONE, BUS_I, BUS_TYPE
 from pypower.idx_gen import GEN_BUS, GEN_STATUS
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pypower.idx_area import PRICE_REF_BUS
-
-from pypower.e2i_field import e2i_field
-from pypower.e2i_data import e2i_data
-
 from pypower.run_userfcn import run_userfcn
+from scipy.sparse import csr_matrix as sparse
 
 
 def ext2int(ppc, val_or_field=None, ordering=None, dim=0):

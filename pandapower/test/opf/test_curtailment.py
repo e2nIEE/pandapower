@@ -4,9 +4,11 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pandapower as pp
 import pytest
 from numpy import array, allclose
+
+import pandapower as pp
+
 try:
     import pplog as logging
 except:

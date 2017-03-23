@@ -4,14 +4,14 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pytest
 import numpy as np
+import pytest
 
 import pandapower as pp
-from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
-from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
+from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 
 
 def test_rundcpp_init():

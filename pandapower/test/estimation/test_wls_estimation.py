@@ -1,10 +1,12 @@
-from pandapower.estimation import state_estimation, estimate
-from pandapower.estimation import chi2_analysis, remove_bad_data
-import pandapower as pp
+import os
+
 import numpy as np
 import pytest
+
+import pandapower as pp
 import pandapower.networks as nw
-import os
+from pandapower.estimation import chi2_analysis, remove_bad_data
+from pandapower.estimation import estimate
 
 
 def test_2bus():

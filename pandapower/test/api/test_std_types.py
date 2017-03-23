@@ -5,7 +5,9 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
+
 import pandapower as pp
+
 
 def test_create_and_load_std_type_line():
     net = pp.create_empty_network()

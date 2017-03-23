@@ -6,6 +6,8 @@
 
 from pandapower.powerflow import _pd2ppc
 from pandapower.auxiliary import _add_ppc_options
+from pandapower.powerflow import _pd2ppc
+
 try:
     import pplog as logging
 except:

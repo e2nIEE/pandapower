@@ -4,12 +4,13 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
 import networkx as nx
+import numpy as np
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
+from pypower.idx_bus import BUS_I, BASE_KV, GS, BS
 
 from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV
-from pypower.idx_bus import BUS_I, BASE_KV, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
+
 
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:

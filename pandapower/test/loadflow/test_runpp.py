@@ -4,20 +4,19 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 import pandapower as pp
-from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
-from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
+from pandapower.auxiliary import _check_connectivity, _add_ppc_options
+from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element
-from pandapower.auxiliary import _check_connectivity, _add_ppc_options
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.powerflow import _select_is_elements
-from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
-from pandapower.powerflow import LoadflowNotConverged
+from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
+from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 
 
 def test_runpp_init():

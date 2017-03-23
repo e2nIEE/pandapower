@@ -5,11 +5,12 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
-from pypower import case9, case9Q
 
 import pandapower as pp
 import pandapower.test.converter.ppc_testgrids as testgrids
 from pandapower.converter import from_ppc, validate_from_ppc
+from pypower import case9
+
 try:
     import pplog as logging
 except:

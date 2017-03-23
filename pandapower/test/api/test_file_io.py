@@ -4,10 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import os
+
+import pytest
+
 import pandapower as pp
 from pandapower.test.toolbox import assert_net_equal, create_test_network
-import os
-import pytest
 
 
 def test_pickle():

@@ -5,15 +5,16 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import copy
-import numpy as np
-import pandas as pd
 import math
 from functools import partial
 
+import numpy as np
+import pandas as pd
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, QT
 from pypower.idx_bus import BASE_KV
 
 from pandapower.auxiliary import get_values
+
 
 def _build_branch_ppc(net, ppc):
     """
