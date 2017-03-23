@@ -9,7 +9,7 @@ from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _sum_by_group
 
-def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
+def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, se=False):
     """
     Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
 
@@ -18,55 +18,97 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
         **results** - the result of runpf loadflow calculation
 
         **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
+        
+    Optional:
+    
+        **se** - (boolean) - Only if state estimation modul is used.
+        Default is 'False'.
 
     """
     i_ft, s_ft = _get_branch_flows(ppc)
-    _get_line_results(net, ppc, i_ft)
-    _get_trafo_results(net, ppc, s_ft, i_ft)
-    _get_trafo3w_results(net, ppc, s_ft, i_ft)
-    _get_impedance_results(net, ppc, i_ft)
-    _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
-    _get_switch_results(net, i_ft)
+    if se:    
+        _get_line_results(net, ppc, i_ft, se)
+    else:
+        _get_line_results(net, ppc, i_ft)
+        _get_trafo_results(net, ppc, s_ft, i_ft)
+        _get_trafo3w_results(net, ppc, s_ft, i_ft)
+        _get_impedance_results(net, ppc, i_ft)
+        _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
+        _get_switch_results(net, i_ft)
     
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
-    u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
+    v_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
     s_ft = (np.sqrt(ppc["branch"][:, (PF, PT)].real**2 +
                     ppc["branch"][:, (QF, QT)].real**2) * 1e3)
-    i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
+    i_ft = s_ft * 1e-3 / v_ft / np.sqrt(3)
     return i_ft, s_ft
     
-def _get_line_results(net, ppc, i_ft):
+def _get_line_results(net, ppc, i_ft, se=False):
+    """
+    Optional:
+    
+        **se** - (boolean) - Only if state estimation modul is used.
+        Default is 'False'.
+    """
     ac = net["_options"]["ac"]
 
     if not "line" in net._pd2ppc_lookups["branch"]:
-        return
-    f, t = net._pd2ppc_lookups["branch"]["line"]
-    pf_kw = ppc["branch"][f:t, PF].real * 1e3
-    qf_kvar = ppc["branch"][f:t, QF].real * 1e3
-    net["res_line"]["p_from_kw"] = pf_kw
-    if ac:
-        net["res_line"]["q_from_kvar"] = qf_kvar
-
-    pt_kw = ppc["branch"][f:t, PT].real * 1e3
-    qt_kvar = ppc["branch"][f:t, QT].real * 1e3
-    net["res_line"]["p_to_kw"] = pt_kw
-    if ac:
-        net["res_line"]["q_to_kvar"] = qt_kvar
-
-    if ac:
-        net["res_line"]["pl_kw"] = pf_kw + pt_kw
-        net["res_line"]["ql_kvar"] = qf_kvar + qt_kvar
-
-    i_ka = np.max(i_ft[f:t], axis=1)
-    net["res_line"]["i_from_ka"] = i_ft[f:t][:,0]
-    net["res_line"]["i_to_ka"] = i_ft[f:t][:,1]
-    i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
-        net["line"]["parallel"].values
-
-    net["res_line"]["i_ka"] = i_ka
-    net["res_line"]["loading_percent"] = i_ka / i_max * 100
-    net["res_line"].index = net["line"].index
+        return    
+    if se:
+        f, t = net._pd2ppc_lookups["branch"]["line"]
+        pf_kw = ppc["branch"][f:t, PF].real * 1e3
+        qf_kvar = ppc["branch"][f:t, QF].real * 1e3
+        net["res_line_est"]["p_from_kw"] = pf_kw
+        if ac:
+            net["res_line_est"]["q_from_kvar"] = qf_kvar
+    
+        pt_kw = ppc["branch"][f:t, PT].real * 1e3
+        qt_kvar = ppc["branch"][f:t, QT].real * 1e3
+        net["res_line_est"]["p_to_kw"] = pt_kw
+        if ac:
+            net["res_line_est"]["q_to_kvar"] = qt_kvar
+    
+        if ac:
+            net["res_line_est"]["pl_kw"] = pf_kw + pt_kw
+            net["res_line_est"]["ql_kvar"] = qf_kvar + qt_kvar
+    
+        i_ka = np.max(i_ft[f:t], axis=1)
+        net["res_line_est"]["i_from_ka"] = i_ft[f:t][:,0]
+        net["res_line_est"]["i_to_ka"] = i_ft[f:t][:,1]
+        i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
+            net["line"]["parallel"].values
+    
+        net["res_line_est"]["i_ka"] = i_ka
+        net["res_line_est"]["loading_percent"] = i_ka / i_max * 100
+        net["res_line_est"].index = net["line"].index
+    else:
+        f, t = net._pd2ppc_lookups["branch"]["line"]
+        pf_kw = ppc["branch"][f:t, PF].real * 1e3
+        qf_kvar = ppc["branch"][f:t, QF].real * 1e3
+        net["res_line"]["p_from_kw"] = pf_kw
+        if ac:
+            net["res_line"]["q_from_kvar"] = qf_kvar
+    
+        pt_kw = ppc["branch"][f:t, PT].real * 1e3
+        qt_kvar = ppc["branch"][f:t, QT].real * 1e3
+        net["res_line"]["p_to_kw"] = pt_kw
+        if ac:
+            net["res_line"]["q_to_kvar"] = qt_kvar
+    
+        if ac:
+            net["res_line"]["pl_kw"] = pf_kw + pt_kw
+            net["res_line"]["ql_kvar"] = qf_kvar + qt_kvar
+    
+        i_ka = np.max(i_ft[f:t], axis=1)
+        net["res_line"]["i_from_ka"] = i_ft[f:t][:,0]
+        net["res_line"]["i_to_ka"] = i_ft[f:t][:,1]
+        i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
+            net["line"]["parallel"].values
+    
+        net["res_line"]["i_ka"] = i_ka
+        net["res_line"]["loading_percent"] = i_ka / i_max * 100
+        net["res_line"].index = net["line"].index
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):
