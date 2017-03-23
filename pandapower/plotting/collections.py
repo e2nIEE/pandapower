@@ -21,7 +21,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     OPTIONAL:
         **buses** (list, None) - The buses for which the collections are created.
-                                 If None, all buses in the network are considered.
+        If None, all buses in the network are considered.
 
         **size** (int, 5) - patch size
 
@@ -149,7 +149,8 @@ def create_trafo_collection(net, trafos=None, **kwargs):
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
-        **trafos** (list, None) - The transformers for which the collections are created. If None, all transformers in the network are considered.
+        **trafos** (list, None) - The transformers for which the collections are created.
+        If None, all transformers in the network are considered.
 
         **kwargs - key word arguments are passed to the patch function
 
