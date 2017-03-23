@@ -309,12 +309,10 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     the active and reactive power are assigned as in a normal power flow. If yes, the following
     flexibilities apply:
         - net.sgen.min_p_kw / net.sgen.max_p_kw
-        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
-        - net.gen.min_q_kvar / net.gen.max_q_kvar
-        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
 
-    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
