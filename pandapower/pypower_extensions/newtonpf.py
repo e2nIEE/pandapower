@@ -5,11 +5,11 @@
 """Solves the power flow using a full Newton's method.
 """
 
-import scipy.sparse.linalg.dsolve._superlu as _superlu
 from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int32
 from pypower.dSbus_dV import dSbus_dV
 from scipy.sparse import hstack, vstack
 from scipy.sparse.linalg import spsolve
+from scipy.sparse import csr_matrix as sparse
 
 try:
     from pandapower.pypower_extensions.create_J import create_J, create_J2
@@ -82,10 +82,11 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
 
         # use numba if activated
         if numba:
-            dx = _solve_with_numba(Ybus, V, pvpq, pq, F, createJ, pvpq_lookup, npv, npq)
+            J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq)
         else:
-            dx = _solve_without_numba(Ybus, V, pvpq, pq, F)
+            J = _create_J_without_numba(Ybus, V, pvpq, pq)
 
+        dx = -1 * spsolve(J, F)
         ## update voltage
         if npv:
             Va[pv] = Va[pv] + dx[j1:j2]
@@ -111,7 +112,7 @@ def _evaluate_Fx(Ybus, V, Sbus, pv, pq):
     return F
 
 
-def _solve_with_numba(Ybus, V, pvpq, pq, F, createJ, pvpq_lookup, npv, npq):
+def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
     # create Jacobian from fast calc of dS_dV
     dVm_x, dVa_x = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V))
 
@@ -123,7 +124,7 @@ def _solve_with_numba(Ybus, V, pvpq, pq, F, createJ, pvpq_lookup, npv, npq):
     Jj = empty(len(dVm_x) * 4, dtype=int32)
 
     # fill Jx, Jj and Jp
-    Jnnz = createJ(dVm_x, dVa_x, Ybus.indptr, Ybus.indices, pvpq_lookup, pvpq, pq, Jx, Jj, Jp)
+    createJ(dVm_x, dVa_x, Ybus.indptr, Ybus.indices, pvpq_lookup, pvpq, pq, Jx, Jj, Jp)
 
     # resize before generating the scipy sparse matrix
     Jx.resize(Jp[-1], refcheck=False)
@@ -131,13 +132,12 @@ def _solve_with_numba(Ybus, V, pvpq, pq, F, createJ, pvpq_lookup, npv, npq):
 
     # generate scipy sparse matrix
     dimJ = npv + npq + npq
-    # J = sparse((Jx, Jj, Jp), shape=(dimJ, dimJ))
-    # dx = -1 * spsolve(J, F)
-    dx = -1 * _superlu.gssv(dimJ, Jnnz, Jx, Jj, Jp, F, 0, options=dict(ColPerm=None))[0]
-    return dx
+    J = sparse((Jx, Jj, Jp), shape=(dimJ, dimJ))
+
+    return J
 
 
-def _solve_without_numba(Ybus, V, pvpq, pq, F):
+def _create_J_without_numba(Ybus, V, pvpq, pq):
     # create Jacobian with standard pypower implementation.
     dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
 
@@ -152,9 +152,7 @@ def _solve_without_numba(Ybus, V, pvpq, pq, F):
         hstack([J21, J22])
     ], format="csr")
 
-    ## compute update step
-    dx = -1 * spsolve(J, F)
-    return dx
+    return J
 
 
 def _check_for_convergence(F, tol):
