@@ -445,6 +445,12 @@ def convert_format(net):
         net["_is_elements"] = copy.deepcopy(net["_is_elems"])
         net.pop("_is_elems", None)
 
+    if "options" in net:
+        if "recycle" in net["options"]:
+            if not "_is_elements" in net["options"]["recycle"]:
+                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(net["recycle"]["is_elems"])
+                net["options"]["recycle"].pop("is_elems", None)
+
     return net
 
 
