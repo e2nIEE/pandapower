@@ -121,14 +121,14 @@ def _get_pp_gen_results(net, ppc, b, p, q):
 
 
 def _get_dcline_results(net):
-    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]
 
     net.res_dcline.p_from_kw = from_gens.p_kw.values
     net.res_dcline.p_to_kw = to_gens.p_kw.values
-    net.res_dcline.pl_kw = from_gens.p_kw.values +  to_gens.p_kw.values
-   
+    net.res_dcline.pl_kw = from_gens.p_kw.values + to_gens.p_kw.values
+
     net.res_dcline.q_from_kvar = from_gens.q_kvar.values
     net.res_dcline.q_to_kvar = to_gens.q_kvar.values
 
@@ -136,6 +136,5 @@ def _get_dcline_results(net):
     net.res_dcline.vm_to_pu = to_gens.vm_pu.values
     net.res_dcline.va_from_degree = from_gens.va_degree.values
     net.res_dcline.va_to_degree = to_gens.va_degree.values
-    
-    net.res_dcline.index = net.dcline.index
 
+    net.res_dcline.index = net.dcline.index
