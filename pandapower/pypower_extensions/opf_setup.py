@@ -39,7 +39,7 @@ def opf_setup(ppc, ppopt):
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
     @author: Richard Lincoln
-    
+
     Modified by University of Kassel (Friederike Meier): Bugfix in line 110
     """
     ## options
@@ -189,7 +189,7 @@ def opf_setup(ppc, ppopt):
         stderr.write('opf_setup: some generator cost rows have invalid MODEL value\n')
 
     ## more problem dimensions
-    nx = nb+nv + ng+nq;  ## number of standard OPF control variables
+    nx = nb+nv + ng+nq  ## number of standard OPF control variables
     if nusr:
         nz = ppc['A'].shape[1] - nx  ## number of user z variables
         if nz < 0:
