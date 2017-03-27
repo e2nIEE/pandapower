@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
                                             create_trafo_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+from pandapower.networks import mv_oberrhein
 
 try:
     import pplog as logging
@@ -62,7 +63,7 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
     """
     if net is None:
         logger.warning("No pandapower network provided -> Plotting mv_oberrhein")
-        net = nw.mv_oberrhein()
+        net = mv_oberrhein()
 
     # create geocoord if none are available
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
@@ -98,8 +99,8 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
     # create trafo collection if trafo is available
 
     trafo_buses_with_geo_coordinates = [t for t, trafo in net.trafo.iterrows()
-                                       if trafo.hv_bus in net.bus_geodata.index
-                                       and trafo.lv_bus in net.bus_geodata.index]
+                                        if trafo.hv_bus in net.bus_geodata.index and
+                                        trafo.lv_bus in net.bus_geodata.index]
     if len(trafo_buses_with_geo_coordinates) > 0:
         tc = create_trafo_collection(net, trafo_buses_with_geo_coordinates, color=trafo_color)
         collections.append(tc)
