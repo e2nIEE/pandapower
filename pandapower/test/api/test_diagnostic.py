@@ -212,7 +212,7 @@ class TestInvalidValues:
          'gen': [(0, 'in_service', '1', 'boolean')],
          'sgen': [(2, 'in_service', '0', 'boolean'), (3, 'in_service', '0.0', 'boolean')],
          'switch': [(1, 'closed', 'False', 'boolean'), (3, 'closed', 'False', 'boolean'),
-                    (4, 'closed', None, 'boolean'), (5, 'closed', 10, 'boolean')],
+                    (4, 'closed', 'None', 'boolean'), (5, 'closed', 10, 'boolean')],
          'trafo': [(0, 'in_service', 'True', 'boolean')],
          'trafo3w': [(0, 'in_service', 'nan', 'boolean')]}
 
@@ -353,18 +353,18 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'switch': [(0, 'et', 'bus', 'switch_type'),
                     (1, 'et', 1, 'switch_type'),
-                    (2, 'et', None, 'switch_type'),
+                    (2, 'et', 'None', 'switch_type'),
                     (3, 'et', True, 'switch_type')]}
 
         for bool_value in [True, False]:
-                diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
-                report_check = None
-                try:
-                    eval(report_methods[check_function])
-                    report_check = True
-                except:
-                    report_check = False
-                assert report_check
+            diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+            report_check = None
+            try:
+                eval(report_methods[check_function])
+                report_check = True
+            except:
+                report_check = False
+            assert report_check
 
 
 def test_no_ext_grid(test_net, diag_params, report_methods):
