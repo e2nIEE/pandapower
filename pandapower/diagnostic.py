@@ -4,8 +4,10 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import copy
 
+
+import copy
+import pandas as pd
 import numpy as np
 
 try:
@@ -19,6 +21,7 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
+from pandapower.powerflow import LoadflowNotConverged
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
@@ -211,10 +214,9 @@ def check_pos_int(element, element_index, column):
 def check_number(element, element_index, column):
     try:
         nan_check = np.isnan(element[column])
-        if nan_check or type(element[column]) == bool:
+        if nan_check or isinstance(element[column], bool):
             return element_index
-
-    except:
+    except TypeError:
         return element_index
 
 
@@ -313,18 +315,13 @@ def invalid_values(net):
                         if key not in check_results:
                             check_results[key] = []
                         # converts np.nan to str for easier usage of assert in pytest
-                        try:
-                            nan_check = np.isnan(net[key][value[0]].at[i])
-                            if nan_check:
-                                check_results[key].append((i, value[0],
-                                                           str(net[key][value[0]].at[i]), value[1]))
-                            else:
-                                check_results[key].append((i, value[0],
-                                                           net[key][value[0]].at[i], value[1]))
-                        except:
+                        nan_check = pd.isnull(net[key][value[0]].at[i])
+                        if nan_check:
+                            check_results[key].append((i, value[0],
+                                                       str(net[key][value[0]].at[i]), value[1]))
+                        else:
                             check_results[key].append((i, value[0],
                                                        net[key][value[0]].at[i], value[1]))
-
     return check_results
 
 
@@ -392,14 +389,14 @@ def overload(net, overload_scaling_factor):
     try:
         runpp(net)
 
-    except:
+    except LoadflowNotConverged:
         try:
             net.load.scaling = overload_scaling_factor
             runpp(net)
             net.load.scaling = load_scaling
             check_result['load'] = True
 
-        except:
+        except LoadflowNotConverged:
             net.load.scaling = load_scaling
             check_result['load'] = 'uncertain'
 
@@ -411,7 +408,7 @@ def overload(net, overload_scaling_factor):
             net.gen.scaling = sgen_scaling
             check_result['generation'] = True
 
-        except:
+        except LoadflowNotConverged:
             net.gen.scaling = gen_scaling
             check_result['generation'] = 'uncertain'
 
@@ -435,13 +432,13 @@ def wrong_switch_configuration(net):
     try:
         runpp(net)
 
-    except:
+    except (ValueError, LoadflowNotConverged):
         try:
             net.switch.closed = 1
             runpp(net)
             net.switch.closed = switch_configuration
             return True
-        except:
+        except LoadflowNotConverged:
             net.switch.closed = switch_configuration
             return 'uncertain'
 
@@ -796,7 +793,7 @@ def numba_comparison(net, numba_tolerance):
     check_results = {}
     try:
         runpp(net, numba=True)
-    except:
+    except LoadflowNotConverged:
         pass
     if net.converged:
         try:
@@ -820,7 +817,7 @@ def numba_comparison(net, numba_tolerance):
                             numba_true = result_numba_true[key][col][diffs[col]]
                             numba_false = result_numba_false[key][col][diffs[col]]
                             check_results[key][col] = abs(numba_true - numba_false)
-        except:
+        except LoadflowNotConverged:
             pass
 
     if check_results:
