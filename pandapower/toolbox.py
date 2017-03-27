@@ -1018,7 +1018,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
                                                         respected
                                                   False: in_service status will be ignored
      OUTPUT:
-        **cl** (set) - Returns connected lines.
+        **connected_elements** (set) - Returns connected elements.
 
     """
 
