@@ -4,18 +4,21 @@
 
 from time import time
 
-from numpy import flatnonzero as find
-from numpy import pi, exp
-from numpy import r_, zeros, argmax
+from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
 from pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
 from pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pypower.makeSbus import makeSbus
 
 from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pypower_extensions.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.run_dc_pf import _run_dc_pf
-
+try:
+    from numba import _version as numba_version
+    from pandapower.pypower_extensions.makeYbus import makeYbus as makeYbus_numba
+except:
+    pass
 
 try:
     import pplog as logging
@@ -91,23 +94,21 @@ def _import_numba_extensions_if_flag_is_true(numba):
     ## check if numba is available and the corresponding flag
     if numba:
         try:
-            from numba import _version as nb_version
             # get numba Version (in order to use it it must be > 0.25)
-            nb_version = float(nb_version.version_version[:4])
-
+            nb_version = float(numba_version.version_version[:4])
             if nb_version < 0.25:
                 logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
                 numba = False
 
-        except ImportError:
-            # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
-            logger.warning('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
+        except:
+            logger.warning('Warning: Numba cannot be imported.'
+                           ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
             numba = False
 
     if numba:
-        from pandapower.pypower_extensions.makeYbus import makeYbus
+        makeYbus = makeYbus_numba
     else:
-        from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
+        makeYbus = makeYbus_pypower
 
     return numba, makeYbus
 

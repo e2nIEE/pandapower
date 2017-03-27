@@ -10,8 +10,7 @@ from numpy import sign, nan, append, zeros, max, array
 from pandas import Series, DataFrame, concat
 
 import pandapower as pp
-from pypower import ppoption
-from pypower import runpf
+from pypower import ppoption, runpf
 
 try:
     import pplog as logging

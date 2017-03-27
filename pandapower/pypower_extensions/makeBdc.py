@@ -1,7 +1,6 @@
 """Builds the B matrices and phase shift injections for DC power flow.
 """
-from numpy import ones, r_, pi, flatnonzero as find
-from numpy import real
+from numpy import ones, r_, pi, flatnonzero as find, real
 from pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pypower.idx_bus import BUS_I
 from scipy.sparse import csr_matrix as sparse

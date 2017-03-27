@@ -29,15 +29,17 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     _get_impedance_results(net, ppc, i_ft)
     _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
     _get_switch_results(net, i_ft)
-    
+
+
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
     u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
-    s_ft = (np.sqrt(ppc["branch"][:, (PF, PT)].real**2 +
-                    ppc["branch"][:, (QF, QT)].real**2) * 1e3)
+    s_ft = (np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
+                    ppc["branch"][:, (QF, QT)].real ** 2) * 1e3)
     i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
     return i_ft, s_ft
-    
+
+
 def _get_line_results(net, ppc, i_ft):
     ac = net["_options"]["ac"]
 
@@ -61,10 +63,10 @@ def _get_line_results(net, ppc, i_ft):
         net["res_line"]["ql_kvar"] = qf_kvar + qt_kvar
 
     i_ka = np.max(i_ft[f:t], axis=1)
-    net["res_line"]["i_from_ka"] = i_ft[f:t][:,0]
-    net["res_line"]["i_to_ka"] = i_ft[f:t][:,1]
+    net["res_line"]["i_from_ka"] = i_ft[f:t][:, 0]
+    net["res_line"]["i_to_ka"] = i_ft[f:t][:, 1]
     i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
-        net["line"]["parallel"].values
+            net["line"]["parallel"].values
 
     net["res_line"]["i_ka"] = i_ka
     net["res_line"]["loading_percent"] = i_ka / i_max * 100
@@ -95,7 +97,7 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     net["res_trafo"]["i_lv_ka"] = i_ft[:, 1][f:t]
     if trafo_loading == "current":
         lds_trafo = i_ft[f:t] * net["trafo"][["vn_hv_kv", "vn_lv_kv"]].values * 1000. * np.sqrt(3) \
-            / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100.
+                    / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100.
         ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
         ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100., axis=1)
@@ -156,7 +158,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
-    net["res_trafo3w"]["loading_percent"] = ld_trafo 
+    net["res_trafo3w"]["loading_percent"] = ld_trafo
     net["res_trafo3w"].index = net["trafo3w"].index
 
 
@@ -183,6 +185,7 @@ def _get_impedance_results(net, ppc, i_ft):
     net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
     net["res_impedance"].index = net["impedance"].index
 
+
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     ac = net["_options"]["ac"]
 
@@ -203,9 +206,10 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     pq_buses[b_ppc, 1] += q
     net["res_xward"].index = net["xward"].index
 
+
 def _get_switch_results(net, i_ft):
     if not "switch" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["switch"]
-    net["res_switch"] = pd.DataFrame(data=np.max(i_ft[f:t], axis=1), columns = ["i_ka"],
+    net["res_switch"] = pd.DataFrame(data=np.max(i_ft[f:t], axis=1), columns=["i_ka"],
                                      index=net.switch[net._closed_bb_switches].index)

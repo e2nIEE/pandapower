@@ -5,8 +5,7 @@
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real
-from numpy import flatnonzero as find
+from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find
 from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pypower.idx_bus import VM, VA, PD, QD
 from pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX

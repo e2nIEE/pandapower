@@ -9,9 +9,7 @@
 
 from sys import stdout, stderr
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, \
-    r_, ones, Inf
-from numpy import flatnonzero as find
+from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
 from pypower.idx_brch import RATE_A
 from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
 from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
@@ -41,7 +39,7 @@ def opf_setup(ppc, ppopt):
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
     @author: Richard Lincoln
-    
+
     Modified by University of Kassel (Friederike Meier): Bugfix in line 110
     """
     ## options
@@ -191,7 +189,7 @@ def opf_setup(ppc, ppopt):
         stderr.write('opf_setup: some generator cost rows have invalid MODEL value\n')
 
     ## more problem dimensions
-    nx = nb+nv + ng+nq;  ## number of standard OPF control variables
+    nx = nb+nv + ng+nq  ## number of standard OPF control variables
     if nusr:
         nz = ppc['A'].shape[1] - nx  ## number of user z variables
         if nz < 0:
