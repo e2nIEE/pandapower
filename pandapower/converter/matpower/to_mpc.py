@@ -78,7 +78,7 @@ def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, t
     _get_std_options(net, init, calculate_voltage_angles, trafo_model)
 
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net)
+    ppc, _ = _pd2ppc(net)
 
     # convert ppc to mpc
     mpc = _ppc_to_mpc(ppc)
