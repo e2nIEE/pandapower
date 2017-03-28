@@ -130,7 +130,7 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(options["numba"])
 
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 

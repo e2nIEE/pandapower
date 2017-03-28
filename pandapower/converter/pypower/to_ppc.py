@@ -73,7 +73,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
                      mode="pf", copy_constraints_to_ppc=True,
                      r_switch=r_switch, init="results", enforce_q_lims=True, recycle=None)
     #  do the conversion
-    ppc, ppci = _pd2ppc(net)
+    ppc, _ = _pd2ppc(net)
     ppc['branch'] = ppc['branch'].real
     ppc.pop('internal')
     return ppc

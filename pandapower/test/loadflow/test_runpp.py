@@ -4,6 +4,8 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import copy
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -322,6 +324,46 @@ def test_pf_algorithms():
 
         assert np.allclose(vm_nr, vm_alg)
         assert np.allclose(va_nr, va_alg)
+
+
+def test_recycle():
+    # Note: Only calls recycle functions and tests if load and gen are updated.
+    # Todo: To fully test the functionality, it must be checked if the recycle methods are being called
+    # or alternatively if the "non-recycle" functions are not being called.
+    net = pp.create_empty_network()
+    b1, b2, ln = add_grid_connection(net)
+    pl = 1200
+    ql = 1100
+    ps = -500
+    u_set = 1.0
+
+    b3 = pp.create_bus(net, vn_kv=.4)
+    pp.create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
+    pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
+    pp.create_gen(net, b2, p_kw=ps, vm_pu=u_set)
+
+    runpp_with_consistency_checks(net, recycle=dict(_is_elements=True, ppc=True, Ybus=True))
+
+    # copy.deepcopy(net)
+
+    # update values
+    pl = 600
+    ql = 550
+    ps = -250
+    u_set = 0.98
+
+    net["load"].p_kw.iloc[0] = pl
+    net["load"].q_kvar.iloc[0] = ql
+    net["gen"].p_kw.iloc[0] = ps
+    net["gen"].vm_pu.iloc[0] = u_set
+
+    runpp_with_consistency_checks(net, recycle=dict(_is_elements=True, ppc=True, Ybus=True))
+
+    assert np.allclose(net.res_load.p_kw.iloc[0], pl)
+    assert np.allclose(net.res_load.q_kvar.iloc[0], ql)
+    assert np.allclose(net.res_gen.p_kw.iloc[0], ps)
+    assert np.allclose(net.res_gen.vm_pu.iloc[0], u_set)
 
 
 if __name__ == "__main__":
