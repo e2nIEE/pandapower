@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
+import json
+import numbers
 import os
 import pickle
-import pandas as pd
 import sys
-import numbers
-import json
+
 import numpy
-from pandapower.toolbox import convert_format
-from pandapower.create import create_empty_network
+import pandas as pd
+
 from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_empty_network
+from pandapower.toolbox import convert_format
 
 
 def to_pickle(net, filename):
@@ -104,8 +106,6 @@ def to_json(net, filename):
     for k in sorted(net.keys()):
         if k[0] == "_":
             continue
-        if k in ["std_types"]:
-            continue
         if isinstance(net[k], pd.DataFrame):
             if len(net[k]) == 0:  # do not bother saving empty data frames
                 continue
@@ -113,7 +113,7 @@ def to_json(net, filename):
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","
         elif isinstance(net[k], dict):
-            json_string += json.dumps(net[k])
+            json_string += '"%s":%s,' % (k, json.dumps(net[k]))
         elif isinstance(net[k], bool):
             json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
         elif isinstance(net[k], str):
@@ -222,29 +222,33 @@ def from_json(filename, convert=True):
     """
     with open(filename) as data_file:
         data = json.load(data_file)
-    net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
+        net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
 
-    # checks if field exists in empty network and if yes, matches data type
-    def check_equal_type(name):
-        if name in net:
-            if isinstance(net[name], type(data[name])):
-                return True
-            elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
-                return True
+        # checks if field exists in empty network and if yes, matches data type
+        def check_equal_type(name):
+            if name in net:
+                if isinstance(net[name], type(data[name])):
+                    return True
+                elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
+                    return True
+                else:
+                    return False
+            return True
+
+        for k in sorted(data.keys()):
+            if not check_equal_type(k):
+                raise UserWarning("Different data type for existing pandapower field")
+            if isinstance(data[k], dict):
+                if isinstance(net[k], pd.DataFrame):
+                    columns = net[k].columns
+                    net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
+                    net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
+                    net[k] = net[k][columns]
+                else:
+                    net[k] = data[k]
             else:
-                return False
-        return True
-
-    for k in sorted(data.keys()):
-        if not check_equal_type(k):
-            raise UserWarning("Different data type for existing pandapower field")
-        if isinstance(data[k], dict):
-            columns = net[k].columns
-            net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
-            net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
-            net[k] = net[k][columns]
-        else:
-            net[k] = data[k]
-    if convert:
-        convert_format(net)
-    return net
+                net[k] = data[k]
+        if convert:
+            convert_format(net)
+        return net
+    return None

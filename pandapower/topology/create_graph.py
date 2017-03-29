@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+from itertools import combinations
 
 import networkx as nx
-from itertools import combinations
+
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                    nogobuses=None, notravbuses=None, multi=True):

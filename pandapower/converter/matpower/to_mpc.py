@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import copy
 
 import numpy as np
 from scipy.io import savemat
 
-from pandapower.powerflow import reset_results, _select_is_elements, _pd2ppc
+from pandapower.auxiliary import _add_ppc_options
+from pandapower.powerflow import reset_results, _pd2ppc
+
 try:
     import pplog as logging
 except:
@@ -15,7 +19,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
-def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_model="t"):
+def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, trafo_model="t"):
     """
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.
@@ -24,9 +28,9 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
 
         **net** - The pandapower net.
 
-        **filename** - File path + name of the mat file which will be created.
-
     OPTIONAL:
+
+        **filename** (None) - File path + name of the mat file which will be created. If None the mpc will only be returned
 
         **init** (str, "results") - initialization method of the loadflow
         For the conversion to a mpc, the following options can be chosen:
@@ -71,17 +75,18 @@ def to_mpc(net, filename, init="results", calculate_voltage_angles=False, trafo_
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
-    net["_is_elems"] = _select_is_elements(net)
+    _get_std_options(net, init, calculate_voltage_angles, trafo_model)
 
-    init_results = True if init == "results" else False
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net, calculate_voltage_angles, enforce_q_lims=False,
-                                    trafo_model=trafo_model, init_results=init_results)
+    ppc, _ = _pd2ppc(net)
 
     # convert ppc to mpc
-    _ppc_to_mpc(ppc)
-    # savemat
-    savemat(filename, ppc)
+    mpc = _ppc_to_mpc(ppc)
+    if filename is not None:
+        # savemat
+        savemat(filename, mpc)
+
+    return mpc
 
 
 def _ppc_to_mpc(ppc):
@@ -96,11 +101,26 @@ def _ppc_to_mpc(ppc):
 
     # convert to matpower
     # Matlab is one-based, so all entries (buses, lines, gens) have to start with 1 instead of 0
-    if len(np.where(ppc["bus"][:, 0] == 0)[0]):
-        ppc["bus"][:, 0] = ppc["bus"][:, 0] + 1
-        ppc["gen"][:, 0] = ppc["gen"][:, 0] + 1
-        ppc["branch"][:, 0:2] = ppc["branch"][:, 0:2] + 1
+    mpc = copy.deepcopy(ppc)
+    if len(np.where(mpc["bus"][:, 0] == 0)[0]):
+        mpc["bus"][:, 0] = mpc["bus"][:, 0] + 1
+        mpc["gen"][:, 0] = mpc["gen"][:, 0] + 1
+        mpc["branch"][:, 0:2] = mpc["branch"][:, 0:2] + 1
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
-    ppc["branch"][np.where(ppc["branch"][:, 8] == 1), 8] = 0
+    mpc["branch"][np.where(mpc["branch"][:, 8] == 1), 8] = 0
     # version is a string
-    ppc["version"] = str(ppc["version"])
+    mpc["version"] = str(mpc["version"])
+    return mpc
+
+
+def _get_std_options(net, init, calculate_voltage_angles, trafo_model):
+    mode = "pf"
+    copy_constraints_to_ppc = False
+
+    # init options
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=False,
+                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     r_switch=0.0, init=init, enforce_q_lims=False,
+                     recycle=None)

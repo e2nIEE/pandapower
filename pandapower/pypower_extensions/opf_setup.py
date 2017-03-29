@@ -1,34 +1,30 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Constructs an OPF model object from a PYPOWER case dict.
 """
 
 from sys import stdout, stderr
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, \
-    r_, ones, Inf
-from numpy import flatnonzero as find
-
+from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
+from pypower.idx_brch import RATE_A
+from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
+from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
+from pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
+from pypower.makeAang import makeAang
+from pypower.makeApq import makeApq
+from pypower.makeAvl import makeAvl
+from pypower.makeAy import makeAy
+from pypower.makeBdc import makeBdc
+from pypower.opf_args import opf_args
+from pypower.pqcost import pqcost
+from pypower.run_userfcn import run_userfcn
 from scipy.sparse import hstack, csr_matrix as sparse
 
-from pypower.pqcost import pqcost
-from pypower.opf_args import opf_args
-from pypower.makeBdc import makeBdc
-from pypower.makeAvl import makeAvl
-from pypower.makeApq import makeApq
-from pypower.makeAang import makeAang
-from pypower.makeAy import makeAy
 from pandapower.pypower_extensions.opf_model import opf_model # temporary changed import to match bugfix path
-from pypower.run_userfcn import run_userfcn
-
-from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
-from pypower.idx_brch import RATE_A
 
 
 def opf_setup(ppc, ppopt):
@@ -43,7 +39,7 @@ def opf_setup(ppc, ppopt):
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
     @author: Richard Lincoln
-    
+
     Modified by University of Kassel (Friederike Meier): Bugfix in line 110
     """
     ## options
@@ -193,7 +189,7 @@ def opf_setup(ppc, ppopt):
         stderr.write('opf_setup: some generator cost rows have invalid MODEL value\n')
 
     ## more problem dimensions
-    nx = nb+nv + ng+nq;  ## number of standard OPF control variables
+    nx = nb+nv + ng+nq  ## number of standard OPF control variables
     if nusr:
         nz = ppc['A'].shape[1] - nx  ## number of user z variables
         if nz < 0:

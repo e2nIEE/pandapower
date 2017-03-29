@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
+import numpy as np
 import pytest
-#from scipy.spatial.tests.test_kdtree import test_two_random_trees
 
 import pandapower as pp
-from pandapower.test.toolbox import create_test_network2
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch
-import numpy as np
+from pandapower.test.toolbox import create_test_network2
+
 
 #TODO: 2 gen 2 ext_grid missing
 

@@ -1,18 +1,15 @@
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real
-from numpy import flatnonzero as find
-
-from scipy.sparse import csr_matrix
-
+from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find
+from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pypower.idx_bus import VM, VA, PD, QD
 from pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from scipy.sparse import csr_matrix
 
 EPS = finfo(float).eps
 

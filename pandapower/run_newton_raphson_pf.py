@@ -1,23 +1,24 @@
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 from time import time
 
-from numpy import pi, exp
-from numpy import r_, zeros, argmax
-from numpy import flatnonzero as find
-
-from pypower.makeSbus import makeSbus
+from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
 from pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
 from pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
-
-from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.pypower_extensions.newtonpf import newtonpf
+from pypower.makeSbus import makeSbus
 
 from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pypower_extensions.makeYbus_pypower import makeYbus as makeYbus_pypower
+from pandapower.pypower_extensions.newtonpf import newtonpf
+from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.run_dc_pf import _run_dc_pf
-
+try:
+    from numba import _version as numba_version
+    from pandapower.pypower_extensions.makeYbus import makeYbus as makeYbus_numba
+except:
+    pass
 
 try:
     import pplog as logging
@@ -93,23 +94,21 @@ def _import_numba_extensions_if_flag_is_true(numba):
     ## check if numba is available and the corresponding flag
     if numba:
         try:
-            from numba import _version as nb_version
             # get numba Version (in order to use it it must be > 0.25)
-            nb_version = float(nb_version.version_version[:4])
-
+            nb_version = float(numba_version.version_version[:4])
             if nb_version < 0.25:
                 logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
                 numba = False
 
-        except ImportError:
-            # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
-            logger.warning('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
+        except:
+            logger.warning('Warning: Numba cannot be imported.'
+                           ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
             numba = False
 
     if numba:
-        from pandapower.pypower_extensions.makeYbus import makeYbus
+        makeYbus = makeYbus_numba
     else:
-        from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
+        makeYbus = makeYbus_pypower
 
     return numba, makeYbus
 
@@ -131,7 +130,7 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(options["numba"])
 
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 

@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 """Solves an optimal power flow.
 """
 
 from time import time
 
 from numpy import zeros, c_, shape
-
+from pypower.idx_brch import MU_ANGMAX
 from pypower.idx_bus import MU_VMIN
 from pypower.idx_gen import MU_QMIN
-from pypower.idx_brch import MU_ANGMAX
-
 from pypower.opf_args import opf_args2
-from pandapower.pypower_extensions.opf_setup import opf_setup #temporary changed import to match bugfix path
+
 from pandapower.pypower_extensions.opf_execute import opf_execute #temporary changed import to match bugfix path
+from pandapower.pypower_extensions.opf_setup import opf_setup #temporary changed import to match bugfix path
 
 
 def opf(*args):

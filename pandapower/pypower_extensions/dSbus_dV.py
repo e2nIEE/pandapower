@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
+from numba import jit
 from numpy import conj, zeros, complex128, diag, asmatrix, asarray
 from scipy.sparse import issparse, csr_matrix as sparse
 
-from numba import jit, i4, c16
-from numba.types import Tuple
 
 #@jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)

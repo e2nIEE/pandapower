@@ -2,6 +2,10 @@
 pandapower
 =============
 
+.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.2.2
+   :target: http://pandapower.readthedocs.io/
+   :alt: Documentation Status
+
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
 
@@ -13,9 +17,12 @@ pandapower
 
 .. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
     :target: https://coveralls.io/github/lthurner/pandapower?branch=master
+    
+.. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
+    :target: https://www.codacy.com/app/lthurner/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lthurner/pandapower&amp;utm_campaign=Badge_Grade
 
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE  
+    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE
 
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
@@ -25,51 +32,74 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 
 .. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
+    :width: 25em
 
 .. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
    :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
-    
+    :width: 25em
 
-For more information, go to `<http://www.uni-kassel.de/go/pandapower>`_.
+|
 
-Installation
-==============
-To install pandapower, simply use: ::
+Element Models
+---------------
 
-    pip install pandapower
+pandapower is an element based network calculation tools that supports the following components:
 
-This will install the following dependencies:
-    - pypower>=5.0.1
-    - pandas
-    - networkx
+	- lines
+	- two-winding and three-winding transformers
+	- ideal bus-bus and bus-branch switches
+	- static generators, loads and shunts
+	- external grid connections
+	- synchronous generators
+	- DC lines
+	- network equivalents (unsymmetric impedances, ward equivalents)
+	
+Network Analysis
+------------------
 
-You will also need numpy and scipy, which are dependencies of pypower.
-We recommend the `Anaconda Distribution <https://www.continuum.io/downloads>`_, which already contains a
-numpy and scipy as well as a lot of other modules for scientific computing that are needed for working with 
-pandapower.
-   
-To use all of pandapowers functionalites, you will need the following additional packages:
-    - numba>=0.25.0 (for accelerated loadflow calculation)
-    - matplotlib (for plotting)
-    - python-igraph (for plotting networks without geographical information)
-    - xlrd (for loading/saving files from/to excel)
-    - openpyxl (for loading/saving files from/to excel)
-    
-All of these packages (except python-igraph) are already included in the anaconda distribution.
-    
+pandapower supports the following network analysis functions:
+
+	- power flow
+	- optimal power flow
+	- state estimation
+	- short-circuit calculation according to IEC 60909
+	- topological graph searches
+
+For more information, please referr to the `documentation <https://pandapower.readthedocs.io>`_.
+
+Installation notes can be found `here <http://pandapower.readthedocs.io/en/develop/getting_started/installation.html>`_, for a comfortable introduction into pandapower see the `interactive tutorials <http://pandapower.readthedocs.io/en/develop/getting_started/tutorials.html>`_.
+
+Citing pandapower
+==================
+
+We are currently working on publishing a peer-reviewed paper about pandapower that should be used as reference in the future.
+
+For now, please acknowledge the use of pandapower in publucations by citing the Technical Report: ::
+
+    @TechReport{pandapower,
+      author =      {Leon Thurner and Alexander Scheidler and Julian Dollichon and Florian Schäfer and Jan-Hendrik Menke and Friederike Meier and Steffen Meinecke and others},
+      title =       {pandapower - Convenient Power System Modelling and Analysis based on PYPOWER and pandas},
+      institution = {University of Kassel and Fraunhofer Institute for Wind Energy and Energy System Technology},
+      year =        {2016},
+      url =         {http://pandapower.readthedocs.io/en/v1.2.2/_downloads/pandapower.pdf}
+    }
+
 Minimal Example
-=====================
+===============
 
 A network in pandapower is represented in a pandapowerNet object, which is a collection of pandas Dataframes.
 Each dataframe in a pandapowerNet contains the information about one pandapower element, such as line, load transformer etc.
 
 We consider the following simple 3-bus example network as a minimal example:
 
-.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/3bus-system.png
+.. image:: http://pandapower.readthedocs.io/en/v1.2.2/_images/3bus-system.png
 		:width: 20em
 		:align: center 
 
-This network can be created in pandapower as follows: ::
+Creating a Network
+------------------------------
+
+The above network can be created in pandapower as follows: ::
     
     import pandapower as pp
     #create empty net
@@ -90,27 +120,30 @@ This network can be created in pandapower as follows: ::
     pp.create_line(net, from_bus=b2, to_bus=b3, length_km=0.1, name="Line",
                    std_type="NAYY 4x50 SE")   
                    
-Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/elements/trafo.html#electric-model>`_.
-The `standard type library <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types.html>`_ allows comfortable creation of line and transformer elements. 
+Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://pandapower.readthedocs.io/en/v1.2.2/elements/trafo.html#electric-model>`_.
+The `standard type library <http://pandapower.readthedocs.io/en/v1.2.2/std_types.html>`_ allows comfortable creation of line and transformer elements. 
 
 The pandapower representation now looks like this:
 
-.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_datastructure.png
+.. image:: http://pandapower.readthedocs.io/en/v1.2.2/_images/pandapower_datastructure.png
 		:width: 40em
 
-**Running a Power Flow**  
+Running a Power Flow
+------------------------------
 
-A powerflow can be carried out with the `runpp function <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/powerflow/ac.html>`_: ::
+A powerflow can be carried out with the `runpp function <http://pandapower.readthedocs.io/en/v1.2.2/powerflow/ac.html>`_: ::
      
     pp.runpp(net)
     
 When a power flow is run, pandapower combines the information of all element tables into one pypower case file and uses pypower to run the power flow.
 The results are then processed and written back into pandapower:
         
-.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_powerflow.png
+.. image:: http://pandapower.readthedocs.io/en/v1.2.2/_images/pandapower_powerflow.png
 		:width: 40em
 
 For the 3-bus example network, the result tables look like this:
 
-.. image:: http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/_images/pandapower_results.png
+.. image:: http://pandapower.readthedocs.io/en/v1.2.2/_images/pandapower_results.png
 		:width: 30em
+		
+All other pandapower elements and network analysis functionality (e.g. optimal power flow, state estimation or short-circuit calculation) is also fully integrated into the tabular pandapower datastructure.

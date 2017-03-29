@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 from pypower.idx_bus import VM, VA
 from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
+
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
@@ -40,7 +41,7 @@ def _get_ext_grid_results(net, ppc):
     ac = net["_options"]["ac"]
 
     # get results for external grids
-    eg_is = net["_is_elems"]['ext_grid']
+    eg_is = net["_is_elements"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
 
     n_res_eg = len(net['ext_grid'])
@@ -71,9 +72,9 @@ def _get_ext_grid_results(net, ppc):
 def _get_pp_gen_results(net, ppc, b, p, q):
     ac = net["_options"]["ac"]
 
-    is_elems = net["_is_elems"]
+    _is_elements = net["_is_elements"]
 
-    gen_is = is_elems['gen']
+    gen_is = _is_elements['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # bus index of in service gens
@@ -82,7 +83,7 @@ def _get_pp_gen_results(net, ppc, b, p, q):
     b = np.hstack([b, net['gen'].bus.values])
 
     # indices of in service gens in the ppc
-    if len(is_elems["gen"]):
+    if len(_is_elements["gen"]):
         gen_idx_ppc = gen_lookup[gen_is.index]
     else:
         gen_idx_ppc = []
@@ -120,14 +121,14 @@ def _get_pp_gen_results(net, ppc, b, p, q):
 
 
 def _get_dcline_results(net):
-    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline)*2):]
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]
 
     net.res_dcline.p_from_kw = from_gens.p_kw.values
     net.res_dcline.p_to_kw = to_gens.p_kw.values
-    net.res_dcline.pl_kw = from_gens.p_kw.values +  to_gens.p_kw.values
-   
+    net.res_dcline.pl_kw = from_gens.p_kw.values + to_gens.p_kw.values
+
     net.res_dcline.q_from_kvar = from_gens.q_kvar.values
     net.res_dcline.q_to_kvar = to_gens.q_kvar.values
 
@@ -135,6 +136,5 @@ def _get_dcline_results(net):
     net.res_dcline.vm_to_pu = to_gens.vm_pu.values
     net.res_dcline.va_from_degree = from_gens.va_degree.values
     net.res_dcline.va_to_degree = to_gens.va_degree.values
-    
-    net.res_dcline.index = net.dcline.index
 
+    net.res_dcline.index = net.dcline.index

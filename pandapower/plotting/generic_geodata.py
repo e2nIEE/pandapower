@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import pandas as pd
-import networkx as nx
-import pandapower.topology as top
 import copy
+
+import networkx as nx
+import pandas as pd
+
+import pandapower.topology as top
+
 
 def build_igraph_from_pp(net, respect_switches=False):
     """
@@ -24,7 +27,6 @@ def build_igraph_from_pp(net, respect_switches=False):
         graph = build_igraph_from_pp(net
 
     """
-    import igraph as ig
     g = ig.Graph(directed=True)
     g.add_vertices(net.bus.shape[0])
     g.vs["label"] = net.bus.index.tolist()  # [s.encode('unicode-escape') for s in net.bus.name.tolist()]

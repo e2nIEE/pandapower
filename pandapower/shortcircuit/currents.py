@@ -1,41 +1,52 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
+from pypower.idx_bus import BASE_KV
 
-def calc_ikss(net):
-    bus = net._is_elems["bus"]
-    case = net["_options"]["case"]
-    name = "ikss_%s_ka"%case
-    ikss_pu = bus["c_%s"%case] / abs(bus.z_equiv)
-    ikss_ka = pu_to_ka(ikss_pu, bus.vn_kv, net.sn_kva)
-    bus[name] = ikss_ka
-    net._options["currents"].append(name)
+from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
+from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS, IP, ITH, X_EQUIV
+
+
+def _calc_ikss(net, ppc):
+    fault = net._options["fault"]
+    case = net._options["case"]
+    c = ppc["bus_sc"][:, C_MIN] if case == "min" else ppc["bus_sc"][:, C_MAX]
+    ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+    z_equiv = abs(ppc["bus_sc"][:, R_EQUIV] + ppc["bus_sc"][:, X_EQUIV] *1j)
+    if fault == "3ph":
+        ppc["bus_sc"][:, IKSS] = c / z_equiv  / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
+    elif fault == "2ph":
+        ppc["bus_sc"][:, IKSS] = c / z_equiv / ppc["bus"][:, BASE_KV] / 2 * ppc["baseMVA"]
+    ppc["branch_sc"][:, [IKSS_F, IKSS_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, IKSS])
     
-def calc_ip(net):
-    bus = net._is_elems["bus"]
-    case = net["_options"]["case"]
-    name = "ip_%s_ka"%case
-    ikss = bus["ikss_%s_ka"%case]
-    bus[name] = bus.kappa * np.sqrt(2) * ikss
-    net._options["currents"].append(name)
+def _calc_ip(ppc):
+    ppc["bus_sc"][:, IP] = ppc["bus_sc"][:, KAPPA] * np.sqrt(2) * ppc["bus_sc"][:, IKSS]
+    ppc["branch_sc"][:, [IP_F, IP_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, IP])
     
-def calc_ith(net):
-    bus = net._is_elems["bus"]
-    case = net["_options"]["case"]
-    name = "ith_%s_ka"%case
+def _calc_ith(net, ppc):
     tk_s = net["_options"]["tk_s"]
+    kappa = ppc["bus_sc"][:, KAPPA]
     f = 50
     n = 1
-    m = (np.exp(4 * f * tk_s * np.log(bus.kappa.values - 1)) - 1) / \
-             (2 * f * tk_s * np.log(bus.kappa.values - 1))
-    m[np.where(bus.kappa > 1.99)] = 0
-    bus[name] = bus["ikss_%s_ka"%case]*np.sqrt(m + n)
-    net._options["currents"].append(name)
-    
-def pu_to_ka(i_pu, vn_kv, sn_kva):
-    in_ka = sn_kva / vn_kv / np.sqrt(3) * 1e-3
-    return i_pu * in_ka
+    m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
+    m[np.where(kappa > 1.99)] = 0
+    ppc["bus_sc"][:, ITH] = ppc["bus_sc"][:, IKSS] * np.sqrt(m + n)
+    ppc["branch_sc"][:, [ITH_F, ITH_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, ITH])
+
+def _branch_currents_from_bus(ppc, current):
+    zbus = ppc["internal"]["zbus"]
+    Yf = ppc["internal"]["Yf"]
+    Yt = ppc["internal"]["Yf"]
+    baseI = ppc["internal"]["baseI"]
+    V = np.dot(zbus, np.diag(current * baseI))
+    fb = np.real(ppc["branch"][:,0]).astype(int)
+    tb = np.real(ppc["branch"][:,1]).astype(int)
+    i_all_f = abs(np.conj(Yf.dot(V)))
+    i_all_t = abs(np.conj(Yt.dot(V)))
+    current_from = np.max(i_all_f, axis=1) / baseI[fb] 
+    current_to = np.max(i_all_t, axis=1) / baseI[tb]
+    return np.c_[current_from, current_to]

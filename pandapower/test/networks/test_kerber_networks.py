@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import random as rd
 
 import pytest
+
 import pandapower as pp
 import pandapower.networks as pn
-import random as rd
 from pandapower.networks.kerber_networks import _create_empty_network_with_transformer, \
     _add_lines_and_loads, _add_lines_with_branched_loads
 

@@ -1,3 +1,4 @@
 include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst
 global-include *.p 
+global-include *.mat
 

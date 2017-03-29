@@ -1,21 +1,18 @@
-# Copyright 1996-2015 PSERC. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
-
 """Builds the B matrices and phase shift injections for DC power flow.
 """
-
-from sys import stderr
-
-from numpy import real
-from numpy import ones, r_, pi, flatnonzero as find
+from numpy import ones, r_, pi, flatnonzero as find, real
+from pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
+from pypower.idx_bus import BUS_I
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_bus import BUS_I
-from pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
+try:
+    import pplog as logging
+except:
+    import logging
 
+logger = logging.getLogger(__name__)
 
-def makeBdc(baseMVA, bus, branch):
+def makeBdc(bus, branch):
     """Builds the B matrices and phase shift injections for DC power flow.
 
     Returns the B matrices and phase shift injection vectors needed for a
@@ -40,7 +37,7 @@ def makeBdc(baseMVA, bus, branch):
 
     ## check that bus numbers are equal to indices to bus (one set of bus nums)
     if any(bus[:, BUS_I] != list(range(nb))):
-        stderr.write('makeBdc: buses must be numbered consecutively in '
+        logger.error('makeBdc: buses must be numbered consecutively in '
                      'bus matrix\n')
 
     ## for each branch, compute the elements of the branch B matrix and the phase
@@ -72,7 +69,7 @@ def makeBdc(baseMVA, bus, branch):
     Bbus = Cft.T * Bf
 
     ## build phase shift injection vectors
-    Pfinj = b * (-branch[:, SHIFT] * pi / 180)  ## injected at the from bus ...
+    Pfinj = b * (-branch[:, SHIFT] * pi / 180.)  ## injected at the from bus ...
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
 

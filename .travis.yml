@@ -31,6 +31,8 @@ install:
   - pip install pytest pytest-cov
   - pip install coveralls
   - python setup.py install
+  - conda list
+  - conda info -a
 
 script:
   # Your test script goes here

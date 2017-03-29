@@ -1,28 +1,26 @@
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Runs a power flow.
 """
 
 from time import time
 
-from numpy import r_, zeros, pi, ones, exp, argmax, real
-from numpy import flatnonzero as find
-
-from pypower.ppoption import ppoption
-from pypower.makeSbus import makeSbus
+from numpy import flatnonzero as find, r_, zeros, pi, ones, exp, argmax, real
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
-from pypower.makeB import makeB
-from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pypower.idx_brch import PF, PT, QF, QT
+from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+from pypower.makeB import makeB
+from pypower.makeSbus import makeSbus
+from pypower.ppoption import ppoption
 
+from pandapower.pypower_extensions.bustypes import bustypes
+from pandapower.pypower_extensions.dcpf import dcpf
 from pandapower.pypower_extensions.makeBdc import makeBdc
 from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.pypower_extensions.dcpf import dcpf
-from pandapower.pypower_extensions.bustypes import bustypes
 
 try:
     import pplog as logging
@@ -93,7 +91,7 @@ def _dc_runpf(ppci, ppopt):
     Va0 = bus[:, VA] * (pi / 180)
 
     ## build B matrices and phase shift injections
-    B, Bf, Pbusinj, Pfinj = makeBdc(baseMVA, bus, branch)
+    B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
 
     ## compute complex bus power injections [generation - load]
     ## adjusted for phase shifters and real shunts
@@ -133,10 +131,10 @@ def _ac_runpf(ppci, ppopt, numba, recycle):
         _print_info_about_solver(ppopt['PF_ALG'])
 
     if ppopt["ENFORCE_Q_LIMS"]:
-        ppci, success, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba)
+        ppci, success, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt)
 
     else:
-        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba)
+        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt)
 
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
 
@@ -224,8 +222,8 @@ def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
     return ppci, Ybus, Yf, Yt
 
 
-def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
+    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch)
 
@@ -233,7 +231,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
     Sbus = makeSbus(baseMVA, bus, gen)
 
     ## run the power flow
-    V, success = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt, numba)
+    V, success = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
 
     ## update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
@@ -241,7 +239,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
     return ppci, success, bus, gen, branch
 
 
-def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
+def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
     qlim = ppopt["ENFORCE_Q_LIMS"]
@@ -249,7 +247,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
     fixedQg = zeros(gen.shape[0])  ## Qg of gens at Q limits
 
     while True:
-        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba)
+        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt)
 
         ## find gens with violated Q constraints
         gen_status = gen[:, GEN_STATUS] > 0
@@ -330,11 +328,11 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt, numba):
     return ppci, success, bus, gen, branch
 
 
-def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt, numba):
+def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt):
     alg = ppopt["PF_ALG"]
     # alg == 1 was deleted = nr -> moved as own pandapower solver
     if alg == 2 or alg == 3:
-        Bp, Bpp = makeB(baseMVA, bus, branch, alg)
+        Bp, Bpp = makeB(baseMVA, bus, real(branch), alg)
         V, success, _ = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
     elif alg == 4:
         V, success, _ = gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt)

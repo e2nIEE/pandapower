@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import copy
 
 import pytest
-import copy
+
 import pandapower as pp
-import pandapower.toolbox as tb
 import pandapower.networks as nw
+import pandapower.toolbox as tb
+
 
 def test_nets_equal():
     tb.logger.setLevel(40)
@@ -110,6 +113,12 @@ def test_scaling_by_type():
 
     assert net.load.at[0, "scaling"] == 42
     assert net.sgen.at[0, "scaling"] == 12
+
+    tb.set_scaling_by_type(net, {"Household": 0, "PV": 0})
+
+    assert net.load.at[0, "scaling"] == 0
+    assert net.sgen.at[0, "scaling"] == 0
+
 
 def test_drop_inactive_elements():
     net = pp.create_empty_network()

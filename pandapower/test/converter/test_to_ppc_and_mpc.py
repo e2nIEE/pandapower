@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
 import pytest
+from pypower.idx_bus import VM, BUS_I, VA
+from pypower.ppoption import ppoption
+from pypower.runpf import runpf
 
 import pandapower.converter as cv
 from pandapower.powerflow import LoadflowNotConverged, reset_results
 
-from pypower.runpf import runpf
-from pypower.ppoption import ppoption
-# from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
-from pypower.idx_bus import VM, BUS_I, VA
+
 # from pypower.idx_gen import PG, QG, GEN_BUS
 
 
-def test_to_ppc():
+def test_to_ppc_and_mpc():
     # pypower cases to validate
     functions = ['case4gs', 'case6ww', 'case14', 'case30', 'case24_ieee_rts', 'case39']
     for fn in functions:
@@ -37,6 +37,9 @@ def test_to_ppc():
 
         # convert to ppc
         ppc = cv.to_ppc(net)
+        # convert to mpc
+        mpc = cv.to_mpc(net)
+
         # runpf from converted ppc
         res_converted_pp, status_converted_pp = runpf(ppc, ppopt=ppoption(VERBOSE=0, OUT_ALL=0))
 
@@ -56,4 +59,4 @@ def test_to_ppc():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_to_ppc.py", "-s"])
+    pytest.main(["test_to_ppc_and_mpc.py", "-s"])

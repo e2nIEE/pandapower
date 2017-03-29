@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import os
+
+import numpy as np
 
 import pandapower as pp
 import pandapower.networks
-import os
-import numpy as np
+
 
 def _get_networks_path():
     return os.path.abspath(os.path.dirname(pandapower.networks.__file__))

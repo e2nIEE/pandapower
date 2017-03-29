@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import numpy.core.numeric as ncn
 import numpy as np
-
-from pandas import DataFrame
-from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
-from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
+import numpy.core.numeric as ncn
 from numpy import array,  zeros, isnan
+from pandas import DataFrame
+from pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
+from pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
+
 
 def _build_gen_ppc(net, ppc):
     '''
@@ -35,11 +35,12 @@ def _build_gen_pf(net, ppc):
         **ppc** - The PYPOWER format network to fill in values
     '''
 
+    mode = net["_options"]["mode"]
 
     # get in service elements
-    is_elems = net["_is_elems"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -50,6 +51,8 @@ def _build_gen_pf(net, ppc):
     p_lim_default = 1e9
 
     _init_ppc_gen(ppc, xw_end, q_lim_default)
+    if mode == "sc":
+        return
     _build_pp_ext_grid(net, ppc, eg_is, eg_end)
 
     # add generator / pv data
@@ -113,7 +116,7 @@ def _build_pp_gen(net, ppc, gen_is, eg_end, gen_end, q_lim_default, p_lim_defaul
 def _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default, update_lookup=True):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     xw = net["xward"]
-    xw_is = net["_is_elems"]['xward']
+    xw_is = net["_is_elements"]['xward']
     if update_lookup:
         ppc["gen"][gen_end:xw_end, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
     ppc["gen"][gen_end:xw_end, VG] = xw["vm_pu"].values
@@ -143,9 +146,9 @@ def _update_gen_ppc(net, ppc):
     enforce_q_lims = net["_options"]["enforce_q_lims"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
-    is_elems = net["_is_elems"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
 
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
@@ -197,16 +200,16 @@ def _build_gen_opf(net, ppc, delta=1e-10):
     if len(net.dcline) > 0:
         ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
     # get in service elements
-    is_elems = net["_is_elems"]
-    eg_is = is_elems['ext_grid']
-    gen_is = is_elems['gen']
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
     sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
         if "controllable" in net.sgen.columns else DataFrame()
     l_is = net.load[(net.load.in_service & net.load.controllable) == True] \
         if "controllable" in net.load.columns else DataFrame()
 
-    is_elems["sgen_controllable"] = sg_is
-    is_elems["load_controllable"] = l_is
+    _is_elements["sgen_controllable"] = sg_is
+    _is_elements["load_controllable"] = l_is
     eg_end = len(eg_is)
     gen_end = eg_end + len(gen_is)
     sg_end = gen_end + len(sg_is)

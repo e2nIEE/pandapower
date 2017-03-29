@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-from numpy import nan, isnan, arange, dtype, zeros
 import pandas as pd
+from numpy import nan, isnan, arange, dtype, zeros
 
-from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
+from pandapower.std_types import add_basic_std_types, load_std_type
 
 
 def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
@@ -275,14 +275,14 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
 
         # internal
         "_ppc": None,
-        "_is_elems": None,
+        "_is_elements": None,
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
         "_ppc2pd_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": 1.1,
+        "version": 1.2,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -1193,6 +1193,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
     OPTIONAL:
         **in_service** (boolean) - True for in_service or False for out of service
+
+        **parallel** (integer) - number of parallel transformers
 
         **name** (string) - A custom name for this transformer
 

@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
-from pypower import case9, case9Q
 
 import pandapower as pp
 import pandapower.test.converter.ppc_testgrids as testgrids
 from pandapower.converter import from_ppc, validate_from_ppc
+from pypower import case9
+
 try:
     import pplog as logging
 except:

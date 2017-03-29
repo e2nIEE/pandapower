@@ -1,23 +1,26 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import warnings
 
 import numpy as np
 import pandas as pd
-import warnings
-from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.results import _set_buses_out_of_service
-from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results, \
-                        _add_ppc_options
-from pandapower.topology import estimate_voltage_vector
-from pandapower.pypower_extensions.ext2int import ext2int
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
+
+from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results, \
+                        _add_ppc_options
+from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower_extensions.ext2int import ext2int
+from pandapower.results import _set_buses_out_of_service
+from pandapower.topology import estimate_voltage_vector
+
 try:
     import pplog as logging
 except ImportError:
@@ -244,11 +247,12 @@ class state_estimation(object):
         self.net.res_bus.va_degree = delta_start
 
         # select elements in service and convert pandapower ppc to ppc
-        self.net["_is_elems"] = _select_is_elements(self.net)
         self.net._options = {}
         _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
                                  copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
-                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0)
+                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                                 recycle=dict(_is_elements=False, ppc=False, Ybus=False))
+        self.net["_is_elements"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
@@ -458,35 +462,40 @@ class state_estimation(object):
         while current_error > self.tolerance and current_iterations < self.max_iterations:
             self.logger.debug(" Starting iteration %d" % (1 + current_iterations))
 
-            # create h(x) for the current iteration
-            h_x = sem.create_hx(v_m, delta)
+            try:
 
-            # Residual r
-            r = csr_matrix(z - h_x).T
+                # create h(x) for the current iteration
+                h_x = sem.create_hx(v_m, delta)
 
-            # Jacobian matrix H
-            H = csr_matrix(sem.create_jacobian(v_m, delta))
+                # Residual r
+                r = csr_matrix(z - h_x).T
 
-            # if not np.linalg.cond(H) < 1 / sys.float_info.epsilon:
-            #    self.logger.error("Error in matrix H")
+                # Jacobian matrix H
+                H = csr_matrix(sem.create_jacobian(v_m, delta))
 
-            # Gain matrix G_m
-            # G_m = H^t * R^-1 * H
-            G_m = H.T * (r_inv * H)
+                # if not np.linalg.cond(H) < 1 / sys.float_info.epsilon:
+                #    self.logger.error("Error in matrix H")
 
-            # State Vector difference d_E
-            # d_E = G_m^-1 * (H' * R^-1 * r)
-            d_E = spsolve(G_m, H.T * (r_inv * r))
-            E += d_E
+                # Gain matrix G_m
+                # G_m = H^t * R^-1 * H
+                G_m = H.T * (r_inv * H)
 
-            # Update V/delta
-            delta[non_slack_buses] = E[:len(non_slack_buses)]
-            v_m = np.squeeze(E[len(non_slack_buses):])
+                # State Vector difference d_E
+                # d_E = G_m^-1 * (H' * R^-1 * r)
+                d_E = spsolve(G_m, H.T * (r_inv * r))
+                E += d_E
 
-            current_iterations += 1
-            current_error = np.max(np.abs(d_E))
-            self.logger.debug("Current error: %.4f" % current_error)
+                # Update V/delta
+                delta[non_slack_buses] = E[:len(non_slack_buses)]
+                v_m = np.squeeze(E[len(non_slack_buses):])
 
+                current_iterations += 1
+                current_error = np.max(np.abs(d_E))
+                self.logger.debug("Current error: %.4f" % current_error)
+            except np.linalg.linalg.LinAlgError:
+                self.logger.error("A problem appeared while using the linear algebra methods."
+                                  "Check and change the measurement set.")
+                return False
         # Print output for results
         if current_error <= self.tolerance:
             successful = True
@@ -678,56 +687,63 @@ class state_estimation(object):
             self.perform_chi2_test(v_in_out, delta_in_out, calculate_voltage_angles=calculate_voltage_angles,
                                    chi2_prob_false=chi2_prob_false)
 
-            # Error covariance matrix:
-            R = np.linalg.inv(self.R_inv)
+            try:
+                # Error covariance matrix:
+                R = np.linalg.inv(self.R_inv)
 
-            # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
-            # (S is the sensitivity matrix: r = S*e):
-            Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
+                # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
+                # (S is the sensitivity matrix: r = S*e):
+                Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
 
-            # Diagonalize \Omega:
-            Omega = np.diag(np.diag(Omega))
+                # Diagonalize \Omega:
+                Omega = np.diag(np.diag(Omega))
 
-            # Compute squareroot (|.| since some -0.0 produced nans):
-            Omega = np.sqrt(np.absolute(Omega))
+                # Compute squareroot (|.| since some -0.0 produced nans):
+                Omega = np.sqrt(np.absolute(Omega))
 
-            OmegaInv = np.linalg.inv(Omega)
+                OmegaInv = np.linalg.inv(Omega)
 
-            # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
-            rN = np.dot(OmegaInv, np.absolute(self.r))
+                # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
+                rN = np.dot(OmegaInv, np.absolute(self.r))
 
-            if max(rN) <= rn_max_threshold:
-                self.logger.info("Largest normalized residual test passed. No bad data detected.")
-            else:
-                self.logger.info("Largest normalized residual test failed. Bad data identified.")
-
-                if self.bad_data_present:
-                    # Identify bad data: Determine index corresponding to max(rN):
-                    idx_rN = np.argsort(rN, axis=0)[len(rN) - 1]
-    
-                    # Sort measurement indexes:
-                    sorted_meas_idxs = np.concatenate(
-                        (self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
-                            self.net.measurement['element_type'] == 'bus')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
-                             self.net.measurement['element_type'] == 'line')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
-                             self.net.measurement['element_type'] == 'bus')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
-                             self.net.measurement['element_type'] == 'line')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'v') & (
-                             self.net.measurement['element_type'] == 'bus')].index,
-                         self.net.measurement.loc[(self.net.measurement['type'] == 'i') & (
-                             self.net.measurement['element_type'] == 'line')].index))
-    
-                    # Determine index of measurement to be removed:
-                    meas_idx = sorted_meas_idxs[idx_rN]
-    
-                    # Remove bad measurement:
-                    self.net.measurement.drop(meas_idx, inplace=True)
-                    self.logger.debug("Bad data removed from the set of measurements.")
+                if max(rN) <= rn_max_threshold:
+                    self.logger.info(
+                        "Largest normalized residual test passed. No bad data detected.")
                 else:
-                    self.logger.debug("No bad data removed from the set of measurements.")
+                    self.logger.info(
+                        "Largest normalized residual test failed. Bad data identified.")
+
+                    if self.bad_data_present:
+                        # Identify bad data: Determine index corresponding to max(rN):
+                        idx_rN = np.argsort(rN, axis=0)[len(rN) - 1]
+
+                        # Sort measurement indexes:
+                        sorted_meas_idxs = np.concatenate(
+                            (self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
+                                self.net.measurement['element_type'] == 'bus')].index,
+                             self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
+                                 self.net.measurement['element_type'] == 'line')].index,
+                             self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
+                                 self.net.measurement['element_type'] == 'bus')].index,
+                             self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
+                                 self.net.measurement['element_type'] == 'line')].index,
+                             self.net.measurement.loc[(self.net.measurement['type'] == 'v') & (
+                                 self.net.measurement['element_type'] == 'bus')].index,
+                             self.net.measurement.loc[(self.net.measurement['type'] == 'i') & (
+                                 self.net.measurement['element_type'] == 'line')].index))
+
+                        # Determine index of measurement to be removed:
+                        meas_idx = sorted_meas_idxs[idx_rN]
+
+                        # Remove bad measurement:
+                        self.net.measurement.drop(meas_idx, inplace=True)
+                        self.logger.debug("Bad data removed from the set of measurements.")
+                    else:
+                        self.logger.debug("No bad data removed from the set of measurements.")
+            except np.linalg.linalg.LinAlgError:
+                self.logger.error("A problem appeared while using the linear algebra methods."
+                                  "Check and change the measurement set.")
+                return False
                 
             self.logger.debug("rn_max identification threshold: %.2f" % rn_max_threshold)
             

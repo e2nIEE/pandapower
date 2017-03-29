@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import networkx as nx
 import pandas as pd
+
 from pandapower.topology.create_graph import create_nxgraph
+
 
 def connected_component(mg, bus, notravbuses=[]):
 
@@ -335,5 +337,8 @@ def estimate_voltage_vector(net):
                     raise UserWarning("An out-of-service bus is connected to an in-service "
                                       "transformer. Please set the transformer out of service or"
                                       "put the bus into service. Treat results with caution!")
+                trafo_index.remove(tix)
+            elif pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]):
+                # parallel transformer, lv buses are already set from previous transformer
                 trafo_index.remove(tix)
     return res_bus

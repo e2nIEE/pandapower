@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 from math import pi
+
 from numpy import sign, nan, append, zeros, max, array
 from pandas import Series, DataFrame, concat
 
-from pypower import runpf
-from pypower import ppoption
-
 import pandapower as pp
+from pypower import ppoption, runpf
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -27,15 +26,17 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
 
     INPUT:
 
-        **ppc** - The pypower case file.
+        **ppc** : The pypower case file.
 
     OPTIONAL:
 
-        **f_hz** - The frequency of the network.
+        **f_hz** (float, 50) - The frequency of the network.
+
+        **validate_conversion** (bool, False) - If True, validate_from_ppc is run after conversion.
 
     OUTPUT:
 
-        **net**
+        **net** : pandapower net.
 
     EXAMPLE:
 
@@ -195,10 +196,10 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
                 tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
     # unused data of ppc: rateB, rateC
 
-    # ToDo: gencost, areas are currently unconverted
+    # gencost and areas are currently unconverted
+
     if validate_conversion:
-        # set logger level to debug
-        logger.setLevel(10)
+        logger.setLevel(logging.DEBUG)
         if not validate_from_ppc(ppc, net):
             logger.error("Validation failed.")
 
@@ -221,14 +222,14 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     OPTIONAL:
 
         **max_diff_values** - Dict of maximal allowed difference values. The keys must be
-            'vm_pu', 'va_degree', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw' and 'q_gen_kvar' and
-            the values floats.
+        'vm_pu', 'va_degree', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw' and 'q_gen_kvar' and
+        the values floats.
 
     OUTPUT:
 
         **conversion_success** - conversion_success is returned as False if pypower or pandapower
-            cannot calculate a power flow or if the maximum difference values (max_diff_values )
-            cannot be hold.
+        cannot calculate a power flow or if the maximum difference values (max_diff_values )
+        cannot be hold.
 
     EXAMPLE:
 
@@ -240,7 +241,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
         pp_net = cv.from_ppc(ppc_net, f_hz=60)
 
-        cv.validate_from_ppc(ppc_net, pp_net)
+        conversion_success = cv.validate_from_ppc(ppc_net, pp_net)
     """
     # --- run a pypower power flow without print output
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
@@ -367,8 +368,9 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                         int(already_used_branches.number.loc[
                             (already_used_branches.hv_bus == to_bus) &
                             (already_used_branches.lv_bus == from_bus)].values)].reshape(1, 4), 0)
-                    already_used_branches.number.loc[(already_used_branches.hv_bus == to_bus) &
-                                                     (already_used_branches.lv_bus == from_bus)] += 1
+                    already_used_branches.number.loc[
+                        (already_used_branches.hv_bus == to_bus) &
+                        (already_used_branches.lv_bus == from_bus)] += 1
         pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
 
         # --- do the power flow result comparison
@@ -406,20 +408,17 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                          "because of a pypower error. Please validate "
                          "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
         # give a return
-        if type(max_diff_values) == dict:
+        if isinstance(max_diff_values, dict):
             if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
                        'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
-                if (max(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
+                return (max(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
                         (max(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
                         (max(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
                             1e3) & \
                         (max(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
                             1e3) & \
                         (max(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
-                        (max(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3):
-                    return True
-                else:
-                    return False
+                        (max(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
             else:
                 logger.debug('Not all requried dict keys are provided.')
         else:

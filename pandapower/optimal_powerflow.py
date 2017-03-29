@@ -1,15 +1,16 @@
 import warnings
 
-from pypower.ppoption import ppoption
-from pypower.idx_bus import VM
 from pypower.add_userfcn import add_userfcn
+from pypower.idx_bus import VM
+from pypower.ppoption import ppoption
+from scipy.sparse import csr_matrix as sparse
 
-from pandapower.auxiliary import ppException, _select_is_elements, _clean_up
+from pandapower.auxiliary import ppException, _clean_up
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.pypower_extensions.opf import opf
 from pandapower.results import _copy_results_ppci_to_ppc, reset_results, \
     _extract_results_opf
-from pandapower.powerflow import _add_auxiliary_elements
 
 
 class OPFNotConverged(ppException):
@@ -26,8 +27,6 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)
     reset_results(net)
-    # select elements in service (time consuming, so we do it once)
-    net["_is_elems"] = _select_is_elements(net)
 
     ppc, ppci = _pd2ppc(net)
     if not ac:
@@ -59,7 +58,6 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
 
 def _add_dcline_constraints(om, net):
     # from numpy import hstack, diag, eye, zeros
-    from scipy.sparse import csr_matrix as sparse
     ppc = om.get_ppc()
     ndc = len(net.dcline)  ## number of in-service DC lines
     ng = ppc['gen'].shape[0]  ## number of total gens
