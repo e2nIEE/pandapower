@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 
-from pandapower.plotting import cmap_continous
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower import runpp
 from pandapower.plotting.generic_geodata import create_generic_coordinates
@@ -14,12 +18,10 @@ import pandas as pd
 
 def in_ipynb():
     """
-    :return:
-    an auxiliary function which checks if located in an jupyter-notebook or not
+    an auxiliary function which checks if plot is called from a jupyter-notebook or not
     """
     import __main__ as main
     return not hasattr(main, '__file__')
-
 
 
 
@@ -79,11 +81,37 @@ except:
 logger = logging.getLogger(__name__)
 
 
+# defining check whether geodata are in lat/lon using geopy
+try:
+    from geopy.geocoders import Nominatim
+    geolocator = Nominatim()
+    def on_map_test(net):
+        """
+        checks if bus_geodata can be located on a map using geopy
+        """
+        location = geolocator.reverse("{0}, {1}".format(net.bus_geodata.iloc[0]['x'],
+                                                        net.bus_geodata.iloc[0]['y']))
+        return False if location.address is None else True
+except:
+    # if geopy is not available there will be no geo-coordinates check
+    # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
+    logger.warning('Geo-coordinates check cannot be peformed (geopy package not available)\n\t--> '
+                   'if geo-coordinates are not in lat/lon format an empty plot may appear...')
+    def on_map_test(net):
+        """
+        checks if bus_geodata can be located on a map using geopy
+        """
+        return True
+
+
+
 def create_bus_trace(net, buses=None, on_map=False, size=5, marker_type="circle", color=None, hoverinfo=None,
-                     trace_name = 'buses',
+                     trace_name='buses', legendgroup=None,
                      cmap=False, cmap_name='Jet', cmap_vals=None, cbar_title='Bus Voltage [pu]',
                      cmin=0.9, cmax=1.1):
 
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    on_map = on_map_test(net) if on_map else False
 
     # defining dict names depending if plot is on map or not
     xk = 'lat' if on_map else 'x'
@@ -105,6 +133,9 @@ def create_bus_trace(net, buses=None, on_map=False, size=5, marker_type="circle"
                                     net.bus_geodata.loc[buses2plot.index, 'y'].tolist())
 
     bus_trace['text'] = buses2plot.name.tolist() if hoverinfo is None else hoverinfo
+
+    if legendgroup:
+        bus_trace['legendgroup'] = legendgroup
 
     if cmap:
         # if color map is set
@@ -154,7 +185,8 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
     return xs[:-1], ys[:-1]
 
 def create_line_trace(net, lines=None, use_line_geodata=True, on_map = False,
-                      respect_switches=False, width=1.0, color='grey', hoverinfo=None, trace_name = 'lines',
+                      respect_switches=False, width=1.0, color='grey',
+                      hoverinfo=None, trace_name = 'lines', legendgroup=None,
                       cmap=False, cbar_title="Line Loading [%]", cmap_name='jet', cmin=0, cmax=100, **kwargs):
 
     # defining lines to be plot
@@ -180,18 +212,18 @@ def create_line_trace(net, lines=None, use_line_geodata=True, on_map = False,
                              lines2plot.to_bus.isin(net.bus_geodata.index)
         lines2plot = lines2plot[lines_with_geodata]
 
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    on_map = on_map_test(net) if on_map else False
+
     # defining dict names depending if plot is on map or not
     xk = 'lat' if on_map else 'x'
     yk = 'lon' if on_map else 'y'
     trace_type = 'scattermapbox' if on_map else 'scatter'
 
-
     if cmap:
-
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
         # TODO correct this when plotly solves existing github issue about Line colorbar
-
         cmap_line_loading = get_cmap_matplotlib_for_plotly(net.res_line.loc[lines2plot.index,'loading_percent'],
                                                            cmap_name=cmap_name, cmin=cmin, cmax=cmax)
 
@@ -232,6 +264,9 @@ def create_line_trace(net, lines=None, use_line_geodata=True, on_map = False,
 
         line_trace['text'] = lines2plot.name.tolist() if hoverinfo is None else hoverinfo
 
+        if legendgroup:
+            line_trace['legendgroup'] = legendgroup
+
         line_traces = [line_trace]
 
     if len(nogolines) > 0:
@@ -244,6 +279,9 @@ def create_line_trace(net, lines=None, use_line_geodata=True, on_map = False,
         line_trace[xk], line_trace[yk] = _get_line_geodata_plotly(net, lines2plot, use_line_geodata)
 
         line_trace['text'] = lines2plot.name.tolist()
+
+        if legendgroup:
+            line_trace['legendgroup'] = legendgroup
 
         line_traces.append(line_trace)
 
@@ -267,11 +305,13 @@ def create_trafo_trace(net, trafos=None, on_map=False, color = 'green', width = 
     trafos_mask = net.trafo.index.isin(trafos)
     tarfo2plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    on_map = on_map_test(net) if on_map else False
+
     # defining dict names depending if plot is on map or not
     xk = 'lat' if on_map else 'x'
     yk = 'lon' if on_map else 'y'
     trace_type = 'scattermapbox' if on_map else 'scatter'
-
 
     if cmap:
         line_traces = []
@@ -328,7 +368,7 @@ def create_trafo_trace(net, trafos=None, on_map=False, color = 'green', width = 
 
 
 
-def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = True, figsize='auto', aspectratio = False):
+def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = True, figsize=1, aspectratio = 'auto'):
     """
     plots all the traces to PLOTLY (see https://plot.ly/python/)
 
@@ -343,7 +383,6 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
         **on_map** (bool, False) - enables using mapbox plot in plotly
         
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
-
             - 'streets'
             - 'bright'
             - 'light'
@@ -352,10 +391,10 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
         
         **showlegend** (bool, 'True') - enables legend display
         
-        **figsize** (tuple, 'auto') - sets figure size as a tuple
-            In "auto" mode figure size is determined automatically from plotly
+        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
             
-        **aspectratio** (bool, False) - enables preserving aspect ration of the network geodata when plotting in plotly
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
     """
 
     # setting Figure object
@@ -363,16 +402,25 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
                  layout=Layout(
                      titlefont=dict(size=16),
                      showlegend=showlegend,
-                     autosize=True if figsize is 'auto' and aspectratio is False else False,
+                     autosize=True if aspectratio is 'auto' else False,
                      hovermode='closest',
-                     margin=dict(b=20, l=5, r=5, t=40),
-                     annotations=[dict(
-                         text="",
-                         showarrow=False,
-                         xref="paper", yref="paper",
-                         x=0.005, y=-0.002)],
+                     margin=dict(b=5, l=5, r=5, t=5),
+                     # annotations=[dict(
+                     #     text="",
+                     #     showarrow=False,
+                     #     xref="paper", yref="paper",
+                     #     x=0.005, y=-0.002)],
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
-                     yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False)))
+                     yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
+                     # legend=dict(x=0, y=1.0)
+                 ),)
+
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    if on_map:
+        on_map = on_map_test(net)
+        if on_map is False:
+            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
+                           " plot on maps is not possible")
 
     # TODO add a check if geodata are real geographic coordinates and if not place appropriate warning !
     if on_map:
@@ -385,14 +433,21 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
                                        style=map_style,
                                        pitch=0,
                                        zoom=13)
-    if aspectratio and not on_map:
-        xrange = net.bus_geodata.x.max() - net.bus_geodata.x.min()
-        yrange = net.bus_geodata.y.max() - net.bus_geodata.y.min()
-        aspectratio = xrange / yrange
-        fig['layout']['width'] = 700 if aspectratio > 1 else 700 * aspectratio
-        fig['layout']['height'] = 700 if aspectratio < 1 else 700 / aspectratio
-    elif figsize is not 'auto' and not on_map:
-        fig['layout']['width'], fig['layout']['height'] = figsize
+
+    # default aspectratio: if on_map use auto, else use 'original'
+    aspectratio = 'original' if not on_map and aspectratio is 'auto' else aspectratio
+
+    if aspectratio is not 'auto':
+        if aspectratio is 'original':
+            xrange = net.bus_geodata.x.max() - net.bus_geodata.x.min()
+            yrange = net.bus_geodata.y.max() - net.bus_geodata.y.min()
+            ratio = xrange / yrange
+            if ratio < 1:
+                aspectratio = (ratio, 1.)
+            else:
+                aspectratio = (1., 1/ratio)
+
+        fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700  for ar in aspectratio])
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if in_ipynb():
@@ -404,10 +459,57 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
     plot(fig)
 
 
-def simple_plotly(net=None, respect_switches=False, on_map=False, map_style='basic', figsize='auto',
+def simple_plotly(net=None, respect_switches=False, use_line_geodata=None,
+                  on_map=False, map_style='basic',
+                  figsize=1, aspectratio='auto',
                   line_width=1, bus_size=10, ext_grid_size=20.0,
-                  bus_color=colors[0], line_color='grey', trafo_color='green', ext_grid_color=color_yellow,
-                  aspectratio=False, use_line_geodata=None):
+                  bus_color=colors[0], line_color='grey', trafo_color='green', ext_grid_color=color_yellow):
+    """
+    Plots a pandapower network as simple as possible in plotly (https://plot.ly/python/).
+    If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+
+    INPUT:
+        **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
+        plotted as an example
+
+    OPTIONAL:
+        **respect_switches** (bool, False) - Respect switches when artificial geodata is created
+        
+        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
+            or on net.bus_geodata of the connected buses (False)
+
+        **on_map** (bool, False) - enables using mapbox plot in plotly.
+            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+        
+        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+            - 'streets'
+            - 'bright'
+            - 'light'
+            - 'dark'
+            - 'satellite'
+                
+        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+            
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+
+        **line_width** (float, 1.0) - width of lines
+
+        **bus_size** (float, 10.0) -  size of buses to plot.
+
+        **ext_grid_size** (float, 20.0) - size of ext_grids to plot.
+
+            See bus sizes for details. Note: ext_grids are plottet as rectangles
+
+        **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette.
+        Usually colors[0] = "b".
+
+        **line_color** (String, 'grey') - Line Color. Init is grey
+
+        **trafo_color** (String, 'g') - Trafo Color. Init is green
+
+        **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
+    """
 
     if net is None:
         import pandapower.networks as nw
@@ -423,6 +525,13 @@ def simple_plotly(net=None, respect_switches=False, on_map=False, map_style='bas
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches)
+
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    if on_map:
+        on_map = on_map_test(net)
+        if on_map is False:
+            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
+                           " plot on maps is not possible")
 
     # ----- Buses ------
     # initializating bus trace
@@ -446,7 +555,7 @@ def simple_plotly(net=None, respect_switches=False, on_map=False, map_style='bas
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
-    marker_type = 'circle' if on_map else 'square'  # doesn't appear on mapbox if sqare
+    marker_type = 'circle' if on_map else 'square'  # doesn't appear on mapbox if square
     ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus, on_map=on_map,
                                           color=ext_grid_color, size=ext_grid_size,
                                           marker_type=marker_type, trace_name='external_grid')
@@ -457,8 +566,49 @@ def simple_plotly(net=None, respect_switches=False, on_map=False, map_style='bas
 
 
 
-def vlevel_plotly(net, colors_dict=None, on_map=False, map_style='basic', line_width=2, bus_size=10,
-                  aspectratio = False, respect_switches=False):
+def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
+                  colors_dict=None,
+                  on_map=False, map_style='basic',
+                  figsize=1, aspectratio='auto',
+                  line_width=2, bus_size=10):
+    """
+    Plots a pandapower network in plotly (https://plot.ly/python/)
+    using lines/buses colors according to the voltage level they belong to. 
+    If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+
+    INPUT:
+        **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
+        plotted as an example
+
+    OPTIONAL:
+        **respect_switches** (bool, False) - Respect switches when artificial geodata is created
+
+        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
+            or on net.bus_geodata of the connected buses (False)
+            
+        *colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
+            Otherwise, user can define a dictionary in the form: voltage_kv : color
+
+        **on_map** (bool, False) - enables using mapbox plot in plotly
+            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+
+        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+            - 'streets'
+            - 'bright'
+            - 'light'
+            - 'dark'
+            - 'satellite'
+
+        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+
+        **line_width** (float, 1.0) - width of lines
+
+        **bus_size** (float, 10.0) -  size of buses to plot.
+
+    """
 
     # create geocoord if none are available
     # TODO remove this if not necessary:
@@ -471,7 +621,19 @@ def vlevel_plotly(net, colors_dict=None, on_map=False, map_style='basic', line_w
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
 
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    if on_map:
+        on_map = on_map_test(net)
+        if on_map is False:
+            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
+                           " plot on maps is not possible")
 
+    # if bus geodata is available, but no line geodata
+    if use_line_geodata is None:
+        use_line_geodata = False if len(net.line_geodata) == 0 else True
+    elif use_line_geodata and len(net.line_geodata) == 0:
+        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
+        use_line_geodata = False
 
     # getting connected componenets without consideration of trafos
     graph = create_nxgraph(net, include_trafos=False)
@@ -501,14 +663,14 @@ def vlevel_plotly(net, colors_dict=None, on_map=False, map_style='basic', line_w
     for vn_kv, buses_vl in vlev_bus_dict.items():
 
         vlev_color = colors_dict[vn_kv]
-        bus_trace_vlev = create_bus_trace(net, buses=buses_vl, size=bus_size, on_map=on_map,
+        bus_trace_vlev = create_bus_trace(net, buses=buses_vl, size=bus_size, on_map=on_map, legendgroup=str(vn_kv),
                                           color=vlev_color, trace_name='buses {0} kV'.format(vn_kv))
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
 
         vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
-        line_trace_vlev = create_line_trace(net, lines=vlev_lines, use_line_geodata=True, on_map=on_map,
-                                            respect_switches=respect_switches,
+        line_trace_vlev = create_line_trace(net, lines=vlev_lines, use_line_geodata=use_line_geodata, on_map=on_map,
+                                            respect_switches=respect_switches, legendgroup=str(vn_kv),
                                             color=vlev_color, width=line_width, trace_name='lines {0} kV'.format(vn_kv))
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev
@@ -516,10 +678,52 @@ def vlevel_plotly(net, colors_dict=None, on_map=False, map_style='basic', line_w
     trafo_traces = create_trafo_trace(net, on_map=on_map, color='gray', width=line_width*2)
 
     draw_traces(net, line_traces + trafo_traces + bus_traces, showlegend=True,
-                aspectratio=aspectratio, on_map=on_map, map_style=map_style)
+                aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
 
 
-def pf_res_plotly(net, cmap_name='jet', on_map=False, map_style='basic', line_width=2, bus_size=10, aspectratio=False):
+def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
+                  on_map=False, map_style='basic',
+                  figsize=1, aspectratio='auto',
+                  line_width=2, bus_size=10):
+    """
+    Plots a pandapower network in plotly (https://plot.ly/python/)
+    using colormap for coloring lines according to line loading and buses according to voltage in p.u. 
+    If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+
+    INPUT:
+        **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
+        plotted as an example
+
+    OPTIONAL:
+        **respect_switches** (bool, False) - Respect switches when artificial geodata is created
+
+        *cmap_name** (str, 'jet') - name of the colormap
+
+        *colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
+            Otherwise, user can define a dictionary in the form: voltage_kv : color
+
+        **on_map** (bool, False) - enables using mapbox plot in plotly
+            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+
+        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+            - 'streets'
+            - 'bright'
+            - 'light'
+            - 'dark'
+            - 'satellite'
+
+        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+
+        **line_width** (float, 1.0) - width of lines
+
+        **bus_size** (float, 10.0) -  size of buses to plot.
+
+    """
+
+
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')
         runpp(net)
@@ -534,6 +738,13 @@ def pf_res_plotly(net, cmap_name='jet', on_map=False, map_style='basic', line_wi
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
 
+    # check if geodata are real geographycal lat/lon coordinates using geopy
+    if on_map:
+        on_map = on_map_test(net)
+        if on_map is False:
+            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
+                           " plot on maps is not possible")
+
     # ----- Buses ------
     # initializating bus trace
     idx = net.line.index
@@ -547,7 +758,12 @@ def pf_res_plotly(net, cmap_name='jet', on_map=False, map_style='basic', line_wi
 
     # ----- Lines ------
     # if bus geodata is available, but no line geodata
-    use_line_geodata = False if net.line_geodata.shape[0] == 0 else True
+    # if bus geodata is available, but no line geodata
+    if use_line_geodata is None:
+        use_line_geodata = False if len(net.line_geodata) == 0 else True
+    elif use_line_geodata and len(net.line_geodata) == 0:
+        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
+        use_line_geodata = False
     idx = net.line.index
     # hoverinfo which contains name and pf results
     hoverinfo = (net.line.name + '<br>' +
@@ -579,7 +795,7 @@ def pf_res_plotly(net, cmap_name='jet', on_map=False, map_style='basic', line_wi
                                       marker_type=marker_type)
 
     draw_traces(net, line_traces + trafo_traces + ext_grid_trace + bus_trace,
-                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style)
+                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
 
 
 
