@@ -84,7 +84,7 @@ def _pd2ppc(net):
     else:
         _calc_loads_and_add_on_ppc(net, ppc)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
-        _calc_shunts_and_add_on_ppc(net, ppc)        
+        _calc_shunts_and_add_on_ppc(net, ppc)
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)

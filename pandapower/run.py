@@ -48,8 +48,9 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         **init** (str, "auto") - initialization method of the loadflow
         pandapower supports four methods for initializing the loadflow:
-
-            - "flat"- flat start with voltage of 1.0pu and angle of 0° at all buses as initial solution
+            
+            - "auto" - init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
+            - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
             - "dc" - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow.
             - "results" - voltage vector of last loadflow from net.res_bus is used as initial solution. This can be useful to accelerate convergence in iterative loadflows like time series calculations.
 
