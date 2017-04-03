@@ -13,6 +13,8 @@ from pandapower.auxiliary import ppException
 from pandapower.pypower_extensions.bustypes import bustypes
 from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.runpf import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
+from pandapower.run_newton_raphson_pf import _get_Y_bus
+
 
 
 class LoadflowNotConverged(ppException):
@@ -68,7 +70,7 @@ def _bibc_bcbv(bus, branch, graph):
         # ordering buses according to breadth-first-search (bfs)
         buses_ordered_bfs, predecs_bfs = csgraph.breadth_first_order(G, ref, directed=False, return_predecessors=True)
         buses_ordered_bfs_nets.append(buses_ordered_bfs)
-        branches_ordered_bfs = zip(predecs_bfs[buses_ordered_bfs[1:]], buses_ordered_bfs[1:])
+        branches_ordered_bfs = list(zip(predecs_bfs[buses_ordered_bfs[1:]], buses_ordered_bfs[1:]))
         G_tree = csgraph.breadth_first_tree(G, ref, directed=False)
 
         # if multiple networks get subnetwork branches
@@ -159,7 +161,20 @@ def _bibc_bcbv(bus, branch, graph):
 
     return DLF, buses_ordered_bfs_nets
 
+def _get_bibc_bcbv(ppci, options, bus, branch, graph):
+    recycle = options["recycle"]
 
+    if recycle["bfsw"] and ppci["internal"]["DLF"].size:
+        DLF, buses_ordered_bfs_nets = ppci["internal"]['DLF'],\
+                                            ppci["internal"]['buses_ord_bfs_nets']
+    else:
+        ## build matrices
+        DLF, buses_ordered_bfs_nets = _bibc_bcbv(bus, branch, graph)
+        if recycle["bfsw"]:
+            ppci["internal"]['DLF'], \
+            ppci["internal"]['buses_ord_bfs_nets'] = DLF, buses_ordered_bfs_nets
+
+    return ppci, DLF, buses_ordered_bfs_nets
 
 def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
          enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
@@ -177,6 +192,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     :param ref: reference bus index
     :param pv: PV buses indices
     :param pq: PQ buses indices
+    :param buses_ordered_bfs_nets: buses ordered according to breadth-first search
 
     :return: power flow result
     """
@@ -241,7 +257,6 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
 
     n_iter = 0
     converged = 0
-
     if verbose:
         print(' -- AC Power Flow (Backward/Forward sweep)\n')
 
@@ -367,7 +382,8 @@ def _run_bfswpf(ppci, options, **kwargs):
     # generate Sbus
     Sbus = makeSbus(baseMVA, bus, gen)
     # generate results for original bus ordering
-    Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+    # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+    ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
 
     # creating network graph from list of branches
@@ -382,8 +398,7 @@ def _run_bfswpf(ppci, options, **kwargs):
         G_trees.append(csgraph.breadth_first_tree(G, refbus, directed=False))
 
     # depth-first-search bus ordering and generating Direct Load Flow matrix DLF = BCBV * BIBC
-    # TODO include recycling of the DLF matrix for repeated power flows with the same net topology
-    DLF, buses_ordered_bfs_nets = _bibc_bcbv(bus, branch, G)
+        ppci, DLF, buses_ordered_bfs_nets = _get_bibc_bcbv(ppci, options, bus, branch, G)
 
     # if there are trafos with phase-shift calculate Ybus without phase-shift for bfswpf
     any_trafo_shift = (branch[:, SHIFT] != 0).any()
@@ -430,6 +445,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     ppci["et"] = time() - time_start    # pf time end
 
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V_final, ref, pv, pq)
+    # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
     ppci["success"] = success
 

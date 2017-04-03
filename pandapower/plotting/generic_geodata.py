@@ -10,7 +10,7 @@ import networkx as nx
 import pandas as pd
 
 import pandapower.topology as top
-
+import igraph as ig
 
 def build_igraph_from_pp(net, respect_switches=False):
     """
