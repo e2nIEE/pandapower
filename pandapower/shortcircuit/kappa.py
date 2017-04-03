@@ -11,7 +11,6 @@ from pypower.idx_bus import BUS_I, BASE_KV, GS, BS
 
 from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV
 
-
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
         return
@@ -35,13 +34,13 @@ def _add_kappa_to_ppc(net, ppc):
                 for path in paths:
                     r = sum([mg[b1][b2][0]["r"] for b1, b2 in zip(path, path[1:])])
                     x = sum([mg[b1][b2][0]["x"] for b1, b2 in zip(path, path[1:])])
-                    if r / x < .3:                                     
+                    if r / x < .3:
                         kappa_korr[bidx] = 1.
-                        break           
+                        break
     rx_equiv = ppc["bus_sc"][:, R_EQUIV] / ppc["bus_sc"][:, X_EQUIV]
     kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
     ppc["bus_sc"][:, KAPPA] = np.clip(kappa_korr * kappa, 1, kappa_max)
-   
+
 def nxgraph_from_ppc(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
@@ -52,6 +51,6 @@ def nxgraph_from_ppc(net, ppc):
     vs_buses_pp = list(set(net._is_elements["ext_grid"].bus.values) | set(net._is_elements["gen"].bus))
     vs_buses = bus_lookup[vs_buses_pp]
     z = 1 / (ppc["bus"][vs_buses, GS] + ppc["bus"][vs_buses, BS] * 1j)
-    mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 
+    mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag})
                         for bus, z in zip(vs_buses, z))
     return mg

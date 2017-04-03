@@ -4,9 +4,9 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 import copy
-
 import networkx as nx
 import numpy as np
+
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 from pypower.idx_bus import BUS_I, GS, BS
 
@@ -15,13 +15,13 @@ from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
 
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
-        return    
+        return
     ppc_20 = copy.deepcopy(ppc)
     y = 1 / (ppc_20["branch"][:, BR_R] + ppc_20["branch"][:, BR_X] * 1j)
     z = 1 / (y.real + y.imag * 1j * 2 / 5)
     ppc_20["branch"][:, BR_R] = z.real
     ppc_20["branch"][:, BR_X] = z.imag
-          
+
 #    ppc_20["branch"][:, BR_X] *= (5/2)
     ppc_20["bus"][:, BS] *= (2/5)
     _calc_equiv_sc_impedance(net, ppc_20)
@@ -32,10 +32,10 @@ def _add_kappa_to_ppc(net, ppc):
     print(ppc["internal"]["zbus"] - ppc_20["internal"]["zbus"])
 
     ppc["bus_sc"][:, KAPPA] = _kappa(rx_equiv_20)
-    
+
 def _kappa(rx):
     return 1.02 + .98 * np.exp(-3 * rx)
-    
+
 def nxgraph_from_ppc(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
@@ -46,6 +46,6 @@ def nxgraph_from_ppc(net, ppc):
     vs_buses_pp = list(set(net._is_elements["ext_grid"].bus.values)|set(net._is_elements["gen"].bus))
     vs_buses = bus_lookup[vs_buses_pp]
     z = 1 / (ppc["bus"][vs_buses, GS] + ppc["bus"][vs_buses, BS] * 1j)
-    mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) 
+    mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag})
                         for bus, z in zip(vs_buses, z))
     return mg

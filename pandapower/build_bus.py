@@ -142,12 +142,12 @@ def _build_bus_ppc(net, ppc):
         # init results (= voltages) from previous power flow
         ppc["bus"][:n_bus, VM] = net["res_bus"]["vm_pu"].values
         ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
-        
+
     if mode == "sc":
         ppc["bus_sc"] = np.empty(shape=(n_bus, 10), dtype=float)
         ppc["bus_sc"].fill(np.nan)
         _add_c_to_ppc(net, ppc)
-        
+
 
     if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
@@ -233,7 +233,7 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
         vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / np.float64(1000.)
         lp = l["p_kw"].values * vl
         lq = l["q_kvar"].values * vl
-    else: 
+    else:
         lp = []
         lq = []
 
@@ -290,13 +290,13 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
-        
+
 def _controllable_to_bool(ctrl):
     ctrl_bool = []
     for val in ctrl:
         ctrl_bool.append(val if not np.isnan(val) else False)
     return np.array(ctrl_bool, dtype=bool)
-        
+
 def _add_gen_impedances_ppc(net, ppc):
     _add_ext_grid_sc_impedance(net, ppc)
     _add_gen_sc_impedance(net, ppc)
@@ -340,7 +340,7 @@ def _add_gen_sc_impedance(net, ppc):
     gen_buses = gen.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_buses_ppc = bus_lookup[gen_buses]
-    
+
     vn_net = ppc["bus"][gen_buses_ppc, BASE_KV]
     cmax = ppc["bus_sc"][gen_buses_ppc, C_MAX]
     phi_gen = np.arccos(gen.cos_phi)
@@ -373,15 +373,15 @@ def _add_sgen_sc_impedance(net, ppc):
     x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
     r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
     y_sgen = 1 / (r_sgen + x_sgen*1j)
-   
+
     buses, gs, bs = _sum_by_group(sgen_buses_ppc, y_sgen.real, y_sgen.imag)
     ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs    
+    ppc["bus"][buses, BS] = bs
 
 def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
     kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))
     return kg
-    
+
 def _add_c_to_ppc(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     ppc["bus_sc"][:, C_MAX] = 1.1

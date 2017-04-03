@@ -8,7 +8,6 @@ import warnings
 
 import numpy as np
 from pypower.idx_bus import BASE_KV
-from scipy.sparse import diags
 from scipy.sparse.linalg import inv
 
 from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
@@ -27,7 +26,7 @@ def _calc_equiv_sc_impedance(net, ppc):
         fault_impedance = (r_fault + x_fault * 1j) / base_r
         np.fill_diagonal(zbus, zbus.diagonal() + fault_impedance)
     z_equiv = np.diag(zbus)
-    ppc["bus_sc"][:, R_EQUIV] = z_equiv.real 
+    ppc["bus_sc"][:, R_EQUIV] = z_equiv.real
     ppc["bus_sc"][:, X_EQUIV] = z_equiv.imag
     ppc["internal"]["zbus"] = zbus
 

@@ -10,9 +10,7 @@ import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS, IP, ITH, X_EQUIV, IKSSCV
-#from pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _sum_by_group
-
 
 def _calc_ikss(net, ppc):
     fault = net._options["fault"]
@@ -28,7 +26,7 @@ def _calc_ikss(net, ppc):
     ikss = ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV]
     if net._options["branch_results"]:
         ppc["branch_sc"][:, [IKSS_F, IKSS_T]] = _branch_currents_from_bus(ppc, ikss, case)
-    
+
 def _current_source_current(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     sgen = net.sgen[net._is_elements["sgen"]]
@@ -45,13 +43,13 @@ def _current_source_current(net, ppc):
     i_sgen_bus_pu = np.zeros(ppc["bus"].shape[0], dtype=complex)
     i_sgen_bus_pu[buses] = i
     ppc["bus_sc"][:, IKSSCV] = abs(1 / np.diag(zbus) * np.dot(zbus, i_sgen_bus_pu) / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"])
-       
+
 def _calc_ip(net, ppc):
     case = net._options["case"]
     ppc["bus_sc"][:, IP] = np.sqrt(2) * (ppc["bus_sc"][:, KAPPA] * ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV])
     if net._options["branch_results"]:
         ppc["branch_sc"][:, [IP_F, IP_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, IP], case)
-    
+
 def _calc_ith(net, ppc):
     case = net._options["case"]
     tk_s = net["_options"]["tk_s"]
@@ -75,11 +73,11 @@ def _branch_currents_from_bus(ppc, current, case):
     i_all_f = abs(np.conj(Yf.dot(V)))
     i_all_t = abs(np.conj(Yt.dot(V)))
     if case == "max":
-        current_from = np.max(i_all_f, axis=1) / baseI[fb] 
+        current_from = np.max(i_all_f, axis=1) / baseI[fb]
         current_to = np.max(i_all_t, axis=1) / baseI[tb]
     elif case == "min":
         i_all_f[i_all_f < 1e-10] = np.inf
         i_all_t[i_all_t < 1e-10] = np.inf
-        current_from = np.min(i_all_f, axis=1) / baseI[fb] 
-        current_to = np.max(i_all_t, axis=1) / baseI[tb]        
+        current_from = np.min(i_all_f, axis=1) / baseI[fb]
+        current_to = np.max(i_all_t, axis=1) / baseI[tb]
     return np.c_[current_from, current_to]
