@@ -377,7 +377,7 @@ def _add_opf_options(net, trafo_loading, ac, **kwargs):
 
 
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith, consider_sgens):
+                    x_fault_ohm, kappa, ip, ith, consider_sgens, branch_results):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -393,6 +393,7 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         , "ip": ip
         , "ith": ith
         , "consider_sgens": consider_sgens
+        , "branch_results": branch_results
     }
     _add_options(net, options)
 

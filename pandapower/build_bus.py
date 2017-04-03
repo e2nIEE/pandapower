@@ -314,7 +314,11 @@ def _add_ext_grid_sc_impedance(net, ppc):
     eg_buses_ppc  = bus_lookup[eg_buses]
 
     c = ppc["bus_sc"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus_sc"][eg_buses_ppc, C_MIN]
+    if not "s_sc_%s_mva"%case in eg:
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for external grid"%case)
     s_sc = eg["s_sc_%s_mva"%case].values
+    if not "rx_%s"%case in eg:
+        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid"%case)
     rx = eg["rx_%s"%case].values
 
     z_grid = c / s_sc
@@ -372,7 +376,7 @@ def _add_sgen_sc_impedance(net, ppc):
    
     buses, gs, bs = _sum_by_group(sgen_buses_ppc, y_sgen.real, y_sgen.imag)
     ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs
+    ppc["bus"][buses, BS] = bs    
 
 def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
     kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))

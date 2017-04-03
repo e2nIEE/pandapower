@@ -24,7 +24,6 @@ def one_line_one_generator():
                                        r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
     net.line.loc[l, "endtemp_degree"] = 165
     pp.create_switch(net, b3, b1, et="b")
-    sc.calc_sc(net)
     return net  
     
 def test_max_gen(one_line_one_generator):

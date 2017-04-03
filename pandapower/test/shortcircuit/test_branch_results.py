@@ -42,6 +42,6 @@ def test_closed_ring(ring_network):
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.4745379023])
     assert np.allclose(net.res_line_sc.ikss_ka.values, [0.26039497, 0.20831598, 0.36590236])
     
-if __name__ == '__main__':  
-    pytest.main(['-xs'])
+if __name__ == '__main__': 
+    pytest.main(["test_branch_results.py"])
 

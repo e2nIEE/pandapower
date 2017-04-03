@@ -24,9 +24,8 @@ def _calc_equiv_sc_impedance(net, ppc):
     zbus = _calc_zbus(ppc)
     if r_fault > 0 or x_fault > 0:
         base_r = np.square(ppc["bus"][:, BASE_KV]) / ppc["baseMVA"]
-        fault = diags((r_fault + x_fault * 1j) / base_r)
-        zbus += fault
-    zbus = zbus.toarray()
+        fault_impedance = (r_fault + x_fault * 1j) / base_r
+        np.fill_diagonal(zbus, zbus.diagonal() + fault_impedance)
     z_equiv = np.diag(zbus)
     ppc["bus_sc"][:, R_EQUIV] = z_equiv.real 
     ppc["bus_sc"][:, X_EQUIV] = z_equiv.imag
@@ -39,4 +38,4 @@ def _calc_zbus(ppc):
     ppc["internal"]["Ybus"] = Ybus
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return inv(Ybus)
+        return inv(Ybus).toarray()

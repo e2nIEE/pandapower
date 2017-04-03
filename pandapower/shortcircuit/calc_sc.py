@@ -22,7 +22,7 @@ from pandapower.shortcircuit.results import _extract_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-          ith=False, tk_s=1., r_fault_ohm=0., x_fault_ohm=0., consider_sgens=True):
+          ith=False, tk_s=1., r_fault_ohm=0., x_fault_ohm=0., branch_results=True):
     
     """
     Calculates minimal or maximal symmetrical short-circuit currents.  
@@ -106,7 +106,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, 
                     topology=topology, r_fault_ohm=r_fault_ohm, 
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    consider_sgens=consider_sgens)
+                    consider_sgens=False, branch_results=branch_results)
     _calc_sc(net)
 
 def _calc_sc(net):
@@ -116,8 +116,17 @@ def _calc_sc(net):
     _calc_equiv_sc_impedance(net, ppci)
     _add_kappa_to_ppc(net, ppci)
     _calc_ikss(net, ppci)
-    _calc_ip(ppci)
-    _calc_ith(net, ppci)
+    if net["_options"]["ip"]:
+        _calc_ip(net, ppci)
+    if net["_options"]["ith"]:
+        _calc_ith(net, ppci)
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc)
     _clean_up(net)
+
+if __name__ == "__main__":
+    import pandapower.networks as nw
+    net = nw.mv_oberrhein()
+    net.ext_grid.s_sc_max_mva = 100
+    net.ext_grid.rx_max = 0.1
+    calc_sc(net)
