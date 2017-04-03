@@ -10,7 +10,7 @@ import networkx as nx
 import pandas as pd
 
 import pandapower.topology as top
-import igraph as ig
+
 
 def build_igraph_from_pp(net, respect_switches=False):
     """
@@ -27,6 +27,7 @@ def build_igraph_from_pp(net, respect_switches=False):
         graph = build_igraph_from_pp(net
 
     """
+    import igraph as ig
     g = ig.Graph(directed=True)
     g.add_vertices(net.bus.shape[0])
     g.vs["label"] = net.bus.index.tolist()  # [s.encode('unicode-escape') for s in net.bus.name.tolist()]
@@ -61,7 +62,6 @@ def build_igraph_from_pp(net, respect_switches=False):
     return g, meshed, roots  # g, (not g.is_dag())
 
 
-
 def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=False):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches and rings.
@@ -87,10 +87,15 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         print("Please delete all geodata. This function cannot be used with pre-existing geodata.")
         return
     if not "bus_geodata" in net:
-        net.bus_geodata = pd.DataFrame(columns=["x","y"])
+        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
     gnet = copy.deepcopy(net)
     gnet.bus = gnet.bus[gnet.bus.in_service == True]
-    if library=="igraph":
+    if library == "igraph":
+        try:
+            import igraph
+        except ImportError:
+            raise UserWarning("The library igraph is selected for plotting, "
+                              "but not installed correctly.")
         graph, meshed, roots = build_igraph_from_pp(gnet, respect_switches)
         if meshed:
             layout = graph.layout("kk")
