@@ -89,8 +89,17 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
 
     # copy the results for bus, gen and branch
     # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
-    n_cols = np.shape(ppc['bus'])[1]
-    ppc['bus'][:len(result['bus']), :n_cols] = result['bus'][:len(result['bus']), :n_cols]
+    n_busses, n_cols = np.shape(ppc['bus'])
+    n_rows_result, n_cols_result = np.shape(result['bus'])
+    # create matrix of proper size
+    updated_bus = np.empty((n_busses, n_cols_result))
+    # fill in results (first 3 types) 
+    updated_bus[:n_rows_result, :] = result['bus']
+    if n_busses > n_rows_result:
+        # keep rows for busses of type NONE
+        updated_bus[n_rows_result:,:n_cols] = ppc['bus'][n_rows_result:,:]
+    ppc['bus']= updated_bus
+    
     if mode == "sc":
         ppc['bus_sc'][:len(result['bus']), :n_cols] = result['bus_sc'][:len(result['bus']), :n_cols]
     # in service branches and gens are taken from 'internal'

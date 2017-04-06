@@ -6,7 +6,7 @@
 
 import numpy as np
 from numpy import zeros, array, float, hstack, invert
-from pypower.idx_bus import VM, VA, PD, QD
+from pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q
 from pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
@@ -75,7 +75,7 @@ def _set_buses_out_of_service(ppc):
 
 def _get_bus_results(net, ppc, bus_pq):
     ac = net["_options"]["ac"]
-
+    mode = net["_options"]["mode"]
     net["res_bus"]["p_kw"] = bus_pq[:, 0]
     if ac:
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
@@ -88,6 +88,11 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"].index = net["bus"].index
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+
+    if mode == "opf":
+        # marginal prices
+        net["res_bus"]["lam_p"] = ppc["bus"][bus_idx][:, LAM_P]
+        net["res_bus"]["lam_q"] = ppc["bus"][bus_idx][:, LAM_Q]
 
 
 def _get_p_q_results(net, bus_lookup_aranged):
