@@ -10,12 +10,14 @@ import pandas as pd
 import warnings
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.results import _set_buses_out_of_service, _extract_results, reset_results
-from pandapower.auxiliary import get_values, _select_is_elements, _add_ppc_options, _add_pf_options
+from pandapower.results import _set_buses_out_of_service, _extract_results, \
+                        reset_results
+from pandapower.auxiliary import get_values, _select_is_elements, \
+                        calculate_line_results, _add_ppc_options, _add_pf_options
 from pandapower.topology import estimate_voltage_vector
 from pandapower.pypower_extensions.ext2int import ext2int
-from pandapower.pypower_extensions.runpf import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
-from pandapower.pypower_extensions.pfsoln import pfsoln
+from pandapower.pypower_extensions.runpf import _get_pf_variables_from_ppci, \
+                        _store_results_from_pf_in_ppci
 from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
@@ -36,7 +38,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     INPUT:
         **net** - The net within this line should be created.
 
-        **init** - (string) - Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
         
@@ -254,11 +256,10 @@ class state_estimation(object):
                                  recycle=dict(is_elems=False, ppc=False, Ybus=False))
         self.net["_is_elems"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
-        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
+        self.mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
         bs_cols = ppc["bus"].shape[1]
-        
-        # reset net.res_bus to pre-SE values
+
         self.net.res_bus.vm_pu = vm_backup
         self.net.res_bus.va_degree = va_backup
 
@@ -268,28 +269,28 @@ class state_estimation(object):
         v_measurements = self.net.measurement[(self.net.measurement.type == "v")
                                               & (self.net.measurement.element_type == "bus")]
         if len(v_measurements):
-            bus_positions = mapping_table[v_measurements.bus.values.astype(int)]
+            bus_positions = self.mapping_table[v_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 0] = v_measurements.value.values
             bus_append[bus_positions, 1] = v_measurements.std_dev.values
 
         p_measurements = self.net.measurement[(self.net.measurement.type == "p")
                                               & (self.net.measurement.element_type == "bus")]
         if len(p_measurements):
-            bus_positions = mapping_table[p_measurements.bus.values.astype(int)]
+            bus_positions = self.mapping_table[p_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 2] = p_measurements.value.values * 1e3 / self.s_ref
             bus_append[bus_positions, 3] = p_measurements.std_dev.values * 1e3 / self.s_ref
 
         q_measurements = self.net.measurement[(self.net.measurement.type == "q")
                                               & (self.net.measurement.element_type == "bus")]
         if len(q_measurements):
-            bus_positions = mapping_table[q_measurements.bus.values.astype(int)]
+            bus_positions = self.mapping_table[q_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 4] = q_measurements.value.values * 1e3 / self.s_ref
             bus_append[bus_positions, 5] = q_measurements.std_dev.values * 1e3 / self.s_ref
 
         # add virtual measurements for artificial buses, which were created because
         # of an open line switch. p/q are 0. and std dev is 1. (small value)
         new_in_line_buses = np.setdiff1d(np.arange(ppc["bus"].shape[0]),
-                                         mapping_table[mapping_table >= 0])
+                                         self.mapping_table[self.mapping_table >= 0])
         bus_append[new_in_line_buses, 2] = 0.
         bus_append[new_in_line_buses, 3] = 1.
         bus_append[new_in_line_buses, 4] = 0.
@@ -513,53 +514,27 @@ class state_estimation(object):
         ppc_i["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppc_i["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
 
-#==============================================================================
-#         # calculate line results # NEW
-#         baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppc_i)
-#         bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, sem.Y_bus, sem.Yf, sem.Yt, v_cpx, ref, pv, pq)
-#         ppc_i = _store_results_from_pf_in_ppci(ppc_i, bus, gen, branch)
-#==============================================================================
-        
-        # calculate line results (in ppc_i) # NEW
+        # calculate line results (in ppc_i)
         baseMVA, bus, gen, branch = _get_pf_variables_from_ppci(ppc_i)[0:4]
         out = find(branch[:, BR_STATUS] == 0)        ## out-of-service branches
-        br =  find(branch[:, BR_STATUS]).astype(int) ## in-service branches
-        
-        ## complex power at "from" bus
+        br =  find(branch[:, BR_STATUS]).astype(int) ## in-service branches   
+        # complex power at "from" bus
         Sf = v_cpx[ np.real(branch[br, F_BUS]).astype(int) ] * np.conj(sem.Yf[br, :] * v_cpx) * baseMVA
-        ## complex power injected at "to" bus
+        # complex power injected at "to" bus
         St = v_cpx[ np.real(branch[br, T_BUS]).astype(int) ] * np.conj(sem.Yt[br, :] * v_cpx) * baseMVA
         branch[ np.ix_(br, [PF, QF, PT, QT]) ] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
         branch[ np.ix_(out, [PF, QF, PT, QT]) ] = np.zeros((len(out), 4)) 
         
         ppc_i = _store_results_from_pf_in_ppci(ppc_i, bus, gen, branch)
-     
-        # convert to pandapower indices
+
+        # convert to pandapower indices (ppc)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             ppc = int2ext(ppc_i)
             _set_buses_out_of_service(ppc)
 
-        # Store results, overwrite old results
-        self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
-                                            index=self.net.bus.index)
-        self.net.res_line_est = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw",
-                                                      "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
-                                                      "i_to_ka", "i_ka", "loading_percent"],
-                                             index=self.net.line.index)
-        
-        bus_idx = mapping_table[self.net["bus"].index.values]
-        self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
-        self.net["res_bus_est"]["va_degree"] = ppc["bus"][bus_idx][:, 8]
-
-        self.net.res_bus_est.p_kw = -  get_values(ppc["bus"][:, 2], self.net.bus.index,
-                                                  mapping_table) * self.s_ref / 1e3
-        self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
-                                                   mapping_table) * self.s_ref / 1e3       
-        # NEW line results
-        _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
-                    numba=True, ac=True, algorithm='nr', max_iteration="auto")
-        _extract_results(self.net, ppc, True)
+        # extract results from ppc
+        extract_results_se(self, ppc)
         
         # Store some variables required for Chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()
@@ -763,6 +738,98 @@ class state_estimation(object):
             num_iterations += 1
 
         return successful
+
+
+def extract_results_se (self, ppc):
+    """
+    This function extracts all important results from 'ppc'. 
+    It creates data frameworks for the SE's results in net
+    and stores in these the new results of the performed SE.
+    Thereby old results of a powerflow analysis will be protected against data loss.
+    Note: You can find previous pf-results in the known data structure (res_xxx).
+    """
+    
+    # create 'res_xxx_est' data frameworks
+    self.net.res_bus_est = self.net._empty_res_bus.copy()
+    self.net.res_line_est = self.net._empty_res_line.copy()
+    self.net.res_dcline_est = self.net._empty_res_dcline.copy()
+    self.net.res_ext_grid_est = self.net._empty_res_ext_grid.copy()
+    self.net.res_trafo_est = self.net._empty_res_trafo.copy()
+    self.net.res_trafo3w_est = self.net._empty_res_trafo3w.copy()
+    self.net.res_load_est = self.net._empty_res_load.copy()
+    self.net.res_gen_est = self.net._empty_res_gen.copy()
+    self.net.res_sgen_est = self.net._empty_res_sgen.copy()
+    self.net.res_impedance_est = self.net._empty_res_impedance.copy()
+    self.net.res_shunt_est = self.net._empty_res_shunt.copy()
+    self.net.res_ward_est = self.net._empty_res_ward.copy()
+    self.net.res_xward_est = self.net._empty_res_xward.copy()
+    
+    # store bus results
+    bus_idx = self.mapping_table[self.net["bus"].index.values]
+    self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
+    self.net["res_bus_est"]["va_degree"] = ppc["bus"][bus_idx][:, 8]
+
+    self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index,
+                                              self.mapping_table) * self.s_ref / 1e3
+    self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
+                                               self.mapping_table) * self.s_ref / 1e3
+    
+    # store previous pf-results
+    pre_results_bus = self.net.res_bus.copy()
+    # check if previous pf-results are available 
+    check_pre_pf_results = False
+    if len(self.net.res_line) > 0:
+        check_pre_pf_results = True
+    if check_pre_pf_results:
+        pre_results_line = self.net.res_line.copy()
+        pre_results_dcline = self.net.res_dcline.copy()
+        pre_results_ext_grid = self.net.res_ext_grid.copy()
+        pre_results_trafo = self.net.res_trafo.copy()
+        pre_results_trafo3w = self.net.res_trafo3w.copy()
+        pre_results_load = self.net.res_load.copy()
+        pre_results_gen = self.net.res_gen.copy()
+        pre_results_sgen = self.net.res_sgen.copy()
+        pre_results_impedance = self.net.res_impedance.copy()
+        pre_results_shunt = self.net.res_shunt.copy()
+        pre_results_ward = self.net.res_ward.copy()
+        pre_results_xward = self.net.res_xward.copy()
+    
+    # get results
+    _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
+                    numba=True, ac=True, algorithm='nr', max_iteration="auto")
+    _extract_results(self.net, ppc)
+    
+    # copy results to 'est'-dictionaries
+    self.net.res_line_est = self.net.res_line
+    self.net.res_dcline_est = self.net.res_dcline
+    self.net.res_ext_grid_est = self.net.res_ext_grid
+    self.net.res_trafo_est = self.net.res_trafo
+    self.net.res_trafo3w_est = self.net.res_trafo3w
+    self.net.res_load_est = self.net.res_load
+    self.net.res_gen_est = self.net.res_gen
+    self.net.res_sgen_est = self.net.res_sgen
+    self.net.res_impedance_est = self.net.res_impedance
+    self.net.res_shunt_est = self.net.res_shunt
+    self.net.res_ward_est = self.net.res_ward
+    self.net.res_xward_est = self.net.res_xward
+    
+    # reset 'res'-dictionaries to previous pf-results (if required)
+    if check_pre_pf_results:
+        self.net.res_line = pre_results_line
+        self.net.res_dcline = pre_results_dcline
+        self.net.res_ext_grid = pre_results_ext_grid
+        self.net.res_trafo_est = pre_results_trafo
+        self.net.res_trafo3w_est = pre_results_trafo3w
+        self.net.res_load = pre_results_load
+        self.net.res_gen = pre_results_gen
+        self.net.res_sgen = pre_results_sgen
+        self.net.res_impedance = pre_results_res_impedance
+        self.net.res_shunt = pre_results_shunt
+        self.net.res_ward = pre_results_ward
+        self.net.res_xward = pre_results_xward
+    else:
+        reset_results(self.net)
+        self.net.res_bus = pre_results_bus
 
 
 if __name__ == "__main__":
