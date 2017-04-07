@@ -190,6 +190,7 @@ class state_estimation(object):
         self.bad_data_present = None
         # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
+        self.mapping_table = None
 
     def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
         """
@@ -243,26 +244,31 @@ class state_estimation(object):
             delta_start = np.zeros(self.net.bus.shape[0])
 
         # initialize the ppc bus with the initial values given
+        # initialize result tables if not existant
+        if "res_bus" not in self.net or "res_line" not in self.net:
+            reset_results(self.net)
+        # create backup of current results
         vm_backup, va_backup = self.net.res_bus.vm_pu.copy(), self.net.res_bus.va_degree.copy()
+        # initialize ppc voltages
         self.net.res_bus.vm_pu = v_start
         self.net.res_bus.vm_pu[self.net.bus.index[self.net.bus.in_service == False]] = np.nan
         self.net.res_bus.va_degree = delta_start
-
         # select elements in service and convert pandapower ppc to ppc
         self.net._options = {}
         _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
-                                 copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
-                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
-                                 recycle=dict(is_elems=False, ppc=False, Ybus=False))
+                         copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
+                         calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                         recycle=dict(is_elems=False, ppc=False, Ybus=False))
         self.net["_is_elems"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
         self.mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
         bs_cols = ppc["bus"].shape[1]
-
+        # restore backup of previous results
         self.net.res_bus.vm_pu = vm_backup
         self.net.res_bus.va_degree = va_backup
 
+        # set measurements for ppc format
         # add 6 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev
         bus_append = np.full((ppc["bus"].shape[0], 6), np.nan, dtype=ppc["bus"].dtype)
 
@@ -502,40 +508,37 @@ class state_estimation(object):
             self.logger.info("WLS State Estimation not successful (%d/%d iterations" %
                              (current_iterations, self.max_iterations))
 
+        # store results for all elements
         # write voltage into ppc
         ppc_i["bus"][:, 7] = v_m
         ppc_i["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
-
-        # calculate bus powers
+        # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
         ppc_i["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppc_i["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
-
         # calculate line results (in ppc_i)
         baseMVA, bus, gen, branch = _get_pf_variables_from_ppci(ppc_i)[0:4]
-        out = find(branch[:, BR_STATUS] == 0)        ## out-of-service branches
-        br =  find(branch[:, BR_STATUS]).astype(int) ## in-service branches   
+        out = find(branch[:, BR_STATUS] == 0)  # out-of-service branches
+        br = find(branch[:, BR_STATUS]).astype(int)  # in-service branches
         # complex power at "from" bus
-        Sf = v_cpx[ np.real(branch[br, F_BUS]).astype(int) ] * np.conj(sem.Yf[br, :] * v_cpx) * baseMVA
+        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(sem.Yf[br, :] * v_cpx) \
+             * baseMVA
         # complex power injected at "to" bus
-        St = v_cpx[ np.real(branch[br, T_BUS]).astype(int) ] * np.conj(sem.Yt[br, :] * v_cpx) * baseMVA
-        branch[ np.ix_(br, [PF, QF, PT, QT]) ] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
-        branch[ np.ix_(out, [PF, QF, PT, QT]) ] = np.zeros((len(out), 4)) 
-        
+        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) \
+             * baseMVA
+        branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
+        branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
         ppc_i = _store_results_from_pf_in_ppci(ppc_i, bus, gen, branch)
-
         # convert to pandapower indices (ppc)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             ppc = int2ext(ppc_i)
             _set_buses_out_of_service(ppc)
-
         # extract results from ppc
-        extract_results_se(self, ppc)
-        
+        _extract_results_se(self, ppc)
         # Store some variables required for Chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()
         self.Gm = G_m.toarray()
@@ -545,7 +548,6 @@ class state_estimation(object):
         self.hx = h_x
         self.V = v_m
         self.delta = delta
-
         return successful
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
@@ -740,7 +742,7 @@ class state_estimation(object):
         return successful
 
 
-def extract_results_se (self, ppc):
+def _extract_results_se(self, ppc):
     """
     This function extracts all important results from 'ppc'. 
     It creates data frameworks for the SE's results in net
@@ -777,9 +779,7 @@ def extract_results_se (self, ppc):
     # store previous pf-results
     pre_results_bus = self.net.res_bus.copy()
     # check if previous pf-results are available 
-    check_pre_pf_results = False
-    if len(self.net.res_line) > 0:
-        check_pre_pf_results = True
+    check_pre_pf_results = len(self.net.res_line) > 0
     if check_pre_pf_results:
         pre_results_line = self.net.res_line.copy()
         pre_results_dcline = self.net.res_dcline.copy()
@@ -823,7 +823,7 @@ def extract_results_se (self, ppc):
         self.net.res_load = pre_results_load
         self.net.res_gen = pre_results_gen
         self.net.res_sgen = pre_results_sgen
-        self.net.res_impedance = pre_results_res_impedance
+        self.net.res_impedance = pre_results_impedance
         self.net.res_shunt = pre_results_shunt
         self.net.res_ward = pre_results_ward
         self.net.res_xward = pre_results_xward
