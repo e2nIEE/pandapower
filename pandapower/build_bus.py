@@ -34,6 +34,8 @@ def ds_find(ar, bus):
 def ds_union(ar, bus1, bus2, bus_is_pv):
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
+    if root1 == root2:
+        return
     if bus_is_pv[root2]:
         if bus_is_pv[root1]:
             raise UserWarning("Can't fuse two PV buses")
