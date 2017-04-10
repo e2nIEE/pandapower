@@ -49,7 +49,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
     # generate lookup pvpq -> index pvpq (used in createJ)
-    pvpq_lookup = zeros(pvpq[-1] + 1, dtype=int)
+    pvpq_lookup = zeros(max(pvpq) + 1, dtype=int)
     pvpq_lookup[pvpq] = arange(len(pvpq))
 
     # import "numba enhanced" functions
