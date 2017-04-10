@@ -73,6 +73,20 @@ def _set_buses_out_of_service(ppc):
     ppc["bus"][disco, QD] = 0
 
 
+def _get_bus_v_results(net, ppc):
+    ac = net["_options"]["ac"]
+
+    ppi = net["bus"].index.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    bus_idx = bus_lookup[ppi]
+    if ac:
+        net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
+    # voltage angles
+    net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+
+    net["res_bus"].index = net["bus"].index
+
+
 def _get_bus_results(net, ppc, bus_pq):
     ac = net["_options"]["ac"]
 
@@ -90,7 +104,7 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
-def _get_p_q_results(net, bus_lookup_aranged):
+def _get_p_q_results(net,  bus_lookup_aranged):
     ac = net["_options"]["ac"]
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
@@ -101,14 +115,60 @@ def _get_p_q_results(net, bus_lookup_aranged):
     if len(l) > 0:
         load_is = _is_elements["load"]
         scaling = l["scaling"].values
-        pl = l["p_kw"].values * scaling * load_is
-        net["res_load"]["p_kw"] = pl
-        p = np.hstack([p, pl])
+
         if ac:
+            bus_idx = l['bus'].values
+            voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+
+            cz = l["const_z_percent"].values / 100. if voltage_depend_loads else 0.
+            ci = l["const_i_percent"].values / 100. if voltage_depend_loads else 0.
+            cp = 1 - (cz + ci)
+
+            # constant power
+            pl = l["p_kw"].values * scaling * load_is * cp
+            net["res_load"]["p_kw"] = pl
+            p = np.hstack([p, pl])
+
             ql = l["q_kvar"].values * scaling * load_is
             net["res_load"]["q_kvar"] = ql
             q = np.hstack([q, ql])
-        b = np.hstack([b, l["bus"].values])
+
+            b = np.hstack([b, l["bus"].values])
+
+            if voltage_depend_loads:
+                v = (net.res_bus.vm_pu * np.exp(1j * np.deg2rad(net.res_bus.va_degree))).values[bus_idx]
+                # constant impedance
+                sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * cz * v**2
+                pl = sl.real
+                net["res_load"]["p_kw"] = pl
+                p = np.hstack([p, pl])
+
+                ql = sl.imag
+                net["res_load"]["q_kvar"] = ql
+                q = np.hstack([q, ql])
+
+                b = np.hstack([b, l["bus"].values])
+
+
+                # constant current
+                sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * cz * v
+                pl = sl.real
+                net["res_load"]["p_kw"] = pl
+                p = np.hstack([p, pl])
+
+                ql = sl.imag
+                net["res_load"]["q_kvar"] = ql
+                q = np.hstack([q, ql])
+
+                b = np.hstack([b, l["bus"].values])
+
+        else:
+            pl = l["p_kw"].values * scaling * load_is
+            net["res_load"]["p_kw"] = pl
+            p = np.hstack([p, pl])
+            b = np.hstack([b, l["bus"].values])
+
+
         net["res_load"].index = net["load"].index
 
     sg = net["sgen"]

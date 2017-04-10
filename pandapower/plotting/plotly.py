@@ -422,8 +422,8 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
                            " plot on maps is not possible")
 
-    # TODO add a check if geodata are real geographic coordinates and if not place appropriate warning !
     if on_map:
+        # TODO replace this token with a proprietary one...
         mapbox_access_token = 'pk.eyJ1IjoiY2hlbHNlYXBsb3RseSIsImEiOiJjaXFqeXVzdDkwMHFrZnRtO' \
                               'GtlMGtwcGs4In0.SLidkdBMEap9POJGIe1eGw'
         fig['layout']['mapbox'] = dict(accesstoken=mapbox_access_token,

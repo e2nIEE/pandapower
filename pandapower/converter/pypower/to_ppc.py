@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
-           check_connectivity=True):
+           check_connectivity=True, voltage_depend_loads=True):
     """
      This function converts a pandapower net to a pypower case file.
 
@@ -37,7 +37,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
 
             - "t" - transformer is modeled as equivalent with the T-model.
             - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since \
-            it is less exact than the T-model. It is only recommended for valdiation with other \
+            it is less exact than the T-model. It is only recommended for validation with other \
             software that uses the pi-model.
 
         **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses
@@ -49,6 +49,8 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
 
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is
             perfomed. If check finds unsupplied buses, they are set out of service in the ppc
+            
+        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
 
     OUTPUT:
 
@@ -71,7 +73,8 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="pf", copy_constraints_to_ppc=True,
-                     r_switch=r_switch, init="results", enforce_q_lims=True, recycle=None)
+                     r_switch=r_switch, init="results", enforce_q_lims=True, recycle=None,
+                     voltage_depend_loads=voltage_depend_loads)
     #  do the conversion
     ppc, _ = _pd2ppc(net)
     ppc['branch'] = ppc['branch'].real

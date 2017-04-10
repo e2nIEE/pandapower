@@ -16,7 +16,7 @@ try:
 except:
     pass
 
-def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
+def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba, Ibus=None):
     """Solves the power flow using a full Newton's method.
 
     Solves for bus voltages given the full system admittance matrix (for
@@ -46,6 +46,8 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
     Va = angle(V)
     Vm = abs(V)
 
+    Ibus = zeros(len(V)) if Ibus is None else Ibus
+
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
     # generate lookup pvpq -> index pvpq (used in createJ)
@@ -70,7 +72,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
     j6 = j4 + npq  ## j5:j6 - V mag of pq buses
 
     ## evaluate F(x0)
-    F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
+    F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
@@ -81,9 +83,9 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
 
         # use numba if activated
         if numba:
-            J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq)
+            J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, Ibus=Ibus)
         else:
-            J = _create_J_without_numba(Ybus, V, pvpq, pq)
+            J = _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=Ibus)
 
         dx = -1 * spsolve(J, F)
         ## update voltage
@@ -96,24 +98,27 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
         Vm = abs(V)  ## update Vm and Va again in case
         Va = angle(V)  ## we wrapped around with a negative Vm
 
-        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
+        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
         converged = _check_for_convergence(F, tol)
 
     return V, converged, i
 
 
-def _evaluate_Fx(Ybus, V, Sbus, pv, pq):
+def _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=None):
+    Ibus = zeros(len(V)) if Ibus is None else Ibus
     ## evalute F(x)
-    mis = V * conj(Ybus * V) - Sbus
+    mis = V * conj(Ybus * V - Ibus) - Sbus
     F = r_[mis[pv].real,
            mis[pq].real,
            mis[pq].imag]
     return F
 
 
-def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
+def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, Ibus=None):
+
+    Ibus = zeros(len(V)) if Ibus is None else Ibus
     # create Jacobian from fast calc of dS_dV
-    dVm_x, dVa_x = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V))
+    dVm_x, dVa_x = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I=Ibus)
 
     # data in J, space preallocated is bigger than acutal Jx -> will be reduced later on
     Jx = empty(len(dVm_x) * 4, dtype=float64)
@@ -136,9 +141,10 @@ def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
     return J
 
 
-def _create_J_without_numba(Ybus, V, pvpq, pq):
+def _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=None):
+    Ibus = zeros(len(V)) if Ibus is None else Ibus
     # create Jacobian with standard pypower implementation.
-    dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
+    dS_dVm, dS_dVa = dSbus_dV(Ybus, V, I=Ibus)
 
     ## evaluate Jacobian
     J11 = dS_dVa[array([pvpq]).T, pvpq].real

@@ -14,7 +14,7 @@ from scipy.sparse import csr_matrix
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
+def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -35,7 +35,8 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
     gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
 
     ## compute total injected bus powers
-    Sbus = V[gbus] * conj(Ybus[gbus, :] * V)
+    Ibus = zeros(len(V)) if Ibus is None else Ibus
+    Sbus = V[gbus] * conj(Ybus[gbus, :] * V - Ibus[gbus])
 
     ## update Qg for all generators
     gen[:, QG] = zeros(gen.shape[0])              ## zero out all Qg
