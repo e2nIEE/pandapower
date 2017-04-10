@@ -323,7 +323,7 @@ def _select_is_elements(net):
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, voltage_depend_loads):
+                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, voltage_depend_loads=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
