@@ -111,7 +111,8 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
         **kwargs - key word arguments are passed to the patch function
 
     """
-    lines = net.line.index.tolist() if lines is None else list(lines)
+    lines = net.line_geodata.index.tolist() if lines is None and use_line_geodata else \
+        net.line.index.tolist() if lines is None and not use_line_geodata else list(lines)
     if len(lines) == 0:
         return None
     if use_line_geodata:
