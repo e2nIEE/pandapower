@@ -558,8 +558,8 @@ class state_estimation(object):
         delta_in_out. Then, the Chi^2 test is performed after calling the function estimate using
         them as input arguments. It can also be called without these arguments if it is called
         from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
-        performed for the states estimated by the funtion estimate and stored internally in a
-        member variable of the class state_estimation. As a optional argument the probability
+        performed for the states estimated by the funtion estimate and the result, the existence of bad data,
+        is given back as a boolean. As a optional argument the probability
         of a false measurement can be provided additionally. For bad data detection, the function
         perform_rn_max_test is more powerful and should be the function of choice. For topology
         error detection, however, perform_chi2_test should be used.
@@ -578,7 +578,7 @@ class state_estimation(object):
             **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **successful** (boolean) - True if bad data has been detected
 
         EXAMPLE:
             perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
@@ -591,7 +591,7 @@ class state_estimation(object):
             delta_in_out = np.zeros(self.net.bus.shape[0]) 
         
         # perform SE
-        successful = self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
+        self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
         # Performance index J(hx)
         J = np.dot(self.r.T, np.dot(self.R_inv, self.r))
@@ -618,7 +618,8 @@ class state_estimation(object):
         else:
             self.bad_data_present = True
             self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
-
+        successful = self.bad_data_present
+        
         if (v_in_out is not None) and (delta_in_out is not None):
             return successful
 
