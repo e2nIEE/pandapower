@@ -39,7 +39,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
-        
+
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6.
@@ -66,20 +66,20 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
     return wls.estimate(v_start, delta_start, calculate_voltage_angles)
-    
-    
+
+
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
              calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
     """
     Wrapper function for bad data removal.
-    
+
     INPUT:
         **net** - The net within this line should be created.
-    
+
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
-    
+
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6.
@@ -87,15 +87,15 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True.        
-        
+        shifts in transformers, if init is 'slack'. Default is True.
+
         **rn_max_threshold** (float) - Identification threshold to determine
         if the largest normalized residual reflects a bad measurement
         (default value of 3.0)
-    
+
         **chi2_prob_false** (float) - probability of error / false alarms
         (default value: 0.05)
-    
+
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
@@ -120,14 +120,14 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
              calculate_voltage_angles=True, chi2_prob_false=0.05):
     """
     Wrapper function for the chi-squared test.
-    
+
     INPUT:
         **net** - The net within this line should be created.
-    
+
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
-    
+
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6.
@@ -135,11 +135,11 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True.        
-    
+        shifts in transformers, if init is 'slack'. Default is True.
+
         **chi2_prob_false** (float) - probability of error / false alarms
         (default value: 0.05)
-    
+
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
@@ -158,7 +158,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         raise UserWarning("Unsupported init value. Using flat initialization.")
     return wls.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
                                  chi2_prob_false)
-    
+
 
 class state_estimation(object):
     """
@@ -213,7 +213,7 @@ class state_estimation(object):
 
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
-        
+
         OPTIONAL:
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
             phase shifts in transformers Default is True.
@@ -573,11 +573,11 @@ class state_estimation(object):
 
             **delta_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
-            
+
         OPTIONAL:
             **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
             shifts in transformers, if init is 'slack'. Default is True.
-            
+
             **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
         OUTPUT:
@@ -586,13 +586,13 @@ class state_estimation(object):
         EXAMPLE:
             perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
 
-        """        
+        """
         # 'flat'-start conditions
         if v_in_out is None:
             v_in_out = np.ones(self.net.bus.shape[0])
         if delta_in_out is None:
-            delta_in_out = np.zeros(self.net.bus.shape[0]) 
-        
+            delta_in_out = np.zeros(self.net.bus.shape[0])
+
         # perform SE
         successful = self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
@@ -644,15 +644,15 @@ class state_estimation(object):
 
             **delta_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
-        
-        OPTIONAL:        
+
+        OPTIONAL:
             **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
             shifts in transformers, if init is 'slack'. Default is True.
-        
+
             **rn_max_threshold** (float) - Identification threshold to determine
             if the largest normalized residual reflects a bad measurement
             (standard value of 3.0)
-            
+
             **chi2_prob_false** (float) - probability of error / false alarms
             (standard value: 0.05)
 
@@ -667,8 +667,8 @@ class state_estimation(object):
         if v_in_out is None:
             v_in_out = np.ones(self.net.bus.shape[0])
         if delta_in_out is None:
-            delta_in_out = np.zeros(self.net.bus.shape[0])        
-        
+            delta_in_out = np.zeros(self.net.bus.shape[0])
+
         num_iterations = 0
 
         v_in = v_in_out
@@ -744,9 +744,9 @@ class state_estimation(object):
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
-                
+
             self.logger.debug("rn_max identification threshold: %.2f" % rn_max_threshold)
-            
+
             num_iterations += 1
 
         return successful

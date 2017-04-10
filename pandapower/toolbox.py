@@ -666,12 +666,12 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             raise UserWarning("Unkown element %s" % element)
 
 
-def create_continuous_bus_index(net):
+def create_continuous_bus_index(net, start=0):
     """
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
-    new_bus_idxs = np.arange(len(net.bus))
+    new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
 
@@ -681,6 +681,8 @@ def create_continuous_bus_index(net):
                            ("impedance", "from_bus"), ("impedance", "to_bus"),
                            ("shunt", "bus"), ("ext_grid", "bus")]:
         net[element][value] = get_indices(net[element][value], bus_lookup)
+    bb_switches = net.switch[net.switch.et=="b"]
+    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
     return net
 
 

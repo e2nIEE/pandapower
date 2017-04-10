@@ -6,12 +6,12 @@
 
 # define the indices
 IKSS_F    = 0
-IKSS_T    = 1 
-ITH_F     = 2   
-ITH_T     = 3  
-IP_F      = 4   
+IKSS_T    = 1
+ITH_F     = 2
+ITH_T     = 3
+IP_F      = 4
 IP_T      = 5
-IK_F      = 6   
+IK_F      = 6
 IK_T      = 7
 IB_F      = 8
 IB_T      = 9

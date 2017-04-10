@@ -32,8 +32,7 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
         geodata is generated. For advanced plotting see the tutorial
 
         INPUT:
-            **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
-            plotted as an example
+            **net** - The pandapower format network.
 
         OPTIONAL:
             **respect_switches** (bool, False) - Respect switches when artificial geodata is created
@@ -62,8 +61,9 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
             **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
     """
     if net is None:
-        logger.warning("No pandapower network provided -> Plotting mv_oberrhein")
-        net = mv_oberrhein()
+        logger.warning("No pandapower network provided -> Please specify a network. "
+                       "Example: net = pandapower.networks.mv_oberrhein()")
+        return
 
     # create geocoord if none are available
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:

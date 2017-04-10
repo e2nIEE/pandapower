@@ -2033,12 +2033,3 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
     net.polynomial_cost.c.loc[index] = coefficients.reshape((1, -1))
 
     return index
-
-if __name__ == "__main__":
-    net = create_empty_network()
-    create_bus(net, vn_kv=10)
-    create_bus(net, vn_kv=0.4)
-    create_line(net, 0, 1, length_km=1.23, std_type="NAYY 4x50 SE")
-    create_transformer(net, 0, 1, std_type="0.25 MVA 10/0.4 kV", tp_pos=3.2)
-    create_measurement(net, "v", "bus", 1.006, .004, bus=0, element=None)
-    create_measurement(net, "p", "line", 888, 8, bus=0, element=0)

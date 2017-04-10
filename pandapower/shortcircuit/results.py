@@ -8,55 +8,57 @@ import numpy as np
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH
-
+from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH, IKSSCV
 
 def _extract_results(net, ppc):
     _initialize_result_tables(net)
     _get_bus_results(net, ppc)
-    _get_line_results(net, ppc)
-    _get_trafo_results(net, ppc)
-    _get_trafo3w_results(net, ppc)
-        
+    if net._options["branch_results"]:
+        _get_line_results(net, ppc)
+        _get_trafo_results(net, ppc)
+        _get_trafo3w_results(net, ppc)
+
 def _initialize_result_tables(net):
     net.res_bus_sc = pd.DataFrame(index=net.bus.index)
     net.res_line_sc = pd.DataFrame(index=net.line.index)
     net.res_trafo_sc = pd.DataFrame(index=net.trafo.index)
     net.res_trafo3w_sc = pd.DataFrame(index=net.trafo3w.index)
-    
+
 def _get_bus_results(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
-    net.res_bus_sc["ikss_ka"] = ppc["bus_sc"][ppc_index, IKSS]
+    net.res_bus_sc["ikss_ka"] = ppc["bus_sc"][ppc_index, IKSS] +  ppc["bus_sc"][ppc_index, IKSSCV]
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc["bus_sc"][ppc_index, IP]
     if net._options["ith"]:
         net.res_bus_sc["ith_ka"] = ppc["bus_sc"][ppc_index, ITH]
-        
+
 def _get_line_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
+    case = net._options["case"]
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
-        net.res_line_sc["ikss_ka"] = np.max(ppc["branch_sc"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+        minmax = np.max if case == "max" else np.min
+        net.res_line_sc["ikss_ka"] = minmax(ppc["branch_sc"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
         if net._options["ip"]:
-            net.res_line_sc["ip_ka"] = np.max(ppc["branch_sc"][f:t, [IP_F, IP_T]].real, axis=1)
+            net.res_line_sc["ip_ka"] = minmax(ppc["branch_sc"][f:t, [IP_F, IP_T]].real, axis=1)
         if net._options["ith"]:
-            net.res_line_sc["ith_ka"] = np.max(ppc["branch_sc"][f:t, [ITH_F, ITH_T]].real, axis=1)            
-        
+            net.res_line_sc["ith_ka"] = minmax(ppc["branch_sc"][f:t, [ITH_F, ITH_T]].real, axis=1)
+
 def _get_trafo_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
         net.res_trafo_sc["ikss_hv_ka"] = ppc["branch_sc"][f:t, IKSS_F].real
         net.res_trafo_sc["ikss_lv_ka"] = ppc["branch_sc"][f:t, IKSS_T].real
-        
+
 def _get_trafo3w_results(net, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo3w" in branch_lookup:
         f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
         hv = int(f + (t - f) / 3)
         mv = int(f + 2 * (t - f) / 3)
-        lv = t    
+        lv = t
         net.res_trafo3w_sc["ikss_hv_ka"] = ppc["branch"][f:hv, IKSS_F].real * 1e3
         net.res_trafo3w_sc = ppc["branch"][hv:mv, IKSS_T].real * 1e3
         net.res_trafo3w_sc = ppc["branch"][mv:lv, IKSS_T].real * 1e3

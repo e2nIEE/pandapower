@@ -131,7 +131,7 @@ def _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default, update_lookup=True
 
 
 
-        
+
 def _update_gen_ppc(net, ppc):
     '''
     Takes the ppc network and updates the gen values from the values in net.
@@ -257,7 +257,7 @@ def _build_gen_opf(net, ppc, delta=1e-10):
             min_p_kw = ppc["gen"][gen_end:sg_end, [PMAX]]
             ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
             ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw
-            
+
     # add controllable loads
     if l_end > sg_end:
         load_buses = bus_lookup[l_is["bus"].values]

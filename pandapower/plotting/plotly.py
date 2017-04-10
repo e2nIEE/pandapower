@@ -375,25 +375,25 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
 
     INPUT:
         **net** - The pandapower format network
-        
-        **traces** - list of dicts which correspond to plotly traces 
+
+        **traces** - list of dicts which correspond to plotly traces
             generated using: create_bus_trace, create_line_trace, create_trafo_trace
 
     OPTIONAL:
         **on_map** (bool, False) - enables using mapbox plot in plotly
-        
+
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
             - 'streets'
             - 'bright'
             - 'light'
             - 'dark'
             - 'satellite'
-        
+
         **showlegend** (bool, 'True') - enables legend display
-        
+
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
-            
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
     """
 
@@ -474,23 +474,23 @@ def simple_plotly(net=None, respect_switches=False, use_line_geodata=None,
 
     OPTIONAL:
         **respect_switches** (bool, False) - Respect switches when artificial geodata is created
-        
+
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
             or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
             If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
-        
+
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
             - 'streets'
             - 'bright'
             - 'light'
             - 'dark'
             - 'satellite'
-                
+
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
-            
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **line_width** (float, 1.0) - width of lines
@@ -573,7 +573,7 @@ def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
                   line_width=2, bus_size=10):
     """
     Plots a pandapower network in plotly (https://plot.ly/python/)
-    using lines/buses colors according to the voltage level they belong to. 
+    using lines/buses colors according to the voltage level they belong to.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
     INPUT:
@@ -585,7 +585,7 @@ def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
 
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
             or on net.bus_geodata of the connected buses (False)
-            
+
         *colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
             Otherwise, user can define a dictionary in the form: voltage_kv : color
 
@@ -601,7 +601,7 @@ def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
 
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **line_width** (float, 1.0) - width of lines
@@ -687,7 +687,7 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
                   line_width=2, bus_size=10):
     """
     Plots a pandapower network in plotly (https://plot.ly/python/)
-    using colormap for coloring lines according to line loading and buses according to voltage in p.u. 
+    using colormap for coloring lines according to line loading and buses according to voltage in p.u.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
     INPUT:
@@ -714,7 +714,7 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
 
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata 
+        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
         **line_width** (float, 1.0) - width of lines
