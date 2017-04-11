@@ -114,6 +114,7 @@ def _get_ibus(ppci, options):
     else:
         return zeros(ppci["bus"].shape[0])
 
+
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
         makeYbus = makeYbus_numba

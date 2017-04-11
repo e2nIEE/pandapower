@@ -4,7 +4,7 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from numpy import where
+import numpy as np
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -140,12 +140,18 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             logger.warning('Warning: Numba cannot be imported.'
                            ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
             numba = False
+
+    if voltage_depend_loads:
+        if not (np.any(net["load"]["const_z_percent"].values) or
+                np.any(net["load"]["const_i_percent"].values)):
+            voltage_depend_loads = False
+
     ac = True
     mode = "pf"
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        hv_buses = where(net.bus.vn_kv.values > 70)[0]
+        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]
         if len(hv_buses) > 0:
             line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
             if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
