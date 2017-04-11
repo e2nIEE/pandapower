@@ -151,8 +151,8 @@ def _ppc2ppci(ppc, ppci, net):
     ppc_buses = ppc["bus"]
 
     # if net._options["enforce_q_lims"]:
-    # sort = ppc_buses[:, BUS_TYPE].argsort(axis=0)[::-1]
-    # ppc['bus'] = ppc_buses[sort[:],]
+    sort = ppc_buses[:, BUS_TYPE].argsort(axis=0)[::-1]
+    ppc['bus'] = ppc_buses[sort[:],]
     # get OOS busses and place them at the end of the bus array (so that: 3
     # (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE

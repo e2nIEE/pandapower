@@ -8,7 +8,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from pypower.int2ext import int2ext
+
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
@@ -17,9 +17,10 @@ from pandapower.auxiliary import get_values, _select_is_elements, calculate_line
                         _add_ppc_options
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower_extensions.ext2int import ext2int
+
 from pandapower.results import _set_buses_out_of_service
 from pandapower.topology import estimate_voltage_vector
+from pandapower.results import _copy_results_ppci_to_ppc
 
 try:
     import pplog as logging
@@ -252,17 +253,17 @@ class state_estimation(object):
                                  copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
                                  calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                                  recycle=dict(_is_elements=False, ppc=False, Ybus=False))
-        self.net["_is_elements"] = _select_is_elements(self.net)
-        ppc, _ = _pd2ppc(self.net)
+        # self.net["_is_elements"] = _select_is_elements(self.net)
+        ppc, ppci = _pd2ppc(self.net)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
-        br_cols = ppc["branch"].shape[1]
-        bs_cols = ppc["bus"].shape[1]
+        br_cols = ppci["branch"].shape[1]
+        bs_cols = ppci["bus"].shape[1]
 
         self.net.res_bus.vm_pu = vm_backup
         self.net.res_bus.va_degree = va_backup
 
-        # add 6 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev
-        bus_append = np.full((ppc["bus"].shape[0], 6), np.nan, dtype=ppc["bus"].dtype)
+        # add 6 columns to ppc_i[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev
+        bus_append = np.full((ppci["bus"].shape[0], 6), np.nan, dtype=ppci["bus"].dtype)
 
         v_measurements = self.net.measurement[(self.net.measurement.type == "v")
                                               & (self.net.measurement.element_type == "bus")]
@@ -287,7 +288,7 @@ class state_estimation(object):
 
         # add virtual measurements for artificial buses, which were created because
         # of an open line switch. p/q are 0. and std dev is 1. (small value)
-        new_in_line_buses = np.setdiff1d(np.arange(ppc["bus"].shape[0]),
+        new_in_line_buses = np.setdiff1d(np.arange(ppci["bus"].shape[0]),
                                          mapping_table[mapping_table >= 0])
         bus_append[new_in_line_buses, 2] = 0.
         bus_append[new_in_line_buses, 3] = 1.
@@ -296,7 +297,7 @@ class state_estimation(object):
 
         # add 12 columns to mpc[branch] for Im_from, Im_from std dev, Im_to, Im_to std dev,
         # P_from, P_from std dev, P_to, P_to std dev, Q_from,Q_from std dev,  Q_to, Q_to std dev
-        branch_append = np.full((ppc["branch"].shape[0], 12), np.nan, dtype=ppc["branch"].dtype)
+        branch_append = np.full((ppci["branch"].shape[0], 12), np.nan, dtype=ppci["branch"].dtype)
 
         i_measurements = self.net.measurement[(self.net.measurement.type == "i")
                                               & (self.net.measurement.element_type == "line")]
@@ -389,38 +390,36 @@ class state_estimation(object):
             branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
             branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
 
-        ppc["bus"] = np.hstack((ppc["bus"], bus_append))
-        ppc["branch"] = np.hstack((ppc["branch"], branch_append))
+        ppci["bus"] = np.hstack((ppci["bus"], bus_append))
+        ppci["branch"] = np.hstack((ppci["branch"], branch_append))
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ppc_i = ext2int(ppc)
+        # ppc_i = ppc
 
-        p_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 2])
-        p_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 4])
-        p_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 6])
-        q_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 4])
-        q_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 8])
-        q_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 10])
-        v_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 0])
-        i_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 0])
-        i_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 2])
+        p_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 2])
+        p_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 4])
+        p_line_t_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 6])
+        q_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 4])
+        q_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 8])
+        q_line_t_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 10])
+        v_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 0])
+        i_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 0])
+        i_line_t_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 2])
 
         # piece together our measurement vector z
-        z = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 2],
-                            ppc_i["branch"][p_line_f_not_nan, br_cols + 4],
-                            ppc_i["branch"][p_line_t_not_nan, br_cols + 6],
-                            ppc_i["bus"][q_bus_not_nan, bs_cols + 4],
-                            ppc_i["branch"][q_line_f_not_nan, br_cols + 8],
-                            ppc_i["branch"][q_line_t_not_nan, br_cols + 10],
-                            ppc_i["bus"][v_bus_not_nan, bs_cols + 0],
-                            ppc_i["branch"][i_line_f_not_nan, br_cols + 0],
-                            ppc_i["branch"][i_line_t_not_nan, br_cols + 2]
+        z = np.concatenate((ppci["bus"][p_bus_not_nan, bs_cols + 2],
+                            ppci["branch"][p_line_f_not_nan, br_cols + 4],
+                            ppci["branch"][p_line_t_not_nan, br_cols + 6],
+                            ppci["bus"][q_bus_not_nan, bs_cols + 4],
+                            ppci["branch"][q_line_f_not_nan, br_cols + 8],
+                            ppci["branch"][q_line_t_not_nan, br_cols + 10],
+                            ppci["bus"][v_bus_not_nan, bs_cols + 0],
+                            ppci["branch"][i_line_f_not_nan, br_cols + 0],
+                            ppci["branch"][i_line_t_not_nan, br_cols + 2]
                             )).real.astype(np.float64)
 
         # number of nodes
-        n_active = len(np.where(ppc_i["bus"][:, 1] != 4)[0])
-        slack_buses = np.where(ppc_i["bus"][:, 1] == 3)[0]
+        n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
+        slack_buses = np.where(ppci["bus"][:, 1] == 3)[0]
 
         # Check if observability criterion is fulfilled and the state estimation is possible
         if len(z) < 2 * n_active - 1:
@@ -430,28 +429,28 @@ class state_estimation(object):
             return False
 
         # Set the starting values for all active buses
-        v_m = ppc_i["bus"][:, 7]
-        delta = ppc_i["bus"][:, 8] * np.pi / 180  # convert to rad
+        v_m = ppci["bus"][:, 7]
+        delta = ppci["bus"][:, 8] * np.pi / 180  # convert to rad
         delta_masked = np.ma.array(delta, mask=False)
         delta_masked.mask[slack_buses] = True
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
         # Matrix calculation object
-        sem = wls_matrix_ops(ppc_i, slack_buses, non_slack_buses, self.s_ref, bs_cols, br_cols)
+        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref, bs_cols, br_cols)
 
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
 
         # Covariance matrix R
-        r_cov = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 3],
-                                ppc_i["branch"][p_line_f_not_nan, br_cols + 5],
-                                ppc_i["branch"][p_line_t_not_nan, br_cols + 7],
-                                ppc_i["bus"][q_bus_not_nan, bs_cols + 5],
-                                ppc_i["branch"][q_line_f_not_nan, br_cols + 9],
-                                ppc_i["branch"][q_line_t_not_nan, br_cols + 11],
-                                ppc_i["bus"][v_bus_not_nan, bs_cols + 1],
-                                ppc_i["branch"][i_line_f_not_nan, br_cols + 1],
-                                ppc_i["branch"][i_line_t_not_nan, br_cols + 3]
+        r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bs_cols + 3],
+                                ppci["branch"][p_line_f_not_nan, br_cols + 5],
+                                ppci["branch"][p_line_t_not_nan, br_cols + 7],
+                                ppci["bus"][q_bus_not_nan, bs_cols + 5],
+                                ppci["branch"][q_line_f_not_nan, br_cols + 9],
+                                ppci["branch"][q_line_t_not_nan, br_cols + 11],
+                                ppci["bus"][v_bus_not_nan, bs_cols + 1],
+                                ppci["branch"][i_line_f_not_nan, br_cols + 1],
+                                ppci["branch"][i_line_t_not_nan, br_cols + 3]
                                 )).real.astype(np.float64)
 
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
@@ -506,22 +505,20 @@ class state_estimation(object):
                              (current_iterations, self.max_iterations))
 
         # write voltage into ppc
-        ppc_i["bus"][:, 7] = v_m
-        ppc_i["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
+        ppci["bus"][:, 7] = v_m
+        ppci["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
 
         # calculate bus powers
         v_cpx = v_m * np.exp(1j * delta)
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
-        ppc_i["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
-        ppc_i["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
+        ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
+        ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
 
         # convert to pandapower indices
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ppc = int2ext(ppc_i)
-            _set_buses_out_of_service(ppc)
+        ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
+
 
         # Store results, overwrite old results
         self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
