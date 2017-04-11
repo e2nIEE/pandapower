@@ -144,11 +144,11 @@ def _get_p_q_results(net,  bus_lookup_aranged):
                 # constant impedance
                 sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * cz * v**2
                 pl = sl.real
-                net["res_load"]["p_kw"] = pl
+                net["res_load"]["p_kw"] += pl
                 p = np.hstack([p, pl])
 
                 ql = sl.imag
-                net["res_load"]["q_kvar"] = ql
+                net["res_load"]["q_kvar"] += ql
                 q = np.hstack([q, ql])
 
                 b = np.hstack([b, l["bus"].values])
@@ -157,11 +157,11 @@ def _get_p_q_results(net,  bus_lookup_aranged):
                 # constant current
                 sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * cz * v
                 pl = sl.real
-                net["res_load"]["p_kw"] = pl
+                net["res_load"]["p_kw"] += pl
                 p = np.hstack([p, pl])
 
                 ql = sl.imag
-                net["res_load"]["q_kvar"] = ql
+                net["res_load"]["q_kvar"] += ql
                 q = np.hstack([q, ql])
 
                 b = np.hstack([b, l["bus"].values])
