@@ -10,6 +10,18 @@ from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_opt
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow
 
+try:
+    from numba import _version as numba_version
+except:
+    pass
+
+try:
+    import pplog as logging
+except:
+    import logging
+
+logger = logging.getLogger(__name__)
+
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
@@ -112,6 +124,19 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
+        ## check if numba is available and the corresponding flag
+    if numba:
+        try:
+            # get numba Version (in order to use it it must be > 0.25)
+            nb_version = float(numba_version.version_version[:4])
+            if nb_version < 0.25:
+                logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
+                numba = False
+
+        except:
+            logger.warning('Warning: Numba cannot be imported.'
+                           ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
+            numba = False
     ac = True
     mode = "pf"
     copy_constraints_to_ppc = False

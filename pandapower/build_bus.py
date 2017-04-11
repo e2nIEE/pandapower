@@ -14,6 +14,82 @@ from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE
 from pandapower.auxiliary import _sum_by_group
 
 
+try:
+    from numba import jit
+except:
+    pass
+
+
+@jit(nopython=True, cache=True)
+def ds_find(ar, bus):
+    while True:
+        p = ar[bus]
+        if p == bus:
+            break
+        bus = p
+    return p
+
+
+@jit(nopython=True, cache=True)
+def ds_union(ar, bus1, bus2, bus_is_pv):
+    root1 = ds_find(ar, bus1)
+    root2 = ds_find(ar, bus2)
+    if root1 == root2:
+        return
+    if bus_is_pv[root2]:
+        if bus_is_pv[root1]:
+            raise UserWarning("Can't fuse two PV buses")
+        ar[root1] = root2
+    else:
+        ar[root2] = root1
+
+
+@jit(nopython=True, cache=True)
+def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service):
+    for i in range(len(switch_bus)):
+        if not switch_closed[i] or not switch_et_bus[i]:
+            continue
+        bus1 = switch_bus[i]
+        bus2 = switch_elm[i]
+        if bus_in_service[bus1] and bus_in_service[bus2]:
+            ds_union(ar, bus1, bus2, bus_is_pv)
+
+
+@jit(nopython=True, cache=True)
+def fill_bus_lookup(ar, bus_lookup, bus_index):
+    for i in range(len(bus_index)):
+        bus_lookup[bus_index[i]] = i
+    for b in bus_index:
+        ds = ds_find(ar, b)
+        bus_lookup[b] = bus_lookup[ar[ds]]
+
+
+def create_bus_lookup_numba(net, bus_is, bus_index, gen_is, eg_is):
+    max_bus_idx = np.max(net["bus"].index.values)
+    # extract numpy arrays of switch table data
+    switch = net["switch"]
+    switch_bus = switch["bus"].values
+    switch_elm = switch["element"].values
+    switch_et_bus = switch["et"].values == "b"
+    switch_closed = switch["closed"].values
+    # create array for fast checking if a bus is in_service
+    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_in_service[bus_is.index.values] = True
+    # create array for fast checking if a bus is pv bus
+    bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_pv[eg_is["bus"].values] = True
+    bus_is_pv[gen_is["bus"].values] = True
+    if len(net["xward"]) > 0:
+        bus_is_pv[net["xward"][net["xward"].in_service == 1]["ad_bus"].values] = True
+    # create array that represents the disjoint set
+    ar = np.arange(max_bus_idx + 1)
+    ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service)
+    # finally create and fill bus lookup
+    bus_lookup = -np.ones(max_bus_idx + 1, dtype=int)
+    fill_bus_lookup(ar, bus_lookup, bus_index)
+    return bus_lookup
+
+
 class DisjointSet(dict):
     def add(self, item):
         self[item] = item
@@ -31,24 +107,7 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def _build_bus_ppc(net, ppc):
-    """
-    Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
-    """
-    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
-    r_switch = net["_options"]["r_switch"]
-    init = net["_options"]["init"]
-    mode = net["_options"]["mode"]
-
-    # get bus indices
-    bus_index = net["bus"].index.values
-    n_bus = len(bus_index)
-    # get in service elements
-    _is_elements = net["_is_elements"]
-    eg_is = _is_elements['ext_grid']
-    gen_is = _is_elements['gen']
-    bus_is = _is_elements['bus']
-
+def create_bus_lookup(net, n_bus, bus_index, bus_is, gen_is, eg_is, r_switch):
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     consec_buses = np.arange(n_bus)
     # bus_lookup as dict:
@@ -59,9 +118,10 @@ def _build_bus_ppc(net, ppc):
     bus_lookup[bus_index] = consec_buses
 
     # if there are any closed bus-bus switches update those entries
-    slidx = (net["switch"]["closed"].values == 1) & (net["switch"]["et"].values == "b") & \
-            (net["switch"]["bus"].isin(bus_is.index).values) & (
-                net["switch"]["element"].isin(bus_is.index).values)
+    slidx = ((net["switch"]["closed"].values == 1) &
+             (net["switch"]["et"].values == "b") &
+             (net["switch"]["bus"].isin(bus_is.index).values) &
+             (net["switch"]["element"].isin(bus_is.index).values))
     net._closed_bb_switches = slidx
 
     if r_switch == 0 and slidx.any():
@@ -86,11 +146,13 @@ def _build_bus_ppc(net, ppc):
         # create a mapping to map each bus to itself at frist ...
         ds = DisjointSet({e: e for e in chain(fbus, tbus)})
 
-        # ... to follow each bus along a possible chain of switches to its final bus and update the map
+        # ... to follow each bus along a possible chain of switches to its final bus and update the
+        # map
         for f, t in zip(fbus, tbus):
             ds.union(f, t)
 
-        # now we can find out how to fuse each bus by looking up the final bus of the chain they are connected to
+        # now we can find out how to fuse each bus by looking up the final bus of the chain they
+        # are connected to
         v = defaultdict(set)
         for a in ds:
             v[ds.find(a)].add(a)
@@ -125,12 +187,37 @@ def _build_bus_ppc(net, ppc):
                 for bus in dj:
                     # update bus lookup
                     bus_lookup[bus] = map_to
+    return bus_lookup
 
+
+def _build_bus_ppc(net, ppc):
+    """
+    Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
+    """
+    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
+    r_switch = net["_options"]["r_switch"]
+    init = net["_options"]["init"]
+    mode = net["_options"]["mode"]
+    numba = net["_options"]["numba"] if "numba" in net["_options"] else False
+
+    # get bus indices
+    bus_index = net["bus"].index.values
+    n_bus = len(bus_index)
+    # get in service elements
+    _is_elements = net["_is_elements"]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
+    bus_is = _is_elements['bus']
+
+    if numba and not r_switch:
+        bus_lookup = create_bus_lookup_numba(net, bus_is, bus_index, gen_is, eg_is)
+    else:
+        bus_lookup = create_bus_lookup(net, n_bus, bus_index, bus_is, gen_is, eg_is, r_switch)
     # init ppc with empty values
     ppc["bus"] = np.zeros(shape=(n_bus, 13), dtype=float)
     ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
     # apply consecutive bus numbers
-    ppc["bus"][:, BUS_I] = consec_buses
+    ppc["bus"][:, BUS_I] = np.arange(n_bus)
 
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values

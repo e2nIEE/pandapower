@@ -16,7 +16,7 @@ try:
 except:
     pass
 
-def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
+def newtonpf(Ybus, Sbus, V0, pv, pq, options):
     """Solves the power flow using a full Newton's method.
 
     Solves for bus voltages given the full system admittance matrix (for
@@ -39,6 +39,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, numba):
     ## options
     tol = options['tolerance_kva'] * 1e-3
     max_it = options["max_iteration"]
+    numba = options["numba"]
 
     ## initialize
     i = 0
