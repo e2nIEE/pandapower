@@ -452,6 +452,11 @@ def convert_format(net):
                 net["options"]["recycle"]["_is_elements"] = copy.deepcopy(net["options"]["recycle"]["is_elems"])
                 net["options"]["recycle"].pop("is_elems", None)
 
+
+    if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
+        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+
     return net
 
 

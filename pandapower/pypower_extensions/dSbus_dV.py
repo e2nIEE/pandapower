@@ -11,7 +11,7 @@ from scipy.sparse import issparse, csr_matrix as sparse
 
 #@jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
-def dSbus_dV_calc(Yx, Yp, Yj, V, Vnorm):
+def dSbus_dV_calc(Yx, Yp, Yj, V, Vnorm, I=None):
     """Computes partial derivatives of power injection w.r.t. voltage.
 
     Calculates faster with numba and sparse matrices.
@@ -43,7 +43,10 @@ def dSbus_dV_calc(Yx, Yp, Yj, V, Vnorm):
             # Ybus * diag(V)
             dS_dVa[k] *= V[Yj[k]]
 
-        Ibus[r] = buffer[r]
+        if I is None:
+            Ibus[r] = buffer[r]
+        else:
+            Ibus[r] = buffer[r] - I[r]
         # conj(diagIbus) * diagVnorm
         buffer[r] = conj(buffer[r]) * Vnorm[r]
 
@@ -66,19 +69,20 @@ def dSbus_dV_calc(Yx, Yp, Yj, V, Vnorm):
     return dS_dVm, dS_dVa
 
 
-def dSbus_dV(Ybus, V):
+def dSbus_dV(Ybus, V, I=None):
     """
     Calls functions to calculate dS/dV depending on whether Ybus is sparse or not
     """
 
+    I = zeros(len(V)) if I is None else I
     if issparse(Ybus):
         # calculates sparse data
-        dS_dVm, dS_dVa = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V))
+        dS_dVm, dS_dVa = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I)
         # generate sparse CSR matrices with computed data and return them
         return sparse((dS_dVm, Ybus.indices, Ybus.indptr)), sparse((dS_dVa, Ybus.indices, Ybus.indptr))
     else:
         # standard code from Pypower (slower than above)
-        Ibus = Ybus * asmatrix(V).T
+        Ibus = Ybus * asmatrix(V).T - asmatrix(I).T
 
         diagV = asmatrix(diag(V))
         diagIbus = asmatrix(diag( asarray(Ibus).flatten() ))
