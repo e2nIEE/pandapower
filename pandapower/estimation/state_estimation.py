@@ -7,19 +7,25 @@
 import warnings
 
 import numpy as np
+from numpy import flatnonzero as find
 import pandas as pd
+
+from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.results import _set_buses_out_of_service, _extract_results, \
+                        reset_results
+from pandapower.auxiliary import get_values, _select_is_elements, \
+                        calculate_line_results, _add_ppc_options, _add_pf_options
+from pandapower.topology import estimate_voltage_vector
+from pandapower.pypower_extensions.ext2int import ext2int
+from pandapower.pypower_extensions.runpf import _get_pf_variables_from_ppci, \
+                        _store_results_from_pf_in_ppci
+from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pypower.int2ext import int2ext
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
-from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results, \
-                        _add_ppc_options
-from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower_extensions.ext2int import ext2int
-from pandapower.results import _set_buses_out_of_service
-from pandapower.topology import estimate_voltage_vector
 
 try:
     import pplog as logging
@@ -188,6 +194,7 @@ class state_estimation(object):
         self.bad_data_present = None
         # offset to accommodate pypower - pandapower differences (additional columns)
         self.br_col_offset = 6
+        self.mapping_table = None
 
     def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
         """
@@ -241,54 +248,59 @@ class state_estimation(object):
             delta_start = np.zeros(self.net.bus.shape[0])
 
         # initialize the ppc bus with the initial values given
+        # initialize result tables if not existant
+        if "res_bus" not in self.net or "res_line" not in self.net:
+            reset_results(self.net)
+        # create backup of current results
         vm_backup, va_backup = self.net.res_bus.vm_pu.copy(), self.net.res_bus.va_degree.copy()
+        # initialize ppc voltages
         self.net.res_bus.vm_pu = v_start
         self.net.res_bus.vm_pu[self.net.bus.index[self.net.bus.in_service == False]] = np.nan
         self.net.res_bus.va_degree = delta_start
-
         # select elements in service and convert pandapower ppc to ppc
         self.net._options = {}
         _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
-                                 copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
-                                 calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
-                                 recycle=dict(_is_elements=False, ppc=False, Ybus=False))
+                         copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
+                         calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                         recycle=dict(_is_elements=False, ppc=False, Ybus=False))
         self.net["_is_elements"] = _select_is_elements(self.net)
         ppc, _ = _pd2ppc(self.net)
-        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
+        self.mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         br_cols = ppc["branch"].shape[1]
         bs_cols = ppc["bus"].shape[1]
-
+        # restore backup of previous results
         self.net.res_bus.vm_pu = vm_backup
         self.net.res_bus.va_degree = va_backup
 
+        # set measurements for ppc format
         # add 6 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev
         bus_append = np.full((ppc["bus"].shape[0], 6), np.nan, dtype=ppc["bus"].dtype)
 
         v_measurements = self.net.measurement[(self.net.measurement.type == "v")
                                               & (self.net.measurement.element_type == "bus")]
         if len(v_measurements):
-            bus_positions = mapping_table[v_measurements.bus.values.astype(int)]
+            bus_positions = self.mapping_table[v_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 0] = v_measurements.value.values
             bus_append[bus_positions, 1] = v_measurements.std_dev.values
 
         p_measurements = self.net.measurement[(self.net.measurement.type == "p")
                                               & (self.net.measurement.element_type == "bus")]
         if len(p_measurements):
-            bus_positions = mapping_table[p_measurements.bus.values.astype(int)]
+            bus_positions = self.mapping_table[p_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 2] = p_measurements.value.values * 1e3 / self.s_ref
             bus_append[bus_positions, 3] = p_measurements.std_dev.values * 1e3 / self.s_ref
 
         q_measurements = self.net.measurement[(self.net.measurement.type == "q")
                                               & (self.net.measurement.element_type == "bus")]
         if len(q_measurements):
-            bus_positions = mapping_table[q_measurements.bus.values.astype(int)]
+            bus_positions = self.mapping_table[q_measurements.bus.values.astype(int)]
             bus_append[bus_positions, 4] = q_measurements.value.values * 1e3 / self.s_ref
             bus_append[bus_positions, 5] = q_measurements.std_dev.values * 1e3 / self.s_ref
 
         # add virtual measurements for artificial buses, which were created because
         # of an open line switch. p/q are 0. and std dev is 1. (small value)
         new_in_line_buses = np.setdiff1d(np.arange(ppc["bus"].shape[0]),
-                                         mapping_table[mapping_table >= 0])
+                                         self.mapping_table[self.mapping_table >= 0])
         bus_append[new_in_line_buses, 2] = 0.
         bus_append[new_in_line_buses, 3] = 1.
         bus_append[new_in_line_buses, 4] = 0.
@@ -505,42 +517,37 @@ class state_estimation(object):
             self.logger.info("WLS State Estimation not successful (%d/%d iterations" %
                              (current_iterations, self.max_iterations))
 
+        # store results for all elements
         # write voltage into ppc
         ppc_i["bus"][:, 7] = v_m
         ppc_i["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
-
-        # calculate bus powers
+        # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
         ppc_i["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppc_i["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
-
-        # convert to pandapower indices
+        # calculate line results (in ppc_i)
+        baseMVA, bus, gen, branch = _get_pf_variables_from_ppci(ppc_i)[0:4]
+        out = find(branch[:, BR_STATUS] == 0)  # out-of-service branches
+        br = find(branch[:, BR_STATUS]).astype(int)  # in-service branches
+        # complex power at "from" bus
+        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(sem.Yf[br, :] * v_cpx) \
+             * baseMVA
+        # complex power injected at "to" bus
+        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) \
+             * baseMVA
+        branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
+        branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
+        ppc_i = _store_results_from_pf_in_ppci(ppc_i, bus, gen, branch)
+        # convert to pandapower indices (ppc)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             ppc = int2ext(ppc_i)
             _set_buses_out_of_service(ppc)
-
-        # Store results, overwrite old results
-        self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
-                                            index=self.net.bus.index)
-        self.net.res_line_est = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw",
-                                                      "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
-                                                      "i_to_ka", "i_ka", "loading_percent"],
-                                             index=self.net.line.index)
-
-        bus_idx = mapping_table[self.net["bus"].index.values]
-        self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
-        self.net["res_bus_est"]["va_degree"] = ppc["bus"][bus_idx][:, 8]
-
-        self.net.res_bus_est.p_kw = -  get_values(ppc["bus"][:, 2], self.net.bus.index,
-                                                  mapping_table) * self.s_ref / 1e3
-        self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
-                                                   mapping_table) * self.s_ref / 1e3
-        self.net.res_line_est = calculate_line_results(self.net, use_res_bus_est=True)
-
+        # extract results from ppc
+        _extract_results_se(self, ppc)
         # Store some variables required for Chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()
         self.Gm = G_m.toarray()
@@ -550,7 +557,6 @@ class state_estimation(object):
         self.hx = h_x
         self.V = v_m
         self.delta = delta
-
         return successful
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
@@ -561,8 +567,8 @@ class state_estimation(object):
         delta_in_out. Then, the Chi^2 test is performed after calling the function estimate using
         them as input arguments. It can also be called without these arguments if it is called
         from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
-        performed for the states estimated by the funtion estimate and stored internally in a
-        member variable of the class state_estimation. As a optional argument the probability
+        performed for the states estimated by the funtion estimate and the result, the existence of bad data,
+        is given back as a boolean. As a optional argument the probability
         of a false measurement can be provided additionally. For bad data detection, the function
         perform_rn_max_test is more powerful and should be the function of choice. For topology
         error detection, however, perform_chi2_test should be used.
@@ -581,7 +587,7 @@ class state_estimation(object):
             **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **successful** (boolean) - True if bad data has been detected
 
         EXAMPLE:
             perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
@@ -594,7 +600,7 @@ class state_estimation(object):
             delta_in_out = np.zeros(self.net.bus.shape[0])
 
         # perform SE
-        successful = self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
+        self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
         # Performance index J(hx)
         J = np.dot(self.r.T, np.dot(self.R_inv, self.r))
@@ -621,7 +627,8 @@ class state_estimation(object):
         else:
             self.bad_data_present = True
             self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
-
+        successful = self.bad_data_present
+        
         if (v_in_out is not None) and (delta_in_out is not None):
             return successful
 
@@ -750,6 +757,96 @@ class state_estimation(object):
             num_iterations += 1
 
         return successful
+
+
+def _extract_results_se(self, ppc):
+    """
+    This function extracts all important results from 'ppc'. 
+    It creates data frameworks for the SE's results in net
+    and stores in these the new results of the performed SE.
+    Thereby old results of a powerflow analysis will be protected against data loss.
+    Note: You can find previous pf-results in the known data structure (res_xxx).
+    """
+    
+    # create 'res_xxx_est' data frameworks
+    self.net.res_bus_est = self.net._empty_res_bus.copy()
+    self.net.res_line_est = self.net._empty_res_line.copy()
+    self.net.res_dcline_est = self.net._empty_res_dcline.copy()
+    self.net.res_ext_grid_est = self.net._empty_res_ext_grid.copy()
+    self.net.res_trafo_est = self.net._empty_res_trafo.copy()
+    self.net.res_trafo3w_est = self.net._empty_res_trafo3w.copy()
+    self.net.res_load_est = self.net._empty_res_load.copy()
+    self.net.res_gen_est = self.net._empty_res_gen.copy()
+    self.net.res_sgen_est = self.net._empty_res_sgen.copy()
+    self.net.res_impedance_est = self.net._empty_res_impedance.copy()
+    self.net.res_shunt_est = self.net._empty_res_shunt.copy()
+    self.net.res_ward_est = self.net._empty_res_ward.copy()
+    self.net.res_xward_est = self.net._empty_res_xward.copy()
+    
+    # store bus results
+    bus_idx = self.mapping_table[self.net["bus"].index.values]
+    self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
+    self.net["res_bus_est"]["va_degree"] = ppc["bus"][bus_idx][:, 8]
+
+    self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index,
+                                              self.mapping_table) * self.s_ref / 1e3
+    self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
+                                               self.mapping_table) * self.s_ref / 1e3
+    
+    # store previous pf-results
+    pre_results_bus = self.net.res_bus.copy()
+    # check if previous pf-results are available 
+    check_pre_pf_results = len(self.net.res_line) > 0
+    if check_pre_pf_results:
+        pre_results_line = self.net.res_line.copy()
+        pre_results_dcline = self.net.res_dcline.copy()
+        pre_results_ext_grid = self.net.res_ext_grid.copy()
+        pre_results_trafo = self.net.res_trafo.copy()
+        pre_results_trafo3w = self.net.res_trafo3w.copy()
+        pre_results_load = self.net.res_load.copy()
+        pre_results_gen = self.net.res_gen.copy()
+        pre_results_sgen = self.net.res_sgen.copy()
+        pre_results_impedance = self.net.res_impedance.copy()
+        pre_results_shunt = self.net.res_shunt.copy()
+        pre_results_ward = self.net.res_ward.copy()
+        pre_results_xward = self.net.res_xward.copy()
+    
+    # get results
+    _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
+                    numba=True, ac=True, algorithm='nr', max_iteration="auto")
+    _extract_results(self.net, ppc)
+    
+    # copy results to 'est'-dictionaries
+    self.net.res_line_est = self.net.res_line
+    self.net.res_dcline_est = self.net.res_dcline
+    self.net.res_ext_grid_est = self.net.res_ext_grid
+    self.net.res_trafo_est = self.net.res_trafo
+    self.net.res_trafo3w_est = self.net.res_trafo3w
+    self.net.res_load_est = self.net.res_load
+    self.net.res_gen_est = self.net.res_gen
+    self.net.res_sgen_est = self.net.res_sgen
+    self.net.res_impedance_est = self.net.res_impedance
+    self.net.res_shunt_est = self.net.res_shunt
+    self.net.res_ward_est = self.net.res_ward
+    self.net.res_xward_est = self.net.res_xward
+    
+    # reset 'res'-dictionaries to previous pf-results (if required)
+    if check_pre_pf_results:
+        self.net.res_line = pre_results_line
+        self.net.res_dcline = pre_results_dcline
+        self.net.res_ext_grid = pre_results_ext_grid
+        self.net.res_trafo_est = pre_results_trafo
+        self.net.res_trafo3w_est = pre_results_trafo3w
+        self.net.res_load = pre_results_load
+        self.net.res_gen = pre_results_gen
+        self.net.res_sgen = pre_results_sgen
+        self.net.res_impedance = pre_results_impedance
+        self.net.res_shunt = pre_results_shunt
+        self.net.res_ward = pre_results_ward
+        self.net.res_xward = pre_results_xward
+    else:
+        reset_results(self.net)
+        self.net.res_bus = pre_results_bus
 
 
 if __name__ == "__main__":

@@ -21,6 +21,11 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
         **results** - the result of runpf loadflow calculation
 
         **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
+        
+    Optional:
+    
+        **se** - (boolean) - Only if state estimation modul is used.
+        Default is 'False'.
 
     """
     i_ft, s_ft = _get_branch_flows(ppc)

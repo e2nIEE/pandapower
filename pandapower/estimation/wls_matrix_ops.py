@@ -18,6 +18,8 @@ class wls_matrix_ops:
         self.slack_buses = slack_buses
         self.non_slack_buses = non_slack_buses
         self.Y_bus = None
+        self.Yf = None
+        self.Yt = None
         self.G = None
         self.B = None
         self.G_series = None
@@ -39,10 +41,12 @@ class wls_matrix_ops:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            Ybus, _, _ = makeYbus(self.s_ref, self.ppc["bus"], self.ppc["branch"])
+            Ybus, Yf, Yt = makeYbus(self.s_ref, self.ppc["bus"], self.ppc["branch"])
 
         # create relevant matrices
         self.Y_bus = Ybus.toarray()
+        self.Yf = Yf
+        self.Yt = Yt
         self.G = self.Y_bus.real
         self.B = self.Y_bus.imag
         n = len(self.ppc["bus"])
