@@ -122,7 +122,6 @@ def _get_p_q_results(net,  bus_lookup_aranged):
         scaling = l["scaling"].values
 
         if ac:
-            bus_idx = l['bus'].values
             voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
             cz = l["const_z_percent"].values / 100. if voltage_depend_loads else 0.
@@ -141,7 +140,7 @@ def _get_p_q_results(net,  bus_lookup_aranged):
             b = np.hstack([b, l["bus"].values])
 
             if voltage_depend_loads:
-                v = (net.res_bus.vm_pu * np.exp(1j * np.deg2rad(net.res_bus.va_degree))).values[bus_idx]
+                v = (net.res_bus.vm_pu * np.exp(1j * np.deg2rad(net.res_bus.va_degree))).loc[l['bus'].values]
                 # constant impedance
                 sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * cz * v**2
                 pl = sl.real

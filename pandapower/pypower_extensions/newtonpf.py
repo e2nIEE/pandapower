@@ -12,7 +12,7 @@ from scipy.sparse.linalg import spsolve
 
 try:
     from pandapower.pypower_extensions.create_J import create_J, create_J2
-    from pandapower.pypower_extensions.dSbus_dV import dSbus_dV_calc
+    from pandapower.pypower_extensions.dSbus_dV import dSbus_dV_calc, dSbus_dV
 except:
     pass
 

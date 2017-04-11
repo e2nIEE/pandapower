@@ -190,22 +190,33 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
     if len(l) > 0:
         voltage_depend_loads = net["_options"]["voltage_depend_loads"]
         if voltage_depend_loads:
-            cz = l["const_z_percent"] / 100.
-            ci = l["const_i_percent"] / 100.
+            cz = l["const_z_percent"].values / 100.
+            ci = l["const_i_percent"].values / 100.
             if ((cz + ci) > 1).any():
                 raise ValueError("const_z_percent + const_i_percent need to be less or equal to 100%!")
+
+            # cumulative sum of constant-current loads
+            vl = _is_elements["load"] * l["scaling"].values.T * ci / np.float64(1000.)
+            p_ci = l["p_kw"].values * vl
+            q_ci = l["q_kvar"].values * vl
+            b_ci = l["bus"].values
+
+            bus_lookup = net["_pd2ppc_lookups"]["bus"]
+            b_ci = bus_lookup[b_ci]
+            b_ci, vp_ci, vq_ci = _sum_by_group(b_ci, p_ci, q_ci)
+
+            ppc["bus"][b_ci, PCID] = vp_ci
+            ppc["bus"][b_ci, QCID] = vq_ci
+
         else:
             cz = 0
             ci = 0
+
         cp = (1 - cz - ci)
         vl = _is_elements["load"] * l["scaling"].values.T * cp / np.float64(1000.)
         q = np.hstack([q, l["q_kvar"].values * vl])
         p = np.hstack([p, l["p_kw"].values * vl])
         b = np.hstack([b, l["bus"].values])
-
-        vl = _is_elements["load"] * l["scaling"].values.T * ci / np.float64(1000.)
-        ppc["bus"][b, PCID] = l["p_kw"].values * vl
-        ppc["bus"][b, QCID] = l["q_kvar"].values * vl
 
 
     s = net["sgen"]
