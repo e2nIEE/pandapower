@@ -88,7 +88,7 @@ To access it, the following wrapper function *remove_bad_data* has been created.
 .. autofunction:: pandapower.estimation.remove_bad_data
 
 Nevertheless the Chi-squared test is available as well to allow a identification of topology errors or, as explained, false measurements.
-It is named as *chi2_analysis*. The detection's result of present bad data of the Chi-squared test is stored internally as *bad_data_present* (boolean, class member variable).
+It is named as *chi2_analysis*. The detection's result of present bad data of the Chi-squared test is stored internally as *bad_data_present* (boolean, class member variable) and returned by the function call.
 
 .. autofunction:: pandapower.estimation.chi2_analysis
 
@@ -138,7 +138,7 @@ If we like to check our data for fault measurements, and exclude them in in our 
     V_rn_max, delta_rn_max = net.res_bus_est.vm_pu, net.res_bus_est.va_degree
 
 In the case that we only like to know if there is a likelihood of fault measurements (probabilty of fault can be adjusted), the Chi-squared test should be performed separatly.
-If the test detects the possibility of fault data, the value of the added class member variable *bad_data_present* would be *true*.
+If the test detects the possibility of fault data, the value of the added class member variable *bad_data_present* would be *true* as well as the boolean variable *success_chi2* that is used here:
 
 ::
 
