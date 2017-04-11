@@ -94,13 +94,13 @@ def _pd2ppc(net):
     _branches_with_oos_buses(net, ppc)
 
     # sets buses out of service, which aren't connected to branches / REF buses
-    _set_isolated_buses_out_of_service(net, ppc)
-
     if check_connectivity:
         isolated_nodes, _, _ = _check_connectivity(ppc)
         _create_ppc2pd_bus_lookup(net)
         _remove_isolated_elements_from_is_elements(net, isolated_nodes)
         # ToDo: The reverse lookup (ppc2pd) needs to be updated in ppc2ppci!
+    else:
+        _set_isolated_buses_out_of_service(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
