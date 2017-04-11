@@ -4,23 +4,18 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import warnings
-
 import numpy as np
 import pandas as pd
-
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
-from pandapower.auxiliary import get_values, _select_is_elements, calculate_line_results, \
-                        _add_ppc_options
+from pandapower.auxiliary import get_values, calculate_line_results, \
+    _add_ppc_options
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pd2ppc import _pd2ppc
-
-from pandapower.results import _set_buses_out_of_service
-from pandapower.topology import estimate_voltage_vector
 from pandapower.results import _copy_results_ppci_to_ppc
+from pandapower.topology import estimate_voltage_vector
 
 try:
     import pplog as logging
@@ -392,8 +387,6 @@ class state_estimation(object):
 
         ppci["bus"] = np.hstack((ppci["bus"], bus_append))
         ppci["branch"] = np.hstack((ppci["branch"], branch_append))
-
-        # ppc_i = ppc
 
         p_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 2])
         p_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 4])

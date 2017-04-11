@@ -7,7 +7,7 @@ import pandapower as pp
 import pandapower.networks as nw
 from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
 
-
+#
 def test_2bus():
     # 1. Create network
     net = pp.create_empty_network()
