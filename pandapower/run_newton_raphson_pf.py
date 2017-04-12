@@ -15,7 +15,6 @@ from pandapower.pypower_extensions.newtonpf import newtonpf
 from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.run_dc_pf import _run_dc_pf
 try:
-    from numba import _version as numba_version
     from pandapower.pypower_extensions.makeYbus import makeYbus as makeYbus_numba
 except:
     pass
@@ -90,29 +89,6 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
     return ppci
 
 
-def _import_numba_extensions_if_flag_is_true(numba):
-    ## check if numba is available and the corresponding flag
-    if numba:
-        try:
-            # get numba Version (in order to use it it must be > 0.25)
-            nb_version = float(numba_version.version_version[:4])
-            if nb_version < 0.25:
-                logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
-                numba = False
-
-        except:
-            logger.warning('Warning: Numba cannot be imported.'
-                           ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
-            numba = False
-
-    if numba:
-        makeYbus = makeYbus_numba
-    else:
-        makeYbus = makeYbus_pypower
-
-    return numba, makeYbus
-
-
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
 
@@ -138,8 +114,12 @@ def _get_ibus(ppci, options):
     else:
         return zeros(ppci["bus"].shape[0])
 
+
 def _run_ac_pf_without_qlims_enforced(ppci, options):
-    numba, makeYbus = _import_numba_extensions_if_flag_is_true(options["numba"])
+    if options["numba"]:
+        makeYbus = makeYbus_numba
+    else:
+        makeYbus = makeYbus_pypower
 
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
@@ -152,7 +132,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     Ibus = _get_ibus(ppci, options)
 
     ## run the newton power  flow
-    V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, numba, Ibus=Ibus)
+    V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
 
     ## update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=Ibus)

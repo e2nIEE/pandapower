@@ -94,13 +94,13 @@ def _pd2ppc(net):
     _branches_with_oos_buses(net, ppc)
 
     # sets buses out of service, which aren't connected to branches / REF buses
-    _set_isolated_buses_out_of_service(net, ppc)
-
     if check_connectivity:
         isolated_nodes, _, _ = _check_connectivity(ppc)
         _create_ppc2pd_bus_lookup(net)
         _remove_isolated_elements_from_is_elements(net, isolated_nodes)
         # ToDo: The reverse lookup (ppc2pd) needs to be updated in ppc2ppci!
+    else:
+        _set_isolated_buses_out_of_service(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
@@ -149,18 +149,13 @@ def _ppc2ppci(ppc, ppci, net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
     ppc_buses = ppc["bus"]
-    sort = ppc_buses[:, BUS_TYPE].argsort(axis=0)[::-1]
-    ppc['bus'] = ppc_buses[sort[:],]
-    # get OOS busses and place them at the end of the bus array (so that: 3
-    # (REF), 2 (PV), 1 (PQ), 4 (OOS))
+    # get OOS busses and place them at the end of the bus array (there are no OOS busses in the ppci)
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
-    # there are no OOS busses in the ppci
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
     ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
 
     if mode == "sc":
-        ppc['bus_sc'] = ppc["bus_sc"][sort[:],]
         ppci['bus_sc'] = ppc['bus_sc'][~oos_busses]
         ppc['bus_sc'] = np.r_[ppc['bus_sc'][~oos_busses], ppc['bus_sc'][oos_busses]]
 

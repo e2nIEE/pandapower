@@ -4,11 +4,23 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from numpy import where
+import numpy as np
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow
+
+try:
+    from numba import _version as numba_version
+except:
+    pass
+
+try:
+    import pplog as logging
+except:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
@@ -115,12 +127,31 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         
         ****kwargs** - options to use for PYPOWER.runpf
     """
+        ## check if numba is available and the corresponding flag
+    if numba:
+        try:
+            # get numba Version (in order to use it it must be > 0.25)
+            nb_version = float(numba_version.version_version[:4])
+            if nb_version < 0.25:
+                logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
+                numba = False
+
+        except:
+            logger.warning('Warning: Numba cannot be imported.'
+                           ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
+            numba = False
+
+    if voltage_depend_loads:
+        if not (np.any(net["load"]["const_z_percent"].values) or
+                np.any(net["load"]["const_i_percent"].values)):
+            voltage_depend_loads = False
+
     ac = True
     mode = "pf"
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        hv_buses = where(net.bus.vn_kv.values > 70)[0]
+        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]
         if len(hv_buses) > 0:
             line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
             if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:

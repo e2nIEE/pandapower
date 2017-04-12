@@ -52,19 +52,16 @@ def dSbus_dV_calc(Yx, Yp, Yj, V, Vnorm, I=None):
 
     for r in range(len(Yp) - 1):
         for k in range(Yp[r], Yp[r+1]):
+            # diag(V) * conj(Ybus * diagVnorm)
+            dS_dVm[k] = conj(dS_dVm[k]) * V[r]
+
             if r == Yj[k]:
+                # diagonal elements
                 dS_dVa[k] = -Ibus[r] + dS_dVa[k]
-
-            dS_dVm[k] = conj(dS_dVm[k])
-            dS_dVa[k] = conj(-dS_dVa[k])
-
-            # diag(Vnorm) * conj(Ybus * diagVnorm)
-            dS_dVm[k] *= V[r]
-            # 1j * diagV * conj(diagIbus - Ybus * diagV)
-            dS_dVa[k] *= (1j * V[r])
-            if r == Yj[k]:
-                # diagV * conj(Ybus * diagVnorm) + conj(diagIbus) * diagVnorm
                 dS_dVm[k] += buffer[r]
+
+            # 1j * diagV * conj(diagIbus - Ybus * diagV)
+            dS_dVa[k] = conj(-dS_dVa[k]) * (1j * V[r])
 
     return dS_dVm, dS_dVa
 

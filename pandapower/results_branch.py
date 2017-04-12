@@ -5,6 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
+import pandas as pd
 from pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pypower.idx_bus import BASE_KV
 

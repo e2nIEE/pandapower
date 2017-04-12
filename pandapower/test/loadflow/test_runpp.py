@@ -70,7 +70,8 @@ def test_result_iter():
             raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 
-def test_bus_bus_switches():
+@pytest.fixture
+def bus_bus_net():
     net = pp.create_empty_network()
     add_grid_connection(net)
     for _u in range(4):
@@ -82,6 +83,11 @@ def test_bus_bus_switches():
     pp.create_switch(net, 0, 7, et="b")
     create_test_line(net, 4, 7)
     pp.create_load(net, 4, p_kw=10)
+    return net
+
+
+def test_bus_bus_switches(bus_bus_net):
+    net = bus_bus_net
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
            net.res_bus.vm_pu.at[6]
@@ -93,6 +99,43 @@ def test_bus_bus_switches():
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
     assert pd.isnull(net.res_bus.vm_pu.at[5])
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
+
+
+def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
+    "buses should not be fused if two gens are connected"
+    net = bus_bus_net
+    net.bus.in_service.at[5] = False
+    pp.create_gen(net, 6, 10)
+    pp.create_gen(net, 4, 10)
+    pp.runpp(net)
+    net.bus.in_service.at[5] = True
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+
+@pytest.fixture
+def r_switch_net():
+    net = pp.create_empty_network()
+    for i in range(3):
+        pp.create_bus(net, vn_kv=.4)
+        pp.create_load(net, i, p_kw=100)
+    pp.create_ext_grid(net, 0, vm_pu=1.0)
+    pp.create_line_from_parameters(net, 0, 1, 0.1, r_ohm_per_km=0.1, x_ohm_per_km=0,
+                                   c_nf_per_km=0, max_i_ka=.2)
+    pp.create_switch(net, 0, 2, et="b")
+    return net
+
+
+def test_r_switch(r_switch_net):
+    net = r_switch_net
+    pp.runpp(net, r_switch=0.01, numba=False)
+    assert net.res_bus.vm_pu.at[1] == net.res_bus.vm_pu.at[2]
+
+
+def test_r_switch_numba(r_switch_net):
+    net = r_switch_net
+    pp.runpp(net, r_switch=0.01, numba=True)
+    assert net.res_bus.vm_pu.at[1] == net.res_bus.vm_pu.at[2]
 
 
 def test_two_open_switches():
