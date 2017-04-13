@@ -511,12 +511,36 @@ def test_zip_loads_gridcal():
     losses_pp = net.res_bus.p_kw.sum() + 1.j * net.res_bus.q_kvar.sum()
     assert np.isclose(losses_gridcal, - losses_pp / 1.e3)
 
+    # Test bfsw algorithm
+    pp.runpp(net, voltage_depend_loads=True, algorithm='bfsw')
+    assert np.allclose(net.res_bus.vm_pu, vm_pu_gridcal)
+    assert np.allclose(net.res_bus.va_degree, va_degree_gridcal)
+
 
 def test_zip_loads_consistency():
     net = four_loads_with_branches_out()
     net.load['const_i_percent'] = 40
     net.load['const_z_percent'] = 40
     assert runpp_with_consistency_checks(net)
+
+
+def test_zip_loads_pf_algorithms():
+    net = four_loads_with_branches_out()
+    net.load['const_i_percent'] = 40
+    net.load['const_z_percent'] = 40
+
+    alg_to_test = ['bfsw']
+    for alg in alg_to_test:
+        pp.runpp(net, algorithm='nr')
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
+
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
+
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
 
 
 if __name__ == "__main__":
