@@ -146,6 +146,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
+    if algorithm not in ['nr', 'bfsw'] and voltage_depend_loads == True:
+        logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
+                       "loads will be considered as constant power".format(algorithm))
+
+
     ac = True
     mode = "pf"
     copy_constraints_to_ppc = False
