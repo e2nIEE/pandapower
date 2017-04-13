@@ -103,6 +103,18 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     return ppci, Ybus, Yf, Yt
 
 
+def _get_ibus(ppci, options):
+    """ returns vector of current injections for constant-current loads
+    """
+    # TODO remove PCID and QCID import after creating unique indexing file
+    from pandapower.build_bus import PCID, QCID
+    if options["voltage_depend_loads"]:
+        basemva = ppci['baseMVA']
+        return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / basemva
+    else:
+        return zeros(ppci["bus"].shape[0])
+
+
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
         makeYbus = makeYbus_numba
@@ -116,11 +128,14 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     ## compute complex bus power injections [generation - load]
     Sbus = makeSbus(baseMVA, bus, gen)
 
+    ## compute complex bus current injections from constant current loads
+    Ibus = _get_ibus(ppci, options)
+
     ## run the newton power  flow
-    V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options)
+    V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=Ibus)
 
     return ppci, success, bus, gen, branch
 

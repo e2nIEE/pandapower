@@ -10,7 +10,10 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 from pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA
-
+# column ppc['bus'] indices for constant current loads real and imaginary part...
+# TODO remove PCID and QCID from here this after creating unique ppc indexing file
+PCID = 13   # active power corresponding to constant current at rated voltage
+QCID = 14   # reactive power corresponding to constant current at rated voltage
 from pandapower.auxiliary import _sum_by_group
 
 
@@ -214,8 +217,8 @@ def _build_bus_ppc(net, ppc):
     else:
         bus_lookup = create_bus_lookup(net, n_bus, bus_index, bus_is, gen_is, eg_is, r_switch)
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus, 13), dtype=float)
-    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9])
+    ppc["bus"] = np.zeros(shape=(n_bus, 15), dtype=float)
+    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0., 0.])
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = np.arange(n_bus)
 
@@ -269,12 +272,39 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
     _is_elements = net["_is_elements"]
 
     l = net["load"]
+
     # element_is = check if element is at a bus in service & element is in service
     if len(l) > 0:
-        vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
+        voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+        if voltage_depend_loads:
+            cz = l["const_z_percent"].values / 100.
+            ci = l["const_i_percent"].values / 100.
+            if ((cz + ci) > 1).any():
+                raise ValueError("const_z_percent + const_i_percent need to be less or equal to 100%!")
+
+            # cumulative sum of constant-current loads
+            vl = _is_elements["load"] * l["scaling"].values.T * ci / np.float64(1000.)
+            p_ci = l["p_kw"].values * vl
+            q_ci = l["q_kvar"].values * vl
+            b_ci = l["bus"].values
+
+            bus_lookup = net["_pd2ppc_lookups"]["bus"]
+            b_ci = bus_lookup[b_ci]
+            b_ci, vp_ci, vq_ci = _sum_by_group(b_ci, p_ci, q_ci)
+
+            ppc["bus"][b_ci, PCID] = vp_ci
+            ppc["bus"][b_ci, QCID] = vq_ci
+
+        else:
+            cz = 0
+            ci = 0
+
+        cp = (1 - cz - ci)
+        vl = _is_elements["load"] * l["scaling"].values.T * cp / np.float64(1000.)
         q = np.hstack([q, l["q_kvar"].values * vl])
         p = np.hstack([p, l["p_kw"].values * vl])
         b = np.hstack([b, l["bus"].values])
+
 
     s = net["sgen"]
     if len(s) > 0:
@@ -368,6 +398,16 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         q = np.hstack([q, xw["qz_kvar"].values * vl])
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
+
+    # constant-impedance loads if voltage_depend_loads=True
+    l = net["load"]
+    voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+    if len(l) > 0 and voltage_depend_loads:
+        cz = l["const_z_percent"].values / 100.
+        vl = _is_elements["load"] * l["scaling"].values.T * cz / np.float64(1000.)
+        q = np.hstack([q, l["q_kvar"].values * vl])
+        p = np.hstack([p, l["p_kw"].values * vl])
+        b = np.hstack([b, l["bus"].values])
 
     # if array is not empty
     if b.size:

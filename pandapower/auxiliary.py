@@ -323,7 +323,7 @@ def _select_is_elements(net):
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle):
+                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, voltage_depend_loads=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -340,6 +340,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         , "init": init
         , "enforce_q_lims": enforce_q_lims
         , "recycle": recycle
+        , "voltage_depend_loads": voltage_depend_loads
     }
     _add_options(net, options)
 
@@ -507,7 +508,7 @@ def _write_lookup_to_net(net, element, element_lookup):
 def _check_connectivity(ppc):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
-    :param ppc: pyPoer matrix
+    :param ppc: pypower case file
     :return:
     """
     nobranch = ppc['branch'].shape[0]
@@ -515,35 +516,34 @@ def _check_connectivity(ppc):
     bus_from = ppc['branch'][:, F_BUS].real.astype(int)
     bus_to = ppc['branch'][:, T_BUS].real.astype(int)
 
-    adj_matrix = sp.sparse.csr_matrix((np.ones(nobranch), (bus_from, bus_to)),
-                                      shape=(nobus, nobus))
-
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+    
+    # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
+    # search at this bus
+    bus_from = np.hstack([bus_from, slacks])
+    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
+    
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
+                                      (bus_from, bus_to)),
+                                      shape=(nobus + 1, nobus + 1))
 
-    all_nodes = set(ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int))
+    all_nodes = ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int)
 
-    visited_nodes = set()
+    reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
+    isolated_nodes = np.setdiff1d(all_nodes, reachable)
 
-    for slack in slacks:
-        node_array = sp.sparse.csgraph.depth_first_order(adj_matrix, slack, False, False)
-        node_set = set(node_array)
-        visited_nodes = visited_nodes.union(node_set)
-
-    isolated_nodes = all_nodes.difference(visited_nodes)
-
-    if isolated_nodes:
+    if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network!")
-        index_array = np.array(list(isolated_nodes), dtype=np.int)
         # set buses in ppc out of service
-        ppc['bus'][index_array, BUS_TYPE] = NONE
+        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
 
-        iso_p = abs(ppc['bus'][index_array, PD] * 1e3).sum()
-        iso_q = abs(ppc['bus'][index_array, QD] * 1e3).sum()
-        if iso_p > 0 or iso_q > 0:
-            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (iso_p, iso_q))
+        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+        if pus > 0 or qus > 0:
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
     else:
-        iso_p = iso_q = 0
-    return isolated_nodes, iso_p, iso_q
+        pus = qus = 0
+    return isolated_nodes, pus, qus
 
 
 def _create_ppc2pd_bus_lookup(net):
@@ -562,6 +562,8 @@ def _create_ppc2pd_bus_lookup(net):
 
 
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
+    if len(isolated_nodes) == 0:
+        return
     ppc2pd_bus_lookup = net["_ppc2pd_lookups"]["bus"]
     _is_elements = net["_is_elements"]
     pp_nodes = [n for n in isolated_nodes if not (n > len(ppc2pd_bus_lookup)-1)]

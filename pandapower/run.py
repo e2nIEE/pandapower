@@ -4,7 +4,7 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from numpy import where
+import numpy as np
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, **kwargs):
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
+          **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -121,7 +122,9 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             If check finds unsupplied buses, they are set out of service in the ppc
 
         **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
-
+        
+        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
+        
         ****kwargs** - options to use for PYPOWER.runpf
     """
         ## check if numba is available and the corresponding flag
@@ -137,12 +140,18 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             logger.warning('Warning: Numba cannot be imported.'
                            ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
             numba = False
+
+    if voltage_depend_loads:
+        if not (np.any(net["load"]["const_z_percent"].values) or
+                np.any(net["load"]["const_i_percent"].values)):
+            voltage_depend_loads = False
+
     ac = True
     mode = "pf"
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        hv_buses = where(net.bus.vn_kv.values > 70)[0]
+        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]
         if len(hv_buses) > 0:
             line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
             if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
@@ -159,7 +168,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
-                     recycle=recycle)
+                     recycle=recycle, voltage_depend_loads=voltage_depend_loads)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _powerflow(net, **kwargs)
@@ -220,7 +229,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
 
@@ -277,7 +287,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
@@ -330,6 +341,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle)
+                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

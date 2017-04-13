@@ -39,6 +39,8 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
                  ("bus", "u4"),
                  ("p_kw", "f8"),
                  ("q_kvar", "f8"),
+                 ("const_z_percent", "f8"),
+                 ("const_i_percent", "f8"),
                  ("sn_kva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
@@ -440,7 +442,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     return index
 
 
-def create_load(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, scaling=1., index=None,
+def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, sn_kva=nan,
+                name=None, scaling=1., index=None,
                 in_service=True, type=None, max_p_kw=nan, min_p_kw=nan,
                 max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
     """
@@ -461,6 +464,10 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, scaling=1., ind
 
         - postive value   -> load
         - negative value  -> generation
+        
+        **const_z_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant impedance load at rated voltage
+        
+        **const_i_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant current load at rated voltage
 
         **sn_kva** (float, default None) - Nominal power of the load
 
@@ -493,9 +500,9 @@ def create_load(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, scaling=1., ind
     # store dtypes
     dtypes = net.load.dtypes
 
-    net.load.loc[index, ["name", "bus", "p_kw", "scaling",
+    net.load.loc[index, ["name", "bus", "p_kw", "const_z_percent", "const_i_percent", "scaling",
                          "q_kvar", "sn_kva", "in_service", "type"]] = \
-        [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type]
+        [name, bus, p_kw, const_z_percent, const_i_percent, scaling, q_kvar, sn_kva, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.load, dtypes)
