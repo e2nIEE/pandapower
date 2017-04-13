@@ -30,10 +30,6 @@ def makeYbus(baseMVA, bus, branch):
     nb = bus.shape[0]          ## number of buses
     nl = branch.shape[0]       ## number of lines
 
-    ## check that bus numbers are equal to indices to bus (one set of bus nums)
-    if any(bus[:, BUS_I] != list(range(nb))):
-        stderr.write('buses must appear in order by bus number\n')
-
     ## for each branch, compute the elements of the branch admittance matrix where
     ##
     ##      | If |   | Yff  Yft |   | Vf |

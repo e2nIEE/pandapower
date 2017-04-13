@@ -4,14 +4,11 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-
-from sys import stderr
-
 from numba import jit
-from numpy import any, r_, argsort, resize, empty, complex128, zeros, int64, array, real
+import numpy as np
 from pypower.idx_brch import F_BUS, T_BUS
 from pypower.idx_bus import BUS_I, GS, BS
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 
 from pandapower.pypower_extensions.makeYbus_pypower import branch_vectors
 
@@ -28,9 +25,9 @@ def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):
     # Note: More space is allocated than needed with empty.
     #       The matrix size will be reduced afterwards
     alloc_size = nl * 2 + nb
-    Yx = empty(alloc_size, dtype=complex128) # data
-    Yp = zeros(nb + 1, dtype=int64) # row pointer
-    Yj = empty(alloc_size, dtype=int64) # colum indices
+    Yx = np.empty(alloc_size, dtype=np.complex128) # data
+    Yp = np.zeros(nb + 1, dtype=np.int64) # row pointer
+    Yj = np.empty(alloc_size, dtype=np.int64) # colum indices
 
     # index iterators
     # a = iterator of f, b = iterator of t, curRow = current Row
@@ -111,6 +108,7 @@ def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):
 
     return Yx, Yj, Yp, nnz
 
+
 def makeYbus(baseMVA, bus, branch):
     """Builds the bus admittance matrix and branch admittance matrices.
 
@@ -131,10 +129,6 @@ def makeYbus(baseMVA, bus, branch):
     nb = bus.shape[0]          ## number of buses
     nl = branch.shape[0]       ## number of lines
 
-    ## check that bus numbers are equal to indices to bus (one set of bus nums)
-    if any(bus[:, BUS_I] != list(range(nb))):
-        stderr.write('buses must appear in order by bus number\n')
-
     ## for each branch, compute the elements of the branch admittance matrix where
     ##
     ##      | If |   | Yff  Yft |   | Vf |
@@ -152,22 +146,22 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
+    f = np.real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
+    t = np.real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
 
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end
-    i = r_[range(nl), range(nl)]                   ## double set of row indices
+    i = np.hstack([np.arange(nl), np.arange(nl)])                  ## double set of row indices
 
-    Yf_x = r_[Yff, Yft]
-    Yt_x = r_[Ytf, Ytt]
-    col_Y = r_[f, t]
+    Yf_x = np.r_[Yff, Yft]
+    Yt_x = np.r_[Ytf, Ytt]
+    col_Y = np.r_[f, t]
 
-    Yf = csr_matrix((Yf_x, (i, col_Y)), (nl, nb))
-    Yt = csr_matrix((Yt_x, (i, col_Y)), (nl, nb))
-    Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, argsort(f), argsort(t), nb, nl,
-                               array(range(nl), dtype=int64))
-    Ybus = csr_matrix((resize(Yx, nnz), resize(Yj, nnz), Yp))
+    Yf = coo_matrix((Yf_x, (i, col_Y)), (nl, nb)).tocsr()
+    Yt = coo_matrix((Yt_x, (i, col_Y)), (nl, nb)).tocsr()
+    Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, np.argsort(f), np.argsort(t), nb, nl,
+                               np.arange(nl, dtype=np.int64))
+    Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp))
 
 
     return Ybus, Yf, Yt

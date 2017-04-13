@@ -164,9 +164,4 @@ def _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=None):
 
 def _check_for_convergence(F, tol):
     # calc infinity norm
-    normF = linalg.norm(F, Inf)
-
-    if normF < tol:
-        return True
-    else:
-        return False
+    return linalg.norm(F, Inf) < tol
