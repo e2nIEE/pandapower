@@ -17,7 +17,7 @@ Input Parameters
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 
-.. csv-table:: 
+.. csv-table::
    :file: load_par.csv
    :delim: ;
    :widths: 10, 10, 25, 40
@@ -29,7 +29,7 @@ Input Parameters
 Electric Model
 =================
 
-Loads are modelled as PQ-buses in the power flow calculation:
+Loads are modelled as PQ-buses in the power flow calculation, with an option to use the so-called ZIP load model, where a load is represented as a composition of constant power (P), constant current (I) and constant impedance (Z):
 
 .. image:: pq.png
 	:width: 8em
@@ -42,8 +42,10 @@ The PQ-Values are calculated from the parameter table values as:
    :nowrap:
    
    \begin{align*}
-    P_{load} = p\_kw \cdot scaling \\
-    Q_{load} = q\_kvar \cdot scaling \\
+    P_{load} = p\_kw \cdot scaling \cdot \left(const\_z\_percent \cdot V^2 + const\_i\_percent \cdot V + \\
+    + (100 - const\_z\_percent - const\_i\_percent) \right)/100 \\
+    Q_{load} = q\_kvar \cdot scaling \cdot \left(const\_z\_percent \cdot V^2 + const\_i\_percent \cdot V + \\
+    + (100 - const\_z\_percent - const\_i\_percent) \right)/100 \\
     \end{align*}
 
 .. note::

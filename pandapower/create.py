@@ -464,6 +464,10 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
         - postive value   -> load
         - negative value  -> generation
+        
+        **const_z_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant impedance load at rated voltage
+        
+        **const_i_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant current load at rated voltage
 
         **sn_kva** (float, default None) - Nominal power of the load
 
