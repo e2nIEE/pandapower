@@ -4,7 +4,6 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-# define the indices
 IKSS_F    = 0
 IKSS_T    = 1
 ITH_F     = 2
