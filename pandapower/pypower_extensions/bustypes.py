@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Builds index lists of each type of bus.
 """
 
 from numpy import ones, flatnonzero as find
-from numpy import zeros
-from scipy.sparse import csr_matrix as sparse
-
 from pypower.idx_bus import BUS_TYPE, REF, PV, PQ
 from pypower.idx_gen import GEN_BUS, GEN_STATUS
+from scipy.sparse import csr_matrix as sparse
 
 
 def bustypes(bus, gen):
@@ -45,12 +43,12 @@ def bustypes(bus, gen):
     pv  = find((bus[:, BUS_TYPE] == PV)  & bus_gen_status) # PV bus indices
     pq  = find((bus[:, BUS_TYPE] == PQ) | ~bus_gen_status) # PQ bus indices
 
-    # pick a new reference bus if for some reason there is none (may have been
-    # shut down)
+    # throw an error since no reference bus is defined
     if len(ref) == 0:
+        raise KeyError("No reference bus (ext_grid) is available. Abort power flow calculation. Please add an ext_grid")
         # bugfix Pypower: must be an numpy array!
-        ref = zeros(1, dtype=int)
-        ref[0] = pv[0]      # use the first PV bus
-        pv = pv[1:]      # take it off PV list
+        # ref = zeros(1, dtype=int)
+        # ref[0] = pv[0]      # use the first PV bus
+        # pv = pv[1:]      # take it off PV list
 
     return ref, pv, pq

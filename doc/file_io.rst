@@ -30,3 +30,11 @@ Excel
 .. autofunction:: pandapower.to_excel
 
 .. autofunction:: pandapower.from_excel
+
+
+Json
+-----------
+
+.. autofunction:: pandapower.to_json
+
+.. autofunction:: pandapower.from_json

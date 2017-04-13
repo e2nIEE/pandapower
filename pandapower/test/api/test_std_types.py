@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import pytest
+
 import pandapower as pp
+
 
 def test_create_and_load_std_type_line():
     net = pp.create_empty_network()
@@ -31,7 +33,7 @@ def test_create_and_load_std_type_line():
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="line")   
 
-    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "imax_ka": i}
+    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i}
     pp.create_std_type(net, name=name, data=typdata, element="line")   
     assert net.std_types["line"][name] == typdata
 
@@ -45,7 +47,7 @@ def test_create_std_types_line():
     x = 0.02
     i = 0.2
 
-    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "imax_ka": i}
+    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i}
 
     typdatas = {"typ1": typdata, "typ2": typdata}
     pp.create_std_types(net, data=typdatas, element="line")       
@@ -61,7 +63,7 @@ def test_create_std_types_from_net_line():
     x = 0.02
     i = 0.2
 
-    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "imax_ka": i,
+    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i,
                "additional": 8}
     pp.create_std_type(net1, typdata, "test_copy")
     pp.copy_std_types(net2, net1, element="line")       
@@ -222,7 +224,7 @@ def test_find_line_type():
     x = 2.0
     i = 10
     name = "test_line1"
-    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "imax_ka": i}
+    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i}
     pp.create_std_type(net, data=typdata, name=name, element="line")
     fitting_type = pp.find_std_type_by_parameter(net, typdata)
     assert len(fitting_type) == 1
@@ -242,7 +244,7 @@ def test_change_type_line():
     c1 = 40
     i1 = 0.2
     name1 = "test_line1"
-    typ1 = {"c_nf_per_km": c1, "r_ohm_per_km": r1, "x_ohm_per_km": x1, "imax_ka": i1}
+    typ1 = {"c_nf_per_km": c1, "r_ohm_per_km": r1, "x_ohm_per_km": x1, "max_i_ka": i1}
     pp.create_std_type(net, data=typ1, name=name1, element="line")
     
     r2 = 0.02
@@ -250,7 +252,7 @@ def test_change_type_line():
     c2 = 20
     i2 = 0.4
     name2 = "test_line2"
-    typ2 = {"c_nf_per_km": c2, "r_ohm_per_km": r2, "x_ohm_per_km": x2, "imax_ka": i2}
+    typ2 = {"c_nf_per_km": c2, "r_ohm_per_km": r2, "x_ohm_per_km": x2, "max_i_ka": i2}
     pp.create_std_type(net, data=typ2, name=name2, element="line")
 
     b1 = pp.create_bus(net, vn_kv=0.4)
@@ -259,7 +261,7 @@ def test_change_type_line():
     assert net.line.r_ohm_per_km.at[lid] == r1
     assert net.line.x_ohm_per_km.at[lid] == x1
     assert net.line.c_nf_per_km.at[lid] == c1
-    assert net.line.imax_ka.at[lid] == i1
+    assert net.line.max_i_ka.at[lid] == i1
     assert net.line.std_type.at[lid] == name1
     
     pp.change_std_type(net, lid, name2)
@@ -267,7 +269,7 @@ def test_change_type_line():
     assert net.line.r_ohm_per_km.at[lid] == r2
     assert net.line.x_ohm_per_km.at[lid] == x2
     assert net.line.c_nf_per_km.at[lid] == c2
-    assert net.line.imax_ka.at[lid] == i2
+    assert net.line.max_i_ka.at[lid] == i2
     assert net.line.std_type.at[lid] == name2
 
 
@@ -278,7 +280,7 @@ def test_parameter_from_std_type_line():
     c1 = 40
     i1 = 0.2
     name1 = "test_line1"
-    typ1 = {"c_nf_per_km": c1, "r_ohm_per_km": r1, "x_ohm_per_km": x1, "imax_ka": i1}
+    typ1 = {"c_nf_per_km": c1, "r_ohm_per_km": r1, "x_ohm_per_km": x1, "max_i_ka": i1}
     pp.create_std_type(net, data=typ1, name=name1, element="line")
     
     r2 = 0.02
@@ -290,7 +292,7 @@ def test_parameter_from_std_type_line():
     endtemp_fill = 20
 
     name2 = "test_line2"
-    typ2 = {"c_nf_per_km": c2, "r_ohm_per_km": r2, "x_ohm_per_km": x2, "imax_ka": i2,
+    typ2 = {"c_nf_per_km": c2, "r_ohm_per_km": r2, "x_ohm_per_km": x2, "max_i_ka": i2,
             "endtemp_degree": endtemp2}
     pp.create_std_type(net, data=typ2, name=name2, element="line")
 
@@ -299,7 +301,7 @@ def test_parameter_from_std_type_line():
     lid1 = pp.create_line(net, b1, b2, 1., std_type=name1)
     lid2 = pp.create_line(net, b1, b2, 1., std_type=name2)
     lid3 = pp.create_line_from_parameters(net, b1, b2, 1., r_ohm_per_km=0.03, x_ohm_per_km=0.04,
-                                          c_nf_per_km=20, imax_ka=0.3)
+                                          c_nf_per_km=20, max_i_ka=0.3)
                                           
     pp.parameter_from_std_type(net, "endtemp_degree", fill=endtemp_fill)
     assert net.line.endtemp_degree.at[lid1] == endtemp_fill #type1 one has not specified an endtemp

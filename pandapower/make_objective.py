@@ -1,198 +1,147 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
-import warnings
-
-from pypower.idx_brch import T_BUS, F_BUS
-from pypower.idx_bus import BUS_TYPE, REF
-from pandas import DataFrame
-from scipy import sparse
-
-from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
+from numpy import zeros, array, concatenate, power
+from pypower.idx_cost import MODEL, NCOST, COST
 
 
-def _make_objective(ppc, net, is_elems, objectivetype="linear", lambda_opf=1000):
+def _make_objective(ppci, net):
     """
-    Implementaton of diverse objective functions for the OPF of the Form C{N}, C{fparm},
-    C{H} and C{Cw}
+    Implementaton of objective functions for the OPF
+
+    Limitations:
+    - Polynomial reactive power costs can only be quadratic, linear or constant
 
     INPUT:
-        **ppc** - Matpower case of the net
+        **net** - The pandapower format network
+        **ppci** - The "internal" pypower format network for PF calculations
 
-    OPTIONAL:
-
-        **objectivetype** (string, "linear") - string with name of objective function
-
-            - **"linear"** - Linear costs of the form  :math:`I\\cdot P_G`. :math:`P_G` represents
-              the active power values of the generators. Target of this objectivefunction is to
-              maximize the generator output.
-              This then basically is this:
-
-                  .. math::
-                      max\{P_G\}
-
-            - **"linear_minloss"** - Quadratic costs of the form
-              :math:`I\\cdot P_G - dV_m^T Y_L dV_m`.
-              :math:`P_G` represents the active power values of the generators,
-              :math:`dV_m` the voltage drop for each line and :math:`Y_L` the line admittance
-              matrix.
-              Target of this objectivefunction is to maximize the generator output but minimize the
-              linelosses.
-              This then basically is this:
-
-                  .. math::
-                      max\{P_G - dVm^TY_{L}dVm\}
-
-            .. note:: Both objective functions have the following constraints:
-
-                .. math::
-                    V_{m,min} < &V_m < V_{m,max}\\\\
-                    P_{G,min} < &P_G < P_{G,max}\\\\
-                    Q_{G,min} < &Q_G < Q_{G,max}\\\\
-                    I < &I_{max}
-
-        **net** (attrdict, None) - Pandapower network
-
+    OUTPUT:
+        **ppci** - The "internal" pypower format network for PF calculations
     """
-    ng = len(ppc["gen"])  # -
-    nref = sum(ppc["bus"][:, BUS_TYPE] == REF)
-    if len(net.dcline) > 0:
-        gen_is = net.gen[net.gen.in_service==True]
+
+    ng = len(ppci["gen"])
+
+    # Determine length of gencost array
+    if (net.piecewise_linear_cost.type == "q").any() or (net.polynomial_cost.type == "q").any():
+        len_gencost = 2 * ng
     else:
-        gen_is = is_elems['gen']
-    eg_is = is_elems['ext_grid']
-    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
-        if "controllable" in net.sgen.columns else DataFrame()
+        len_gencost = 1 * ng
 
-    if gen_is.empty:
-        gen_cost_per_kw = np.array([])
-    elif "cost_per_kw" in gen_is.columns:
-        gen_cost_per_kw = gen_is.cost_per_kw
+    # get indices
+    eg_idx = net._pd2ppc_lookups["ext_grid"] if "ext_grid" in net._pd2ppc_lookups else None
+    gen_idx = net._pd2ppc_lookups["gen"] if "gen" in net._pd2ppc_lookups else None
+    sgen_idx = net._pd2ppc_lookups["sgen_controllable"] if "sgen_controllable" in \
+        net._pd2ppc_lookups else None
+    load_idx = net._pd2ppc_lookups["load_controllable"] if "load_controllable" in \
+        net._pd2ppc_lookups else None
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
+    from_gens = net.gen.loc[dc_gens[1::2]]
+    if gen_idx is not None:
+        dcline_idx = gen_idx[from_gens.index]
+
+    # calculate size of gencost array
+    if len(net.piecewise_linear_cost):
+        n_coefficients = net.piecewise_linear_cost.p.values[0].shape[1] * 2
     else:
-        gen_cost_per_kw = np.ones(len(gen_is))
+        n_coefficients = 0
+    if len(net.polynomial_cost):
+        n_coefficients = max(n_coefficients,  net.polynomial_cost.c.values[0].shape[1], 4)
 
-    if sg_is.empty:
-        sgen_cost_per_kw = np.array([])
-    elif "cost_per_kw" in sg_is.columns:
-        sgen_cost_per_kw = sg_is.cost_per_kw
+    if n_coefficients:
+        # initialize array
+        ppci["gencost"] = zeros((len_gencost, 4 + n_coefficients), dtype=float)
+        ppci["gencost"][:, MODEL:COST + 4] = array([1, 0, 0, 2, 0, 0, 1, 0])
+
+        if len(net.piecewise_linear_cost):
+
+            for type in ["p", "q"]:
+                if (net.piecewise_linear_cost.type == type).any():
+                    costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == type]
+                    p = concatenate(costs.p)
+                    f = concatenate(costs.f)
+
+                    if type == "q":
+                        shift_idx = ng
+                    else:
+                        shift_idx = 0
+
+                    for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
+
+                        if not costs.element[costs.element_type == el].empty:
+                            if el == "gen":
+                                idx = gen_idx
+                            if el == "sgen":
+                                idx = sgen_idx
+                            if el == "ext_grid":
+                                idx = eg_idx
+                            if el == "load":
+                                idx = load_idx
+                            if el == "dcline":
+                                idx = dcline_idx
+
+                        if not costs.element[costs.element_type == el].empty:
+                            elements = idx[costs.element[costs.element_type ==
+                                                         el].values.astype(int)] + shift_idx
+                            ppci["gencost"][elements, COST::2] = p[
+                                costs.index[costs.element_type == el]]
+                            if el in ["load", "dcline"]:
+                                ppci["gencost"][elements, COST + 1::2] = - \
+                                    f[costs.index[costs.element_type == el]] * 1e3
+                            else:
+                                ppci["gencost"][elements, COST + 1::2] = f[
+                                    costs.index[costs.element_type == el]] * 1e3
+
+                            ppci["gencost"][elements, NCOST] = n_coefficients / 2
+                            ppci["gencost"][elements, MODEL] = 1
+
+        if len(net.polynomial_cost):
+
+            for type in ["p", "q"]:
+                if (net.polynomial_cost.type == type).any():
+                    costs = net.polynomial_cost[net.polynomial_cost.type == type]
+                    c = concatenate(costs.c)
+                    n_c = c.shape[1]
+                    c = c * power(1e3, array(range(n_c))[::-1])
+
+                    if type == "q":
+                        shift_idx = ng
+                    else:
+                        shift_idx = 0
+
+                    for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
+
+                        if not costs.element[costs.element_type == el].empty:
+                            if el == "gen":
+                                idx = gen_idx
+                            if el == "sgen":
+                                idx = sgen_idx
+                            if el == "ext_grid":
+                                idx = eg_idx
+                            if el == "load":
+                                idx = load_idx
+                            if el == "dcline":
+                                idx = dcline_idx
+
+                            elements = idx[costs.element[costs.element_type ==
+                                                         el].values.astype(int)] + shift_idx
+                            if el in ["load", "dcline"]:
+                                ppci["gencost"][elements, COST:(COST + n_c):] = - \
+                                    c[costs.index[costs.element_type == el]]
+                            else:
+                                ppci["gencost"][elements, COST:(
+                                    COST + n_c):] = c[costs.index[costs.element_type == el]]
+
+                            ppci["gencost"][elements, NCOST] = n_c
+                            ppci["gencost"][elements, MODEL] = 2
+
     else:
-        sgen_cost_per_kw = np.ones(len(sg_is))
+        ppci["gencost"] = zeros((len_gencost, 8), dtype=float)
+        # initialize as pwl cost - otherwise we will get a user warning from
+        # pypower for unspecified costs.
+        ppci["gencost"][:, :] = array([1, 0, 0, 2, 0, 0, 1, 1000])
 
-    if "cost_per_kw" not in eg_is.columns:
-        eg_cost_per_kw = np.ones(len(eg_is))
-    else:
-        eg_cost_per_kw = eg_is.cost_per_kw
-
-    if objectivetype == "linear":
-
-        ppc["gencost"] = np.zeros((ng, 8), dtype=float)
-        ppc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-        ppc["gencost"][:nref, 7] = np.nan_to_num(eg_cost_per_kw*1e3)
-        ppc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
-        ppc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw*1e3,
-                                                              gen_cost_per_kw*1e3]))
-
-#        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
-#        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 0])  # initializing gencost array
-#        ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
-#        p = p_timestep/-1e3
-#        p[p == 0] = 1e-6
-#        ppc["gencost"][nref:ng, 6] = array(p)
-
-
-    if objectivetype == "linear_minloss":
-
-        ppc["gencost"] = np.zeros((ng, 8), dtype=float)
-        ppc["gencost"][:nref, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1]) # initializing gencost array for eg
-        ppc["gencost"][:nref, 7] = np.nan_to_num(eg_cost_per_kw*1e3)
-        ppc["gencost"][nref:ng, :] = np.array([1, 0, 0, 2, 0, 0, 1, 1])  # initializing gencost array
-        ppc["gencost"][nref:ng, 7] = np.nan_to_num(np.hstack([sgen_cost_per_kw*1e3,
-                                                             gen_cost_per_kw*1e3]))
-
-#        ppc["gencost"][:nref, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
-#        ppc["gencost"][nref:ng, :] = array([1, 0, 0, 2, 0, 1, 1, 1])
-        #ppc["gencost"][nref:ng, 5] = nan_to_num(hstack([sgen_cost_per_kw, gen_cost_per_kw]))
-#        p = p_timestep/-1e3
-#        p[p == 0] = 1e-6
-#        ppc["gencost"][nref:ng, 6] = array(p)
-
-        #print(ppc["gencost"][nref:ng, 6])
-
-        # Get additional counts
-        nb = len(ppc["bus"])
-        nl = len(ppc["branch"])
-        dim = 2 * nb + 2 * ng + 2 * nl
-
-#        print("nb %s" % nb)
-#        print("ng %s" % ng)
-#        print("nl %s" % nl)
-
-        # Get branch admitance matrices
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            Ybus, Yf, Yt = makeYbus(1, ppc["bus"], ppc["branch"])
-
-        #########################
-        # Additional z variables
-        #########################
-
-        # z_k = u_i - u_j
-        # z_m = alpha_i - alpha_j
-        # with i,j = start and endbus from lines
-
-        # Epsilon for z constraints
-        eps = 0
-
-        # z constraints upper and lower bounds
-        l = np.ones(2*nl)*eps
-        u = np.ones(2*nl)*-eps
-
-        # Initialize A and H matrix
-        H = sparse.csr_matrix((dim, dim), dtype=float)
-        A = sparse.csr_matrix((2*nl, dim), dtype=float)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            for i in range(nl):
-                bus_f = int(ppc["branch"][i, F_BUS].real)
-                bus_t = int(ppc["branch"][i, T_BUS].real)
-                # minimization of potential difference between two buses
-                H[dim-2*nl+i, dim-2*nl+i] = abs(Ybus[bus_f, bus_t]) * lambda_opf  # weigthing of minloss
-                A[i, nb+bus_f] = 1
-                A[i, nb+bus_t] = -1
-                A[i, dim-2*nl+i] = 1
-                # minimization of angle between two buses
-                H[dim-nl+i, dim-nl+i] = 800 * lambda_opf  # weigthing of angles
-                A[nl+i, bus_f] = 1
-                A[nl+i, bus_t] = -1
-                A[nl+i, dim-nl+i] = 1
-
-        # Linear transformation for new omega-vector
-        N = sparse.lil_matrix((dim, dim), dtype=float)
-        for i in range(dim - 2*nl, dim):
-            N[i, i] = 1.0
-
-        # Cw = 0, no linear costs in additional costfunction
-        Cw = np.zeros(dim, dtype=float)
-        # d = 1
-        d = np.ones((dim, 1), dtype=float)
-        # r = 0
-        r = np.zeros((dim, 1), dtype=float)
-        # k = 0
-        k = np.zeros((dim, 1), dtype=float)
-        # m = 1
-        m = np.ones((dim, 1), dtype=float)
-
-        # Set ppc matrices
-        ppc["H"] = H
-        ppc["Cw"] = Cw
-        ppc["N"] = N
-        ppc["A"] = A
-        ppc["l"] = l
-        ppc["u"] = u
-        ppc["fparm"] = np.hstack((d, r, k, m))
-
-    return ppc
+    return ppci

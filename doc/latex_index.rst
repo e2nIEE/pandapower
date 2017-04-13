@@ -10,9 +10,11 @@ pandapower
     elements
     std_types_latex
     powerflow
+    shortcircuit
     estimation
     topology
     networks
     plotting
     file_io
+    converter
     toolbox

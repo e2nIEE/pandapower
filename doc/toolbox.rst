@@ -27,7 +27,7 @@ Result Information
 
 .. autofunction:: pandapower.violated_buses
 
-.. autofunction:: pandapower.equal_nets
+.. autofunction:: pandapower.nets_equal
 
 ====================================
 Simulation Setup and Preparation

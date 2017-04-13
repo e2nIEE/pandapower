@@ -1,12 +1,11 @@
-from pandapower.create import *
-from pandapower.run import *
-from pandapower.file_io import *
-from pandapower.toolbox import *
 from pandapower.auxiliary import *
-from pandapower.std_types import *
+from pandapower.create import *
 from pandapower.diagnostic import *
+from pandapower.file_io import *
+from pandapower.run import *
+from pandapower.std_types import *
+from pandapower.toolbox import *
 
-import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
-__version__ = "1.1.0"
+__version__ = "1.2.2"

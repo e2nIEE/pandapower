@@ -76,6 +76,27 @@ Running the State Estimation
 The state estimation can be used with the wrapper function *"estimate"*, which prevents the need to deal with the state_estimation class object and functions. It can be imported from *"estimation.state_estimation"*.
 
 .. autofunction:: pandapower.estimation.estimate
+
+Handling of bad data
+=============================
+The state estimation class allows additionally the removal of bad data, especially single or non-interacting false measurements.
+For detecting bad data the Chi-squared distribution is used to identify the presence of them.
+Afterwards follows the largest normalized residual test that identifys the actual measurements which will be removed at the end.
+Both methods are combined in the *perform_rn_max_test* function that is part of the state estimation class.
+To access it, the following wrapper function *remove_bad_data* has been created.
+
+.. autofunction:: pandapower.estimation.remove_bad_data
+
+Nevertheless the Chi-squared test is available as well to allow a identification of topology errors or, as explained, false measurements.
+It is named as *chi2_analysis*. The detection's result of present bad data of the Chi-squared test is stored internally as *bad_data_present* (boolean, class member variable) and returned by the function call.
+
+.. autofunction:: pandapower.estimation.chi2_analysis
+
+Background information about this topic can be sourced from the following literature:
+
+.. seealso::
+    - *Power System State Estimation: Theory and Implementation* by Ali Abur, Antonio Gómez Expósito, CRC Press, 2004.
+    - *Power Generation, Operation, and Control* by Allen J. Wood, Bruce Wollenberg, Wiley Interscience Publication, 1996. 
  
 Example
 =============================
@@ -107,6 +128,22 @@ Now that the data is ready, the state_estimation can be initialized and run. We 
 
 The resulting variables now contain the voltage absolute values in *V*, the voltage angles in *delta*, an indication of success in *success*.
 The bus power injections can be accessed similarly with *net.res_bus_est.p_kw* and *net.res_bus_est.q_kvar*. Line data is also available in the same format as defined in *res_line*.
+
+
+If we like to check our data for fault measurements, and exclude them in in our state estimation, we use the following code:
+
+::
+    
+    success_rn_max = remove_bad_data(net, init="flat")
+    V_rn_max, delta_rn_max = net.res_bus_est.vm_pu, net.res_bus_est.va_degree
+
+In the case that we only like to know if there is a likelihood of fault measurements (probabilty of fault can be adjusted), the Chi-squared test should be performed separatly.
+If the test detects the possibility of fault data, the value of the added class member variable *bad_data_present* would be *true* as well as the boolean variable *success_chi2* that is used here:
+
+::
+
+    success_chi2 = chi2_analysis(net, init="flat")
+    
 
 .. Class state_estimation
    ======================

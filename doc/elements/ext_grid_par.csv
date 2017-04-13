@@ -3,8 +3,6 @@ name;string;;name of the external grid
 bus*;integer;;index of connected bus
 vm_pu*;float;:math:`>` 0;voltage set point [p.u]
 va_degree*;float;;angle set point [degree]
-cost_per_kw**;float;;Cost per kW
-cost_per_kvar**;float;;Cost per kvar
 max_p_kw**;float;;Maximum active power
 min_p_kw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power

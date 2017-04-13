@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-from numpy import allclose
 import pandas as pd
+from numpy import allclose
+
 import pandapower as pp
+
 
 def runpp_with_consistency_checks(net, **kwargs):
     pp.runpp(net, **kwargs)
+    consistency_checks(net)
+    return True
+
+def rundcpp_with_consistency_checks(net, **kwargs):
+    pp.rundcpp(net, **kwargs)
     consistency_checks(net)
     return True
 
@@ -41,7 +48,8 @@ def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
                     net.res_dcline.pl_kw.sum()
     branch_loss_q = net.res_line.ql_kvar.sum() + net.res_trafo.ql_kvar.sum() + \
                     net.res_trafo3w.ql_kvar.sum() + net.res_impedance.ql_kvar.sum() + \
-                    net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()             
+                    net.res_dcline.q_to_kvar.sum() + net.res_dcline.q_from_kvar.sum()
+
     assert allclose(bus_surplus_p, branch_loss_p, rtol=rtol)
     assert allclose(bus_surplus_q, branch_loss_q, rtol=rtol)
 
@@ -50,8 +58,8 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
     """
     The bus feed-in at each node has to be equal to the sum of the element feed ins at each node.
     """
-    bus_p = pd.Series(data=0, index=net.bus.index, dtype=float)
-    bus_q = pd.Series(data=0, index=net.bus.index, dtype=float)
+    bus_p = pd.Series(data=0., index=net.bus.index)
+    bus_q = pd.Series(data=0., index=net.bus.index)
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:

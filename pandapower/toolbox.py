@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+import copy
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-import copy
-import numbers
-from collections import defaultdict
+
+from pandapower.auxiliary import get_indices, pandapowerNet
+from pandapower.create import create_empty_network, create_piecewise_linear_cost
+from pandapower.topology import unsupplied_buses
+
 try:
     import pplog as logging
 except:
@@ -16,13 +20,8 @@ except:
 
 logger = logging.getLogger(__name__)
 
-from pandapower.auxiliary import get_indices, PandapowerNet
-from pandapower.create import create_empty_network
-from pandapower.topology import unsupplied_buses
 
 # --- Information
-
-
 def lf_info(net, numv=1, numi=2):
     """
     Prints some basic information of the results in a net
@@ -43,7 +42,7 @@ def lf_info(net, numv=1, numi=2):
     logger.info("Max loading trafo")
     if net.res_trafo is not None:
         for _, r in net.res_trafo.sort_values("loading_percent", ascending=False).iloc[
-                :numi].iterrows():
+                    :numi].iterrows():
             logger.info("  %s loading at trafo %s (%s)", r.loading_percent, r.name,
                         net.trafo.name.at[r.name])
     logger.info("Max loading line")
@@ -91,11 +90,11 @@ def opf_task(net):
         logger.info("  Generator Constraints")
         for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
             c_gen[i] = np.nan
-        if (c_gen.max_p_kw >= c_gen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all generators. " +
+        if (c_gen.max_p_kw <= c_gen.min_p_kw).any():
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all generators. " +
                         "Please observe the pandapower signing system.")
         if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
-            logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. "+
+            logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. " +
                         "Please observe the pandapower signing system.")
         if c_gen.duplicated()[1:].all():
             logger.info("    at all Gens [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
@@ -122,8 +121,8 @@ def opf_task(net):
         logger.info("  Static Generator Constraints")
         for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
             c_sgen[i] = np.nan
-        if (c_sgen.max_p_kw >= c_sgen.min_p_kw).any():
-            logger.warn("The value of max_p_kw must be less than min_p_kw for all static " +
+        if (c_sgen.max_p_kw <= c_sgen.min_p_kw).any():
+            logger.warn("The value of min_p_kw must be less than max_p_kw for all static " +
                         "generators. Please observe the pandapower signing system.")
         if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
             logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
@@ -207,6 +206,9 @@ def opf_task(net):
         logger.info("  There are no constraints.")
 
 
+        # check if full range of generator is covered by pwl cost function!
+
+
 def switch_info(net, sidx):
     """
     Prints what buses and elements are connected by a certain switch.
@@ -217,16 +219,16 @@ def switch_info(net, sidx):
     eidx = net.switch.at[sidx, "element"]
     if switch_type == "b":
         bus2_name = net.bus.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                         bus2_name))
+        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name,
+                                                                         eidx, bus2_name))
     elif switch_type == "l":
         line_name = net.line.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                          line_name))
+        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name,
+                                                                          eidx, line_name))
     elif switch_type == "t":
         trafo_name = net.trafo.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name, eidx,
-                                                                           trafo_name))
+        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name,
+                                                                           eidx, trafo_name))
 
 
 def overloaded_lines(net, max_load=100):
@@ -252,92 +254,87 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def equal_nets(x, y, check_only_results=False, tol=1.e-14):
+def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     """
-    Compares two networks. The networks are considered equal
+    Compares the DataFrames of two networks. The networks are considered equal
     if they share the same keys and values, except of the
     'et' (elapsed time) entry which differs depending on
     runtime conditions and entries stating with '_'.
     """
     eq = True
-    eq_count = 0
-    if isinstance(x, dict) or isinstance(x, PandapowerNet) and \
-            isinstance(y, dict) or isinstance(y, PandapowerNet):
+    not_equal = []
 
+    if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
         # for two networks make sure both have the same keys ...
         if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
             logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
             return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for k in [k for k in x.keys() if(k != 'et' and not k.startswith("_"))]:
-            if check_only_results and not k.startswith("res_"):
-                continue  # skip anything thats not a result table
+        for df_name in x.keys():
+            # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
+            if (df_name != 'et' and not df_name.startswith("_")):
+                if check_only_results and not df_name.startswith("res_"):
+                    continue  # skip anything that is not a result table
 
-            eq = equal_nets(x[k], y[k], check_only_results, tol)
+                if isinstance(x[df_name], pd.DataFrame) and isinstance(y[df_name], pd.DataFrame):
+                    frames_equal = dataframes_equal(x[df_name], y[df_name], tol)
+                    eq &= frames_equal
 
-            # counts the mismatches and creates a list to print
-            if not eq:
-                if eq_count == 0:
-                    logger_str = "Mismatch(es) at table(s): %s" % k
-                else:
-                    logger_str = logger_str + ", %s" % k
-                eq_count += 1
+                    if not frames_equal:
+                        not_equal.append(df_name)
 
-        if eq_count:
-            logger.info(logger_str)
-            return False
-    else:
-        if isinstance(x, pd.DataFrame) and isinstance(y, pd.DataFrame):
-            # for two DataFrames eval if all entries are equal
-            if len(x) != len(y):
-                logger.info("The number of elements of differ.")
-                return False
+    if len(not_equal) > 0:
+        logger.info("Networks do not match in DataFrame(s): %s" % (', '.join(not_equal)))
 
-            if len(x.dtypes) != len(y.dtypes):
-                logger.info("The number of columns of differ.")
-                return False
-
-            # we use numpy.allclose to grant a tolerance
-            numerical_equal = np.allclose(x.select_dtypes(include=[np.number]),
-                                          y.select_dtypes(include=[np.number]),
-                                          atol=tol, equal_nan=True)
-
-            # we use pandas equals for the rest, which also evaluates NaNs to be equal
-            rest_equal = x.select_dtypes(exclude=[np.number]).equals(
-                y.select_dtypes(exclude=[np.number]))
-
-            eq &= numerical_equal & rest_equal
-        else:
-            # else items are assumed to be single values, compare them
-            if isinstance(x, numbers.Number):
-                eq &= np.isclose(x, y, atol=tol)
-            else:
-                eq &= x == y
-
-            # Note: if we deal with HDFStores we might encounter a problem here:
-            # empty DataFrames are stored as None to HDFStore so we might be
-            # comparing None to an empty DataFrame
     return eq
 
 
-# --- Simulation setup and preparations
+def dataframes_equal(x_df, y_df, tol=1.e-14):
+    # eval if two DataFrames are equal, with regard to a tolerance
+    if len(x_df) == len(y_df) and len(x_df.columns) == len(y_df.columns):
+        # we use numpy.allclose to grant a tolerance on numerical values
+        numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
+                                      y_df.select_dtypes(include=[np.number]),
+                                      atol=tol, equal_nan=True)
 
+        # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
+        rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
+            y_df.select_dtypes(exclude=[np.number]))
+
+        return numerical_equal & rest_equal
+    else:
+        return False
+
+
+# --- Simulation setup and preparations
 def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     _pre_release_changes(net)
+    if not "sn_kva" in net:
+        net.sn_kva = 1e3
+    net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
+    for typ, data in net.std_types["line"].items():
+        if "imax_ka" in data:
+            net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
     # unsymmetric impedance
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
     # initialize measurement dataframe
     if "measurement" in net and "element_type" not in net.measurement:
-        raise UserWarning("The measurement structure seems outdated. Please adjust it according"
-                          "to the documentation.")
+        if net.measurement.empty:
+            del net["measurement"]
+        else:
+            logger.warn("The measurement structure seems outdated. Please adjust it "
+                        "according to the documentation.")
+    if "measurement" in net and "name" not in net.measurement:
+        net.measurement.insert(0, "name", None)
     if "measurement" not in net:
-        net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+        net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                             ("type", np.dtype(object)),
                                                              ("element_type", np.dtype(object)),
                                                              ("value", "f8"),
                                                              ("std_dev", "f8"),
@@ -348,26 +345,27 @@ def convert_format(net):
                                                         ("from_bus", "u4"),
                                                         ("to_bus", "u4"),
                                                         ("p_kw", "f8"),
-                                                        ("loss_percent", 'bool'),
-                                                        ("loss_kw", 'bool'),
+                                                        ("loss_percent", 'f8'),
+                                                        ("loss_kw", 'f8'),
                                                         ("vm_from_pu", "f8"),
                                                         ("vm_to_pu", "f8"),
+                                                        ("max_p_kw", "f8"),
                                                         ("min_q_from_kvar", "f8"),
                                                         ("min_q_to_kvar", "f8"),
                                                         ("max_q_from_kvar", "f8"),
                                                         ("max_q_to_kvar", "f8"),
-                                                        ("forward", 'bool'),
+                                                        ("cost_per_kw", 'f8'),
                                                         ("in_service", 'bool')]))
     if "_empty_res_dcline" not in net:
         net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                    ("q_from_kvar", "f8"),
-                                                                    ("p_to_kw", "f8"),
-                                                                    ("q_to_kvar", "f8"),
-                                                                    ("pl_kw", "f8"),
-                                                                    ("vm_from_pu", "f8"),
-                                                                    ("va_from_degree", "f8"),                            
-                                                                    ("vm_to_pu", "f8"),
-                                                                    ("va_to_degree", "f8")]))
+                                                                   ("q_from_kvar", "f8"),
+                                                                   ("p_to_kw", "f8"),
+                                                                   ("q_to_kvar", "f8"),
+                                                                   ("pl_kw", "f8"),
+                                                                   ("vm_from_pu", "f8"),
+                                                                   ("va_from_degree", "f8"),
+                                                                   ("vm_to_pu", "f8"),
+                                                                   ("va_to_degree", "f8")]))
     if not "version" in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
@@ -375,12 +373,96 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
-    net.version = 1.1
+    if not "piecewise_linear_cost" in net:
+        net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                                                                       ("element", np.dtype(object)),
+                                                                       ("element_type", np.dtype(object)),
+                                                                       ("p", np.dtype(object)),
+                                                                       ("f", np.dtype(object))]))
+
+    if not "polynomial_cost" in net:
+        net["polynomial_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
+                                                                 ("element", np.dtype(object)),
+                                                                 ("element_type", np.dtype(object)),
+                                                                 ("c", np.dtype(object))]))
+
+    if "cost_per_kw" in net.gen:
+        for index, cost in net.gen.cost_per_kw.iteritems():
+            if not np.isnan(cost):
+                p = net.gen.min_p_kw.at[index]
+                create_piecewise_linear_cost(net, index, "gen", np.array([[p, cost * p], [0, 0]]))
+
+    if "cost_per_kw" in net.sgen:
+        for index, cost in net.sgen.cost_per_kw.iteritems():
+            if not np.isnan(cost):
+                p = net.sgen.min_p_kw.at[index]
+                create_piecewise_linear_cost(net, index, "sgen", np.array([[p, cost * p], [0, 0]]))
+
+    if "cost_per_kw" in net.ext_grid:
+        for index, cost in net.ext_grid.cost_per_kw.iteritems():
+            if not np.isnan(cost):
+                p = net.ext_grid.min_p_kw.at[index]
+                create_piecewise_linear_cost(net, index, "ext_grid", np.array([[p, cost * p], [0, 0]]))
+
+    if "cost_per_kvar" in net.gen:
+        for index, cost in net.gen.cost_per_kvar.iteritems():
+            if not np.isnan(cost):
+                qmin = net.gen.min_q_kvar.at[index]
+                qmax = net.gen.max_q_kvar.at[index]
+                create_piecewise_linear_cost(net, index, "gen",
+                                             np.array([[qmin, cost * qmin], [0, 0], [qmax, cost * qmax]]), type="q")
+
+    if "cost_per_kvar" in net.sgen:
+        for index, cost in net.sgen.cost_per_kvar.iteritems():
+            if not np.isnan(cost):
+                qmin = net.sgen.min_q_kvar.at[index]
+                qmax = net.sgen.max_q_kvar.at[index]
+                create_piecewise_linear_cost(net, index, "sgen",
+                                             np.array([[qmin, cost * qmin], [0, 0], [qmax, cost * qmax]]), type="q")
+
+    if "cost_per_kvar" in net.ext_grid:
+        for index, cost in net.ext_grid.cost_per_kvar.iteritems():
+            if not np.isnan(cost):
+                qmin = net.ext_grid.min_q_kvar.at[index]
+                qmax = net.ext_grid.max_q_kvar.at[index]
+                create_piecewise_linear_cost(net, index, "ext_grid",
+                                             np.array([[qmin, cost * qmin], [0, 0], [qmax, cost * qmax]]), type="q")
+
+    if not "tp_st_degree" in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
+    net.version = 1.2
+    if not "_pd2ppc_lookups" in net:
+        net._pd2ppc_lookups = {"bus": None,
+                               "ext_grid": None,
+                               "gen": None}
+    if not "_ppc2pd_lookups" in net:
+        net._ppc2pd_lookups = {"bus": None,
+                               "ext_grid": None,
+                               "gen": None}
+    if not "_is_elements" in net and "__is_elements" in net:
+        net["_is_elements"] = copy.deepcopy(net["__is_elements"])
+        net.pop("__is_elements", None)
+    elif not "_is_elements" in net and "_is_elems" in net:
+        net["_is_elements"] = copy.deepcopy(net["_is_elems"])
+        net.pop("_is_elems", None)
+
+    if "options" in net:
+        if "recycle" in net["options"]:
+            if not "_is_elements" in net["options"]["recycle"]:
+                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(net["options"]["recycle"]["is_elems"])
+                net["options"]["recycle"].pop("is_elems", None)
+
+
+    if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
+        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+
     return net
+
 
 def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
-    from pandapower.run import reset_results
+    from pandapower.powerflow import reset_results
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
         add_basic_std_types(net)
@@ -424,7 +506,8 @@ def _pre_release_changes(net):
     net["bus"]["type"].replace("k", "n", inplace=True)
     net["line"] = net["line"].rename(columns={'vf': 'df', 'line_type': 'type'})
     net["ext_grid"] = net["ext_grid"].rename(columns={"angle_degree": "va_degree",
-                                                      "ua_degree": "va_degree", "sk_max_mva": "s_sc_max_mva", "sk_min_mva": "s_sc_min_mva"})
+                                                      "ua_degree": "va_degree", "sk_max_mva": "s_sc_max_mva",
+                                                      "sk_min_mva": "s_sc_min_mva"})
     net["line"]["type"].replace("f", "ol", inplace=True)
     net["line"]["type"].replace("k", "cs", inplace=True)
     net["trafo"] = net["trafo"].rename(columns={'trafotype': 'std_type', "type": "std_type",
@@ -446,9 +529,6 @@ def _pre_release_changes(net):
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kv": "sn_hv_kv",
                                                     "snm_kv": "sn_mv_kv", "snl_kv": "sn_lv_kv"})
-    net["switch"]["type"].replace("LS", "CB", inplace=True)
-    net["switch"]["type"].replace("LTS", "LBS", inplace=True)
-    net["switch"]["type"].replace("TS", "DS", inplace=True)
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
@@ -510,6 +590,8 @@ def _pre_release_changes(net):
 
     if "parallel" not in net.line:
         net.line["parallel"] = 1
+    if "parallel" not in net.trafo:
+        net.trafo["parallel"] = 1
     if "_empty_res_bus" not in net:
         net2 = create_empty_network()
         for key, item in net2.items():
@@ -542,6 +624,7 @@ def _pre_release_changes(net):
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     net.switch.closed = net.switch.closed.astype(bool)
+
 
 def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"]):
     """
@@ -588,12 +671,12 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             raise UserWarning("Unkown element %s" % element)
 
 
-def create_continuous_bus_index(net):
+def create_continuous_bus_index(net, start=0):
     """
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
-    new_bus_idxs = np.arange(len(net.bus))
+    new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
 
@@ -603,6 +686,8 @@ def create_continuous_bus_index(net):
                            ("impedance", "from_bus"), ("impedance", "to_bus"),
                            ("shunt", "bus"), ("ext_grid", "bus")]:
         net[element][value] = get_indices(net[element][value], bus_lookup)
+    bb_switches = net.switch[net.switch.et=="b"]
+    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
     return net
 
 
@@ -614,7 +699,7 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
     E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
 
     :param net:
-    :param scaling: A dictionary containing a mapping from element type to
+    :param scalings: A dictionary containing a mapping from element type to
     :param scale_load:
 	:param scale_sgen:
     """
@@ -624,7 +709,7 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] or s for t, s in zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in zip(et.type.values, et.scaling.values)]
 
     scale = defaultdict(lambda: None, scalings)
     if scale_load:
@@ -665,13 +750,13 @@ def drop_inactive_elements(net):
                     set(net.line.from_bus.values) | set(net.line.to_bus.values)
 
     # removes inactive buses safely
-    inactive_buses = set(net.bus[net.bus.in_service==False].index) - do_not_delete
+    inactive_buses = set(net.bus[net.bus.in_service == False].index) - do_not_delete
     drop_buses(net, inactive_buses)
 
     for element in net.keys():
         if element not in ["bus", "trafo", "line"] and type(net[element]) == pd.DataFrame \
-                                                        and "in_service" in net[element].columns:
-            drop_idx = net[element][net[element].in_service==False].index
+                and "in_service" in net[element].columns:
+            drop_idx = net[element][net[element].in_service == False].index
             net[element].drop(drop_idx, inplace=True)
 
 
@@ -680,7 +765,7 @@ def drop_buses(net, buses):
     Drops buses and by default safely drops all elements connected to them as well.
     """
     # drop busbus switches
-    i = net["switch"][((net["switch"]["element"].isin(buses)) | (net["switch"]["bus"].isin(buses)))\
+    i = net["switch"][((net["switch"]["element"].isin(buses)) | (net["switch"]["bus"].isin(buses))) \
                       & (net["switch"]["et"] == "b")].index
     net["switch"].drop(i, inplace=True)
 
@@ -776,6 +861,10 @@ def set_element_status(net, buses, in_service):
     shunts = net.shunt[net.shunt.bus.isin(buses)].index
     net.shunt.loc[shunts, "in_service"] = in_service
 
+    grids = net.ext_grid[net.ext_grid.bus.isin(buses)].index
+    net.ext_grid.loc[grids, "in_service"] = in_service
+
+
 def set_isolated_areas_out_of_service(net):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
@@ -784,13 +873,13 @@ def set_isolated_areas_out_of_service(net):
     set_element_status(net, unsupplied, False)
 
     for element in ["line", "trafo"]:
-        oos_elements = net.line[net.line.in_service==False].index
-        oos_switches = net.switch[(net.switch.et==element[0]) &
+        oos_elements = net.line[net.line.in_service == False].index
+        oos_switches = net.switch[(net.switch.et == element[0]) &
                                   (net.switch.element.isin(oos_elements))].index
         net.switch.loc[oos_switches, "closed"] = True
 
-        for idx, bus in net.switch[(net.switch.closed==False) & (net.switch.et==element[0])]\
-                                    [["element", "bus"]].values:
+        for idx, bus in net.switch[(net.switch.closed == False) & (net.switch.et == element[0])] \
+                [["element", "bus"]].values:
             if net.bus.in_service.at[next_bus(net, bus, idx, element)] == False:
                 net[element].at[idx, "in_service"] = False
 
@@ -855,33 +944,35 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
            (s["et"] == "l" and s["element"] in p2["line"].index) or
            (s["et"] == "t" and s["element"] in p2["trafo"].index))]
     p2["switch"] = net["switch"].loc[si]
-    # return a PandapowerNet
+    # return a pandapowerNet
     if keep_everything_else:
         newnet = copy.deepcopy(net)
         newnet.update(p2)
-        return PandapowerNet(newnet)
-    return PandapowerNet(p2)
+        return pandapowerNet(newnet)
+    p2["std_types"] = copy.deepcopy(net["std_types"])
+    return pandapowerNet(p2)
 
 
 # --- item/element selections
 
-def get_element_index(net, element, name, exact_match=True, regex=False):
+def get_element_index(net, element, name, exact_match=True):
     """
-    Returns the element identified by the element string and a name.
+    Returns the element(s) identified by a name or regex and its element-table.
 
     INPUT:
       **net** - pandapower network
 
-      **element** - line indices of lines that are considered. If None, all lines in the network are \
-                  considered.
+      **element** - Table to get indices from ("line", "bus", "trafo" etc.)
 
-      **name** - if True, switches are also considered as connected elements.
+      **name** - Name of the element to match.
+
+    OPTIONAL:
+      **exact_match** (boolean, True) - True: Expects exactly one match, raises
+                                                UserWarning otherwise.
+                                        False: returns all indices matching the name/pattern
 
     OUTPUT:
-
-      **connections** - pandapower Series with number of connected elements for each bus. If a \
-                      selection of lines is given, only buses connected to these lines are in \
-                      the returned series.
+      **index** - The indices of matching element(s).
     """
     if exact_match:
         idx = net[element][net[element]["name"] == name].index
@@ -889,9 +980,9 @@ def get_element_index(net, element, name, exact_match=True, regex=False):
             raise UserWarning("There is no %s with name %s" % (element, name))
         if len(idx) > 1:
             raise UserWarning("Duplicate %s names for %s" % (element, name))
+        return idx[0]
     else:
-        return net[element][net[element]["name"].str.contains(name, regex=regex)].index
-    return idx[0]
+        return net[element][net[element]["name"].str.match(name, as_indexer=True)].index
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):
@@ -921,23 +1012,20 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
      Returns elements connected to a given bus.
 
      INPUT:
-
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **element** (string, name of the element table)
 
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-
         **respect_switches** (boolean, True)    - True: open switches will be respected
                                                   False: open switches will be ignored
         **respect_in_service** (boolean, False) - True: in_service status of connected lines will be
                                                         respected
                                                   False: in_service status will be ignored
-     RETURN:
-
-        **cl** (set) - Returns connected lines.
+     OUTPUT:
+        **connected_elements** (set) - Returns connected elements.
 
     """
 
@@ -1007,13 +1095,11 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
      Returns buses connected to given buses. The source buses will NOT be returned.
 
      INPUT:
-
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
      OPTIONAL:
-
         **respect_switches** (boolean, True)        - True: open switches will be respected
                                                       False: open switches will be ignored
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
@@ -1025,8 +1111,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
                                                       l: lines
                                                       s: switches
                                                       t: trafos
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected buses.
 
     """
@@ -1062,8 +1147,7 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
      will be returned, else one.
 
      INPUT:
-
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **element** (integer)
 
@@ -1073,12 +1157,10 @@ def get_connected_buses_at_element(net, element, et, respect_in_service=False):
                                                       t: trafo
 
      OPTIONAL:
-
         **respect_in_service** (boolean, False)     - True: in_service status of connected buses
                                                             will be respected
                                                       False: in_service status will be ignored
-     RETURN:
-
+     OUTPUT:
         **cl** (set) - Returns connected switches.
 
     """
@@ -1107,13 +1189,11 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     Returns switches connected to given buses.
 
     INPUT:
-
-        **net** (PandapowerNet)
+        **net** (pandapowerNet)
 
         **buses** (single integer or iterable of ints)
 
     OPTIONAL:
-
         **respect_switches** (boolean, True)        - True: open switches will be respected
                                                      False: open switches will be ignored
 
@@ -1129,8 +1209,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
 
         **status** (string, ("all", "closed", "open"))    - Determines, which switches will
                                                             be considered
-    RETURN:
-
+    OUTPUT:
        **cl** (set) - Returns connected buses.
 
     """

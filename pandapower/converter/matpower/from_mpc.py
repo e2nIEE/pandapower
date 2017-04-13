@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import scipy.io
 import numpy as np
+import scipy.io
 
-from pandapower.converter import from_ppc
+from pandapower.converter.pypower import from_ppc
+
 try:
     import pplog as logging
 except:
@@ -16,9 +17,10 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
+def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False):
     """
     This function converts a matpower case file (.mat) version 2 to a pandapower net.
+
     Note: python is 0-based while Matlab is 1-based.
 
     INPUT:
@@ -29,11 +31,8 @@ def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
 
         **f_hz** (int, 50) - The frequency of the network.
 
-        **detect_trafo** (str, 'vn_kv') - In case of 'vn_kv' trafos are detected by different bus voltages.
-            In case of 'ratio' trafos are detected by tap ratios != 0.
-
-        **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch" and "bus" it will use the
-            sub-struct casename_mpc_file
+        **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch"
+        and "bus" it will use the sub-struct casename_mpc_file
 
     OUTPUT:
 
@@ -47,7 +46,7 @@ def from_mpc(mpc_file, f_hz=50, detect_trafo='vn_kv', casename_mpc_file='mpc'):
 
     """
     ppc = _mpc2ppc(mpc_file, casename_mpc_file)
-    net = from_ppc(ppc, f_hz, detect_trafo)
+    net = from_ppc(ppc, f_hz, validate_conversion)
 
     return net
 
@@ -71,6 +70,9 @@ def _adjust_ppc_indices(ppc):
     ppc["bus"][:, 0] -= 1
     ppc["branch"][:, 0] -= 1
     ppc["branch"][:, 1] -= 1
+    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+    if len(ppc["gen"].shape) == 1:
+        ppc["gen"] = np.array(ppc["gen"], ndmin=2)
     ppc["gen"][:, 0] -= 1
 
 
@@ -84,32 +86,17 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         ppc["branch"] = mpc[casename_mpc_file].branch
 
         try:
-            ppc['gencost'] = mpc[casename_mpc_file].gencost
+            ppc['gencost'] = mpc[casename_mpc_file].mpc.gencost
         except:
             logger.info('gencost is not in mpc')
 
-    elif 'bus' in mpc \
-            and 'branch' in mpc \
-            and 'gen' in mpc \
-            and 'baseMVA' in mpc \
-            and 'version' in mpc:
-
-        # if struct contains bus, branch, gen, etc. directly
-        ppc['version'] = mpc['version']
-        ppc["baseMVA"] = mpc['baseMVA']
-        ppc["bus"] = mpc['bus']
-        ppc["gen"] = mpc['gen']
-        ppc["branch"] = mpc['branch']
-
-        if 'gencost' in mpc:
-            ppc['gencost'] = mpc['gencost']
-        else:
-            logger.info('gencost is not in mpc')
-
     else:
-        logger.error('Matfile does not contain a valid mpc structure')
+        logger.error('Matfile does not contain a valid mpc structure.')
 
 
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
     ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
+
+if "__main__" == __name__:
+    pass

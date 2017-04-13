@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import numpy as np
+
+
 import copy
+import pandas as pd
+import numpy as np
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -18,6 +21,8 @@ import pandapower.topology as top
 from pandapower.run import runpp
 from pandapower.diagnostic_reports import diagnostic_report
 from pandapower.toolbox import get_connected_elements
+from pandapower.powerflow import LoadflowNotConverged
+
 # separator between log messages
 log_message_sep = ("\n --------\n")
 
@@ -29,7 +34,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
     INPUT:
-     **net** (PandapowerNet) : pandapower network
+     **net** (pandapowerNet) : pandapower network
 
     OPTIONAL:
      - **report_style** (string, 'detailed') : style of the report, that gets ouput in the console
@@ -64,7 +69,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
      - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
      voltages and bus voltages
 
-    RETURN:
+    OUTPUT:
      - **diag_results** (dict): dict that contains the indeces of all elements where errors were found
 
       Format: {'check_name': check_results}
@@ -74,7 +79,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-    diag_functions = ["disconnected_elements(net)",
+    diag_functions = ["missing_bus_indeces(net)",
+                      "disconnected_elements(net)",
                       "different_voltage_levels_connected(net)",
                       "lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm)",
                       "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
@@ -85,18 +91,37 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                       "no_ext_grid(net)",
                       "wrong_reference_system(net)",
                       "deviation_from_std_type(net)",
-                      "numba_comparison(net, numba_tolerance)"]
+                      "numba_comparison(net, numba_tolerance)",
+                      "parallel_switches(net)"]
+    bus_index_dependent_checks = ["disconnected_elements(net)",
+                                  "different_voltage_levels_connected(net)",
+                                  "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
+                                  "multiple_voltage_controlling_elements_per_bus(net)"]
+    invalid_value_dependent_checks = ["wrong_reference_system(net)"]
+
     diag_results = {}
     for diag_function in diag_functions:
-        diag_result = eval(diag_function)
-        if diag_result:
-            diag_results[diag_function.split("(")[0]] = diag_result
+        if (diag_function in bus_index_dependent_checks) and ("missing_bus_indeces" in diag_results.keys()):
+            diag_result = "check skipped"
+        elif 'invalid_values' in diag_results.keys():
+            if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen'])
+                                                                      & set(diag_results['invalid_values'].keys())):
+                diag_result = "check skipped"
+            else:
+                diag_result = eval(diag_function)
+                if diag_result:
+                    diag_results[diag_function.split("(")[0]] = diag_result
+        else:
+            diag_result = eval(diag_function)
+            if diag_result:
+                diag_results[diag_function.split("(")[0]] = diag_result
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
         "lines_min_length_km": lines_min_length_km,
         "lines_min_z_ohm": lines_min_z_ohm,
-        "nom_voltage_tolerance": nom_voltage_tolerance
+        "nom_voltage_tolerance": nom_voltage_tolerance,
+        "numba_tolerance": numba_tolerance
     }
     if warnings_only:
         logger.setLevel(logging.WARNING)
@@ -118,7 +143,6 @@ def check_greater_zero(element, element_index, column):
      elements are fulfilled. Exemplary description for all type check functions.
 
      INPUT:
-
         **element (pandas.Series)** - pandapower element instance (e.g. net.bus.loc[1])
 
         **element_index (int)**     - index of the element instance
@@ -126,8 +150,7 @@ def check_greater_zero(element, element_index, column):
         **column (string)**         - element attribute (e.g. 'vn_kv')
 
 
-     RETURN:
-
+     OUTPUT:
         **element_index (index)**   - index of element instance, if input type restriction is not
                                       fulfilled
 
@@ -144,7 +167,6 @@ def check_greater_zero(element, element_index, column):
 
 
 def check_greater_equal_zero(element, element_index, column):
-
     if check_number(element, element_index, column) is None:
 
         if (element[column] < 0):
@@ -190,13 +212,11 @@ def check_pos_int(element, element_index, column):
 
 
 def check_number(element, element_index, column):
-
     try:
         nan_check = np.isnan(element[column])
-        if nan_check or type(element[column]) == bool:
+        if nan_check or isinstance(element[column], bool):
             return element_index
-
-    except:
+    except TypeError:
         return element_index
 
 
@@ -221,14 +241,12 @@ def invalid_values(net):
     Applies type check functions to find violations of input type restrictions.
 
      INPUT:
-
-        **net** (PandapowerNet)         - pandapower network
+        **net** (pandapowerNet)         - pandapower network
 
         **detailed_report** (boolean)   - True: detailed report of input type restriction violations
                                           False: summary only
 
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all input type restriction violations
                                           grouped by element (keys)
                                           Format: {'element': [element_index, 'element_attribute',
@@ -248,7 +266,7 @@ def invalid_values(net):
                                  ('to_bus', 'positive_integer'),
                                  ('length_km', '>0'), ('r_ohm_per_km', '>=0'),
                                  ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
-                                 ('imax_ka', '>0'), ('df', '0to1'), ('in_service', 'boolean')],
+                                 ('max_i_ka', '>0'), ('df', '0to1'), ('in_service', 'boolean')],
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
                                   ('sn_kva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
                                   ('vscr_percent', '>=0'),
@@ -297,18 +315,13 @@ def invalid_values(net):
                         if key not in check_results:
                             check_results[key] = []
                         # converts np.nan to str for easier usage of assert in pytest
-                        try:
-                            nan_check = np.isnan(net[key][value[0]].at[i])
-                            if nan_check:
-                                check_results[key].append((i, value[0],
-                                                           str(net[key][value[0]].at[i]), value[1]))
-                            else:
-                                check_results[key].append((i, value[0],
-                                                           net[key][value[0]].at[i], value[1]))
-                        except:
+                        nan_check = pd.isnull(net[key][value[0]].at[i])
+                        if nan_check:
+                            check_results[key].append((i, value[0],
+                                                       str(net[key][value[0]].at[i]), value[1]))
+                        else:
                             check_results[key].append((i, value[0],
                                                        net[key][value[0]].at[i], value[1]))
-
     return check_results
 
 
@@ -317,9 +330,7 @@ def no_ext_grid(net):
     Checks, if at least one external grid exists.
 
      INPUT:
-
-        **net** (PandapowerNet)         - pandapower network
-
+        **net** (pandapowerNet)         - pandapower network
 
     """
 
@@ -332,15 +343,12 @@ def multiple_voltage_controlling_elements_per_bus(net):
     Checks, if there are buses with more than one generator and/or more than one external grid.
 
      INPUT:
-
-        **net** (PandapowerNet)         - pandapower network
-
+        **net** (pandapowerNet)         - pandapower network
 
         **detailed_report** (boolean)   - True: detailed report of errors found
                                       l    False: summary only
 
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all buses with multiple generator and
                                           all buses with multiple external grids
                                           Format: {'mult_ext_grids': [buses]
@@ -351,9 +359,6 @@ def multiple_voltage_controlling_elements_per_bus(net):
     buses_with_mult_ext_grids = list(net.ext_grid.groupby("bus").count().query("vm_pu > 1").index)
     if buses_with_mult_ext_grids:
         check_results['buses_with_mult_ext_grids'] = buses_with_mult_ext_grids
-    buses_with_mult_gens = list(net.gen.groupby("bus").count().query("p_kw > 1").index)
-    if buses_with_mult_gens:
-        check_results['buses_with_mult_gens'] = buses_with_mult_gens
     buses_with_gens_and_ext_grids = set(net.ext_grid.bus).intersection(set(net.gen.bus))
     if buses_with_gens_and_ext_grids:
         check_results['buses_with_gens_and_ext_grids'] = list(buses_with_gens_and_ext_grids)
@@ -368,12 +373,10 @@ def overload(net, overload_scaling_factor):
     that by scaling down the loads, gens and sgens to 0.1%.
 
      INPUT:
+        **net** (pandapowerNet)         - pandapower network
 
-        **net** (PandapowerNet)         - pandapower network
 
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict with the results of the overload check
                                           Format: {'load_overload': True/uncertain
                                                    'generation_overload', True/uncertain}
@@ -386,14 +389,14 @@ def overload(net, overload_scaling_factor):
     try:
         runpp(net)
 
-    except:
+    except LoadflowNotConverged:
         try:
             net.load.scaling = overload_scaling_factor
             runpp(net)
             net.load.scaling = load_scaling
             check_result['load'] = True
 
-        except:
+        except LoadflowNotConverged:
             net.load.scaling = load_scaling
             check_result['load'] = 'uncertain'
 
@@ -405,7 +408,7 @@ def overload(net, overload_scaling_factor):
             net.gen.scaling = sgen_scaling
             check_result['generation'] = True
 
-        except:
+        except LoadflowNotConverged:
             net.gen.scaling = gen_scaling
             check_result['generation'] = 'uncertain'
 
@@ -419,28 +422,58 @@ def wrong_switch_configuration(net):
     the reason for that by closing all switches
 
      INPUT:
+        **net** (pandapowerNet)         - pandapower network
 
-        **net** (PandapowerNet)         - pandapower network
-
-     RETURN:
-
+     OUTPUT:
         **check_result** (boolean)
-
 
     """
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
         runpp(net)
 
-    except:
+    except (ValueError, LoadflowNotConverged):
         try:
             net.switch.closed = 1
             runpp(net)
             net.switch.closed = switch_configuration
             return True
-        except:
+        except LoadflowNotConverged:
             net.switch.closed = switch_configuration
             return 'uncertain'
+
+
+def missing_bus_indeces(net):
+    """
+        Checks for missing bus indeces.
+
+         INPUT:
+            **net** (PandapowerNet)    - pandapower network
+
+
+         OUTPUT:
+            **check_results** (list)   - List of tuples each containing missing bus indeces.
+                                         Format:
+                                         [(element_index, bus_name (e.g. "from_bus"),  bus_index]
+
+    """
+    check_results = {}
+    bus_indeces = set(net.bus.index)
+    element_bus_names = {"ext_grid": ["bus"], "load": ["bus"], "gen": ["bus"], "sgen": ["bus"],
+                         "trafo": ["lv_bus", "hv_bus"], "trafo3w": ["lv_bus", "mv_bus", "hv_bus"],
+                         "switch": ["bus", "element"], "line": ["from_bus", "to_bus"]}
+    for element in element_bus_names.keys():
+        element_check = []
+        for i, row in net[element].iterrows():
+            for bus_name in element_bus_names[element]:
+                if row[bus_name] not in bus_indeces:
+                    if not ((element == "switch") and (bus_name == "element") and (row.et in ['l', 't'])):
+                        element_check.append((i, bus_name, row[bus_name]))
+        if element_check:
+            check_results[element] = element_check
+
+    if check_results:
+        return check_results
 
 
 def different_voltage_levels_connected(net):
@@ -448,16 +481,12 @@ def different_voltage_levels_connected(net):
     Checks, if there are lines or switches that connect different voltage levels.
 
      INPUT:
+        **net** (pandapowerNet)         - pandapower network
 
-        **net** (PandapowerNet)         - pandapower network
-
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all lines and switches that connect
                                           different voltage levels.
                                           Format: {'lines': lines, 'switches': switches}
-
 
     """
     check_results = {}
@@ -486,11 +515,10 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     Checks, if there are lines with an impedance value of zero
 
      INPUT:
+        **net** (pandapowerNet)         - pandapower network
 
-        **net** (PandapowerNet)         - pandapower network
 
-
-     RETURN:
+     OUTPUT:
         **implausible_lines** (list)    - list that contains the indeces of all lines with an
                                           impedance value of zero.
 
@@ -498,39 +526,10 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
     """
     implausible_lines = net.line[(net.line.length_km <= lines_min_length_km)
                                  | ((net.line.r_ohm_per_km + net.line.x_ohm_per_km)
-                                     <= lines_min_z_ohm)]
+                                    <= lines_min_z_ohm)]
 
     if len(implausible_lines) > 0:
-
         return list(implausible_lines.index)
-
-
-def closed_switches_between_oos_and_is_buses(net):
-    """
-    Checks, if there are switches connecting an out-of-service and an in-service bus.
-
-     INPUT:
-
-        **net** (PandapowerNet)         - pandapower network
-
-     RETURN:
-
-        **problematic_switches** (list)  - list that contains the indeces of all switches
-                                           connecting an out-of-service and an in-service bus.
-
-
-    """
-
-    problematic_switches = []
-    for i, switch in net.switch.iterrows():
-        if (switch.et == 'b') & (switch.closed == 1):
-            buses = net.bus.loc[[switch.bus, switch.element]]
-            if (not (all(buses.in_service.values)) and any(buses.in_service.values)):
-                problematic_switches.append(i)
-
-    if len(problematic_switches) > 0:
-
-        return problematic_switches
 
 
 def nominal_voltages_dont_match(net, nom_voltage_tolerance):
@@ -540,12 +539,9 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     Also checks for trafos with swapped hv and lv connectors.
 
      INPUT:
+        **net** (pandapowerNet)         - pandapower network
 
-        **net** (PandapowerNet)         - pandapower network
-
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains all components whose nominal voltages
                                           differ from the nominal voltages of the buses they're
                                           connected to.
@@ -573,26 +569,33 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     mv_bus_3w = []
     lv_bus_3w = []
     connectors_swapped_3w = []
-    min_v_pu = 1 - nom_voltage_tolerance
-    max_v_pu = 1 + nom_voltage_tolerance
 
     for i, trafo in net.trafo.iterrows():
+        hv_bus_violation = False
+        lv_bus_violation = False
+        connectors_swapped = False
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo.hv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo.lv_bus]
-        if ((trafo.vn_hv_kv > lv_bus_vn_kv * min_v_pu)
-            and ((trafo.vn_hv_kv < lv_bus_vn_kv * max_v_pu))
-            and ((trafo.vn_lv_kv > hv_bus_vn_kv * min_v_pu))
-                and ((trafo.vn_lv_kv < hv_bus_vn_kv * max_v_pu))):
 
+        if abs(1-(trafo.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
+            hv_bus_violation = True
+        if abs(1-(trafo.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
+            lv_bus_violation = True
+        if hv_bus_violation and lv_bus_violation:
+            trafo_voltages = np.array(([trafo.vn_hv_kv, trafo.vn_lv_kv]))
+            bus_voltages = np.array([hv_bus_vn_kv, lv_bus_vn_kv])
+            trafo_voltages.sort()
+            bus_voltages.sort()
+            if all((abs(trafo_voltages - bus_voltages) / bus_voltages) < (nom_voltage_tolerance)):
+                connectors_swapped = True
+
+        if connectors_swapped:
             hv_lv_swapped.append(i)
-
-        if (((trafo.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-                and (i not in hv_lv_swapped)):
-            hv_bus.append(i)
-
-        if (((trafo.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-                and (i not in hv_lv_swapped)):
-            lv_bus.append(i)
+        else:
+            if hv_bus_violation:
+                hv_bus.append(i)
+            if lv_bus_violation:
+                lv_bus.append(i)
 
     if hv_bus:
         trafo_results['hv_bus'] = hv_bus
@@ -604,32 +607,37 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         results['trafo'] = trafo_results
 
     for i, trafo3w in net.trafo3w.iterrows():
+        hv_bus_violation = False
+        mv_bus_violation = False
+        lv_bus_violation = False
+        connectors_swapped = False
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.hv_bus]
         mv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.mv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.lv_bus]
 
-        if ((((trafo3w.vn_hv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < mv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_hv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_hv_kv < lv_bus_vn_kv * max_v_pu)))
-            and
-            (((trafo3w.vn_mv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < hv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_mv_kv > lv_bus_vn_kv * min_v_pu) and (trafo3w.vn_mv_kv < lv_bus_vn_kv * max_v_pu)))
-            and
-            (((trafo3w.vn_lv_kv > hv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < hv_bus_vn_kv * max_v_pu))
-             or ((trafo3w.vn_lv_kv > mv_bus_vn_kv * min_v_pu) and (trafo3w.vn_lv_kv < mv_bus_vn_kv * max_v_pu)))):
+        if abs(1-(trafo3w.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
+            hv_bus_violation = True
+        if abs(1-(trafo3w.vn_mv_kv / mv_bus_vn_kv)) > nom_voltage_tolerance:
+            mv_bus_violation = True
+        if abs(1-(trafo3w.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
+            lv_bus_violation = True
+        if hv_bus_violation and mv_bus_violation and lv_bus_violation:
+            trafo_voltages = np.array(([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv]))
+            bus_voltages = np.array([hv_bus_vn_kv, mv_bus_vn_kv, lv_bus_vn_kv])
+            trafo_voltages.sort()
+            bus_voltages.sort()
+            if all((abs(trafo_voltages - bus_voltages) / bus_voltages) < (nom_voltage_tolerance)):
+                connectors_swapped = True
 
+        if connectors_swapped:
             connectors_swapped_3w.append(i)
-
-        if (((trafo3w.vn_hv_kv > hv_bus_vn_kv * max_v_pu) or (trafo3w.vn_hv_kv < hv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
-            hv_bus_3w.append(i)
-
-        if (((trafo3w.vn_mv_kv > mv_bus_vn_kv * max_v_pu) or (trafo3w.vn_mv_kv < mv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
-            mv_bus_3w.append(i)
-
-        if (((trafo3w.vn_lv_kv > lv_bus_vn_kv * max_v_pu) or (trafo3w.vn_lv_kv < lv_bus_vn_kv * min_v_pu))
-                and (i not in connectors_swapped_3w)):
-            lv_bus_3w.append(i)
+        else:
+            if hv_bus_violation:
+                hv_bus_3w.append(i)
+            if mv_bus_violation:
+                mv_bus_3w.append(i)
+            if lv_bus_violation:
+                lv_bus_3w.append(i)
 
     if hv_bus_3w:
         trafo3w_results['hv_bus'] = hv_bus_3w
@@ -642,7 +650,8 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     if trafo3w_results:
         results['trafo3w'] = trafo3w_results
 
-    return results
+    if len(results) > 0:
+        return results
 
 
 def disconnected_elements(net):
@@ -654,12 +663,9 @@ def disconnected_elements(net):
     The same stands for lines 4, 5.)
 
      INPUT:
+        **net** (pandapowerNet)         - pandapower network
 
-        **net** (PandapowerNet)         - pandapower network
-
-
-     RETURN:
-
+     OUTPUT:
         **disc_elements** (dict)        - list that contains all network elements, without a
                                           connection to an ext_grid.
 
@@ -721,14 +727,6 @@ def disconnected_elements(net):
             if any(section_dict.values()):
                 disc_elements.append(section_dict)
 
-    open_line_switches = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
-    isolated_lines = set(
-        (open_line_switches.groupby("element").count().query("bus > 1").index))
-    isolated_lines_is = isolated_lines.intersection((set(net.line[net.line.in_service == True]
-                                                         .index)))
-    if isolated_lines_is:
-        disc_elements.append({'isolated_lines': list(isolated_lines_is)})
-
     open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
     isolated_trafos = set(
         (open_trafo_switches.groupby("element").count().query("bus > 1").index))
@@ -753,13 +751,9 @@ def wrong_reference_system(net):
     Checks usage of wrong reference system for loads, sgens and gens.
 
      INPUT:
+        **net** (pandapowerNet)    - pandapower network
 
-        **net** (PandapowerNet)    - pandapower network
-
-
-
-     RETURN:
-
+     OUTPUT:
         **check_results** (dict)        - dict that contains the indeces of all components where the
                                           usage of the wrong reference system was found.
 
@@ -787,45 +781,44 @@ def numba_comparison(net, numba_tolerance):
         Compares the results of loadflows with numba=True vs. numba=False.
 
          INPUT:
-
-            **net** (PandapowerNet)    - pandapower network
+            **net** (pandapowerNet)    - pandapower network
 
          OPTIONAL:
-
             **tol** (float, 1e-5)      - Maximum absolute deviation allowed between
                                          numba=True/False results.
 
-
-         RETURN:
-
+         OUTPUT:
             **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
     check_results = {}
     try:
         runpp(net, numba=True)
-    except:
+    except LoadflowNotConverged:
         pass
     if net.converged:
-        result_numba_true = copy.deepcopy(net)
-        runpp(net, numba=False)
-        result_numba_false = copy.deepcopy(net)
-        res_keys = [key for key in result_numba_true.keys() if (key in ['res_bus', 'res_ext_grid',
-                                                                        'res_gen', 'res_impedance',
-                                                                        'res_line', 'res_load',
-                                                                        'res_sgen', 'res_shunt',
-                                                                        'res_trafo', 'res_trafo3w',
-                                                                        'res_ward', 'res_xward'])]
-        for key in res_keys:
-            diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
-            if any(diffs.any()):
-                if (key not in check_results.keys()):
-                    check_results[key] = {}
-                for col in diffs.columns:
-                    if (col not in check_results[key].keys()) and (diffs.any()[col]):
-                        check_results[key][col] = {}
-                        numba_true = result_numba_true[key][col][diffs[col]]
-                        numba_false = result_numba_false[key][col][diffs[col]]
-                        check_results[key][col] = abs(numba_true - numba_false)
+        try:
+            result_numba_true = copy.deepcopy(net)
+            runpp(net, numba=False)
+            result_numba_false = copy.deepcopy(net)
+            res_keys = [key for key in result_numba_true.keys() if (key in ['res_bus', 'res_ext_grid',
+                                                                            'res_gen', 'res_impedance',
+                                                                            'res_line', 'res_load',
+                                                                            'res_sgen', 'res_shunt',
+                                                                            'res_trafo', 'res_trafo3w',
+                                                                            'res_ward', 'res_xward'])]
+            for key in res_keys:
+                diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
+                if any(diffs.any()):
+                    if (key not in check_results.keys()):
+                        check_results[key] = {}
+                    for col in diffs.columns:
+                        if (col not in check_results[key].keys()) and (diffs.any()[col]):
+                            check_results[key][col] = {}
+                            numba_true = result_numba_true[key][col][diffs[col]]
+                            numba_false = result_numba_false[key][col][diffs[col]]
+                            check_results[key][col] = abs(numba_true - numba_false)
+        except LoadflowNotConverged:
+            pass
 
     if check_results:
         return check_results
@@ -836,24 +829,23 @@ def deviation_from_std_type(net):
         Checks, if element parameters match the values in the standard type library.
 
          INPUT:
+            **net** (pandapowerNet)    - pandapower network
 
-            **net** (PandapowerNet)    - pandapower network
 
-
-         RETURN:
-
+         OUTPUT:
             **check_results** (dict)   - All elements, that don't match the values in the
                                          standard type library
 
                                          Format: (element_type, element_index, parameter)
 
 
-        """
+    """
     check_results = {}
     for key in net.std_types.keys():
         for i, element in net[key].iterrows():
-            if element.std_type in net.std_types[key].keys():
-                std_type_values = net.std_types[key][element.std_type]
+            std_type = element.std_type
+            if std_type in net.std_types[key].keys():
+                std_type_values = net.std_types[key][std_type]
                 for param in std_type_values.keys():
                     if param == "tp_pos":
                         continue
@@ -864,10 +856,35 @@ def deviation_from_std_type(net):
                             check_results[key][i] = {'param': param, 'e_value': element[param],
                                                      'std_type_value': std_type_values[param],
                                                      'std_type_in_lib': True}
-            else:
+            elif std_type is not None:
                 if key not in check_results.keys():
-                                check_results[key] = {}
+                    check_results[key] = {}
                 check_results[key][i] = {'std_type_in_lib': False}
 
     if check_results:
         return check_results
+
+
+def parallel_switches(net):
+    """
+        Checks for parallel switches.
+
+         INPUT:
+            **net** (PandapowerNet)    - pandapower network
+
+
+         OUTPUT:
+            **parallel_switches** (list)   - List of tuples each containing parallel switches.
+
+
+
+
+    """
+    parallel_switches = []
+    compare_parameters = ['bus', 'element']
+    parallels_bus_and_element = list(net.switch.groupby(compare_parameters).count().query('et > 1').index)
+    for bus, element in parallels_bus_and_element:
+        parallel_switches.append(list(net.switch[(net.switch.bus == bus)
+                                                 & (net.switch.element == element)].index))
+    if parallel_switches:
+        return parallel_switches

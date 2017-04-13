@@ -26,7 +26,7 @@ The following attributes get transferred into the MultiGraph:
 |   - length_km            |    - index        |
 |   - index                |    - in_service   |
 |   - in_service           |                   |
-|   - imax_ka              |                   |
+|   - max_i_ka              |                   |
 +--------------------------+-------------------+
 
 Apart from these there are no element attributes contained in the MultiGraph!

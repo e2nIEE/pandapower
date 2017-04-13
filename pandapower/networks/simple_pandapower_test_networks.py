@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import pandapower as pp
 
@@ -11,12 +11,10 @@ def panda_four_load_branch():
     This function creates a simple six bus system with four radial low voltage nodes connected to \
     a medium valtage slack bus. At every low voltage node the same load is connected.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required four load system
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net_four_load = pn.panda_four_load_branch()
@@ -57,12 +55,10 @@ def four_loads_with_branches_out():
     a medium valtage slack bus. At every of the four radial low voltage nodes another low voltage \
     node with a load is connected via cable.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required four load system with branches
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net_four_load_with_branches = pn.four_loads_with_branches_out()
@@ -112,12 +108,10 @@ def simple_four_bus_system():
     a medium valtage slack bus. At both low voltage nodes the a load and a static generator is \
     connected.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required four bus system
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net_simple_four_bus = pn.simple_four_bus_system()
@@ -145,12 +139,10 @@ def simple_mv_open_ring_net():
     voltage node.
     As an example this function is used in the topology and diagnostic docu.
 
-    RETURN:
-
+    OUTPUT:
          **net** - Returns the required simple medium voltage open ring network
 
     EXAMPLE:
-
          import pandapower.networks as pn
 
          net_simple_open_ring = pn.simple_mv_open_ring_net()

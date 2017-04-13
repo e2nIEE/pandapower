@@ -1,25 +1,29 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
+import json
+import numbers
 import os
 import pickle
-import pandas as pd
 import sys
 
-from pandapower.toolbox import convert_format
+import numpy
+import pandas as pd
+
+from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
-from pandapower.auxiliary import PandapowerNet
+from pandapower.toolbox import convert_format
 
 
 def to_pickle(net, filename):
     """
-    Saves a Pandapower Network with the pickle library.
+    Saves a pandapower Network with the pickle library.
 
     INPUT:
-        **net** (dict) - The Pandapower format network
+        **net** (dict) - The pandapower format network
 
         **filename** (string) - The absolute or relative path to the input file.
 
@@ -37,10 +41,10 @@ def to_pickle(net, filename):
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
-    Saves a Pandapower Network to an excel file.
+    Saves a pandapower Network to an excel file.
 
     INPUT:
-        **net** (dict) - The Pandapower format network
+        **net** (dict) - The pandapower format network
 
         **filename** (string) - The absolute or relative path to the input file.
 
@@ -57,6 +61,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     for item, table in net.items():
+        if item == "bus_geodata":
+            table = pd.DataFrame(table[["x", "y"]])
         if type(table) != pd.DataFrame or item.startswith("_"):
             continue
         elif item.startswith("res"):
@@ -80,15 +86,56 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
+def to_json(net, filename):
+    """
+        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        be saved in ascending order. net elements which name begins with "_" (internal elements)
+        will not be saved. Std types will also not be saved.
+
+        INPUT:
+            **net** (dict) - The pandapower format network
+
+            **filename** (string) - The absolute or relative path to the input file.
+
+        EXAMPLE:
+
+             >>> pp.to_pickle(net, "example.json")
+
+    """
+    json_string = "{"
+    for k in sorted(net.keys()):
+        if k[0] == "_":
+            continue
+        if isinstance(net[k], pd.DataFrame):
+            if len(net[k]) == 0:  # do not bother saving empty data frames
+                continue
+            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
+        elif isinstance(net[k], numpy.ndarray):
+            json_string += k + ":" + json.dumps(net[k].tolist()) + ","
+        elif isinstance(net[k], dict):
+            json_string += '"%s":%s,' % (k, json.dumps(net[k]))
+        elif isinstance(net[k], bool):
+            json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
+        elif isinstance(net[k], str):
+            json_string += '"%s":"%s",' % (k, net[k])
+        elif isinstance(net[k], numbers.Number):
+            json_string += '"%s":%s,' % (k, net[k])
+        elif net[k] is None:
+            json_string += '"%s":null,' % k
+        else:
+            raise UserWarning("could not detect type of %s" % k)
+    with open(filename, "w") as text_file:
+        text_file.write(json_string[:-1] + "}\n")
+
+
 def from_pickle(filename, convert=True):
     """
-    Load a Pandapower format Network from pickle file
+    Load a pandapower format Network from pickle file
 
     INPUT:
         **filename** (string) - The absolute or relative path to the input file.
 
-    RETURN:
-
+    OUTPUT:
         **net** (dict) - The pandapower format network
 
     EXAMPLE:
@@ -97,15 +144,14 @@ def from_pickle(filename, convert=True):
         >>> net2 = pp.from_pickle("example2.p") #relative path
 
     """
-
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     with open(filename, "rb") as f:
         if sys.version_info >= (3,0):
-            net = pickle.load(f, encoding='latin1') #with encoding in python 3
+            net = pickle.load(f, encoding='latin1')  # with encoding in python 3
         else:
-            net = pickle.load(f) #without encoding in python 2
-    net = PandapowerNet(net)
+            net = pickle.load(f)  # without encoding in python 2
+    net = pandapowerNet(net)
     if convert:
         convert_format(net)
     return net
@@ -113,15 +159,13 @@ def from_pickle(filename, convert=True):
 
 def from_excel(filename, convert=True):
     """
-    Load a Pandapower network from an excel file
+    Load a pandapower network from an excel file
 
     INPUT:
-
         **filename** (string) - The absolute or relative path to the input file.
 
-    RETURN:
-
-        **convert** (bool) - use the convert format function to 
+    OUTPUT:
+        **convert** (bool) - use the convert format function to
 
         **net** (dict) - The pandapower format network
 
@@ -155,3 +199,56 @@ def from_excel(filename, convert=True):
     if convert:
         convert_format(net)
     return net
+
+
+def from_json(filename, convert=True):
+    """
+    Load a pandapower network from a JSON file.
+    The index of the returned network is not necessarily in the same order as the original network.
+    Index columns of all pandas DataFrames are sorted in ascending order.
+
+    INPUT:
+        **filename** (string) - The absolute or relative path to the input file.
+
+    OUTPUT:
+        **convert** (bool) - use the convert format function to
+
+        **net** (dict) - The pandapower format network
+
+    EXAMPLE:
+
+        >>> net = pp.from_json("example.json")
+
+    """
+    with open(filename) as data_file:
+        data = json.load(data_file)
+        net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
+
+        # checks if field exists in empty network and if yes, matches data type
+        def check_equal_type(name):
+            if name in net:
+                if isinstance(net[name], type(data[name])):
+                    return True
+                elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
+                    return True
+                else:
+                    return False
+            return True
+
+        for k in sorted(data.keys()):
+            if not check_equal_type(k):
+                raise UserWarning("Different data type for existing pandapower field")
+            if isinstance(data[k], dict):
+                if isinstance(net[k], pd.DataFrame):
+                    columns = net[k].columns
+                    net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
+                    net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
+                    net[k] = net[k][columns]
+                else:
+                    net[k] = data[k]
+            else:
+                net[k] = data[k]
+        if convert:
+            convert_format(net)
+        return net
+    return None

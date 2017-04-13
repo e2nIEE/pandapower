@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
+import pandas as pd
 import pytest
+
 import pandapower as pp
 import pandapower.networks as pn
-import pandas as pd
 
 
 def test_cigre_hv():
@@ -26,7 +27,7 @@ def test_cigre_hv():
     assert len(net.trafo) == 6
     assert len(net.load) == 5
     assert len(net.ext_grid) == 1
-    assert net.converged is True
+    assert net.converged
 
     net = pn.create_cigre_network_hv(length_km_6a_6b=80)
     assert net.line.length_km[8] == 80
@@ -47,9 +48,9 @@ def test_cigre_mv():
     assert len(net.load) == 18
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 8
-    assert net.converged is True
+    assert net.converged
 
-    net = pn.create_cigre_network_mv(with_der=True)
+    net = pn.create_cigre_network_mv(with_der="pv_wind")
     pp.runpp(net)
 
     all_vn_kv = pd.Series([110, 20])
@@ -63,7 +64,23 @@ def test_cigre_mv():
     assert len(net.load) == 18
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 8
-    assert net.converged is True
+    assert net.converged
+
+    net = pn.create_cigre_network_mv(with_der="all")
+    pp.runpp(net)
+
+    all_vn_kv = pd.Series([110, 20])
+    assert net.bus.vn_kv.isin(all_vn_kv).all()
+    assert len(net.bus) == 15
+    assert len(net.line) == 15
+    assert len(net.gen) == 0
+    assert len(net.sgen) == 15
+    assert len(net.shunt) == 0
+    assert len(net.trafo) == 2
+    assert len(net.load) == 18
+    assert len(net.ext_grid) == 1
+    assert len(net.switch) == 8
+    assert net.converged
 
 
 def test_cigre_lv():
@@ -81,7 +98,7 @@ def test_cigre_lv():
     assert len(net.load) == 15
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 3
-    assert net.converged is True
+    assert net.converged
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_cigre_networks.py"])

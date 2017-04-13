@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import warnings
 
 import numpy as np
-import warnings
 from pypower.makeYbus import makeYbus
+
 
 class wls_matrix_ops:
     def __init__(self, ppc, slack_buses, non_slack_buses, s_ref, bs_cols, br_cols):
@@ -16,6 +18,8 @@ class wls_matrix_ops:
         self.slack_buses = slack_buses
         self.non_slack_buses = non_slack_buses
         self.Y_bus = None
+        self.Yf = None
+        self.Yt = None
         self.G = None
         self.B = None
         self.G_series = None
@@ -29,7 +33,7 @@ class wls_matrix_ops:
         self.create_y()
 
     # Function which builds a node admittance matrix out of the topology data
-    # In addition, it provides the series admittances of lines as G_series and B_series    
+    # In addition, it provides the series admittances of lines as G_series and B_series
     def create_y(self):
         from_to = np.concatenate((self.ppc["branch"][:, 0].real, self.ppc["branch"][:, 1].real))\
             .astype(int)
@@ -37,10 +41,12 @@ class wls_matrix_ops:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            Ybus, _, _ = makeYbus(self.s_ref, self.ppc["bus"], self.ppc["branch"])
+            Ybus, Yf, Yt = makeYbus(self.s_ref, self.ppc["bus"], self.ppc["branch"])
 
         # create relevant matrices
         self.Y_bus = Ybus.toarray()
+        self.Yf = Yf
+        self.Yt = Yt
         self.G = self.Y_bus.real
         self.B = self.Y_bus.imag
         n = len(self.ppc["bus"])
@@ -52,11 +58,11 @@ class wls_matrix_ops:
         self.G_shunt = np.zeros_like(self.G)
         self.B_shunt = np.zeros((n, n))
         self.B_shunt[from_to, to_from] = np.tile(0.5 * self.ppc["branch"][:, 4].real, 2)
-        
+
     # Get Y as tuple (real, imaginary)
     def get_y(self):
         return self.G, self.B
-    
+
     # Creates h(x), depending on the current U and delta and the static topology data
     def create_hx(self, v, delta):
         deltas = delta[:, np.newaxis] - delta
@@ -115,7 +121,7 @@ class wls_matrix_ops:
 
         return hx
 
-    # Create Jacobian matrix    
+    # Create Jacobian matrix
     def create_jacobian(self, v, delta):
         n = len(self.ppc["bus"])
         G = self.G
@@ -124,10 +130,10 @@ class wls_matrix_ops:
         B_series = self.B_series
         G_shunt = self.G_shunt
         B_shunt = self.B_shunt
-        
+
         # Create Jacobi Matrix
         # Source: p.23; Power System State Estimation by Ali Abur
-            
+
         deltas = delta[:, np.newaxis] - delta  # delta_i - delta_j
         cos_delta = np.cos(deltas)  # cos(delta_i - delta_j)
         sin_delta = np.sin(deltas)  # sin(delta_i - delta_j)
@@ -152,7 +158,7 @@ class wls_matrix_ops:
         H_dQinj_dU[diag_n, diag_n] = np.sum(v * (G * sin_delta - B * cos_delta), axis=1) \
                                      - (v * B.diagonal())
 
-        # Submatrices d(Pij)/d(theta) and d(Pij)/d(V)	
+        # Submatrices d(Pij)/d(theta) and d(Pij)/d(V)
         # d(P01)/d(theta0) is at position H_dPij_dth_i[0,1]
         # d(P23)/d(theta3) is at position H_dPij_dth_j[2,3]
         # d(P23)/d(theta1) is 0 and not stored in the matrix
@@ -192,7 +198,7 @@ class wls_matrix_ops:
         columns = 2 * n - len(self.slack_buses)
         range_theta = self.non_slack_buses
         range_v = list(range(n))
-        
+
         h_mat = np.zeros((1, columns))  # create matrix with dummy line so that we can append to it
 
         # if P bus measurements exist

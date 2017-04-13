@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Evaluates Hessian of Lagrangian for AC OPF.
 """
 
 from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
-from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
-
-from pypower.idx_gen import PG, QG
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_cost import MODEL, POLYNOMIAL
-
-from pypower.polycost import polycost
-from pypower.d2Sbus_dV2 import d2Sbus_dV2
-from pypower.dSbr_dV import dSbr_dV
-from pypower.dIbr_dV import dIbr_dV
 from pypower.d2AIbr_dV2 import d2AIbr_dV2
 from pypower.d2ASbr_dV2 import d2ASbr_dV2
-from pypower.opf_costfcn import opf_costfcn
+from pypower.d2Sbus_dV2 import d2Sbus_dV2
+from pypower.dIbr_dV import dIbr_dV
+from pypower.dSbr_dV import dSbr_dV
+from pypower.idx_brch import F_BUS, T_BUS
+from pypower.idx_cost import MODEL, POLYNOMIAL
+from pypower.idx_gen import PG, QG
 from pypower.opf_consfcn import opf_consfcn
+from pypower.opf_costfcn import opf_costfcn
+from pypower.polycost import polycost
+from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
 
 
 def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
@@ -108,7 +106,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     ipolp = find(pcost[:, MODEL] == POLYNOMIAL)
     d2f_dPg2[ipolp] = \
             baseMVA**2 * polycost(pcost[ipolp, :], Pg[ipolp] * baseMVA, 2)
-    if any(qcost):          ## Qg is not free
+    if qcost.any():          ## Qg is not free
         ipolq = find(qcost[:, MODEL] == POLYNOMIAL)
         d2f_dQg2[ipolq] = \
                 baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
@@ -170,9 +168,12 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     muF = lmbda["ineqnonlin"][:nmu]
     muT = lmbda["ineqnonlin"][nmu:nmu + nmu]
     if ppopt['OPF_FLOW_LIM'] == 2:       ## current
-        dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V) #TypeError: dIbr_dV() missing 1 required positional argument: 'V' >> branch was missing
-        Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
-        Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
+        if Yf.size:
+            dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V) #TypeError: dIbr_dV() missing 1 required positional argument: 'V' >> branch was missing
+            Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
+            Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
+        else:
+            Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
     else:
         f = branch[il, F_BUS].astype(int)    ## list of "from" buses
         t = branch[il, T_BUS].astype(int)    ## list of "to" buses
@@ -195,9 +196,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
 
     d2H = vstack([
             hstack([
-                vstack([hstack([Hfaa, Hfav]),
-                        hstack([Hfva, Hfvv])]) +
-                vstack([hstack([Htaa, Htav]),
+                vstack([hstack([Hfaa, Hfav]), hstack([Hfva, Hfvv])]) + vstack([hstack([Htaa, Htav]),
                         hstack([Htva, Htvv])]),
                 sparse((2 * nb, nxtra))
             ]),

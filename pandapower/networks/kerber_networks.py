@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import random as rd
+
 import pandapower as pp
+
 
 ##########################################################
 ################## support functions #####################
@@ -21,16 +23,16 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
     be set with "ti"
     '''
     pd_net = pp.create_empty_network()
-    NFA2X4x70 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.069, "imax_ka": 0.270,
+    NFA2X4x70 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.069, "max_i_ka": 0.270,
                  "type": "ol", "q_mm2": 70}
     NAYY4x50 = {"c_nf_per_km": 670, "r_ohm_per_km": 0.6417, "x_ohm_per_km": 0.084823,
-                "imax_ka": 0.141, "type": "cs", "q_mm2": 50}
+                "max_i_ka": 0.141, "type": "cs", "q_mm2": 50}
     NAYY4x150 = {"c_nf_per_km": 830, "r_ohm_per_km": 0.2067, "x_ohm_per_km": 0.08042478,
-                 "imax_ka": 0.275, "type": "cs", "q_mm2": 150}
+                 "max_i_ka": 0.275, "type": "cs", "q_mm2": 150}
     NAYY4x185 = {"c_nf_per_km": 830, "r_ohm_per_km": 0.165, "x_ohm_per_km": 0.08042478,
-                 "imax_ka": 0.313, "type": "cs", "q_mm2": 185}
+                 "max_i_ka": 0.313, "type": "cs", "q_mm2": 185}
     NYY4x35 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.5240284, "x_ohm_per_km": 0.08513716,
-               "imax_ka": 0.156, "type": "cs", "q_mm2": 35}
+               "max_i_ka": 0.156, "type": "cs", "q_mm2": 35}
     pp.create_std_type(net=pd_net, data=NFA2X4x70, name="NFA2X 4x70", element="line")
     pp.create_std_type(net=pd_net, data=NAYY4x50, name="NAYY 4x50", element="line")
     pp.create_std_type(net=pd_net, data=NAYY4x150, name="NAYY 4x150", element="line")

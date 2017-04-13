@@ -1,23 +1,20 @@
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real
-from numpy import flatnonzero as find
-
-from scipy.sparse import csr_matrix
-
+from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find
+from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pypower.idx_bus import VM, VA, PD, QD
 from pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from scipy.sparse import csr_matrix
 
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
+def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -38,7 +35,8 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
     gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
 
     ## compute total injected bus powers
-    Sbus = V[gbus] * conj(Ybus[gbus, :] * V)
+    Ibus = zeros(len(V)) if Ibus is None else Ibus
+    Sbus = V[gbus] * conj(Ybus[gbus, :] * V - Ibus[gbus])
 
     ## update Qg for all generators
     gen[:, QG] = zeros(gen.shape[0])              ## zero out all Qg

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 
 # This script provides pypower case files to test the converter 'from_ppc' and 'validate_from_ppc'.
@@ -10,10 +10,14 @@
 # which origin is pypower.
 
 from numpy import array
+
 import pandapower as pp
 
 
 def case2_1():
+    """
+    2 bus system with a line
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
@@ -32,12 +36,15 @@ def case2_1():
     # branch data
     # fbus, tbus, r, x, b, rateA, rateB, rateC, ratio, angle, status, angmin, angmax
     ppc["branch"] = array([
-        [3, 0, 0,      0.05, 0,     250, 250, 250, 0, 0, 1, -360, 360]
+        [3, 0, 0,      0.05, 0,     250, 250, 250, 1, 0, 1, -360, 360]
     ])
     return ppc
 
 
 def case2_2():
+    """
+    2 bus system with a transformer which can be detect by vn_kv or by ratio
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
@@ -71,11 +78,14 @@ def case2_2_by_code():
     pp.create_ext_grid(ppnet, bus=bus0, vm_pu=1.02, va_degree=15, in_service=True)
     pp.create_transformer_from_parameters(ppnet, hv_bus=bus0, lv_bus=bus1, sn_kva=2.5e5,
                                           vn_hv_kv=110, vn_lv_kv=20, vsc_percent=13.462912017836263,
-                                          vscr_percent=5, pfe_kw=0, i0_percent=-0.8, shift_degree=0)
+                                          vscr_percent=5, pfe_kw=0, i0_percent=0.8, shift_degree=0)
     return ppnet
 
 
 def case2_3():
+    """
+    2 bus system with a transformer which has a ratio != 1 and can be detect by vn_kv or by ratio
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0
@@ -100,6 +110,9 @@ def case2_3():
 
 
 def case2_4():
+    """
+    2 bus system with a transformer which only can be detected by vn_kv
+    """
     ppc = {"version": '2'}
     # system MVA base
     ppc["baseMVA"] = 100.0

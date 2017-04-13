@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import random as rd
 
 import pytest
+
 import pandapower as pp
 import pandapower.networks as pn
-import random as rd
 from pandapower.networks.kerber_networks import _create_empty_network_with_transformer, \
     _add_lines_and_loads, _add_lines_with_branched_loads
 
@@ -132,72 +134,6 @@ def test_create_kerber_vorstadtnetz_kabel_2():
     assert len(pd_net.bus.index) == 290
     assert len(pd_net.line.index) == 288
     assert len(pd_net.trafo.index) == 1
-
-
-def test_kerber_landnetz_freileitung_1_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_landnetz_freileitung_1(p_load_in_kw=2., q_load_in_kvar=1.,
-                                                         v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
-
-def test_kerber_landnetz_freileitung_2_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_landnetz_freileitung_2(p_load_in_kw=2., q_load_in_kvar=1.,
-                                                         v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
-
-def test_kerber_landnetz_kabel_1_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_landnetz_kabel_1(p_load_in_kw=2., q_load_in_kvar=1., v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
-
-def test_kerber_landnetz_kabel_2_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_landnetz_kabel_2(p_load_in_kw=2., q_load_in_kvar=1., v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
-
-def test_kerber_dorfnetz_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_dorfnetz(p_load_in_kw=2., q_load_in_kvar=1., v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
-
-def test_kerber_vorstadtnetz_kabel_1_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_vorstadtnetz_kabel_1(p_load_in_kw=2., q_load_in_kvar=1., v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
-
-def test_kerber_vorstadtnetz_kabel_2_error_default_trafo_other_voltage_lvl():
-    try:
-        pn.create_kerber_vorstadtnetz_kabel_2(p_load_in_kw=2., q_load_in_kvar=1., v_os=20.)
-        warning1 = False
-    except UserWarning:
-        warning1 = True
-    assert not warning1
-
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_kerber_networks.py"])

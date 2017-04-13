@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
 
@@ -11,7 +11,7 @@ def create_std_type(net, data, name, element="line", overwrite=True):
     """
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
-        - c_nf_per_km, r_ohm_per_km, x_ohm_per_km and imax_ka (for lines)
+        - c_nf_per_km, r_ohm_per_km, x_ohm_per_km and max_i_ka (for lines)
         - sn_kva, vn_hv_kv, vn_lv_kv, vsc_percent, vscr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)
         - sn_hv_kva, sn_mv_kva, sn_lv_kva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
     additional parameters can be added and later loaded into pandapower with the function
@@ -32,14 +32,14 @@ def create_std_type(net, data, name, element="line", overwrite=True):
 
     EXAMPLE:
 
-    >>> line_data = {"c_nf_per_km": 0, "r_ohm_per_km": 0.642, "x_ohm_per_km": 0.083, "imax_ka": 0.142, "type": "cs", "q_mm2": 50}
+    >>> line_data = {"c_nf_per_km": 0, "r_ohm_per_km": 0.642, "x_ohm_per_km": 0.083, "max_i_ka": 0.142, "type": "cs", "q_mm2": 50}
     >>> pandapower.create_std_type(net, line_data, "NAYY 4×50 SE", element='line')
     """
 
     if type(data) != dict:
         raise UserWarning("type data has to be given as a dictionary of parameters")
     if element == "line":
-        required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "imax_ka"]
+        required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
     elif element == "trafo":
         required = ["sn_kva", "vn_hv_kv", "vn_lv_kv", "vsc_percent", "vscr_percent",
                     "pfe_kw", "i0_percent", "shift_degree"]
@@ -70,8 +70,8 @@ def create_std_types(net, data, element="line", overwrite=True):
 
     EXAMPLE:
 
-    >>> linetypes = {"typ1": {"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.02, "c_nf_per_km": 10, "imax_ka": 0.4, "type": "cs"},
-    >>>              "typ2": {"r_ohm_per_km": 0.015, "x_ohm_per_km": 0.01, "c_nf_per_km": 30, "imax_ka": 0.3, "type": "cs"}}
+    >>> linetypes = {"typ1": {"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.02, "c_nf_per_km": 10, "max_i_ka": 0.4, "type": "cs"},
+    >>>              "typ2": {"r_ohm_per_km": 0.015, "x_ohm_per_km": 0.01, "c_nf_per_km": 30, "max_i_ka": 0.3, "type": "cs"}}
     >>> pp.create_std_types(net, data=linetypes, element="line")
 
     """
@@ -125,7 +125,7 @@ def std_type_exists(net, name, element="line"):
     Checks if a standard type exists.
 
     INPUT:
-        **net** - Pandapower Network
+        **net** - pandapower Network
 
         **name** - name of the standard type as string
 
@@ -143,7 +143,7 @@ def delete_std_type(net, name, element="line"):
     Deletes standard type parameters from database.
 
     INPUT:
-        **net** - Pandapower Network
+        **net** - pandapower Network
 
         **name** - name of the standard type as string
 
@@ -162,7 +162,7 @@ def available_std_types(net, element="line"):
     Returns all standard types available for this network as a table.
 
     INPUT:
-        **net** - Pandapower Network
+        **net** - pandapower Network
 
         **element** - type of element ("line" or "trafo")
 
@@ -216,7 +216,6 @@ def change_std_type(net, eid, name, element="line"):
 
         **name** - name of the new standard type
 
-        **element** - type of element ("line" or "trafo")
     """
     type_param = load_std_type(net, name, element)
     table = net[element]
@@ -269,21 +268,21 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 210,
          "r_ohm_per_km": 0.642,
          "x_ohm_per_km": 0.083,
-         "imax_ka": 0.142,
+         "max_i_ka": 0.142,
          "type": "cs",
          "q_mm2": 50},
         "NAYY 4x120 SE":
         {"c_nf_per_km": 264,
          "r_ohm_per_km": 0.225,
          "x_ohm_per_km": 0.080,
-         "imax_ka": 0.242,
+         "max_i_ka": 0.242,
          "type": "cs",
          "q_mm2": 120},
         "NAYY 4x150 SE":
         {"c_nf_per_km": 261,
          "r_ohm_per_km": 0.208,
          "x_ohm_per_km": 0.080,
-         "imax_ka": 0.270,
+         "max_i_ka": 0.270,
          "type": "cs",
          "q_mm2": 150},
 
@@ -292,21 +291,21 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 216,
             "r_ohm_per_km": 0.313,
             "x_ohm_per_km": 0.132,
-            "imax_ka": 0.252,
+            "max_i_ka": 0.252,
             "type": "cs",
             "q_mm2": 95},
         "NA2XS2Y 1x185 RM/25 12/20 kV":
         {"c_nf_per_km": 273,
             "r_ohm_per_km": 0.161,
             "x_ohm_per_km": 0.117,
-            "imax_ka": 0.362,
+            "max_i_ka": 0.362,
             "type": "cs",
             "q_mm2": 185},
         "NA2XS2Y 1x240 RM/25 12/20 kV":
         {"c_nf_per_km": 304,
             "r_ohm_per_km": 0.122,
             "x_ohm_per_km": 0.112,
-            "imax_ka": 0.421,
+            "max_i_ka": 0.421,
             "type": "cs",
             "q_mm2": 240},
 
@@ -315,28 +314,28 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 112,
             "r_ohm_per_km": 0.153,
             "x_ohm_per_km": 0.166,
-            "imax_ka": 0.366,
+            "max_i_ka": 0.366,
             "type": "cs",
             "q_mm2": 120},
         "N2XS(FL)2Y 1x185 RM/35 64/110 kV":
         {"c_nf_per_km": 125,
             "r_ohm_per_km": 0.099,
             "x_ohm_per_km": 0.156,
-            "imax_ka": 0.457,
+            "max_i_ka": 0.457,
             "type": "cs",
             "q_mm2": 185},
         "N2XS(FL)2Y 1x240 RM/35 64/110 kV":
         {"c_nf_per_km": 135,
             "r_ohm_per_km": 0.075,
             "x_ohm_per_km": 0.149,
-            "imax_ka": 0.526,
+            "max_i_ka": 0.526,
             "type": "cs",
             "q_mm2": 240},
         "N2XS(FL)2Y 1x300 RM/35 64/110 kV":
         {"c_nf_per_km": 144,
             "r_ohm_per_km": 0.060,
             "x_ohm_per_km": 0.144,
-            "imax_ka": 0.588,
+            "max_i_ka": 0.588,
             "type": "cs",
             "q_mm2": 300},
 
@@ -348,28 +347,28 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 11,
             "r_ohm_per_km": 1.8769,
             "x_ohm_per_km": 0.35,
-            "imax_ka": 0.105,
+            "max_i_ka": 0.105,
             "type": "ol",
             "q_mm2": 16},
         "24-AL1/4-ST1A 0.4":
         {"c_nf_per_km": 11.25,
             "r_ohm_per_km": 1.2012,
             "x_ohm_per_km": 0.335,
-            "imax_ka": 0.140,
+            "max_i_ka": 0.140,
             "type": "ol",
             "q_mm2": 24},
         "48-AL1/8-ST1A 0.4":
         {"c_nf_per_km": 12.2,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.3,
-            "imax_ka": .210,
+            "max_i_ka": .210,
             "type": "ol",
             "q_mm2": 48},
         "94-AL1/15-ST1A 0.4":
         {"c_nf_per_km": 13.2,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.29,
-            "imax_ka": 0.350,
+            "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94},
 
@@ -378,56 +377,56 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 10.1,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.35,
-            "imax_ka": 0.210,
+            "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48},
         "94-AL1/15-ST1A 10.0":
         {"c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.33,
-            "imax_ka": 0.350,
+            "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94},
         "149-AL1/24-ST1A 10.0":
         {"c_nf_per_km": 11.25,
             "r_ohm_per_km": 0.1940,
             "x_ohm_per_km": 0.315,
-            "imax_ka": 0.470,
+            "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149},
         "48-AL1/8-ST1A 20.0":
         {"c_nf_per_km": 9.5,
          "r_ohm_per_km": 0.5939,
          "x_ohm_per_km": 0.372,
-         "imax_ka": 0.210,
+         "max_i_ka": 0.210,
          "type": "ol",
          "q_mm2": 48},
         "94-AL1/15-ST1A 20.0":
         {"c_nf_per_km": 10,
          "r_ohm_per_km": 0.3060,
          "x_ohm_per_km": 0.35,
-         "imax_ka": 0.350,
+         "max_i_ka": 0.350,
          "type": "ol",
          "q_mm2": 94},
         "149-AL1/24-ST1A 20.0":
         {"c_nf_per_km": 10.5,
          "r_ohm_per_km": 0.1940,
          "x_ohm_per_km": 0.337,
-         "imax_ka": 0.470,
+         "max_i_ka": 0.470,
          "type": "ol",
          "q_mm2": 149},
         "184-AL1/30-ST1A 20.0":
         {"c_nf_per_km": 10.75,
          "r_ohm_per_km": 0.1571,
          "x_ohm_per_km": 0.33,
-         "imax_ka": 0.535,
+         "max_i_ka": 0.535,
          "type": "ol",
          "q_mm2": 184},
         "243-AL1/39-ST1A 20.0":
         {"c_nf_per_km": 11,
          "r_ohm_per_km": 0.1188,
          "x_ohm_per_km": 0.32,
-         "imax_ka": 0.645,
+         "max_i_ka": 0.645,
          "type": "ol",
          "q_mm2": 243},
 
@@ -436,14 +435,14 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 8.75,
          "r_ohm_per_km": 0.1940,
          "x_ohm_per_km": 0.41,
-         "imax_ka": 0.470,
+         "max_i_ka": 0.470,
          "type": "ol",
          "q_mm2": 149},
         "184-AL1/30-ST1A 110.0":
         {"c_nf_per_km": 8.8,
          "r_ohm_per_km": 0.1571,
          "x_ohm_per_km": 0.4,
-         "imax_ka": 0.535,
+         "max_i_ka": 0.535,
          "type": "ol",
          "q_mm2": 184},
 
@@ -451,7 +450,7 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 9,
          "r_ohm_per_km": 0.1188,
          "x_ohm_per_km": 0.39,
-         "imax_ka": 0.645,
+         "max_i_ka": 0.645,
          "type": "ol",
          "q_mm2": 243},
 
@@ -459,7 +458,7 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 9.2,
          "r_ohm_per_km": 0.0949,
          "x_ohm_per_km": 0.38,
-         "imax_ka": 0.74,
+         "max_i_ka": 0.74,
          "type": "ol",
          "q_mm2": 305},
 
@@ -471,7 +470,7 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 10,
          "r_ohm_per_km": 0.059,
          "x_ohm_per_km": 0.285,
-         "imax_ka": 0.96,
+         "max_i_ka": 0.96,
          "type": "ol",
          "q_mm2": 490},
 
@@ -479,7 +478,7 @@ def add_basic_std_types(net):
         {"c_nf_per_km": 11,
          "r_ohm_per_km": 0.059,
          "x_ohm_per_km": 0.253,
-         "imax_ka": 0.96,
+         "max_i_ka": 0.96,
          "type": "ol",
          "q_mm2": 490}
     }
@@ -504,6 +503,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         "100 MVA 220/110 kV":
@@ -520,6 +520,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         # compare to IFT Ingenieurbüro data and Schlabbach book
@@ -537,6 +538,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         "40 MVA 110/20 kV":
@@ -553,6 +555,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         "25 MVA 110/20 kV":
@@ -569,6 +572,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         "63 MVA 110/10 kV":
@@ -585,6 +589,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         "40 MVA 110/10 kV":
@@ -601,6 +606,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         "25 MVA 110/10 kV":
@@ -617,6 +623,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -9,
          "tp_max": 9,
+         "tp_st_degree": 0,
          "tp_st_percent": 1.5},
 
         # Tafo20/0.4
@@ -635,6 +642,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -2,
          "tp_max": 2,
+         "tp_st_degree": 0,
          "tp_st_percent": 2.5},
 
         # 0.4 MVA 20/0.4 kV Trafo Union
@@ -650,6 +658,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -2,
          "tp_max": 2,
+         "tp_st_degree": 0,
          "tp_st_percent": 2.5},
 
         # 0.63 MVA 20/0.4 kV Trafo Union
@@ -667,6 +676,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -2,
          "tp_max": 2,
+         "tp_st_degree": 0,
          "tp_st_percent": 2.5},
 
         # Tafo10/0.4:
@@ -685,6 +695,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -2,
          "tp_max": 2,
+         "tp_st_degree": 0,
          "tp_st_percent": 2.5},
 
         # 0.4 MVA 10/0.4 kV Trafo Union wnr
@@ -702,6 +713,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -2,
          "tp_max": 2,
+         "tp_st_degree": 0,
          "tp_st_percent": 2.5},
 
         # 0.63 MVA 10/0.4 kV Trafo Union wnr
@@ -719,6 +731,7 @@ def add_basic_std_types(net):
          "tp_mid": 0,
          "tp_min": -2,
          "tp_max": 2,
+         "tp_st_degree": 0,
          "tp_st_percent": 2.5},
     }
     create_std_types(net, data=trafotypes, element="trafo")
