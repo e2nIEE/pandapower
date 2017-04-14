@@ -67,7 +67,7 @@ def fill_bus_lookup(ar, bus_lookup, bus_index):
         bus_lookup[b] = bus_lookup[ar[ds]]
 
 
-def create_bus_lookup_numba(net, bus_is, bus_index, gen_is, eg_is):
+def create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is, eg_is):
     max_bus_idx = np.max(net["bus"].index.values)
     # extract numpy arrays of switch table data
     switch = net["switch"]
@@ -77,7 +77,7 @@ def create_bus_lookup_numba(net, bus_is, bus_index, gen_is, eg_is):
     switch_closed = switch["closed"].values
     # create array for fast checking if a bus is in_service
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
-    bus_in_service[bus_is.index.values] = True
+    bus_in_service[bus_is_idx.values] = True
     # create array for fast checking if a bus is pv bus
     bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_pv[eg_is["bus"].values] = True
@@ -213,7 +213,7 @@ def _build_bus_ppc(net, ppc):
     bus_is = _is_elements['bus']
 
     if numba and not r_switch:
-        bus_lookup = create_bus_lookup_numba(net, bus_is, bus_index, gen_is, eg_is)
+        bus_lookup = create_bus_lookup_numba(net, bus_is.index, bus_index, gen_is, eg_is)
     else:
         bus_lookup = create_bus_lookup(net, n_bus, bus_index, bus_is, gen_is, eg_is, r_switch)
     # init ppc with empty values

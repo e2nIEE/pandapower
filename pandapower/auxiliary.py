@@ -295,10 +295,13 @@ def _select_is_elements(net):
                                              & net[elm]["in_service"].values.astype(bool)]
 
     else:
+        if "numba" in net["_options"] and net["_options"]["numba"]:
+            return find_is_elements_numba(net)
         # select in service buses. needed for the other elements to be selected
-        bus_is = net["bus"]["in_service"].values.astype(bool)
-        line_is = net["line"]["in_service"].values.astype(bool)
-        bus_is_ind = net["bus"][bus_is].index
+        bus_is_mask = net["bus"]["in_service"].values.astype(bool)
+        bus_is = net["bus"][bus_is_mask]
+        bus_is_ind = bus_is.index
+        line_is_mask = net["line"]["in_service"].values.astype(bool)
         # check if in service elements are at in service buses
         _is_elements = {
             "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
@@ -315,11 +318,41 @@ def _select_is_elements(net):
                        & net["shunt"].in_service.values.astype(bool)
             , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
                                           & net["ext_grid"]["in_service"].values.astype(bool)]
-            , 'bus': net['bus'][bus_is]
-            , 'line': net['line'][line_is]
+            , 'bus': bus_is
+            , 'line': net['line'][line_is_mask]
         }
 
     return _is_elements
+
+
+from numba import jit
+@jit(nopython=True, cache=True)
+def x(ti, tis, bis, lis):
+    for i in range(len(ti)):
+        if tis[i] and bis[ti[i]]:
+            lis[i] = True
+
+
+def find_is_elements_numba(net, isolated_nodes=None):
+    max_bus_idx = np.max(net["bus"].index.values)
+    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_mask = net["bus"]["in_service"].values.astype(bool)
+    bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    if isolated_nodes is not None:
+        bus_in_service[isolated_nodes] = False
+
+    is_elements = dict()
+    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid"]:
+        element_is_mask = np.zeros(len(net[element].index), dtype=bool)
+        element_df = net[element]
+        x(element_df["bus"].values, element_df["in_service"].values, bus_in_service, element_is_mask)
+        if element == "gen" or element == "ext_grid":
+            is_elements[element] = net[element][element_is_mask]
+        else:
+            is_elements[element] = element_is_mask
+    is_elements["bus"] = net["bus"][bus_is_mask]
+    is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+    return is_elements
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
