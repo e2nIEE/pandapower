@@ -410,6 +410,8 @@ def test_recycle():
 
 
 import os
+
+
 def test_zip_loads_gridcal():
     ## Tests newton power flow considering zip loads against GridCal's pf result
 
@@ -473,21 +475,21 @@ def test_zip_loads_gridcal():
     # print('\tVang:', np.rad2deg(np.angle(grid.power_flow_results.voltage)))
 
     vm_pu_gridcal = np.array([1., 0.9566486349, 0.9555640318, 0.9340468428, 0.9540542172])
-    va_degree_gridcal = np.array([0., -2.3717973886, -2.345654238 , -3.6303651197, -2.6713716569])
+    va_degree_gridcal = np.array([0., -2.3717973886, -2.345654238, -3.6303651197, -2.6713716569])
 
     Ybus_gridcal = np.array(
-            [[10.9589041096 - 25.9973972603j, -3.4246575342 + 7.5342465753j, -3.4246575342 + 7.5342465753j,
-                 0.0000000000 + 0.j, -4.1095890411 + 10.9589041096j],
-             [-3.4246575342 + 7.5342465753j, 11.8320802147 - 26.1409476063j, -4.1237113402 + 9.2783505155j,
-                 0.0000000000 + 0.j, -4.1237113402 + 9.2783505155j],
-             [-3.4246575342 + 7.5342465753j, -4.1237113402 + 9.2783505155j, 10.4751981427 - 23.1190605054j,
-                 -2.9268292683 + 6.3414634146j, 0.0000000000 + 0.j],
-             [0.0000000000 + 0.j, 0.0000000000 + 0.j, -2.9268292683 + 6.3414634146j, 7.0505406085 - 15.5948139301j,
-                 -4.1237113402 + 9.2783505155j],
-             [-4.1095890411 + 10.9589041096j, -4.1237113402 + 9.2783505155j, 0.0000000000 + 0.j,
-                 -4.1237113402 + 9.2783505155j, 12.3570117215 - 29.4856051405j]])
+        [[10.9589041096 - 25.9973972603j, -3.4246575342 + 7.5342465753j, -3.4246575342 + 7.5342465753j,
+          0.0000000000 + 0.j, -4.1095890411 + 10.9589041096j],
+         [-3.4246575342 + 7.5342465753j, 11.8320802147 - 26.1409476063j, -4.1237113402 + 9.2783505155j,
+          0.0000000000 + 0.j, -4.1237113402 + 9.2783505155j],
+         [-3.4246575342 + 7.5342465753j, -4.1237113402 + 9.2783505155j, 10.4751981427 - 23.1190605054j,
+          -2.9268292683 + 6.3414634146j, 0.0000000000 + 0.j],
+         [0.0000000000 + 0.j, 0.0000000000 + 0.j, -2.9268292683 + 6.3414634146j, 7.0505406085 - 15.5948139301j,
+          -4.1237113402 + 9.2783505155j],
+         [-4.1095890411 + 10.9589041096j, -4.1237113402 + 9.2783505155j, 0.0000000000 + 0.j,
+          -4.1237113402 + 9.2783505155j, 12.3570117215 - 29.4856051405j]])
 
-    losses_gridcal = 4.69773448916-2.710430515j
+    losses_gridcal = 4.69773448916 - 2.710430515j
 
     abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                             'networks', 'power_system_test_case_pickles', 'case5_demo_gridcal.p')
@@ -541,6 +543,27 @@ def test_zip_loads_pf_algorithms():
 
         assert np.allclose(vm_nr, vm_alg)
         assert np.allclose(va_nr, va_alg)
+
+
+def test_pvpq_lookup():
+    net = pp.create_empty_network()
+
+    b1 = pp.create_bus(net, vn_kv=0.4, index=4)
+    b2 = pp.create_bus(net, vn_kv=0.4, index=2)
+    b3 = pp.create_bus(net, vn_kv=0.4, index=3)
+
+    g2 = pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
+    l3 = pp.create_load(net, b2, p_kw=10)
+    e1 = pp.create_ext_grid(net, b3)
+
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.5, std_type="NAYY 4x120 SE")
+    pp.create_line(net, from_bus=b1, to_bus=b3, length_km=0.5, std_type="NAYY 4x120 SE")
+    net_numba = copy.deepcopy(net)
+    pp.runpp(net_numba, numba=True)
+    pp.runpp(net, numba=False)
+
+    assert np.allclose(net.res_bus.vm_pu.values, net_numba.res_bus.vm_pu.values)
+    assert np.allclose(net.res_bus.va_degree.values, net_numba.res_bus.va_degree.values)
 
 
 if __name__ == "__main__":
