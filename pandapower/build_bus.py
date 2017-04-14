@@ -67,7 +67,7 @@ def fill_bus_lookup(ar, bus_lookup, bus_index):
         bus_lookup[b] = bus_lookup[ar[ds]]
 
 
-def create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_idx, eg_is_idx):
+def create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is, eg_is):
     max_bus_idx = np.max(net["bus"].index.values)
     # extract numpy arrays of switch table data
     switch = net["switch"]
@@ -77,7 +77,7 @@ def create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_idx, eg_is_idx):
     switch_closed = switch["closed"].values
     # create array for fast checking if a bus is in_service
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
-    bus_in_service[bus_is_idx] = True
+    bus_in_service[bus_is_idx.values] = True
     # create array for fast checking if a bus is pv bus
     bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_pv[net["ext_grid"]["bus"].values[eg_is_idx]] = True
@@ -209,8 +209,7 @@ def _build_bus_ppc(net, ppc):
     gen_is_mask = _is_elements['gen']
 
     if numba and not r_switch:
-        bus_is_idx = _is_elements['bus_is_idx']
-        bus_lookup = create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_mask, eg_is_mask)
+        bus_lookup = create_bus_lookup_numba(net, bus_is.index, bus_index, gen_is, eg_is)
     else:
         bus_lookup = create_bus_lookup(net, n_bus, bus_index, _is_elements['bus_is_idx'],
                                        gen_is_mask, eg_is_mask, r_switch)
