@@ -409,7 +409,8 @@ def test_recycle():
     assert np.allclose(net.res_gen.vm_pu.iloc[0], u_set)
 
 
-def test_zip_loads():
+import os
+def test_zip_loads_gridcal():
     ## Tests newton power flow considering zip loads against GridCal's pf result
 
     ## Results used for benchmarking are obtained using GridCal with the following code:
@@ -486,25 +487,60 @@ def test_zip_loads():
              [-4.1095890411 + 10.9589041096j, -4.1237113402 + 9.2783505155j, 0.0000000000 + 0.j,
                  -4.1237113402 + 9.2783505155j, 12.3570117215 - 29.4856051405j]])
 
-    import os
+    losses_gridcal = 4.69773448916-2.710430515j
 
-    abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname( __file__ ))),
-                'networks','power_system_test_case_pickles', 'case5_demo_gridcal.p')
+    abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                            'networks', 'power_system_test_case_pickles', 'case5_demo_gridcal.p')
     net = pp.from_pickle(abs_path)
 
-    pp.runpp(net, voltage_depend_loads=True, numba=True,
+    pp.runpp(net, voltage_depend_loads=True,
              recycle=dict(_is_elements=False, ppc=False, Ybus=True, bfsw=False))
 
-    ## Test Ybus matrix
+    # Test Ybus matrix
     Ybus_pp = net["_ppc"]['internal']['Ybus'].todense()
     bus_ord = net["_pd2ppc_lookups"]["bus"]
     Ybus_pp = Ybus_pp[bus_ord, :][:, bus_ord]
 
     assert np.allclose(Ybus_pp, Ybus_gridcal)
 
-    ## Test Results
+    # Test Results
     assert np.allclose(net.res_bus.vm_pu, vm_pu_gridcal)
     assert np.allclose(net.res_bus.va_degree, va_degree_gridcal)
+
+    # Test losses
+    losses_pp = net.res_bus.p_kw.sum() + 1.j * net.res_bus.q_kvar.sum()
+    assert np.isclose(losses_gridcal, - losses_pp / 1.e3)
+
+    # Test bfsw algorithm
+    pp.runpp(net, voltage_depend_loads=True, algorithm='bfsw')
+    assert np.allclose(net.res_bus.vm_pu, vm_pu_gridcal)
+    assert np.allclose(net.res_bus.va_degree, va_degree_gridcal)
+
+
+def test_zip_loads_consistency():
+    net = four_loads_with_branches_out()
+    net.load['const_i_percent'] = 40
+    net.load['const_z_percent'] = 40
+    assert runpp_with_consistency_checks(net)
+
+
+def test_zip_loads_pf_algorithms():
+    net = four_loads_with_branches_out()
+    net.load['const_i_percent'] = 40
+    net.load['const_z_percent'] = 40
+
+    alg_to_test = ['bfsw']
+    for alg in alg_to_test:
+        pp.runpp(net, algorithm='nr')
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
+
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
+
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
 
 
 if __name__ == "__main__":

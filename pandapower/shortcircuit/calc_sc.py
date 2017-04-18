@@ -22,7 +22,7 @@ from pandapower.shortcircuit.results import _extract_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-          ith=False, tk_s=1., r_fault_ohm=0., x_fault_ohm=0., branch_results=True):
+          ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0., branch_results=True):
 
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
@@ -104,7 +104,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
                              mode="sc", copy_constraints_to_ppc=False,
                              r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
-                    topology=topology, r_fault_ohm=r_fault_ohm,
+                    topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
                     consider_sgens=False, branch_results=branch_results)
     _calc_sc(net)

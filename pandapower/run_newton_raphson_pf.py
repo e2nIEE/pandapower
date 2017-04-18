@@ -103,16 +103,15 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     return ppci, Ybus, Yf, Yt
 
 
-def _get_ibus(ppci, options):
+def _get_ibus(ppci):
     """ returns vector of current injections for constant-current loads
     """
     # TODO remove PCID and QCID import after creating unique indexing file
     from pandapower.build_bus import PCID, QCID
-    if options["voltage_depend_loads"]:
-        basemva = ppci['baseMVA']
-        return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / basemva
-    else:
-        return zeros(ppci["bus"].shape[0])
+
+    return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / ppci['baseMVA']
+
+
 
 
 def _run_ac_pf_without_qlims_enforced(ppci, options):
@@ -129,7 +128,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     Sbus = makeSbus(baseMVA, bus, gen)
 
     ## compute complex bus current injections from constant current loads
-    Ibus = _get_ibus(ppci, options)
+    Ibus = _get_ibus(ppci)
 
     ## run the newton power  flow
     V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
