@@ -62,7 +62,7 @@ def _pd2ppc(net):
     use_numba = ("numba" in net["_options"] and net["_options"]["numba"] and
                  (net["_options"]["recycle"] is None or
                   not net["_options"]["recycle"]["_is_elements"]))
-#    use_numba = False
+    #use_numba = False
     if use_numba:
         net["_is_elements"] = aux._select_is_elements_numba(net)
     else:
