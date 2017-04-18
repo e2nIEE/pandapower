@@ -129,14 +129,15 @@ def _calc_line_parameter(net, ppc):
     t[:, 0] = fb
     t[:, 1] = tb
 
-    t[:, 2] = line["r_ohm_per_km"] * length / baseR / parallel
-    t[:, 3] = line["x_ohm_per_km"] * length / baseR / parallel
+    t[:, 2] = line["r_ohm_per_km"].values * length / baseR / parallel
+    t[:, 3] = line["x_ohm_per_km"].values * length / baseR / parallel
     if mode == "sc":
         if net["_options"]["case"] == "min":
             t[:, 2] *= _end_temperature_correction_factor(net)
     else:
-        t[:, 4] = 2 * net.f_hz * math.pi * line["c_nf_per_km"] * 1e-9 * baseR * length * parallel
-    t[:, 5] = line["in_service"]
+        t[:, 4] = (2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR *
+                   length * parallel)
+    t[:, 5] = line["in_service"].values
     if copy_constraints_to_ppc:
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
         vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
@@ -168,8 +169,8 @@ def _calc_trafo_parameter(net, ppc):
     temp_para[:, 2:7] = _calc_branch_values_from_trafo_df(net, ppc)
     temp_para[:, 7] = trafo["in_service"].values
     if copy_constraints_to_ppc:
-        max_load = trafo.max_loading_percent if "max_loading_percent" in trafo else 0
-        temp_para[:, 8] = max_load / 100. * trafo.sn_kva / 1000. * parallel
+        max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
+        temp_para[:, 8] = max_load / 100. * trafo.sn_kva.values / 1000. * parallel
     return temp_para
 
 
@@ -330,7 +331,7 @@ def _calc_tap_from_dataframe(net, trafo_df, vn_lv):
 
     tp_diff = trafo_df["tp_pos"].values - trafo_df["tp_mid"].values
 
-    tap_os = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"] == "hv").values
+    tap_os = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv")
     if any(tap_os):
         os_steps = trafo_df["tp_st_percent"].values[tap_os]
         vnh[tap_os] *= np.ones((tap_os.sum()), dtype=np.float) + tp_diff[tap_os] * os_steps / 100.
@@ -339,7 +340,7 @@ def _calc_tap_from_dataframe(net, trafo_df, vn_lv):
             trafo_shift[ps_os] += tp_diff[ps_os] * trafo_df["tp_st_degree"].values[ps_os]
 
     # Changing Voltage on low-voltage side
-    tap_us = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"] == "lv").values
+    tap_us = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv")
     if any(tap_us):
         us_steps = trafo_df["tp_st_percent"].values[tap_us]
         vnl[tap_us] *= np.ones((tap_us.sum()), dtype=np.float) + tp_diff[tap_us] * us_steps / 100.
@@ -356,8 +357,9 @@ def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
 
     """
     tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva * 1e-3  # adjust for low voltage side voltage converter
-    z_sc = trafo_df["vsc_percent"].values / 100. / trafo_df.sn_kva.values * 1000. * tap_lv
-    r_sc = trafo_df["vscr_percent"].values / 100. / trafo_df.sn_kva.values * 1000. * tap_lv
+    sn_kva = trafo_df.sn_kva.values
+    z_sc = trafo_df["vsc_percent"].values / 100. / sn_kva * 1000. * tap_lv
+    r_sc = trafo_df["vscr_percent"].values / 100. / sn_kva * 1000. * tap_lv
     x_sc = np.sqrt(z_sc ** 2 - r_sc ** 2)
     return r_sc, x_sc
 
@@ -469,12 +471,12 @@ def _trafo_df_from_trafo3w(net):
 def _calc_impedance_parameter(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     t = np.zeros(shape=(len(net["impedance"].index), 7), dtype=np.complex128)
-    sn_impedance = net["impedance"]["sn_kva"]
+    sn_impedance = net["impedance"]["sn_kva"].values
     sn_net = net.sn_kva
-    rij = net["impedance"]["rft_pu"]
-    xij = net["impedance"]["xft_pu"]
-    rji = net["impedance"]["rtf_pu"]
-    xji = net["impedance"]["xtf_pu"]
+    rij = net["impedance"]["rft_pu"].values
+    xij = net["impedance"]["xft_pu"].values
+    rji = net["impedance"]["rtf_pu"].values
+    xji = net["impedance"]["xtf_pu"].values
     t[:, 0] = bus_lookup[net["impedance"]["from_bus"].values]
     t[:, 1] = bus_lookup[net["impedance"]["to_bus"].values]
     t[:, 2] = rij / sn_impedance * sn_net
@@ -536,14 +538,14 @@ def _switch_branches(net, ppc):
             & (net["switch"]["et"].values == "l")
 
     # check if there are multiple opened switches at a line (-> set line out of service)
-    sw_elem = net['switch'].ix[slidx].element
+    sw_elem = net['switch'][slidx]["element"].values
     m = np.zeros_like(sw_elem, dtype=bool)
     m[np.unique(sw_elem, return_index=True)[1]] = True
 
     # if non unique elements are in sw_elem (= multiple opened bus line switches)
     if np.count_nonzero(m) < len(sw_elem):
-        from_bus = lines_is.ix[sw_elem[~m]].from_bus
-        to_bus = lines_is.ix[sw_elem[~m]].to_bus
+        from_bus = lines_is.ix[sw_elem[~m]].from_bus.values
+        to_bus = lines_is.ix[sw_elem[~m]].to_bus.values
         # check if branch is already out of service -> ignore switch
         from_bus = from_bus[~np.isnan(from_bus)].values.astype(int)
         to_bus = to_bus[~np.isnan(to_bus)].values.astype(int)
