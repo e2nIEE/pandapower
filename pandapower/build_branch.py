@@ -529,7 +529,7 @@ def _switch_branches(net, ppc):
     # get in service elements
     _is_elements = net["_is_elements"]
     lines_is = _is_elements['line']
-    bus_is = _is_elements['bus']
+    bus_is_idx = _is_elements['bus_is_idx']
 
     # opened bus line switches
     slidx = (net["switch"]["closed"].values == 0) \
@@ -563,7 +563,7 @@ def _switch_branches(net, ppc):
     # opened switches at in service lines
     slidx = slidx \
             & (np.in1d(net["switch"]["element"].values, lines_is.index)) \
-            & (np.in1d(net["switch"]["bus"].values, bus_is.index))
+            & (np.in1d(net["switch"]["bus"].values, bus_is_idx))
     nlo = np.count_nonzero(slidx)
 
     stidx = (net.switch["closed"].values == 0) & (net.switch["et"].values == "t")
@@ -691,17 +691,17 @@ def _branches_with_oos_buses(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     _is_elements = net["_is_elements"]
-    bus_is = _is_elements['bus']
+    bus_is_idx = _is_elements['bus_is_idx']
     line_is = _is_elements['line']
 
-    n_oos_buses = len(net['bus']) - len(bus_is)
+    n_oos_buses = len(net['bus']) - len(bus_is_idx)
 
     # only filter lines at oos buses if oos buses exists
     if n_oos_buses > 0:
         n_bus = len(ppc["bus"])
         future_buses = [ppc["bus"]]
         # out of service buses
-        bus_oos = net['bus'].drop(bus_is.index).index
+        bus_oos = np.setdiff1d(net['bus'].index.values, bus_is_idx)
         # from buses of line
         f_bus = line_is.from_bus.values
         t_bus = line_is.to_bus.values

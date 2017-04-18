@@ -62,7 +62,7 @@ def _pd2ppc(net):
     use_numba = ("numba" in net["_options"] and net["_options"]["numba"] and
                  (net["_options"]["recycle"] is None or
                   not net["_options"]["recycle"]["_is_elements"]))
-#    use_numba = False
+    #use_numba = False
     if use_numba:
         net["_is_elements"] = aux._select_is_elements_numba(net)
     else:
@@ -217,8 +217,8 @@ def _ppc2ppci(ppc, ppci, net):
 
     # update gen lookups
     _is_elements = net["_is_elements"]
-    eg_end = len(_is_elements['ext_grid'])
-    gen_end = eg_end + len(_is_elements['gen'])
+    eg_end = np.sum(_is_elements['ext_grid'])
+    gen_end = eg_end + np.sum(_is_elements['gen'])
     sgen_end = len(_is_elements["sgen_controllable"]) + gen_end if "sgen_controllable" in _is_elements else gen_end
     load_end = len(_is_elements["load_controllable"]) + sgen_end if "load_controllable" in _is_elements else sgen_end
 
@@ -276,7 +276,7 @@ def _update_lookup_entries(net, lookup, e2i, element):
 def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     # get buses from pandapower and ppc
     _is_elements = net["_is_elements"]
-    pandapower_index = _is_elements[element].index.values
+    pandapower_index = net[element].index.values[_is_elements[element]]
     ppc_index = sort_gens[ppc_start_index: ppc_end_index]
 
     # init lookup

@@ -253,72 +253,72 @@ def _select_is_elements(net):
     """
     recycle = net["_options"]["recycle"]
 
-    if recycle is not None and recycle["_is_elements"]:
-        if "_is_elements" not in net or net["_is_elements"] is None:
-            # sort elements according to their in service status
-            elems = ['bus', 'line']
-            for elm in elems:
-                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
-
-            # select in service buses. needed for the other elements to be selected
-            bus_is = net["bus"]["in_service"].values.astype(bool)
-            line_is = net["line"]["in_service"].values.astype(bool)
-            bus_is_ind = net["bus"][bus_is].index
-            # check if in service elements are at in service buses
-            _is_elements = {
-                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                                  & net["gen"]["in_service"].values.astype(bool)]
-                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
-                          & net["load"].in_service.values.astype(bool)
-                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
-                          & net["sgen"].in_service.values.astype(bool)
-                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
-                          & net["ward"].in_service.values.astype(bool)
-                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
-                           & net["xward"].in_service.values.astype(bool)
-                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
-                           & net["shunt"].in_service.values.astype(bool)
-                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                                              & net["ext_grid"]["in_service"].values.astype(bool)]
-                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
-                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
-            }
-        else:
-            # just update the elements
-            _is_elements = net['_is_elements']
-
-            bus_is_ind = _is_elements['bus'].index
-            # update elements
-            elems = ['gen', 'ext_grid']
-            for elm in elems:
-                _is_elements[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
-                                             & net[elm]["in_service"].values.astype(bool)]
-
-    else:
-        # select in service buses. needed for the other elements to be selected
-        bus_is_mask = net["bus"]["in_service"].values.astype(bool)
-        bus_is = net["bus"][bus_is_mask]
-        bus_is_ind = bus_is.index
-        line_is_mask = net["line"]["in_service"].values.astype(bool)
-        # check if in service elements are at in service buses
-        _is_elements = {
-            "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                              & net["gen"]["in_service"].values.astype(bool)]
-            , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
-                      & net["load"].in_service.values.astype(bool)
-            , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
-                      & net["sgen"].in_service.values.astype(bool)
-            , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
-                      & net["ward"].in_service.values.astype(bool)
-            , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
-                       & net["xward"].in_service.values.astype(bool)
-            , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
-                       & net["shunt"].in_service.values.astype(bool)
-            , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                                          & net["ext_grid"]["in_service"].values.astype(bool)]
-            , 'bus': bus_is
-            , 'line': net['line'][line_is_mask]
-        }
+#    if recycle is not None and recycle["_is_elements"]:
+#        if "_is_elements" not in net or net["_is_elements"] is None:
+#            # sort elements according to their in service status
+#            elems = ['bus', 'line']
+#            for elm in elems:
+#                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
+#
+#            # select in service buses. needed for the other elements to be selected
+#            bus_is = net["bus"]["in_service"].values.astype(bool)
+#            line_is = net["line"]["in_service"].values.astype(bool)
+#            bus_is_ind = net["bus"][bus_is].index
+#            # check if in service elements are at in service buses
+#            _is_elements = {
+#                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+#                                  & net["gen"]["in_service"].values.astype(bool)]
+#                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
+#                          & net["load"].in_service.values.astype(bool)
+#                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
+#                          & net["sgen"].in_service.values.astype(bool)
+#                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
+#                          & net["ward"].in_service.values.astype(bool)
+#                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
+#                           & net["xward"].in_service.values.astype(bool)
+#                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
+#                           & net["shunt"].in_service.values.astype(bool)
+#                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+#                                              & net["ext_grid"]["in_service"].values.astype(bool)]
+#                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
+#                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
+#            }
+#        else:
+#            # just update the elements
+#            _is_elements = net['_is_elements']
+#
+#            bus_is_ind = _is_elements['bus'].index
+#            # update elements
+#            elems = ['gen', 'ext_grid']
+#            for elm in elems:
+#                _is_elements[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
+#                                             & net[elm]["in_service"].values.astype(bool)]
+#
+#    else:
+    # select in service buses. needed for the other elements to be selected
+    bus_is_mask = net["bus"]["in_service"].values.astype(bool)
+    bus_is = net["bus"][bus_is_mask]
+    bus_is_idx = bus_is.index
+    line_is_mask = net["line"]["in_service"].values.astype(bool)
+    # check if in service elements are at in service buses
+    _is_elements = {
+        "gen": np.in1d(net["gen"].bus.values, bus_is_idx) \
+               & net["gen"]["in_service"].values.astype(bool)
+        , "load": np.in1d(net["load"].bus.values, bus_is_idx) \
+                  & net["load"].in_service.values.astype(bool)
+        , "sgen": np.in1d(net["sgen"].bus.values, bus_is_idx) \
+                  & net["sgen"].in_service.values.astype(bool)
+        , "ward": np.in1d(net["ward"].bus.values, bus_is_idx) \
+                  & net["ward"].in_service.values.astype(bool)
+        , "xward": np.in1d(net["xward"].bus.values, bus_is_idx) \
+                   & net["xward"].in_service.values.astype(bool)
+        , "shunt": np.in1d(net["shunt"].bus.values, bus_is_idx) \
+                   & net["shunt"].in_service.values.astype(bool)
+        , "ext_grid": np.in1d(net["ext_grid"].bus.values, bus_is_idx) \
+                   & net["ext_grid"]["in_service"].values.astype(bool)
+        , "bus_is_idx": bus_is_idx
+        , 'line': net['line'][line_is_mask]
+    }
 
     return _is_elements
 
@@ -401,7 +401,6 @@ def _select_is_elements_numba(net, isolated_nodes=None):
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-#        import pudb; pudb.set_trace()
         ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
@@ -412,11 +411,8 @@ def _select_is_elements_numba(net, isolated_nodes=None):
         element_df = net[element]
         set_elements_oos(element_df["bus"].values, element_df["in_service"].values, bus_in_service,
                          element_in_service)
-        if element == "gen" or element == "ext_grid":
-            is_elements[element] = net[element][element_in_service]
-        else:
-            is_elements[element] = element_in_service
-    is_elements["bus"] = net["bus"][bus_in_service[net["bus"].index.values]]
+        is_elements[element] = element_in_service
+    is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
     return is_elements
 
@@ -554,17 +550,14 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pp_nodes = [n for n in isolated_nodes if not (n > len(ppc2pd_bus_lookup)-1)]
     isolated_nodes_pp = ppc2pd_bus_lookup[pp_nodes]
     # remove isolated buses from _is_elements["bus"]
-    _is_elements["bus"] = _is_elements["bus"].drop(set(isolated_nodes_pp) & set(_is_elements["bus"].index))
-    bus_is_ind = _is_elements["bus"].index
+    _is_elements["bus_is_idx"] = np.setdiff1d(_is_elements["bus_is_idx"], isolated_nodes_pp)#_is_elements["bus"].drop(set(isolated_nodes_pp) & set(_is_elements["bus"].index))
+    bus_is_ind = _is_elements["bus_is_idx"]
     # check if in service elements are at in service buses
 
-    elems_to_update = ["load", "sgen", "ward", "xward", "shunt"]
+    elems_to_update = ["load", "sgen", "gen", "ward", "xward", "shunt"]
     for elem in elems_to_update:
         _is_elements[elem] = np.in1d(net[elem].bus.values, bus_is_ind) \
                              & net[elem].in_service.values.astype(bool)
-
-    _is_elements["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                                     & net["gen"]["in_service"].values.astype(bool)]
 
     net["_is_elements"] = _is_elements
 
