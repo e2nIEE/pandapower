@@ -17,10 +17,10 @@ from pypower.makeB import makeB
 from pypower.makeSbus import makeSbus
 from pypower.ppoption import ppoption
 
-from pandapower.pypower_extensions.bustypes import bustypes
-from pandapower.pypower_extensions.dcpf import dcpf
-from pandapower.pypower_extensions.makeBdc import makeBdc
-from pandapower.pypower_extensions.pfsoln import pfsoln
+from pandapower.pf.bustypes import bustypes
+from pandapower.pf.dcpf import dcpf
+from pandapower.pf.makeBdc import makeBdc
+from pandapower.pf.pfsoln import pfsoln
 
 try:
     import pplog as logging
@@ -189,9 +189,9 @@ def _import_numba_extensions_if_flag_is_true(numba):
             numba = False
 
     if numba:
-        from pandapower.pypower_extensions.makeYbus import makeYbus
+        from pandapower.pf.makeYbus import makeYbus
     else:
-        from pandapower.pypower_extensions.makeYbus_pypower import makeYbus
+        from pandapower.pf.makeYbus_pypower import makeYbus
 
     return numba, makeYbus
 

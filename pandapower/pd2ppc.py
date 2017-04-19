@@ -22,7 +22,7 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
-from pandapower.make_objective import _make_objective
+from pandapower.opf.make_objective import _make_objective
 
 
 def _pd2ppc(net):

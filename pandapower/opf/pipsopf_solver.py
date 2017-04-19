@@ -17,8 +17,8 @@ from pypower.opf_consfcn import opf_consfcn
 from pypower.opf_costfcn import opf_costfcn
 from pypower.util import sub2ind
 
-from pandapower.pypower_extensions.opf_hessfcn import opf_hessfcn #temporary changed import to match bugfix path
-from pandapower.pypower_extensions.pips import pips
+from pandapower.opf.opf_hessfcn import opf_hessfcn #temporary changed import to match bugfix path
+from pandapower.opf.pips import pips
 
 
 def pipsopf_solver(om, ppopt, out_opt=None):

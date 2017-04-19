@@ -6,9 +6,9 @@ from pypower.idx_bus import VM, VA, GS
 from pypower.idx_gen import PG, VG, GEN_STATUS, GEN_BUS
 from pypower.makeSbus import makeSbus
 
-from pandapower.pypower_extensions.bustypes import bustypes
-from pandapower.pypower_extensions.dcpf import dcpf
-from pandapower.pypower_extensions.makeBdc import makeBdc
+from pandapower.pf.bustypes import bustypes
+from pandapower.pf.dcpf import dcpf
+from pandapower.pf.makeBdc import makeBdc
 
 
 def _run_dc_pf(ppci):

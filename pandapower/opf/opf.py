@@ -14,8 +14,8 @@ from pypower.idx_bus import MU_VMIN
 from pypower.idx_gen import MU_QMIN
 from pypower.opf_args import opf_args2
 
-from pandapower.pypower_extensions.opf_execute import opf_execute #temporary changed import to match bugfix path
-from pandapower.pypower_extensions.opf_setup import opf_setup #temporary changed import to match bugfix path
+from pandapower.opf.opf_execute import opf_execute #temporary changed import to match bugfix path
+from pandapower.opf.opf_setup import opf_setup #temporary changed import to match bugfix path
 
 
 def opf(*args):

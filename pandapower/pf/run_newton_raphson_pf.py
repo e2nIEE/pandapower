@@ -9,13 +9,14 @@ from pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
 from pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pypower.makeSbus import makeSbus
 
-from pandapower.pypower_extensions.bustypes import bustypes
-from pandapower.pypower_extensions.makeYbus_pypower import makeYbus as makeYbus_pypower
-from pandapower.pypower_extensions.newtonpf import newtonpf
-from pandapower.pypower_extensions.pfsoln import pfsoln
-from pandapower.run_dc_pf import _run_dc_pf
+from pandapower.pf.bustypes import bustypes
+from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
+from pandapower.pf.newtonpf import newtonpf
+from pandapower.pf.pfsoln import pfsoln
+from pandapower.pf.run_dc_pf import _run_dc_pf
+
 try:
-    from pandapower.pypower_extensions.makeYbus import makeYbus as makeYbus_numba
+    from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
 except:
     pass
 
@@ -112,11 +113,12 @@ def _get_ibus(ppci):
     return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / ppci['baseMVA']
 
 
-
-
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
-        makeYbus = makeYbus_numba
+        try:
+            makeYbus = makeYbus_numba
+        except:
+            makeYbus = makeYbus_pypower
     else:
         makeYbus = makeYbus_pypower
 

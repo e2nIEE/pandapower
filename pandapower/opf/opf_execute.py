@@ -21,7 +21,7 @@ from pypower.opf_costfcn import opf_costfcn
 from pypower.ppver import ppver
 from pypower.update_mupq import update_mupq
 
-from pandapower.pypower_extensions.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
+from pandapower.opf.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
 
 
 def opf_execute(om, ppopt):

@@ -5,25 +5,20 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-import pandas as pd
-import warnings
-
-from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.results import _set_buses_out_of_service, _extract_results, \
-                        reset_results, _copy_results_ppci_to_ppc
-from pandapower.auxiliary import get_values, _select_is_elements, \
-                        calculate_line_results, _add_ppc_options, _add_pf_options
-from pandapower.topology import estimate_voltage_vector
-from pandapower.pypower_extensions.runpf import _get_pf_variables_from_ppci, \
-                        _store_results_from_pf_in_ppci
 from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pypower.int2ext import int2ext
-
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
+from pandapower.auxiliary import get_values, _select_is_elements, \
+    _add_ppc_options, _add_pf_options
+from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.pf.runpf import _get_pf_variables_from_ppci, \
+    _store_results_from_pf_in_ppci
+from pandapower.results import _extract_results, \
+    reset_results, _copy_results_ppci_to_ppc
+from pandapower.topology import estimate_voltage_vector
 
 try:
     import pplog as logging
@@ -618,7 +613,7 @@ class state_estimation(object):
             self.bad_data_present = True
             self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
         successful = self.bad_data_present
-        
+
         if (v_in_out is not None) and (delta_in_out is not None):
             return successful
 
@@ -757,7 +752,7 @@ def _extract_results_se(self, ppc):
     Thereby old results of a powerflow analysis will be protected against data loss.
     Note: You can find previous pf-results in the known data structure (res_xxx).
     """
-    
+
     # create 'res_xxx_est' data frameworks
     self.net.res_bus_est = self.net._empty_res_bus.copy()
     self.net.res_line_est = self.net._empty_res_line.copy()
@@ -772,7 +767,7 @@ def _extract_results_se(self, ppc):
     self.net.res_shunt_est = self.net._empty_res_shunt.copy()
     self.net.res_ward_est = self.net._empty_res_ward.copy()
     self.net.res_xward_est = self.net._empty_res_xward.copy()
-    
+
     # store bus results
     bus_idx = self.mapping_table[self.net["bus"].index.values]
     self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
@@ -782,10 +777,10 @@ def _extract_results_se(self, ppc):
                                              self.mapping_table) * self.s_ref / 1e3
     self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
                                                self.mapping_table) * self.s_ref / 1e3
-    
+
     # store previous pf-results
     pre_results_bus = self.net.res_bus.copy()
-    # check if previous pf-results are available 
+    # check if previous pf-results are available
     check_pre_pf_results = len(self.net.res_line) > 0
     if check_pre_pf_results:
         pre_results_line = self.net.res_line.copy()
@@ -800,12 +795,12 @@ def _extract_results_se(self, ppc):
         pre_results_shunt = self.net.res_shunt.copy()
         pre_results_ward = self.net.res_ward.copy()
         pre_results_xward = self.net.res_xward.copy()
-    
+
     # get results
     _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
                     numba=True, ac=True, algorithm='nr', max_iteration="auto")
     _extract_results(self.net, ppc)
-    
+
     # copy results to 'est'-dictionaries
     self.net.res_line_est = self.net.res_line
     self.net.res_dcline_est = self.net.res_dcline
@@ -819,7 +814,7 @@ def _extract_results_se(self, ppc):
     self.net.res_shunt_est = self.net.res_shunt
     self.net.res_ward_est = self.net.res_ward
     self.net.res_xward_est = self.net.res_xward
-    
+
     # reset 'res'-dictionaries to previous pf-results (if required)
     if check_pre_pf_results:
         self.net.res_line = pre_results_line

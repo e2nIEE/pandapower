@@ -1,11 +1,11 @@
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.create import create_gen
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
-from pandapower.pypower_extensions.runpf import _runpf
+from pandapower.pf.run_bfswpf import _run_bfswpf
+from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
+from pandapower.pf.runpf import _runpf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results
-from pandapower.run_bfswpf import _run_bfswpf
-from pandapower.run_dc_pf import _run_dc_pf
-from pandapower.run_newton_raphson_pf import _run_newton_raphson_pf
 
 
 class AlgorithmUnknown(ppException):
