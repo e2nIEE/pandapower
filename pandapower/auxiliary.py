@@ -345,10 +345,12 @@ def _check_connectivity(ppc):
                                       (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
 
-    all_nodes = ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int)
-
     reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
-    isolated_nodes = np.setdiff1d(all_nodes, reachable)
+    # TODO: the former impl. excluded ppc buses that are already oos, but is this necessary ?
+    # if so: bus_not_reachable = np.hstack([ppc['bus'][:, BUS_TYPE] != 4, np.array([False])])
+    bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
+    bus_not_reachable[reachable] = False
+    isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network!")
         # set buses in ppc out of service
