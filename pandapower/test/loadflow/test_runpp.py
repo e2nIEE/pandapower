@@ -15,6 +15,7 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import LoadflowNotConverged
+from pandapower.toolbox import nets_equal
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element, \
     result_test_network_generator
@@ -562,9 +563,7 @@ def test_pvpq_lookup():
     pp.runpp(net_numba, numba=True)
     pp.runpp(net, numba=False)
 
-    assert np.allclose(net.res_bus.vm_pu.values, net_numba.res_bus.vm_pu.values)
-    assert np.allclose(net.res_bus.va_degree.values, net_numba.res_bus.va_degree.values)
-
+    assert nets_equal(net, net_numba)
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])
