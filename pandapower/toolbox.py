@@ -265,13 +265,16 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     not_equal = []
 
     if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
-        # for two networks make sure both have the same keys ...
-        if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
-            logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
+        # for two networks make sure both have the same keys that do not start with "_"...
+        x_keys = [key for key in x.keys() if not key.startswith("_")]
+        y_keys = [key for key in y.keys() if not key.startswith("_")]
+
+        if len(set(x_keys) - set(y_keys)) + len(set(y_keys) - set(x_keys)) > 0:
+            logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
             return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in x.keys():
+        for df_name in x_keys:
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
