@@ -427,8 +427,6 @@ def _controllable_to_bool(ctrl):
 def _add_gen_impedances_ppc(net, ppc):
     _add_ext_grid_sc_impedance(net, ppc)
     _add_gen_sc_impedance(net, ppc)
-    if net._options["consider_sgens"] and net._options["fault"] != "2ph":
-        _add_sgen_sc_impedance(net, ppc)
 
 def _add_ext_grid_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
@@ -486,22 +484,24 @@ def _add_gen_sc_impedance(net, ppc):
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
-def _add_sgen_sc_impedance(net, ppc):
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+def _add_motor_impedances_ppc(net, ppc):
     sgen = net.sgen[net._is_elements["sgen"]]
-    if len(sgen) == 0:
+    if not "motor" in sgen.type.values:
         return
-    if any(pd.isnull(sgen.sn_kva)):
-        raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
-    sgen_buses = sgen.bus.values
-    sgen_buses_ppc = bus_lookup[sgen_buses]
+    motor = sgen[sgen.type=="motor"]
+    for par in ["sn_kva", "rx", "k"]:
+        if any(pd.isnull(motor[par])):
+            raise UserWarning("%s needs to be specified for all motors in net.sgen.%s"%(par, par))
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    motor_buses = motor.bus.values
+    motor_buses_ppc = bus_lookup[motor_buses]
 
-    z_sgen = 1 / (sgen.sn_kva.values * 1e-3) / 3 #1 us reference voltage in pu
-    x_sgen = np.sqrt(z_sgen**2 / (0.1**2 + 1))
-    r_sgen = np.sqrt(z_sgen**2 - x_sgen**2)
-    y_sgen = 1 / (r_sgen + x_sgen*1j)
+    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k #1 us reference voltage in pu
+    x_motor = np.sqrt(z_motor**2 / (motor.rx**2 + 1))
+    r_motor = np.sqrt(z_motor**2 - x_motor**2)
+    y_motor = 1 / (r_motor + x_motor*1j)
 
-    buses, gs, bs = _sum_by_group(sgen_buses_ppc, y_sgen.real, y_sgen.imag)
+    buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 

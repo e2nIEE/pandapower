@@ -395,7 +395,6 @@ def wye_delta(zbr_n, s):
                                      (zbr_n[1] + zbr_n[0] - zbr_n[2]),
                                      (zbr_n[2] + zbr_n[1] - zbr_n[0])])
 
-
 def _trafo_df_from_trafo3w(net):
     mode = net._options["mode"]
     trafos2w = {}
@@ -598,18 +597,30 @@ def _switch_branches(net, ppc):
             to_buses = ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1].real.astype(int)
             from_buses = ppc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0].real \
                 .astype(int)
+
+            if mode == "sc":
+                from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
+                new_sc_buses = np.zeros(shape=(nlo, 10), dtype=float)
+
             if len(to_buses):
                 ix = ls_info[:, 0] == 1
                 new_ls_buses[ix, 7] = ppc["bus"][to_buses, 7]
                 new_ls_buses[ix, 8] = ppc["bus"][to_buses, 8]
+                if mode == "sc":
+                    new_sc_buses[ix, C_MAX] = ppc["bus_sc"][to_buses, C_MAX]
+                    new_sc_buses[ix, C_MIN] = ppc["bus_sc"][to_buses, C_MIN]
+
             if len(from_buses):
                 ix = ls_info[:, 0] == 0
                 new_ls_buses[ix, 7] = ppc["bus"][from_buses, 7]
                 new_ls_buses[ix, 8] = ppc["bus"][from_buses, 8]
+                if mode == "sc":
+                    new_sc_buses[ix, C_MAX] = ppc["bus_sc"][from_buses, C_MAX]
+                    new_sc_buses[ix, C_MIN] = ppc["bus_sc"][from_buses, C_MIN]
 
             future_buses.append(new_ls_buses)
             if mode == "sc":
-                ppc["bus_sc"] = np.vstack([ppc["bus_sc"], np.zeros(shape=(nlo, 10), dtype=float)])
+                ppc["bus_sc"] = np.vstack([ppc["bus_sc"], new_sc_buses])
 
             # re-route the end of lines to a new bus
             ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \

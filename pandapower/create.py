@@ -10,7 +10,7 @@ from numpy import nan, isnan, arange, dtype, zeros
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-
+from pandapower.version import __version__
 
 def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     """
@@ -284,7 +284,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
         "_ppc2pd_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": 1.2,
+        "version": float(__version__[:3]),
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -464,9 +464,9 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
         - postive value   -> load
         - negative value  -> generation
-        
+
         **const_z_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant impedance load at rated voltage
-        
+
         **const_i_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant current load at rated voltage
 
         **sn_kva** (float, default None) - Nominal power of the load
