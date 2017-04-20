@@ -422,10 +422,12 @@ def _select_is_elements_numba(net, isolated_nodes=None):
 
     is_elements = dict()
     for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid"]:
-        element_in_service = np.zeros(len(net[element].index), dtype=bool)
-        element_df = net[element]
-        set_elements_oos(element_df["bus"].values, element_df["in_service"].values, bus_in_service,
-                         element_in_service)
+        len_ = len(net[element].index)
+        element_in_service = np.zeros(len_, dtype=bool)
+        if len_ > 0:
+            element_df = net[element]
+            set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
+                             bus_in_service, element_in_service)
         is_elements[element] = element_in_service
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
