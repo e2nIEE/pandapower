@@ -5,11 +5,15 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+
+
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
+from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
+    _build_measurement_vectors
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import get_values, _select_is_elements, \
     _add_ppc_options, _add_pf_options
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
@@ -68,7 +72,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
+                    calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
     """
     Wrapper function for bad data removal.
 
@@ -116,7 +120,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
 
 def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, chi2_prob_false=0.05):
+                  calculate_voltage_angles=True, chi2_prob_false=0.05):
     """
     Wrapper function for the chi-squared test.
 
@@ -175,6 +179,7 @@ class state_estimation(object):
         self.net = net
         self.s_ref = 1e6
         self.s_node_powers = None
+        self.mapping_table = None
         # variables for chi^2 / rn_max tests
         self.hx = None
         self.R_inv = None
@@ -186,9 +191,6 @@ class state_estimation(object):
         self.pp_meas_indices = None
         self.delta = None
         self.bad_data_present = None
-        # offset to accommodate pypower - pandapower differences (additional columns)
-        self.br_col_offset = 6
-        self.mapping_table = None
 
     def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
         """
@@ -261,193 +263,18 @@ class state_estimation(object):
         self.net["_is_elements"] = _select_is_elements(self.net)
         ppc, ppci = _pd2ppc(self.net)
         self.mapping_table = self.net["_pd2ppc_lookups"]["bus"]
-        br_cols = ppci["branch"].shape[1]
-        bs_cols = ppci["bus"].shape[1]
         # restore backup of previous results
         self.net.res_bus.vm_pu = vm_backup
         self.net.res_bus.va_degree = va_backup
-        # set measurements for ppc format
-        # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
-        # pandapower measurement indices V, P, Q
-        bus_append = np.full((ppci["bus"].shape[0], 9), np.nan, dtype=ppci["bus"].dtype)
 
-        v_measurements = self.net.measurement[(self.net.measurement.type == "v")
-                                              & (self.net.measurement.element_type == "bus")]
-        if len(v_measurements):
-            bus_positions = self.mapping_table[v_measurements.bus.values.astype(int)]
-            bus_append[bus_positions, 0] = v_measurements.value.values
-            bus_append[bus_positions, 1] = v_measurements.std_dev.values
-            bus_append[bus_positions, 6] = v_measurements.index.values
+        br_cols = ppci["branch"].shape[1]
+        bs_cols = ppci["bus"].shape[1]
 
-        p_measurements = self.net.measurement[(self.net.measurement.type == "p")
-                                              & (self.net.measurement.element_type == "bus")]
-        if len(p_measurements):
-            bus_positions = self.mapping_table[p_measurements.bus.values.astype(int)]
-            bus_append[bus_positions, 2] = p_measurements.value.values * 1e3 / self.s_ref
-            bus_append[bus_positions, 3] = p_measurements.std_dev.values * 1e3 / self.s_ref
-            bus_append[bus_positions, 7] = p_measurements.index.values
+        # add measurements to ppci structure
+        ppci = _add_measurements_to_ppc(self.net, self.mapping_table, ppci, self.s_ref)
 
-        q_measurements = self.net.measurement[(self.net.measurement.type == "q")
-                                              & (self.net.measurement.element_type == "bus")]
-        if len(q_measurements):
-            bus_positions = self.mapping_table[q_measurements.bus.values.astype(int)]
-            bus_append[bus_positions, 4] = q_measurements.value.values * 1e3 / self.s_ref
-            bus_append[bus_positions, 5] = q_measurements.std_dev.values * 1e3 / self.s_ref
-            bus_append[bus_positions, 8] = q_measurements.index.values
-
-        # add virtual measurements for artificial buses, which were created because
-        # of an open line switch. p/q are 0. and std dev is 1. (small value)
-        new_in_line_buses = np.setdiff1d(np.arange(ppci["bus"].shape[0]),
-                                         self.mapping_table[self.mapping_table >= 0])
-        bus_append[new_in_line_buses, 2] = 0.
-        bus_append[new_in_line_buses, 3] = 1.
-        bus_append[new_in_line_buses, 4] = 0.
-        bus_append[new_in_line_buses, 5] = 1.
-
-        # add 15 columns to mpc[branch] for Im_from, Im_from std dev, Im_to, Im_to std dev,
-        # P_from, P_from std dev, P_to, P_to std dev, Q_from, Q_from std dev,  Q_to, Q_to std dev,
-        # pandapower measurement index I, P, Q
-        branch_append = np.full((ppci["branch"].shape[0], 15), np.nan, dtype=ppci["branch"].dtype)
-
-        i_measurements = self.net.measurement[(self.net.measurement.type == "i")
-                                              & (self.net.measurement.element_type == "line")]
-        if len(i_measurements):
-            meas_from = i_measurements[(i_measurements.bus.values.astype(int) ==
-                                        self.net.line.from_bus[i_measurements.element]).values]
-            meas_to = i_measurements[(i_measurements.bus.values.astype(int) ==
-                                      self.net.line.to_bus[i_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            i_a_to_pu_from = (self.net.bus.vn_kv[meas_from.bus] * 1e3 / self.s_ref).values
-            i_a_to_pu_to = (self.net.bus.vn_kv[meas_to.bus] * 1e3 / self.s_ref).values
-            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu_from
-            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu_from
-            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu_to
-            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu_to
-            branch_append[i_measurements.element.values.astype(int), 12] = \
-                i_measurements.index.values
-
-        p_measurements = self.net.measurement[(self.net.measurement.type == "p")
-                                              & (self.net.measurement.element_type == "line")]
-        if len(p_measurements):
-            meas_from = p_measurements[(p_measurements.bus.values.astype(int) ==
-                                        self.net.line.from_bus[p_measurements.element]).values]
-            meas_to = p_measurements[(p_measurements.bus.values.astype(int) ==
-                                      self.net.line.to_bus[p_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            branch_append[ix_from, 4] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 5] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 6] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 7] = meas_to.std_dev.values * 1e3 / self.s_ref
-            branch_append[p_measurements.element.values.astype(int), 13] = \
-                p_measurements.index.values
-
-        q_measurements = self.net.measurement[(self.net.measurement.type == "q")
-                                              & (self.net.measurement.element_type == "line")]
-        if len(q_measurements):
-            meas_from = q_measurements[(q_measurements.bus.values.astype(int) ==
-                                        self.net.line.from_bus[q_measurements.element]).values]
-            meas_to = q_measurements[(q_measurements.bus.values.astype(int) ==
-                                      self.net.line.to_bus[q_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            branch_append[ix_from, 8] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 9] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
-            branch_append[q_measurements.element.values.astype(int), 14] = \
-                q_measurements.index.values
-
-        i_tr_measurements = self.net.measurement[(self.net.measurement.type == "i")
-                                                 & (self.net.measurement.element_type ==
-                                                 "transformer")]
-        if len(i_tr_measurements):
-            meas_from = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
-                                           self.net.trafo.hv_bus[i_tr_measurements.element]).values]
-            meas_to = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
-                                         self.net.trafo.lv_bus[i_tr_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            i_a_to_pu_from = (self.net.bus.vn_kv[meas_from.bus] * 1e3 / self.s_ref).values
-            i_a_to_pu_to = (self.net.bus.vn_kv[meas_to.bus] * 1e3 / self.s_ref).values
-            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu_from
-            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu_from
-            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu_to
-            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu_to
-            branch_append[i_tr_measurements.element.values.astype(int), 12] = \
-                i_tr_measurements.index.values
-
-        p_tr_measurements = self.net.measurement[(self.net.measurement.type == "p") &
-                                                 (self.net.measurement.element_type ==
-                                                  "transformer")]
-        if len(p_tr_measurements):
-            meas_from = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
-                                           self.net.trafo.hv_bus[p_tr_measurements.element]).values]
-            meas_to = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
-                                         self.net.trafo.lv_bus[p_tr_measurements.element]).values]
-            ix_from = len(self.net.line) + meas_from.element.values.astype(int)
-            ix_to = len(self.net.line) + meas_to.element.values.astype(int)
-            branch_append[ix_from, 4] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 5] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 6] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 7] = meas_to.std_dev.values * 1e3 / self.s_ref
-            branch_append[p_tr_measurements.element.values.astype(int), 13] = \
-                p_tr_measurements.index.values
-
-        q_tr_measurements = self.net.measurement[(self.net.measurement.type == "q") &
-                                                 (self.net.measurement.element_type ==
-                                                 "transformer")]
-        if len(q_tr_measurements):
-            meas_from = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
-                                           self.net.trafo.hv_bus[q_tr_measurements.element]).values]
-            meas_to = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
-                                         self.net.trafo.lv_bus[q_tr_measurements.element]).values]
-            ix_from = len(self.net.line) + meas_from.element.values.astype(int)
-            ix_to = len(self.net.line) + meas_to.element.values.astype(int)
-            branch_append[ix_from, 8] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 9] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
-            branch_append[q_tr_measurements.element.values.astype(int), 14] = \
-                q_tr_measurements.index.values
-
-        ppci["bus"] = np.hstack((ppci["bus"], bus_append))
-        ppci["branch"] = np.hstack((ppci["branch"], branch_append))
-
-        p_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 2])
-        p_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 4])
-        p_line_t_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 6])
-        q_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 4])
-        q_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 8])
-        q_line_t_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 10])
-        v_bus_not_nan = ~np.isnan(ppci["bus"][:, bs_cols + 0])
-        i_line_f_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 0])
-        i_line_t_not_nan = ~np.isnan(ppci["branch"][:, br_cols + 2])
-
-        # piece together our measurement vector z
-        z = np.concatenate((ppci["bus"][p_bus_not_nan, bs_cols + 2],
-                            ppci["branch"][p_line_f_not_nan, br_cols + 4],
-                            ppci["branch"][p_line_t_not_nan, br_cols + 6],
-                            ppci["bus"][q_bus_not_nan, bs_cols + 4],
-                            ppci["branch"][q_line_f_not_nan, br_cols + 8],
-                            ppci["branch"][q_line_t_not_nan, br_cols + 10],
-                            ppci["bus"][v_bus_not_nan, bs_cols + 0],
-                            ppci["branch"][i_line_f_not_nan, br_cols + 0],
-                            ppci["branch"][i_line_t_not_nan, br_cols + 2]
-                            )).real.astype(np.float64)
-
-        # conserve the pandapower indices of measurements in the ppci order
-        self.pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bs_cols + 7],
-                                               ppci["branch"][p_line_f_not_nan, br_cols + 13],
-                                               ppci["branch"][p_line_t_not_nan, br_cols + 13],
-                                               ppci["bus"][q_bus_not_nan, bs_cols + 8],
-                                               ppci["branch"][q_line_f_not_nan, br_cols + 14],
-                                               ppci["branch"][q_line_t_not_nan, br_cols + 14],
-                                               ppci["bus"][v_bus_not_nan, bs_cols + 6],
-                                               ppci["branch"][i_line_f_not_nan, br_cols + 12],
-                                               ppci["branch"][i_line_t_not_nan, br_cols + 12]
-                                               )).real.astype(int)
+        # calculate relevant vectors from ppci measurements
+        z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci, br_cols, bs_cols)
 
         # number of nodes
         n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
@@ -460,31 +287,20 @@ class state_estimation(object):
                               (len(z), 2 * n_active - 1))
             return False
 
-        # Set the starting values for all active buses
+        # set the starting values for all active buses
         v_m = ppci["bus"][:, 7]
         delta = ppci["bus"][:, 8] * np.pi / 180  # convert to rad
         delta_masked = np.ma.array(delta, mask=False)
         delta_masked.mask[slack_buses] = True
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
-        # Matrix calculation object
+        # matrix calculation object
         sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref, bs_cols, br_cols)
 
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
 
-        # Covariance matrix R
-        r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bs_cols + 3],
-                                ppci["branch"][p_line_f_not_nan, br_cols + 5],
-                                ppci["branch"][p_line_t_not_nan, br_cols + 7],
-                                ppci["bus"][q_bus_not_nan, bs_cols + 5],
-                                ppci["branch"][q_line_f_not_nan, br_cols + 9],
-                                ppci["branch"][q_line_t_not_nan, br_cols + 11],
-                                ppci["bus"][v_bus_not_nan, bs_cols + 1],
-                                ppci["branch"][i_line_f_not_nan, br_cols + 1],
-                                ppci["branch"][i_line_t_not_nan, br_cols + 3]
-                                )).real.astype(np.float64)
-
+        # invert covariance matrix
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
 
         current_error = 100
@@ -493,7 +309,6 @@ class state_estimation(object):
         while current_error > self.tolerance and current_iterations < self.max_iterations:
             self.logger.debug(" Starting iteration %d" % (1 + current_iterations))
             try:
-
                 # create h(x) for the current iteration
                 h_x = sem.create_hx(v_m, delta)
 
@@ -502,9 +317,6 @@ class state_estimation(object):
 
                 # Jacobian matrix H
                 H = csr_matrix(sem.create_jacobian(v_m, delta))
-
-                # if not np.linalg.cond(H) < 1 / sys.float_info.epsilon:
-                #    self.logger.error("Error in matrix H")
 
                 # Gain matrix G_m
                 # G_m = H^t * R^-1 * H
@@ -526,6 +338,7 @@ class state_estimation(object):
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
+
         # Print output for results
         if current_error <= self.tolerance:
             successful = True
@@ -547,15 +360,13 @@ class state_estimation(object):
         ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
         # calculate line results (in ppc_i)
-        baseMVA, bus, gen, branch = _get_pf_variables_from_ppci(ppci)[0:4]
+        s_ref, bus, gen, branch = _get_pf_variables_from_ppci(ppci)[0:4]
         out = np.flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
         br = np.flatnonzero(branch[:, BR_STATUS]).astype(int)  # in-service branches
         # complex power at "from" bus
-        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(sem.Yf[br, :] * v_cpx) \
-             * baseMVA
+        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(sem.Yf[br, :] * v_cpx) * s_ref
         # complex power injected at "to" bus
-        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) \
-             * baseMVA
+        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) * s_ref
         branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
         branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
         ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
@@ -572,7 +383,6 @@ class state_estimation(object):
         self.hx = h_x
         self.V = v_m
         self.delta = delta
-        self.z = z
         return successful
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
