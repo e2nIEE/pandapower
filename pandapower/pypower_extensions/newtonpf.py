@@ -5,7 +5,7 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int32
+from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int32, max
 from pypower.dSbus_dV import dSbus_dV
 from scipy.sparse import hstack, vstack, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
@@ -53,7 +53,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
     # generate lookup pvpq -> index pvpq (used in createJ)
-    pvpq_lookup = zeros(max(pvpq) + 1, dtype=int)
+    pvpq_lookup = zeros(max(Ybus.indices) + 1, dtype=int)
     pvpq_lookup[pvpq] = arange(len(pvpq))
 
     # import "numba enhanced" functions
