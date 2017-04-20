@@ -14,7 +14,7 @@ from pandapower.idx_bus import BASE_KV
 try:
     from pandapower.pf.makeYbus import makeYbus
 except ImportError:
-    from pypower.makeYbus import makeYbus
+    from pandapower.pf.makeYbus_pypower import makeYbus
 
 
 def _calc_equiv_sc_impedance(net, ppc):

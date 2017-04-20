@@ -7,11 +7,17 @@
 import copy
 
 import numpy as np
+
 from pandapower.idx_area import PRICE_REF_BUS
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pandapower.idx_gen import GEN_BUS, GEN_STATUS
-from pypower.run_userfcn import run_userfcn
+
+try:
+    from pypower.run_userfcn import run_userfcn
+except ImportError:
+    # ToDo: Error only for OPF functions if PYPOWER is not installed
+    pass
 
 import pandapower.auxiliary as aux
 #from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \

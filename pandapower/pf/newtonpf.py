@@ -5,14 +5,14 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int32, max
-from pypower.dSbus_dV import dSbus_dV
+from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float64, empty, int32, max, complex128
+from pandapower.pf.dSbus_dV_pypower import dSbus_dV
 from scipy.sparse import hstack, vstack, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
 
 try:
     from pandapower.pf.create_J import create_J, create_J2
-    from pandapower.pf.dSbus_dV import dSbus_dV_calc, dSbus_dV
+    from pandapower.pf.dSbus_dV_numba import dSbus_dV_numba_sparse
 except:
     pass
 
@@ -118,9 +118,9 @@ def _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=None):
 
 def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, Ibus=None):
 
-    Ibus = zeros(len(V)) if Ibus is None else Ibus
+    Ibus = zeros(len(V), dtype=complex128) if Ibus is None else -Ibus
     # create Jacobian from fast calc of dS_dV
-    dVm_x, dVa_x = dSbus_dV_calc(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I=Ibus)
+    dVm_x, dVa_x = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), Ibus)
 
     # data in J, space preallocated is bigger than acutal Jx -> will be reduced later on
     Jx = empty(len(dVm_x) * 4, dtype=float64)

@@ -8,23 +8,27 @@
 from time import time
 
 from numpy import flatnonzero as find, r_, zeros, pi, ones, exp, argmax, real
-from pypower.fdpf import fdpf
-from pypower.gausspf import gausspf
+
 from pandapower.idx_brch import PF, PT, QF, QT
 from pandapower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
 from pandapower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
-from pypower.makeB import makeB
-from pypower.makeSbus import makeSbus
-from pypower.ppoption import ppoption
-
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.dcpf import dcpf
 from pandapower.pf.makeBdc import makeBdc
+from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.pfsoln import pfsoln
 
 try:
+    from pypower.makeB import makeB
+    from pypower.ppoption import ppoption
+    from pypower.fdpf import fdpf
+    from pypower.gausspf import gausspf
+except ImportError:
+    raise ImportError("Cannot import PYPOWER functions. Select a different solver, for example nr, or install PYPOWER")
+
+try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

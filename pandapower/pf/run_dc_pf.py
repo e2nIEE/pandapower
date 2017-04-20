@@ -1,14 +1,14 @@
 from time import time
 
 from numpy import flatnonzero as find, pi, exp, zeros, ones, real
+
 from pandapower.idx_brch import PF, PT, QF, QT
 from pandapower.idx_bus import VM, VA, GS
 from pandapower.idx_gen import PG, VG, GEN_STATUS, GEN_BUS
-from pypower.makeSbus import makeSbus
-
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.dcpf import dcpf
 from pandapower.pf.makeBdc import makeBdc
+from pandapower.pf.makeSbus import makeSbus
 
 
 def _run_dc_pf(ppci):

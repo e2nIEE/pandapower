@@ -5,11 +5,11 @@
 from time import time
 
 from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
+
 from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
 from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
-from pypower.makeSbus import makeSbus
-
 from pandapower.pf.bustypes import bustypes
+from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pf.newtonpf import newtonpf
 from pandapower.pf.pfsoln import pfsoln
