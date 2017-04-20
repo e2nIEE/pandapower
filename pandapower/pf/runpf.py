@@ -10,9 +10,9 @@ from time import time
 from numpy import flatnonzero as find, r_, zeros, pi, ones, exp, argmax, real
 from pypower.fdpf import fdpf
 from pypower.gausspf import gausspf
-from pypower.idx_brch import PF, PT, QF, QT
-from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
-from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+from pandapower.idx_brch import PF, PT, QF, QT
+from pandapower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
+from pandapower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pypower.makeB import makeB
 from pypower.makeSbus import makeSbus
 from pypower.ppoption import ppoption

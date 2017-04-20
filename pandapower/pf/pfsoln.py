@@ -6,9 +6,9 @@
 """
 
 from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pypower.idx_bus import VM, VA, PD, QD
-from pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.idx_bus import VM, VA, PD, QD
+from pandapower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
 from scipy.sparse import csr_matrix
 
 EPS = finfo(float).eps

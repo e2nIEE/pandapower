@@ -10,7 +10,7 @@ import numpy as np
 from scipy.sparse.linalg import inv
 
 from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
-from pypower.idx_bus import BASE_KV
+from pandapower.idx_bus import BASE_KV
 try:
     from pandapower.pf.makeYbus import makeYbus
 except ImportError:

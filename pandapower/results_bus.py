@@ -6,8 +6,8 @@
 
 import numpy as np
 from numpy import zeros, array, float, hstack, invert
-from pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q
-from pypower.idx_gen import PG, QG
+from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q
+from pandapower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 

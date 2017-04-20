@@ -8,8 +8,8 @@
 """
 
 from numpy import ones, flatnonzero as find
-from pypower.idx_bus import BUS_TYPE, REF, PV, PQ
-from pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.idx_bus import BUS_TYPE, REF, PV, PQ
+from pandapower.idx_gen import GEN_BUS, GEN_STATUS
 from scipy.sparse import csr_matrix as sparse
 
 

@@ -5,7 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2

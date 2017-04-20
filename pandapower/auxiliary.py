@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import six
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 try:
     import pplog as logging

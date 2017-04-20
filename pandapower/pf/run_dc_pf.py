@@ -1,9 +1,9 @@
 from time import time
 
 from numpy import flatnonzero as find, pi, exp, zeros, ones, real
-from pypower.idx_brch import PF, PT, QF, QT
-from pypower.idx_bus import VM, VA, GS
-from pypower.idx_gen import PG, VG, GEN_STATUS, GEN_BUS
+from pandapower.idx_brch import PF, PT, QF, QT
+from pandapower.idx_bus import VM, VA, GS
+from pandapower.idx_gen import PG, VG, GEN_STATUS, GEN_BUS
 from pypower.makeSbus import makeSbus
 
 from pandapower.pf.bustypes import bustypes

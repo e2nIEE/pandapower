@@ -9,9 +9,9 @@
 from time import time
 
 from numpy import zeros, c_, shape
-from pypower.idx_brch import MU_ANGMAX
-from pypower.idx_bus import MU_VMIN
-from pypower.idx_gen import MU_QMIN
+from pandapower.idx_brch import MU_ANGMAX
+from pandapower.idx_bus import MU_VMIN
+from pandapower.idx_gen import MU_QMIN
 from pypower.opf_args import opf_args2
 
 from pandapower.opf.opf_execute import opf_execute #temporary changed import to match bugfix path

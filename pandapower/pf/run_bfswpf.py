@@ -2,9 +2,9 @@ from time import time  # alternatively use import timeit.default_timer as time
 
 import numpy as np
 import scipy as sp
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, BR_STATUS, SHIFT
-from pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
-from pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
+from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, BR_STATUS, SHIFT
+from pandapower.idx_bus import BUS_I, BUS_TYPE, GS, BS
+from pandapower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
 from pypower.makeSbus import makeSbus
 from scipy.sparse import csr_matrix, csgraph
 from six import iteritems

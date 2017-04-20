@@ -5,8 +5,8 @@
 from time import time
 
 from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
-from pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
-from pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
+from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
+from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pypower.makeSbus import makeSbus
 
 from pandapower.pf.bustypes import bustypes

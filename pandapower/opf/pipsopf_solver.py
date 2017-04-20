@@ -8,10 +8,10 @@
 """
 
 from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_
-from pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
-from pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
-from pypower.idx_cost import MODEL, PW_LINEAR, NCOST
-from pypower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from pandapower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
+from pandapower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
+from pandapower.idx_cost import MODEL, PW_LINEAR, NCOST
+from pandapower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
 from pypower.makeYbus import makeYbus
 from pypower.opf_consfcn import opf_consfcn
 from pypower.opf_costfcn import opf_costfcn

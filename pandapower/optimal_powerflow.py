@@ -1,7 +1,7 @@
 import warnings
 
 from pypower.add_userfcn import add_userfcn
-from pypower.idx_bus import VM
+from pandapower.idx_bus import VM
 from pypower.ppoption import ppoption
 from scipy.sparse import csr_matrix as sparse
 

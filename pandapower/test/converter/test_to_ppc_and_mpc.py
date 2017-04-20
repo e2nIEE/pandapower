@@ -6,7 +6,7 @@
 
 import numpy as np
 import pytest
-from pypower.idx_bus import VM, BUS_I, VA
+from pandapower.idx_bus import VM, BUS_I, VA
 from pypower.ppoption import ppoption
 from pypower.runpf import runpf
 
@@ -14,7 +14,7 @@ import pandapower.converter as cv
 from pandapower.powerflow import LoadflowNotConverged, reset_results
 
 
-# from pypower.idx_gen import PG, QG, GEN_BUS
+# from pandapower.idx_gen import PG, QG, GEN_BUS
 
 
 def test_to_ppc_and_mpc():

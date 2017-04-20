@@ -11,10 +11,10 @@ from warnings import warn
 from numpy import array, zeros, argsort, arange, flatnonzero as find
 from pypower.e2i_data import e2i_data
 from pypower.e2i_field import e2i_field
-from pypower.idx_area import PRICE_REF_BUS
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pypower.idx_bus import PQ, PV, REF, NONE, BUS_I, BUS_TYPE
-from pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.idx_area import PRICE_REF_BUS
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.idx_bus import PQ, PV, REF, NONE, BUS_I, BUS_TYPE
+from pandapower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.run_userfcn import run_userfcn
 from scipy.sparse import csr_matrix as sparse
 

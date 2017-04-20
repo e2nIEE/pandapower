@@ -11,9 +11,9 @@ from sys import stdout, stderr
 
 from numpy import array, arange, pi, zeros, r_
 from pypower.dcopf_solver import dcopf_solver
-from pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
-from pypower.idx_bus import VM
-from pypower.idx_gen import GEN_BUS, VG
+from pandapower.idx_brch import MU_ANGMIN, MU_ANGMAX
+from pandapower.idx_bus import VM
+from pandapower.idx_gen import GEN_BUS, VG
 from pypower.ipoptopf_solver import ipoptopf_solver
 from pypower.makeYbus import makeYbus
 from pypower.opf_consfcn import opf_consfcn

@@ -7,10 +7,10 @@
 import copy
 
 import numpy as np
-from pypower.idx_area import PRICE_REF_BUS
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pypower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.idx_area import PRICE_REF_BUS
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.idx_gen import GEN_BUS, GEN_STATUS
 from pypower.run_userfcn import run_userfcn
 
 import pandapower.auxiliary as aux

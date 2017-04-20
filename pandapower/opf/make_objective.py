@@ -5,7 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 from numpy import zeros, array, concatenate, power
-from pypower.idx_cost import MODEL, NCOST, COST
+from pandapower.idx_cost import MODEL, NCOST, COST
 
 
 def _make_objective(ppci, net):

@@ -6,8 +6,8 @@
 
 import numpy as np
 from numba import jit
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_bus import GS, BS
+from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_bus import GS, BS
 from scipy.sparse import csr_matrix, coo_matrix
 
 from pandapower.pf.makeYbus_pypower import branch_vectors

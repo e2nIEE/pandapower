@@ -13,9 +13,9 @@ from pypower.d2ASbr_dV2 import d2ASbr_dV2
 from pypower.d2Sbus_dV2 import d2Sbus_dV2
 from pypower.dIbr_dV import dIbr_dV
 from pypower.dSbr_dV import dSbr_dV
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_cost import MODEL, POLYNOMIAL
-from pypower.idx_gen import PG, QG
+from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_cost import MODEL, POLYNOMIAL
+from pandapower.idx_gen import PG, QG
 from pypower.opf_consfcn import opf_consfcn
 from pypower.opf_costfcn import opf_costfcn
 from pypower.polycost import polycost

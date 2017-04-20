@@ -5,8 +5,8 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from pypower.idx_bus import VM, VA
-from pypower.idx_gen import PG, QG
+from pandapower.idx_bus import VM, VA
+from pandapower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
