@@ -81,40 +81,6 @@ except:
 logger = logging.getLogger(__name__)
 
 
-# defining check whether geodata are in lat/lon using geopy
-
-def _on_map_test_transf(net, projection=None, country=None):
-    """
-    checks if bus_geodata can be located on a map using geopy
-    """
-    try:
-        from geopy.geocoders import Nominatim
-        geolocator = Nominatim()
-
-    except:
-        # if geopy is not available there will be no geo-coordinates check
-        # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
-        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
-                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
-        return True
-
-    location = geolocator.reverse("{0}, {1}".format(net.bus_geodata.iloc[0]['x'],
-                                                    net.bus_geodata.iloc[0]['y']), language='en-US')
-
-    if location.address is None:
-        if country is None and projection is None:
-            logger.warning('Geo-coordinates are not in lat/lon (wgs84), '
-                           'projection transformation is possible if country information is provided '
-                           'as input argument country=<name_of_the_country>')
-            return False
-
-        if _transform_projection(net, projection) is None:
-            return False
-        else:
-            return True
-
-    else:
-        return True
 
 
 def _on_map_test(x, y):
@@ -142,69 +108,14 @@ def _on_map_test(x, y):
 
 
 
-def _transform_projection(net, projection):
-    try:
-        from pyproj import Proj, transform
-        from geopy.geocoders import Nominatim
-        geolocator = Nominatim()
-    except:
-        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
-                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
-        return None
-
-    wgs84 = Proj(init='epsg:4326')  # lat/long
-
-    # if projection is None:
-    #     # searching for projection until lat/lon drops in the pre-defined country
-    #     # dict with projections key: projection, value: name
-    #     projections = {
-    #         # TODO add more projections
-    #         Proj(init='epsg:31466'): "gauss-kruger_zone2",
-    #         Proj(init='epsg:31467'): "gauss-kruger_zone3",
-    #         Proj(init='epsg:31468'): "gauss-kruger_zone4",
-    #         Proj(init='epsg:31465'): "gauss-kruger_zone5",
-    #     }
-    #
-    #     x1, y1 = net.bus_geodata.loc[0, 'x'], net.bus_geodata.loc[0,'y']
-    #
-    #     proj_found = False
-    #     for projection in projections.keys():
-    #         lon, lat = transform(projection, wgs84, x1, y1)
-    #         location = geolocator.reverse("{0}, {1}".format(lat, lon), language='en-US')
-    #         if location is not None and "address" in location.raw:
-    #             if location.raw["address"]["country"] == country:
-    #                 proj_found = True
-    #                 break
-    #
-    #     if not proj_found:
-    #         logger.warning('No any corresponding projection found for the provided geo_data and specific country -> '
-    #                        'Network cannot be plot on a map!')
-    #         return None
-    #     else:
-    #         logger.warning('Projection {0} found to correspond to the provided geodata -> All network geodata '
-    #                        'transformed from {0} to lat/lon (wgs84)'.format(projections[projection]))
-    # else:
-    try:
-        projection = Proj(init=projection)
-    except:
-        raise ValueError("Unknown projection provided"
-                         "(format 'epsg:<number>' required as available in http://spatialreference.org/ref/epsg/ )")
-
-    # transform all geodata to long/lat using set or found projection
-    lon, lat = transform(projection, wgs84, net.bus_geodata.loc[:, 'x'].values, net.bus_geodata.loc[:, 'y'].values)
-    net.bus_geodata.loc[:, 'x'], net.bus_geodata.loc[:, 'y'] = lat, lon
-
-    if net.line_geodata.shape[0] > 0:
-        for idx in net.line_geodata.index:
-            line_coo = np.array(net.line_geodata.loc[idx, 'coords'])
-            lon, lat = transform(projection, wgs84, line_coo[:, 0], line_coo[:, 1])
-            net.line_geodata.loc[idx, 'coords'] = np.array([lat,lon]).T.tolist()
-
-    return True
-    
-
 
 def geo_data_to_latlong(net, projection):
+    """
+    
+    :param net: 
+    :param projection: 
+    :return: 
+    """
     try:
         from pyproj import Proj, transform
         from geopy.geocoders import Nominatim
@@ -241,41 +152,101 @@ def geo_data_to_latlong(net, projection):
 
 
 
-def create_bus_trace(net, buses=None, size=5, patch_type="circle", color=None, infofunc=None,
+def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
                      trace_name='buses', legendgroup=None,
-                     cmap=False, cmap_name='Jet', cmap_vals=None, cbar_title='Bus Voltage [pu]',
-                     cmin=0.9, cmax=1.1):
+                     cmap=None, cmap_vals=None, cbar_title=None,
+                     cmin=None, cmax=None):
+    """
+    Creates a plotly trace of pandapower buses.
 
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **buses** (list, None) - The buses for which the collections are created.
+        If None, all buses in the network are considered.
+
+        **size** (int, 5) - patch size
+
+        **patch_type** (str, "circle") - patch type, can be 
+
+                - "circle" for a circle
+                - "square" for a rectangle
+                - "diamond" for a diamond
+                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+
+        **infofunc** (list, None) - hoverinfo for each trace element 
+        
+        **trace_name** (String, "buses") - name of the trace which will appear in the legend
+
+        **color** (String, "blue") - color of buses in the trace
+
+        **cmap** (String, None) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd,
+            Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
+            alternatively a custom discrete colormap can be used
+
+        **cmap_vals** (list, None) - values used for coloring using colormap
+        
+        **cbar_title** (String, None) - title for the colorbar 
+
+        **cmin** (float, None) - colorbar range minimum 
+        
+        **cmax** (float, None) - colorbar range maximum
+
+        **kwargs - key word arguments are passed to the patch function
+
+    """
 
     bus_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
 
-    buses2plot = net.bus if buses is None else net.bus[net.bus.index.isin(buses)]
+    buses = net.bus.index.tolist() if buses is None else list(buses)
 
-    buses_with_geodata = buses2plot.index.isin(net.bus_geodata.index)
-    buses2plot = buses2plot[buses_with_geodata]
+    buses2plot = net.bus.index.isin(buses)
 
-    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[buses2plot.index, 'x'].tolist(),
-                                    net.bus_geodata.loc[buses2plot.index, 'y'].tolist())
+    buses_with_geodata = net.bus.index.isin(net.bus_geodata.index)
+    buses2plot = buses2plot & buses_with_geodata
 
-    bus_trace['text'] = buses2plot.name.tolist() if infofunc is None else infofunc
+    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[buses2plot, 'x'].tolist(),
+                                    net.bus_geodata.loc[buses2plot, 'y'].tolist())
+
+    bus_trace['text'] = net.bus.loc[buses2plot, 'name'] if infofunc is None else infofunc
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
 
-    if cmap:
-        # if color map is set
-        cmap_vals = net.res_bus.loc[buses2plot.index, 'vm_pu'] if cmap_vals is None else cmap_vals
+    # if color map is set
+    if cmap is not None:
+        # TODO introduce discrete colormaps (see contour plots in plotly)
+        # if cmap_vals are not given
+
+        cmap = 'Jet' if cmap is True else cmap
+
+        if cmap_vals is not None:
+            cmap_vals = cmap_vals
+        else:
+            if net.res_line.shape[0] == 0:
+                logger.error("There are no power flow results for buses voltage magnitudes which are default for bus "
+                             "colormap coloring..."
+                             "set cmap_vals input argument if you want colormap according to some specific values...")
+            cmap_vals = net.res_bus.loc[buses2plot, 'vm_pu'].values
+
+        cmap_vals = net.res_bus.loc[buses2plot, 'vm_pu'] if cmap_vals is None else cmap_vals
+
+        cmin = cmin if cmin else cmap_vals.min()
+        cmax = cmax if cmax else cmap_vals.max()
+
         bus_trace['marker'] = Marker(size=size,
-                                     cmax=cmax,  # bus_volt_pu.max()
-                                     cmin=cmin,  # bus_volt_pu.min(),
-                                     color=cmap_vals,
-                                     colorscale=cmap_name,
+                                     color=cmap_vals, cmin=cmin, cmax=cmax,
+                                     colorscale=cmap,
                                      colorbar=ColorBar(thickness=10,
-                                                       title=cbar_title,
                                                        x=1.0,
                                                        titleside='right'),
                                      )
+
+        if cbar_title:
+            bus_trace['marker']['colorbar']['title'] = cbar_title
+
     return [bus_trace]
 
 
@@ -310,10 +281,54 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
     # [:-1] is because the trace will not appear on maps if None is at the end
     return xs[:-1], ys[:-1]
 
+
+
 def create_line_trace(net, lines=None, use_line_geodata=True,
                       respect_switches=False, width=1.0, color='grey',
                       infofunc=None, trace_name='lines', legendgroup=None,
-                      cmap=False, cbar_title="Line Loading [%]", cmap_name='jet', cmin=0, cmax=100, **kwargs):
+                      cmap=None, cbar_title=None, show_colorbar = True,
+                      cmap_vals=None, cmin=None, cmax=None, **kwargs):
+    """
+        Creates a plotly trace of pandapower lines.
+
+        Input:
+            **net** (pandapowerNet) - The pandapower network
+
+        OPTIONAL:
+            **lines** (list, None) - The lines for which the collections are created.
+                If None, all lines in the network are considered.
+
+            **width** (int, 1) - line width
+
+            **respect_switches** (bool, False) - flag for consideration of disconnected lines
+
+            **infofunc** (list, None) - hoverinfo for each line
+
+            **trace_name** (String, "lines") - name of the trace which will appear in the legend
+
+            **color** (String, "grey") - color of lines in the trace
+            
+            **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
+                e.g. groups according to voltage level (as used in `vlevel_plotly`)
+
+            **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet` 
+                colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd, 
+                Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+
+            **cmap_vals** (list, None) - values used for coloring using colormap
+            
+            **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
+
+            **cbar_title** (String, None) - title for the colorbar 
+
+            **cmin** (float, None) - colorbar range minimum 
+
+            **cmax** (float, None) - colorbar range maximum
+
+            **kwargs - key word arguments are passed to the patch function
+
+        """
+
 
     # defining lines to be plot
     lines = net.line.index.tolist() if lines is None else list(lines)
@@ -339,12 +354,22 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
         lines2plot = lines2plot[lines_with_geodata]
 
 
-    if cmap:
+    if cmap is not None:
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
         # TODO correct this when plotly solves existing github issue about Line colorbar
-        cmap_line_loading = get_cmap_matplotlib_for_plotly(net.res_line.loc[lines2plot.index, 'loading_percent'],
-                                                           cmap_name=cmap_name, cmin=cmin, cmax=cmax)
+
+        cmap = 'jet' if cmap is True else cmap
+
+        if cmap_vals is not None:
+            cmap_vals = cmap_vals
+        else:
+            if net.res_line.shape[0] == 0:
+                logger.error("There are no power flow results for lines which are default for line colormap coloring..."
+                             "set cmap_vals input argument if you want colormap according to some specific values...")
+            cmap_vals = net.res_line.loc[lines2plot.index, 'loading_percent'].values
+
+        cmap_lines = get_cmap_matplotlib_for_plotly(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
 
         line_traces = []
         col_i = 0
@@ -354,24 +379,35 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
 
             line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
 
-            line_trace['line']['color'] = cmap_line_loading[col_i]
+            line_trace['line']['color'] = cmap_lines[col_i]
 
-            line_trace['text'] = line.name.tolist() if infofunc is None else infofunc[col_i]
+            line_trace['text'] = line['name'] if infofunc is None else infofunc[col_i]
 
             line_traces.append(line_trace)
             col_i += 1
 
-        # workaround to get colorbar for lines (an unvisible node is added)
-        lines_cbar = dict(type='scatter',x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
-                          marker=Marker(size=0, cmax=100.0, cmin=0.0,
-                                        color='rgb(255,255,255)',
-                                        colorscale='Jet',
-                                        colorbar=ColorBar(thickness=10,
-                                                          title=cbar_title,
-                                                          x=1.1,
-                                                          titleside='right'),
-                                        ))
-        line_traces.append(lines_cbar)
+        cmin = cmin if cmin else cmap_vals.min()
+        cmax = cmax if cmax else cmap_vals.max()
+
+        if show_colorbar:
+            try:
+                # TODO for custom colormaps
+                cbar_cmap_name = 'Jet' if cmap is 'jet' else cmap
+                # workaround to get colorbar for lines (an unvisible node is added)
+                lines_cbar = dict(type='scatter',x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
+                                  marker=Marker(size=0, cmin=cmin, cmax=cmax,
+                                                color='rgb(255,255,255)',
+                                                colorscale=cbar_cmap_name,
+                                                colorbar=ColorBar(thickness=10,
+                                                                  x=1.1,
+                                                                  titleside='right'),
+                                                ))
+                if cbar_title:
+                    lines_cbar['marker']['colorbar']['title'] = cbar_title
+
+                line_traces.append(lines_cbar)
+            except:
+                pass
 
     else:
         line_trace = dict(type='scatter',
@@ -381,7 +417,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
 
         line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot, use_line_geodata)
 
-        line_trace['text'] = lines2plot.name.tolist() if infofunc is None else infofunc
+        line_trace['text'] = lines2plot['name'].tolist() if infofunc is None else infofunc
 
         if legendgroup:
             line_trace['legendgroup'] = legendgroup
@@ -397,7 +433,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
 
         line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot, use_line_geodata)
 
-        line_trace['text'] = lines2plot.name.tolist()
+        line_trace['text'] = lines2plot['name'].tolist()
 
         if legendgroup:
             line_trace['legendgroup'] = legendgroup
@@ -411,7 +447,40 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
 
 def create_trafo_trace(net, trafos=None, color ='green', width = 5,
                        infofunc=None, trace_name ='trafos',
-                       cmap=False, cmap_name='jet', cmin=None, cmax=None, **kwargs):
+                       cmap=None, cmin=None, cmax=None, cmap_vals=None, **kwargs):
+    """
+        Creates a plotly trace of pandapower trafos.
+
+        Input:
+            **net** (pandapowerNet) - The pandapower network
+
+        OPTIONAL:
+            **trafos** (list, None) - The trafos for which the collections are created.
+                If None, all trafos in the network are considered.
+
+            **width** (int, 5) - line width
+
+            **infofunc** (list, None) - hoverinfo for each line
+
+            **trace_name** (String, "lines") - name of the trace which will appear in the legend
+
+            **color** (String, "green") - color of lines in the trace
+
+            **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd,
+                Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
+
+            **cmap_vals** (list, None) - values used for coloring using colormap
+
+            **cbar_title** (String, None) - title for the colorbar 
+
+            **cmin** (float, None) - colorbar range minimum 
+
+            **cmax** (float, None) - colorbar range maximum
+
+            **kwargs - key word arguments are passed to the patch function
+
+    """
+
 
     # defining lines to be plot
     trafos = net.trafo.index.tolist() if trafos is None else list(trafos)
@@ -425,19 +494,28 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
     tarfo2plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
 
-    if cmap:
+    if cmap is not None:
+        cmap = 'jet' if cmap is None else cmap
+
         cmin = 0 if cmin is None else cmin
         cmax = 100 if cmin is None else cmax
-        cmap_name = 'jet' if cmap_name is None else cmap_name
-        cmap_colors = get_cmap_matplotlib_for_plotly(net.res_trafo.loc[tarfo2plot.index,'loading_percent'],
-                                                            cmap_name=cmap_name, cmin=cmin, cmax=cmax)
+
+        if cmap_vals is not None:
+            cmap_vals = cmap_vals
+        else:
+            if net.res_trafo.shape[0] == 0:
+                logger.error("There are no power flow results for lines which are default for line colormap coloring..."
+                             "set cmap_vals input argument if you want colormap according to some specific values...")
+            cmap_vals = net.res_trafo.loc[tarfo2plot.index,'loading_percent'].values
+
+        cmap_colors = get_cmap_matplotlib_for_plotly(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
         trafo_traces = []
         col_i = 0
         for trafo_ind, trafo in tarfo2plot.iterrows():
             trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=cmap_colors[col_i]),
                                   hoverinfo='text', mode='lines', name=trace_name)
 
-            trafo_trace['text'] = trafo.name.tolist() if infofunc is None else infofunc[col_i]
+            trafo_trace['text'] = trafo['name'].tolist() if infofunc is None else infofunc[col_i]
 
             from_bus = net.bus_geodata.loc[trafo.hv_bus, 'x']
             to_bus = net.bus_geodata.loc[trafo.lv_bus, 'x']
@@ -455,7 +533,7 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
                            text=[], line=dict(width=width, color=color),
                            hoverinfo='text', mode='lines', name=trace_name)
 
-        trafo_trace['text'] = tarfo2plot.name.tolist() if infofunc is None else infofunc
+        trafo_trace['text'] = tarfo2plot['name'].tolist() if infofunc is None else infofunc
 
         from_bus = net.bus_geodata.loc[tarfo2plot.hv_bus, 'x'].tolist()
         to_bus = net.bus_geodata.loc[tarfo2plot.lv_bus, 'x'].tolist()
@@ -481,13 +559,15 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
 
 def draw_traces(traces, on_map = False, map_style='basic', showlegend = True, figsize=1, aspectratio ='auto'):
     """
-    plots all the traces to PLOTLY (see https://plot.ly/python/)
+    plots all the traces (which can be created using :func:`create_bus_trace`,
+                                                     :func:`create_line_trace`, 
+                                                     :func:`create_trafo_trace`) 
+    to PLOTLY (see https://plot.ly/python/)
 
     INPUT:
-        **net** - The pandapower format network
 
         **traces** - list of dicts which correspond to plotly traces
-            generated using: create_bus_trace, create_line_trace, create_trafo_trace
+            generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
 
     OPTIONAL:
         **on_map** (bool, False) - enables using mapbox plot in plotly
@@ -611,6 +691,10 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
             If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+            
+        **projection** (String, None) - defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at http://spatialreference.org/ref/epsg/
+        
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
             - 'streets'
@@ -729,6 +813,9 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
         **on_map** (bool, False) - enables using mapbox plot in plotly
             If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
+        **projection** (String, None) - defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at http://spatialreference.org/ref/epsg/
+
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
             - 'streets'
             - 'bright'
@@ -824,7 +911,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
                 aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
 
 
-def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
+def pf_res_plotly(net, cmap='Jet', use_line_geodata = None,
                   on_map=False, projection=None, map_style='basic',
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
@@ -840,13 +927,16 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
     OPTIONAL:
         **respect_switches** (bool, False) - Respect switches when artificial geodata is created
 
-        *cmap_name** (str, 'jet') - name of the colormap
+        *cmap** (str, True) - name of the colormap
 
         *colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
             Otherwise, user can define a dictionary in the form: voltage_kv : color
 
         **on_map** (bool, False) - enables using mapbox plot in plotly
             If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+
+        **projection** (String, None) - defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
             - 'streets'
@@ -898,16 +988,18 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
     # initializating bus trace
     idx = net.line.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.bus.name + '<br>' +
+    hoverinfo = (net.bus['name'] + '<br>' +
                  'U = ' + net.res_bus.loc[idx, 'vm_pu'].astype(str) + ' pu' + '<br>' +
                  'U = ' + (net.res_bus.loc[idx, 'vm_pu'] * net.bus.vn_kv).astype(str) + ' kV' + '<br>' +
                  'ang = ' + net.res_bus.loc[idx, 'va_degree'].astype(str) + ' deg'
                  ).tolist()
-    bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=True)
+    bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
+                                 cbar_title='Bus Voltage [pu]', cmin=0.9, cmax=1.1)
 
     # ----- Lines ------
     # if bus geodata is available, but no line geodata
     # if bus geodata is available, but no line geodata
+    cmap_lines = 'jet' if cmap is 'Jet' else cmap
     if use_line_geodata is None:
         use_line_geodata = False if len(net.line_geodata) == 0 else True
     elif use_line_geodata and len(net.line_geodata) == 0:
@@ -915,7 +1007,7 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
         use_line_geodata = False
     idx = net.line.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.line.name + '<br>' +
+    hoverinfo = (net.line['name'] + '<br>' +
                  'I = ' + net.res_line.loc[idx, 'loading_percent'].astype(str) + ' %' + '<br>' +
                  'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].astype(str) + ' kA' + '<br>' +
                  'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].astype(str) + ' kA' + '<br>'
@@ -924,18 +1016,22 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
                                     infofunc=hoverinfo,
-                                    cmap=True, cmap_name=cmap_name, cmin=0, cmax=100)
+                                    cmap=cmap_lines,
+                                    cmap_vals=net.res_line.loc[:, 'loading_percent'].values,
+                                    cmin=0,
+                                    cmax=100,
+                                    cbar_title='Line Loading [%]')
 
     # ----- Trafos ------
     idx = net.trafo.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.trafo.name + '<br>' +
+    hoverinfo = (net.trafo['name'] + '<br>' +
                  'I = ' + net.res_trafo.loc[idx, 'loading_percent'].astype(str) + ' %' + '<br>' +
                  'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].astype(str) + ' kA' + '<br>'  +
                  'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].astype(str) + ' kA' + '<br>'
                  ).tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
-                                      cmap=True, cmap_name='jet', cmin=0, cmax=100)
+                                      cmap=cmap_lines, cmin=0, cmax=100)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
