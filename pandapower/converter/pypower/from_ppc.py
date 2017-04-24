@@ -247,7 +247,11 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     if 'success' in ppc_net.keys():
         if ppc_net['success'] != 1:
             ppc_success = False
-            logger.error('The given data of ppc indicate a unsuccessful pypower power flow.')
+            logger.error("The given ppc data indicates an unsuccessful pypower powerflow: " +
+                         "'ppc_net['success'] != 1'")
+    if (ppc_net['branch'].shape[1] < 17):
+        ppc_success = False
+        logger.error("The shape of given ppc data indicates missing pypower powerflow results.")
 
     # --- try to run a pandapower power flow
     try:
