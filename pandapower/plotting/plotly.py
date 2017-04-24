@@ -65,6 +65,8 @@ try:
 except:
     import logging
 
+logger = logging.getLogger(__name__)
+
 try:
     import seaborn
     import matplotlib.colors as colors_mbl
@@ -76,9 +78,8 @@ try:
     color_yellow = seaborn_to_plotly_color(seaborn.xkcd_palette(["amber"])[0])
     # color_yellow = colors_bright[4]
 except:
-    colors = ["b", "g", "r", "c", "y"]
-
-logger = logging.getLogger(__name__)
+    colors = ["blue", "green", "red", "cyan", "yellow"]
+    color_yellow = "yellow"
 
 
 
@@ -111,10 +112,16 @@ def _on_map_test(x, y):
 
 def geo_data_to_latlong(net, projection):
     """
-    
-    :param net: 
-    :param projection: 
-    :return: 
+    Transforms network's geodata (in `net.bus_geodata` and `net.line_geodata`) from specified projection to lat/long (WGS84).
+
+    INPUT:      
+        **net** (pandapowerNet) - The pandapower network
+        
+        **projection** (String) - projection from which geodata are transformed to lat/long. some examples  
+        
+                - "epsg:31467" - 3-degree Gauss-Kruger zone 3
+                - "epsg:2032" - NAD27(CGQ77) / UTM zone 18N
+                - "epsg:2190" - Azores Oriental 1940 / UTM zone 26N
     """
     try:
         from pyproj import Proj, transform
@@ -159,7 +166,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     """
     Creates a plotly trace of pandapower buses.
 
-    Input:
+    INPUT:
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
@@ -291,7 +298,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
     """
         Creates a plotly trace of pandapower lines.
 
-        Input:
+        INPUT:
             **net** (pandapowerNet) - The pandapower network
 
         OPTIONAL:
@@ -451,7 +458,7 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
     """
         Creates a plotly trace of pandapower trafos.
 
-        Input:
+        INPUT:
             **net** (pandapowerNet) - The pandapower network
 
         OPTIONAL:
@@ -667,6 +674,7 @@ def draw_traces(traces, on_map = False, map_style='basic', showlegend = True, fi
     else:
         from plotly.offline import plot as plot
 
+
     plot(fig)
 
 
@@ -676,7 +684,7 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
                   line_width=1, bus_size=10, ext_grid_size=20.0,
                   bus_color=colors[0], line_color='grey', trafo_color='green', ext_grid_color=color_yellow):
     """
-    Plots a pandapower network as simple as possible in plotly (https://plot.ly/python/).
+    Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
     INPUT:
@@ -793,7 +801,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
     """
-    Plots a pandapower network in plotly (https://plot.ly/python/)
+    Plots a pandapower network in plotly 
     using lines/buses colors according to the voltage level they belong to.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
@@ -916,7 +924,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None,
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
     """
-    Plots a pandapower network in plotly (https://plot.ly/python/)
+    Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
