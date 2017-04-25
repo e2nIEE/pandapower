@@ -15,6 +15,7 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import LoadflowNotConverged
+from pandapower.toolbox import nets_equal
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element, \
     result_test_network_generator
@@ -408,6 +409,161 @@ def test_recycle():
     assert np.allclose(net.res_gen.p_kw.iloc[0], ps)
     assert np.allclose(net.res_gen.vm_pu.iloc[0], u_set)
 
+
+import os
+
+
+def test_zip_loads_gridcal():
+    ## Tests newton power flow considering zip loads against GridCal's pf result
+
+    ## Results used for benchmarking are obtained using GridCal with the following code:
+    # from GridCal.grid.CalculationEngine import *
+    #
+    # np.set_printoptions(precision=4)
+    # grid = MultiCircuit()
+    #
+    # # Add buses
+    # bus1 = Bus('Bus 1', vnom=20)
+    #
+    # bus1.controlled_generators.append(ControlledGenerator('Slack Generator', voltage_module=1.0))
+    # grid.add_bus(bus1)
+    #
+    # bus2 = Bus('Bus 2', vnom=20)
+    # bus2.loads.append(Load('load 2',
+    #                        power=0.2 * complex(40, 20),
+    #                        impedance=1 / (0.40 * (40. - 20.j)),
+    #                        current=np.conj(0.40 * (40. + 20.j)) / (20 * np.sqrt(3)),
+    #                        ))
+    # grid.add_bus(bus2)
+    #
+    # bus3 = Bus('Bus 3', vnom=20)
+    # bus3.loads.append(Load('load 3', power=complex(25, 15)))
+    # grid.add_bus(bus3)
+    #
+    # bus4 = Bus('Bus 4', vnom=20)
+    # bus4.loads.append(Load('load 4', power=complex(40, 20)))
+    # grid.add_bus(bus4)
+    #
+    # bus5 = Bus('Bus 5', vnom=20)
+    # bus5.loads.append(Load('load 5', power=complex(50, 20)))
+    # grid.add_bus(bus5)
+    #
+    # # add branches (Lines in this case)
+    # grid.add_branch(Branch(bus1, bus2, 'line 1-2', r=0.05, x=0.11, b=0.02))
+    #
+    # grid.add_branch(Branch(bus1, bus3, 'line 1-3', r=0.05, x=0.11, b=0.02))
+    #
+    # grid.add_branch(Branch(bus1, bus5, 'line 1-5', r=0.03, x=0.08, b=0.02))
+    #
+    # grid.add_branch(Branch(bus2, bus3, 'line 2-3', r=0.04, x=0.09, b=0.02))
+    #
+    # grid.add_branch(Branch(bus2, bus5, 'line 2-5', r=0.04, x=0.09, b=0.02))
+    #
+    # grid.add_branch(Branch(bus3, bus4, 'line 3-4', r=0.06, x=0.13, b=0.03))
+    #
+    # grid.add_branch(Branch(bus4, bus5, 'line 4-5', r=0.04, x=0.09, b=0.02))
+    #
+    # grid.compile()
+    #
+    # print('Ybus:\n', grid.circuits[0].power_flow_input.Ybus.todense())
+    #
+    # options = PowerFlowOptions(SolverType.NR, verbose=False, robust=False)
+    # power_flow = PowerFlow(grid, options)
+    # power_flow.run()
+    #
+    # print('\n\n', grid.name)
+    # print('\t|V|:', abs(grid.power_flow_results.voltage))
+    # print('\tVang:', np.rad2deg(np.angle(grid.power_flow_results.voltage)))
+
+    vm_pu_gridcal = np.array([1., 0.9566486349, 0.9555640318, 0.9340468428, 0.9540542172])
+    va_degree_gridcal = np.array([0., -2.3717973886, -2.345654238, -3.6303651197, -2.6713716569])
+
+    Ybus_gridcal = np.array(
+        [[10.9589041096 - 25.9973972603j, -3.4246575342 + 7.5342465753j, -3.4246575342 + 7.5342465753j,
+          0.0000000000 + 0.j, -4.1095890411 + 10.9589041096j],
+         [-3.4246575342 + 7.5342465753j, 11.8320802147 - 26.1409476063j, -4.1237113402 + 9.2783505155j,
+          0.0000000000 + 0.j, -4.1237113402 + 9.2783505155j],
+         [-3.4246575342 + 7.5342465753j, -4.1237113402 + 9.2783505155j, 10.4751981427 - 23.1190605054j,
+          -2.9268292683 + 6.3414634146j, 0.0000000000 + 0.j],
+         [0.0000000000 + 0.j, 0.0000000000 + 0.j, -2.9268292683 + 6.3414634146j, 7.0505406085 - 15.5948139301j,
+          -4.1237113402 + 9.2783505155j],
+         [-4.1095890411 + 10.9589041096j, -4.1237113402 + 9.2783505155j, 0.0000000000 + 0.j,
+          -4.1237113402 + 9.2783505155j, 12.3570117215 - 29.4856051405j]])
+
+    losses_gridcal = 4.69773448916 - 2.710430515j
+
+    abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                            'networks', 'power_system_test_case_pickles', 'case5_demo_gridcal.p')
+    net = pp.from_pickle(abs_path)
+
+    pp.runpp(net, voltage_depend_loads=True,
+             recycle=dict(_is_elements=False, ppc=False, Ybus=True, bfsw=False))
+
+    # Test Ybus matrix
+    Ybus_pp = net["_ppc"]['internal']['Ybus'].todense()
+    bus_ord = net["_pd2ppc_lookups"]["bus"]
+    Ybus_pp = Ybus_pp[bus_ord, :][:, bus_ord]
+
+    assert np.allclose(Ybus_pp, Ybus_gridcal)
+
+    # Test Results
+    assert np.allclose(net.res_bus.vm_pu, vm_pu_gridcal)
+    assert np.allclose(net.res_bus.va_degree, va_degree_gridcal)
+
+    # Test losses
+    losses_pp = net.res_bus.p_kw.sum() + 1.j * net.res_bus.q_kvar.sum()
+    assert np.isclose(losses_gridcal, - losses_pp / 1.e3)
+
+    # Test bfsw algorithm
+    pp.runpp(net, voltage_depend_loads=True, algorithm='bfsw')
+    assert np.allclose(net.res_bus.vm_pu, vm_pu_gridcal)
+    assert np.allclose(net.res_bus.va_degree, va_degree_gridcal)
+
+
+def test_zip_loads_consistency():
+    net = four_loads_with_branches_out()
+    net.load['const_i_percent'] = 40
+    net.load['const_z_percent'] = 40
+    assert runpp_with_consistency_checks(net)
+
+
+def test_zip_loads_pf_algorithms():
+    net = four_loads_with_branches_out()
+    net.load['const_i_percent'] = 40
+    net.load['const_z_percent'] = 40
+
+    alg_to_test = ['bfsw']
+    for alg in alg_to_test:
+        pp.runpp(net, algorithm='nr')
+        vm_nr = net.res_bus.vm_pu
+        va_nr = net.res_bus.va_degree
+
+        pp.runpp(net, algorithm=alg)
+        vm_alg = net.res_bus.vm_pu
+        va_alg = net.res_bus.va_degree
+
+        assert np.allclose(vm_nr, vm_alg)
+        assert np.allclose(va_nr, va_alg)
+
+
+def test_pvpq_lookup():
+    net = pp.create_empty_network()
+
+    b1 = pp.create_bus(net, vn_kv=0.4, index=4)
+    b2 = pp.create_bus(net, vn_kv=0.4, index=2)
+    b3 = pp.create_bus(net, vn_kv=0.4, index=3)
+
+    g2 = pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
+    l3 = pp.create_load(net, b2, p_kw=10)
+    e1 = pp.create_ext_grid(net, b3)
+
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.5, std_type="NAYY 4x120 SE")
+    pp.create_line(net, from_bus=b1, to_bus=b3, length_km=0.5, std_type="NAYY 4x120 SE")
+    net_numba = copy.deepcopy(net)
+    pp.runpp(net_numba, numba=True)
+    pp.runpp(net, numba=False)
+
+    assert nets_equal(net, net_numba)
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])

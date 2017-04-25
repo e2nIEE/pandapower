@@ -5,7 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from pypower.idx_bus import BASE_KV
+from pandapower.idx_bus import BASE_KV
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
@@ -29,7 +29,10 @@ def _calc_ikss(net, ppc):
 
 def _current_source_current(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    sgen = net.sgen[net._is_elements["sgen"]]
+    if not "motor" in net.sgen.type.values:
+        sgen = net.sgen[net._is_elements["sgen"]]
+    else:
+        sgen = net.sgen[(net._is_elements["sgen"]) & (net.sgen.type != "motor")]
     if len(sgen) == 0:
         ppc["bus_sc"][:, IKSSCV] = 0.
         return
@@ -37,18 +40,20 @@ def _current_source_current(net, ppc):
         raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
-    zbus = ppc["internal"]["zbus"]
+    Zbus = ppc["internal"]["Zbus"]
     i_sgen_pu = sgen.sn_kva.values / net.sn_kva * sgen.k.values * -1j
     buses, i, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
     i_sgen_bus_pu = np.zeros(ppc["bus"].shape[0], dtype=complex)
     i_sgen_bus_pu[buses] = i
-    ppc["bus_sc"][:, IKSSCV] = abs(1 / np.diag(zbus) * np.dot(zbus, i_sgen_bus_pu) / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"])
+    ppc["bus_sc"][:, IKSSCV] = abs(1 / np.diag(Zbus) * np.dot(Zbus, i_sgen_bus_pu) / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"])
 
 def _calc_ip(net, ppc):
     case = net._options["case"]
-    ppc["bus_sc"][:, IP] = np.sqrt(2) * (ppc["bus_sc"][:, KAPPA] * ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV])
+    ikss = ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV]
+    ip = np.sqrt(2) * (ppc["bus_sc"][:, KAPPA] * ikss)
+    ppc["bus_sc"][:, IP] = ip
     if net._options["branch_results"]:
-        ppc["branch_sc"][:, [IP_F, IP_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, IP], case)
+        ppc["branch_sc"][:, [IP_F, IP_T]] = _branch_currents_from_bus(ppc, ip, case)
 
 def _calc_ith(net, ppc):
     case = net._options["case"]
@@ -58,16 +63,17 @@ def _calc_ith(net, ppc):
     n = 1
     m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
     m[np.where(kappa > 1.99)] = 0
-    ppc["bus_sc"][:, ITH] = (ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV])  * np.sqrt(m + n)
+    ith = (ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV])  * np.sqrt(m + n)
+    ppc["bus_sc"][:, ITH] = ith
     if net._options["branch_results"]:
-        ppc["branch_sc"][:, [ITH_F, ITH_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, ITH], case)
+        ppc["branch_sc"][:, [ITH_F, ITH_T]] = _branch_currents_from_bus(ppc, ith, case)
 
 def _branch_currents_from_bus(ppc, current, case):
-    zbus = ppc["internal"]["zbus"]
+    Zbus = ppc["internal"]["Zbus"]
     Yf = ppc["internal"]["Yf"]
     Yt = ppc["internal"]["Yf"]
     baseI = ppc["internal"]["baseI"]
-    V = (current * baseI) * zbus
+    V = (current * baseI) * Zbus
     fb = np.real(ppc["branch"][:,0]).astype(int)
     tb = np.real(ppc["branch"][:,1]).astype(int)
     i_all_f = abs(np.conj(Yf.dot(V)))

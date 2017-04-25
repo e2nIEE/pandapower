@@ -123,7 +123,7 @@ def test_scaling_by_type():
 def test_drop_inactive_elements():
     net = pp.create_empty_network()
 
-    service = 0
+    service = False
 
     bus0 = pp.create_bus(net, vn_kv=.4, in_service=service)
     pp.create_ext_grid(net, bus0, in_service=service)
@@ -145,11 +145,12 @@ def test_drop_inactive_elements():
     sum_of_elements = 0
     for element in net.keys():
         # skip this one since we expect items here
-        if element == "std_types" or element == "_pd2ppc_lookups" or element == "_ppc2pd_lookups":
+        if element == "std_types" or element.startswith("_"):
             continue
-
         try:
             sum_of_elements += len(net[element])
+            if len(net[element]) > 0:
+                print(element)
         except TypeError:
             # _ppc is initialized with None and clashes when checking
             continue
@@ -171,7 +172,7 @@ def test_get_connected_lines_at_bus():
     pp.create_switch(net, bus0, line0, "l")
     pp.create_switch(net, bus0, line1, "l", closed=False)
     pp.create_switch(net, bus0, line2, "l")
-    
+
     lines = tb.get_connected_elements(net, "line", bus0, respect_switches=False, respect_in_service=False)
 
     assert set(lines) == set([line0, line1, line2, line3])

@@ -1,6 +1,16 @@
 Change Log
 =============
 
+unreleased
+-------------------
+- [ADDED] ZIP loads integrated in power flow
+- [ADDED] numba implementation of dissolving switch buses
+- [ADDED] Method C for calculation of factor kappa in short circuit calculation
+- [ADDED] Current source representation of full converter elements in short circuit calculations
+- [CHANGED] Speedup for calculation of branch short circuit currents
+- [CHANGED] branch results for minimum short circuit calculations are calculated as minimal currents 
+- [ADDED] interactive plots with plotly
+
 [1.2.2] - 2017-03-22
 --------------------
 - [CHANGED] Minor refactoring in pd2ppc

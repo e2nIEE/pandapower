@@ -1,14 +1,14 @@
 import warnings
 
+from pandapower.idx_bus import VM
 from pypower.add_userfcn import add_userfcn
-from pypower.idx_bus import VM
 from pypower.ppoption import ppoption
 from scipy.sparse import csr_matrix as sparse
 
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import _add_auxiliary_elements
-from pandapower.pypower_extensions.opf import opf
+from pandapower.opf.opf import opf
 from pandapower.results import _copy_results_ppci_to_ppc, reset_results, \
     _extract_results_opf
 

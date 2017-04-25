@@ -1,11 +1,11 @@
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.create import create_gen
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
-from pandapower.pypower_extensions.runpf import _runpf
+from pandapower.pf.run_bfswpf import _run_bfswpf
+from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
+from pandapower.pf.runpf import _runpf
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results
-from pandapower.run_bfswpf import _run_bfswpf
-from pandapower.run_dc_pf import _run_dc_pf
-from pandapower.run_newton_raphson_pf import _run_newton_raphson_pf
 
 
 class AlgorithmUnknown(ppException):
@@ -32,12 +32,18 @@ def _powerflow(net, **kwargs):
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
     mode = net["_options"]["mode"]
+    algorithm = net["_options"]["algorithm"]
+    max_iteration = net["_options"]["max_iteration"]
 
     net["converged"] = False
     _add_auxiliary_elements(net)
 
     if (ac and not init == "results") or not ac:
         reset_results(net)
+
+    # TODO remove this when zip loads are integrated for all PF algorithms
+    if algorithm not in ['nr', 'bfsw']:
+        net["_options"]["voltage_depend_loads"] = False
 
     if recycle["ppc"] and "_ppc" in net and net["_ppc"] is not None and "_pd2ppc_lookups" in net:
         # update the ppc from last cycle
@@ -60,7 +66,7 @@ def _powerflow(net, **kwargs):
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
-        raise LoadflowNotConverged("Power Flow did not converge!")
+        raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format(algorithm, max_iteration))
     else:
         net["_ppc"] = result
         net["converged"] = True

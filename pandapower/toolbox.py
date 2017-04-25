@@ -12,6 +12,8 @@ import pandas as pd
 from pandapower.auxiliary import get_indices, pandapowerNet
 from pandapower.create import create_empty_network, create_piecewise_linear_cost
 from pandapower.topology import unsupplied_buses
+from pandapower.run import runpp
+from pandapower.version import __version__
 
 try:
     import pplog as logging
@@ -265,13 +267,16 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     not_equal = []
 
     if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
-        # for two networks make sure both have the same keys ...
-        if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
-            logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
+        # for two networks make sure both have the same keys that do not start with "_"...
+        x_keys = [key for key in x.keys() if not key.startswith("_")]
+        y_keys = [key for key in y.keys() if not key.startswith("_")]
+
+        if len(set(x_keys) - set(y_keys)) + len(set(y_keys) - set(x_keys)) > 0:
+            logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
             return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in x.keys():
+        for df_name in x_keys:
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
@@ -430,7 +435,6 @@ def convert_format(net):
 
     if not "tp_st_degree" in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
-    net.version = 1.2
     if not "_pd2ppc_lookups" in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
@@ -452,6 +456,11 @@ def convert_format(net):
                 net["options"]["recycle"]["_is_elements"] = copy.deepcopy(net["options"]["recycle"]["is_elems"])
                 net["options"]["recycle"].pop("is_elems", None)
 
+
+    if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
+        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+    net.version = float(__version__[:3])
     return net
 
 
@@ -946,6 +955,47 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         return pandapowerNet(newnet)
     p2["std_types"] = copy.deepcopy(net["std_types"])
     return pandapowerNet(p2)
+
+def merge_nets(net1, net2, validate=True):
+    """
+    Function to concatenate two nets into one data structure. The second net is reindexed to avoid
+    duplicate element indices.
+    """
+    create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
+    net = copy.deepcopy(net1)
+    net2 = copy.deepcopy(net2)
+    if validate:
+        runpp(net1)
+        runpp(net2)
+
+    for element, table in net.items():
+        if element.startswith("_") or element.startswith("res"):
+            continue
+        if type(table) == pd.DataFrame and len(table) > 0:
+            if element == "switch":
+                bl_switches = net2.switch[net2.switch.et=="l"]
+                new_line_index = [net2.line.index.get_loc(ix) + len(net1.line) for ix in bl_switches.element.values]
+                net2.switch.loc[bl_switches.index, "element"] = new_line_index
+
+                bl_switches = net1.switch[net1.switch.et=="l"]
+                new_line_index = [net1.line.index.get_loc(ix) for ix in bl_switches.element.values]
+                net1.switch.loc[bl_switches.index, "element"] = new_line_index
+
+                bt_switches = net2.switch[net2.switch.et=="t"]
+                new_trafo_index = [net2.trafo.index.get_loc(ix) + len(net1.trafo) for ix in bt_switches.element.values]
+                net2.switch.loc[bt_switches.index, "element"] = new_trafo_index
+
+                bt_switches = net1.switch[net1.switch.et=="t"]
+                new_trafo_index = [net1.trafo.index.get_loc(ix) for ix in bt_switches.element.values]
+                net1.switch.loc[bt_switches.index, "element"] = new_trafo_index
+            net[element] = net1[element].append(net2[element], ignore_index=element!="bus")
+    if validate:
+        runpp(net)
+        dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
+        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values - net2.res_bus.vm_pu.values))
+        if dev1 > 1e-10 or dev2 > 1e-10:
+            raise UserWarning("Deviation in bus voltages after merging")
+    return net
 
 
 # --- item/element selections
