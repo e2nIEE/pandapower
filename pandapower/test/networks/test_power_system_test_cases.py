@@ -97,6 +97,16 @@ def test_case57():
     assert net.converged
 
 
+def test_case89pegase():
+    net = pn.case89pegase()
+    assert net.converged
+    pp.runpp(net)
+    assert len(net.bus) == 89
+    assert len(net.line) + len(net.trafo) == 210
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 18
+    assert net.converged
+
+
 def test_case118():
     net = pn.case118()
     assert net.converged

@@ -194,6 +194,23 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
     return case57
 
 
+def case89pegase():
+    """
+    Calls the pickle file case89pegase.p which data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
+
+    OUTPUT:
+         **net** - Returns the required ieee network case89pegase
+
+    EXAMPLE:
+         import pandapower.networks as pn
+
+         net = pn.case89pegase()
+    """
+    case89pegase = pp.from_pickle(os.path.join(_get_cases_path(), "case89pegase.p"))
+    return case89pegase
+
+
 def case118():
     """
     Calls the pickle file case118.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
