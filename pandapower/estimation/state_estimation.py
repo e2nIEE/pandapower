@@ -144,7 +144,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         (default value: 0.05)
 
     OUTPUT:
-        **successful** (boolean) - Was the state estimation successful?
+        **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
@@ -453,10 +453,9 @@ class state_estimation(object):
         else:
             self.bad_data_present = True
             self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
-        successful = self.bad_data_present
 
         if (v_in_out is not None) and (delta_in_out is not None):
-            return successful
+            return self.bad_data_present
 
     def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
                             calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
@@ -490,7 +489,7 @@ class state_estimation(object):
             (standard value: 0.05)
 
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **successful** (boolean) - True if all bad data could be removed
 
         EXAMPLE:
             perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
@@ -507,20 +506,24 @@ class state_estimation(object):
         v_in = v_in_out
         delta_in = delta_in_out
 
-        self.bad_data_present = True
-
-        while self.bad_data_present and (num_iterations < 11):
+        while num_iterations <= 10:
             # Estimate the state with bad data identified in previous iteration
             # removed from set of measurements:
-            successful = self.estimate(v_in, delta_in, calculate_voltage_angles)
+            _ = self.estimate(v_in, delta_in, calculate_voltage_angles)
             v_in_out = self.net.res_bus_est.vm_pu.values
             delta_in_out = self.net.res_bus_est.va_degree.values
 
             # Perform a Chi^2 test to determine whether bad data is to be removed.
-            self.perform_chi2_test(v_in_out, delta_in_out,
-                                   calculate_voltage_angles=calculate_voltage_angles,
-                                   chi2_prob_false=chi2_prob_false)
+            self.bad_data_present = self.perform_chi2_test(v_in_out, delta_in_out,
+                                                           calculate_voltage_angles=
+                                                           calculate_voltage_angles,
+                                                           chi2_prob_false=chi2_prob_false)
 
+            # If bad data was removed in the previous iterations, return True
+            if not self.bad_data_present:
+                return True
+
+            # Try to remove the bad data
             try:
                 # Error covariance matrix:
                 R = np.linalg.inv(self.R_inv)
@@ -547,30 +550,27 @@ class state_estimation(object):
                     self.logger.info(
                         "Largest normalized residual test failed. Bad data identified.")
 
-                    if self.bad_data_present:
-                        # Identify bad data: Determine index corresponding to max(rN):
-                        idx_rN = np.argsort(rN, axis=0)[-1]
+                    # Identify bad data: Determine index corresponding to max(rN):
+                    idx_rN = np.argsort(rN, axis=0)[-1]
 
-                        # Determine index of measurement to be removed:
-                        meas_idx = self.pp_meas_indices[idx_rN]
+                    # Determine pandapower index of measurement to be removed:
+                    meas_idx = self.pp_meas_indices[idx_rN]
 
-                        # Remove bad measurement:
-                        self.logger.info("Removing measurement: %s"
-                                         % self.net.measurement.loc[meas_idx].values[0])
-                        self.net.measurement.drop(meas_idx, inplace=True)
-                        self.logger.debug("Bad data removed from the set of measurements.")
-                    else:
-                        self.logger.debug("No bad data removed from the set of measurements.")
+                    # Remove bad measurement:
+                    self.logger.debug("Removing measurement: %s"
+                                      % self.net.measurement.loc[meas_idx].values[0])
+                    self.net.measurement.drop(meas_idx, inplace=True)
+                    self.logger.debug("Bad data removed from the set of measurements.")
+
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
 
-            self.logger.debug("rn_max identification threshold: %.2f" % rn_max_threshold)
-
+            self.logger.debug("rN_max identification threshold: %.2f" % rn_max_threshold)
             num_iterations += 1
 
-        return successful
+        return not self.bad_data_present
 
 
 def _extract_results_se(self, ppc):

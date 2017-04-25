@@ -104,7 +104,7 @@ def test_3bus_with_bad_data():
     pp.create_measurement(net, "v", "bus", 1.3, 0.05, bus=1)   # V at bus 2
 
     # 2. Do chi2-test
-    success_chi2 = chi2_analysis(net, init='flat')
+    bad_data_detected = chi2_analysis(net, init='flat')
 
     # 3. Perform rn_max_test
     success_rn_max = remove_bad_data(net, init='flat')
@@ -116,7 +116,7 @@ def test_3bus_with_bad_data():
     target_delta = np.array([0., 0.8677, 3.1381])
     diff_delta = target_delta - delta_est_rn_max
 
-    assert success_chi2
+    assert bad_data_detected
     assert success_rn_max
     assert (np.nanmax(abs(diff_v)) < 1e-4)
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
@@ -404,9 +404,10 @@ def test_IEEE_case_9_with_bad_data():
 
     # 3. Create false measurement (very close to useful values)
     pp.create_measurement(net, "v", "bus", 0.9, 0.01, bus=0)  # V at bus 0
+    # pp.create_measurement(net, "p", "bus", -1, 10., bus=4)
 
     # 4. Do chi2-test
-    success_chi2 = chi2_analysis(net, init='flat')
+    bad_data_detected = chi2_analysis(net, init='flat')
 
     # 5. Perform rn_max_test
     success_rn_max = remove_bad_data(net, init='flat')
@@ -417,7 +418,7 @@ def test_IEEE_case_9_with_bad_data():
     diff_delta = delta_SE - delta_est_rn_max
 
     assert success_SE
-    assert success_chi2
+    assert bad_data_detected
     assert success_rn_max
     assert (np.nanmax(abs(diff_v)) < 1e-5)
     assert (np.nanmax(abs(diff_delta)) < 1e-5)
