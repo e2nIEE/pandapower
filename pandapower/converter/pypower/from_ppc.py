@@ -111,6 +111,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
                           max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
                           max_q_kvar=ppc['gen'][i, 3] * 1e3,
                           min_q_kvar=ppc['gen'][i, 4] * 1e3, controllable=True)
+            if ppc['gen'][i, 1] < 0:
+                logger.info('p_kw of gen %d must be less than zero but is not.' % i)
             if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
                 logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
             if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
@@ -123,6 +125,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
                            max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
                            max_q_kvar=ppc['gen'][i, 3] * 1e3,
                            min_q_kvar=ppc['gen'][i, 4] * 1e3, controllable=True)
+            if ppc['gen'][i, 1] < 0:
+                logger.info('p_kw of sgen %d must be less than zero but is not.' % i)
             if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
                 logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
             if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
@@ -187,8 +191,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
 
             pp.create_transformer_from_parameters(
                 net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
-                vn_lv_kv=vn_lv_kv, vsc_percent=zk * sn / 1e3, vscr_percent=rk * sn / 1e3, pfe_kw=0,
-                i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
+                vn_lv_kv=vn_lv_kv, vsc_percent=zk * sn / 1e3, vscr_percent=rk * sn / 1e3,
+                pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
                 tp_st_percent=abs(ratio_1) if ratio_1 else nan,
                 tp_pos=sign(ratio_1) if ratio_1 else nan,
                 tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)
@@ -226,7 +230,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     OUTPUT:
 
         **conversion_success** - conversion_success is returned as False if pypower or pandapower
-        cannot calculate a power flow or if the maximum difference values (max_diff_values )
+        cannot calculate a powerflow or if the maximum difference values (max_diff_values )
         cannot be hold.
 
     EXAMPLE:
@@ -242,7 +246,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         The user has to take care that the loadflow results already are included in the provided \
         ppc_net.
     """
-    # --- check pypower power flow success, if possible
+    # --- check pypower powerflow success, if possible
     ppc_success = True
     if 'success' in ppc_net.keys():
         if ppc_net['success'] != 1:
@@ -253,7 +257,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         ppc_success = False
         logger.error("The shape of given ppc data indicates missing pypower powerflow results.")
 
-    # --- try to run a pandapower power flow
+    # --- try to run a pandapower powerflow
     try:
         pp.runpp(pp_net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
     except:
@@ -263,13 +267,13 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
             try:
                 pp.runpp(pp_net, trafo_model="pi")
             except:
-                logger.error('The pandapower net power flow does not converge.')
+                logger.error('The pandapower powerflow does not converge.')
                 return False
 
-    # --- prepare power flow result comparison by reordering pp results as they are in ppc results
+    # --- prepare powerflow result comparison by reordering pp results as they are in ppc results
     if (ppc_success) & (pp_net.converged):
 
-        # --- store pypower power flow results
+        # --- store pypower powerflow results
         ppc_res_branch = ppc_net['branch'][:, 13:17]
         ppc_res_bus = ppc_net['bus'][:, 7:9]
         ppc_res_gen = ppc_net['gen'][:, 1:3]
@@ -372,7 +376,7 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                         (already_used_branches.lv_bus == from_bus)] += 1
         pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
 
-        # --- do the power flow result comparison
+        # --- do the powerflow result comparison
         diff_res_bus = ppc_res_bus - pp_res_bus
         diff_res_branch = ppc_res_branch - pp_res_branch * 1e-3
         diff_res_gen = ppc_res_gen + pp_res_gen * 1e-3
