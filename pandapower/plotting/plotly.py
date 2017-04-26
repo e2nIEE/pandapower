@@ -14,6 +14,12 @@ import numpy as np
 
 import pandas as pd
 
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def in_ipynb():
@@ -24,8 +30,10 @@ def in_ipynb():
     return not hasattr(main, '__file__')
 
 
-
-from plotly.graph_objs import Figure, Data, Layout, Scatter, Marker, XAxis, YAxis, Line, ColorBar, Scattermapbox
+try:
+    from plotly.graph_objs import Figure, Data, Layout, Scatter, Marker, XAxis, YAxis, Line, ColorBar, Scattermapbox
+except ImportError:
+    logger.exception("Failed to import plotly!")
 
 def seaborn_to_plotly_palette(scl, transparence = None):
     ''' converts a seaborn color palette to a plotly colorscale '''
@@ -60,12 +68,7 @@ def get_cmap_matplotlib_for_plotly(values, cmap_name='jet', cmin=None, cmax=None
     return ['rgb({0},{1},{2})'.format(r, g, b) for r, g, b in bus_fill_colors_rgba]
 
 
-try:
-    import pplog as logging
-except ImportError:
-    import logging
 
-logger = logging.getLogger(__name__)
 
 try:
     import seaborn
