@@ -526,6 +526,12 @@ class state_estimation(object):
                 # Error covariance matrix:
                 R = np.linalg.inv(self.R_inv)
 
+                # todo for future debugging: this line's results have changed with the ppc
+                # overhaul in April 2017 after commit 9ae5b8f42f69ae39f8c8cf (which still works)
+                # there are differences of < 1e-10 for the Omega entries which cause
+                # the function to work far worse. As of now it is unclear if it's just numerical
+                # accuracy to blame or an error in the code. a sort in the ppc creation function
+                # was removed which caused this issue
                 # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
                 # (S is the sensitivity matrix: r = S*e):
                 Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
