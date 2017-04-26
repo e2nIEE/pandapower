@@ -14,6 +14,12 @@ import numpy as np
 
 import pandas as pd
 
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def in_ipynb():
@@ -24,8 +30,10 @@ def in_ipynb():
     return not hasattr(main, '__file__')
 
 
-
-from plotly.graph_objs import Figure, Data, Layout, Scatter, Marker, XAxis, YAxis, Line, ColorBar, Scattermapbox
+try:
+    from plotly.graph_objs import Figure, Data, Layout, Scatter, Marker, XAxis, YAxis, Line, ColorBar, Scattermapbox
+except ImportError:
+    logger.exception("Failed to import plotly!")
 
 def seaborn_to_plotly_palette(scl, transparence = None):
     ''' converts a seaborn color palette to a plotly colorscale '''
@@ -60,10 +68,7 @@ def get_cmap_matplotlib_for_plotly(values, cmap_name='jet', cmin=None, cmax=None
     return ['rgb({0},{1},{2})'.format(r, g, b) for r, g, b in bus_fill_colors_rgba]
 
 
-try:
-    import pplog as logging
-except:
-    import logging
+
 
 try:
     import seaborn
@@ -75,10 +80,9 @@ try:
     colors_hex = [colors_mbl.rgb2hex(col) for col in colors_sns]
     color_yellow = seaborn_to_plotly_color(seaborn.xkcd_palette(["amber"])[0])
     # color_yellow = colors_bright[4]
-except:
-    colors = ["b", "g", "r", "c", "y"]
-
-logger = logging.getLogger(__name__)
+except ImportError:
+    colors = ["blue", "green", "red", "cyan", "yellow"]
+    color_yellow = "yellow"
 
 
 
@@ -89,16 +93,20 @@ def _on_map_test(x, y):
     """
     try:
         from geopy.geocoders import Nominatim
+        from geopy.exc import GeocoderTimedOut
         geolocator = Nominatim()
 
-    except:
+    except ImportError:
         # if geopy is not available there will be no geo-coordinates check
         # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
         logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
                        'if geo-coordinates are not in lat/lon format an empty plot may appear...')
         return True
-
-    location = geolocator.reverse("{0}, {1}".format(x, y), language='en-US')
+    try:
+        location = geolocator.reverse("{0}, {1}".format(x, y), language='en-US')
+    except GeocoderTimedOut as e:
+        logger.Error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
+                     "try geo_data_to_latlong(net, projection) to transform geodata to lat/long!")
 
     if location.address is None:
         return False
@@ -111,16 +119,20 @@ def _on_map_test(x, y):
 
 def geo_data_to_latlong(net, projection):
     """
-    
-    :param net: 
-    :param projection: 
-    :return: 
+    Transforms network's geodata (in `net.bus_geodata` and `net.line_geodata`) from specified projection to lat/long (WGS84).
+
+    INPUT:      
+        **net** (pandapowerNet) - The pandapower network
+        
+        **projection** (String) - projection from which geodata are transformed to lat/long. some examples  
+        
+                - "epsg:31467" - 3-degree Gauss-Kruger zone 3
+                - "epsg:2032" - NAD27(CGQ77) / UTM zone 18N
+                - "epsg:2190" - Azores Oriental 1940 / UTM zone 26N
     """
     try:
         from pyproj import Proj, transform
-        from geopy.geocoders import Nominatim
-        geolocator = Nominatim()
-    except:
+    except ImportError:
         logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
                        'if geo-coordinates are not in lat/lon format an empty plot may appear...')
         return
@@ -159,7 +171,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     """
     Creates a plotly trace of pandapower buses.
 
-    Input:
+    INPUT:
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
@@ -291,7 +303,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
     """
         Creates a plotly trace of pandapower lines.
 
-        Input:
+        INPUT:
             **net** (pandapowerNet) - The pandapower network
 
         OPTIONAL:
@@ -451,7 +463,7 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
     """
         Creates a plotly trace of pandapower trafos.
 
-        Input:
+        INPUT:
             **net** (pandapowerNet) - The pandapower network
 
         OPTIONAL:
@@ -588,10 +600,15 @@ def draw_traces(traces, on_map = False, map_style='basic', showlegend = True, fi
     """
 
     if on_map:
-        on_map = _on_map_test(traces[0]['x'][0], traces[0]['y'][0])
+        try:
+            on_map = _on_map_test(traces[0]['x'][0], traces[0]['y'][0])
+        except:
+            logger.warning("Test if geo-data are in lat/long cannot be performed using geopy -> "
+                           "eventual plot errors are possible.")
+
         if on_map is False:
-            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
-                           " plot on maps is not possible.\n"
+            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -> "
+                           "plot on maps is not possible.\n"
                            "Use geo_data_to_latlong(net, projection) to transform geodata from specific projection.")
 
     if on_map:
@@ -667,6 +684,7 @@ def draw_traces(traces, on_map = False, map_style='basic', showlegend = True, fi
     else:
         from plotly.offline import plot as plot
 
+
     plot(fig)
 
 
@@ -676,7 +694,7 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
                   line_width=1, bus_size=10, ext_grid_size=20.0,
                   bus_color=colors[0], line_color='grey', trafo_color='green', ext_grid_color=color_yellow):
     """
-    Plots a pandapower network as simple as possible in plotly (https://plot.ly/python/).
+    Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
     INPUT:
@@ -745,14 +763,8 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
             on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
-    if on_map:
-        if projection is None:
-            if not _on_map_test(net.bus_geodata.x.iloc[0], net.bus_geodata.y.iloc[0]):
-                on_map = False
-                logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
-                               " plot on maps is not possible")
-        else:
-            geo_data_to_latlong(net, projection=projection)
+    if on_map and projection is not None:
+        geo_data_to_latlong(net, projection=projection)
 
     # ----- Buses ------
     # initializating bus trace
@@ -793,7 +805,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
     """
-    Plots a pandapower network in plotly (https://plot.ly/python/)
+    Plots a pandapower network in plotly 
     using lines/buses colors according to the voltage level they belong to.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
@@ -849,14 +861,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
             on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
-    if on_map:
-        if projection is None:
-            if not _on_map_test(net.bus_geodata.x.iloc[0], net.bus_geodata.y.iloc[0]):
-                on_map = False
-                logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
-                               " plot on maps is not possible")
-        else:
-            geo_data_to_latlong(net, projection=projection)
+    if on_map and projection is not None:
+        geo_data_to_latlong(net, projection=projection)
 
     # if bus geodata is available, but no line geodata
     if use_line_geodata is None:
@@ -916,7 +922,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None,
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
     """
-    Plots a pandapower network in plotly (https://plot.ly/python/)
+    Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
@@ -975,13 +981,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None,
             on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
-    if on_map:
-        if projection is None:
-            if not _on_map_test(net.bus_geodata.x.iloc[0], net.bus_geodata.y.iloc[0]):
-                on_map = False
-                logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
-                               " plot on maps is not possible")
-        else:
+    if on_map and projection is not None:
             geo_data_to_latlong(net, projection=projection)
 
     # ----- Buses ------
