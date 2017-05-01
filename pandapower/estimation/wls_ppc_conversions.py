@@ -1,4 +1,22 @@
 import numpy as np
+from pandapower.auxiliary import _select_is_elements, _add_ppc_options
+from pandapower.pd2ppc import _pd2ppc
+
+
+def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
+    # initialize ppc voltages
+    net.res_bus.vm_pu = v_start
+    net.res_bus.vm_pu[net.bus.index[net.bus.in_service == False]] = np.nan
+    net.res_bus.va_degree = delta_start
+    # select elements in service and convert pandapower ppc to ppc
+    net._options = {}
+    _add_ppc_options(net, check_connectivity=False, init="results", trafo_model="t",
+                     copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
+                     calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                     recycle=dict(_is_elements=False, ppc=False, Ybus=False))
+    net["_is_elements"] = _select_is_elements(net)
+    ppc, ppci = _pd2ppc(net)
+    return ppc, ppci
 
 
 def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):

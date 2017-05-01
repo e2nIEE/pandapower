@@ -12,16 +12,14 @@ from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
 from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors
+    _build_measurement_vectors, _init_ppc
+from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.auxiliary import get_values, _select_is_elements, \
-    _add_ppc_options, _add_pf_options
+from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.runpf import _get_pf_variables_from_ppci, \
     _store_results_from_pf_in_ppci
-from pandapower.results import _extract_results, \
-    reset_results, _copy_results_ppci_to_ppc
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
 from pandapower.topology import estimate_voltage_vector
 
 try:
@@ -144,7 +142,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         (default value: 0.05)
 
     OUTPUT:
-        **successful** (boolean) - Was the state estimation successful?
+        **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
     wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
@@ -179,7 +177,6 @@ class state_estimation(object):
         self.net = net
         self.s_ref = 1e6
         self.s_node_powers = None
-        self.mapping_table = None
         # variables for chi^2 / rn_max tests
         self.hx = None
         self.R_inv = None
@@ -243,35 +240,18 @@ class state_estimation(object):
         if delta_start is None:
             delta_start = np.zeros(self.net.bus.shape[0])
 
-        # initialize the ppc bus with the initial values given
         # initialize result tables if not existant
-        if "res_bus" not in self.net or "res_line" not in self.net:
-            reset_results(self.net)
-        # create backup of current results
-        vm_backup = self.net.res_bus.vm_pu.copy()
-        va_backup = self.net.res_bus.va_degree.copy()
-        # initialize ppc voltages
-        self.net.res_bus.vm_pu = v_start
-        self.net.res_bus.vm_pu[self.net.bus.index[self.net.bus.in_service == False]] = np.nan
-        self.net.res_bus.va_degree = delta_start
-        # select elements in service and convert pandapower ppc to ppc
-        self.net._options = {}
-        _add_ppc_options(self.net, check_connectivity=False, init="results", trafo_model="t",
-                         copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
-                         calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
-                         recycle=dict(_is_elements=False, ppc=False, Ybus=False))
-        self.net["_is_elements"] = _select_is_elements(self.net)
-        ppc, ppci = _pd2ppc(self.net)
-        self.mapping_table = self.net["_pd2ppc_lookups"]["bus"]
-        # restore backup of previous results
-        self.net.res_bus.vm_pu = vm_backup
-        self.net.res_bus.va_degree = va_backup
+        _copy_power_flow_results(self.net)
+
+        # initialize ppc
+        ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
+        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
 
         br_cols = ppci["branch"].shape[1]
         bs_cols = ppci["bus"].shape[1]
 
         # add measurements to ppci structure
-        ppci = _add_measurements_to_ppc(self.net, self.mapping_table, ppci, self.s_ref)
+        ppci = _add_measurements_to_ppc(self.net, mapping_table, ppci, self.s_ref)
 
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci, br_cols, bs_cols)
@@ -303,7 +283,7 @@ class state_estimation(object):
         # invert covariance matrix
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
 
-        current_error = 100
+        current_error = 100.
         current_iterations = 0
 
         while current_error > self.tolerance and current_iterations < self.max_iterations:
@@ -312,34 +292,36 @@ class state_estimation(object):
                 # create h(x) for the current iteration
                 h_x = sem.create_hx(v_m, delta)
 
-                # Residual r
+                # residual r
                 r = csr_matrix(z - h_x).T
 
-                # Jacobian matrix H
+                # jacobian matrix H
                 H = csr_matrix(sem.create_jacobian(v_m, delta))
 
-                # Gain matrix G_m
+                # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
 
-                # State Vector difference d_E
+                # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
                 d_E = spsolve(G_m, H.T * (r_inv * r))
                 E += d_E
 
-                # Update V/delta
+                # update V/delta
                 delta[non_slack_buses] = E[:len(non_slack_buses)]
                 v_m = np.squeeze(E[len(non_slack_buses):])
 
+                # prepare next iteration
                 current_iterations += 1
                 current_error = np.max(np.abs(d_E))
                 self.logger.debug("Current error: %.4f" % current_error)
+
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
 
-        # Print output for results
+        # print output for results
         if current_error <= self.tolerance:
             successful = True
             self.logger.info("WLS State Estimation successful (%d iterations)" % current_iterations)
@@ -352,6 +334,7 @@ class state_estimation(object):
         # write voltage into ppc
         ppci["bus"][:, 7] = v_m
         ppci["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
+
         # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
@@ -359,6 +342,7 @@ class state_estimation(object):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
         ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
+
         # calculate line results (in ppc_i)
         s_ref, bus, gen, branch = _get_pf_variables_from_ppci(ppci)[0:4]
         out = np.flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
@@ -370,11 +354,25 @@ class state_estimation(object):
         branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
         branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
         ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
+
         # convert to pandapower indices
         ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
+
         # extract results from ppc
-        _extract_results_se(self, ppc)
-        # store  variables required for chi^2 and r_N_max test:
+        _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
+                        numba=True, ac=True, algorithm='nr', max_iteration="auto")
+        _extract_results(self.net, ppc)
+
+        # restore backup of previous results
+        _rename_results(self.net)
+
+        # additionally, write bus results (these are not written in _extract_results)
+        self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index,
+                                                 mapping_table) * self.s_ref / 1e3
+        self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
+                                                   mapping_table) * self.s_ref / 1e3
+
+        # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()
         self.Gm = G_m.toarray()
         self.r = r.toarray()
@@ -453,10 +451,9 @@ class state_estimation(object):
         else:
             self.bad_data_present = True
             self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
-        successful = self.bad_data_present
 
         if (v_in_out is not None) and (delta_in_out is not None):
-            return successful
+            return self.bad_data_present
 
     def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
                             calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
@@ -490,7 +487,7 @@ class state_estimation(object):
             (standard value: 0.05)
 
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **successful** (boolean) - True if all bad data could be removed
 
         EXAMPLE:
             perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
@@ -507,24 +504,34 @@ class state_estimation(object):
         v_in = v_in_out
         delta_in = delta_in_out
 
-        self.bad_data_present = True
-
-        while self.bad_data_present and (num_iterations < 11):
+        while num_iterations <= 10:
             # Estimate the state with bad data identified in previous iteration
             # removed from set of measurements:
-            successful = self.estimate(v_in, delta_in, calculate_voltage_angles)
+            _ = self.estimate(v_in, delta_in, calculate_voltage_angles)
             v_in_out = self.net.res_bus_est.vm_pu.values
             delta_in_out = self.net.res_bus_est.va_degree.values
 
             # Perform a Chi^2 test to determine whether bad data is to be removed.
-            self.perform_chi2_test(v_in_out, delta_in_out,
-                                   calculate_voltage_angles=calculate_voltage_angles,
-                                   chi2_prob_false=chi2_prob_false)
+            self.bad_data_present = self.perform_chi2_test(v_in_out, delta_in_out,
+                                                           calculate_voltage_angles=
+                                                           calculate_voltage_angles,
+                                                           chi2_prob_false=chi2_prob_false)
 
+            # If bad data was removed in the previous iterations, return True
+            if not self.bad_data_present:
+                return True
+
+            # Try to remove the bad data
             try:
                 # Error covariance matrix:
                 R = np.linalg.inv(self.R_inv)
 
+                # todo for future debugging: this line's results have changed with the ppc
+                # overhaul in April 2017 after commit 9ae5b8f42f69ae39f8c8cf (which still works)
+                # there are differences of < 1e-10 for the Omega entries which cause
+                # the function to work far worse. As of now it is unclear if it's just numerical
+                # accuracy to blame or an error in the code. a sort in the ppc creation function
+                # was removed which caused this issue
                 # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
                 # (S is the sensitivity matrix: r = S*e):
                 Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
@@ -547,122 +554,29 @@ class state_estimation(object):
                     self.logger.info(
                         "Largest normalized residual test failed. Bad data identified.")
 
-                    if self.bad_data_present:
-                        # Identify bad data: Determine index corresponding to max(rN):
-                        idx_rN = np.argsort(rN, axis=0)[-1]
+                    # Identify bad data: Determine index corresponding to max(rN):
+                    idx_rN = np.argsort(rN, axis=0)[-1]
 
-                        # Determine index of measurement to be removed:
-                        meas_idx = self.pp_meas_indices[idx_rN]
+                    # Determine pandapower index of measurement to be removed:
+                    meas_idx = self.pp_meas_indices[idx_rN]
 
-                        # Remove bad measurement:
-                        self.logger.info("Removing measurement: %s"
-                                         % self.net.measurement.loc[meas_idx].values[0])
-                        self.net.measurement.drop(meas_idx, inplace=True)
-                        self.logger.debug("Bad data removed from the set of measurements.")
-                    else:
-                        self.logger.debug("No bad data removed from the set of measurements.")
+                    # Remove bad measurement:
+                    self.logger.debug("Removing measurement: %s"
+                                      % self.net.measurement.loc[meas_idx].values[0])
+                    self.net.measurement.drop(meas_idx, inplace=True)
+                    self.logger.debug("Bad data removed from the set of measurements.")
+
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
 
-            self.logger.debug("rn_max identification threshold: %.2f" % rn_max_threshold)
-
+            self.logger.debug("rN_max identification threshold: %.2f" % rn_max_threshold)
             num_iterations += 1
 
-        return successful
-
-
-def _extract_results_se(self, ppc):
-    """
-    This function extracts all important results from 'ppc'. 
-    It creates data frameworks for the SE's results in net
-    and stores in these the new results of the performed SE.
-    Thereby old results of a powerflow analysis will be protected against data loss.
-    Note: You can find previous pf-results in the known data structure (res_xxx).
-    """
-
-    # create 'res_xxx_est' data frameworks
-    self.net.res_bus_est = self.net._empty_res_bus.copy()
-    self.net.res_line_est = self.net._empty_res_line.copy()
-    self.net.res_dcline_est = self.net._empty_res_dcline.copy()
-    self.net.res_ext_grid_est = self.net._empty_res_ext_grid.copy()
-    self.net.res_trafo_est = self.net._empty_res_trafo.copy()
-    self.net.res_trafo3w_est = self.net._empty_res_trafo3w.copy()
-    self.net.res_load_est = self.net._empty_res_load.copy()
-    self.net.res_gen_est = self.net._empty_res_gen.copy()
-    self.net.res_sgen_est = self.net._empty_res_sgen.copy()
-    self.net.res_impedance_est = self.net._empty_res_impedance.copy()
-    self.net.res_shunt_est = self.net._empty_res_shunt.copy()
-    self.net.res_ward_est = self.net._empty_res_ward.copy()
-    self.net.res_xward_est = self.net._empty_res_xward.copy()
-
-    # store bus results
-    bus_idx = self.mapping_table[self.net["bus"].index.values]
-    self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
-    self.net["res_bus_est"]["va_degree"] = ppc["bus"][bus_idx][:, 8]
-
-    self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index,
-                                             self.mapping_table) * self.s_ref / 1e3
-    self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
-                                               self.mapping_table) * self.s_ref / 1e3
-
-    # store previous pf-results
-    pre_results_bus = self.net.res_bus.copy()
-    # check if previous pf-results are available
-    check_pre_pf_results = len(self.net.res_line) > 0
-    if check_pre_pf_results:
-        pre_results_line = self.net.res_line.copy()
-        pre_results_dcline = self.net.res_dcline.copy()
-        pre_results_ext_grid = self.net.res_ext_grid.copy()
-        pre_results_trafo = self.net.res_trafo.copy()
-        pre_results_trafo3w = self.net.res_trafo3w.copy()
-        pre_results_load = self.net.res_load.copy()
-        pre_results_gen = self.net.res_gen.copy()
-        pre_results_sgen = self.net.res_sgen.copy()
-        pre_results_impedance = self.net.res_impedance.copy()
-        pre_results_shunt = self.net.res_shunt.copy()
-        pre_results_ward = self.net.res_ward.copy()
-        pre_results_xward = self.net.res_xward.copy()
-
-    # get results
-    _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
-                    numba=True, ac=True, algorithm='nr', max_iteration="auto")
-    _extract_results(self.net, ppc)
-
-    # copy results to 'est'-dictionaries
-    self.net.res_line_est = self.net.res_line
-    self.net.res_dcline_est = self.net.res_dcline
-    self.net.res_ext_grid_est = self.net.res_ext_grid
-    self.net.res_trafo_est = self.net.res_trafo
-    self.net.res_trafo3w_est = self.net.res_trafo3w
-    self.net.res_load_est = self.net.res_load
-    self.net.res_gen_est = self.net.res_gen
-    self.net.res_sgen_est = self.net.res_sgen
-    self.net.res_impedance_est = self.net.res_impedance
-    self.net.res_shunt_est = self.net.res_shunt
-    self.net.res_ward_est = self.net.res_ward
-    self.net.res_xward_est = self.net.res_xward
-
-    # reset 'res'-dictionaries to previous pf-results (if required)
-    if check_pre_pf_results:
-        self.net.res_line = pre_results_line
-        self.net.res_dcline = pre_results_dcline
-        self.net.res_ext_grid = pre_results_ext_grid
-        self.net.res_trafo_est = pre_results_trafo
-        self.net.res_trafo3w_est = pre_results_trafo3w
-        self.net.res_load = pre_results_load
-        self.net.res_gen = pre_results_gen
-        self.net.res_sgen = pre_results_sgen
-        self.net.res_impedance = pre_results_impedance
-        self.net.res_shunt = pre_results_shunt
-        self.net.res_ward = pre_results_ward
-        self.net.res_xward = pre_results_xward
-    else:
-        reset_results(self.net)
-        self.net.res_bus = pre_results_bus
+        return not self.bad_data_present
 
 
 if __name__ == "__main__":
-    from pandapower.test.estimation.test_wls_estimation import test_3bus
-    test_3bus()
+    from pandapower.test.estimation.test_wls_estimation import test_3bus_with_out_of_service_bus
+    test_3bus_with_out_of_service_bus()

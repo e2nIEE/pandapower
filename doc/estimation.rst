@@ -79,6 +79,9 @@ The state estimation can be used with the wrapper function *"estimate"*, which p
 
 Handling of bad data
 =============================
+
+.. note::  The bad data removal is not very robust at this time. Please treat the results with caution!
+
 The state estimation class allows additionally the removal of bad data, especially single or non-interacting false measurements.
 For detecting bad data the Chi-squared distribution is used to identify the presence of them.
 Afterwards follows the largest normalized residual test that identifys the actual measurements which will be removed at the end.
