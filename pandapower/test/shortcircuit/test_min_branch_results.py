@@ -5,7 +5,6 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 
-import numpy as np
 import pytest
 
 import pandapower as pp
@@ -39,5 +38,5 @@ if __name__ == '__main__':
     print(net.res_line_sc.values)
 #    print()
 
-#    pytest.main(["test_ring.py"])
-
+    pytest.main(["test_ring.py"])
+#

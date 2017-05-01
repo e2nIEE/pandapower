@@ -356,10 +356,10 @@ def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     transformer values
 
     """
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva * 1e-3  # adjust for low voltage side voltage converter
-    sn_kva = trafo_df.sn_kva.values
-    z_sc = trafo_df["vsc_percent"].values / 100. / sn_kva * 1000. * tap_lv
-    r_sc = trafo_df["vscr_percent"].values / 100. / sn_kva * 1000. * tap_lv
+    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva  # adjust for low voltage side voltage converter
+    sn_trafo_kva = trafo_df.sn_kva.values
+    z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_kva * tap_lv
+    r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_kva * tap_lv
     x_sc = np.sqrt(z_sc ** 2 - r_sc ** 2)
     return r_sc, x_sc
 
@@ -602,7 +602,7 @@ def _switch_branches(net, ppc):
 
             if mode == "sc":
                 from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
-                new_sc_buses = np.zeros(shape=(nlo, 10), dtype=float)
+                new_sc_buses = np.zeros(shape=(nlo, 12), dtype=float)
 
             if len(to_buses):
                 ix = ls_info[:, 0] == 1

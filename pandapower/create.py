@@ -545,7 +545,7 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
-                max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan):
     """
     Adds one static generator in table net["sgen"].
 
@@ -643,6 +643,18 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
     else:
         if "controllable" in net.sgen.columns:
             net.sgen.loc[index, "controllable"] = False
+
+    if not isnan(k):
+        if "k" not in net.sgen.columns:
+            net.sgen.loc[:, "k"] = pd.Series()
+
+        net.sgen.loc[index, "k"] = float(k)
+
+    if not isnan(rx):
+        if "rx" not in net.sgen.columns:
+            net.sgen.loc[:, "rx"] = pd.Series()
+
+        net.sgen.loc[index, "rx"] = float(rx)
 
     return index
 

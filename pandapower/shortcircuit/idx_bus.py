@@ -8,11 +8,14 @@
 R_EQUIV     = 0
 X_EQUIV     = 1
 KAPPA       = 2
-C_MIN       = 3
-C_MAX       = 4
-IKSS        = 5
-IKSSCV      = 6
-IP          = 7
-IB          = 8
-ITH         = 9
-IK          = 10
+M           = 3
+C_MIN       = 4
+C_MAX       = 5
+IKSS1       = 6
+IKSS2       = 7
+IKCV        = 8
+IP          = 9
+IB          = 10
+ITH         = 11
+IK          = 12
+

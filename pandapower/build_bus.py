@@ -230,7 +230,7 @@ def _build_bus_ppc(net, ppc):
         ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
 
     if mode == "sc":
-        ppc["bus_sc"] = np.empty(shape=(n_bus, 10), dtype=float)
+        ppc["bus_sc"] = np.empty(shape=(n_bus, 12), dtype=float)
         ppc["bus_sc"].fill(np.nan)
         _add_c_to_ppc(net, ppc)
 
@@ -443,8 +443,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     rx = eg["rx_%s"%case].values
 
     z_grid = c / s_sc
-    x_grid = np.sqrt(z_grid**2 / (rx**2 + 1))
-    r_grid = np.sqrt(z_grid**2 - x_grid**2)
+    x_grid = z_grid / np.sqrt(rx**2 + 1)
+    r_grid = rx * x_grid
     eg["r"] = r_grid
     eg["x"] = x_grid
 
@@ -493,8 +493,8 @@ def _add_motor_impedances_ppc(net, ppc):
     motor_buses_ppc = bus_lookup[motor_buses]
 
     z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k #1 us reference voltage in pu
-    x_motor = np.sqrt(z_motor**2 / (motor.rx**2 + 1))
-    r_motor = np.sqrt(z_motor**2 - x_motor**2)
+    x_motor = z_motor / np.sqrt(motor.rx**2 + 1)
+    r_motor = motor.rx * x_motor
     y_motor = 1 / (r_motor + x_motor*1j)
 
     buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)

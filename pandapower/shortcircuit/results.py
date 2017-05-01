@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import IKSS, IP, ITH, IKSSCV
+from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2
 
 def _extract_results(net, ppc):
     _initialize_result_tables(net)
@@ -27,7 +27,7 @@ def _initialize_result_tables(net):
 def _get_bus_results(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
-    net.res_bus_sc["ikss_ka"] = ppc["bus_sc"][ppc_index, IKSS] +  ppc["bus_sc"][ppc_index, IKSSCV]
+    net.res_bus_sc["ikss_ka"] = ppc["bus_sc"][ppc_index, IKSS1] +  ppc["bus_sc"][ppc_index, IKSS2]
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc["bus_sc"][ppc_index, IP]
     if net._options["ith"]:
