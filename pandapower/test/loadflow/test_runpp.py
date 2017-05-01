@@ -566,5 +566,4 @@ def test_pvpq_lookup():
     assert nets_equal(net, net_numba)
 
 if __name__ == "__main__":
-    test_recycle()
-#    pytest.main(["test_runpp.py", "-xs"])
+    pytest.main(["test_runpp.py", "-xs"])

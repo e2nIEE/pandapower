@@ -80,3 +80,9 @@ MU_SF       = 17   # Kuhn-Tucker multiplier on MVA limit at "from" bus (u/MVA)
 MU_ST       = 18   # Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 MU_ANGMIN   = 19   # Kuhn-Tucker multiplier lower angle difference limit
 MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
+
+BR_R_ASYM = 21
+BR_X_ASYM = 22
+
+
+branch_cols = 23

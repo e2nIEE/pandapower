@@ -9,9 +9,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
-from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, PCID, QCID
-# column ppc['bus'] indices for constant current loads real and imaginary part...
-
+from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, PCID, QCID, bus_cols
 from pandapower.auxiliary import _sum_by_group
 
 
@@ -213,8 +211,15 @@ def _build_bus_ppc(net, ppc):
         bus_lookup = create_bus_lookup(net, n_bus, bus_index, _is_elements['bus_is_idx'],
                                        gen_is_mask, eg_is_mask, r_switch)
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus, 15), dtype=float)
+
+    ppc["bus"] = np.zeros(shape=(n_bus, bus_cols), dtype=float)
     ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0., 0.])
+    if mode == "sc":
+        from pandapower.shortcircuit.idx_bus import bus_cols_sc
+        bus_sc = np.empty(shape=(n_bus, bus_cols_sc), dtype=float)
+        bus_sc.fill(np.nan)
+        ppc["bus"] = np.hstack((ppc["bus"], bus_sc ))
+
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = np.arange(n_bus)
 
@@ -230,8 +235,6 @@ def _build_bus_ppc(net, ppc):
         ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
 
     if mode == "sc":
-        ppc["bus_sc"] = np.empty(shape=(n_bus, 12), dtype=float)
-        ppc["bus_sc"].fill(np.nan)
         _add_c_to_ppc(net, ppc)
 
 
@@ -434,7 +437,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     eg_buses = eg.bus.values
     eg_buses_ppc  = bus_lookup[eg_buses]
 
-    c = ppc["bus_sc"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus_sc"][eg_buses_ppc, C_MIN]
+    c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     if not "s_sc_%s_mva"%case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for external grid"%case)
     s_sc = eg["s_sc_%s_mva"%case].values
@@ -463,7 +466,7 @@ def _add_gen_sc_impedance(net, ppc):
     gen_buses_ppc = bus_lookup[gen_buses]
 
     vn_net = ppc["bus"][gen_buses_ppc, BASE_KV]
-    cmax = ppc["bus_sc"][gen_buses_ppc, C_MAX]
+    cmax = ppc["bus"][gen_buses_ppc, C_MAX]
     phi_gen = np.arccos(gen.cos_phi)
 
     vn_gen = gen.vn_kv.values
@@ -507,8 +510,8 @@ def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
 
 def _add_c_to_ppc(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
-    ppc["bus_sc"][:, C_MAX] = 1.1
-    ppc["bus_sc"][:, C_MIN] = 1.
+    ppc["bus"][:, C_MAX] = 1.1
+    ppc["bus"][:, C_MIN] = 1.
     lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
@@ -519,5 +522,5 @@ def _add_c_to_ppc(net, ppc):
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" \
                                         " to be either 6% or 10% according to IEC 60909")
-        ppc["bus_sc"][lv_buses, C_MAX] = c_ns
-        ppc["bus_sc"][lv_buses, C_MIN] = .95
+        ppc["bus"][lv_buses, C_MAX] = c_ns
+        ppc["bus"][lv_buses, C_MIN] = .95

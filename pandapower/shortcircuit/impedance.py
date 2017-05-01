@@ -28,8 +28,8 @@ def _calc_rx(net, ppc):
         fault_impedance = (r_fault + x_fault * 1j) / base_r
         np.fill_diagonal(Zbus, Zbus.diagonal() + fault_impedance)
     z_equiv = np.diag(Zbus)
-    ppc["bus_sc"][:, R_EQUIV] = z_equiv.real
-    ppc["bus_sc"][:, X_EQUIV] = z_equiv.imag
+    ppc["bus"][:, R_EQUIV] = z_equiv.real
+    ppc["bus"][:, X_EQUIV] = z_equiv.imag
 
 def _calc_ybus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])

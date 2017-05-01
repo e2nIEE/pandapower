@@ -51,6 +51,4 @@ def test_max_gen_fault_impedance(one_line_one_generator):
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
 if __name__ == '__main__':
-#    net = one_line_one_generator()
-#    test_max_gen(net)
     pytest.main(['test_gen.py'])
