@@ -19,7 +19,7 @@ def _build_gen_ppc(net, ppc):
     # options
     mode = net["_options"]["mode"]
     if mode == "opf":
-        _build_gen_opf(net, ppc, delta=1e-10)
+        _build_gen_opf(net, ppc)
     else:
         _build_gen_pf(net, ppc)
 
@@ -188,7 +188,7 @@ def _update_gen_ppc(net, ppc):
                                   update_lookup=False)
 
 
-def _build_gen_opf(net, ppc, delta=1e-10):
+def _build_gen_opf(net, ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
@@ -221,6 +221,7 @@ def _build_gen_opf(net, ppc, delta=1e-10):
 
     q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
     p_lim_default = 1e9
+    delta = net["_options"]["delta"]
 
     # initialize generator matrix
     ppc["gen"] = zeros(shape=(l_end, 21), dtype=float)
@@ -236,6 +237,7 @@ def _build_gen_opf(net, ppc, delta=1e-10):
         # set bus values for generator buses
         gen_buses = bus_lookup[sg_is["bus"].values]
         ppc["bus"][gen_buses, BUS_TYPE] = PQ
+
 
         # set constraints for PV generators
         if "min_q_kvar" in sg_is.columns:
@@ -349,21 +351,25 @@ def _build_gen_opf(net, ppc, delta=1e-10):
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
         # set constraints for PV generators
-        _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'], delta)
-        _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'], delta)
+        _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
+        _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
 
         _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
         _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
 
 
-def _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask, delta=0.0):
+def _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask):
     # Note: Pypower has generator reference system, pandapower uses load reference
     # system (max <-> min)
+
+    delta = net["_options"]["delta"]
+
     ppc["gen"][eg_end:gen_end, QMIN] = -net["gen"]["max_q_kvar"].values[gen_is_mask] * 1e-3 - delta
     ppc["gen"][eg_end:gen_end, QMAX] = -net["gen"]["min_q_kvar"].values[gen_is_mask] * 1e-3 + delta
 
 
-def _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask, delta=0.0):
+def _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask):
+    delta = net["_options"]["delta"]
     ppc["gen"][eg_end:gen_end, PMIN] = -net["gen"]["max_p_kw"].values[gen_is_mask] * 1e-3 + delta
     ppc["gen"][eg_end:gen_end, PMAX] = -net["gen"]["min_p_kw"].values[gen_is_mask] * 1e-3 - delta
 
