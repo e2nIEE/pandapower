@@ -6,7 +6,8 @@ from time import time
 
 from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
 
-from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
+from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA, PCID, QCID
+
 from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
@@ -105,11 +106,9 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
 
 
 def _get_ibus(ppci):
-    """ returns vector of current injections for constant-current loads
     """
-    # TODO remove PCID and QCID import after creating unique indexing file
-    from pandapower.build_bus import PCID, QCID
-
+    returns vector of current injections for constant-current loads
+    """
     return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / ppci['baseMVA']
 
 

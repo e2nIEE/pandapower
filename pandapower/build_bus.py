@@ -213,7 +213,7 @@ def _build_bus_ppc(net, ppc):
     # init ppc with empty values
 
     ppc["bus"] = np.zeros(shape=(n_bus, bus_cols), dtype=float)
-    ppc["bus"][:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0., 0.])
+    ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0., 0.])
     if mode == "sc":
         from pandapower.shortcircuit.idx_bus import bus_cols_sc
         bus_sc = np.empty(shape=(n_bus, bus_cols_sc), dtype=float)

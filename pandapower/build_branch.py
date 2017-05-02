@@ -594,7 +594,7 @@ def _switch_branches(net, ppc):
             new_ls_buses = np.zeros(shape=(nlo, ppc["bus"].shape[1]), dtype=float)
             new_indices = np.arange(n_bus, n_bus + nlo)
             # the newly created buses
-            new_ls_buses[:, :bus_cols] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            new_ls_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
             new_ls_buses[:, 0] = new_indices
             new_ls_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
             #             set voltage of new buses to voltage on other branch end
@@ -645,7 +645,7 @@ def _switch_branches(net, ppc):
             # build new buses
             new_ts_buses = np.zeros(shape=(nto, ppc["bus"].shape[1]), dtype=float)
             new_indices = np.arange(n_bus + nlo, n_bus + nlo + nto)
-            new_ts_buses[:, :bus_cols] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            new_ts_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
             new_ts_buses[:, 0] = new_indices
             new_ts_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ts_info[:, 1], bus_lookup)
             # set voltage of new buses to voltage on other branch end
@@ -756,10 +756,10 @@ def _branches_with_oos_buses(net, ppc):
             # ls_info = np.array(ls_info, dtype=int)
 
             # build new buses
-            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, 15), dtype=float)
+            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc["bus"].shape[1]), dtype=float)
             new_indices = np.arange(n_bus, n_bus + n_oos_buses_at_lines)
             # the newly created buses
-            new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            new_ls_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
             new_ls_buses[:, 0] = new_indices
             new_ls_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
 
