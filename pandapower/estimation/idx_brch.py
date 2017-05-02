@@ -17,8 +17,11 @@ Q_FROM = 8
 Q_FROM_STD = 9
 Q_TO = 10
 Q_TO_STD = 11
-IM_BR_IDX = 12
-P_BR_IDX = 13
-Q_BR_IDX = 14
+IM_FROM_IDX = 12
+P_FROM_IDX = 13
+Q_FROM_IDX = 14
+IM_TO_IDX = 15
+P_TO_IDX = 16
+Q_TO_IDX = 17
 
-branch_cols_se = 15
+branch_cols_se = 18

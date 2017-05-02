@@ -91,8 +91,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[ix_from, IM_FROM_STD] = meas_from.std_dev.values * i_a_to_pu_from
         branch_append[ix_to, IM_TO] = meas_to.value.values * i_a_to_pu_to
         branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values * i_a_to_pu_to
-        branch_append[i_measurements.element.values.astype(int), IM_BR_IDX] = \
-            i_measurements.index.values
+        branch_append[meas_from.element.values.astype(int), IM_FROM_IDX] = meas_from.index.values
+        branch_append[meas_to.element.values.astype(int), IM_TO_IDX] = meas_to.index.values
 
     p_measurements = net.measurement[(net.measurement.type == "p")
                                           & (net.measurement.element_type == "line")]
@@ -107,8 +107,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[ix_from, P_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
         branch_append[ix_to, P_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, P_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[p_measurements.element.values.astype(int), P_BR_IDX] = \
-            p_measurements.index.values
+        branch_append[meas_from.element.values.astype(int), P_FROM_IDX] = meas_from.index.values
+        branch_append[meas_to.element.values.astype(int), P_TO_IDX] = meas_to.index.values
 
     q_measurements = net.measurement[(net.measurement.type == "q")
                                           & (net.measurement.element_type == "line")]
@@ -123,8 +123,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[ix_from, Q_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
         branch_append[ix_to, Q_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[q_measurements.element.values.astype(int), Q_BR_IDX] = \
-            q_measurements.index.values
+        branch_append[meas_from.element.values.astype(int), Q_FROM_IDX] = meas_from.index.values
+        branch_append[meas_to.element.values.astype(int), Q_TO_IDX] = meas_to.index.values
 
     i_tr_measurements = net.measurement[(net.measurement.type == "i")
                                              & (net.measurement.element_type ==
@@ -142,8 +142,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[ix_from, IM_FROM_STD] = meas_from.std_dev.values * i_a_to_pu_from
         branch_append[ix_to, IM_TO] = meas_to.value.values * i_a_to_pu_to
         branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values * i_a_to_pu_to
-        branch_append[i_tr_measurements.element.values.astype(int), IM_BR_IDX] = \
-            i_tr_measurements.index.values
+        branch_append[meas_from.element.values.astype(int), IM_FROM_IDX] = meas_from.index.values
+        branch_append[meas_to.element.values.astype(int), IM_TO_IDX] = meas_to.index.values
 
     p_tr_measurements = net.measurement[(net.measurement.type == "p") &
                                              (net.measurement.element_type ==
@@ -159,8 +159,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[ix_from, P_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
         branch_append[ix_to, P_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, P_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[p_tr_measurements.element.values.astype(int), P_BR_IDX] = \
-            p_tr_measurements.index.values
+        branch_append[meas_from.element.values.astype(int), P_FROM_IDX] = meas_from.index.values
+        branch_append[meas_to.element.values.astype(int), P_TO_IDX] = meas_to.index.values
 
     q_tr_measurements = net.measurement[(net.measurement.type == "q") &
                                              (net.measurement.element_type ==
@@ -176,8 +176,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[ix_from, Q_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
         branch_append[ix_to, Q_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[q_tr_measurements.element.values.astype(int), Q_BR_IDX] = \
-            q_tr_measurements.index.values
+        branch_append[meas_from.element.values.astype(int), Q_FROM_IDX] = meas_from.index.values
+        branch_append[meas_to.element.values.astype(int), Q_TO_IDX] = meas_to.index.values
 
     ppci["bus"] = np.hstack((ppci["bus"], bus_append))
     ppci["branch"] = np.hstack((ppci["branch"], branch_append))
@@ -192,46 +192,46 @@ def _build_measurement_vectors(ppci):
     :param bus_cols: number of columns in original ppci["bus"] without measurements
     :return: both created vectors
     """
-    p_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + 2])
-    p_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + 4])
-    p_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + 6])
-    q_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + 4])
-    q_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + 8])
-    q_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + 10])
-    v_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + 0])
-    i_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + 0])
-    i_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + 2])
+    p_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + P])
+    p_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_FROM])
+    p_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_TO])
+    q_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + Q])
+    q_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + Q_FROM])
+    q_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + Q_TO])
+    v_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + VM])
+    i_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IM_FROM])
+    i_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IM_TO])
     # piece together our measurement vector z
-    z = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + 2],
-                        ppci["branch"][p_line_f_not_nan, branch_cols + 4],
-                        ppci["branch"][p_line_t_not_nan, branch_cols + 6],
-                        ppci["bus"][q_bus_not_nan, bus_cols + 4],
-                        ppci["branch"][q_line_f_not_nan, branch_cols + 8],
-                        ppci["branch"][q_line_t_not_nan, branch_cols + 10],
-                        ppci["bus"][v_bus_not_nan, bus_cols + 0],
-                        ppci["branch"][i_line_f_not_nan, branch_cols + 0],
-                        ppci["branch"][i_line_t_not_nan, branch_cols + 2]
+    z = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P],
+                        ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM],
+                        ppci["branch"][p_line_t_not_nan, branch_cols + P_TO],
+                        ppci["bus"][q_bus_not_nan, bus_cols + Q],
+                        ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM],
+                        ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO],
+                        ppci["bus"][v_bus_not_nan, bus_cols + VM],
+                        ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM],
+                        ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO]
                         )).real.astype(np.float64)
     # conserve the pandapower indices of measurements in the ppci order
-    pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + 7],
-                                      ppci["branch"][p_line_f_not_nan, branch_cols + 13],
-                                      ppci["branch"][p_line_t_not_nan, branch_cols + 13],
-                                      ppci["bus"][q_bus_not_nan, bus_cols + 8],
-                                      ppci["branch"][q_line_f_not_nan, branch_cols + 14],
-                                      ppci["branch"][q_line_t_not_nan, branch_cols + 14],
-                                      ppci["bus"][v_bus_not_nan, bus_cols + 6],
-                                      ppci["branch"][i_line_f_not_nan, branch_cols + 12],
-                                      ppci["branch"][i_line_t_not_nan, branch_cols + 12]
+    pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_IDX],
+                                      ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_IDX],
+                                      ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_IDX],
+                                      ppci["bus"][q_bus_not_nan, bus_cols + Q_IDX],
+                                      ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_IDX],
+                                      ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_IDX],
+                                      ppci["bus"][v_bus_not_nan, bus_cols + VM_IDX],
+                                      ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_IDX],
+                                      ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX]
                                       )).real.astype(int)
     # Covariance matrix R
-    r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + 3],
-                            ppci["branch"][p_line_f_not_nan, branch_cols + 5],
-                            ppci["branch"][p_line_t_not_nan, branch_cols + 7],
-                            ppci["bus"][q_bus_not_nan, bus_cols + 5],
-                            ppci["branch"][q_line_f_not_nan, branch_cols + 9],
-                            ppci["branch"][q_line_t_not_nan, branch_cols + 11],
-                            ppci["bus"][v_bus_not_nan, bus_cols + 1],
-                            ppci["branch"][i_line_f_not_nan, branch_cols + 1],
-                            ppci["branch"][i_line_t_not_nan, branch_cols + 3]
+    r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
+                            ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_STD],
+                            ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_STD],
+                            ppci["bus"][q_bus_not_nan, bus_cols + Q_STD],
+                            ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_STD],
+                            ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_STD],
+                            ppci["bus"][v_bus_not_nan, bus_cols + VM_STD],
+                            ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
+                            ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD]
                             )).real.astype(np.float64)
     return z, pp_meas_indices, r_cov
