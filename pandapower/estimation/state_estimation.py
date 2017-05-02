@@ -14,7 +14,8 @@ from scipy.stats import chi2
 from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
     _build_measurement_vectors, _init_ppc
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT, branch_cols
+from pandapower.idx_bus import bus_cols
 from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pf.runpf import _get_pf_variables_from_ppci, \
@@ -247,14 +248,11 @@ class state_estimation(object):
         ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
 
-        br_cols = ppci["branch"].shape[1]
-        bs_cols = ppci["bus"].shape[1]
-
         # add measurements to ppci structure
         ppci = _add_measurements_to_ppc(self.net, mapping_table, ppci, self.s_ref)
 
         # calculate relevant vectors from ppci measurements
-        z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci, br_cols, bs_cols)
+        z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
 
         # number of nodes
         n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
@@ -275,7 +273,7 @@ class state_estimation(object):
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
         # matrix calculation object
-        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref, bs_cols, br_cols)
+        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref, bus_cols, branch_cols)
 
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
