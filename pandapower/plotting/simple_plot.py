@@ -3,11 +3,11 @@
 # Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
-
+# for plotting
 import matplotlib.pyplot as plt
 
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
-                                            create_trafo_collection, draw_collections
+    create_trafo_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
