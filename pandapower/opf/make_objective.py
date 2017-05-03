@@ -126,14 +126,14 @@ def _make_objective(ppci, net):
                             if el == "dcline":
                                 idx = dcline_idx
 
-                            elements = idx[costs.element[costs.element_type ==
-                                                         el].values.astype(int)] + shift_idx
+                            el_is = net[el][net[el].in_service].index
+                            elements = idx[el_is] + shift_idx
                             if el in ["load", "dcline"]:
                                 ppci["gencost"][elements, COST:(COST + n_c):] = - \
                                     c[costs.index[costs.element_type == el]]
                             else:
                                 ppci["gencost"][elements, COST:(
-                                    COST + n_c):] = c[costs.index[costs.element_type == el]]
+                                    COST + n_c):] = c[costs.index[costs.element_type == el]][el_is]
 
                             ppci["gencost"][elements, NCOST] = n_c
                             ppci["gencost"][elements, MODEL] = 2

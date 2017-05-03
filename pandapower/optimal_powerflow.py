@@ -25,6 +25,7 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
 
     ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
     net["OPF_converged"] = False
+    net["converged"] = False
     _add_auxiliary_elements(net)
     reset_results(net)
 

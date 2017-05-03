@@ -144,7 +144,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f = d2f * cost_mult
 
     ##----- evaluate Hessian of power balance constraints -----
-    nlam = len(lmbda["eqnonlin"]) / 2
+    nlam = len(lmbda["eqnonlin"]) // 2
     lamP = lmbda["eqnonlin"][:nlam]
     lamQ = lmbda["eqnonlin"][nlam:nlam + nlam]
     Gpaa, Gpav, Gpva, Gpvv = d2Sbus_dV2(Ybus, V, lamP)
@@ -164,7 +164,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         ], "csr")
 
     ##----- evaluate Hessian of flow constraints -----
-    nmu = len(lmbda["ineqnonlin"]) / 2
+    nmu = len(lmbda["ineqnonlin"]) // 2
     muF = lmbda["ineqnonlin"][:nmu]
     muT = lmbda["ineqnonlin"][nmu:nmu + nmu]
     if ppopt['OPF_FLOW_LIM'] == 2:       ## current
