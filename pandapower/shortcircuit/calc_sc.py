@@ -111,17 +111,17 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _calc_sc(net)
 
 def _calc_sc(net):
-    t0 = time.perf_counter()
+#    t0 = time.perf_counter()
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
-    t1 = time.perf_counter()
+#    t1 = time.perf_counter()
     _calc_ybus(ppci)
-    t2 = time.perf_counter()
+#    t2 = time.perf_counter()
     _calc_zbus(ppci)
     _calc_rx(net, ppci)
-    t3 = time.perf_counter()
+#    t3 = time.perf_counter()
     _add_kappa_to_ppc(net, ppci)
-    t4 = time.perf_counter()
+#    t4 = time.perf_counter()
     _calc_ikss(net, ppci)
     if net["_options"]["ip"]:
         _calc_ip(net, ppci)
@@ -132,9 +132,9 @@ def _calc_sc(net):
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc)
     _clean_up(net)
-    t5 = time.perf_counter()
-    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
-               "currents": t5-t4}
+#    t5 = time.perf_counter()
+#    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
+#               "currents": t5-t4}
 
 
 if __name__ == "__main__":
