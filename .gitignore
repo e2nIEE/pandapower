@@ -4,6 +4,8 @@ build/
 dist/
 .cache/
 .idea
+.DS_Store
+doc/.DS_Store
 pandapower.egg-info/
 doc/api/
 doc/.build/*
@@ -16,3 +18,5 @@ tutorials/.ipynb_checkpoints
 *.user
 *.sln
 *.bak
+
+

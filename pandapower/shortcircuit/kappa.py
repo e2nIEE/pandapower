@@ -12,7 +12,7 @@ from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 from pandapower.idx_bus import BUS_I, GS, BS, BASE_KV
 
 from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV
-from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
+from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx
 
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
@@ -20,14 +20,14 @@ def _add_kappa_to_ppc(net, ppc):
     topology = net._options["topology"]
     kappa_method = net._options["kappa_method"]
     if topology == "radial":
-        kappa = _kappa(ppc["bus_sc"][:, R_EQUIV] / ppc["bus_sc"][:, X_EQUIV])
+        kappa = _kappa(ppc["bus"][:, R_EQUIV] / ppc["bus"][:, X_EQUIV])
     elif kappa_method in ["C", "c"]:
         kappa = _kappa_method_c(net, ppc)
     elif kappa_method in ["B", "b"]:
         kappa = _kappa_method_b(net, ppc)
     else:
         raise ValueError("Unkown kappa method %s - specify B or C"%kappa_method)
-    ppc["bus_sc"][:, KAPPA] = kappa
+    ppc["bus"][:, KAPPA] = kappa
 
 def _kappa_method_c(net, ppc):
     if net.f_hz == 50:
@@ -47,8 +47,10 @@ def _kappa_method_c(net, ppc):
     y_shunt = 1 / (z_shunt.real + 1j * z_shunt.imag * fc / net.f_hz)
     ppc_c["bus"][conductance, GS] = y_shunt.real[0]
     ppc_c["bus"][conductance, BS] = y_shunt.imag[0]
-    _calc_equiv_sc_impedance(net, ppc_c)
-    rx_equiv_c = ppc_c["bus_sc"][:, R_EQUIV] / ppc_c["bus_sc"][:, X_EQUIV] * fc / net.f_hz
+    _calc_ybus(ppc_c)
+    _calc_zbus(ppc_c)
+    _calc_rx(net, ppc_c)
+    rx_equiv_c = ppc_c["bus"][:, R_EQUIV] / ppc_c["bus"][:, X_EQUIV] * fc / net.f_hz
     return _kappa(rx_equiv_c)
 
 def _kappa(rx):
@@ -78,7 +80,7 @@ def _kappa_method_b(net, ppc):
                     if r / x < .3:
                         kappa_korr[bidx] = 1.
                         break
-    rx_equiv = ppc["bus_sc"][:, R_EQUIV] / ppc["bus_sc"][:, X_EQUIV]
+    rx_equiv = ppc["bus"][:, R_EQUIV] / ppc["bus"][:, X_EQUIV]
     return np.clip(kappa_korr * _kappa(rx_equiv), 1, kappa_max)
 
 def nxgraph_from_ppc(net, ppc):

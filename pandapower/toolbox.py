@@ -13,7 +13,7 @@ from pandapower.auxiliary import get_indices, pandapowerNet
 from pandapower.create import create_empty_network, create_piecewise_linear_cost
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
-from pandapower.version import __version__
+from pandapower import __version__
 
 try:
     import pplog as logging

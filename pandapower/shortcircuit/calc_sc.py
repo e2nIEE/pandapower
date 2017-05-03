@@ -10,13 +10,14 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
+import time
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith
-from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith, _calc_branch_currents
+from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results
 
@@ -110,23 +111,36 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _calc_sc(net)
 
 def _calc_sc(net):
-    # net["_is_elements"] = _select_is_elements(net)
+#    t0 = time.perf_counter()
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
-    _calc_equiv_sc_impedance(net, ppci)
+#    t1 = time.perf_counter()
+    _calc_ybus(ppci)
+#    t2 = time.perf_counter()
+    _calc_zbus(ppci)
+    _calc_rx(net, ppci)
+#    t3 = time.perf_counter()
     _add_kappa_to_ppc(net, ppci)
+#    t4 = time.perf_counter()
     _calc_ikss(net, ppci)
     if net["_options"]["ip"]:
         _calc_ip(net, ppci)
     if net["_options"]["ith"]:
         _calc_ith(net, ppci)
+    if net._options["branch_results"]:
+        _calc_branch_currents(net, ppci)
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc)
     _clean_up(net)
+#    t5 = time.perf_counter()
+#    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
+#               "currents": t5-t4}
+
 
 if __name__ == "__main__":
     import pandapower.networks as nw
     net = nw.mv_oberrhein()
     net.ext_grid.s_sc_max_mva = 100
     net.ext_grid.rx_max = 0.1
+    net.sgen["k"] = 1.2
     calc_sc(net)

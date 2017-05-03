@@ -24,8 +24,8 @@ def one_line_one_generator():
                                        r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
     net.line.loc[l, "endtemp_degree"] = 165
     pp.create_switch(net, b3, b1, et="b")
-    return net  
-    
+    return net
+
 def test_max_gen(one_line_one_generator):
     net = one_line_one_generator
     sc.calc_sc(net, case="max")
@@ -39,7 +39,7 @@ def test_min_gen(one_line_one_generator):
     sc.calc_sc(net, case="min")
     assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.3996195) < 1e-7
     assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.3996195) < 1e-7
-    assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7    
+    assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
 def test_max_gen_fault_impedance(one_line_one_generator):

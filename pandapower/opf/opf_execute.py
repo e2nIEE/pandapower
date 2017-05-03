@@ -10,7 +10,7 @@
 from sys import stdout, stderr
 
 from numpy import array, arange, pi, zeros, r_
-from pypower.dcopf_solver import dcopf_solver
+from pandapower.opf.dcopf_solver import dcopf_solver
 from pandapower.idx_brch import MU_ANGMIN, MU_ANGMAX
 from pandapower.idx_bus import VM
 from pandapower.idx_gen import GEN_BUS, VG

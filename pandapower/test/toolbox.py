@@ -260,10 +260,4 @@ def create_test_line(net, b1, b2, in_service=True):
 
 
 if __name__ == "__main__":
-    #    net_nr = create_test_network2()
-    #    pp.to_pickle(net_nr, "testgrid.p")
-    #    pp.rundcpp(net_nr)
-    #    net_dc = create_test_network2()
-    #    pp.runpp(net_dc)
-    #
     run_all_tests()

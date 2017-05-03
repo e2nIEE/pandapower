@@ -10,9 +10,9 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, QT
-from pandapower.idx_bus import BASE_KV
-
+from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
+                                BR_R_ASYM, BR_X_ASYM, branch_cols
+from pandapower.idx_bus import BASE_KV, VM, VA, bus_cols
 from pandapower.auxiliary import get_values
 
 
@@ -37,12 +37,13 @@ def _build_branch_ppc(net, ppc):
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
     mode = net._options["mode"]
-    ppc["branch"] = np.zeros(shape=(length, QT + 3), dtype=np.complex128)
-    ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
     if mode == "sc":
-        ppc["branch_sc"] = np.empty(shape=(length, 10), dtype=float)
-        ppc["branch_sc"].fill(np.nan)
-
+        from pandapower.shortcircuit.idx_brch import branch_cols_sc
+        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
+        branch_sc.fill(np.nan)
+        ppc["branch"] = np.hstack((ppc["branch"], branch_sc ))
+    ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
     if "line" in lookup:
         f, t = lookup["line"]
         ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_B,
@@ -57,7 +58,7 @@ def _build_branch_ppc(net, ppc):
             _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
         f, t = lookup["impedance"]
-        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, 17, 18, BR_STATUS]] = \
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_R_ASYM, BR_X_ASYM, BR_STATUS]] = \
             _calc_impedance_parameter(net)
     if "xward" in lookup:
         f, t = lookup["xward"]
@@ -237,7 +238,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
         if trafo_df.equals(net.trafo):
             from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
-            cmax = net._ppc["bus_sc"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
+            cmax = net._ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
                                                 trafo_df.sn_kva, cmax)
             r *= kt
@@ -356,10 +357,10 @@ def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     transformer values
 
     """
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva * 1e-3  # adjust for low voltage side voltage converter
-    sn_kva = trafo_df.sn_kva.values
-    z_sc = trafo_df["vsc_percent"].values / 100. / sn_kva * 1000. * tap_lv
-    r_sc = trafo_df["vscr_percent"].values / 100. / sn_kva * 1000. * tap_lv
+    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva  # adjust for low voltage side voltage converter
+    sn_trafo_kva = trafo_df.sn_kva.values
+    z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_kva * tap_lv
+    r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_kva * tap_lv
     x_sc = np.sqrt(z_sc ** 2 - r_sc ** 2)
     return r_sc, x_sc
 
@@ -515,6 +516,7 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
 
 
 def _switch_branches(net, ppc):
+    from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     according of the status of switches
@@ -589,41 +591,34 @@ def _switch_branches(net, ppc):
             ls_info = np.array(ls_info, dtype=int)
 
             # build new buses
-            new_ls_buses = np.zeros(shape=(nlo, 15), dtype=float)
+            new_ls_buses = np.zeros(shape=(nlo, ppc["bus"].shape[1]), dtype=float)
             new_indices = np.arange(n_bus, n_bus + nlo)
             # the newly created buses
-            new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            new_ls_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
             new_ls_buses[:, 0] = new_indices
-            new_ls_buses[:, 9] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
+            new_ls_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
             #             set voltage of new buses to voltage on other branch end
             to_buses = ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1].real.astype(int)
             from_buses = ppc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0].real \
                 .astype(int)
 
-            if mode == "sc":
-                from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
-                new_sc_buses = np.zeros(shape=(nlo, 10), dtype=float)
-
             if len(to_buses):
                 ix = ls_info[:, 0] == 1
-                new_ls_buses[ix, 7] = ppc["bus"][to_buses, 7]
-                new_ls_buses[ix, 8] = ppc["bus"][to_buses, 8]
+                new_ls_buses[ix, VM] = ppc["bus"][to_buses, VM]
+                new_ls_buses[ix, VA] = ppc["bus"][to_buses, VA]
                 if mode == "sc":
-                    new_sc_buses[ix, C_MAX] = ppc["bus_sc"][to_buses, C_MAX]
-                    new_sc_buses[ix, C_MIN] = ppc["bus_sc"][to_buses, C_MIN]
+                    new_ls_buses[ix, C_MAX] = ppc["bus"][to_buses, C_MAX]
+                    new_ls_buses[ix, C_MIN] = ppc["bus"][to_buses, C_MIN]
 
             if len(from_buses):
                 ix = ls_info[:, 0] == 0
-                new_ls_buses[ix, 7] = ppc["bus"][from_buses, 7]
-                new_ls_buses[ix, 8] = ppc["bus"][from_buses, 8]
+                new_ls_buses[ix, VM] = ppc["bus"][from_buses, VM]
+                new_ls_buses[ix, VA] = ppc["bus"][from_buses, VA]
                 if mode == "sc":
-                    new_sc_buses[ix, C_MAX] = ppc["bus_sc"][from_buses, C_MAX]
-                    new_sc_buses[ix, C_MIN] = ppc["bus_sc"][from_buses, C_MIN]
+                    new_ls_buses[ix, C_MAX] = ppc["bus"][from_buses, C_MAX]
+                    new_ls_buses[ix, C_MIN] = ppc["bus"][from_buses, C_MIN]
 
             future_buses.append(new_ls_buses)
-            if mode == "sc":
-                ppc["bus_sc"] = np.vstack([ppc["bus_sc"], new_sc_buses])
-
             # re-route the end of lines to a new bus
             ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \
                 new_indices[ls_info[:, 0].astype(bool)]
@@ -648,12 +643,11 @@ def _switch_branches(net, ppc):
             ts_info = np.array(ts_info, dtype=int)
 
             # build new buses
-            new_ts_buses = np.zeros(shape=(nto, 15), dtype=float)
+            new_ts_buses = np.zeros(shape=(nto, ppc["bus"].shape[1]), dtype=float)
             new_indices = np.arange(n_bus + nlo, n_bus + nlo + nto)
-            new_ts_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            new_ts_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
             new_ts_buses[:, 0] = new_indices
-            new_ts_buses[:, 9] = get_values(ppc["bus"][:, BASE_KV],
-                                            ts_info[:, 1], bus_lookup)
+            new_ts_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ts_info[:, 1], bus_lookup)
             # set voltage of new buses to voltage on other branch end
             to_buses = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 1].real.astype(int)
             from_buses = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 0].real \
@@ -662,17 +656,22 @@ def _switch_branches(net, ppc):
             # set newly created buses to voltage on other side of
             if len(to_buses):
                 ix = ts_info[:, 0] == 1
-                taps = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 8].real
-                shift = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 9].real
-                new_ts_buses[ix, 7] = ppc["bus"][to_buses, 7] * taps
-                new_ts_buses[ix, 8] = ppc["bus"][to_buses, 8] + shift
+                taps = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], VA].real
+                shift = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], BASE_KV].real
+                new_ts_buses[ix, VM] = ppc["bus"][to_buses, VM] * taps
+                new_ts_buses[ix, VA] = ppc["bus"][to_buses, VA] + shift
+                if mode == "sc":
+                    new_ts_buses[ix, C_MAX] = ppc["bus"][to_buses, C_MAX]
+                    new_ts_buses[ix, C_MIN] = 0.95#ppc["bus"][to_buses, C_MIN]
             if len(from_buses):
                 ix = ts_info[:, 0] == 0
-                taps = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 8].real
-                shift = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 9].real
-                new_ts_buses[ix, 7] = ppc["bus"][from_buses, 7] * taps
-                new_ts_buses[ix, 8] = ppc["bus"][from_buses, 8] + shift
-
+                taps = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], VA].real
+                shift = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], BASE_KV].real
+                new_ts_buses[ix, VM] = ppc["bus"][from_buses, VM] * taps
+                new_ts_buses[ix, VA] = ppc["bus"][from_buses, VA] + shift
+                if mode == "sc":
+                    new_ts_buses[ix, C_MAX] = ppc["bus"][from_buses, C_MAX]
+                    new_ts_buses[ix, C_MIN] = ppc["bus"][from_buses, C_MIN]
             future_buses.append(new_ts_buses)
 
             # re-route the hv/lv-side of the trafo to a new bus
@@ -757,12 +756,12 @@ def _branches_with_oos_buses(net, ppc):
             # ls_info = np.array(ls_info, dtype=int)
 
             # build new buses
-            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, 15), dtype=float)
+            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc["bus"].shape[1]), dtype=float)
             new_indices = np.arange(n_bus, n_bus + n_oos_buses_at_lines)
             # the newly created buses
-            new_ls_buses[:] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            new_ls_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
             new_ls_buses[:, 0] = new_indices
-            new_ls_buses[:, 9] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
+            new_ls_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
 
             future_buses.append(new_ls_buses)
 

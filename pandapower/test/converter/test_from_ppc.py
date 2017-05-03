@@ -21,30 +21,21 @@ max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_br
                     "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
 
 
-def get_ppc_testgrids(name):
+def get_testgrids(name, filename):
     """
     This function return the ppc (or pp net) which is saved in ppc_testgrids.p to validate the
     from_ppc function via validate_from_ppc.
     """
     pp_path = pp_path = os.path.split(pp.__file__)[0]
-    save_path = os.path.join(pp_path, 'test', 'converter', 'ppc_testgrids.p')
-    ppcs = pickle.load(open(save_path, "rb"))
-    return ppcs[name]
-
-def get_pypower_cases(name):
-    """
-    This function return the pypower cases provided by pypower including powerflow results.
-    """
-    pp_path = pp_path = os.path.split(pp.__file__)[0]
-    save_path = os.path.join(pp_path, 'test', 'converter', 'pypower_cases.p')
+    save_path = os.path.join(pp_path, 'test', 'converter', filename)
     ppcs = pickle.load(open(save_path, "rb"))
     return ppcs[name]
 
 
 def test_from_ppc():
-    ppc = get_ppc_testgrids('case2_2')
+    ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
-    net_by_code = get_ppc_testgrids('case2_2_by_code')
+    net_by_code = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
 
@@ -57,8 +48,8 @@ def test_from_ppc():
 
 
 def test_validate_from_ppc():
-    ppc = get_ppc_testgrids('case2_2')
-    net = get_ppc_testgrids('case2_2_by_code')
+    ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
+    net = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
@@ -67,7 +58,7 @@ def test_ppc_testgrids():
     name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
             'case57']
     for i in name:
-        ppc = get_ppc_testgrids(i)
+        ppc = get_testgrids(i, 'ppc_testgrids.p')
         net = from_ppc(ppc, f_hz=60)
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
@@ -78,7 +69,7 @@ def test_pypower_cases():
     name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
             'case118', 'case300']
     for i in name:
-        ppc = get_pypower_cases(i)
+        ppc = get_testgrids(i, 'pypower_cases.p')
         net = from_ppc(ppc, f_hz=60)
         assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
         logger.debug('%s has been checked successfully.' % i)
@@ -86,7 +77,7 @@ def test_pypower_cases():
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3,
                         "q_branch_kvar": 1e-3, "p_gen_kw": 1e3, "q_gen_kvar": 1e3}
-    ppc = get_pypower_cases('case9')
+    ppc = get_testgrids('case9', 'pypower_cases.p')
     net = from_ppc(ppc, f_hz=60)
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')

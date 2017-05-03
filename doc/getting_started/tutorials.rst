@@ -33,10 +33,14 @@ Running topological searches:
     - `topologic searches <https://github.com/panda-power/pandapower/blob/master/tutorials/topology.ipynb>`_
 
 Plotting pandapower networks:
-    - `basic plotting <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_basic.ipynb>`_
-    - `plotting with colormaps <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_colormaps.ipynb>`_
-    - `plotting without geographical data <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_structural.ipynb>`_
-
+    * matplotlib
+        - `basic plotting <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_basic.ipynb>`_
+        - `plotting with colormaps <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_colormaps.ipynb>`_
+        - `plotting without geographical data <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_structural.ipynb>`_
+    * plotly
+        - `built-in plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_
+        - `custom plots plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_traces.ipynb>`_
+        - `map plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_maps.ipynb>`_
     
 To run the tutorials interactively (jupyter module is needed):
 

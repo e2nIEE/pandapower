@@ -1,10 +1,10 @@
 Branch Elements
 =================
 
-All branches are represented by a single short circuit impedance:
+Branches are represented by a single short circuit impedance:
 
-.. image:: branch.png
-	:width: 30em
+.. image:: branch2.png
+	:width: 15em
 	:align: center
     
 Shunt admittances are neglected for all branch elements. 
@@ -61,8 +61,8 @@ Three-Winding Transformer
 --------------------------
 Three Winding Transformers are modelled by three two-winding transformers:
 
-.. image:: ../elements/trafo3w.png
-	:width: 25em
+.. image:: branch3.png
+	:width: 15em
 	:alt: alternate Text
 	:align: center
 

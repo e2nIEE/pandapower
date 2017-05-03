@@ -174,9 +174,9 @@ def _ppc2ppci(ppc, ppci, net):
     # in ppc the OOS busses are included and at the end of the array
     ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
 
-    if mode == "sc":
-        ppci['bus_sc'] = ppc['bus_sc'][~oos_busses]
-        ppc['bus_sc'] = np.r_[ppc['bus_sc'][~oos_busses], ppc['bus_sc'][oos_busses]]
+#    if mode == "sc":
+#        ppci["bus"] = ppc["bus"][~oos_busses]
+#        ppc["bus"] = np.r_[ppc["bus"][~oos_busses], ppc["bus"][oos_busses]]
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
@@ -259,8 +259,6 @@ def _ppc2ppci(ppc, ppci, net):
 
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
-    if mode == "sc":
-        ppci["branch_sc"] = ppc["branch_sc"][brs]
 
     ppci["gen"] = ppc["gen"][gs]
 
@@ -283,7 +281,10 @@ def _update_lookup_entries(net, lookup, e2i, element):
 def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     # get buses from pandapower and ppc
     _is_elements = net["_is_elements"]
-    pandapower_index = net[element].index.values[_is_elements[element]]
+    if element in ["sgen_controllable", "load_controllable"]:
+        pandapower_index = net["_is_elements"][element].index.values
+    else:
+        pandapower_index = net[element].index.values[_is_elements[element]]
     ppc_index = sort_gens[ppc_start_index: ppc_end_index]
 
     # init lookup

@@ -36,6 +36,7 @@ def _powerflow(net, **kwargs):
     max_iteration = net["_options"]["max_iteration"]
 
     net["converged"] = False
+    net["OPF_converged"] = False
     _add_auxiliary_elements(net)
 
     if (ac and not init == "results") or not ac:
