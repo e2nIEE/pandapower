@@ -312,62 +312,63 @@ def test_test_sn_kva():
 def test_pf_algorithms():
     alg_to_test = ['bfsw', 'fdbx', 'fdxb', 'gs']
     for alg in alg_to_test:
-        net = create_cigre_network_mv(with_der=False)
+        for enforce_q_lims in [False, True]:
+            net = create_cigre_network_mv(with_der=False)
 
-        pp.runpp(net, algorithm='nr')
-        vm_nr = net.res_bus.vm_pu
-        va_nr = net.res_bus.va_degree
+            pp.runpp(net, algorithm='nr', enforce_q_lims=enforce_q_lims)
+            vm_nr = net.res_bus.vm_pu
+            va_nr = net.res_bus.va_degree
 
-        pp.runpp(net, algorithm=alg)
-        vm_alg = net.res_bus.vm_pu
-        va_alg = net.res_bus.va_degree
+            pp.runpp(net, algorithm=alg, enforce_q_lims=enforce_q_lims)
+            vm_alg = net.res_bus.vm_pu
+            va_alg = net.res_bus.va_degree
 
-        assert np.allclose(vm_nr, vm_alg)
-        assert np.allclose(va_nr, va_alg)
+            assert np.allclose(vm_nr, vm_alg)
+            assert np.allclose(va_nr, va_alg)
 
-        # testing with a network which contains DERs
-        net = create_cigre_network_mv()
+            # testing with a network which contains DERs
+            net = create_cigre_network_mv()
 
-        pp.runpp(net)
-        vm_nr = net.res_bus.vm_pu
-        va_nr = net.res_bus.va_degree
+            pp.runpp(net)
+            vm_nr = net.res_bus.vm_pu
+            va_nr = net.res_bus.va_degree
 
-        pp.runpp(net, algorithm=alg)
-        vm_alg = net.res_bus.vm_pu
-        va_alg = net.res_bus.va_degree
+            pp.runpp(net, algorithm=alg, enforce_q_lims=enforce_q_lims)
+            vm_alg = net.res_bus.vm_pu
+            va_alg = net.res_bus.va_degree
 
-        assert np.allclose(vm_nr, vm_alg)
-        assert np.allclose(va_nr, va_alg)
+            assert np.allclose(vm_nr, vm_alg)
+            assert np.allclose(va_nr, va_alg)
 
-        # testing a weakly meshed network and consideration of phase-shifting transformer using calculate_voltage_angles
-        net = four_loads_with_branches_out()
-        # adding a line in order to create a loop
-        pp.create_line(net, from_bus=8, to_bus=9, length_km=0.05, name='line9', std_type='NAYY 4x120 SE')
+            # testing a weakly meshed network and consideration of phase-shifting transformer using calculate_voltage_angles
+            net = four_loads_with_branches_out()
+            # adding a line in order to create a loop
+            pp.create_line(net, from_bus=8, to_bus=9, length_km=0.05, name='line9', std_type='NAYY 4x120 SE')
 
-        pp.runpp(net, calculate_voltage_angles=True)
-        vm_nr = net.res_bus.vm_pu
-        va_nr = net.res_bus.va_degree
+            pp.runpp(net, calculate_voltage_angles=True)
+            vm_nr = net.res_bus.vm_pu
+            va_nr = net.res_bus.va_degree
 
-        pp.runpp(net, algorithm=alg, calculate_voltage_angles=True)
-        vm_alg = net.res_bus.vm_pu
-        va_alg = net.res_bus.va_degree
+            pp.runpp(net, algorithm=alg, calculate_voltage_angles=True, enforce_q_lims=enforce_q_lims)
+            vm_alg = net.res_bus.vm_pu
+            va_alg = net.res_bus.va_degree
 
-        assert np.allclose(vm_nr, vm_alg)
-        assert np.allclose(va_nr, va_alg)
+            assert np.allclose(vm_nr, vm_alg)
+            assert np.allclose(va_nr, va_alg)
 
-        # testing a network with PV buses
-        net = example_simple()
+            # testing a network with PV buses
+            net = example_simple()
 
-        pp.runpp(net)
-        vm_nr = net.res_bus.vm_pu
-        va_nr = net.res_bus.va_degree
+            pp.runpp(net)
+            vm_nr = net.res_bus.vm_pu
+            va_nr = net.res_bus.va_degree
 
-        pp.runpp(net, algorithm='bfsw')
-        vm_alg = net.res_bus.vm_pu
-        va_alg = net.res_bus.va_degree
+            pp.runpp(net, algorithm='bfsw')
+            vm_alg = net.res_bus.vm_pu
+            va_alg = net.res_bus.va_degree
 
-        assert np.allclose(vm_nr, vm_alg)
-        assert np.allclose(va_nr, va_alg)
+            assert np.allclose(vm_nr, vm_alg)
+            assert np.allclose(va_nr, va_alg)
 
 
 def test_recycle():
