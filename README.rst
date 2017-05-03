@@ -2,8 +2,8 @@
 pandapower
 =============
 
-.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.2.2
-   :target: http://pandapower.readthedocs.io/
+.. image:: https://readthedocs.org/projects/pandapower/badge/?version=develop
+   :target: http://pandapower.readthedocs.io/en/develop
    :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
@@ -12,11 +12,11 @@ pandapower
 .. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
     :target: https://pypi.python.org/pypi/pandapower
 
-.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
+.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=develop
     :target: https://travis-ci.org/lthurner/pandapower
 
-.. image:: https://coveralls.io/repos/github/lthurner/pandapower/badge.svg?branch=master
-    :target: https://coveralls.io/github/lthurner/pandapower?branch=master
+.. image:: https://codecov.io/github/lthurner/pandapower/coverage.svg?branch=develop
+   :target: https://codecov.io/github/lthurner/pandapower?branch=develop
     
 .. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
     :target: https://www.codacy.com/app/lthurner/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lthurner/pandapower&amp;utm_campaign=Badge_Grade
