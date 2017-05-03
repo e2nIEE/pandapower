@@ -12,7 +12,7 @@ from pandapower.pf.dSbus_dV_pypower import dSbus_dV_dense
 
 # @jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
-def dSbus_dV_numba_sparse(Yx, Yp, Yj, V, Vnorm, Ibus):
+def dSbus_dV_numba_sparse(Yx, Yp, Yj, V, Vnorm, Ibus): # pragma: no cover
     """Computes partial derivatives of power injection w.r.t. voltage.
 
     Calculates faster with numba and sparse matrices.
