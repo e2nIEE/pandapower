@@ -66,7 +66,7 @@ def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, t
 
         net = pn.case9()
 
-        pc.pp2mpc(net)
+        pc.to_mpc(net)
 
     """
     # convert to matpower

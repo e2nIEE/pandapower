@@ -166,8 +166,6 @@ def _ppc2ppci(ppc, ppci, net):
     mode = net._options["mode"]
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
-    ppc_buses = ppc["bus"]
     # get OOS busses and place them at the end of the bus array (there are no OOS busses in the ppci)
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
@@ -180,10 +178,10 @@ def _ppc2ppci(ppc, ppci, net):
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
-    aranged_buses = np.arange(len(ppc_buses))
+    aranged_buses = np.arange(len(ppc["bus"]))
 
     # lookup ppc former order -> consecutive order
-    e2i = np.zeros(len(ppc_buses), dtype=int)
+    e2i = np.zeros(len(ppc["bus"]), dtype=int)
     e2i[ppc_former_order] = aranged_buses
 
     # save consecutive indices in ppc and ppci

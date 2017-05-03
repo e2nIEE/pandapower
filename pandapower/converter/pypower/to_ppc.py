@@ -50,14 +50,14 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
 
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is
             perfomed. If check finds unsupplied buses, they are set out of service in the ppc
-            
+
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
-        
+
         **init** (str, "results") - initialization method of the converter
         pandapower ppc converter supports two methods for initializing the converter:
 
             - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
-            - "results" - voltage vector from net.res_bus is used as initial solution. 
+            - "results" - voltage vector from net.res_bus is used as initial solution.
 
 
     OUTPUT:
@@ -72,7 +72,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
 
         net = pn.case9()
 
-        ppc = pc.pp2ppc(net)
+        ppc = pc.to_ppc(net)
 
     """
 
