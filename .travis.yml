@@ -30,6 +30,7 @@ install:
   - conda install numpy=1.11
   - pip install pytest pytest-cov
   - pip install coveralls
+  - pip install codecov
   - python setup.py install
   - conda list
   - conda info -a
@@ -40,5 +41,5 @@ script:
     
 after_success:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
-          coveralls;
+          codecov;
       fi

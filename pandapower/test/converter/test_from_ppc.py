@@ -10,7 +10,6 @@ import pickle
 
 import pandapower as pp
 from pandapower.converter import from_ppc, validate_from_ppc
-from pypower import case9
 
 try:
     import pplog as logging
