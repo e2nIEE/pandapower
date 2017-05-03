@@ -57,7 +57,7 @@ def in_ipynb():
     return not hasattr(main, '__file__')
 
 
-def seaborn_to_plotly_palette(scl, transparence = None):
+def seaborn_to_plotly_palette(scl, transparence=None):
     """
     converts a seaborn color palette to a plotly colorscale
     """
@@ -67,17 +67,16 @@ def seaborn_to_plotly_palette(scl, transparence = None):
         return ['rgb' + str((scl[i][0] * 255, scl[i][1] * 255, scl[i][2] * 255)) for i in range(len(scl))]
 
 
-def seaborn_to_plotly_color(scl, transparence = None):
+def seaborn_to_plotly_color(scl, transparence=None):
     """
     converts a seaborn color to a plotly color
     """
     if transparence:
         return 'rgb' + str((scl[0] * 255, scl[1] * 255, scl[2] * 255, transparence))
+    elif len(scl) > 3:
+        return 'rgb' + str((scl[0] * 255, scl[1] * 255, scl[2] * 255, scl[3]))
     else:
-        if len(scl) > 3:
-            return 'rgb' + str((scl[0] * 255, scl[1] * 255, scl[2] * 255, scl[3]))
-        else:
-            return 'rgb'+str((scl[0]*255, scl[1]*255, scl[2]*255))
+        return 'rgb'+str((scl[0]*255, scl[1]*255, scl[2]*255))
 
 
 def get_cmap_matplotlib_for_plotly(values, cmap_name='jet', cmin=None, cmax=None):
@@ -448,8 +447,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             line_trace['legendgroup'] = legendgroup
 
         line_traces.append(line_trace)
-
-
     return line_traces
 
 
