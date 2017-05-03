@@ -10,7 +10,7 @@ from numpy import nan, isnan, arange, dtype, zeros
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.version import __version__
+from pandapower import __version__
 
 def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     """
