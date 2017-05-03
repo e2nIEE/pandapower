@@ -49,8 +49,8 @@ pandapower is an element based network calculation tools that supports the follo
 	- two-winding and three-winding transformers
 	- ideal bus-bus and bus-branch switches
 	- static generators
-    - ZIP loads
-    - shunts
+	- ZIP loads
+	- shunts
 	- external grid connections
 	- synchronous generators
 	- DC lines
