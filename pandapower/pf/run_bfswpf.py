@@ -14,7 +14,7 @@ from pandapower.pf.bustypes import bustypes
 from pandapower.pf.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pf.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus, _get_ibus
-from pandapower.pf.runpf import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
+from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
 
 
 class LoadflowNotConverged(ppException):

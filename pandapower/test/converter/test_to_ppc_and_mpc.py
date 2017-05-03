@@ -10,7 +10,7 @@ import pandapower.converter as cv
 from pandapower.test.converter.test_from_ppc import get_testgrids
 from pandapower.idx_bus import VM, BUS_I, VA
 from pandapower.powerflow import LoadflowNotConverged, reset_results
-from pandapower.pf.runpf import _runpf
+from pandapower.pf.runpf_pypower import _runpf_pypower
 
 
 def test_to_ppc_and_mpc():
@@ -39,7 +39,7 @@ def test_to_ppc_and_mpc():
         net["_options"]['max_iteration'] = 30
         net["_options"]['enforce_q_lims'] = False
         net["_options"]['calculate_voltage_angles'] = True
-        res_converted_pp, status_converted_pp = _runpf(ppc, net["_options"])
+        res_converted_pp, status_converted_pp = _runpf_pypower(ppc, net["_options"])
 
         if status_converted_pp:
             # get lookup pp2ppc

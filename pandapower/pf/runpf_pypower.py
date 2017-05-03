@@ -34,14 +34,12 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _runpf(ppci, options, **kwargs):
-    """Runs a power flow.
+def _runpf_pypower(ppci, options, **kwargs):
+    """
+    This is a modified version* of runpf() to run the algorithms gausspf and fdpf from PYPOWER. 
+    See PYPOWER documentation for more information.
 
-    Similar to runpf() from pypower. See Pypower documentation for more information.
-
-    Changes by University of Kassel (Florian Schaefer):
-        numba can be used for pf calculations.
-        Changes in structure (AC as well as DC PF can be calculated)
+    * mainly the verbose functions and ext2int() int2ext() were deleted
     """
 
     ##-----  run the power flow  -----
@@ -81,6 +79,7 @@ def _get_options(options, **kwargs):
     ppopt['PF_MAX_IT'] = max_iteration
     ppopt['PF_MAX_IT_GS'] = max_iteration
     ppopt['PF_MAX_IT_FD'] = max_iteration
+    ppopt['VERBOSE'] = 0
     return init, ac, numba, recycle, ppopt
 
 
@@ -130,9 +129,6 @@ def _dc_runpf(ppci, ppopt):
 
 def _ac_runpf(ppci, ppopt, numba, recycle):
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(numba)
-
-    if ppopt["VERBOSE"] > 0:
-        _print_info_about_solver(ppopt['PF_ALG'])
 
     if ppopt["ENFORCE_Q_LIMS"]:
         ppci, success, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt)
@@ -198,20 +194,6 @@ def _import_numba_extensions_if_flag_is_true(numba):
         from pandapower.pf.makeYbus_pypower import makeYbus
 
     return numba, makeYbus
-
-
-def _print_info_about_solver(alg):
-    if alg == 1:
-        solver = 'Newton'
-    elif alg == 2:
-        solver = 'fast-decoupled, XB'
-    elif alg == 3:
-        solver = 'fast-decoupled, BX'
-    elif alg == 4:
-        solver = 'Gauss-Seidel'
-    else:
-        solver = 'unknown'
-    logger.info(' -- AC Power Flow (%s)\n' % solver)
 
 
 def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):

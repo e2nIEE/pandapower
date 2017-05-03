@@ -18,7 +18,7 @@ from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT, branch_
 from pandapower.idx_bus import bus_cols
 from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pf.runpf import _get_pf_variables_from_ppci, \
+from pandapower.pf.runpf_pypower import _get_pf_variables_from_ppci, \
     _store_results_from_pf_in_ppci
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
 from pandapower.topology import estimate_voltage_vector
