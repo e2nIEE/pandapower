@@ -10,7 +10,7 @@ import pandapower.converter as cv
 from pandapower.test.converter.test_from_ppc import get_testgrids
 from pandapower.idx_bus import VM, BUS_I, VA
 from pandapower.powerflow import LoadflowNotConverged, reset_results
-from pandapower.pf.runpf import _runpf
+from pandapower.pf.runpf_pypower import _runpf_pypower
 
 
 def test_to_ppc_and_mpc():
