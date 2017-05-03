@@ -19,5 +19,6 @@ pandapower currently implements symmetrical and two-phase faults. One phase faul
 .. toctree:: 
     :maxdepth: 1
     
-    3ph
-    2ph
+    ikss
+    ip
+    ith

@@ -1,17 +1,17 @@
-Bus Elements
-================
+Voltage Source Elements
+================================
 
-All bus elements are represented by their internal voltage source with an internal resistance :math:`Z_k`:
+Voltage source elements are represented by their internal voltage source with an internal resistance :math:`Z_k`:
 
-.. image:: bus.png
-	:width: 15em
+.. image:: bus_voltage.png
+	:width: 8em
 	:align: center
     
 since the voltage source is moved to the fault location for with methodology of the equivalent voltage source, the bus elements
 can be reduced to a single shunt impedance:
  
 .. image:: bus_equivalent.png
-	:width: 15em
+	:width: 10em
 	:align: center
 
 The contribution of loads and shunts are negligible according to the standard and therefore neglected in the short-circuit calculation.
@@ -24,8 +24,8 @@ When calculating maximum short-circuit currents, the impedance of an external gr
 .. math::
 
   z_{k, eg} =& \frac{c_{max}}{s\_sc\_max\_mva} \\[1em]
-  x_{k, sg} =& \frac{z_{sg}}{\sqrt{1 - (rx\_max)^2}} \\[1em]
-  r_{k, sg} =& rx\_max \cdot x_{sg} 
+  x_{k, eg} =& \frac{z_{sg}}{\sqrt{1 + rx\_max^2}} \\[1em]
+  r_{k, eg} =& rx\_max \cdot x_{sg} 
   
 where :math:`rx\_max` and :math:`s\_sc\_max\_mva` are parameters in the ext_grid table and :math:`c_{max}` is the :ref:`voltage correction factor <c>` of the
 external grid bus.
@@ -35,20 +35,23 @@ In case of minimal short-circuit currents, the impedance is calculated according
 .. math::
 
   z_{k, eg} =& \frac{c_{min}}{s\_sc\_min\_mva} \\[1em]
-  x_{k, sg} =& \frac{z_{sg}}{\sqrt{1 - (rx\_min)^2}} \\[1em]
-  r_{k, sg} =& rx\_min \cdot x_{sg} 
+  x_{k, eg} =& \frac{z_{sg}}{\sqrt{1 + rx\_min^2}} \\[1em]
+  r_{k, eg} =& rx\_min \cdot x_{sg} 
 
-Static Generator
+Asynchronous Motor
 -----------------------
-Not all inverter based elements contribute to the short-circuit current. That is why it can be chosen in the runsc function if static generators
-are to be considered or not. If they are considered, the short-circuit impedance is defined according to the standard as:
+Asynchronous motors can be considered by setting the type variable of an sgen element to "motor". The internal impedance is then calculated as:
 
 .. math::
 
-    Z_{k, sg} = \frac{1}{3} \cdot \frac{vn\_kv^2 \cdot 1000}{sn\_kva} \\
-    X_{k, sg} = \frac{Z_{sg}}{\sqrt{1 - 0.1^2}} \\
-    R_{k, sg} = 0.1 \cdot X_{sg}
+    Z_{k, m} = \frac{1}{k} \cdot \frac{vn\_kv^2 \cdot 1000}{sn\_kva} \\
+    X_{k, m} = \frac{Z_{sg}}{\sqrt{1 + rx^2}} \\
+    R_{k, m} = rx \cdot X_{sg}
 
+where :math:`sn\_kva` is the rated power of the motor, :math:`k` is the ratio of nominal to short circuit current and :math:`rx` is the R/X ratio of the motor.
+:math:`vn\_kv` is the rated voltage of the bus the motor is connected to.
+
+    
 Synchronous Generator
 -----------------------
 Synchronous generators are considered with the short-circuit impedance of:
