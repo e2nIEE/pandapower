@@ -9,24 +9,17 @@ import matplotlib.pyplot as plt
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
                                             create_trafo_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.networks import mv_oberrhein
 
 try:
     import pplog as logging
 except ImportError:
     import logging
 
-try:
-    import seaborn
-    colors = seaborn.color_palette()
-except ImportError:
-    colors = ["b", "g", "r", "c", "y"]
-
 logger = logging.getLogger(__name__)
 
 
-def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                scale_size=True, bus_color=colors[0], line_color='grey', trafo_color='g',
+def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
+                scale_size=True, bus_color="b", line_color='grey', trafo_color='g',
                 ext_grid_color='y'):
     """
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
@@ -64,11 +57,6 @@ def simple_plot(net=None, respect_switches=False, line_width=1.0, bus_size=1.0, 
 
             **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
     """
-    if net is None:
-        logger.warning("No pandapower network provided -> Please specify a network. "
-                       "Example: net = pandapower.networks.mv_oberrhein()")
-        return
-
     # create geocoord if none are available
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +

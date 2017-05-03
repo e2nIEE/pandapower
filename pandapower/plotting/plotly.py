@@ -9,17 +9,44 @@ from pandapower.topology import create_nxgraph, connected_components
 from pandapower import runpp
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
+import matplotlib.cm as cm
+import matplotlib.colors as colors
+
 import numpy as np
-
-
 import pandas as pd
 
 try:
     import pplog as logging
 except ImportError:
     import logging
-
 logger = logging.getLogger(__name__)
+
+
+try:
+    from plotly.graph_objs import Figure, Data, Layout, Marker, XAxis, YAxis, Line, ColorBar
+except ImportError:
+    logger.debug("Failed to import plotly - interactive plotting will not be available")
+
+try:
+    import seaborn
+except ImportError:
+    pass
+
+
+#
+#try:
+#    import seaborn
+#    import matplotlib.colors as colors_mbl
+#    colors_sns = seaborn.color_palette("muted")
+#    colors_sns_bright = seaborn.color_palette("bright")
+#    colors = seaborn_to_plotly_palette(colors_sns)
+#    colors_bright = seaborn_to_plotly_palette(colors_sns_bright)
+#    colors_hex = [colors_mbl.rgb2hex(col) for col in colors_sns]
+#    color_yellow = seaborn_to_plotly_color(seaborn.xkcd_palette(["amber"])[0])
+#    color_yellow = colors_bright[4]
+#except ImportError:
+#    colors = ["blue", "green", "red", "cyan", "yellow"]
+#    color_yellow = "yellow"
 
 
 def in_ipynb():
@@ -30,22 +57,20 @@ def in_ipynb():
     return not hasattr(main, '__file__')
 
 
-try:
-    from plotly.graph_objs import Figure, Data, Layout, Scatter, Marker, XAxis, YAxis, Line, ColorBar, Scattermapbox
-except ImportError:
-    logger.exception("Failed to import plotly!")
-
 def seaborn_to_plotly_palette(scl, transparence = None):
-    ''' converts a seaborn color palette to a plotly colorscale '''
-    # return [ [ float(i)/float(len(scl)-1), 'rgb'+str((scl[i][0]*255, scl[i][1]*255, scl[i][2]*255)) ] \
-    #         for i in range(len(scl)) ]
+    """
+    converts a seaborn color palette to a plotly colorscale
+    """
     if transparence:
         return ['rgb' + str((scl[i][0] * 255, scl[i][1] * 255, scl[i][2] * 255, transparence)) for i in range(len(scl))]
     else:
         return ['rgb' + str((scl[i][0] * 255, scl[i][1] * 255, scl[i][2] * 255)) for i in range(len(scl))]
 
+
 def seaborn_to_plotly_color(scl, transparence = None):
-    ''' converts a seaborn color to a plotly color '''
+    """
+    converts a seaborn color to a plotly color
+    """
     if transparence:
         return 'rgb' + str((scl[0] * 255, scl[1] * 255, scl[2] * 255, transparence))
     else:
@@ -56,8 +81,6 @@ def seaborn_to_plotly_color(scl, transparence = None):
 
 
 def get_cmap_matplotlib_for_plotly(values, cmap_name='jet', cmin=None, cmax=None):
-    import matplotlib.cm as cm
-    import matplotlib.colors as colors
     cmap = cm.get_cmap(cmap_name)
     if cmin is None:
         cmin = values.min()
@@ -66,25 +89,6 @@ def get_cmap_matplotlib_for_plotly(values, cmap_name='jet', cmin=None, cmax=None
     norm = colors.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.
     return ['rgb({0},{1},{2})'.format(r, g, b) for r, g, b in bus_fill_colors_rgba]
-
-
-
-
-try:
-    import seaborn
-    import matplotlib.colors as colors_mbl
-    colors_sns = seaborn.color_palette("muted")
-    colors_sns_bright = seaborn.color_palette("bright")
-    colors = seaborn_to_plotly_palette(colors_sns)
-    colors_bright = seaborn_to_plotly_palette(colors_sns_bright)
-    colors_hex = [colors_mbl.rgb2hex(col) for col in colors_sns]
-    color_yellow = seaborn_to_plotly_color(seaborn.xkcd_palette(["amber"])[0])
-    # color_yellow = colors_bright[4]
-except ImportError:
-    colors = ["blue", "green", "red", "cyan", "yellow"]
-    color_yellow = "yellow"
-
-
 
 
 def _on_map_test(x, y):
@@ -114,18 +118,15 @@ def _on_map_test(x, y):
         return True
 
 
-
-
-
 def geo_data_to_latlong(net, projection):
     """
     Transforms network's geodata (in `net.bus_geodata` and `net.line_geodata`) from specified projection to lat/long (WGS84).
 
-    INPUT:      
+    INPUT:
         **net** (pandapowerNet) - The pandapower network
-        
-        **projection** (String) - projection from which geodata are transformed to lat/long. some examples  
-        
+
+        **projection** (String) - projection from which geodata are transformed to lat/long. some examples
+
                 - "epsg:31467" - 3-degree Gauss-Kruger zone 3
                 - "epsg:2032" - NAD27(CGQ77) / UTM zone 18N
                 - "epsg:2190" - Azores Oriental 1940 / UTM zone 26N
@@ -163,11 +164,9 @@ def geo_data_to_latlong(net, projection):
         return
 
 
-
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
-                     trace_name='buses', legendgroup=None,
-                     cmap=None, cmap_vals=None, cbar_title=None,
-                     cmin=None, cmax=None):
+                     trace_name='buses', legendgroup=None, cmap=None, cmap_vals=None,
+                     cbar_title=None, cmin=None, cmax=None):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -180,15 +179,15 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
         **size** (int, 5) - patch size
 
-        **patch_type** (str, "circle") - patch type, can be 
+        **patch_type** (str, "circle") - patch type, can be
 
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
                 - much more pathc types at https://plot.ly/python/reference/#scatter-marker
 
-        **infofunc** (list, None) - hoverinfo for each trace element 
-        
+        **infofunc** (list, None) - hoverinfo for each trace element
+
         **trace_name** (String, "buses") - name of the trace which will appear in the legend
 
         **color** (String, "blue") - color of buses in the trace
@@ -198,11 +197,11 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
             alternatively a custom discrete colormap can be used
 
         **cmap_vals** (list, None) - values used for coloring using colormap
-        
-        **cbar_title** (String, None) - title for the colorbar 
 
-        **cmin** (float, None) - colorbar range minimum 
-        
+        **cbar_title** (String, None) - title for the colorbar
+
+        **cmin** (float, None) - colorbar range minimum
+
         **cmax** (float, None) - colorbar range maximum
 
         **kwargs - key word arguments are passed to the patch function
@@ -294,12 +293,10 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
     return xs[:-1], ys[:-1]
 
 
-
-def create_line_trace(net, lines=None, use_line_geodata=True,
-                      respect_switches=False, width=1.0, color='grey',
-                      infofunc=None, trace_name='lines', legendgroup=None,
-                      cmap=None, cbar_title=None, show_colorbar = True,
-                      cmap_vals=None, cmin=None, cmax=None, **kwargs):
+def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
+                      color='grey', infofunc=None, trace_name='lines', legendgroup=None,
+                      cmap=None, cbar_title=None, show_colorbar = True, cmap_vals=None, cmin=None,
+                      cmax=None, **kwargs):
     """
         Creates a plotly trace of pandapower lines.
 
@@ -319,21 +316,21 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
             **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
             **color** (String, "grey") - color of lines in the trace
-            
+
             **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
                 e.g. groups according to voltage level (as used in `vlevel_plotly`)
 
-            **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet` 
-                colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd, 
+            **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
+                colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
                 Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
 
             **cmap_vals** (list, None) - values used for coloring using colormap
-            
+
             **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
 
-            **cbar_title** (String, None) - title for the colorbar 
+            **cbar_title** (String, None) - title for the colorbar
 
-            **cmin** (float, None) - colorbar range minimum 
+            **cmin** (float, None) - colorbar range minimum
 
             **cmax** (float, None) - colorbar range maximum
 
@@ -457,9 +454,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True,
 
 
 
-def create_trafo_trace(net, trafos=None, color ='green', width = 5,
-                       infofunc=None, trace_name ='trafos',
-                       cmap=None, cmin=None, cmax=None, cmap_vals=None, **kwargs):
+def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, cmap=None,
+                       trace_name='trafos', cmin=None, cmax=None, cmap_vals=None, **kwargs):
     """
         Creates a plotly trace of pandapower trafos.
 
@@ -483,9 +479,9 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
 
             **cmap_vals** (list, None) - values used for coloring using colormap
 
-            **cbar_title** (String, None) - title for the colorbar 
+            **cbar_title** (String, None) - title for the colorbar
 
-            **cmin** (float, None) - colorbar range minimum 
+            **cmin** (float, None) - colorbar range minimum
 
             **cmax** (float, None) - colorbar range maximum
 
@@ -569,11 +565,12 @@ def create_trafo_trace(net, trafos=None, color ='green', width = 5,
 
 
 
-def draw_traces(traces, on_map = False, map_style='basic', showlegend = True, figsize=1, aspectratio ='auto'):
+def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
+                aspectratio='auto'):
     """
     plots all the traces (which can be created using :func:`create_bus_trace`,
-                                                     :func:`create_line_trace`, 
-                                                     :func:`create_trafo_trace`) 
+                                                     :func:`create_line_trace`,
+                                                     :func:`create_trafo_trace`)
     to PLOTLY (see https://plot.ly/python/)
 
     INPUT:
@@ -688,11 +685,10 @@ def draw_traces(traces, on_map = False, map_style='basic', showlegend = True, fi
     plot(fig)
 
 
-def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
-                  on_map=False, projection=None, map_style='basic',
-                  figsize=1, aspectratio='auto',
-                  line_width=1, bus_size=10, ext_grid_size=20.0,
-                  bus_color=colors[0], line_color='grey', trafo_color='green', ext_grid_color=color_yellow):
+def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
+                  projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=1,
+                  bus_size=10, ext_grid_size=20.0, bus_color="b", line_color='grey',
+                  trafo_color='green', ext_grid_color="y"):
     """
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
@@ -709,10 +705,10 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
             If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
-            
+
         **projection** (String, None) - defines a projection from which network geo-data will be transformed to lat-long.
             For each projection a string can be found at http://spatialreference.org/ref/epsg/
-        
+
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
             - 'streets'
@@ -743,12 +739,6 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
 
         **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
     """
-
-    if net is None:
-        import pandapower.networks as nw
-        logger.warning("No pandapower network provided -> Plotting mv_oberrhein")
-        net = nw.mv_oberrhein()
-
     # create geocoord if none are available
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])
@@ -799,13 +789,11 @@ def simple_plotly(net=None, respect_switches=True, use_line_geodata=None,
 
 
 
-def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
-                  colors_dict=None,
-                  on_map=False, projection=None, map_style='basic',
-                  figsize=1, aspectratio='auto',
-                  line_width=2, bus_size=10):
+def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict=None, on_map=False,
+                  projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
+                  bus_size=10):
     """
-    Plots a pandapower network in plotly 
+    Plots a pandapower network in plotly
     using lines/buses colors according to the voltage level they belong to.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
@@ -917,10 +905,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None,
                 aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
 
 
-def pf_res_plotly(net, cmap='Jet', use_line_geodata = None,
-                  on_map=False, projection=None, map_style='basic',
-                  figsize=1, aspectratio='auto',
-                  line_width=2, bus_size=10):
+def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projection=None,
+                  map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10):
     """
     Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.

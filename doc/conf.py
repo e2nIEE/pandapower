@@ -17,7 +17,8 @@ import mock
 
 MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
                   'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
-                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg']
+                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
+                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm']
 for mod_name in MOCK_MODULES:
   sys.modules[mod_name] = mock.Mock()
 
