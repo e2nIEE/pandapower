@@ -7,7 +7,7 @@
 import numpy as np
 import pytest
 import pandapower.converter as cv
-from pandapower.test.converter.test_from_ppc import get_pypower_cases
+from pandapower.test.converter.test_from_ppc import get_testgrids
 from pandapower.idx_bus import VM, BUS_I, VA
 from pandapower.powerflow import LoadflowNotConverged, reset_results
 from pandapower.pf.runpf import _runpf
@@ -18,7 +18,7 @@ def test_to_ppc_and_mpc():
     functions = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39']
     for fn in functions:
         # get pypower grids with results
-        ppc_net = get_pypower_cases(fn)
+        ppc_net = get_testgrids(fn, 'pypower_cases.p')
 
         # get pandapower grids
         pandapower_module = __import__('pandapower', fromlist=['networks'])
