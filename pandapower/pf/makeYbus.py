@@ -14,7 +14,7 @@ from pandapower.pf.makeYbus_pypower import branch_vectors
 
 
 @jit(nopython=True, cache=True)
-def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):
+def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl): # pragma: no cover
     """
     Fast calculation of Ybus
     """

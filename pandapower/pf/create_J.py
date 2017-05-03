@@ -9,7 +9,7 @@ from numba import jit
 
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
-def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
+def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma: no cover
     """Calculates Jacobian faster with numba and sparse matrices.
 
         Input: dS_dVa and dS_dVm in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), pvpq, pq from pypower
@@ -99,7 +99,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
 # @profile
-def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):
+def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma: no cover
     """Calculates Jacobian faster with numba and sparse matrices. This version is similar to create_J except that
         if pvpq = pq (when no pv bus is available) some if statements are obsolete and J11 = J12 and J21 = J22
 

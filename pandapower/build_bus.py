@@ -19,8 +19,8 @@ except:
     pass
 
 
-@jit(nopython=True, cache=True)
-def ds_find(ar, bus):
+@jit(nopython=True, cache=True) 
+def ds_find(ar, bus): # pragma: no cover
     while True:
         p = ar[bus]
         if p == bus:
@@ -30,7 +30,7 @@ def ds_find(ar, bus):
 
 
 @jit(nopython=True, cache=True)
-def ds_union(ar, bus1, bus2, bus_is_pv):
+def ds_union(ar, bus1, bus2, bus_is_pv): # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
     if root1 == root2:
@@ -44,7 +44,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv):
 
 
 @jit(nopython=True, cache=True)
-def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service):
+def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service): # pragma: no cover
     for i in range(len(switch_bus)):
         if not switch_closed[i] or not switch_et_bus[i]:
             continue

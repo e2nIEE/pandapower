@@ -395,7 +395,7 @@ def _create_ppc2pd_bus_lookup(net):
 
 from numba import jit
 @jit(nopython=True, cache=True)
-def set_elements_oos(ti, tis, bis, lis):
+def set_elements_oos(ti, tis, bis, lis): # pragma: no cover
     """iterates over elements; returns array where element is of service if element is oos in
     element table or bus is oos"""
     for i in range(len(ti)):
@@ -404,7 +404,7 @@ def set_elements_oos(ti, tis, bis, lis):
 
 
 @jit(nopython=True, cache=True)
-def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):
+def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup): # pragma: no cover
     """determines out of service pp buses by also checking if fused to isolated ppc buses"""
     for k in range(len(bus_lookup)):
         if ppc_bus_isolated[bus_lookup[k]]:
