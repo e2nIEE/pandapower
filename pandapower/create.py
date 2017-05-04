@@ -1655,7 +1655,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_service=True, index=None):
+def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_service=True,
+                 index=None):
     """
     Creates a shunt element
 
