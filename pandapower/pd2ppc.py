@@ -79,7 +79,6 @@ def _pd2ppc(net):
     check_connectivity = net["_options"]["check_connectivity"]
 
     ppc = _init_ppc(net)
-    _init_lookups(net)
 
     if mode == "opf":
         # additional fields in ppc
@@ -152,14 +151,6 @@ def _init_ppc(net):
            }
     net["_ppc"] = ppc
     return ppc
-
-
-def _init_lookups(net):
-    if "_pd2ppc_lookups" not in net:
-        net["_pd2ppc_lookups"] = {"bus": None,
-                                  "gen": None,
-                                  "branch": None}
-
 
 def _ppc2ppci(ppc, ppci, net):
     # BUS Sorting and lookups
