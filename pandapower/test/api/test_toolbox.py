@@ -201,12 +201,10 @@ def test_merge_and_split_nets():
     assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
     assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
-    net3 = pp.select_subnet(net, net.bus.index[:n1])
-    pp.runpp(net3)
+    net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
     assert np.allclose(net3.res_bus.vm_pu.values, net1.res_bus.vm_pu.values)
 
-    net4 = pp.select_subnet(net, net.bus.index[n1:])
-    pp.runpp(net4)
+    net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 if __name__ == "__main__":
