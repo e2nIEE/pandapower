@@ -87,8 +87,6 @@ def _dc_runpf(ppci, ppopt):
     baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _ = _get_pf_variables_from_ppci(ppci)
 
     ppci["bus"][:, VM] = 1.0
-    if ppopt["VERBOSE"]:
-        print(' -- DC Power Flow\n')
 
     ## initial state
     Va0 = bus[:, VA] * (pi / 180)
@@ -246,11 +244,6 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         if len(mx) > 0 or len(mn) > 0:  ## we have some Q limit violations
             # No PV generators
             if len(pv) == 0:
-                if ppopt["VERBOSE"]:
-                    if len(mx) > 0:
-                        logger.info('Gen %d [only one left] exceeds upper Q limit : INFEASIBLE PROBLEM\n' % mx + 1)
-                    else:
-                        logger.info('Gen %d [only one left] exceeds lower Q limit : INFEASIBLE PROBLEM\n' % mn + 1)
 
                 success = 0
                 break
@@ -266,15 +259,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
                     mx = mx[k]
                     mn = []
 
-            if ppopt["VERBOSE"] and len(mx) > 0:
-                for i in range(len(mx)):
-                    logger.info('Gen ' + str(mx[i] + 1) + ' at upper Q limit, converting to PQ bus\n')
-
-            if ppopt["VERBOSE"] and len(mn) > 0:
-                for i in range(len(mn)):
-                    logger.info('Gen ' + str(mn[i] + 1) + ' at lower Q limit, converting to PQ bus\n')
-
-            ## save corresponding limit values
+           ## save corresponding limit values
             fixedQg[mx] = gen[mx, QMAX]
             fixedQg[mn] = gen[mn, QMIN]
             mx = r_[mx, mn].astype(int)
@@ -294,10 +279,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
-            ref_temp = ref
             ref, pv, pq = bustypes(bus, gen)
-            if ppopt["VERBOSE"] and ref != ref_temp:
-                print('Bus %d is new slack bus\n' % ref)
 
             limited = r_[limited, mx].astype(int)
         else:
@@ -323,7 +305,7 @@ def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq,
     elif alg == 4:
         V, success, _ = gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt)
     else:
-        raise ValueError('Only Newton''s method, fast-decoupled, and '
+        raise ValueError('Only PYPOWERS fast-decoupled, and '
                          'Gauss-Seidel power flow algorithms currently '
                          'implemented.\n')
 

@@ -309,67 +309,32 @@ def test_test_sn_kva():
             raise UserWarning("Result difference due to sn_kva after adding %s" % net1.last_added_case)
 
 
-def test_pf_algorithms():
-    alg_to_test = ['bfsw', 'fdbx', 'fdxb', 'gs']
+def test_bsfw_algorithm():
+    net = example_simple()
+
+    pp.runpp(net)
+    vm_nr = net.res_bus.vm_pu
+    va_nr = net.res_bus.va_degree
+
+    pp.runpp(net, algorithm='bfsw')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg)
+    assert np.allclose(va_nr, va_alg)
+
+
+def test_pypower_algorithms_iter():
+    alg_to_test = ['fdbx', 'fdxb', 'gs']
     for alg in alg_to_test:
-        for enforce_q_lims in [False, True]:
-            net = create_cigre_network_mv(with_der=False)
-
-            pp.runpp(net, algorithm='nr', enforce_q_lims=enforce_q_lims)
-            vm_nr = net.res_bus.vm_pu
-            va_nr = net.res_bus.va_degree
-
-            pp.runpp(net, algorithm=alg, enforce_q_lims=enforce_q_lims)
-            vm_alg = net.res_bus.vm_pu
-            va_alg = net.res_bus.va_degree
-
-            assert np.allclose(vm_nr, vm_alg)
-            assert np.allclose(va_nr, va_alg)
-
-            # testing with a network which contains DERs
-            net = create_cigre_network_mv()
-
-            pp.runpp(net)
-            vm_nr = net.res_bus.vm_pu
-            va_nr = net.res_bus.va_degree
-
-            pp.runpp(net, algorithm=alg, enforce_q_lims=enforce_q_lims)
-            vm_alg = net.res_bus.vm_pu
-            va_alg = net.res_bus.va_degree
-
-            assert np.allclose(vm_nr, vm_alg)
-            assert np.allclose(va_nr, va_alg)
-
-            # testing a weakly meshed network and consideration of phase-shifting transformer using calculate_voltage_angles
-            net = four_loads_with_branches_out()
-            # adding a line in order to create a loop
-            pp.create_line(net, from_bus=8, to_bus=9, length_km=0.05, name='line9', std_type='NAYY 4x120 SE')
-
-            pp.runpp(net, calculate_voltage_angles=True)
-            vm_nr = net.res_bus.vm_pu
-            va_nr = net.res_bus.va_degree
-
-            pp.runpp(net, algorithm=alg, calculate_voltage_angles=True, enforce_q_lims=enforce_q_lims)
-            vm_alg = net.res_bus.vm_pu
-            va_alg = net.res_bus.va_degree
-
-            assert np.allclose(vm_nr, vm_alg)
-            assert np.allclose(va_nr, va_alg)
-
-            # testing a network with PV buses
-            net = example_simple()
-
-            pp.runpp(net)
-            vm_nr = net.res_bus.vm_pu
-            va_nr = net.res_bus.va_degree
-
-            pp.runpp(net, algorithm='bfsw')
-            vm_alg = net.res_bus.vm_pu
-            va_alg = net.res_bus.va_degree
-
-            assert np.allclose(vm_nr, vm_alg)
-            assert np.allclose(va_nr, va_alg)
-
+        for net in result_test_network_generator(skip_test_impedance=True):
+            try:
+                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg)
+                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg)
+            except (AssertionError):
+                raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+            except(LoadflowNotConverged):
+                raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 def test_recycle():
     # Note: Only calls recycle functions and tests if load and gen are updated.
