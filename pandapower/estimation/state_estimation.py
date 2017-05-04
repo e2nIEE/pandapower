@@ -573,8 +573,3 @@ class state_estimation(object):
             num_iterations += 1
 
         return not self.bad_data_present
-
-
-if __name__ == "__main__":
-    from pandapower.test.estimation.test_wls_estimation import test_3bus_with_out_of_service_bus
-    test_3bus_with_out_of_service_bus()

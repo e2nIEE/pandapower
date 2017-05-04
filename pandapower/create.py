@@ -881,6 +881,9 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
     """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
     if index and index in net["ext_grid"].index:
         raise UserWarning("An external grid with with index %s already exists" % index)
 
@@ -1002,8 +1005,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     # check if bus exist to attach the line to
     for b in [from_bus, to_bus]:
         if b not in net["bus"].index.values:
-            raise UserWarning("Line %s tries to attach to non-existing bus %s"
-                              % (name, b))
+            raise UserWarning("Line %s tries to attach to non-existing bus %s"% (name, b))
 
     if index is None:
         index = get_free_id(net["line"])
@@ -1755,6 +1757,9 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None,
 
         impedance id
     """
+    for b in [from_bus, to_bus]:
+        if b not in net["bus"].index.values:
+            raise UserWarning("Impedance %s tries to attach to non-existing bus %s"% (name, b))
 
     if index is None:
         index = get_free_id(net.impedance)

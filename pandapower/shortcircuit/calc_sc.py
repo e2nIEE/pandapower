@@ -10,7 +10,7 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
-import time
+#import time
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pd2ppc import _pd2ppc
@@ -135,12 +135,3 @@ def _calc_sc(net):
 #    t5 = time.perf_counter()
 #    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
 #               "currents": t5-t4}
-
-
-if __name__ == "__main__":
-    import pandapower.networks as nw
-    net = nw.mv_oberrhein()
-    net.ext_grid.s_sc_max_mva = 100
-    net.ext_grid.rx_max = 0.1
-    net.sgen["k"] = 1.2
-    calc_sc(net)

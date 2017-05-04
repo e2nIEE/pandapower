@@ -163,7 +163,6 @@ def _init_lookups(net):
 
 def _ppc2ppci(ppc, ppci, net):
     # BUS Sorting and lookups
-    mode = net._options["mode"]
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get OOS busses and place them at the end of the bus array (there are no OOS busses in the ppci)
@@ -171,10 +170,6 @@ def _ppc2ppci(ppc, ppci, net):
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
     ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
-
-#    if mode == "sc":
-#        ppci["bus"] = ppc["bus"][~oos_busses]
-#        ppc["bus"] = np.r_[ppc["bus"][~oos_busses], ppc["bus"][oos_busses]]
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
