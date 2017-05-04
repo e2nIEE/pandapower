@@ -460,6 +460,11 @@ def convert_format(net):
     if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
         net.load["const_z_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+
+    if not "vn_kv" in net["shunt"]:
+        net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
+    if not "step" in net["shunt"]:
+        net.shunt["step"] = 1
     net.version = float(__version__[:3])
     return net
 

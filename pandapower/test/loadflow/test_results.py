@@ -485,9 +485,9 @@ def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
     shunts = [x for x in net.shunt.index if net.shunt.bus[x] in buses.index]
     s1 = shunts[0]
 
-    u = 1.015007138
-    p = 123.628741
-    q = -1236.287413
+    u = 1.0177330269
+    p = 205.44
+    q = -2054.44
 
     assert abs(net.res_bus.vm_pu.loc[b2] - u) < v_tol
     assert abs(net.res_shunt.p_kw.loc[s1] - p) < s_tol

@@ -19,7 +19,7 @@ except:
     pass
 
 
-@jit(nopython=True, cache=True) 
+@jit(nopython=True, cache=True)
 def ds_find(ar, bus): # pragma: no cover
     while True:
         p = ar[bus]
@@ -380,8 +380,9 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     s = net["shunt"]
     if len(s) > 0:
         vl = _is_elements["shunt"] / np.float64(1000.)
-        q = np.hstack([q, s["q_kvar"].values * vl])
-        p = np.hstack([p, s["p_kw"].values * vl])
+        scale_volage = (net["bus"]["vn_kv"].loc[s["bus"].values].values / s["vn_kv"].values)**2
+        q = np.hstack([q, s["q_kvar"].values * s["step"] * scale_volage * vl ])
+        p = np.hstack([p, s["p_kw"].values * s["step"] * scale_volage * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]

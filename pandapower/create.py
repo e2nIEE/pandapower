@@ -73,6 +73,8 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
                   ("name", dtype(object)),
                   ("q_kvar", "f8"),
                   ("p_kw", "f8"),
+                  ("vn_kv", "f8"),
+                  ("step", "u4"),
                   ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
@@ -1653,7 +1655,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=None):
+def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_service=True, index=None):
     """
     Creates a shunt element
 
@@ -1667,6 +1669,10 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
         **q_kvar** - shunt susceptance in kVAr at v= 1.0 p.u.
 
     OPTIONAL:
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus
+
+        **step** (int, 1) - step of shunt with which power values are multiplied
+
         **name** (str, None) - element name
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -1686,11 +1692,13 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
     if index in net["shunt"].index:
         raise UserWarning("A shunt with index %s already exists" % index)
 
+    if vn_kv is None:
+        vn_kv = net.bus.vn_kv.at[bus]
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "in_service"]] = \
-        [bus, name, p_kw, q_kvar, in_service]
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "in_service"]] = \
+        [bus, name, p_kw, q_kvar, vn_kv, step, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)

@@ -410,7 +410,7 @@ def add_test_shunt(net):
     pz = 120
     qz = -1200
     # one shunt at a bus
-    pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz)
+    pp.create_shunt_as_condensator(net, b2, q_kvar=1200, loss_factor=0.1, vn_kv=22., step=2)
     # add out of service shunt shuold not change the result
     pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
     return net
@@ -437,41 +437,13 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 
 if __name__ == '__main__':
-    net1 = pp.create_empty_network()
-    net2 = pp.create_empty_network(sn_kva=2e3)
-    for net in [net1, net2]:
-        add_test_line(net)
-        add_test_trafo(net)
-        add_test_load_sgen(net)
-        add_test_load_sgen_split(net)
-        add_test_single_load_single_eg(net)
-        add_test_ward(net)
-        add_test_xward(net)
-        add_test_shunt_split(net)
-        add_test_impedance(net)
-
-    pp.runpp(net1)
-    pp.runpp(net2)
-    print(net1.res_trafo.values - net2.res_trafo.values)
-    nets_equal(net1, net2)
-# print(net1._ppc["branch"][:,3] / net2._ppc["branch"][:,3])
-
-#    add_test_load_sgen(net)
-#    add_test_load_sgen_split(net)
-#    yield add_test_ext_grid(net)
-#    yield add_test_trafo(net)
-#    yield add_test_single_load_single_eg(net)
-#    yield add_test_ward(net)
-#    yield add_test_ward_split(net)
-#    yield add_test_xward(net)
-#    yield add_test_xward_combination(net)
-#    yield add_test_gen(net)
-#    yield add_test_ext_grid_gen_switch(net)
-#    yield add_test_enforce_qlims(net)
-#    yield add_test_trafo3w(net)
-#    yield add_test_impedance(net)
-#    yield add_test_bus_bus_switch(net)
-#    yield add_test_oos_bus_with_is_element(net)
-#    yield add_test_shunt(net)
-#    yield add_test_shunt_split(net)
-#    yield add_test_two_open_switches_on_deactive_line(net)
+    net = pp.create_empty_network()
+    b1, b2, ln = add_grid_connection(net, zone="test_shunt")
+    pz = 120
+    qz = -1200
+    # one shunt at a bus
+    pp.create_shunt_as_condensator(net, b2, q_kvar=1200, loss_factor=0.1, vn_kv=20., step=1)
+    # add out of service shunt shuold not change the result
+    pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
+    # add out of service shunt shuold not change the result
+    pp.runpp(net)
