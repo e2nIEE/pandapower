@@ -9,7 +9,7 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.toolbox import nets_equal
 
 
-def result_test_network_generator(sn_kva=1e3):
+def result_test_network_generator(sn_kva=1e3, skip_test_impedance=False):
     """ This is a generator for the result_test_network
         It is structured like this so it can be tested for consistency at
         different stages of adding elements
@@ -29,7 +29,8 @@ def result_test_network_generator(sn_kva=1e3):
     yield add_test_ext_grid_gen_switch(net)
     yield add_test_enforce_qlims(net)
     yield add_test_trafo3w(net)
-    yield add_test_impedance(net)
+    if not skip_test_impedance:
+        yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
     yield add_test_oos_bus_with_is_element(net)
     yield add_test_shunt(net)
