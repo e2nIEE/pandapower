@@ -1289,3 +1289,34 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                                       & switch_selection])
 
     return cs
+
+def pq_from_cosphi(s, cosphi, qmode, pmode):
+    """
+    Calculates P/Q values from rated apparent power and cosine(phi) values.
+
+       - s: rated apparent power
+       - cosphi: cosine phi of the
+       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - pmode: "load" for load or "gen" for generation
+
+    As all other pandapower functions this function is based on the consumer viewpoint. For active
+    power, that means that loads are positive and generation is negative. For reactive power,
+    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    """
+    if qmode == "ind":
+        qsign = 1
+    elif qmode == "cap":
+        qsign = -1
+    else:
+        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'"%qmode)
+
+    if pmode == "load":
+        psign = 1
+    elif pmode == "gen":
+        psign = -1
+    else:
+        raise ValueError("Unknown mode %s - specify 'load' or 'gen'"%pmode)
+
+    p = psign * s * cosphi
+    q = qsign * np.sqrt(s**2 - p**2)
+    return p, q

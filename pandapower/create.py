@@ -542,6 +542,33 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
+def create_load_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
+    """
+    Creates a load element from rated power and power factor cos(phi).
+
+    INPUT:
+        **net** - The net within this static generator should be created
+
+        **bus** (int) - The bus id to which the load is connected
+
+        **sn_kva** (float) - rated power of the generator
+
+        **cos_phi** (float) - power factor cos_phi
+
+        **mode** (str) - "ind" for inductive or "cap" for capacitive behaviour
+
+        **kwargs are passed on to the create_load function
+
+    OUTPUT:
+        **index** - The unique id of the created load
+
+    All elements are modeled from a consumer point of view. Active power will therefore always be
+    positive, reactive power will be negative for inductive behaviour and positive for capacitive
+    behaviour.
+    """
+    from pandapower.toolbox import pq_from_cosphi
+    p_kw, q_kvar = pq_from_cosphi(sn_kva, cos_phi, qmode=mode, pmode="load")
+    return create_load(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
@@ -563,9 +590,9 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **bus** (int) - The bus id to which the static generator is connected
 
+        **p_kw** (float) - The real power of the static generator  (negative for generation!)
+
     OPTIONAL:
-        **p_kw** (float, default 0) - The real power of the static generator
-        (negative for generation!)
 
         **q_kvar** (float, default 0) - The reactive power of the sgen
 
@@ -657,6 +684,32 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
         net.sgen.loc[index, "rx"] = float(rx)
 
     return index
+
+def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
+    """
+    Creates an sgen element from rated power and power factor cos(phi).
+
+    INPUT:
+        **net** - The net within this static generator should be created
+
+        **bus** (int) - The bus id to which the static generator is connected
+
+        **sn_kva** (float) - rated power of the generator
+
+        **cos_phi** (float) - power factor cos_phi
+
+        **mode** (str) - "ind" for inductive or "cap" for capacitive behaviour
+
+    OUTPUT:
+        **index** - The unique id of the created sgen
+
+    All elements including generators are modeled from a consumer point of view. Active power
+    will therefore always be negative, reactive power will be negative for inductive behaviour and
+    positive for capacitive behaviour.
+    """
+    from pandapower.toolbox import pq_from_cosphi
+    p_kw, q_kvar = pq_from_cosphi(sn_kva, cos_phi, qmode=mode, pmode="gen")
+    return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan,
@@ -1619,7 +1672,7 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
         **in_service** (boolean, True) - True for in_service or False for out of service
 
     OUTPUT:
-        shunt id
+        **index** - The unique id of the created shunt
 
     EXAMPLE:
         create_shunt(net, 0, 20)
@@ -1643,6 +1696,31 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
     _preserve_dtypes(net.shunt, dtypes)
 
     return index
+
+def create_shunt_as_condensator(net, bus, q_kvar, loss_factor, **kwargs):
+    """
+    Creates a shunt element representing a condensator bank.
+
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** - bus number of bus to whom the shunt is connected to
+
+        **q_kvar** (float) - reactive power of the condensator bank at rated voltage
+
+        **loss_factor** (float) - loss factor tan(delta) of the condensator bank
+
+        **kwargs are passed to the create_shunt function
+
+
+    OUTPUT:
+        **index** - The unique id of the created shunt
+    """
+    q_kvar = -abs(q_kvar) #q is always negative for condensator
+    p_kw = abs(q_kvar*loss_factor) #p is always positive for active power losses
+    return create_shunt(net, bus, q_kvar=q_kvar , p_kw=p_kw, **kwargs)
+
 
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None, xtf_pu=None,
