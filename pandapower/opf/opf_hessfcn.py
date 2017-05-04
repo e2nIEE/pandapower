@@ -117,7 +117,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f = sparse((r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
     ## generalized cost
-    if issparse(N) and N.nnz > 0:
+    if issparse(N) and N.nnz > 0: # pragma: no cover
         nw = N.shape[0]
         r = N * x - rh                    ## Nx - rhat
         iLT = find(r < -kk)               ## below dead zone
@@ -174,7 +174,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
             Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
         else:
             Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
-    else:
+    else: # pragma: no cover
         f = branch[il, F_BUS].astype(int)    ## list of "from" buses
         t = branch[il, T_BUS].astype(int)    ## list of "to" buses
         ## connection matrix for line & from buses

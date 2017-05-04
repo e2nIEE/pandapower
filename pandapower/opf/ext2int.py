@@ -19,7 +19,7 @@ from pypower.run_userfcn import run_userfcn
 from scipy.sparse import csr_matrix as sparse
 
 
-def ext2int(ppc, val_or_field=None, ordering=None, dim=0):
+def ext2int(ppc, val_or_field=None, ordering=None, dim=0): # pragma: no cover
     """Converts external to internal indexing.
 
     This function has two forms, the old form that operates on

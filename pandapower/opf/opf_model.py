@@ -102,7 +102,7 @@ class opf_model(object):
         self.user_data = {}
 
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         """String representation of the object.
         """
         s = ''
@@ -254,7 +254,7 @@ class opf_model(object):
             self.lin["order"].append(name)
 
 
-    def add_costs(self, name, cp, varsets):
+    def add_costs(self, name, cp, varsets): # pragma: no cover
         """Adds a set of user costs to the model.
 
         Adds a named block of user-defined costs to the model. Each set is
@@ -447,7 +447,7 @@ class opf_model(object):
         mm = ones(nw)                        ## default => no scaling
 
         ## fill in each piece
-        for k in range(self.cost["NS"]):
+        for k in range(self.cost["NS"]): # pragma: no cover
             name = self.cost["order"][k]
             Nk = self.cost["data"]["N"][name]          ## N for kth cost set
             i1 = self.cost["idx"]["i1"][name]          ## starting row index
@@ -487,7 +487,7 @@ class opf_model(object):
             'N': N, 'Cw': Cw, 'H': H, 'dd': dd, 'rh': rh, 'kk': kk, 'mm': mm }
 
 
-    def compute_cost(self, x, name=None):
+    def compute_cost(self, x, name=None): # pragma: no cover
         """ Computes a user-defined cost.
 
         Computes the value of a user defined cost, either for all user
@@ -562,7 +562,7 @@ class opf_model(object):
         return f
 
 
-    def get_cost_params(self, name=None):
+    def get_cost_params(self, name=None): # pragma: no cover
         """Returns the cost parameter struct for user-defined costs.
 
         Requires calling L{build_cost_params} first to build the full set of
@@ -692,7 +692,7 @@ class opf_model(object):
                 v0 = r_[ v0, self.var["data"]["v0"][name] ]
                 vl = r_[ vl, self.var["data"]["vl"][name] ]
                 vu = r_[ vu, self.var["data"]["vu"][name] ]
-        else:
+        else: # pragma: no cover
             if name in self.var["idx"]["N"]:
                 v0 = self.var["data"]["v0"][name]
                 vl = self.var["data"]["vl"][name]

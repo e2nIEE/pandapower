@@ -81,7 +81,7 @@ def opf_execute(om, ppopt):
         ## run specific AC OPF solver
         if alg == 560 or alg == 565:                   ## PIPS
             results, success, raw = pipsopf_solver(om, ppopt)
-        elif alg == 580:                              ## IPOPT
+        elif alg == 580:                              ## IPOPT # pragma: no cover
             try:
                 __import__('pyipopt')
                 results, success, raw = ipoptopf_solver(om, ppopt)
@@ -101,14 +101,14 @@ def opf_execute(om, ppopt):
             results['gen'][:, VG] = results['bus'][results['gen'][:, GEN_BUS].astype(int), VM]
 
             ## gen PQ capability curve multipliers
-            if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0):
+            if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0): # pragma: no cover
                 mu_PQh = results['mu']['lin']['l'][ll['i1']['PQh']:ll['iN']['PQh']] - results['mu']['lin']['u'][ll['i1']['PQh']:ll['iN']['PQh']]
                 mu_PQl = results['mu']['lin']['l'][ll['i1']['PQl']:ll['iN']['PQl']] - results['mu']['lin']['u'][ll['i1']['PQl']:ll['iN']['PQl']]
                 Apqdata = om.userdata('Apqdata')
                 results['gen'] = update_mupq(results['baseMVA'], results['gen'], mu_PQh, mu_PQl, Apqdata)
 
             ## compute g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
-            if ppopt['RETURN_RAW_DER']:
+            if ppopt['RETURN_RAW_DER']: # pragma: no cover
                 ## move from results to raw if using v4.0 of MINOPF or TSPOPF
                 if 'dg' in results:
                     raw = {}
