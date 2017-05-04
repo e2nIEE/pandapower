@@ -185,6 +185,110 @@ def test_get_connected_lines_at_bus():
                                           respect_in_service=True)
     assert set(lines) == set([line0, line1, line3])
 
+    
 
+
+######################################################
+
+
+def test_overloaded_lines():
+        
+    net = pp.create_empty_network()
+    
+    bus0 = pp.create_bus(net, vn_kv=.4)
+    bus1 = pp.create_bus(net, vn_kv=.4)
+    
+    ext_grid0 = pp.create_ext_grid(net, bus0, vm_pu=4)
+    
+    line0 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
+    line1 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
+    line2 = pp.create_line(net, bus0, bus1, length_km=1, std_type="15-AL1/3-ST1A 0.4")
+    line3 = pp.create_line(net, bus0, bus1, length_km=10, std_type="149-AL1/24-ST1A 10.0")
+    
+    pp.runpp(net)
+    
+    # test the overloaded lines by default value of max_load=100
+    overloaded_lines = tb.overloaded_lines(net,max_load=100)
+      
+    assert set(overloaded_lines) == set([line0, line1, line2])
+    
+    # test the overloaded lines by a self defined value of max_load=50
+    overloaded_lines = tb.overloaded_lines(net,max_load=50)
+    
+    assert set(overloaded_lines) == set([line0, line1, line2, line3])  
+
+
+
+def test_violated_buses():
+    
+    net = nw.create_cigre_network_lv()
+    
+    pp.runpp(net)
+    
+    # set the range of vm.pu
+    min_vm_pu = 0.92
+    max_vm_pu = 1.1
+    
+    # print out the list of violated_bus's index
+    violated_bus = tb.violated_buses(net, min_vm_pu, max_vm_pu)
+    
+    # check if the elements in the violated_bus list is beyond range
+    for i in violated_bus:   
+        
+        if net["res_bus"]["vm_pu"].loc[i] > max_vm_pu or net["res_bus"]["vm_pu"].loc[i] < min_vm_pu:
+            continue
+        else:
+            return ("bus index %d is not violated" % i)
+        
+    assert set(violated_bus) == set(net["bus"].index[[16,35,36,40]])
+
+
+
+def test_add_zones_to_elements():
+    net = nw.create_cigre_network_mv()
+
+    # add zones to lines and switchs
+    tb.add_zones_to_elements(net, elements=["line","switch"])
+
+    #create 2 arrays which include "zone" in lines and switchs
+    zone_line = net["line"]["zone"].values
+    zone_switch = net["switch"]["zone"].values
+
+    assert any([x=="CIGRE_MV" for x in zone_line])
+    assert any([x=="CIGRE_MV" for x in zone_switch])
+
+
+
+
+def test_fuse_buses():
+    
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=1, name="b1")
+    b2 = pp.create_bus(net, vn_kv=1.5, name="b2")
+    
+    line1 = pp.create_line(net, b2, b1, length_km=1, std_type="NAYY 4x50 SE")
+    
+    sw1 = pp.create_switch(net, b2, line1, et="l")
+    sw2 = pp.create_switch(net, b1, b2, et="b")
+    
+    load1 = pp.create_load(net,b1,p_kw=6)
+    load2 = pp.create_load(net,b2,p_kw=5)
+    
+        
+    tb.fuse_buses(net, b1, b2, drop=True)
+    
+    # assertion: elements connected to b2 are given to b1 instead
+    assert net["line"]["from_bus"].loc[0] == b1
+    assert net["switch"]["bus"].loc[0] == b1
+    assert net["load"]["bus"].loc[1] == b1
+
+    
+
+  
+
+
+
+
+  
 if __name__ == "__main__":
     pytest.main(["test_toolbox.py", "-xs"])
