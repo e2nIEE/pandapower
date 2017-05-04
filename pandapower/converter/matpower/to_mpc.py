@@ -19,7 +19,7 @@ except:
 
 logger = logging.getLogger(__name__)
 
-def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, trafo_model="t"):
+def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, trafo_model="t", mode = "pf"):
     """
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.
@@ -71,16 +71,21 @@ def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, t
     """
     # convert to matpower
     net["converged"] = False
+
     if not init == "results":
         reset_results(net)
 
     # select elements in service (time consuming, so we do it once)
     _get_std_options(net, init, calculate_voltage_angles, trafo_model)
+    net["_options"]["mode"] = mode
 
     # convert pandapower net to ppc
-    ppc, _ = _pd2ppc(net)
+    ppc, ppci = _pd2ppc(net)
 
     # convert ppc to mpc
+    if mode == "opf":
+        ppc["gencost"] = ppci["gencost"]
+
     mpc = _ppc_to_mpc(ppc)
     if filename is not None:
         # savemat
