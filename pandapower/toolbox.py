@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Information
-def lf_info(net, numv=1, numi=2):
+def lf_info(net, numv=1, numi=2): # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -53,7 +53,7 @@ def lf_info(net, numv=1, numi=2):
                     net.line.name.at[r.name])
 
 
-def opf_task(net):
+def opf_task(net): # pragma: no cover
     """
     Prints some basic inforamtion of the optimal powerflow task.
     """
@@ -211,7 +211,7 @@ def opf_task(net):
         # check if full range of generator is covered by pwl cost function!
 
 
-def switch_info(net, sidx):
+def switch_info(net, sidx): # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
