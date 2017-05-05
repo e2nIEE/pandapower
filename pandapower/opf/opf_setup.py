@@ -66,7 +66,7 @@ def opf_setup(ppc, ppopt):
         ppc['gencost'], _ = pqcost(ppc['gencost'], ng)
 
         ## reduce A and/or N from AC dimensions to DC dimensions, if needed
-        if nusr or nw:
+        if nusr or nw: # pragma: no cover
             acc = r_[nb + arange(nb), 2 * nb + ng + arange(ng)]   ## Vm and Qg columns
 
             if nusr and (ppc['A'].shape[1] >= 2*nb + 2*ng):
@@ -176,7 +176,7 @@ def opf_setup(ppc, ppopt):
     Aang, lang, uang, iang  = makeAang(baseMVA, branch, nb, ppopt)
 
     ## basin constraints for piece-wise linear gen cost variables
-    if alg == 545 or alg == 550:     ## SC-PDIPM or TRALM, no CCV cost vars
+    if alg == 545 or alg == 550:     ## SC-PDIPM or TRALM, no CCV cost vars # pragma: no cover
         ny = 0
         Ay = None
         by = array([])
@@ -190,7 +190,7 @@ def opf_setup(ppc, ppopt):
 
     ## more problem dimensions
     nx = nb+nv + ng+nq  ## number of standard OPF control variables
-    if nusr:
+    if nusr: # pragma: no cover
         nz = ppc['A'].shape[1] - nx  ## number of user z variables
         if nz < 0:
             stderr.write('opf_setup: user supplied A matrix must have at least %d columns.\n' % nx)
@@ -237,14 +237,14 @@ def opf_setup(ppc, ppopt):
         om.add_constraints('ycon', Ay, array([]), by, ycon_vars)          ## ncony
 
     ## add user vars, constraints and costs (as specified via A, ..., N, ...)
-    if nz > 0:
+    if nz > 0: # pragma: no cover
         om.add_vars('z', nz, z0, zl, zu)
         user_vars.append('z')
 
-    if nusr:
+    if nusr: # pragma: no cover
         om.add_constraints('usr', ppc['A'], lbu, ubu, user_vars)      ## nusr
 
-    if nw:
+    if nw: # pragma: no cover
         user_cost = {}
         user_cost['N'] = ppc['N']
         user_cost['Cw'] = Cw

@@ -12,6 +12,9 @@ Create Function
 
 .. autofunction:: pandapower.create_shunt
 
+.. autofunction:: pandapower.create_shunt_as_condensator
+
+
 Input Parameters
 =====================
 
@@ -35,13 +38,13 @@ Electric Model
 	:alt: alternate Text
 	:align: center
 
-The power values are given at :math:`v = 1 pu` or :math:`V = V_{N}`:
+The power values are given at :math:`v = 1` pu and are scaled linearly with the number of steps:
    
 .. math::
    :nowrap:
    
    \begin{align*}
-   \underline{S}_{shunt, ref} &= p\_kw + j \cdot q\_kvar
+   \underline{S}_{shunt, ref} &= (p\_kw + j \cdot q\_kvar) \cdot step
    \end{align*}
    
 Since :math:`\underline{S}_{shunt, ref}` is the apparent power at the nominal voltage, we know that:
@@ -50,8 +53,7 @@ Since :math:`\underline{S}_{shunt, ref}` is the apparent power at the nominal vo
    :nowrap:
    
    \begin{align*}
-   \underline{S}_{shunt, ref} &= \frac{\underline{Y}_{shunt}}{V_{N}^2} \\
-   \underline{Y}_{shunt} &= \frac{\underline{S}_{shunt, ref}}{V_{N}^2}
+   \underline{Y}_{shunt} = \frac{\underline{S}_{shunt, ref}}{vn\_kv^2}
    \end{align*}
    
 Converting to the per unit system results in:
@@ -65,9 +67,7 @@ Converting to the per unit system results in:
                          &= \frac{S_{shunt, ref}}{S_{N}}
    \end{align*}
 
-with :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`). 
-
-   
+with the reference values for the per unit system as defined in :ref:`Unit Systems and Conventions<conventions>`.
    
 Result Parameters
 ==========================

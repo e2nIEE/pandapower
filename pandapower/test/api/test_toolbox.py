@@ -5,7 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import copy
-
+import numpy as np
 import pytest
 
 import pandapower as pp
@@ -189,6 +189,23 @@ def test_get_connected_lines_at_bus():
                                           respect_in_service=True)
     assert set(lines) == set([line0, line1, line3])
 
+
+def test_merge_and_split_nets():
+    net1 = nw.mv_oberrhein()
+    n1 = len(net1.bus)
+    pp.runpp(net1)
+    net2 = nw.create_cigre_network_mv()
+    pp.runpp(net2)
+    net = pp.merge_nets(net1, net2)
+    pp.runpp(net)
+    assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
+    assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
+
+    net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
+    assert np.allclose(net3.res_bus.vm_pu.values, net1.res_bus.vm_pu.values)
+
+    net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
+    assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 if __name__ == "__main__":
     pytest.main(["test_toolbox.py", "-xs"])

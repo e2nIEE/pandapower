@@ -5,7 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 from numba import jit
-from numpy import conj, zeros, complex128, diag, asmatrix, asarray
+from numpy import conj, zeros, complex128
 from scipy.sparse import issparse, csr_matrix as sparse
 from pandapower.pf.dSbus_dV_pypower import dSbus_dV_dense
 

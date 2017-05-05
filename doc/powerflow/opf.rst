@@ -45,8 +45,8 @@ The network constraints contain constraints for bus voltages and branch flows:
 Cost functions
 ---------------
 
-The cost function is specified element wise and is organized in tables as well, which makes the parametrization user friendly. There are two options formulating a cost function for each element: A piecewise linear function with $n$ data points:
-
+The cost function is specified element wise and is organized in tables as well, which makes the parametrization user friendly. There are two options formulating a cost function for each element: 
+A piecewise linear function with $n$ data points.
 
 .. math::
         f_{pwl}(p) = f_{\alpha} +(p-p_{\alpha}) \frac{f_{\alpha + 1}-f_{\alpha}}{p_{\alpha + 1}-p_{\alpha}}  \ , \ (p_{\alpha},f_{\alpha}) \ =\begin{cases}
@@ -54,11 +54,7 @@ The cost function is specified element wise and is organized in tables as well, 
                                                           ...\\
                                                           (p_{n-1},f_{n-1}) \ , & \ p_{n-1} < p <p_{n})
                                                           \end{cases} \\  \\
-        f_{pwl}(q) = f_{\alpha} +(q-q_{\alpha}) \frac{f_{\alpha + 1}-f_{\alpha}}{q_{\alpha + 1}-q_{\alpha}}  \ , \ (q_{\alpha},f_{\alpha}) \ =\begin{cases}
-                                                        (q_{0},f_{0}) \ , \ & q_{0} < p <q_{1}) \\       
-                                                        ...\\       
-                                                        (q_{n-1},f_{n-1}) \ , & \ q_{n-1} < q <q_{n})          
-                                                        \end{cases}
+        f_{pwl}(q) = f_{1} +(q-q_{1}) \frac{f_{2}-f_{1}}{q_{2}-q_{1}}  
                                                         
 Piecewise linear cost functions can be specified using create_piecewise_linear_costs():
 
@@ -76,7 +72,11 @@ Polynomial cost functions can be speciefied using create_polynomial_cost():
         
 .. autofunction:: pandapower.create_polynomial_cost 
 
-Please note, that polynomial costs for reactive power can only be quadratic, linear or constant.
+.. note::
+	Please note, that polynomial costs for reactive power can only be quadratic, linear or constant.
+	Piecewise linear cost funcions for reactive power are not working at the moment with 2 segments or more.
+	Loads can only have 2 data points in their piecewise linear cost function for active power.
+
 Active and reactive power costs are calculted seperately. The costs of all types are summed up to determine the overall costs for a grid state.
 
 Parametrisation of the calculation

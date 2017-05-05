@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Information
-def lf_info(net, numv=1, numi=2):
+def lf_info(net, numv=1, numi=2): # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -53,7 +53,7 @@ def lf_info(net, numv=1, numi=2):
                     net.line.name.at[r.name])
 
 
-def opf_task(net):
+def opf_task(net): # pragma: no cover
     """
     Prints some basic inforamtion of the optimal powerflow task.
     """
@@ -211,7 +211,7 @@ def opf_task(net):
         # check if full range of generator is covered by pwl cost function!
 
 
-def switch_info(net, sidx):
+def switch_info(net, sidx): # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
@@ -460,6 +460,15 @@ def convert_format(net):
     if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
         net.load["const_z_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+
+    if not "vn_kv" in net["shunt"]:
+        net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
+    if not "step" in net["shunt"]:
+        net.shunt["step"] = 1
+    if not "_pd2ppc_lookups" in net:
+        net["_pd2ppc_lookups"] = {"bus": None,
+                                  "gen": None,
+                                  "branch": None}
     net.version = float(__version__[:3])
     return net
 
@@ -627,6 +636,8 @@ def _pre_release_changes(net):
         net.bus["zone"] = None
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
+    if "in_service" not in net["ward"]:
+        net.ward["in_service"] = True
     net.switch.closed = net.switch.closed.astype(bool)
 
 
@@ -1289,3 +1300,34 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                                       & switch_selection])
 
     return cs
+
+def pq_from_cosphi(s, cosphi, qmode, pmode):
+    """
+    Calculates P/Q values from rated apparent power and cosine(phi) values.
+
+       - s: rated apparent power
+       - cosphi: cosine phi of the
+       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - pmode: "load" for load or "gen" for generation
+
+    As all other pandapower functions this function is based on the consumer viewpoint. For active
+    power, that means that loads are positive and generation is negative. For reactive power,
+    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    """
+    if qmode == "ind":
+        qsign = 1
+    elif qmode == "cap":
+        qsign = -1
+    else:
+        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'"%qmode)
+
+    if pmode == "load":
+        psign = 1
+    elif pmode == "gen":
+        psign = -1
+    else:
+        raise ValueError("Unknown mode %s - specify 'load' or 'gen'"%pmode)
+
+    p = psign * s * cosphi
+    q = qsign * np.sqrt(s**2 - p**2)
+    return p, q

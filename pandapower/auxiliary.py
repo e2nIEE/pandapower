@@ -152,7 +152,7 @@ class pandapowerNet(ADict):
     def __init__(self, *args, **kwargs):
         super(pandapowerNet, self).__init__(*args, **kwargs)
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         r = "This pandapower network includes the following parameter tables:"
         par = []
         res = []
@@ -251,7 +251,7 @@ def _select_is_elements(net):
     @return: _is_elements Certain in service elements
     :rtype: object
     """
-    recycle = net["_options"]["recycle"]
+#    recycle = net["_options"]["recycle"]
 
 #    if recycle is not None and recycle["_is_elements"]:
 #        if "_is_elements" not in net or net["_is_elements"] is None:
@@ -376,22 +376,6 @@ def _check_connectivity(ppc):
     else:
         pus = qus = 0
     return isolated_nodes, pus, qus
-
-
-def _create_ppc2pd_bus_lookup(net):
-    # pd to ppc lookup
-    pd2ppc_bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # valid entries in pd2ppc lookup
-    valid_entries = pd2ppc_bus_lookup >= 0
-    # init reverse (ppc2pd) lookup with -1
-    ppc2pd_bus_lookup = np.ones(max(pd2ppc_bus_lookup[valid_entries]) + 1, dtype=int) * -1
-    # index of pd2ppc lookup
-    ind_pd2ppc_bus_lookup = np.array(range(len(pd2ppc_bus_lookup)), dtype=int)
-    # update reverse lookup
-    ppc2pd_bus_lookup[pd2ppc_bus_lookup[valid_entries]] = ind_pd2ppc_bus_lookup[valid_entries]
-    # store reverse lookup innet
-    net["_ppc2pd_lookups"]["bus"] = ppc2pd_bus_lookup
-
 
 from numba import jit
 @jit(nopython=True, cache=True)
@@ -578,63 +562,4 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
                              & net[elem].in_service.values.astype(bool)
 
     net["_is_elements"] = _is_elements
-
-
-def calculate_line_results(net, use_res_bus_est=False):
-    """
-    Calculates complex line currents, powers at both bus sides and saves them in the result table.
-    Requires the res_bus or res_bus_est table of the network to be filled.
-    :param net: pandapower network
-    :param use_res_bus_est: use res_bus_est dataframe instead of res_bus
-    :return: new dataframe, which can be assigned to either res_line or res_line_est
-    """
-    res_line = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw", "q_to_kvar", "pl_kw",
-                                     "ql_kvar", "i_from_ka", "i_to_ka", "i_ka", "loading_percent"],
-                            index=net.line.index)
-    # calculate impedances and complex voltages
-    Zij = net.line['length_km'] * (net.line['r_ohm_per_km'] + 1j * net.line['x_ohm_per_km'])
-    Zcbij = 0.5j * 2 * np.pi * 50 * net.line['c_nf_per_km'] * 1e-9
-    if use_res_bus_est:
-        V = net.res_bus_est.vm_pu * net.bus.vn_kv * 1e3 * np.exp(
-            1j * np.pi / 180 * net.res_bus_est.va_degree)
-    else:
-        V = net.res_bus.vm_pu * net.bus.vn_kv * 1e3 * np.exp(
-            1j * np.pi / 180 * net.res_bus.va_degree)
-    fb = net.line.from_bus
-    tb = net.line.to_bus
-    # calculate line currents of from bus side
-    line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
-                          * Zcbij).values
-    open_lines_from = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
-    line_currents_from[open_lines_from.values] = 0.
-    charging_from = open_lines_from[open_lines_from.index[
-        net.line.to_bus.loc[open_lines_from].values ==
-        net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
-    line_currents_from[charging_from] = V[net.line.ix[charging_from].from_bus].values \
-                                        * Zcbij[charging_from] * (1 + Zij[charging_from])
-    # calculate line currents on to bus side
-    line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
-                        * Zcbij).values
-    open_lines_to = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
-    line_currents_to[open_lines_to.values] = 0.
-    charging_to = open_lines_to[open_lines_to.index[
-        net.line.from_bus.loc[open_lines_to].values ==
-        net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
-    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus] * Zcbij[charging_to] \
-                                    * (1 + Zij[charging_to])
-    # derive other values
-    line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
-    line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
-    res_line.i_from_ka = np.abs(line_currents_from) / 1e3
-    res_line.i_to_ka = np.abs(line_currents_to) / 1e3
-    res_line.i_ka = np.fmax(res_line.i_from_ka, res_line.i_to_ka)
-    res_line.loading_percent = res_line.i_ka * 100. / net.line.max_i_ka.values \
-                               / net.line.df.values / net.line.parallel.values
-    res_line.p_from_kw = line_powers_from.real
-    res_line.q_from_kvar = line_powers_from.imag
-    res_line.p_to_kw = line_powers_to.real
-    res_line.q_to_kvar = line_powers_to.imag
-    res_line.pl_kw = res_line.p_from_kw + res_line.p_to_kw
-    res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
-    return res_line
 

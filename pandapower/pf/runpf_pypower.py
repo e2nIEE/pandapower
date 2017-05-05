@@ -7,16 +7,14 @@
 
 from time import time
 
-from numpy import flatnonzero as find, r_, zeros, pi, ones, exp, argmax, real
+from numpy import flatnonzero as find, r_, zeros, pi, exp, argmax, real
 
-from pandapower.idx_brch import PF, PT, QF, QT
-from pandapower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PQ, REF
+from pandapower.idx_bus import PD, QD, VM, VA, BUS_TYPE, PQ, REF
 from pandapower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pf.bustypes import bustypes
-from pandapower.pf.dcpf import dcpf
-from pandapower.pf.makeBdc import makeBdc
 from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.pfsoln import pfsoln
+from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 
 try:
     from pypower.makeB import makeB
@@ -49,11 +47,13 @@ def _runpf_pypower(ppci, options, **kwargs):
 
     if ac:  # AC formulation
         if init == "dc":
-            ppci, success = _dc_runpf(ppci, ppopt)
+            ppci = _run_dc_pf(ppci)
+            success = True
 
         ppci, success = _ac_runpf(ppci, ppopt, numba, recycle)
     else:  ## DC formulation
-        ppci, success = _dc_runpf(ppci, ppopt)
+        ppci = _run_dc_pf(ppci)
+        success = True
 
     ppci["et"] = time() - t0
     ppci["success"] = success
@@ -81,50 +81,6 @@ def _get_options(options, **kwargs):
     ppopt['PF_MAX_IT_FD'] = max_iteration
     ppopt['VERBOSE'] = 0
     return init, ac, numba, recycle, ppopt
-
-
-def _dc_runpf(ppci, ppopt):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _ = _get_pf_variables_from_ppci(ppci)
-
-    ppci["bus"][:, VM] = 1.0
-    if ppopt["VERBOSE"]:
-        print(' -- DC Power Flow\n')
-
-    ## initial state
-    Va0 = bus[:, VA] * (pi / 180)
-
-    ## build B matrices and phase shift injections
-    B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
-
-    ## compute complex bus power injections [generation - load]
-    ## adjusted for phase shifters and real shunts
-    Pbus = makeSbus(baseMVA, bus, gen) - Pbusinj - bus[:, GS] / baseMVA
-
-    ## "run" the power flow
-    Va = dcpf(B, Pbus, Va0, ref, pv, pq)
-
-    ## update data matrices with solution
-    branch[:, [QF, QT]] = zeros((branch.shape[0], 2))
-    branch[:, PF] = (Bf * Va + Pfinj) * baseMVA
-    branch[:, PT] = -branch[:, PF]
-    bus[:, VM] = ones(bus.shape[0])
-    bus[:, VA] = Va * (180 / pi)
-    ## update Pg for slack generator (1st gen at ref bus)
-    ## (note: other gens at ref bus are accounted for in Pbus)
-    ##      Pg = Pinj + Pload + Gs
-    ##      newPg = oldPg + newPinj - oldPinj
-
-    refgen = zeros(len(ref), dtype=int)
-    for k in range(len(ref)):
-        temp = find(gbus == ref[k])
-        refgen[k] = on[temp[0]]
-    gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
-    success = 1
-
-    # store results from DC powerflow for AC powerflow
-    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
-
-    return ppci, success
 
 
 def _ac_runpf(ppci, ppopt, numba, recycle):
@@ -246,12 +202,6 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         if len(mx) > 0 or len(mn) > 0:  ## we have some Q limit violations
             # No PV generators
             if len(pv) == 0:
-                if ppopt["VERBOSE"]:
-                    if len(mx) > 0:
-                        logger.info('Gen %d [only one left] exceeds upper Q limit : INFEASIBLE PROBLEM\n' % mx + 1)
-                    else:
-                        logger.info('Gen %d [only one left] exceeds lower Q limit : INFEASIBLE PROBLEM\n' % mn + 1)
-
                 success = 0
                 break
 
@@ -266,15 +216,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
                     mx = mx[k]
                     mn = []
 
-            if ppopt["VERBOSE"] and len(mx) > 0:
-                for i in range(len(mx)):
-                    logger.info('Gen ' + str(mx[i] + 1) + ' at upper Q limit, converting to PQ bus\n')
-
-            if ppopt["VERBOSE"] and len(mn) > 0:
-                for i in range(len(mn)):
-                    logger.info('Gen ' + str(mn[i] + 1) + ' at lower Q limit, converting to PQ bus\n')
-
-            ## save corresponding limit values
+                    ## save corresponding limit values
             fixedQg[mx] = gen[mx, QMAX]
             fixedQg[mn] = gen[mn, QMIN]
             mx = r_[mx, mn].astype(int)
@@ -294,10 +236,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
-            ref_temp = ref
             ref, pv, pq = bustypes(bus, gen)
-            if ppopt["VERBOSE"] and ref != ref_temp:
-                print('Bus %d is new slack bus\n' % ref)
 
             limited = r_[limited, mx].astype(int)
         else:
@@ -323,7 +262,7 @@ def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq,
     elif alg == 4:
         V, success, _ = gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt)
     else:
-        raise ValueError('Only Newton''s method, fast-decoupled, and '
+        raise ValueError('Only PYPOWERS fast-decoupled, and '
                          'Gauss-Seidel power flow algorithms currently '
                          'implemented.\n')
 

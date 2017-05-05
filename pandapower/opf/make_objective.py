@@ -66,8 +66,10 @@ def _make_objective(ppci, net):
 
                     if type == "q":
                         shift_idx = ng
+                        sign_corr = -1
                     else:
                         shift_idx = 0
+                        sign_corr = 1
 
                     for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
 
@@ -93,7 +95,7 @@ def _make_objective(ppci, net):
                                     f[costs.index[costs.element_type == el]] * 1e3
                             else:
                                 ppci["gencost"][elements, COST + 1::2] = f[
-                                    costs.index[costs.element_type == el]] * 1e3
+                                    costs.index[costs.element_type == el]] * 1e3 * sign_corr
 
                             ppci["gencost"][elements, NCOST] = n_coefficients / 2
                             ppci["gencost"][elements, MODEL] = 1
@@ -109,8 +111,10 @@ def _make_objective(ppci, net):
 
                     if type == "q":
                         shift_idx = ng
+                        sign_corr = -1
                     else:
                         shift_idx = 0
+                        sign_corr = 1
 
                     for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
 
@@ -133,7 +137,7 @@ def _make_objective(ppci, net):
                                     c[costs.index[costs.element_type == el]]
                             else:
                                 ppci["gencost"][elements, COST:(
-                                    COST + n_c):] = c[costs.index[costs.element_type == el]][el_is]
+                                    COST + n_c):] = c[costs.index[costs.element_type == el]][el_is]*sign_corr
 
                             ppci["gencost"][elements, NCOST] = n_c
                             ppci["gencost"][elements, MODEL] = 2
