@@ -465,6 +465,10 @@ def convert_format(net):
         net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
     if not "step" in net["shunt"]:
         net.shunt["step"] = 1
+    if not "_pd2ppc_lookups" in net:
+        net["_pd2ppc_lookups"] = {"bus": None,
+                                  "gen": None,
+                                  "branch": None}
     net.version = float(__version__[:3])
     return net
 
@@ -632,6 +636,8 @@ def _pre_release_changes(net):
         net.bus["zone"] = None
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
+    if "in_service" not in net["ward"]:
+        net.ward["in_service"] = True
     net.switch.closed = net.switch.closed.astype(bool)
 
 

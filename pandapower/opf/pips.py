@@ -639,7 +639,3 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                  "output": output, "lmbda": lmbda}
 
     return solution
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()

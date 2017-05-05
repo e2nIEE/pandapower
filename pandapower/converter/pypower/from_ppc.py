@@ -426,7 +426,3 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                 logger.debug('Not all requried dict keys are provided.')
         else:
             logger.debug("'max_diff_values' must be a dict.")
-
-
-if __name__ == '__main__':
-    pass

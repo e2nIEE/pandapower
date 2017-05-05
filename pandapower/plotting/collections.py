@@ -196,7 +196,10 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
                 cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")
                 if hasattr(c, "cbar_title"):
                     cbar_load.ax.set_ylabel(c.cbar_title)
-    ax.set_facecolor("white")
+    try:
+        ax.set_facecolor("white")
+    except:
+        pass
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax.set_aspect('equal', 'datalim')

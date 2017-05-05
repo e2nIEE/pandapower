@@ -11,9 +11,9 @@ from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
 def test_2bus():
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1,x_ohm_per_km=0.5, c_nf_per_km=0,
                                    max_i_ka=1)
 
@@ -42,10 +42,10 @@ def test_2bus():
 def test_3bus():
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
@@ -80,10 +80,10 @@ def test_3bus():
 def test_3bus_with_bad_data():
     # 1. Create 3-bus-network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
@@ -133,11 +133,11 @@ def test_3bus_with_out_of_service_bus():
 
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
@@ -174,11 +174,11 @@ def test_3bus_with_out_of_service_bus():
 def test_3bus_with_transformer():
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, bus=3)
     pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_bus(net, name="bus2", vn_kv=10.)
     pp.create_bus(net, name="bus3", vn_kv=10.)
     pp.create_bus(net, name="bus4", vn_kv=110.)
+    pp.create_ext_grid(net, bus=3)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
@@ -222,11 +222,10 @@ def test_3bus_with_2_slacks():
     net = load_3bus_network()
     # add the same net with different slack (no galvanic connection)
     # skip bus index 4 as further stability test
-    pp.create_ext_grid(net, 5)
     pp.create_bus(net, name="bus5", vn_kv=1., index=5)
     pp.create_bus(net, name="bus6", vn_kv=1., index=6)
     pp.create_bus(net, name="bus7", vn_kv=1., index=7)
-
+    pp.create_ext_grid(net, 5)
     pp.create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
