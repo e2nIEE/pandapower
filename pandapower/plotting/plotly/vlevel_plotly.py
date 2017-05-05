@@ -35,20 +35,21 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
 
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
+        
+        **use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True) 
+        or on net.bus_geodata of the connected buses (False)
+        
+        *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level in the form: 
+        voltage_kv : color 
+            
+        **on_map** (bool, False) - enables using mapbox plot in plotly If provided geodata are not real 
+        geo-coordinates in lon/lat form, on_map will be set to False.
 
-        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
-            or on net.bus_geodata of the connected buses (False)
+        **projection** (String, None) - defines a projection from which network geo-data will be transformed to
+        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
-        *colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
-            Otherwise, user can define a dictionary in the form: voltage_kv : color
-
-        **on_map** (bool, False) - enables using mapbox plot in plotly
-            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
-
-        **projection** (String, None) - defines a projection from which network geo-data will be transformed to lat-long.
-            For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        **map_style** (str, 'basic') - enables using mapbox plot in plotly  
+        
             - 'streets'
             - 'bright'
             - 'light'
@@ -123,7 +124,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
             bus_traces += bus_trace_vlev
 
         vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
-        line_trace_vlev = create_line_trace(net, lines=vlev_lines, use_line_geodata=use_line_geodata, on_map=on_map,
+        line_trace_vlev = create_line_trace(net, lines=vlev_lines, use_line_geodata=use_line_geodata,
                                             respect_switches=respect_switches, legendgroup=str(vn_kv),
                                             color=vlev_color, width=line_width, trace_name='lines {0} kV'.format(vn_kv))
         if line_trace_vlev is not None:
@@ -134,7 +135,3 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                 aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
 
-if __name__ == "__main__":
-    from pandapower.networks import mv_oberrhein as nettw
-    net = nettw()
-    vlevel_plotly(net)

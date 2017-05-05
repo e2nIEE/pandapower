@@ -12,13 +12,15 @@ If a network has geocoordinates, there is a possibility to represent interactive
 
 .. note::
 
-    Plots on Mapbox maps are available only considering you have a Mapbox account and a `Mapbox Access Token <https://www.mapbox.com/studio>`_ which you can add to your pandapower.plotting settings.
+    Plots on Mapbox maps are available only considering you have a Mapbox account and a `Mapbox Access Token <https://www.mapbox.com/studio>`_.
+    After getting a mabox token it can be written set to pandapower as the following ::
 
-
+        from pandapower.plotting.plotly.mapbox_plot import set_mapbox_token
+        set_mapbox_token('<token>')
 
 .. toctree::
     :maxdepth: 1
 
     built-in_plots
-    create_collections
+    create_traces
     geo_data_to_latlong

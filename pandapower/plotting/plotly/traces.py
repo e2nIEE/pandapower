@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
-from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token
+from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, MapboxTokenMissing
 
 try:
     import pplog as logging
@@ -61,9 +61,9 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
         **color** (String, "blue") - color of buses in the trace
 
-        **cmap** (String, None) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd,
-            Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
-            alternatively a custom discrete colormap can be used
+        **cmap** (String, None) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, 
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) 
+        alternatively a custom discrete colormap can be used
 
         **cmap_vals** (list, None) - values used for coloring using colormap
 
@@ -72,8 +72,6 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
         **cmin** (float, None) - colorbar range minimum
 
         **cmax** (float, None) - colorbar range maximum
-
-        **kwargs - key word arguments are passed to the patch function
 
     """
     color = get_plotly_color(color)
@@ -166,45 +164,43 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
 def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup=None,
                       cmap=None, cbar_title=None, show_colorbar = True, cmap_vals=None, cmin=None,
-                      cmax=None, **kwargs):
+                      cmax=None):
     """
-        Creates a plotly trace of pandapower lines.
+    Creates a plotly trace of pandapower lines.
 
-        INPUT:
-            **net** (pandapowerNet) - The pandapower network
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
 
-        OPTIONAL:
-            **lines** (list, None) - The lines for which the collections are created.
-                If None, all lines in the network are considered.
+    OPTIONAL:
+        **lines** (list, None) - The lines for which the collections are created. 
+        If None, all lines in the network are considered.
 
-            **width** (int, 1) - line width
+        **width** (int, 1) - line width
 
-            **respect_switches** (bool, False) - flag for consideration of disconnected lines
+        **respect_switches** (bool, False) - flag for consideration of disconnected lines
 
-            **infofunc** (list, None) - hoverinfo for each line
+        **infofunc** (list, None) - hoverinfo for each line
 
-            **trace_name** (String, "lines") - name of the trace which will appear in the legend
+        **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
-            **color** (String, "grey") - color of lines in the trace
+        **color** (String, "grey") - color of lines in the trace
 
-            **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
-                e.g. groups according to voltage level (as used in `vlevel_plotly`)
+        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend 
+        e.g. groups according to voltage level (as used in `vlevel_plotly`)
 
-            **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
-                colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
-                Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
+        colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
 
-            **cmap_vals** (list, None) - values used for coloring using colormap
+        **cmap_vals** (list, None) - values used for coloring using colormap
 
-            **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
+        **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
 
-            **cbar_title** (String, None) - title for the colorbar
+        **cbar_title** (String, None) - title for the colorbar
 
-            **cmin** (float, None) - colorbar range minimum
+        **cmin** (float, None) - colorbar range minimum
 
-            **cmax** (float, None) - colorbar range maximum
-
-            **kwargs - key word arguments are passed to the patch function
+        **cmax** (float, None) - colorbar range maximum
 
         """
 
@@ -324,37 +320,36 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
 
 def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, cmap=None,
-                       trace_name='trafos', cmin=None, cmax=None, cmap_vals=None, **kwargs):
+                       trace_name='trafos', cmin=None, cmax=None, cmap_vals=None):
     """
-        Creates a plotly trace of pandapower trafos.
+    Creates a plotly trace of pandapower trafos.
 
-        INPUT:
-            **net** (pandapowerNet) - The pandapower network
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
 
-        OPTIONAL:
-            **trafos** (list, None) - The trafos for which the collections are created.
-                If None, all trafos in the network are considered.
+    OPTIONAL:
+        **trafos** (list, None) - The trafos for which the collections are created. 
+        If None, all trafos in the network are considered.
 
-            **width** (int, 5) - line width
+        **width** (int, 5) - line width
 
-            **infofunc** (list, None) - hoverinfo for each line
+        **infofunc** (list, None) - hoverinfo for each line
 
-            **trace_name** (String, "lines") - name of the trace which will appear in the legend
+        **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
-            **color** (String, "green") - color of lines in the trace
+        **color** (String, "green") - color of lines in the trace
 
-            **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd,
-                Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
+        **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, 
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
 
-            **cmap_vals** (list, None) - values used for coloring using colormap
+        **cmap_vals** (list, None) - values used for coloring using colormap
 
-            **cbar_title** (String, None) - title for the colorbar
+        **cbar_title** (String, None) - title for the colorbar
 
-            **cmin** (float, None) - colorbar range minimum
+        **cmin** (float, None) - colorbar range minimum
 
-            **cmax** (float, None) - colorbar range maximum
+        **cmax** (float, None) - colorbar range maximum
 
-            **kwargs - key word arguments are passed to the patch function
 
     """
     color = get_plotly_color(color)
@@ -438,20 +433,19 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
                 aspectratio='auto'):
     """
-    plots all the traces (which can be created using :func:`create_bus_trace`,
-                                                     :func:`create_line_trace`,
-                                                     :func:`create_trafo_trace`)
+    plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`, 
+    :func:`create_trafo_trace`)
     to PLOTLY (see https://plot.ly/python/)
 
     INPUT:
-
         **traces** - list of dicts which correspond to plotly traces
-            generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
+        generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
 
     OPTIONAL:
         **on_map** (bool, False) - enables using mapbox plot in plotly
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        
             - 'streets'
             - 'bright'
             - 'light'
@@ -464,6 +458,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        
     """
 
     if on_map:
@@ -507,8 +502,16 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
     # check if geodata are real geographycal lat/lon coordinates using geopy
 
     if on_map:
-        # TODO replace this token with a proprietary one...
-        mapbox_access_token = _get_mapbox_token()
+        try:
+            mapbox_access_token = _get_mapbox_token()
+        except Exception:
+            logger.exception('mapbox token required for map plots. '
+                         'Get Mapbox token by signing in to https://www.mapbox.com/.\n'
+                         'After getting a token, set it to pandapower using:\n'
+                         'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
+            raise MapboxTokenMissing
+
+
         fig['layout']['mapbox'] = dict(accesstoken=mapbox_access_token,
                                        bearing=0,
                                        center=dict(lat= pd.Series(traces[0]['lat']).dropna().mean(),

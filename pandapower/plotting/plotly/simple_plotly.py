@@ -34,16 +34,17 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
         *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True)
-            or on net.bus_geodata of the connected buses (False)
+        or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
-            If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+        If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
-        **projection** (String, None) - defines a projection from which network geo-data will be transformed to lat-long.
-            For each projection a string can be found at http://spatialreference.org/ref/epsg/
+        **projection** (String, None) - defines a projection from which network geo-data will be transformed to 
+        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        
             - 'streets'
             - 'bright'
             - 'light'
@@ -63,13 +64,13 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
 
             See bus sizes for details. Note: ext_grids are plotted as rectangles
 
-        **bus_color** (String, "b") - Bus Color. Init as first value of color palette.
+        **bus_color** (String, "blue") - Bus Color. Init as first value of color palette.
 
         **line_color** (String, 'grey') - Line Color. Init is grey
 
-        **trafo_color** (String, 'g') - Trafo Color. Init is green
+        **trafo_color** (String, 'green') - Trafo Color. Init is green
 
-        **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
+        **ext_grid_color** (String, 'yellow') - External Grid Color. Init is yellow
     """
     # create geocoord if none are available
     if 'line_geodata' not in net:
@@ -108,9 +109,9 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5)
 
 
-    # ----- Ext grid ------§
+    # ----- Ext grid ------
     # get external grid from create_bus_trace
-    marker_type = 'circle' if on_map else 'square'  # doesn't appear on mapbox if square
+    marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
     ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
                                       color=ext_grid_color, size=ext_grid_size,
                                       patch_type=marker_type, trace_name='external_grid')
@@ -119,8 +120,3 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                 aspectratio=aspectratio, figsize=figsize, on_map=on_map, map_style=map_style)
 
 
-if __name__ == "__main__":
-
-    from pandapower.networks import mv_oberrhein
-    net = mv_oberrhein()
-    simple_plotly(net, on_map=True, projection='epsg:31467')

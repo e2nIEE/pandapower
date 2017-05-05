@@ -1,11 +1,19 @@
 import os
 import numpy as np
 
+from pandapower.auxiliary import ppException
+
 try:
     import pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
+
+class MapboxTokenMissing(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
+    pass
 
 def _on_map_test(x, y):
     """

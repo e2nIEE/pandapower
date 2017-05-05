@@ -16,7 +16,7 @@ def get_plotly_color(color_string):
     colors_names = ['blue', 'green', 'red', 'purple', 'yellow', 'cyan']
     colors = mpl.rcParams['axes.prop_cycle'].by_key()['color']
     colors_plotly = []
-    if isinstance(colors[0], tuple):
+    if 'seaborn' in sys.modules:
         for c in colors:
             colors_plotly.append(_to_plotly_color(c))
         colors_dict = dict(zip(colors_names, colors_plotly))
