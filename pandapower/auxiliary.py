@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import six
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 try:
     import pplog as logging
@@ -152,7 +152,7 @@ class pandapowerNet(ADict):
     def __init__(self, *args, **kwargs):
         super(pandapowerNet, self).__init__(*args, **kwargs)
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         r = "This pandapower network includes the following parameter tables:"
         par = []
         res = []
@@ -251,79 +251,175 @@ def _select_is_elements(net):
     @return: _is_elements Certain in service elements
     :rtype: object
     """
-    recycle = net["_options"]["recycle"]
+#    recycle = net["_options"]["recycle"]
 
-    if recycle is not None and recycle["_is_elements"]:
-        if "_is_elements" not in net or net["_is_elements"] is None:
-            # sort elements according to their in service status
-            elems = ['bus', 'line']
-            for elm in elems:
-                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
-
-            # select in service buses. needed for the other elements to be selected
-            bus_is = net["bus"]["in_service"].values.astype(bool)
-            line_is = net["line"]["in_service"].values.astype(bool)
-            bus_is_ind = net["bus"][bus_is].index
-            # check if in service elements are at in service buses
-            _is_elements = {
-                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                                  & net["gen"]["in_service"].values.astype(bool)]
-                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
-                          & net["load"].in_service.values.astype(bool)
-                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
-                          & net["sgen"].in_service.values.astype(bool)
-                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
-                          & net["ward"].in_service.values.astype(bool)
-                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
-                           & net["xward"].in_service.values.astype(bool)
-                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
-                           & net["shunt"].in_service.values.astype(bool)
-                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                                              & net["ext_grid"]["in_service"].values.astype(bool)]
-                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
-                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
-            }
-        else:
-            # just update the elements
-            _is_elements = net['_is_elements']
-
-            bus_is_ind = _is_elements['bus'].index
-            # update elements
-            elems = ['gen', 'ext_grid']
-            for elm in elems:
-                _is_elements[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
-                                             & net[elm]["in_service"].values.astype(bool)]
-
-    else:
-        # select in service buses. needed for the other elements to be selected
-        bus_is = net["bus"]["in_service"].values.astype(bool)
-        line_is = net["line"]["in_service"].values.astype(bool)
-        bus_is_ind = net["bus"][bus_is].index
-        # check if in service elements are at in service buses
-        _is_elements = {
-            "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                              & net["gen"]["in_service"].values.astype(bool)]
-            , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
-                      & net["load"].in_service.values.astype(bool)
-            , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
-                      & net["sgen"].in_service.values.astype(bool)
-            , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
-                      & net["ward"].in_service.values.astype(bool)
-            , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
-                       & net["xward"].in_service.values.astype(bool)
-            , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
-                       & net["shunt"].in_service.values.astype(bool)
-            , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
-                                          & net["ext_grid"]["in_service"].values.astype(bool)]
-            , 'bus': net['bus'][bus_is]
-            , 'line': net['line'][line_is]
-        }
+#    if recycle is not None and recycle["_is_elements"]:
+#        if "_is_elements" not in net or net["_is_elements"] is None:
+#            # sort elements according to their in service status
+#            elems = ['bus', 'line']
+#            for elm in elems:
+#                net[elm] = net[elm].sort_values(by=['in_service'], ascending=0)
+#
+#            # select in service buses. needed for the other elements to be selected
+#            bus_is = net["bus"]["in_service"].values.astype(bool)
+#            line_is = net["line"]["in_service"].values.astype(bool)
+#            bus_is_ind = net["bus"][bus_is].index
+#            # check if in service elements are at in service buses
+#            _is_elements = {
+#                "gen": net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
+#                                  & net["gen"]["in_service"].values.astype(bool)]
+#                , "load": np.in1d(net["load"].bus.values, bus_is_ind) \
+#                          & net["load"].in_service.values.astype(bool)
+#                , "sgen": np.in1d(net["sgen"].bus.values, bus_is_ind) \
+#                          & net["sgen"].in_service.values.astype(bool)
+#                , "ward": np.in1d(net["ward"].bus.values, bus_is_ind) \
+#                          & net["ward"].in_service.values.astype(bool)
+#                , "xward": np.in1d(net["xward"].bus.values, bus_is_ind) \
+#                           & net["xward"].in_service.values.astype(bool)
+#                , "shunt": np.in1d(net["shunt"].bus.values, bus_is_ind) \
+#                           & net["shunt"].in_service.values.astype(bool)
+#                , "ext_grid": net["ext_grid"][np.in1d(net["ext_grid"].bus.values, bus_is_ind) \
+#                                              & net["ext_grid"]["in_service"].values.astype(bool)]
+#                , 'bus': net['bus'].iloc[:np.count_nonzero(bus_is)]
+#                , 'line': net['line'].iloc[:np.count_nonzero(line_is)]
+#            }
+#        else:
+#            # just update the elements
+#            _is_elements = net['_is_elements']
+#
+#            bus_is_ind = _is_elements['bus'].index
+#            # update elements
+#            elems = ['gen', 'ext_grid']
+#            for elm in elems:
+#                _is_elements[elm] = net[elm][np.in1d(net[elm].bus.values, bus_is_ind) \
+#                                             & net[elm]["in_service"].values.astype(bool)]
+#
+#    else:
+    # select in service buses. needed for the other elements to be selected
+    bus_is_mask = net["bus"]["in_service"].values.astype(bool)
+    bus_is = net["bus"][bus_is_mask]
+    bus_is_idx = bus_is.index
+    line_is_mask = net["line"]["in_service"].values.astype(bool)
+    # check if in service elements are at in service buses
+    _is_elements = {
+        "gen": np.in1d(net["gen"].bus.values, bus_is_idx) \
+               & net["gen"]["in_service"].values.astype(bool)
+        , "load": np.in1d(net["load"].bus.values, bus_is_idx) \
+                  & net["load"].in_service.values.astype(bool)
+        , "sgen": np.in1d(net["sgen"].bus.values, bus_is_idx) \
+                  & net["sgen"].in_service.values.astype(bool)
+        , "ward": np.in1d(net["ward"].bus.values, bus_is_idx) \
+                  & net["ward"].in_service.values.astype(bool)
+        , "xward": np.in1d(net["xward"].bus.values, bus_is_idx) \
+                   & net["xward"].in_service.values.astype(bool)
+        , "shunt": np.in1d(net["shunt"].bus.values, bus_is_idx) \
+                   & net["shunt"].in_service.values.astype(bool)
+        , "ext_grid": np.in1d(net["ext_grid"].bus.values, bus_is_idx) \
+                   & net["ext_grid"]["in_service"].values.astype(bool)
+        , "bus_is_idx": bus_is_idx
+        , 'line': net['line'][line_is_mask]
+    }
 
     return _is_elements
 
+def _create_ppc2pd_bus_lookup(net):
+    # pd to ppc lookup
+    pd2ppc_bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    # valid entries in pd2ppc lookup
+    valid_entries = pd2ppc_bus_lookup >= 0
+    # init reverse (ppc2pd) lookup with -1
+    ppc2pd_bus_lookup = np.ones(max(pd2ppc_bus_lookup[valid_entries]) + 1, dtype=int) * -1
+    # index of pd2ppc lookup
+    ind_pd2ppc_bus_lookup = np.array(range(len(pd2ppc_bus_lookup)), dtype=int)
+    # update reverse lookup
+    ppc2pd_bus_lookup[pd2ppc_bus_lookup[valid_entries]] = ind_pd2ppc_bus_lookup[valid_entries]
+    # store reverse lookup innet
+    net["_ppc2pd_lookups"]["bus"] = ppc2pd_bus_lookup
+
+def _check_connectivity(ppc):
+    """
+    Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
+    :param ppc: pypower case file
+    :return:
+    """
+    nobranch = ppc['branch'].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
+
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+
+    # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
+    # search at this bus
+    bus_from = np.hstack([bus_from, slacks])
+    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
+
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
+                                      (bus_from, bus_to)),
+                                      shape=(nobus + 1, nobus + 1))
+
+    reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
+    # TODO: the former impl. excluded ppc buses that are already oos, but is this necessary ?
+    # if so: bus_not_reachable = np.hstack([ppc['bus'][:, BUS_TYPE] != 4, np.array([False])])
+    bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
+    bus_not_reachable[reachable] = False
+    isolated_nodes = np.where(bus_not_reachable)[0]
+    if len(isolated_nodes) > 0:
+        logger.debug("There are isolated buses in the network!")
+        # set buses in ppc out of service
+        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
+
+        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+        if pus > 0 or qus > 0:
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+    else:
+        pus = qus = 0
+    return isolated_nodes, pus, qus
+
+from numba import jit
+@jit(nopython=True, cache=True)
+def set_elements_oos(ti, tis, bis, lis): # pragma: no cover
+    """iterates over elements; returns array where element is of service if element is oos in
+    element table or bus is oos"""
+    for i in range(len(ti)):
+        if tis[i] and bis[ti[i]]:
+            lis[i] = True
+
+
+@jit(nopython=True, cache=True)
+def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup): # pragma: no cover
+    """determines out of service pp buses by also checking if fused to isolated ppc buses"""
+    for k in range(len(bus_lookup)):
+        if ppc_bus_isolated[bus_lookup[k]]:
+            bus_in_service[k] = False
+
+
+def _select_is_elements_numba(net, isolated_nodes=None):
+    max_bus_idx = np.max(net["bus"].index.values)
+    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    if isolated_nodes is not None and len(isolated_nodes) > 0:
+        ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
+        ppc_bus_isolated[isolated_nodes] = True
+        set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
+
+    is_elements = dict()
+    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid"]:
+        len_ = len(net[element].index)
+        element_in_service = np.zeros(len_, dtype=bool)
+        if len_ > 0:
+            element_df = net[element]
+            set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
+                             bus_in_service, element_in_service)
+        is_elements[element] = element_in_service
+    is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
+    is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+    return is_elements
+
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, voltage_depend_loads=False):
+                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, delta=1e-10, voltage_depend_loads=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -341,6 +437,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         , "enforce_q_lims": enforce_q_lims
         , "recycle": recycle
         , "voltage_depend_loads": voltage_depend_loads
+        , "delta": delta
     }
     _add_options(net, options)
 
@@ -440,126 +537,11 @@ def _set_isolated_buses_out_of_service(net, ppc):
     ppc["bus"][disco, 1] = 4
 
 
-def calculate_line_results(net, use_res_bus_est=False):
-    """
-    Calculates complex line currents, powers at both bus sides and saves them in the result table.
-    Requires the res_bus or res_bus_est table of the network to be filled.
-    :param net: pandapower network
-    :param use_res_bus_est: use res_bus_est dataframe instead of res_bus
-    :return: new dataframe, which can be assigned to either res_line or res_line_est
-    """
-    res_line = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw", "q_to_kvar", "pl_kw",
-                                     "ql_kvar", "i_from_ka", "i_to_ka", "i_ka", "loading_percent"],
-                            index=net.line.index)
-    # calculate impedances and complex voltages
-    Zij = net.line['length_km'] * (net.line['r_ohm_per_km'] + 1j * net.line['x_ohm_per_km'])
-    Zcbij = 0.5j * 2 * np.pi * 50 * net.line['c_nf_per_km'] * 1e-9
-    if use_res_bus_est:
-        V = net.res_bus_est.vm_pu * net.bus.vn_kv * 1e3 * np.exp(
-            1j * np.pi / 180 * net.res_bus_est.va_degree)
-    else:
-        V = net.res_bus.vm_pu * net.bus.vn_kv * 1e3 * np.exp(
-            1j * np.pi / 180 * net.res_bus.va_degree)
-    fb = net.line.from_bus
-    tb = net.line.to_bus
-    # calculate line currents of from bus side
-    line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
-                          * Zcbij).values
-    open_lines_from = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
-    line_currents_from[open_lines_from.values] = 0.
-    charging_from = open_lines_from[open_lines_from.index[
-        net.line.to_bus.loc[open_lines_from].values ==
-        net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
-    line_currents_from[charging_from] = V[net.line.ix[charging_from].from_bus].values \
-                                        * Zcbij[charging_from] * (1 + Zij[charging_from])
-    # calculate line currents on to bus side
-    line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
-                        * Zcbij).values
-    open_lines_to = net.switch.element.loc[(net.switch.et == 'l') & (net.switch.closed == False)]
-    line_currents_to[open_lines_to.values] = 0.
-    charging_to = open_lines_to[open_lines_to.index[
-        net.line.from_bus.loc[open_lines_to].values ==
-        net.switch.bus.loc[(net.switch.et == 'l') & (net.switch.closed == False)].values]].values
-    line_currents_to[charging_to] = V[net.line.ix[charging_to].to_bus] * Zcbij[charging_to] \
-                                    * (1 + Zij[charging_to])
-    # derive other values
-    line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
-    line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
-    res_line.i_from_ka = np.abs(line_currents_from) / 1e3
-    res_line.i_to_ka = np.abs(line_currents_to) / 1e3
-    res_line.i_ka = np.fmax(res_line.i_from_ka, res_line.i_to_ka)
-    res_line.loading_percent = res_line.i_ka * 100. / net.line.max_i_ka.values \
-                               / net.line.df.values / net.line.parallel.values
-    res_line.p_from_kw = line_powers_from.real
-    res_line.q_from_kvar = line_powers_from.imag
-    res_line.p_to_kw = line_powers_to.real
-    res_line.q_to_kvar = line_powers_to.imag
-    res_line.pl_kw = res_line.p_from_kw + res_line.p_to_kw
-    res_line.ql_kvar = res_line.q_from_kvar + res_line.q_to_kvar
-    return res_line
-
-
 def _write_lookup_to_net(net, element, element_lookup):
     """
     Updates selected lookups in net
     """
     net["_pd2ppc_lookups"][element] = element_lookup
-
-
-def _check_connectivity(ppc):
-    """
-    Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
-    :param ppc: pypower case file
-    :return:
-    """
-    nobranch = ppc['branch'].shape[0]
-    nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
-
-    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
-
-    # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
-    # search at this bus
-    bus_from = np.hstack([bus_from, slacks])
-    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
-
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
-                                      (bus_from, bus_to)),
-                                      shape=(nobus + 1, nobus + 1))
-
-    all_nodes = ppc['bus'][ppc['bus'][:, BUS_TYPE] != 4, BUS_I].astype(int)
-
-    reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
-    isolated_nodes = np.setdiff1d(all_nodes, reachable)
-
-    if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network!")
-        # set buses in ppc out of service
-        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
-
-        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
-        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
-        if pus > 0 or qus > 0:
-            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
-    else:
-        pus = qus = 0
-    return isolated_nodes, pus, qus
-
-
-def _create_ppc2pd_bus_lookup(net):
-    # pd to ppc lookup
-    pd2ppc_bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # valid entries in pd2ppc lookup
-    valid_entries = pd2ppc_bus_lookup >= 0
-    # init reverse (ppc2pd) lookup with -1
-    ppc2pd_bus_lookup = np.ones(max(pd2ppc_bus_lookup[valid_entries]) + 1, dtype=int) * -1
-    # index of pd2ppc lookup
-    ind_pd2ppc_bus_lookup = np.array(range(len(pd2ppc_bus_lookup)), dtype=int)
-    # update reverse lookup
-    ppc2pd_bus_lookup[pd2ppc_bus_lookup[valid_entries]] = ind_pd2ppc_bus_lookup[valid_entries]
-    # store reverse lookup innet
-    net["_ppc2pd_lookups"]["bus"] = ppc2pd_bus_lookup
 
 
 def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
@@ -570,16 +552,14 @@ def _remove_isolated_elements_from_is_elements(net, isolated_nodes):
     pp_nodes = [n for n in isolated_nodes if not (n > len(ppc2pd_bus_lookup)-1)]
     isolated_nodes_pp = ppc2pd_bus_lookup[pp_nodes]
     # remove isolated buses from _is_elements["bus"]
-    _is_elements["bus"] = _is_elements["bus"].drop(set(isolated_nodes_pp) & set(_is_elements["bus"].index))
-    bus_is_ind = _is_elements["bus"].index
+    _is_elements["bus_is_idx"] = np.setdiff1d(_is_elements["bus_is_idx"], isolated_nodes_pp)#_is_elements["bus"].drop(set(isolated_nodes_pp) & set(_is_elements["bus"].index))
+    bus_is_ind = _is_elements["bus_is_idx"]
     # check if in service elements are at in service buses
 
-    elems_to_update = ["load", "sgen", "ward", "xward", "shunt"]
+    elems_to_update = ["load", "sgen", "gen", "ward", "xward", "shunt"]
     for elem in elems_to_update:
         _is_elements[elem] = np.in1d(net[elem].bus.values, bus_is_ind) \
                              & net[elem].in_service.values.astype(bool)
 
-    _is_elements["gen"] = net['gen'][np.in1d(net["gen"].bus.values, bus_is_ind) \
-                                     & net["gen"]["in_service"].values.astype(bool)]
-
     net["_is_elements"] = _is_elements
+

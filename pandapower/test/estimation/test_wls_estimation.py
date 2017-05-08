@@ -7,13 +7,13 @@ import pandapower as pp
 import pandapower.networks as nw
 from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
 
-#
+
 def test_2bus():
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1,x_ohm_per_km=0.5, c_nf_per_km=0,
                                    max_i_ka=1)
 
@@ -42,10 +42,10 @@ def test_2bus():
 def test_3bus():
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
@@ -80,10 +80,10 @@ def test_3bus():
 def test_3bus_with_bad_data():
     # 1. Create 3-bus-network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0,
@@ -104,7 +104,7 @@ def test_3bus_with_bad_data():
     pp.create_measurement(net, "v", "bus", 1.3, 0.05, bus=1)   # V at bus 2
 
     # 2. Do chi2-test
-    success_chi2 = chi2_analysis(net, init='flat')
+    bad_data_detected = chi2_analysis(net, init='flat')
 
     # 3. Perform rn_max_test
     success_rn_max = remove_bad_data(net, init='flat')
@@ -116,7 +116,7 @@ def test_3bus_with_bad_data():
     target_delta = np.array([0., 0.8677, 3.1381])
     diff_delta = target_delta - delta_est_rn_max
 
-    assert success_chi2
+    assert bad_data_detected
     assert success_rn_max
     assert (np.nanmax(abs(diff_v)) < 1e-4)
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
@@ -133,11 +133,11 @@ def test_3bus_with_out_of_service_bus():
 
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, 0)
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
     pp.create_bus(net, name="bus3", vn_kv=1.)
     pp.create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
+    pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
@@ -174,11 +174,11 @@ def test_3bus_with_out_of_service_bus():
 def test_3bus_with_transformer():
     # 1. Create network
     net = pp.create_empty_network()
-    pp.create_ext_grid(net, bus=3)
     pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_bus(net, name="bus2", vn_kv=10.)
     pp.create_bus(net, name="bus3", vn_kv=10.)
     pp.create_bus(net, name="bus4", vn_kv=110.)
+    pp.create_ext_grid(net, bus=3)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
@@ -222,11 +222,10 @@ def test_3bus_with_2_slacks():
     net = load_3bus_network()
     # add the same net with different slack (no galvanic connection)
     # skip bus index 4 as further stability test
-    pp.create_ext_grid(net, 5)
     pp.create_bus(net, name="bus5", vn_kv=1., index=5)
     pp.create_bus(net, name="bus6", vn_kv=1., index=6)
     pp.create_bus(net, name="bus7", vn_kv=1., index=7)
-
+    pp.create_ext_grid(net, 5)
     pp.create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
@@ -380,34 +379,34 @@ def test_IEEE_case_9_with_bad_data():
     pp.create_measurement(net, "v", "bus", 0.999, 0.01, bus=7)   # V at bus 7
     pp.create_measurement(net, "v", "bus", 0.963, 0.01, bus=8)   # V at bus 8
 
-    pp.create_measurement(net, "p", "bus", 73137., 1000., bus=0)   # P at bus 0
-    pp.create_measurement(net, "p", "bus", 85133., 1000., bus=2)   # P at bus 2
+    pp.create_measurement(net, "p", "bus", 73137., 100., bus=0)   # P at bus 0
+    pp.create_measurement(net, "p", "bus", 85133., 100., bus=2)   # P at bus 2
     pp.create_measurement(net, "p", "bus", 0., 1., bus=3)   # P at bus 3
     pp.create_measurement(net, "p", "bus", 0., 1., bus=5)   # P at bus 5
-    pp.create_measurement(net, "p", "bus", -99884., 1000., bus=6)   # P at bus 6
+    pp.create_measurement(net, "p", "bus", -99884., 100., bus=6)   # P at bus 6
     pp.create_measurement(net, "p", "bus", 0., 10., bus=7)   # P at bus 7
 
-    pp.create_measurement(net, "q", "bus", 24272., 1000., bus=0)   # P at bus 0
-    pp.create_measurement(net, "q", "bus", 13969., 1000., bus=1)   # P at bus 1
-    pp.create_measurement(net, "q", "bus", 4235., 1000., bus=2)   # P at bus 2
+    pp.create_measurement(net, "q", "bus", 24272., 100., bus=0)   # P at bus 0
+    pp.create_measurement(net, "q", "bus", 13969., 100., bus=1)   # P at bus 1
+    pp.create_measurement(net, "q", "bus", 4235., 100., bus=2)   # P at bus 2
     pp.create_measurement(net, "q", "bus", 0., 1., bus=3)   # Q at bus 3
-    pp.create_measurement(net, "q", "bus", -30177., 1000., bus=4)   # Q at bus 4
+    pp.create_measurement(net, "q", "bus", -30177., 100., bus=4)   # Q at bus 4
     pp.create_measurement(net, "q", "bus", 0., 10., bus=5)   # Q at bus 5
-    pp.create_measurement(net, "q", "bus", -36856., 1000., bus=6)   # Q at bus 6
+    pp.create_measurement(net, "q", "bus", -36856., 100., bus=6)   # Q at bus 6
     pp.create_measurement(net, "q", "bus", 0., 1., bus=7)   # Q at bus 7
-    pp.create_measurement(net, "q", "bus", -49673., 1000., bus=8)   # Q at bus 8
+    pp.create_measurement(net, "q", "bus", -49673., 100., bus=8)   # Q at bus 8
 
     # 2. Do state estimation
     success_SE = estimate(net, init='flat')
     v_est_SE = net.res_bus_est.vm_pu.values
     delta_SE = net.res_bus_est.va_degree.values
 
-    # 3. Create false measurements
-    pp.create_measurement(net, "p", "bus", 3000., 1000., bus=1)   # P at bus 1
-    pp.create_measurement(net, "p", "bus", -2000., 1000., bus=4)   # P at bus 4
+    # 3. Create false measurement (very close to useful values)
+    pp.create_measurement(net, "v", "bus", 0.9, 0.01, bus=0)  # V at bus 0
+    # pp.create_measurement(net, "p", "bus", -1, 10., bus=4)
 
     # 4. Do chi2-test
-    success_chi2 = chi2_analysis(net, init='flat')
+    bad_data_detected = chi2_analysis(net, init='flat')
 
     # 5. Perform rn_max_test
     success_rn_max = remove_bad_data(net, init='flat')
@@ -418,7 +417,7 @@ def test_IEEE_case_9_with_bad_data():
     diff_delta = delta_SE - delta_est_rn_max
 
     assert success_SE
-    assert success_chi2
+    assert bad_data_detected
     assert success_rn_max
     assert (np.nanmax(abs(diff_v)) < 1e-5)
     assert (np.nanmax(abs(diff_delta)) < 1e-5)

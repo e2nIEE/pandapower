@@ -61,7 +61,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     hv_trafos = net.trafo[net.trafo.sn_kva > 1e3].index
     if scenario == "load":
         net.load.scaling = 0.6
-        net.sgen.scaling = 0
+        net.sgen.scaling = 0.0
         net.trafo.tp_pos.loc[hv_trafos] = [-2, -3]
     elif scenario == "generation":
         net.load.scaling = 0.1

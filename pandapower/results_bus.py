@@ -6,8 +6,8 @@
 
 import numpy as np
 from numpy import zeros, array, float, hstack, invert
-from pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q
-from pypower.idx_gen import PG, QG
+from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
+from pandapower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 
@@ -233,13 +233,15 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         sidx = bus_lookup[s["bus"].values]
         shunt_is = _is_elements["shunt"]
         u_shunt = ppc["bus"][sidx, VM]
+        step = s["step"]
+        scale_voltage = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values)**2
         u_shunt = np.nan_to_num(u_shunt)
-        p_shunt = u_shunt ** 2 * net["shunt"]["p_kw"].values * shunt_is
+        p_shunt = u_shunt ** 2 * net["shunt"]["p_kw"].values * shunt_is * scale_voltage * step
         net["res_shunt"]["p_kw"] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
             net["res_shunt"]["vm_pu"] = u_shunt
-            q_shunt = u_shunt ** 2 * net["shunt"]["q_kvar"].values * shunt_is
+            q_shunt = u_shunt ** 2 * net["shunt"]["q_kvar"].values * shunt_is * scale_voltage * step
             net["res_shunt"]["q_kvar"] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])

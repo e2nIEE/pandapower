@@ -10,4 +10,3 @@ The shortcircuit module is used to calculate short-circuits according to DIN/IEC
     shortcircuit/run
     shortcircuit/currents
     shortcircuit/elements
-    shortcircuit/correction

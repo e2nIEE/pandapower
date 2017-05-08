@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=1e-10,
           **kwargs):
     """
     Runs PANDAPOWER AC Flow
@@ -61,7 +61,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         **init** (str, "auto") - initialization method of the loadflow
         pandapower supports four methods for initializing the loadflow:
-            
+
             - "auto" - init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
             - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
             - "dc" - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow.
@@ -122,9 +122,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             If check finds unsupplied buses, they are set out of service in the ppc
 
         **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
-        
+
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
-        
+
+        **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
         ## check if numba is available and the corresponding flag
@@ -173,7 +175,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
-                     recycle=recycle, voltage_depend_loads=voltage_depend_loads)
+                     recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _powerflow(net, **kwargs)
@@ -235,7 +237,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False)
+                     voltage_depend_loads=False, delta=0)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
 
@@ -243,7 +245,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
-           suppress_warnings=True, r_switch=0.0, **kwargs):
+           suppress_warnings=True, r_switch=0.0, delta = 1e-10, **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -256,6 +258,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
+        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
         - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
@@ -293,12 +297,12 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False)
+                     voltage_depend_loads=False, delta=delta)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0, delta = 1e-10,
              **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
@@ -309,12 +313,10 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     the active and reactive power are assigned as in a normal power flow. If yes, the following
     flexibilities apply:
         - net.sgen.min_p_kw / net.sgen.max_p_kw
-        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
-        - net.gen.min_q_kvar / net.gen.max_q_kvar
-        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
 
-    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.line.max_loading_percent
         - net.trafo.max_loading_percent
         - net.trafo3w.max_loading_percent
@@ -347,6 +349,6 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False)
+                     voltage_depend_loads=False, delta=delta)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

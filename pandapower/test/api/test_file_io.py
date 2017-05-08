@@ -39,6 +39,12 @@ def test_json():
     assert_net_equal(net_in, net_out, reindex=True)
     os.remove('testfile.json')
 
+def test_convert_format():
+    folder = os.path.abspath(os.path.dirname(pp.__file__))
+    net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    pp.runpp(net)
+    assert net.converged
+
 
 if __name__ == "__main__":
     pytest.main(["test_file_io.py", "-xs"])

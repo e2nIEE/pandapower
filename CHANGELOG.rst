@@ -1,6 +1,18 @@
 Change Log
 =============
 
+unreleased
+-------------------
+- [ADDED] ZIP loads integrated in power flow
+- [ADDED] numba implementation of dissolving switch buses
+- [ADDED] Method C for calculation of factor kappa in short circuit calculation
+- [ADDED] Current source representation of full converter elements in short circuit calculations
+- [CHANGED] Speedup for calculation of branch short circuit currents
+- [CHANGED] branch results for minimum short circuit calculations are calculated as minimal currents
+- [ADDED] interactive plots with plotly
+- [ADDED] case89pegase
+- [CHANGED] no pypower import in pandapower.converter and pandapower.test.converter anymore
+
 [1.2.2] - 2017-03-22
 --------------------
 - [CHANGED] Minor refactoring in pd2ppc
@@ -18,7 +30,7 @@ Change Log
 - [ADDED] parameter parallel for trafo element
 - [ADDED] connectivity check for power flow to deal with disconnected network areas
 - [ADDED] backward/forward sweep power flow algorithm specially suited for radial and weakly-meshed networks
-- [ADDED] linear piece wise and polynomial OPF cost functions 
+- [ADDED] linear piece wise and polynomial OPF cost functions
 - [ADDED] possibility to make loads controllable in OPF
 - [ADDED] to_json and from_json functions to save/load networks with a JSON format
 - [ADDED] generator lookup to allow multiple generators at one bus

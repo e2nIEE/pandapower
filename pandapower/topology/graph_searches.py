@@ -122,7 +122,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
 
     """
     g = create_nxgraph(net, respect_switches=respect_switches,
-                       nogobuses=nogobuses, notravbuses=None)
+                       nogobuses=nogobuses, notravbuses=notravbuses)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
 
 

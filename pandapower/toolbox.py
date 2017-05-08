@@ -12,6 +12,8 @@ import pandas as pd
 from pandapower.auxiliary import get_indices, pandapowerNet
 from pandapower.create import create_empty_network, create_piecewise_linear_cost
 from pandapower.topology import unsupplied_buses
+from pandapower.run import runpp
+from pandapower import __version__
 
 try:
     import pplog as logging
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Information
-def lf_info(net, numv=1, numi=2):
+def lf_info(net, numv=1, numi=2): # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -51,7 +53,7 @@ def lf_info(net, numv=1, numi=2):
                     net.line.name.at[r.name])
 
 
-def opf_task(net):
+def opf_task(net): # pragma: no cover
     """
     Prints some basic inforamtion of the optimal powerflow task.
     """
@@ -209,7 +211,7 @@ def opf_task(net):
         # check if full range of generator is covered by pwl cost function!
 
 
-def switch_info(net, sidx):
+def switch_info(net, sidx): # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
@@ -265,13 +267,16 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     not_equal = []
 
     if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
-        # for two networks make sure both have the same keys ...
-        if len(set(x.keys()) - set(y.keys())) + len(set(y.keys()) - set(x.keys())) > 0:
-            logger.info("Networks entries mismatch:", list(x.keys()), " - VS. - ", list(y.keys()))
+        # for two networks make sure both have the same keys that do not start with "_"...
+        x_keys = [key for key in x.keys() if not key.startswith("_")]
+        y_keys = [key for key in y.keys() if not key.startswith("_")]
+
+        if len(set(x_keys) - set(y_keys)) + len(set(y_keys) - set(x_keys)) > 0:
+            logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
             return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in x.keys():
+        for df_name in x_keys:
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
@@ -430,7 +435,6 @@ def convert_format(net):
 
     if not "tp_st_degree" in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
-    net.version = 1.2
     if not "_pd2ppc_lookups" in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
@@ -457,6 +461,15 @@ def convert_format(net):
         net.load["const_z_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_percent"] = np.zeros(net.load.shape[0])
 
+    if not "vn_kv" in net["shunt"]:
+        net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
+    if not "step" in net["shunt"]:
+        net.shunt["step"] = 1
+    if not "_pd2ppc_lookups" in net:
+        net["_pd2ppc_lookups"] = {"bus": None,
+                                  "gen": None,
+                                  "branch": None}
+    net.version = float(__version__[:3])
     return net
 
 
@@ -623,6 +636,8 @@ def _pre_release_changes(net):
         net.bus["zone"] = None
     for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
+    if "in_service" not in net["ward"]:
+        net.ward["in_service"] = True
     net.switch.closed = net.switch.closed.astype(bool)
 
 
@@ -772,6 +787,26 @@ def drop_buses(net, buses):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+
+
+
+def drop_elements_at_buses(net,buses):
+    """
+    drop elements connected to certain buses and drop the buses as well
+    """
+    #drop elements connected to buses
+    for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
+                           ("sgen", "bus"), ("load", "bus"),
+                           ("switch", "bus"), ("ext_grid", "bus"),
+                           ("ward", "bus"), ("xward", "bus"),
+                           ("shunt", "bus")]:
+        if net[element][value].isin(buses).all:
+            eid = net[element][net[element][value].isin(buses)].index
+            net[element].drop(eid,inplace=True)
+    #drop buses 
+    net["bus"].drop(buses, inplace=True)
+    
 
 
 def drop_trafos(net, trafos):
@@ -951,6 +986,47 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         return pandapowerNet(newnet)
     p2["std_types"] = copy.deepcopy(net["std_types"])
     return pandapowerNet(p2)
+
+def merge_nets(net1, net2, validate=True):
+    """
+    Function to concatenate two nets into one data structure. The second net is reindexed to avoid
+    duplicate element indices.
+    """
+    create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
+    net = copy.deepcopy(net1)
+    net2 = copy.deepcopy(net2)
+    if validate:
+        runpp(net1)
+        runpp(net2)
+
+    for element, table in net.items():
+        if element.startswith("_") or element.startswith("res"):
+            continue
+        if type(table) == pd.DataFrame and len(table) > 0:
+            if element == "switch":
+                bl_switches = net2.switch[net2.switch.et=="l"]
+                new_line_index = [net2.line.index.get_loc(ix) + len(net1.line) for ix in bl_switches.element.values]
+                net2.switch.loc[bl_switches.index, "element"] = new_line_index
+
+                bl_switches = net1.switch[net1.switch.et=="l"]
+                new_line_index = [net1.line.index.get_loc(ix) for ix in bl_switches.element.values]
+                net1.switch.loc[bl_switches.index, "element"] = new_line_index
+
+                bt_switches = net2.switch[net2.switch.et=="t"]
+                new_trafo_index = [net2.trafo.index.get_loc(ix) + len(net1.trafo) for ix in bt_switches.element.values]
+                net2.switch.loc[bt_switches.index, "element"] = new_trafo_index
+
+                bt_switches = net1.switch[net1.switch.et=="t"]
+                new_trafo_index = [net1.trafo.index.get_loc(ix) for ix in bt_switches.element.values]
+                net1.switch.loc[bt_switches.index, "element"] = new_trafo_index
+            net[element] = net1[element].append(net2[element], ignore_index=element!="bus")
+    if validate:
+        runpp(net)
+        dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
+        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values - net2.res_bus.vm_pu.values))
+        if dev1 > 1e-10 or dev2 > 1e-10:
+            raise UserWarning("Deviation in bus voltages after merging")
+    return net
 
 
 # --- item/element selections
@@ -1244,3 +1320,34 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
                                       & switch_selection])
 
     return cs
+
+def pq_from_cosphi(s, cosphi, qmode, pmode):
+    """
+    Calculates P/Q values from rated apparent power and cosine(phi) values.
+
+       - s: rated apparent power
+       - cosphi: cosine phi of the
+       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+       - pmode: "load" for load or "gen" for generation
+
+    As all other pandapower functions this function is based on the consumer viewpoint. For active
+    power, that means that loads are positive and generation is negative. For reactive power,
+    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+    """
+    if qmode == "ind":
+        qsign = 1
+    elif qmode == "cap":
+        qsign = -1
+    else:
+        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'"%qmode)
+
+    if pmode == "load":
+        psign = 1
+    elif pmode == "gen":
+        psign = -1
+    else:
+        raise ValueError("Unknown mode %s - specify 'load' or 'gen'"%pmode)
+
+    p = psign * s * cosphi
+    q = qsign * np.sqrt(s**2 - p**2)
+    return p, q

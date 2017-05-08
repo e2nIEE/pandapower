@@ -6,7 +6,7 @@
 
 
 latex_file_path = "..\\doc\\_build\\latex\\pandapower.tex"
-version = "1.2.2"
+from pandapower import __version__ as version
 
 class AlreadyProcessedException(Exception):
     pass

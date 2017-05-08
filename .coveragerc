@@ -2,4 +2,3 @@
 omit = 
     pandapower/test/*
     pandapower/plotting/*
-    pandapower/pypower_extensions/*
