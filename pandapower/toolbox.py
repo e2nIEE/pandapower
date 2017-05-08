@@ -1094,10 +1094,6 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     Returns the index of the second bus an element is connected to, given a
     first one. E.g. the from_bus given the to_bus of a line.
     """
-    # for legacy compliance
-    if "element_type" in kwargs:
-        et = kwargs["element_type"]
-
     if et == 'line':
         bc = ["from_bus", "to_bus"]
     elif et == 'trafo':
