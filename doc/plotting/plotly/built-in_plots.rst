@@ -18,11 +18,23 @@ Example plot with mv_oberrhein network from the pandapower.networks package:
 	:width: 30em
 	:align: center
 
-Examples plot on a map:
+
+Example simple plot ::
+
+    from pandapower.plotting.plotly import simple_plotly
+    from pandapower.networks import mv_oberrhein
+    net = mv_oberrhein()
+    simple_plotly(net)
+
 
 .. image:: /pics/simple_plotly_map_mvoberr_sample.png
 	:width: 30em
 	:align: center
+
+Example simple plot on a map::
+
+    net = mv_oberrhein()
+    simple_plotly(net, on_map=True, projection='epsg:31467')
 
 .. image:: /pics/simple_plotly_mapsatelite_mvoberr_sample.png
 	:width: 30em
@@ -40,7 +52,12 @@ The function vlevel_plotly() is used to plot a network colored and labeled accor
 
 .. autofunction:: pandapower.plotting.plotly.vlevel_plotly
 
-Example plot with mv_oberrhein network from the pandapower.networks package:
+Example plot with mv_oberrhein network from the pandapower.networks package::
+
+    from pandapower.plotting.plotly import vlevel_plotly
+    from pandapower.networks import mv_oberrhein
+    net = mv_oberrhein()
+    vlevel_plotly(net)
 
 .. image:: /pics/vlevel_plotly_mvoberr_sample.png
 	:width: 30em
@@ -57,13 +74,22 @@ The function pf_res_plotly() is used to plot a network according to power flow r
 
 .. autofunction:: pandapower.plotting.plotly.pf_res_plotly
 
-Example plot with mv_oberrhein network from the pandapower.networks package:
+Example power flow results plot::
+
+    from pandapower.plotting.plotly import pf_res_plotly
+    from pandapower.networks import mv_oberrhein
+    net = mv_oberrhein()
+    pf_res_plotly(net)
+
 
 .. image:: /pics/pf_res_plotly_mvoberr_sample.png
 	:width: 30em
 	:align: center
 
-A map plot:
+Power flow results on a map::
+
+    net = mv_oberrhein()
+    pf_res_plotly(net, on_map=True, projection='epsg:31467', map_style='dark')
 
 .. image:: /pics/pf_res_plotly_map_mvoberr_sample.png
 	:width: 30em
