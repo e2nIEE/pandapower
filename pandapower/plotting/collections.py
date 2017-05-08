@@ -13,7 +13,7 @@ from matplotlib.patches import Circle, Rectangle, RegularPolygon
 
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          cmap=None, norm=None, infofunc=None, picker=False, **kwargs):
+                          z = None, cmap=None, norm=None, infofunc=None, picker=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -80,7 +80,9 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     if cmap:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        pc.set_array(net.res_bus.vm_pu.loc[buses])
+        if z is None:
+            z = net.res_bus.vm_pu.loc[buses]
+        pc.set_array(z)
         pc.has_colormap = True
         pc.cbar_title = "Bus Voltage [pu]"
 
