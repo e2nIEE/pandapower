@@ -789,6 +789,26 @@ def drop_buses(net, buses):
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
 
 
+
+def drop_elements_at_buses(net,buses):
+    """
+    drop elements connected to certain buses and drop the buses as well
+    """
+    #drop elements connected to buses
+    for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
+                           ("sgen", "bus"), ("load", "bus"),
+                           ("switch", "bus"), ("ext_grid", "bus"),
+                           ("ward", "bus"), ("xward", "bus"),
+                           ("shunt", "bus")]:
+        if net[element][value].isin(buses).all:
+            eid = net[element][net[element][value].isin(buses)].index
+            net[element].drop(eid,inplace=True)
+    #drop buses 
+    net["bus"].drop(buses, inplace=True)
+    
+
+
 def drop_trafos(net, trafos):
     """
     Deletes all trafos and in the given list of indices and removes
