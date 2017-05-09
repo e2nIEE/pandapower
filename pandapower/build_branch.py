@@ -361,7 +361,7 @@ def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     sn_trafo_kva = trafo_df.sn_kva.values
     z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_kva * tap_lv
     r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_kva * tap_lv
-    x_sc = np.sqrt(z_sc ** 2 - r_sc ** 2)
+    x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
     return r_sc, x_sc
 
 
