@@ -1,20 +1,21 @@
 Change Log
 =============
 
-unreleased
--------------------
+[1.3.0] - 2017-05-09
+----------------------
 - [ADDED] ZIP loads integrated in power flow
 - [ADDED] numba implementation of dissolving switch buses
-- [ADDED] Method C for calculation of factor kappa in short circuit calculation
 - [ADDED] Current source representation of full converter elements in short circuit calculations
+- [ADDED] Method C for calculation of factor kappa in short circuit calculation
 - [CHANGED] Speedup for calculation of branch short circuit currents
-- [CHANGED] branch results for minimum short circuit calculations are calculated as minimal currents
-- [ADDED] interactive plots with plotly
-- [ADDED] case89pegase
-- [CHANGED] no pypower import in pandapower.converter and pandapower.test.converter anymore
-- [CHANGED] henceforth -1 is a valid value for net.bus_geodata.x
-- [CHANGED] build_branch behaviour for transformer with negative xk (unrealistic case) has changed to provide large scale IEEE cases (RTE, PEGASE, Polish)
+- [CHANGED] Branch results for minimum short circuit calculations are calculated as minimal currents
+- [ADDED] Interactive plots with plotly
+- [CHANGED] included pypower files for power flow and index files
+- [FIXED] compatibility with numpy 1.12
+- [CHANGED] -1 is a valid value for net.bus_geodata.x
+- [CHANGED] allow transformers with negative xk to provide large scale IEEE cases (RTE, PEGASE, Polish)
 - [ADDED] large scale IEEE cases (RTE, PEGASE, Polish)
+- [ADDED] rated voltage and step variable for shunts
 
 [1.2.2] - 2017-03-22
 --------------------

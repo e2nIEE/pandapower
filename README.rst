@@ -71,6 +71,8 @@ For more information, please referr to the `documentation <https://pandapower.re
 
 Installation notes can be found `here <http://pandapower.readthedocs.io/en/develop/getting_started/installation.html>`_, for a comfortable introduction into pandapower see the `interactive tutorials <http://pandapower.readthedocs.io/en/develop/getting_started/tutorials.html>`_.
 
+If you are interested in getting release notes for new pandapower versions, please subscribe to the pandapower mailing list `here <http://www.uni-kassel.de/go/pandapower>`_.
+
 Citing pandapower
 ==================
 
