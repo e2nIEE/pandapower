@@ -1027,7 +1027,7 @@ def merge_nets(net1, net2, validate=True):
         runpp(net2)
 
     def adapt_switches(net, element, offset=0):
-        switches = net2.switch[net2.switch.et == element[0]]  # element[0] == "l" for "line", ect.
+        switches = net.switch[net.switch.et == element[0]]  # element[0] == "l" for "line", ect.
         new_index = [net[element].index.get_loc(ix) + offset
                      for ix in switches.element.values]
         net.switch.loc[switches.index, "element"] = new_index
@@ -1042,10 +1042,11 @@ def merge_nets(net1, net2, validate=True):
                 adapt_switches(net2, "trafo", offset=len(net1.trafo))
                 adapt_switches(net1, "trafo")
             if element == "line_geodata":
-                net1.line_geodata.set_index([net1.line.index.get_loc(ix)
-                                             for ix in net1["line_geodata"].index], inplace=True)
-                net2.line_geodata.set_index([net2.line.index.get_loc(ix) + len(net1.line)
-                                             for ix in net1["line_geodata"].index], inplace=True)
+                ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
+                net1.line_geodata.set_index(np.array(ni), inplace=True)
+                ni = [net2.line.index.get_loc(ix) + len(net1.line)
+                      for ix in net2["line_geodata"].index]
+                net2.line_geodata.set_index(np.array(ni), inplace=True)
             net[element] = net1[element].append(net2[element], ignore_index=element != "bus")
     if validate:
         runpp(net)
@@ -1055,7 +1056,6 @@ def merge_nets(net1, net2, validate=True):
         if dev1 > 1e-10 or dev2 > 1e-10:
             raise UserWarning("Deviation in bus voltages after merging")
     return net
-
 
 # --- item/element selections
 
