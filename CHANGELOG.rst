@@ -12,6 +12,9 @@ unreleased
 - [ADDED] interactive plots with plotly
 - [ADDED] case89pegase
 - [CHANGED] no pypower import in pandapower.converter and pandapower.test.converter anymore
+- [CHANGED] henceforth -1 is a valid value for net.bus_geodata.x
+- [CHANGED] build_branch behaviour for transformer with negative xk (unrealistic case) has changed to provide large scale IEEE cases (RTE, PEGASE, Polish)
+- [ADDED] large scale IEEE cases (RTE, PEGASE, Polish)
 
 [1.2.2] - 2017-03-22
 --------------------
