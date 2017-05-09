@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+
 from time import time
 
 from numpy import flatnonzero as find, pi, exp, zeros, ones, real
