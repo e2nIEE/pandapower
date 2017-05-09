@@ -729,6 +729,7 @@ def create_continuous_bus_index(net, start=0):
                            ("impedance", "from_bus"), ("impedance", "to_bus"),
                            ("shunt", "bus"), ("ext_grid", "bus")]:
         net[element][value] = get_indices(net[element][value], bus_lookup)
+    net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et=="b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
     return net
@@ -1017,8 +1018,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 def merge_nets(net1, net2, validate=True):
     """
-    Function to concatenate two nets into one data structure. The second net is reindexed to avoid
-    duplicate element indices.
+    Function to concatenate two nets into one data structure. All element tables get new,
+    continuous indizes in order to avoid duplicates.
     """
     create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
     net = copy.deepcopy(net1)
@@ -1027,31 +1028,32 @@ def merge_nets(net1, net2, validate=True):
         runpp(net1)
         runpp(net2)
 
+    def adapt_switches(net, element, offset=0):
+        switches = net2.switch[net2.switch.et == element[0]]  # element[0] == "l" for "line", ect.
+        new_index = [net[element].index.get_loc(ix) + offset
+                     for ix in switches.element.values]
+        net.switch.loc[switches.index, "element"] = new_index
+
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res"):
             continue
         if type(table) == pd.DataFrame and len(table) > 0:
             if element == "switch":
-                bl_switches = net2.switch[net2.switch.et=="l"]
-                new_line_index = [net2.line.index.get_loc(ix) + len(net1.line) for ix in bl_switches.element.values]
-                net2.switch.loc[bl_switches.index, "element"] = new_line_index
-
-                bl_switches = net1.switch[net1.switch.et=="l"]
-                new_line_index = [net1.line.index.get_loc(ix) for ix in bl_switches.element.values]
-                net1.switch.loc[bl_switches.index, "element"] = new_line_index
-
-                bt_switches = net2.switch[net2.switch.et=="t"]
-                new_trafo_index = [net2.trafo.index.get_loc(ix) + len(net1.trafo) for ix in bt_switches.element.values]
-                net2.switch.loc[bt_switches.index, "element"] = new_trafo_index
-
-                bt_switches = net1.switch[net1.switch.et=="t"]
-                new_trafo_index = [net1.trafo.index.get_loc(ix) for ix in bt_switches.element.values]
-                net1.switch.loc[bt_switches.index, "element"] = new_trafo_index
-            net[element] = net1[element].append(net2[element], ignore_index=element!="bus")
+                adapt_switches(net2, "line", offset=len(net1.line))
+                adapt_switches(net1, "line")
+                adapt_switches(net2, "trafo", offset=len(net1.trafo))
+                adapt_switches(net1, "trafo")
+            if element == "line_geodata":
+                net1.line_geodata.set_index([net1.line.index.get_loc(ix)
+                                             for ix in net1["line_geodata"].index], inplace=True)
+                net2.line_geodata.set_index([net2.line.index.get_loc(ix) + len(net1.line)
+                                             for ix in net1["line_geodata"].index], inplace=True)
+            net[element] = net1[element].append(net2[element], ignore_index=element != "bus")
     if validate:
         runpp(net)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
-        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values - net2.res_bus.vm_pu.values))
+        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
+                                        net2.res_bus.vm_pu.values))
         if dev1 > 1e-10 or dev2 > 1e-10:
             raise UserWarning("Deviation in bus voltages after merging")
     return net
