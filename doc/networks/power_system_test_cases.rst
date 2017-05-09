@@ -83,6 +83,13 @@ Case 118
 
 ---------------------------
 
+Case 145
+------------------------------------
+
+.. autofunction:: pandapower.networks.case145
+
+---------------------------
+
 Case 300
 ------------------------------------
 
@@ -97,10 +104,52 @@ Case 1354pegase
 
 ---------------------------
 
+Case 1888rte
+------------------------------------
+
+.. autofunction:: pandapower.networks.case1888rte
+
+---------------------------
+
+Case 2848rte
+------------------------------------
+
+.. autofunction:: pandapower.networks.case2848rte
+
+---------------------------
+
 Case 2869pegase
 ------------------------------------
 
 .. autofunction:: pandapower.networks.case2869pegase
+
+---------------------------
+
+Case 3120sp
+------------------------------------
+
+.. autofunction:: pandapower.networks.case3120sp
+
+---------------------------
+
+Case 6470rte
+------------------------------------
+
+.. autofunction:: pandapower.networks.case6470rte
+
+---------------------------
+
+Case 6495rte
+------------------------------------
+
+.. autofunction:: pandapower.networks.case6495rte
+
+---------------------------
+
+Case 6515rte
+------------------------------------
+
+.. autofunction:: pandapower.networks.case6515rte
 
 ---------------------------
 
