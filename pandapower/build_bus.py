@@ -374,15 +374,16 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
 def _calc_shunts_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     _is_elements = net["_is_elements"]
 
     s = net["shunt"]
     if len(s) > 0:
         vl = _is_elements["shunt"] / np.float64(1000.)
-        scale_volage = (net["bus"]["vn_kv"].loc[s["bus"].values].values / s["vn_kv"].values)**2
-        q = np.hstack([q, s["q_kvar"].values * s["step"] * scale_volage * vl ])
-        p = np.hstack([p, s["p_kw"].values * s["step"] * scale_volage * vl])
+        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values)**2
+        q = np.hstack([q, s["q_kvar"].values * s["step"] * v_ratio * vl ])
+        p = np.hstack([p, s["p_kw"].values * s["step"] * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
@@ -411,7 +412,6 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
     # if array is not empty
     if b.size:
-        bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
 
