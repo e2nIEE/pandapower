@@ -74,7 +74,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     patches = [figmaker(x, y, i)
                for i, (x, y) in enumerate(zip(net.bus_geodata.loc[buses].x.values,
                                               net.bus_geodata.loc[buses].y.values))
-               if x != -1 and x != np.nan]
+               if x != np.nan]
     pc = PatchCollection(patches, match_original=True, picker=picker)
     pc.bus_indices = np.array(buses)
     if cmap:
