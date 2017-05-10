@@ -1394,7 +1394,7 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     return p, q
 
 
-def create_replacement_switch_for_branch(net, element: str, idx: int):
+def create_replacement_switch_for_branch(net, element, idx):
     """
     Creates a switch parallel to a branch, connecting the same buses as the branch.
     The switch is closed if the branch is in service and open if the branch is out of service.
