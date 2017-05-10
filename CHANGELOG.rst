@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[1.3.0] - 2017-05-09
+[1.3.0] - 2017-05-10
 ----------------------
 - [ADDED] ZIP loads integrated in power flow
 - [ADDED] numba implementation of dissolving switch buses
@@ -16,6 +16,7 @@ Change Log
 - [CHANGED] allow transformers with negative xk to provide large scale IEEE cases (RTE, PEGASE, Polish)
 - [ADDED] large scale IEEE cases (RTE, PEGASE, Polish)
 - [ADDED] rated voltage and step variable for shunts
+- [ADDED] lagrange multiplier included in bus results after OPF
 
 [1.2.2] - 2017-03-22
 --------------------
