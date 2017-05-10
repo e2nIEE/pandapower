@@ -184,7 +184,8 @@ def opf_task(net):  # pragma: no cover
                 to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
                           ' [max_p_kw, min_q_from_kvar, max_q_from_kvar, min_q_to_kvar, ' + \
                           'max_q_to_kvar] is [%s, %s, %s, %s, %s]' % (
-                              constr.max_p_kw[0], constr.min_q_from_kvar[0], constr.max_q_from_kvar[0],
+                              constr.max_p_kw[0], constr.min_q_from_kvar[0],
+                              constr.max_q_from_kvar[0],
                               constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
     # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
@@ -408,8 +409,10 @@ def convert_format(net):
                 net.gen["max_p_kw"] = pmin
     if not "piecewise_linear_cost" in net:
         net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
-                                                                       ("element", np.dtype(object)),
-                                                                       ("element_type", np.dtype(object)),
+                                                                       ("element",
+                                                                        np.dtype(object)),
+                                                                       ("element_type",
+                                                                        np.dtype(object)),
                                                                        ("p", np.dtype(object)),
                                                                        ("f", np.dtype(object))]))
 
@@ -435,7 +438,8 @@ def convert_format(net):
         for index, cost in net.ext_grid.cost_per_kw.iteritems():
             if not np.isnan(cost):
                 p = net.ext_grid.min_p_kw.at[index]
-                create_piecewise_linear_cost(net, index, "ext_grid", np.array([[p, cost * p], [0, 0]]))
+                create_piecewise_linear_cost(net, index, "ext_grid",
+                                             np.array([[p, cost * p], [0, 0]]))
 
     if "cost_per_kvar" in net.gen:
         for index, cost in net.gen.cost_per_kvar.iteritems():
@@ -443,7 +447,8 @@ def convert_format(net):
                 qmin = net.gen.min_q_kvar.at[index]
                 qmax = net.gen.max_q_kvar.at[index]
                 create_piecewise_linear_cost(net, index, "gen",
-                                             np.array([[qmin, cost * qmin], [0, 0], [qmax, cost * qmax]]), type="q")
+                                             np.array([[qmin, cost * qmin], [0, 0],
+                                                       [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.sgen:
         for index, cost in net.sgen.cost_per_kvar.iteritems():
@@ -451,7 +456,8 @@ def convert_format(net):
                 qmin = net.sgen.min_q_kvar.at[index]
                 qmax = net.sgen.max_q_kvar.at[index]
                 create_piecewise_linear_cost(net, index, "sgen",
-                                             np.array([[qmin, cost * qmin], [0, 0], [qmax, cost * qmax]]), type="q")
+                                             np.array([[qmin, cost * qmin], [0, 0],
+                                                       [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.ext_grid:
         for index, cost in net.ext_grid.cost_per_kvar.iteritems():
@@ -459,7 +465,8 @@ def convert_format(net):
                 qmin = net.ext_grid.min_q_kvar.at[index]
                 qmax = net.ext_grid.max_q_kvar.at[index]
                 create_piecewise_linear_cost(net, index, "ext_grid",
-                                             np.array([[qmin, cost * qmin], [0, 0], [qmax, cost * qmax]]), type="q")
+                                             np.array([[qmin, cost * qmin], [0, 0],
+                                                       [qmax, cost * qmax]]), type="q")
 
     if not "tp_st_degree" in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
@@ -481,7 +488,8 @@ def convert_format(net):
     if "options" in net:
         if "recycle" in net["options"]:
             if not "_is_elements" in net["options"]["recycle"]:
-                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(net["options"]["recycle"]["is_elems"])
+                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(
+                    net["options"]["recycle"]["is_elems"])
                 net["options"]["recycle"].pop("is_elems", None)
 
     if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
@@ -546,7 +554,8 @@ def _pre_release_changes(net):
     net["bus"]["type"].replace("k", "n", inplace=True)
     net["line"] = net["line"].rename(columns={'vf': 'df', 'line_type': 'type'})
     net["ext_grid"] = net["ext_grid"].rename(columns={"angle_degree": "va_degree",
-                                                      "ua_degree": "va_degree", "sk_max_mva": "s_sc_max_mva",
+                                                      "ua_degree": "va_degree",
+                                                      "sk_max_mva": "s_sc_max_mva",
                                                       "sk_min_mva": "s_sc_min_mva"})
     net["line"]["type"].replace("f", "ol", inplace=True)
     net["line"]["type"].replace("k", "cs", inplace=True)
@@ -573,7 +582,8 @@ def _pre_release_changes(net):
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
     net["ext_grid"] = net["ext_grid"].rename(columns={'voltage': 'vm_pu', "u_pu": "vm_pu",
-                                                      "sk_max": "sk_max_mva", "ua_degree": "va_degree"})
+                                                      "sk_max": "sk_max_mva",
+                                                      "ua_degree": "va_degree"})
     if "in_service" not in net["ext_grid"].columns:
         net["ext_grid"]["in_service"] = 1
     if "shift_mv_degree" not in net["trafo3w"].columns:
@@ -752,7 +762,8 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in
+                         zip(et.type.values, et.scaling.values)]
 
     scale = defaultdict(lambda: None, scalings)
     if scale_load:
@@ -830,11 +841,11 @@ def drop_elements_at_buses(net, buses):
                            ("shunt", "bus")]:
         if net[element][value].isin(buses).all:
             eid = net[element][net[element][value].isin(buses)].index
-            net[element].drop(eid,inplace=True)
-    #drop busbus switch
+            net[element].drop(eid, inplace=True)
+    # drop busbus switch
     net["switch"].drop(net["switch"][(net["switch"]["element"].isin(buses)) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
-    #drop buses
+    # drop buses
     net["bus"].drop(buses, inplace=True)
 
 
@@ -1060,6 +1071,7 @@ def merge_nets(net1, net2, validate=True):
             raise UserWarning("Deviation in bus voltages after merging")
     return net
 
+
 # --- item/element selections
 
 def get_element_index(net, element, name, exact_match=True):
@@ -1193,7 +1205,8 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     return connected_elements
 
 
-def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=True, respect_in_service=False):
+def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=True,
+                        respect_in_service=False):
     """
      Returns buses connected to given buses. The source buses will NOT be returned.
 
@@ -1379,21 +1392,3 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     p = psign * s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
-
-
-def make_switch_at_branch(net, element, idx):
-    bus_i = net[element].loc[idx, 'from_bus']
-    bus_j = net[element].loc[idx, 'to_bus']
-    in_service = net[element].loc[idx, 'in_service']
-    net[element].loc[idx, 'in_service'] = False
-    create_switch(net, bus=bus_i, element=bus_j, et='b', closed=in_service, type='CB')
-
-
-def replace_zero_branches_with_switches(net, elements=['line', 'impedance'], zero_length=True, zero_r=True):
-
-
-    for elm in elements:
-        branch_zero = set()
-        if 'length_km' in net[elm].columns and zero_length:
-            branch_zero.update(net[elm].loc[net[elm].length_km == 0].index.tolist())
-
