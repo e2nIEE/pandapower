@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices, pandapowerNet
-from pandapower.create import create_empty_network, create_piecewise_linear_cost
+from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
 from pandapower import __version__
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Information
-def lf_info(net, numv=1, numi=2): # pragma: no cover
+def lf_info(net, numv=1, numi=2):  # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -75,7 +75,7 @@ def opf_task(net):  # pragma: no cover
     pol = net.polynomial_cost
     # --- Determine duplicated cost data
     all_costs = plc[['type', 'element', 'element_type']].append(
-            pol[['type', 'element', 'element_type']]).reset_index(drop=True)
+        pol[['type', 'element', 'element_type']]).reset_index(drop=True)
     duplicates = all_costs.loc[all_costs.duplicated()]
     if duplicates.shape[0]:
         raise ValueError("There are elements with multipy costs.\nelement_types: %s\n"
@@ -184,8 +184,8 @@ def opf_task(net):  # pragma: no cover
                 to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
                           ' [max_p_kw, min_q_from_kvar, max_q_from_kvar, min_q_to_kvar, ' + \
                           'max_q_to_kvar] is [%s, %s, %s, %s, %s]' % (
-                          constr.max_p_kw[0], constr.min_q_from_kvar[0], constr.max_q_from_kvar[0],
-                          constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
+                              constr.max_p_kw[0], constr.min_q_from_kvar[0], constr.max_q_from_kvar[0],
+                              constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
     # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
@@ -196,7 +196,7 @@ def opf_task(net):  # pragma: no cover
                 logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
             if c_bus.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + '    at all Nodes [min_vm_pu, max_vm_pu] is [%s, %s]' % \
-                                                   (c_bus.min_vm_pu[0], c_bus.max_vm_pu[0])
+                                 (c_bus.min_vm_pu[0], c_bus.max_vm_pu[0])
             else:  # different constraints exist
                 unique_rows = ~c_bus.duplicated()
                 duplicated_rows = c_bus.duplicated()
@@ -207,7 +207,7 @@ def opf_task(net):  # pragma: no cover
                             same_data_nodes.append(i2)
                     to_log += '\n' + '    at Nodes ' + ', '.join(map(str, same_data_nodes)) + \
                               ' [min_vm_pu, max_vm_pu] is [%s, %s]' % (c_bus.min_vm_pu[i],
-                                                                      c_bus.max_vm_pu[i])
+                                                                       c_bus.max_vm_pu[i])
     # --- Branch constraints
     branches = ['trafo', 'line']
     branch_names = ['Trafo', 'Line']
@@ -484,7 +484,6 @@ def convert_format(net):
                 net["options"]["recycle"]["_is_elements"] = copy.deepcopy(net["options"]["recycle"]["is_elems"])
                 net["options"]["recycle"].pop("is_elems", None)
 
-
     if not "const_z_percent" in net.load or not "const_i_percent" in net.load:
         net.load["const_z_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_percent"] = np.zeros(net.load.shape[0])
@@ -568,8 +567,8 @@ def _pre_release_changes(net):
                                                     "urm_percent": "vscr_mv_percent",
                                                     "url_percent": "vscr_lv_percent",
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
-                                                    "vnl_kv": "vn_lv_kv", "snh_kv": "sn_hv_kv",
-                                                    "snm_kv": "sn_mv_kv", "snl_kv": "sn_lv_kv"})
+                                                    "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
+                                                    "snm_kva": "sn_mv_kva", "snl_kva": "sn_lv_kva"})
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
@@ -730,7 +729,7 @@ def create_continuous_bus_index(net, start=0):
                            ("shunt", "bus"), ("ext_grid", "bus")]:
         net[element][value] = get_indices(net[element][value], bus_lookup)
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
-    bb_switches = net.switch[net.switch.et=="b"]
+    bb_switches = net.switch[net.switch.et == "b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
     return net
 
@@ -818,12 +817,11 @@ def drop_buses(net, buses):
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
 
 
-
-def drop_elements_at_buses(net,buses):
+def drop_elements_at_buses(net, buses):
     """
     drop elements connected to certain buses and drop the buses as well
     """
-    #drop elements connected to buses
+    # drop elements connected to buses
     for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                            ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
                            ("sgen", "bus"), ("load", "bus"),
@@ -836,9 +834,8 @@ def drop_elements_at_buses(net,buses):
     #drop busbus switch
     net["switch"].drop(net["switch"][(net["switch"]["element"].isin(buses)) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
-    #drop buses 
+    #drop buses
     net["bus"].drop(buses, inplace=True)
-    
 
 
 def drop_trafos(net, trafos):
@@ -1019,6 +1016,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     p2["std_types"] = copy.deepcopy(net["std_types"])
     return pandapowerNet(p2)
 
+
 def merge_nets(net1, net2, validate=True):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
@@ -1057,7 +1055,7 @@ def merge_nets(net1, net2, validate=True):
         runpp(net)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
         dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
-                                        net2.res_bus.vm_pu.values))
+                       net2.res_bus.vm_pu.values))
         if dev1 > 1e-10 or dev2 > 1e-10:
             raise UserWarning("Deviation in bus voltages after merging")
     return net
@@ -1350,6 +1348,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
 
     return cs
 
+
 def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
     Calculates P/Q values from rated apparent power and cosine(phi) values.
@@ -1368,15 +1367,33 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     elif qmode == "cap":
         qsign = -1
     else:
-        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'"%qmode)
+        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
 
     if pmode == "load":
         psign = 1
     elif pmode == "gen":
         psign = -1
     else:
-        raise ValueError("Unknown mode %s - specify 'load' or 'gen'"%pmode)
+        raise ValueError("Unknown mode %s - specify 'load' or 'gen'" % pmode)
 
     p = psign * s * cosphi
-    q = qsign * np.sqrt(s**2 - p**2)
+    q = qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
+
+
+def make_switch_at_branch(net, element, idx):
+    bus_i = net[element].loc[idx, 'from_bus']
+    bus_j = net[element].loc[idx, 'to_bus']
+    in_service = net[element].loc[idx, 'in_service']
+    net[element].loc[idx, 'in_service'] = False
+    create_switch(net, bus=bus_i, element=bus_j, et='b', closed=in_service, type='CB')
+
+
+def replace_zero_branches_with_switches(net, elements=['line', 'impedance'], zero_length=True, zero_r=True):
+
+
+    for elm in elements:
+        branch_zero = set()
+        if 'length_km' in net[elm].columns and zero_length:
+            branch_zero.update(net[elm].loc[net[elm].length_km == 0].index.tolist())
+
