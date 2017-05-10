@@ -21,7 +21,7 @@ class Tag(object):
         contents = ''.join(a.html if isinstance(a, Raw) else escape(str(a)) for a in args)
         return Raw('<%s%s>%s</%s>' % (self.name, attr.rstrip(), contents, self.name))
 
-def net2html(net, respect_switches=True, include_lines=True, include_trafos=True):
+def to_html(net, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
 
     """
      Converts a pandapower network into an html page which contains a simplified representation
@@ -42,11 +42,13 @@ def net2html(net, respect_switches=True, include_lines=True, include_trafos=True
 
         **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
 
-     EXAMPLE:
-         import pandapower.html as net2html
+        **show_tables** (boolean, True) - shows pandapower element tables
 
-         html = net2html(net, respect_switches = False)
-         open('index.html').write(html)
+     EXAMPLE:
+
+         from pandapower.html import to_html
+         html = to_html(net, respect_switches = False)
+         open('C:\\index.html', "w").write(html)
 
     """
 
@@ -55,42 +57,40 @@ def net2html(net, respect_switches=True, include_lines=True, include_trafos=True
 
     if include_lines:
         # lines with open switches can be excluded
-        if respect_switches:
-            nogolines = set(net.switch.element[(net.switch.et == "l") &
-                                               (net.switch.closed == 0)])
-            edges += [{'from':int(fb), 
-                       'to':int(tb), 
+        nogolines = set(net.switch.element[(net.switch.et == "l") &  (net.switch.closed == 0)]) \
+                    if respect_switches else set()
+        edges += [{'from':int(fb),
+                       'to':int(tb),
                        'label':'weight %f, key: %i, type %s, capacity: %f, path: %i' %
                        (l, idx, 'l', imax, 1)}
                       for fb, tb, l, idx, inservice, imax in
                       list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                                net.line.index, net.line.in_service, net.line.max_i_ka))
                       if inservice == 1 and not idx in nogolines]
-        edges += [{'from':int(fb), 
-                   'to':int(tb), 
-                   'label':'weight %f, key: %i, type %s, path: %i' %
-                   (l, idx, 'l', 1)}
+        edges += [{'from':int(fb),
+                   'to':int(tb),
+                   'label': 'key: %i, type %s, path: %i' %(idx, 'i', 1)}
                   for fb, tb, idx, inservice in
                   list(zip(net.impedance.from_bus, net.impedance.to_bus,
                            net.impedance.index, net.impedance.in_service))
                   if inservice == 1]
-                     
+
     if include_trafos:
         nogotrafos = set(net.switch.element[(net.switch.et == "t") & (net.switch.closed == 0)])
-        edges += [{'from':int(hvb), 
-                   'to':int(lvb), 
+        edges += [{'from':int(hvb),
+                   'to':int(lvb),
                    'label':'weight %f, key: %i, type %s' % (0, idx, 't')}
                   for hvb, lvb, idx, inservice in
                   list(zip(net.trafo.hv_bus, net.trafo.lv_bus,
                            net.trafo.index, net.trafo.in_service))
                   if inservice == 1 and not idx in nogotrafos]
         for trafo3, t3tab in net.trafo3w.iterrows():
-            edges += [{'from':int(bus1), 
-                       'to':int(bus2), 
+            edges += [{'from':int(bus1),
+                       'to':int(bus2),
                        'label':'weight %f, key: %i, type %s' % (0, trafo3, 't3')}
                       for bus1, bus2 in combinations([t3tab.hv_bus,t3tab.mv_bus, t3tab.lv_bus], 2)
                       if t3tab.in_service]
-                                                         
+
     # add bus-bus switches
     bs = net.switch[(net.switch.et == "b") &
                     ((net.switch.closed == 1) | (not respect_switches))]
@@ -100,7 +100,7 @@ def net2html(net, respect_switches=True, include_lines=True, include_trafos=True
               for b, e, i in list(zip(bs.bus, bs.element, bs.index))]
 
     HTML, HEAD, STYLE, BODY, DIV = Tag('html'), Tag('head'), Tag('style'), Tag('body'), Tag('div')
-    TABLE, TR, TH, TD, SCRIPT = Tag('table'), Tag('tr'), Tag('th'), Tag('td'), Tag('script')        
+    TABLE, TR, TH, TD, SCRIPT = Tag('table'), Tag('tr'), Tag('th'), Tag('td'), Tag('script')
     H2 = Tag('h2')
 
     style = 'tr:first {background:#e1e1e1;} th,td {text-align:center; border:1px solid #e1e1e1;}'
@@ -111,12 +111,13 @@ def net2html(net, respect_switches=True, include_lines=True, include_trafos=True
     script += "var network = new vis.Network(container, data, {zoomable: false});"
 
     tables = []
-    for name in ['bus', 'trafo', 'line', 'load', 'ext_grid',
-                 'res_bus', 'res_trafo', 'res_line', 'res_load', 'res_ext_grid']:
-        item = getattr(net, name)
-        table = TABLE(TR(*map(TH, item.columns)),
-                      *[TR(*map(TD, row)) for row in item.values])
-        tables.append(DIV(H2(name), table))
+    if show_tables:
+        for name in ['bus', 'trafo', 'line', 'load', 'ext_grid',
+                     'res_bus', 'res_trafo', 'res_line', 'res_load', 'res_ext_grid']:
+            item = getattr(net, name)
+            table = TABLE(TR(*map(TH, item.columns)),
+                          *[TR(*map(TD, row)) for row in item.values])
+            tables.append(DIV(H2(name), table))
 
     page = HTML(
         HEAD(STYLE(style)),
