@@ -125,7 +125,7 @@ The above network can be created in pandapower as follows: ::
     pp.create_line(net, from_bus=b2, to_bus=b3, length_km=0.1, name="Line",
                    std_type="NAYY 4x50 SE")   
                    
-Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://pandapower.readthedocs.io/en/v1.2.2/elements/trafo.html#electric-model>`_.
+Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://pandapower.readthedocs.io/en/v1.3.0/elements/trafo.html#electric-model>`_.
 The `standard type library <http://pandapower.readthedocs.io/en/v1.3.0/std_types.html>`_ allows comfortable creation of line and transformer elements. 
 
 The pandapower representation now looks like this:
