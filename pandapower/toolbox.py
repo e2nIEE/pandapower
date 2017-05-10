@@ -1392,3 +1392,25 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     p = psign * s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
+
+
+def create_replacement_switch_for_branch(net, element: str, idx: int):
+    """
+    Creates a switch parallel to a branch, connecting the same buses as the branch.
+    The switch is closed if the branch is in service and open if the branch is out of service.
+    The in_service status of the original branch is not affected and should be set separately, 
+    if needed.
+    
+    :param net: pandapower network
+    :param element: element table e. g. 'line', 'impedance'
+    :param idx: index of the branch e. g. 0
+    :return: None
+    """
+    bus_i = net[element].from_bus.at[idx]
+    bus_j = net[element].to_bus.at[idx]
+    in_service = net[element].in_service.at[idx]
+    switch_name = 'REPLACEMENT_%s_%d' % (element, idx)
+    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=in_service,
+                        type='CB')
+    logger.debug('created switch %s (%d) as replacement for %s %s' %
+                 (switch_name, sid, element, idx))

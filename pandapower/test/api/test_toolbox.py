@@ -324,5 +324,49 @@ def test_close_switch_at_line_with_two_open_switches():
     # assertion: sw2 closed
     assert net.switch.closed.loc[1] == True
 
+
+def test_create_replacement_switch_for_branch():
+    net = pp.create_empty_network()
+
+    bus0 = pp.create_bus(net, vn_kv=0.4)
+    bus1 = pp.create_bus(net, vn_kv=0.4)
+    bus2 = pp.create_bus(net, vn_kv=0.4)
+    bus3 = pp.create_bus(net, vn_kv=0.4)
+
+    ext_grid0 = pp.create_ext_grid(net, bus0, vm_pu=0.4)
+
+    line0 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
+    line1 = pp.create_line(net, bus2, bus3, length_km=1, std_type="NAYY 4x50 SE")
+    impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
+    impedance1 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
+
+    pp.create_load(net, bus2, 1)
+
+    pp.runpp(net)
+
+    # look that the switch is created properly
+    tb.create_replacement_switch_for_branch(net, 'line', line0)
+    tb.create_replacement_switch_for_branch(net, 'impedance', impedance0)
+    net.line.in_service.at[line0] = False
+    net.impedance.in_service.at[impedance0] = False
+
+    assert 'REPLACEMENT_line_0' in net.switch.name.values
+    assert 'REPLACEMENT_impedance_0' in net.switch.name.values
+    assert net.switch.closed.at[0]
+    assert net.switch.closed.at[1]
+    pp.runpp(net)
+
+    # look that the switch is created with the correct closed status
+    net.line.in_service.at[line1] = False
+    net.impedance.in_service.at[impedance1] = False
+    tb.create_replacement_switch_for_branch(net, 'line', line1)
+    tb.create_replacement_switch_for_branch(net, 'impedance', impedance1)
+
+    assert 'REPLACEMENT_line_1' in net.switch.name.values
+    assert 'REPLACEMENT_impedance_1' in net.switch.name.values
+    assert ~net.switch.closed.at[2]
+    assert ~net.switch.closed.at[3]
+
+
 if __name__ == "__main__":
     pytest.main(["test_toolbox.py", "-xs"])
