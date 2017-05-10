@@ -50,7 +50,7 @@ def net2html(net, respect_switches=True, include_lines=True, include_trafos=True
 
     """
 
-    nodes = [{'id':id, 'label':id} for id in net.bus[net.bus.in_service==1].index]
+    nodes = [{'id':int(id), 'label':str(id)} for id in net.bus[net.bus.in_service==1].index]
     edges = []
 
     if include_lines:
