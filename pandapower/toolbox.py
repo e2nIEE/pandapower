@@ -567,8 +567,8 @@ def _pre_release_changes(net):
                                                     "urm_percent": "vscr_mv_percent",
                                                     "url_percent": "vscr_lv_percent",
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
-                                                    "vnl_kv": "vn_lv_kv", "snh_kv": "sn_hv_kv",
-                                                    "snm_kv": "sn_mv_kv", "snl_kv": "sn_lv_kv"})
+                                                    "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
+                                                    "snm_kva": "sn_mv_kva", "snl_kva": "sn_lv_kva"})
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
