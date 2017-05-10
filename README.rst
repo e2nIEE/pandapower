@@ -55,7 +55,7 @@ pandapower is an element based network calculation tools that supports the follo
 	- synchronous generators
 	- DC lines
 	- unsymmetric impedances
-    - ward equivalents
+	- ward equivalents
 	
 Network Analysis
 ------------------
