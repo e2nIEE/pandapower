@@ -24,8 +24,10 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     If ext_grid_p is a list, it must be in the same order as net.ext_grid.index.
     """
     # cast ref_bus_idx and ext_grid_p as list
-    if type(ref_bus_idx) is not list: ref_bus_idx = [ref_bus_idx]
-    if type(ext_grid_p) is not list: ext_grid_p = [ext_grid_p]
+    if type(ref_bus_idx) is not list:
+        ref_bus_idx = [ref_bus_idx]
+    if type(ext_grid_p) is not list:
+        ext_grid_p = [ext_grid_p]
     for i in ref_bus_idx:
         if i not in net.gen.bus.values and i not in net.ext_grid.bus.values:
             raise ValueError("Index %i is not in net.gen.bus or net.ext_grid.bus." % i)
