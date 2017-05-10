@@ -2068,6 +2068,20 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
     if index in net["piecewise_linear_cost"].index:
         raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
 
+    if not net["polynomial_cost"].loc[
+            (net["polynomial_cost"].element_type == element_type) &
+            (net["polynomial_cost"].element == element) &
+            (net["polynomial_cost"].type == type)].empty:
+        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
+                          (element_type, element))
+
+    if not net["piecewise_linear_cost"].loc[
+            (net["piecewise_linear_cost"].element_type == element_type) &
+            (net["piecewise_linear_cost"].element == element) &
+            (net["piecewise_linear_cost"].type == type)].empty:
+        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
+                          (element_type, element))
+
     p = data_points[:, 0]
     f = data_points[:, 1]
 
@@ -2132,9 +2146,19 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
     if index in net["polynomial_cost"].index:
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
 
-    if not net["polynomial_cost"][net["polynomial_cost"].element_type == element_type].loc[
-           net["polynomial_cost"].element == element].empty:
-        raise UserWarning("A polynomial_cost for this element already exists")
+    if not net["polynomial_cost"].loc[
+            (net["polynomial_cost"].element_type == element_type) &
+            (net["polynomial_cost"].element == element) &
+            (net["polynomial_cost"].type == type)].empty:
+        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
+                          (element_type, element))
+
+    if not net["piecewise_linear_cost"].loc[
+            (net["piecewise_linear_cost"].element_type == element_type) &
+            (net["piecewise_linear_cost"].element == element) &
+            (net["piecewise_linear_cost"].type == type)].empty:
+        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
+                          (element_type, element))
 
     net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]

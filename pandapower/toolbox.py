@@ -53,165 +53,193 @@ def lf_info(net, numv=1, numi=2): # pragma: no cover
                     net.line.name.at[r.name])
 
 
-def opf_task(net): # pragma: no cover
+def _opf_controllables(net, to_log, control_elm, control_elm_name, all_costs):
+    to_log += '\n' + "  " + control_elm_name
+    for q, r in net[control_elm].iterrows():
+        if 'bus' in r:
+            to_log += '\n' + "    %i at Node %i" % (q, r.bus)
+        else:
+            to_log += '\n' + "    %i at Nodes %i, %i" % (q, r.from_bus, r.to_bus)
+        idx_cost = all_costs.loc[(all_costs.element == q) &
+                                 (all_costs.element_type == control_elm)].index
+        if len(idx_cost):
+            to_log += " with %s-costs" % all_costs.loc[idx_cost].type.values
+    return to_log
+
+
+def opf_task(net):  # pragma: no cover
     """
     Prints some basic inforamtion of the optimal powerflow task.
     """
-    logger.info("Cotrollables & Costs:")
-    logger.info("  External Grid")
-    for q, r in net.ext_grid.iterrows():
-        if "cost_per_kw" in net.ext_grid.columns:
-            logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
+    plc = net.piecewise_linear_cost
+    pol = net.polynomial_cost
+    # --- Determine duplicated cost data
+    all_costs = plc[['type', 'element', 'element_type']].append(
+            pol[['type', 'element', 'element_type']]).reset_index(drop=True)
+    duplicates = all_costs.loc[all_costs.duplicated()]
+    if duplicates.shape[0]:
+        raise ValueError("There are elements with multipy costs.\nelement_types: %s\n"
+                         "element: %s\ntypes: %s" % (duplicates.element_type.values,
+                                                     duplicates.element.values,
+                                                     duplicates.type.values))
+    # --- store cost data to all_costs
+    all_costs['str'] = None
+    for i, j in all_costs.iterrows():
+        costs = plc.loc[(plc.element == j.element) & (plc.element_type == j.element_type) &
+                        (plc.type == j.type)]
+        if len(costs):
+            all_costs.str.at[i] = "p: " + str(costs.p.values[0]) + ", f: " + str(costs.f.values[0])
         else:
-            logger.info("    at Node %i", r.bus)
-    if 'controllable' in net.gen.columns:
-        if (net.gen.controllable == True).any():
-            logger.info("  Generator")
-            if "cost_per_kw" in net.gen.columns:
-                for q, r in net.gen[net.gen.controllable == True].iterrows():
-                    logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
-            else:
-                for q, r in net.gen[net.gen.controllable == True].iterrows():
-                    logger.info("    at Node %i", r.bus)
-    if 'controllable' in net.sgen.columns:
-        if (net.sgen.controllable == True).any():
-            logger.info("  Static Generator")
-            if "cost_per_kw" in net.sgen.columns:
-                for q, r in net.sgen[net.sgen.controllable == True].iterrows():
-                    logger.info("    %i at Node %i with cost %s", q, r.bus, r.cost_per_kw)
-            else:
-                logger.info("    at Node %i", r.bus)
-    logger.info("Constraints:")
-    c_exist = False  # stores if there are any constraints
-    # --- Generator constraints
-    c_gen_columns = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
-    c_gen_columns_exist = c_gen_columns[c_gen_columns.isin(net.gen.columns)]
-    c_gen = net.gen[c_gen_columns_exist].dropna(how='all')
-    if (c_gen.shape[1] > 0) & (c_gen.shape[0] > 0):
-        c_exist = True
-        logger.info("  Generator Constraints")
-        for i in c_gen_columns[c_gen_columns.isin(net.gen.columns) == False]:
-            c_gen[i] = np.nan
-        if (c_gen.max_p_kw <= c_gen.min_p_kw).any():
-            logger.warn("The value of min_p_kw must be less than max_p_kw for all generators. " +
-                        "Please observe the pandapower signing system.")
-        if (c_gen.min_q_kvar >= c_gen.max_q_kvar).any():
-            logger.warn("The value of min_q_kvar must be less than max_q_kvar for all generators. " +
-                        "Please observe the pandapower signing system.")
-        if c_gen.duplicated()[1:].all():
-            logger.info("    at all Gens [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
-                        "[%s, %s, %s, %s]", c_gen.min_p_kw[0], c_gen.max_p_kw[0],
-                        c_gen.min_q_kvar[0], c_gen.max_q_kvar[0])
-        else:
-            unique_rows = ~c_gen.duplicated()
-            duplicated_rows = c_gen.duplicated()
-            for i in c_gen[unique_rows].index:
-                same_data_gens = list([i])
-                for i2 in c_gen[duplicated_rows].index:
-                    if c_gen.iloc[i].equals(c_gen.iloc[i2]):
-                        same_data_gens.append(i2)
-                logger.info('    at Gens %s [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] ' +
-                            'is [%s, %s, %s, %s]', ', '.join(map(str, same_data_gens)),
-                            c_gen.min_p_kw[i], c_gen.max_p_kw[i],
-                            c_gen.min_q_kvar[i], c_gen.max_q_kvar[i])
-    # --- Static Generator constraints
-    c_sgen_columns = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
-    c_sgen_columns_exist = c_sgen_columns[c_sgen_columns.isin(net.sgen.columns)]
-    c_sgen = net.sgen[c_sgen_columns_exist].dropna(how='all')
-    if (c_sgen.shape[1] > 0) & (c_sgen.shape[0] > 0):
-        c_exist = True
-        logger.info("  Static Generator Constraints")
-        for i in c_sgen_columns[c_sgen_columns.isin(net.sgen.columns) == False]:
-            c_sgen[i] = np.nan
-        if (c_sgen.max_p_kw <= c_sgen.min_p_kw).any():
-            logger.warn("The value of min_p_kw must be less than max_p_kw for all static " +
-                        "generators. Please observe the pandapower signing system.")
-        if (c_sgen.min_q_kvar >= c_sgen.max_q_kvar).any():
-            logger.warn("The value of min_q_kvar must be less than max_q_kvar for all static.  " +
-                        "generators. Please observe the pandapower signing system.")
-        if c_sgen.duplicated()[1:].all():
-            logger.info("    at all Sgens [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " +
-                        "[%s, %s, %s, %s]", c_sgen.min_p_kw[0], c_sgen.max_p_kw[0],
-                        c_sgen.min_q_kvar[0], c_sgen.max_q_kvar[0])
-        else:
-            unique_rows = ~c_sgen.duplicated()
-            duplicated_rows = c_sgen.duplicated()
-            for i in c_sgen[unique_rows].index:
-                same_data_sgens = list([i])
-                for i2 in c_sgen[duplicated_rows].index:
-                    if c_sgen.iloc[i].equals(c_sgen.iloc[i2]):
-                        same_data_sgens.append(i2)
-                logger.info('    at Sgens %s [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar]' +
-                            'is [%s, %s, %s, %s]', ', '.join(map(str, same_data_sgens)),
-                            c_sgen.min_p_kw[i], c_sgen.max_p_kw[i],
-                            c_sgen.min_q_kvar[i], c_sgen.max_q_kvar[i])
+            costs = pol.loc[(pol.element == j.element) & (pol.element_type == j.element_type) &
+                            (pol.type == j.type)]
+            all_costs.str.at[i] = "c: " + str(costs.c.values[0])
+
+    # --- examine logger info
+    to_log = '\n' + "Cotrollables & Costs:"
+    control_elms = ['gen', 'sgen', 'load']
+    control_elm_names = ['Generator', 'Static Generator', 'Load']
+    to_log = _opf_controllables(net, to_log, 'ext_grid', 'External Grid', all_costs)
+    for j in range(len(control_elms)):
+        if len(net[control_elms[j]]):
+            if ('controllable' not in net[control_elms[j]].columns):
+                raise ValueError("net.%s has no 'controllable' column!" % control_elms[j])
+            if (net[control_elms[j]].controllable == True).any():
+                to_log = _opf_controllables(net, to_log, control_elms[j], control_elm_names[j],
+                                            all_costs)
+    if len(net.dcline):  # dcline always is assumed as controllable
+        to_log = _opf_controllables(net, to_log, 'dcline', 'DC Line', all_costs)
+    to_log += '\n' + "Constraints:"
+    constr_exist = False  # stores if there are any constraints
+    # --- variables constraints
+    variables = ['ext_grid', 'gen', 'sgen']
+    variable_names = ['Ext_Grid', 'Gen', 'SGen']
+    variable_long_names = ['External Grid', 'Generator', 'Static Generator']
+    if (net['load'].controllable == True).any():
+        variables += ['load']
+        variable_names += ['Load']
+        variable_long_names += ['Load']
+    for j in range(len(variables)):
+        constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
+        constr_col_exist = constr_col[constr_col.isin(net[variables[j]].columns)]
+        constr = net[variables[j]][constr_col_exist].dropna(how='all')
+        if (constr.shape[1] > 0) & (constr.shape[0] > 0):
+            constr_exist = True
+            to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
+            for i in constr_col[constr_col.isin(net[variables[j]].columns) == False]:
+                constr[i] = np.nan
+            if (constr.min_p_kw >= constr.max_p_kw).any():
+                logger.warn("The value of min_p_kw must be less than max_p_kw for all " +
+                            variable_names[j] + ". " + "Please observe the pandapower " +
+                            "signing system.")
+            if (constr.min_q_kvar >= constr.max_q_kvar).any():
+                logger.warn("The value of min_q_kvar must be less than max_q_kvar for all " +
+                            variable_names[j] + ". Please observe the pandapower signing system.")
+            if constr.duplicated()[1:].all():  # all with the same constraints
+                to_log += '\n' + "    at all " + variable_names[j] + \
+                          " [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " + \
+                          "[%s, %s, %s, %s]" % (constr.min_p_kw[0], constr.max_p_kw[0],
+                                                constr.min_q_kvar[0], constr.max_q_kvar[0])
+            else:  # different constraints exist
+                unique_rows = ~constr.duplicated()
+                duplicated_rows = constr.duplicated()
+                for i in constr[unique_rows].index:
+                    same_data = list([i])
+                    for i2 in constr[duplicated_rows].index:
+                        if (constr.iloc[i] == constr.iloc[i2]).all():
+                            same_data.append(i2)
+                    to_log += '\n' + '    at ' + variable_names[j] + ' ' + \
+                              ', '.join(map(str, same_data)) + \
+                              ' [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is ' + \
+                              '[%s, %s, %s, %s]' % (constr.min_p_kw[i], constr.max_p_kw[i],
+                                                    constr.min_q_kvar[i], constr.max_q_kvar[i])
+    # DC Line constraints
+    constr_col = pd.Series(['max_p_kw', 'min_q_from_kvar', 'max_q_from_kvar', 'min_q_to_kvar',
+                            'max_q_to_kvar'])
+    constr_col_exist = constr_col[constr_col.isin(net['dcline'].columns)]
+    constr = net['dcline'][constr_col_exist].dropna(how='all')
+    if (constr.shape[1] > 0) & (constr.shape[0] > 0):
+        constr_exist = True
+        to_log += '\n' + "  DC Line Constraints"
+        for i in constr_col[constr_col.isin(net['dcline'].columns) == False]:
+            constr[i] = np.nan
+        if (constr.min_q_from_kvar >= constr.max_q_from_kvar).any():
+            logger.warn("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
+                        "all DC Line. Please observe the pandapower signing system.")
+        if (constr.min_q_to_kvar >= constr.max_q_to_kvar).any():
+            logger.warn("The value of min_q_to_kvar must be less than min_q_to_kvar for " +
+                        "all DC Line. Please observe the pandapower signing system.")
+        if constr.duplicated()[1:].all():  # all with the same constraints
+            to_log += '\n' + "    at all DC Line [max_p_kw, min_q_from_kvar, max_q_from_kvar, " + \
+                      "min_q_to_kvar, max_q_to_kvar] is [%s, %s, %s, %s, %s]" % \
+                      (constr.max_p_kw[0], constr.min_q_from_kvar[0], constr.max_q_from_kvar[0],
+                       constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
+        else:  # different constraints exist
+            unique_rows = ~constr.duplicated()
+            duplicated_rows = constr.duplicated()
+            for i in constr[unique_rows].index:
+                same_data = list([i])
+                for i2 in constr[duplicated_rows].index:
+                    if (constr.iloc[i] == constr.iloc[i2]).all():
+                        same_data.append(i2)
+                to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
+                          ' [max_p_kw, min_q_from_kvar, max_q_from_kvar, min_q_to_kvar, ' + \
+                          'max_q_to_kvar] is [%s, %s, %s, %s, %s]' % (
+                          constr.max_p_kw[0], constr.min_q_from_kvar[0], constr.max_q_from_kvar[0],
+                          constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
     # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
         if c_bus.shape[0] > 0:
-            c_exist = True
-            logger.info("  Voltage Constraints")
+            constr_exist = True
+            to_log += '\n' + "  Voltage Constraints"
             if (net.bus.min_vm_pu >= net.bus.max_vm_pu).any():
                 logger.warn("The value of min_vm_pu must be less than max_vm_pu.")
-            if c_bus.duplicated()[1:].all():
-                logger.info('    at all Nodes [min_vm_pu, max_vm_pu] is [%s, %s]',
-                            c_bus.min_vm_pu[0], c_bus.max_vm_pu[0])
-            else:
+            if c_bus.duplicated()[1:].all():  # all with the same constraints
+                to_log += '\n' + '    at all Nodes [min_vm_pu, max_vm_pu] is [%s, %s]' % \
+                                                   (c_bus.min_vm_pu[0], c_bus.max_vm_pu[0])
+            else:  # different constraints exist
                 unique_rows = ~c_bus.duplicated()
                 duplicated_rows = c_bus.duplicated()
                 for i in c_bus[unique_rows].index:
                     same_data_nodes = list([i])
                     for i2 in c_bus[duplicated_rows].index:
-                        if c_bus.iloc[i].equals(c_bus.iloc[i2]):
+                        if (c_bus.iloc[i] == c_bus.iloc[i2]).all():
                             same_data_nodes.append(i2)
-                    logger.info('    at Nodes %s [min_vm_pu, max_vm_pu] is [%s, %s]',
-                                ', '.join(map(str, same_data_nodes)), c_bus.min_vm_pu[i],
-                                c_bus.max_vm_pu[i])
-    # --- Trafo constraints
-    if "max_loading_percent" in net.trafo.columns:
-        c_trafo = net.trafo['max_loading_percent'].dropna()
-        if c_trafo.shape[0] > 0:
-            c_exist = True
-            logger.info("  Trafo Constraint")
-            if c_trafo.duplicated()[1:].all():
-                logger.info('    at all Trafos max_loading_percent is %s', c_trafo[0])
-            else:
-                unique_rows = ~c_bus.duplicated()
-                duplicated_rows = c_bus.duplicated()
-                for i in c_trafo[unique_rows].index:
-                    same_data_trafos = list([i])
-                    for i2 in c_trafo[duplicated_rows].index:
-                        if c_trafo.iloc[i].equals(c_trafo.iloc[i2]):
-                            same_data_trafos.append(i2)
-                    logger.info("    at Trafos %s max_loading_percent is %s",
-                                ', '.join(map(str, same_data_trafos)), c_trafo[i])
-    # --- Line constraints
-    if "max_loading_percent" in net.line.columns:
-        c_line = net.line['max_loading_percent'].dropna()
-        if c_line.shape[0] > 0:
-            c_exist = True
-            logger.info("  Line Constraint")
-            if c_line.duplicated()[1:].all():
-                logger.info('    at all Lines max_loading_percent is %s', c_line[0])
-            else:
-                unique_rows = ~c_bus.duplicated()
-                duplicated_rows = c_bus.duplicated()
-                for i in c_line[unique_rows].index:
-                    same_data_lines = list([i])
-                    for i2 in c_line[duplicated_rows].index:
-                        if c_line.iloc[i].equals(c_line.iloc[i2]):
-                            same_data_lines.append(i2)
-                    logger.info("    at Lines %s max_loading_percent is %s",
-                                ', '.join(map(str, same_data_lines)), c_line[i])
+                    to_log += '\n' + '    at Nodes ' + ', '.join(map(str, same_data_nodes)) + \
+                              ' [min_vm_pu, max_vm_pu] is [%s, %s]' % (c_bus.min_vm_pu[i],
+                                                                      c_bus.max_vm_pu[i])
+    # --- Branch constraints
+    branches = ['trafo', 'line']
+    branch_names = ['Trafo', 'Line']
+    for j in range(len(branches)):
+        if "max_loading_percent" in net[branches[j]].columns:
+            constr = net[branches[j]]['max_loading_percent'].dropna()
+            if constr.shape[0] > 0:
+                constr_exist = True
+                to_log += '\n' + "  " + branch_names[j] + " Constraint"
+                if constr.duplicated()[1:].all():  # all with the same constraints
+                    to_log += '\n' + '    at all ' + branch_names[j] + \
+                              ' max_loading_percent is %s' % (constr[0])
+                else:  # different constraints exist
+                    unique_rows = ~c_bus.duplicated()
+                    duplicated_rows = c_bus.duplicated()
+                    for i in constr[unique_rows].index:
+                        same_data = list([i])
+                        for i2 in constr[duplicated_rows].index:
+                            if (constr.iloc[i] == constr.iloc[i2]).all():
+                                same_data.append(i2)
+                        to_log += '\n' + "    at " + branch_names[j] + " " + \
+                                  ', '.join(map(str, same_data)) + \
+                                  " max_loading_percent is %s" % (constr[j])
+    if not constr_exist:
+        to_log += '\n' + "  There are no constraints."
+    # do logger info
+    logger.info(to_log)
 
-    if not c_exist:
-        logger.info("  There are no constraints.")
+    # check if full range of generator is covered by pwl cost function!
 
 
-        # check if full range of generator is covered by pwl cost function!
-
-
-def switch_info(net, sidx): # pragma: no cover
+def switch_info(net, sidx):  # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
@@ -701,6 +729,7 @@ def create_continuous_bus_index(net, start=0):
                            ("impedance", "from_bus"), ("impedance", "to_bus"),
                            ("shunt", "bus"), ("ext_grid", "bus")]:
         net[element][value] = get_indices(net[element][value], bus_lookup)
+    net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et=="b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
     return net
@@ -787,6 +816,29 @@ def drop_buses(net, buses):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+
+
+
+def drop_elements_at_buses(net,buses):
+    """
+    drop elements connected to certain buses and drop the buses as well
+    """
+    #drop elements connected to buses
+    for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
+                           ("sgen", "bus"), ("load", "bus"),
+                           ("switch", "bus"), ("ext_grid", "bus"),
+                           ("ward", "bus"), ("xward", "bus"),
+                           ("shunt", "bus")]:
+        if net[element][value].isin(buses).all:
+            eid = net[element][net[element][value].isin(buses)].index
+            net[element].drop(eid,inplace=True)
+    #drop busbus switch
+    net["switch"].drop(net["switch"][(net["switch"]["element"].isin(buses)) &
+                                     (net["switch"]["et"] == "b")].index, inplace=True)
+    #drop buses 
+    net["bus"].drop(buses, inplace=True)
+    
 
 
 def drop_trafos(net, trafos):
@@ -969,8 +1021,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 def merge_nets(net1, net2, validate=True):
     """
-    Function to concatenate two nets into one data structure. The second net is reindexed to avoid
-    duplicate element indices.
+    Function to concatenate two nets into one data structure. All element tables get new,
+    continuous indizes in order to avoid duplicates.
     """
     create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
     net = copy.deepcopy(net1)
@@ -979,35 +1031,36 @@ def merge_nets(net1, net2, validate=True):
         runpp(net1)
         runpp(net2)
 
+    def adapt_switches(net, element, offset=0):
+        switches = net.switch[net.switch.et == element[0]]  # element[0] == "l" for "line", ect.
+        new_index = [net[element].index.get_loc(ix) + offset
+                     for ix in switches.element.values]
+        net.switch.loc[switches.index, "element"] = new_index
+
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res"):
             continue
         if type(table) == pd.DataFrame and len(table) > 0:
             if element == "switch":
-                bl_switches = net2.switch[net2.switch.et=="l"]
-                new_line_index = [net2.line.index.get_loc(ix) + len(net1.line) for ix in bl_switches.element.values]
-                net2.switch.loc[bl_switches.index, "element"] = new_line_index
-
-                bl_switches = net1.switch[net1.switch.et=="l"]
-                new_line_index = [net1.line.index.get_loc(ix) for ix in bl_switches.element.values]
-                net1.switch.loc[bl_switches.index, "element"] = new_line_index
-
-                bt_switches = net2.switch[net2.switch.et=="t"]
-                new_trafo_index = [net2.trafo.index.get_loc(ix) + len(net1.trafo) for ix in bt_switches.element.values]
-                net2.switch.loc[bt_switches.index, "element"] = new_trafo_index
-
-                bt_switches = net1.switch[net1.switch.et=="t"]
-                new_trafo_index = [net1.trafo.index.get_loc(ix) for ix in bt_switches.element.values]
-                net1.switch.loc[bt_switches.index, "element"] = new_trafo_index
-            net[element] = net1[element].append(net2[element], ignore_index=element!="bus")
+                adapt_switches(net2, "line", offset=len(net1.line))
+                adapt_switches(net1, "line")
+                adapt_switches(net2, "trafo", offset=len(net1.trafo))
+                adapt_switches(net1, "trafo")
+            if element == "line_geodata":
+                ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
+                net1.line_geodata.set_index(np.array(ni), inplace=True)
+                ni = [net2.line.index.get_loc(ix) + len(net1.line)
+                      for ix in net2["line_geodata"].index]
+                net2.line_geodata.set_index(np.array(ni), inplace=True)
+            net[element] = net1[element].append(net2[element], ignore_index=element != "bus")
     if validate:
         runpp(net)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
-        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values - net2.res_bus.vm_pu.values))
+        dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
+                                        net2.res_bus.vm_pu.values))
         if dev1 > 1e-10 or dev2 > 1e-10:
             raise UserWarning("Deviation in bus voltages after merging")
     return net
-
 
 # --- item/element selections
 
@@ -1046,10 +1099,6 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     Returns the index of the second bus an element is connected to, given a
     first one. E.g. the from_bus given the to_bus of a line.
     """
-    # for legacy compliance
-    if "element_type" in kwargs:
-        et = kwargs["element_type"]
-
     if et == 'line':
         bc = ["from_bus", "to_bus"]
     elif et == 'trafo':

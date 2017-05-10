@@ -61,7 +61,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         **init** (str, "auto") - initialization method of the loadflow
         pandapower supports four methods for initializing the loadflow:
-            
+
             - "auto" - init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
             - "flat"- flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
             - "dc" - initial DC loadflow before the AC loadflow. The results of the DC loadflow are used as initial solution for the AC loadflow.
@@ -122,11 +122,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             If check finds unsupplied buses, they are set out of service in the ppc
 
         **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
-        
+
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
-        
+
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
-        
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
         ## check if numba is available and the corresponding flag
@@ -258,6 +258,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
+        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
         - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:

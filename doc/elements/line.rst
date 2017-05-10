@@ -89,7 +89,7 @@ The parameters are then transformed in the per unit system:
     \underline{y} &= \underline{Y} \cdot Z_{N} \\
     \end{align*}
 
-Where :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`) and :math:`U_{N}` is the nominal voltage at the from bus.
+Where the reference voltage :math:`V_{N}` is the nominal voltage at the from bus and the rated apparent power :math:`S_{N}` is defined system wide in the net object (see :ref:`Unit Systems and Conventions<conventions>`).
 
 .. note::
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.

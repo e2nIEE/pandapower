@@ -4,7 +4,6 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates

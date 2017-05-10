@@ -85,5 +85,6 @@ def test_nonexistent_bus():
             func()
 
 if __name__ == '__main__':
-    pytest.main(["test_create.py"])
+    test_convenience_create_functions()
+#    pytest.main(["test_create.py"])
 
