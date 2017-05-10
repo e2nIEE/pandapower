@@ -360,5 +360,87 @@ def test_create_replacement_switch_for_branch():
     assert ~net.switch.closed.at[3]
 
 
+def test_replace_zero_branches_with_switches():
+    net = pp.create_empty_network()
+
+    bus0 = pp.create_bus(net, vn_kv=0.4)
+    bus1 = pp.create_bus(net, vn_kv=0.4)
+    bus2 = pp.create_bus(net, vn_kv=0.4)
+    bus3 = pp.create_bus(net, vn_kv=0.4)
+    bus4 = pp.create_bus(net, vn_kv=0.4)
+    bus5 = pp.create_bus(net, vn_kv=0.4)
+    bus6 = pp.create_bus(net, vn_kv=0.4)
+
+    pp.create_ext_grid(net, bus0, vm_pu=0.4)
+
+    line0 = pp.create_line(net, bus0, bus1, length_km=0, std_type="NAYY 4x50 SE")
+    line1 = pp.create_line_from_parameters(net, bus2, bus3, length_km=1, r_ohm_per_km=0,
+                                           x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1)
+    line2 = pp.create_line_from_parameters(net, bus3, bus4, length_km=1, r_ohm_per_km=0,
+                                           x_ohm_per_km=0, c_nf_per_km=0, max_i_ka=1)
+
+    impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
+    impedance1 = pp.create_impedance(net, bus4, bus5, 0, 0, sn_kva=1e5)
+    impedance2 = pp.create_impedance(net, bus5, bus6, 0, 0, rtf_pu=0.1, sn_kva=1e5)
+
+    # test for line with zero length
+    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=True,
+                                           zero_impedance=False, in_service_only=True)
+
+    assert 'REPLACEMENT_line_0' in net.switch.name.values
+    assert ~net.line.in_service.at[0]
+
+    # test for in_service_only
+    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=True,
+                                           zero_impedance=False, in_service_only=True)
+
+    assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 1
+
+    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=True,
+                                           zero_impedance=False, in_service_only=False)
+
+    assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 2
+    assert ~net.switch.closed.at[1]
+
+    # test for line with zero impedance
+    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=False,
+                                           zero_impedance=True, in_service_only=True)
+
+    assert 'REPLACEMENT_line_1' not in net.switch.name.values
+    assert 'REPLACEMENT_line_2' in net.switch.name.values
+
+    # test for impedance
+    tb.replace_zero_branches_with_switches(net, elements=('impedance',), zero_length=False,
+                                           zero_impedance=True, in_service_only=True)
+
+    assert 'REPLACEMENT_impedance_0' not in net.switch.name.values
+    assert 'REPLACEMENT_impedance_1' in net.switch.name.values
+    assert 'REPLACEMENT_impedance_2' not in net.switch.name.values
+
+    # now run everything altogether
+    net.switch.drop(net.switch.index, inplace=True)
+    net.line.loc[:, 'in_service'] = True
+    net.impedance.loc[:, 'in_service'] = True
+
+    tb.replace_zero_branches_with_switches(net, elements=('impedance', 'line'), zero_length=True,
+                                           zero_impedance=True, in_service_only=True)
+
+    assert 'REPLACEMENT_impedance_1' in net.switch.name.values
+    assert 'REPLACEMENT_line_0' in net.switch.name.values
+    assert 'REPLACEMENT_line_2' in net.switch.name.values
+
+    assert ~net.line.in_service.at[0]
+    assert net.line.in_service.at[1]
+    assert ~net.line.in_service.at[2]
+
+    assert 'REPLACEMENT_impedance_0' not in net.switch.name.values
+    assert 'REPLACEMENT_impedance_2' not in net.switch.name.values
+    assert 'REPLACEMENT_line_1' not in net.switch.name.values
+
+    assert net.impedance.in_service.at[0]
+    assert ~net.impedance.in_service.at[1]
+    assert net.impedance.in_service.at[2]
+
+
 if __name__ == "__main__":
     pytest.main(["test_toolbox.py", "-xs"])

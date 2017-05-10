@@ -1394,7 +1394,7 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     return p, q
 
 
-def create_replacement_switch_for_branch(net, element: str, idx: int):
+def create_replacement_switch_for_branch(net, element, idx):
     """
     Creates a switch parallel to a branch, connecting the same buses as the branch.
     The switch is closed if the branch is in service and open if the branch is out of service.
@@ -1414,3 +1414,46 @@ def create_replacement_switch_for_branch(net, element: str, idx: int):
                         type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element, idx))
+
+
+def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
+                                        zero_impedance=True, in_service_only=True):
+    """
+    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them 
+    out of service.
+    :param net: pandapower network
+    :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
+    :param zero_length: 
+    :param zero_impedance: 
+    :return: 
+    """
+
+    if type(elements) != tuple:
+        raise TypeError(
+            'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
+
+    for elm in elements:
+        branch_zero = set()
+        if elm == 'line' and zero_length:
+            branch_zero.update(net[elm].loc[net[elm].length_km == 0].index.tolist())
+
+        if elm == 'line' and zero_impedance:
+            branch_zero.update(net[elm].loc[(net[elm].r_ohm_per_km == 0) &
+                                            (net[elm].x_ohm_per_km == 0) &
+                                            (net[elm].c_nf_per_km == 0)].index.tolist())
+
+        if elm == 'impedance' and zero_impedance:
+            branch_zero.update(net[elm].loc[(net[elm].rft_pu == 0) &
+                                            (net[elm].xft_pu == 0) &
+                                            (net[elm].rtf_pu == 0) &
+                                            (net[elm].xtf_pu == 0)].index.tolist())
+
+        k = 0
+        for b in branch_zero:
+            if in_service_only and ~net[elm].in_service.at[b]:
+                continue
+            create_replacement_switch_for_branch(net, element=elm, idx=b)
+            net[elm].loc[b, 'in_service'] = False
+            k += 1
+
+        logger.info('set %d %ss out of service' % (k, elm))
