@@ -2,11 +2,13 @@
 Built-in plot functions
 #############################
 
+In order to get idea about interactive plot features and possibilities see the `tutorial <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_.
+
 =============================
 Simple Plotting
 =============================
 
-The function simple_plotly() can be used for simple plotting. For advanced possibilities see the tutorials.
+The function simple_plotly() can be used for a simple interactive plotting.
 
 .. _simple_plotly:
 
@@ -46,7 +48,7 @@ Example simple plot on a map::
 Network coloring according to voltage levels
 ===============================================
 
-The function vlevel_plotly() is used to plot a network colored and labeled according to voltage levels. For advanced possibilities see the tutorials.
+The function vlevel_plotly() is used to plot a network colored and labeled according to voltage levels.
 
 .. _vlevel_plotly:
 
