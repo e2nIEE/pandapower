@@ -3,7 +3,7 @@ pandapower
 =============
 
 .. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.3.0
-   :target: http://pandapower.readthedocs.io/en/master
+   :target: http://pandapower.readthedocs.io/
    :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
@@ -68,11 +68,11 @@ pandapower supports the following network analysis functions:
 	- short-circuit calculation according to IEC 60909
 	- topological graph searches
 
-For more information, please referr to the `documentation <https://pandapower.readthedocs.io>`_.
+For more information, please refer to the `documentation <https://pandapower.readthedocs.io>`_.
 
 Installation notes can be found `here <http://pandapower.readthedocs.io/en/v1.3.0/getting_started/installation.html>`_, for a comfortable introduction into pandapower see the `interactive tutorials <http://pandapower.readthedocs.io/en/develop/getting_started/tutorials.html>`_.
 
-If you are interested in getting release notes for new pandapower versions, please subscribe to the pandapower mailing list `here <http://www.uni-kassel.de/go/pandapower>`_.
+If you are interested in getting release notes for new pandapower versions, please subscribe to the pandapower `mailing list <http://www.uni-kassel.de/go/pandapower>`_.
 
 Citing pandapower
 ==================
