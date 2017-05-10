@@ -25,7 +25,8 @@ Configure and run a state estimation:
 
 Run a short-circuit calculation according to IEC 60909:
     - `short-circuit calculation <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit.ipynb>`_
-    
+    - `considering renewable energy (2016 revision) <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit_renewables.ipynb>`_
+
 Working with the pandapower standard type library:
     - `standard types <https://github.com/panda-power/pandapower/blob/master/tutorials/std_types.ipynb>`_ 
 

@@ -830,8 +830,11 @@ def drop_elements_at_buses(net, buses):
                            ("shunt", "bus")]:
         if net[element][value].isin(buses).all:
             eid = net[element][net[element][value].isin(buses)].index
-            net[element].drop(eid, inplace=True)
-    # drop buses
+            net[element].drop(eid,inplace=True)
+    #drop busbus switch
+    net["switch"].drop(net["switch"][(net["switch"]["element"].isin(buses)) &
+                                     (net["switch"]["et"] == "b")].index, inplace=True)
+    #drop buses
     net["bus"].drop(buses, inplace=True)
 
 
