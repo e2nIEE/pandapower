@@ -76,8 +76,9 @@ def test_dispatch1(dcline_net):
 
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
-    pp.create_polynomial_cost(net, 0, "ext_grid", array([.08, 0]))
-    pp.create_polynomial_cost(net, 1, "ext_grid", array([0.1, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([.1, 0]))
+    pp.create_polynomial_cost(net, 1, "ext_grid", array([.08, 0]))
+
     net.bus["max_vm_pu"] = 2  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     pp.runopp(net)
@@ -89,6 +90,7 @@ def test_dcline_dispatch2(dcline_net):
 
     p_eg_expect = array([-8.21525358e+05,  -5.43498903e-02])
     q_eg_expect = array([7787.55852923,  21048.59213887])
+    print(net.res_ext_grid.p_kw.values)
     assert allclose(net.res_ext_grid.p_kw.values, p_eg_expect)
     assert allclose(net.res_ext_grid.q_kvar.values, q_eg_expect)
 

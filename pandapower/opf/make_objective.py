@@ -105,6 +105,7 @@ def _make_objective(ppci, net):
 
                         if not costs.element[costs.element_type == el].empty:
 
+
                             # cost data to write into gencost
                             el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(
                                     costs.loc[costs.element_type == el].element)].index
@@ -116,8 +117,13 @@ def _make_objective(ppci, net):
                                 p = concatenate(p)
                                 f = concatenate(f)
                                 # gencost indeces
+
                                 elements = idx[el_is] + shift_idx
+                                # elements = idx[costs.element[costs.element_type ==
+                                #                              el].values.astype(int)] + shift_idx
+
                                 ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
+                                # ppci["gencost"][elements, COST::2] = p[costs.index[costs.element_type == el]]
 
                                 if el in ["load", "dcline"]:
                                     ppci["gencost"][elements, COST+1:COST +
@@ -126,22 +132,51 @@ def _make_objective(ppci, net):
                                     ppci["gencost"][elements, COST+1:COST+n_piece_lin_coefficients +
                                                     1:2] = f * 1e3 * sign_corr
 
+                                # if el in ["load", "dcline"]:
+                                #     ppci["gencost"][elements, COST + 1::2] = - \
+                                #                                                  f[costs.index[costs.element_type == el]] * 1e3
+                                # else:
+                                #     ppci["gencost"][elements, COST + 1::2] = f[
+                                #                                                  costs.index[costs.element_type == el]] * 1e3 * sign_corr
+
                                 ppci["gencost"][elements, NCOST] = n_coefficients / 2
                                 ppci["gencost"][elements, MODEL] = 1
 
-                if len(net.polynomial_cost):
 
-                    if (net.polynomial_cost.type == type).any():
-                        costs = net.polynomial_cost[
-                                net.polynomial_cost.type == type].reset_index(drop=True)
+        if len(net.polynomial_cost):
+
+            for type in ["p", "q"]:
+                if (net.polynomial_cost.type == type).any():
+                    costs = net.polynomial_cost[net.polynomial_cost.type == type].reset_index(drop=True)
+                    # n_c = costs.c.values[0].shape[1]
+                    # c.values = c.values * power(1e3, array(range(n_c))[::-1])
+
+                    if type == "q":
+                        shift_idx = ng
+                        sign_corr = -1
+                    else:
+                        shift_idx = 0
+                        sign_corr = 1
+
+                    for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
 
                         if not costs.element[costs.element_type == el].empty:
+                            if el == "gen":
+                                idx = gen_idx
+                            if el == "sgen":
+                                idx = sgen_idx
+                            if el == "ext_grid":
+                                idx = eg_idx
+                            if el == "load":
+                                idx = load_idx
+                            if el == "dcline":
+                                idx = dcline_idx
 
-                            # cost data to write into gencost
-                            el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(
-                                    costs.loc[costs.element_type == el].element)].index
-                            c = costs.loc[(costs.element_type == el) & (
-                                    costs.element.isin(el_is))].c.reset_index(drop=True)
+                            # el_is = net[el][net[el].in_service].index
+                            el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(\
+                                     costs.loc[costs.element_type == el].element)].index
+                            c = costs.loc[(costs.element_type == el) & (costs.element.isin(el_is))].c.reset_index(drop=True)
+
                             if len(c) > 0:
                                 c = concatenate(c)
                                 n_c = c.shape[1]
@@ -150,19 +185,23 @@ def _make_objective(ppci, net):
                                 elements = idx[el_is] + shift_idx
                                 n_gencost = ppci["gencost"].shape[1]
 
-                                if el in ["load", "dcline"]:
-                                    ppci["gencost"][elements, -n_c:n_gencost] = - c
-                                    # this is deprecated since duplicated cost data is determined:
-#                                    ppci["gencost"][elements, -n_c:n_gencost] = zeros((
-#                                            elements, n_gencost-n_c-COST), dtype=float)
-                                else:
-                                    ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
-                                    # this is deprecated since duplicated cost data is determined:
-#                                    ppci["gencost"][elements, COST:-n_c] = zeros((
-#                                            len(elements), n_gencost-n_c-COST), dtype=float)
 
-                                ppci["gencost"][elements, NCOST] = n_coefficients
-                                ppci["gencost"][elements, MODEL] = 2
+
+                            # elements = idx[el_is] + shift_idx
+                            elcosts = costs[costs.element_type == el]
+                            elcosts.index = elcosts.element
+                            if el in ["load", "dcline"]:
+                                ppci["gencost"][elements, COST:(COST + n_c):] = - c
+                                # \
+                                #     elcosts[elcosts.element == el_is].c.values[0] * \
+                                #         power(1e3, array(range(n_c))[::-1])
+                            else:
+                                ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
+                                # ppci["gencost"][elements, COST:(
+                                #     COST + n_c):] = elcosts.loc[el_is].c.values[0]*sign_corr*power(1e3, array(range(n_c))[::-1])
+
+                            ppci["gencost"][elements, NCOST] = n_coefficients
+                            ppci["gencost"][elements, MODEL] = 2
 
     else:
         ppci["gencost"] = zeros((len_gencost, 8), dtype=float)
