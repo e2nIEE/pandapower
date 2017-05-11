@@ -39,6 +39,13 @@ def test_json():
     assert_net_equal(net_in, net_out, reindex=True)
     os.remove('testfile.json')
 
+
+def test_html():
+    net_in = create_test_network()
+    pp.to_html(net_in, "testfile.html")
+    os.remove('testfile.html')
+
+
 def test_convert_format():
     folder = os.path.abspath(os.path.dirname(pp.__file__))
     net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))

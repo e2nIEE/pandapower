@@ -77,7 +77,8 @@ def test_dispatch1(dcline_net):
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
     pp.create_polynomial_cost(net, 0, "ext_grid", array([.08, 0]))
-    pp.create_polynomial_cost(net, 1, "ext_grid", array([0.1, 0]))
+    pp.create_polynomial_cost(net, 1, "ext_grid", array([.1, 0]))
+
     net.bus["max_vm_pu"] = 2  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     pp.runopp(net)
@@ -120,4 +121,4 @@ def test_dcline_dispatch3(dcline_net):
     assert abs(net.res_dcline.p_from_kw.values - net.res_cost) < 1e-3
 
 if __name__ == "__main__":
-    pytest.main(["test_dcline.py", "-xs"])
+    pytest.main(["test_dcline.py::test_dcline_dispatch2", "-xs"])
