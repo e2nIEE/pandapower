@@ -1416,15 +1416,28 @@ def create_replacement_switch_for_branch(net, element, idx):
                  (switch_name, sid, element, idx))
 
 
-def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zero_length=True,
-                                        zero_impedance=True, in_service_only=True):
+def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
+                                        zero_length=True, zero_impedance=True, in_service_only=True,
+                                        min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
+                                        min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
+                                        min_xtf_pu=0):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them 
     out of service.
+    
     :param net: pandapower network
     :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
-    :param zero_length: 
-    :param zero_impedance: 
+    :param zero_length: whether zero length lines will be affected
+    :param zero_impedance: whether zero impedance branches will be affected
+    :param in_service_only: whether the branches that are not in service will be affected
+    :param min_length_km: threshhold for line length for a line to be considered zero line
+    :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
+    :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
+    :param min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
+    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance 
+    :param min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
+    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance 
+    :param min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
     :return: 
     """
 
@@ -1435,18 +1448,19 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
     for elm in elements:
         branch_zero = set()
         if elm == 'line' and zero_length:
-            branch_zero.update(net[elm].loc[net[elm].length_km == 0].index.tolist())
+            branch_zero.update(net[elm].loc[net[elm].length_km <= min_length_km].index.tolist())
 
         if elm == 'line' and zero_impedance:
-            branch_zero.update(net[elm].loc[(net[elm].r_ohm_per_km == 0) &
-                                            (net[elm].x_ohm_per_km == 0) &
-                                            (net[elm].c_nf_per_km == 0)].index.tolist())
+            branch_zero.update(net[elm].loc[(net[elm].r_ohm_per_km <= min_r_ohm_per_km) &
+                                            (net[elm].x_ohm_per_km <= min_x_ohm_per_km) &
+                                            (net[elm].c_nf_per_km <= min_c_nf_per_km)
+                                            ].index.tolist())
 
         if elm == 'impedance' and zero_impedance:
-            branch_zero.update(net[elm].loc[(net[elm].rft_pu == 0) &
-                                            (net[elm].xft_pu == 0) &
-                                            (net[elm].rtf_pu == 0) &
-                                            (net[elm].xtf_pu == 0)].index.tolist())
+            branch_zero.update(net[elm].loc[(net[elm].rft_pu <= min_rft_pu) &
+                                            (net[elm].xft_pu <= min_xft_pu) &
+                                            (net[elm].rtf_pu <= min_rtf_pu) &
+                                            (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
 
         k = 0
         for b in branch_zero:
