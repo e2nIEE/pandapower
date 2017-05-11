@@ -15,6 +15,8 @@ from pandapower.pypower_extensions.pfsoln import pfsoln
 from pandapower.pypower_extensions.runpf import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
 from pandapower.run_newton_raphson_pf import _get_Y_bus
 
+from pandapower.run_newton_raphson_pf import _get_ibus
+from pandapower.pypower_extensions.newtonpf import _evaluate_Fx, _check_for_convergence
 
 
 class LoadflowNotConverged(ppException):
@@ -26,7 +28,7 @@ class LoadflowNotConverged(ppException):
 
 
 
-def _bibc_bcbv(bus, branch, graph):
+def _make_bibc_bcbv(bus, branch, graph):
     """
     performs depth-first-search bus ordering and creates Direct Load Flow (DLF) matrix
     which establishes direct relation between bus current injections and voltage drops from each bus to the root bus
@@ -169,14 +171,45 @@ def _get_bibc_bcbv(ppci, options, bus, branch, graph):
                                             ppci["internal"]['buses_ord_bfs_nets']
     else:
         ## build matrices
-        DLF, buses_ordered_bfs_nets = _bibc_bcbv(bus, branch, graph)
+        DLF, buses_ordered_bfs_nets = _make_bibc_bcbv(bus, branch, graph)
         if recycle["bfsw"]:
             ppci["internal"]['DLF'], \
             ppci["internal"]['buses_ord_bfs_nets'] = DLF, buses_ordered_bfs_nets
 
     return ppci, DLF, buses_ordered_bfs_nets
 
-def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
+
+def _makeYsh_bfsw(bus, branch, baseMVA):
+    # compute shunt admittance
+    # if Psh is the real power consumed by the shunt at V = 1.0 p.u. and Qsh is the reactive power injected by
+    # the shunt at V = 1.0 p.u. then Psh - j Qsh = V * conj(Ysh * V) = conj(Ysh) = Gs - j Bs,
+    # vector of shunt admittances
+    nobus = bus.shape[0]
+
+    Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
+
+    # Line charging susceptance BR_B is also added as shunt admittance:
+    # summation of charging susceptances per each bus
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])
+    ysh = (- branch[:, BR_B].imag + 1j*(branch[:, BR_B].real)) / 2
+    tap = branch[:, TAP]    # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
+
+    ysh_f = Ys * (1-tap)/(tap * np.conj(tap)) + ysh/(tap * np.conj(tap))
+    ysh_t = Ys * (tap-1)/tap + ysh
+
+    Gch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.real, minlength=nobus) +
+           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.real, minlength=nobus))
+    Bch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.imag, minlength=nobus) +
+           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.imag, minlength=nobus))
+
+    Ysh += Gch + 1j * Bch
+
+    return Ysh
+
+
+
+def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, buses_ordered_bfs_nets,
          enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
     """
     distribution power flow solution according to [1]
@@ -219,35 +252,13 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     mask_root = ~ (bus[:, BUS_TYPE] == 3)  # mask for eliminating root bus
     norefs = len(ref)
 
-    # compute shunt admittance
-    # if Psh is the real power consumed by the shunt at V = 1.0 p.u. and Qsh is the reactive power injected by
-    # the shunt at V = 1.0 p.u. then Psh - j Qsh = V * conj(Ysh * V) = conj(Ysh) = Gs - j Bs,
-    # vector of shunt admittances
-    Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
-
-    # Line charging susceptance BR_B is also added as shunt admittance:
-    # summation of charging susceptances per each bus
-    stat = branch[:, BR_STATUS]  ## ones at in-service branches
-    Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])
-    ysh = (- branch[:, BR_B].imag + 1j*(branch[:, BR_B].real)) / 2
-    tap = branch[:, TAP]    # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
-
-    ysh_f = Ys * (1-tap)/(tap * np.conj(tap)) + ysh/(tap * np.conj(tap))
-    ysh_t = Ys * (tap-1)/tap + ysh
-
-    Gch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.real, minlength=nobus) +
-           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.real, minlength=nobus))
-    Bch = (np.bincount(branch[:, F_BUS].real.astype(int), weights=ysh_f.imag, minlength=nobus) +
-           np.bincount(branch[:, T_BUS].real.astype(int), weights=ysh_t.imag, minlength=nobus))
-
-    Ysh += Gch + 1j * Bch
-
+    Ysh = _makeYsh_bfsw(bus, branch, baseMVA)
 
     # detect generators on PV buses which have status ON
     gen_pv = np.in1d(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
     qg_lim = np.zeros(ngen, dtype=bool)   #initialize generators which violated Q limits
 
-    Iinj = np.conj(Sbus / V0) - Ysh * V0  # Initial current injections
+    Iinj = np.conj(Sbus / V0) - Ysh * V0 + Ibus  # Initial current injections
 
     # initiate reference voltage vector
     V_ref = np.ones(nobus, dtype=complex)
@@ -307,7 +318,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
 
             # avoid calling makeSbus, update only Sbus for pv nodes
             Sbus = makeSbus(baseMVA, bus, gen)
-            Iinj = np.conj(Sbus / V) - Ysh * V
+            Iinj = np.conj(Sbus / V) - Ysh * V + Ibus
             deltaV = DLF * Iinj[mask_root]
             V[mask_root] = V_ref[mask_root] + deltaV
 
@@ -322,24 +333,16 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
 
 
         # testing termination criterion -
-        mis = V * np.conj(Ybus * V) - Sbus
-        F = np.r_[mis[pv].real,
-                  mis[pq].real,
-                  mis[pq].imag]
-
+        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
         # check tolerance
-        normF = np.linalg.norm(F, np.Inf)
-        if normF < tolerance_mva:
-            converged = 1
-            if verbose:
-                print("\nFwd-back sweep power flow converged in "
-                                 "{0} iterations.\n".format(n_iter))
-        elif n_iter == max_it:
-            raise LoadflowNotConverged(" FBSW Power Flow did not converge - "
-                                       "reached maximum iterations = {0}!".format(max_it))
+        converged = _check_for_convergence(F, tolerance_mva)
+
+        if converged and verbose:
+            print("\nFwd-back sweep power flow converged in "
+                  "{0} iterations.\n".format(n_iter))
 
         # updating injected currents
-        Iinj = np.conj(Sbus / V) - Ysh * V
+        Iinj = np.conj(Sbus / V) - Ysh * V + Ibus
 
     return V, converged
 
@@ -409,9 +412,12 @@ def _run_bfswpf(ppci, options, **kwargs):
     else:
         Ybus_noshift = Ybus.copy()
 
+    # get current injections for constant-current loads
+    Ibus = _get_ibus(ppci)
+
     # #-----  run the power flow  -----
     V_final, success = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
-                               Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
+                               Sbus, Ibus, V0, ref, pv, pq, buses_ordered_bfs_nets,
                                enforce_q_lims, tolerance_kva, max_iteration, **kwargs)
 
     # if phase-shifting trafos are present adjust final state vector angles accordingly

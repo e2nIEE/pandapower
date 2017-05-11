@@ -4,16 +4,57 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import copy
 import networkx as nx
 import numpy as np
+
 from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
-from pypower.idx_bus import BUS_I, BASE_KV, GS, BS
+from pypower.idx_bus import BUS_I, GS, BS, BASE_KV
 
 from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV
+from pandapower.shortcircuit.impedance import _calc_equiv_sc_impedance
 
 def _add_kappa_to_ppc(net, ppc):
     if not net._options["kappa"]:
         return
+    topology = net._options["topology"]
+    kappa_method = net._options["kappa_method"]
+    if topology == "radial":
+        kappa = _kappa(ppc["bus_sc"][:, R_EQUIV] / ppc["bus_sc"][:, X_EQUIV])
+    elif kappa_method in ["C", "c"]:
+        kappa = _kappa_method_c(net, ppc)
+    elif kappa_method in ["B", "b"]:
+        kappa = _kappa_method_b(net, ppc)
+    else:
+        raise ValueError("Unkown kappa method %s - specify B or C"%kappa_method)
+    ppc["bus_sc"][:, KAPPA] = kappa
+
+def _kappa_method_c(net, ppc):
+    if net.f_hz == 50:
+        fc = 20
+    elif net.f_hz == 60:
+        fc = 24
+    else:
+        raise ValueError("Frequency has to be 50 Hz or 60 Hz according to the standard")
+    ppc_c = copy.deepcopy(ppc)
+    ppc_c["branch"][:, BR_X] *= fc / net.f_hz
+
+    zero_conductance = np.where(ppc["bus"][:,GS] == 0)
+    ppc["bus"][zero_conductance, BS] *= net.f_hz / fc
+
+    conductance = np.where(ppc["bus"][:,GS] != 0)
+    z_shunt = 1 / (ppc_c["bus"][conductance, GS] + 1j * ppc_c["bus"][conductance, BS])
+    y_shunt = 1 / (z_shunt.real + 1j * z_shunt.imag * fc / net.f_hz)
+    ppc_c["bus"][conductance, GS] = y_shunt.real[0]
+    ppc_c["bus"][conductance, BS] = y_shunt.imag[0]
+    _calc_equiv_sc_impedance(net, ppc_c)
+    rx_equiv_c = ppc_c["bus_sc"][:, R_EQUIV] / ppc_c["bus_sc"][:, X_EQUIV] * fc / net.f_hz
+    return _kappa(rx_equiv_c)
+
+def _kappa(rx):
+    return 1.02 + .98 * np.exp(-3 * rx)
+
+def _kappa_method_b(net, ppc):
     topology = net._options["topology"]
     kappa_max = np.full(ppc["bus"].shape[0], 2.)
     lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
@@ -38,8 +79,7 @@ def _add_kappa_to_ppc(net, ppc):
                         kappa_korr[bidx] = 1.
                         break
     rx_equiv = ppc["bus_sc"][:, R_EQUIV] / ppc["bus_sc"][:, X_EQUIV]
-    kappa = 1.02 + .98 * np.exp(-3 * rx_equiv)
-    ppc["bus_sc"][:, KAPPA] = np.clip(kappa_korr * kappa, 1, kappa_max)
+    return np.clip(kappa_korr * _kappa(rx_equiv), 1, kappa_max)
 
 def nxgraph_from_ppc(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]

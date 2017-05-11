@@ -82,26 +82,130 @@ logger = logging.getLogger(__name__)
 
 
 # defining check whether geodata are in lat/lon using geopy
-try:
-    from geopy.geocoders import Nominatim
-    geolocator = Nominatim()
-    def on_map_test(net):
-        """
-        checks if bus_geodata can be located on a map using geopy
-        """
-        location = geolocator.reverse("{0}, {1}".format(net.bus_geodata.iloc[0]['x'],
-                                                        net.bus_geodata.iloc[0]['y']))
-        return False if location.address is None else True
-except:
-    # if geopy is not available there will be no geo-coordinates check
-    # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
-    logger.warning('Geo-coordinates check cannot be peformed (geopy package not available)\n\t--> '
-                   'if geo-coordinates are not in lat/lon format an empty plot may appear...')
-    def on_map_test(net):
-        """
-        checks if bus_geodata can be located on a map using geopy
-        """
+
+def _on_map_test_transf(net, projection=None, country=None):
+    """
+    checks if bus_geodata can be located on a map using geopy
+    """
+    try:
+        from geopy.geocoders import Nominatim
+        geolocator = Nominatim()
+
+    except:
+        # if geopy is not available there will be no geo-coordinates check
+        # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
+        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
+                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
         return True
+
+    location = geolocator.reverse("{0}, {1}".format(net.bus_geodata.iloc[0]['x'],
+                                                    net.bus_geodata.iloc[0]['y']), language='en-US')
+
+    if location.address is None:
+        if country is None and projection is None:
+            logger.warning('Geo-coordinates are not in lat/lon (wgs84), '
+                           'projection transformation is possible if country information is provided '
+                           'as input argument country=<name_of_the_country>')
+            return False
+
+        if _transform_projection(net, projection, country) is None:
+            return False
+        else:
+            return True
+
+    else:
+        return True
+
+
+def _on_map_test(net):
+    """
+    checks if bus_geodata can be located on a map using geopy
+    """
+    try:
+        from geopy.geocoders import Nominatim
+        geolocator = Nominatim()
+
+    except:
+        # if geopy is not available there will be no geo-coordinates check
+        # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
+        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
+                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
+        return True
+
+    location = geolocator.reverse("{0}, {1}".format(net.bus_geodata.iloc[0]['x'],
+                                                    net.bus_geodata.iloc[0]['y']), language='en-US')
+
+    if location.address is None:
+        return False
+    else:
+        return True
+
+
+
+
+def _transform_projection(net, projection, country):
+    try:
+        from pyproj import Proj, transform
+        from geopy.geocoders import Nominatim
+        geolocator = Nominatim()
+    except:
+        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
+                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
+        return None
+
+    wgs84 = Proj(init='epsg:4326')  # lat/long
+
+    if projection is None:
+        # searching for projection until lat/lon drops in the pre-defined country
+        # dict with projections key: projection, value: name
+        projections = {
+            # TODO add more projections
+            Proj(init='epsg:31466'): "gauss-kruger_zone2",
+            Proj(init='epsg:31467'): "gauss-kruger_zone3",
+            Proj(init='epsg:31468'): "gauss-kruger_zone4",
+            Proj(init='epsg:31465'): "gauss-kruger_zone5",
+        }
+
+        x1, y1 = net.bus_geodata.loc[0, 'x'], net.bus_geodata.loc[0,'y']
+
+        proj_found = False
+        for projection in projections.keys():
+            lon, lat = transform(projection, wgs84, x1, y1)
+            location = geolocator.reverse("{0}, {1}".format(lat, lon), language='en-US')
+            if location is not None and "address" in location.raw:
+                if location.raw["address"]["country"] == country:
+                    proj_found = True
+                    break
+
+        if not proj_found:
+            logger.warning('No any corresponding projection found for the provided geo_data and specific country -> '
+                           'Network cannot be plot on a map!')
+            return None
+        else:
+            logger.warning('Projection {0} found to correspond to the provided geodata -> All network geodata '
+                           'transformed from {0} to lat/lon (wgs84)'.format(projections[projection]))
+    else:
+        try:
+            projection = Proj(init=projection)
+        except:
+            raise ValueError("Unknown projection provided"
+                             "(format 'epsg:<number>' required as available in http://spatialreference.org/ref/epsg/ )")
+
+    # transform all geodata to long/lat using set or found projection
+    lon, lat = transform(projection, wgs84, net.bus_geodata.loc[:, 'x'].values, net.bus_geodata.loc[:, 'y'].values)
+    net.bus_geodata.loc[:, 'x'], net.bus_geodata.loc[:, 'y'] = lat, lon
+
+    if net.line_geodata.shape[0] > 0:
+        for idx in net.line_geodata.index:
+            line_coo = np.array(net.line_geodata.loc[idx, 'coords'])
+            lon, lat = transform(projection, wgs84, line_coo[:, 0], line_coo[:, 1])
+            net.line_geodata.loc[idx, 'coords'] = np.array([lat,lon]).T.tolist()
+
+    return True
+    
+
+
+
 
 
 
@@ -111,7 +215,7 @@ def create_bus_trace(net, buses=None, on_map=False, size=5, marker_type="circle"
                      cmin=0.9, cmax=1.1):
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
-    on_map = on_map_test(net) if on_map else False
+    on_map = _on_map_test(net) if on_map else False
 
     # defining dict names depending if plot is on map or not
     xk = 'lat' if on_map else 'x'
@@ -121,10 +225,7 @@ def create_bus_trace(net, buses=None, on_map=False, size=5, marker_type="circle"
     bus_trace = dict(type=trace_type, text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=marker_type))
 
-
-
     buses2plot = net.bus if buses is None else net.bus[net.bus.index.isin(buses)]
-
 
     buses_with_geodata = buses2plot.index.isin(net.bus_geodata.index)
     buses2plot = buses2plot[buses_with_geodata]
@@ -213,7 +314,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, on_map = False,
         lines2plot = lines2plot[lines_with_geodata]
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
-    on_map = on_map_test(net) if on_map else False
+    on_map = _on_map_test(net) if on_map else False
 
     # defining dict names depending if plot is on map or not
     xk = 'lat' if on_map else 'x'
@@ -271,8 +372,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, on_map = False,
 
     if len(nogolines) > 0:
         line_trace = dict(type=trace_type,
-                          text=[], line=Line(width=width/2, color='grey', dash='dot'),
-                          hoverinfo='text', mode='lines', name='disconnected lines')
+                          text=[], hoverinfo='text', mode='lines', name='disconnected lines',
+                          line=Line(width=width / 2, color='grey', dash='dot'))
 
         lines2plot = net.line.loc[nogolines]
 
@@ -306,7 +407,7 @@ def create_trafo_trace(net, trafos=None, on_map=False, color = 'green', width = 
     tarfo2plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
-    on_map = on_map_test(net) if on_map else False
+    on_map = _on_map_test(net) if on_map else False
 
     # defining dict names depending if plot is on map or not
     xk = 'lat' if on_map else 'x'
@@ -417,7 +518,7 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map:
-        on_map = on_map_test(net)
+        on_map = _on_map_test(net)
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
                            " plot on maps is not possible")
@@ -432,7 +533,7 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
                                                    lon=net.bus_geodata.y.mean()),
                                        style=map_style,
                                        pitch=0,
-                                       zoom=13)
+                                       zoom=11)
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio is 'auto' else aspectratio
@@ -460,7 +561,7 @@ def draw_traces(net, traces, on_map = False, map_style='basic', showlegend = Tru
 
 
 def simple_plotly(net=None, respect_switches=False, use_line_geodata=None,
-                  on_map=False, map_style='basic',
+                  on_map=False, projection=None, country=None, map_style='basic',
                   figsize=1, aspectratio='auto',
                   line_width=1, bus_size=10, ext_grid_size=20.0,
                   bus_color=colors[0], line_color='grey', trafo_color='green', ext_grid_color=color_yellow):
@@ -523,12 +624,15 @@ def simple_plotly(net=None, respect_switches=False, use_line_geodata=None,
         net.bus_geodata = pd.DataFrame(columns=["x","y"])
     if len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
-                       " This may take some time")
+                       " This may take some time...")
         create_generic_coordinates(net, respect_switches=respect_switches)
+        if on_map == True:
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
+            on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map:
-        on_map = on_map_test(net)
+        on_map = _on_map_test_transf(net, projection=projection, country=country)
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
                            " plot on maps is not possible")
@@ -568,7 +672,7 @@ def simple_plotly(net=None, respect_switches=False, use_line_geodata=None,
 
 def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
                   colors_dict=None,
-                  on_map=False, map_style='basic',
+                  on_map=False, projection=None, country=None, map_style='basic',
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
     """
@@ -620,10 +724,13 @@ def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
+        if on_map == True:
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
+            on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map:
-        on_map = on_map_test(net)
+        on_map = _on_map_test_transf(net, projection=projection, country=country)
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
                            " plot on maps is not possible")
@@ -682,7 +789,7 @@ def vlevel_plotly(net, respect_switches=False, use_line_geodata=None,
 
 
 def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
-                  on_map=False, map_style='basic',
+                  on_map=False, projection=None, country=None, map_style='basic',
                   figsize=1, aspectratio='auto',
                   line_width=2, bus_size=10):
     """
@@ -737,10 +844,13 @@ def pf_res_plotly(net, cmap_name='jet', use_line_geodata = None,
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
+        if on_map == True:
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
+            on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map:
-        on_map = on_map_test(net)
+        on_map = _on_map_test_transf(net, projection=projection, country=country)
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -->"
                            " plot on maps is not possible")

@@ -378,7 +378,7 @@ def _add_opf_options(net, trafo_loading, ac, **kwargs):
 
 
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith, consider_sgens, branch_results):
+                    x_fault_ohm, kappa, ip, ith, consider_sgens, branch_results, kappa_method):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -395,6 +395,7 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         , "ith": ith
         , "consider_sgens": consider_sgens
         , "branch_results": branch_results
+        , "kappa_method": kappa_method
     }
     _add_options(net, options)
 
@@ -517,12 +518,12 @@ def _check_connectivity(ppc):
     bus_to = ppc['branch'][:, T_BUS].real.astype(int)
 
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
-    
+
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
     bus_from = np.hstack([bus_from, slacks])
     bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
-    
+
     adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
                                       (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
