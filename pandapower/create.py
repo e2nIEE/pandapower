@@ -2148,6 +2148,8 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
         **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] are possible
 
         **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
+        
+        **type ** -"p" or "q"
 
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
@@ -2180,6 +2182,12 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
             (net["piecewise_linear_cost"].type == type)].empty:
         raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
                           (element_type, element))
+# =======
+#     typecosts=  net["polynomial_cost"][net["polynomial_cost"].element_type == element_type]
+#
+#     if not typecosts[typecosts.type == type].loc[typecosts.element == element].empty:
+#         raise UserWarning("A polynomial_cost for this element already exists")
+# >>>>>>> Need to commit for merging my changes to make_objective with steffens changes.
 
     net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
