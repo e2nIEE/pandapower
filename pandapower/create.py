@@ -2088,19 +2088,41 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
         raise ValueError("Piecewise linear costs need to be defined in ascending order: " +
                          "p0 < p1 < ... < pn")
 
-    if type == "p":
-        if not (hasattr(net[element_type], "max_p_kw") and hasattr(net[element_type], "min_p_kw")):
-            raise AttributeError("No operational constraints defined for controllable element!")
-        # if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
-        #     raise ValueError("Cost function must be defined for whole power range of the generator")
-
-    if type == "q":
-        if not (hasattr(net[element_type], "max_q_kvar") or hasattr(net[element_type],
-                                                                    "min_q_kvar")):
-            raise AttributeError("No operational constraints defined!")
-        if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
-                element_type].min_q_kvar.at[element] >= min(p)):
-            raise ValueError("Cost function must be defined for whole power range of the generator")
+    if element_type != 'dcline':
+        if type == "p":
+            if not (hasattr(net[element_type], "max_p_kw") and hasattr(net[element_type],
+                                                                       "min_p_kw")):
+                raise AttributeError("No operational constraints defined for controllable element!")
+            if not (net[element_type].max_p_kw.at[element] <= max(p) and
+                    net[element_type].min_p_kw.at[element] >= min(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
+        if type == "q":
+            if not (hasattr(net[element_type], "max_q_kvar") or hasattr(net[element_type],
+                                                                        "min_q_kvar")):
+                raise AttributeError("No operational constraints defined!")
+            if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
+                    element_type].min_q_kvar.at[element] >= min(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
+    else:
+        if type == "p":
+            if not (hasattr(net[element_type], "max_p_kw")):
+                raise AttributeError("No operational constraints defined for controllable element!")
+            if not (net[element_type].max_p_kw.at[element] <= max(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
+        if type == "q":
+            if not pd.Series([
+                "max_q_to_kvar", "max_q_from_kvar", "min_q_to_kvar", "min_q_from_kvar"]).isin(
+                 net[element_type].columns).all():
+                raise AttributeError("No operational constraints defined!")
+            if not (net[element_type].max_q_to_kvar.at[element] <= max(p) and
+                    net[element_type].max_q_from_kvar.at[element] <= max(p) and
+                    net[element_type].min_q_to_kvar.at[element] <= min(p) and
+                    net[element_type].min_q_from_kvar.at[element] >= min(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
 
     net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
