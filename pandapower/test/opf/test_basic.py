@@ -420,3 +420,6 @@ def test_dcopf():
 if __name__ == "__main__":
     pytest.main(["-s"])
     # pytest.main(["test_basic.py", "-xs"])
+    # test_simplest_dispatch()
+    # test_trafo3w_loading()
+    # test_trafo3w_loading()
