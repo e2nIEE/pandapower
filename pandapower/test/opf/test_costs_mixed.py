@@ -106,8 +106,8 @@ def test_mixed_p_q_pwl():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-100, -100],[100, 100]]))
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-100, -100],[100, 100]]), type ="q")
+    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -150],[150, 150]]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -150],[150, 150]]), type ="q")
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost == - net.res_gen.p_kw.values + net.res_gen.q_kvar.values
