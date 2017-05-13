@@ -170,6 +170,43 @@ def create_trafo_collection(net, trafos=None, **kwargs):
 
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
 
+def create_trafo_symbol_collection(net, trafos=None, picker=False):
+    """
+    Creates a matplotlib line collection of pandapower transformers.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **trafos** (list, None) - The transformers for which the collections are created.
+        If None, all transformers in the network are considered.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    """
+    trafo_buses = zip(net.trafo.hv_bus.values, net.trafo.lv_bus.values) if trafos is None else \
+                  zip(net.trafo.hv_bus.loc[trafos].values, net.trafo.lv_bus.loc[trafos].values)
+    lines = []
+    circles = []
+    for p1, p2 in trafo_buses:
+        p1 = net.bus_geodata[["x", "y"]].loc[0].values
+        p2 = net.bus_geodata[["x", "y"]].loc[1].values
+        d = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+        off = 0.1
+        d_circle = 1/5
+        circ1 = (0.5 - off) * (p1 - p2) + p2
+        circ2 = (0.5 + off) * (p1 - p2) + p2
+        circles.append(Circle(circ1, d_circle*d, facecolor=(1,0,0,0), edgecolor=(0,0,0,1)))
+        circles.append(Circle(circ2, d_circle*d, facecolor=(1,0,0,0), edgecolor=(0,0,0,1)))
+
+        lp1 = (0.5 - off - d_circle) * (p2 - p1) + p1
+        lp2 = (0.5 - off - d_circle) * (p1 - p2) + p2
+        lines.append([p1, lp1])
+        lines.append([p2, lp2])
+    lc = LineCollection((lines), color="k")
+    pc = PatchCollection(circles, match_original=True)
+    return lc, pc
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
     """
@@ -208,3 +245,20 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
     plt.tight_layout()
+
+if __name__ == "__main__":
+    import pandapower as pp
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10, geodata=(5,10))
+    b2 = pp.create_bus(net, 0.4, geodata=(5,15))
+    b3 = pp.create_bus(net, 0.4, geodata=(0,22))
+    b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
+
+    pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")
+    pp.create_line(net, b2, b4, 2.0, std_type="NAYY 4x50 SE")
+    pp.create_transformer(net, b1, b2, std_type="0.63 MVA 10/0.4 kV")
+
+    bc = create_bus_collection(net, size=0.1, color="k")
+    lc = create_line_collection(net, use_line_geodata=False, color="k")
+    lt, bt = create_trafo_symbol_collection(net)
+    draw_collections([bc, lc, lt, bt])
