@@ -41,7 +41,7 @@ In radial networks, :math:`\kappa` is given as:
 
 .. math::
 
-    \kappa = 1.02 + 0.98 e^{-\frac{3}{R/X}}
+    \kappa = 1.02 + 0.98 e^{-{3}{R/X}}
     
 where :math:`R/X` is the R/X ratio of the equivalent short-circuit impedance :math:`Z_k` at the fault location.
 
@@ -65,7 +65,7 @@ For method B, :math:`\kappa` is given as:
 
 .. math::
 
-    \kappa = [1.02 + 0.98 e^{-\frac{3}{R/X}}] \cdot 1.15
+    \kappa = [1.02 + 0.98 e^{-{3}{R/X}}] \cdot 1.15
 
    
 while being limited with :math:`\kappa_{min} < \kappa < \kappa_{max}` depending on the voltage level:
