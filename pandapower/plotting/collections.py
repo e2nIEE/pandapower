@@ -188,9 +188,9 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False):
                   zip(net.trafo.hv_bus.loc[trafos].values, net.trafo.lv_bus.loc[trafos].values)
     lines = []
     circles = []
-    for p1, p2 in trafo_buses:
-        p1 = net.bus_geodata[["x", "y"]].loc[0].values
-        p2 = net.bus_geodata[["x", "y"]].loc[1].values
+    for hv_bus, lv_bus in trafo_buses:
+        p1 = net.bus_geodata[["x", "y"]].loc[hv_bus].values
+        p2 = net.bus_geodata[["x", "y"]].loc[lv_bus].values
         d = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
         off = 0.1
@@ -207,6 +207,8 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False):
     lc = LineCollection((lines), color="k")
     pc = PatchCollection(circles, match_original=True)
     return lc, pc
+
+#def create_load_symbol_collection(net)
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
     """
@@ -257,8 +259,20 @@ if __name__ == "__main__":
     pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")
     pp.create_line(net, b2, b4, 2.0, std_type="NAYY 4x50 SE")
     pp.create_transformer(net, b1, b2, std_type="0.63 MVA 10/0.4 kV")
+    pp.create_transformer(net, b3, b4, std_type="0.63 MVA 10/0.4 kV")
 
     bc = create_bus_collection(net, size=0.1, color="k")
     lc = create_line_collection(net, use_line_geodata=False, color="k")
     lt, bt = create_trafo_symbol_collection(net)
-    draw_collections([bc, lc, lt, bt])
+
+    bus = b4
+    size = 1.0
+    color = "k"
+    lines = []
+    polys = []
+    p1 = net.bus_geodata[["x", "y"]].loc[bus]
+    polys.append(RegularPolygon([8 , 20 - size*1.7], numVertices=3, radius=size, orientation=np.pi))
+    lines.append(([8, 20], [8, 20-size*1.7]))
+    load1 = PatchCollection(polys, facecolor="w", edgecolor="k")
+    load2 = LineCollection(lines, color=color)
+    draw_collections([bc, lc, lt, bt, load1, load2])
