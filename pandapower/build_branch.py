@@ -421,7 +421,7 @@ def _trafo_df_from_trafo3w(net):
             taps[k]["tp_side"] = None
 
         if pd.notnull(ttab.tp_side):
-            if ttab.tp_side == "hv":
+            if ttab.tp_side == "hv" or ttab.tp_side == 0:
                 tp_trafo = 0
             elif ttab.tp_side == "mv":
                 tp_trafo = 1
