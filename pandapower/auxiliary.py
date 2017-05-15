@@ -238,7 +238,7 @@ def get_values(source, selection, lookup):
     value array from the selection.
     :return:
     """
-    return np.array([source[lookup[k]] for k in selection])
+    return np.array([source[lookup[np.int(k)]] for k in selection])
 
 
 def _select_is_elements(net):
