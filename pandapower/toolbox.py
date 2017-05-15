@@ -638,6 +638,8 @@ def _pre_release_changes(net):
     net["bus"]["type"].replace("s", "b", inplace=True)
     net["bus"]["type"].replace("k", "n", inplace=True)
     net["line"] = net["line"].rename(columns={'vf': 'df', 'line_type': 'type'})
+    if not "df" in net.line.columns:
+        net.line['df'] = 1.
     net["ext_grid"] = net["ext_grid"].rename(columns={"angle_degree": "va_degree",
                                                       "ua_degree": "va_degree",
                                                       "sk_max_mva": "s_sc_max_mva",
