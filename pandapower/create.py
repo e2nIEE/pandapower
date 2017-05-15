@@ -857,7 +857,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     OPTIONAL:
         **vm_pu** (float, default 1.0) - voltage at the slack node in per unit
 
-        **va_degree** (float, default 0.) - name of of the external grid*
+        **va_degree** (float, default 0.) - voltage angle at the slack node in degrees*
 
         **name** (string, default None) - name of of the external grid
 
