@@ -660,6 +660,7 @@ def _pre_release_changes(net):
                                                     "urh_percent": "vscr_hv_percent",
                                                     "urm_percent": "vscr_mv_percent",
                                                     "url_percent": "vscr_lv_percent",
+                                                    'vfe_kw': 'pfe_kw',
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
                                                     "snm_kva": "sn_mv_kva", "snl_kva": "sn_lv_kva"})
