@@ -303,7 +303,8 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
 def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
                zone=None, in_service=True, max_vm_pu=nan,
                min_vm_pu=nan, **kwargs):
-    """
+    """create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", \
+                  zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
     Adds one bus in table net["bus"].
 
     Busses are the nodes of the network that all other elements connect to.
@@ -370,7 +371,8 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
                  zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan):
-    """
+    """create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None, \
+                    zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
     Adds several buses in table net["bus"] at once.
 
     Busses are the nodal points of the network that all other elements connect to.
@@ -448,7 +450,10 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
                 name=None, scaling=1., index=None,
                 in_service=True, type=None, max_p_kw=nan, min_p_kw=nan,
                 max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
-    """
+    """create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, sn_kva=nan, \
+                   name=None, scaling=1., index=None, \
+                   in_service=True, type=None, max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, \
+                   min_q_kvar=nan, controllable=nan)
     Adds one load in table net["load"].
 
     All loads are modelled in the consumer system, meaning load is positive and generation is
@@ -574,7 +579,9 @@ def create_load_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
                 max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan):
-    """
+    """create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None, \
+                scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan, \
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
     Adds one static generator in table net["sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -715,7 +722,9 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan,
                min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None,
                controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True):
-    """
+    """create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan, \
+               min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None, \
+               controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True)
     Adds a generator to the network.
 
     Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
@@ -843,7 +852,10 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,
                     index=None):
-    """
+    """create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,\
+                    s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,\
+                    max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,\
+                    index=None)
     Creates an external grid connection.
 
     External grids represent the higher level power grid connection and are modelled as the slack
@@ -956,7 +968,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
                 df=1., parallel=1, in_service=True, max_loading_percent=nan):
-    """
+    """ create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,\
+                df=1., parallel=1, in_service=True, max_loading_percent=nan)
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
 
@@ -1051,7 +1064,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 geodata=None, in_service=True, df=1., parallel=1,
                                 max_loading_percent=nan, **kwargs):
 
-    """
+    """create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km, \
+                                c_nf_per_km, max_i_ka, name=None, index=None, type=None, \
+                                geodata=None, in_service=True, df=1., parallel=1, \
+                                max_loading_percent=nan, **kwargs)
     Creates a line element in net["line"] from line parameters.
 
     INPUT:
@@ -1146,7 +1162,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1):
-    """
+    """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True, \
+                       index=None, max_loading_percent=nan, parallel=1)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1239,7 +1256,12 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        tp_pos=nan, in_service=True, name=None, index=None,
                                        max_loading_percent=nan, parallel=1, **kwargs):
 
-    """
+    """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, \
+                                       vscr_percent, vsc_percent, pfe_kw, i0_percent, \
+                                       shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan, \
+                                       tp_min=nan, tp_st_percent=nan, tp_st_degree=nan, \
+                                       tp_pos=nan, in_service=True, name=None, index=None, \
+                                       max_loading_percent=nan, parallel=1, **kwargs)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1349,7 +1371,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan):
-    """
+    """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan, \
+                         in_service=True, index=None, max_loading_percent=nan)
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
 
@@ -1448,7 +1471,14 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan,
                                          tp_min=nan, name=None, in_service=True, index=None,
                                          max_loading_percent=nan):
-    """
+    """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
+                                         sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, \
+                                         vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
+                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,\
+                                         shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
+                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan, \
+                                         tp_min=nan, name=None, in_service=True, index=None, \
+                                         max_loading_percent=nan)
     Adds a three-winding transformer in table net["trafo3w"].
 
     Input:
@@ -1708,9 +1738,9 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_se
 
     return index
 
-def create_shunt_as_condensator(net, bus, q_kvar, loss_factor, **kwargs):
+def create_shunt_as_capacitor(net, bus, q_kvar, loss_factor, **kwargs):
     """
-    Creates a shunt element representing a condensator bank.
+    Creates a shunt element representing a capacitor bank.
 
     INPUT:
 
@@ -1718,9 +1748,9 @@ def create_shunt_as_condensator(net, bus, q_kvar, loss_factor, **kwargs):
 
         **bus** - bus number of bus to whom the shunt is connected to
 
-        **q_kvar** (float) - reactive power of the condensator bank at rated voltage
+        **q_kvar** (float) - reactive power of the capacitor bank at rated voltage
 
-        **loss_factor** (float) - loss factor tan(delta) of the condensator bank
+        **loss_factor** (float) - loss factor tan(delta) of the capacitor bank
 
         **kwargs are passed to the create_shunt function
 
@@ -1728,7 +1758,7 @@ def create_shunt_as_condensator(net, bus, q_kvar, loss_factor, **kwargs):
     OUTPUT:
         **index** (int) - The unique ID of the created shunt
     """
-    q_kvar = -abs(q_kvar) #q is always negative for condensator
+    q_kvar = -abs(q_kvar) #q is always negative for capacitor
     p_kw = abs(q_kvar*loss_factor) #p is always positive for active power losses
     return create_shunt(net, bus, q_kvar=q_kvar , p_kw=p_kw, **kwargs)
 
@@ -1877,7 +1907,10 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
                   index=None, name=None, max_p_kw=nan, min_q_from_kvar=nan,
                   min_q_to_kvar=nan, max_q_from_kvar=nan, max_q_to_kvar=nan,
                   in_service=True):
-    """
+    """create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, \
+                  index=None, name=None, max_p_kw=nan, min_q_from_kvar=nan, \
+                  min_q_to_kvar=nan, max_q_from_kvar=nan, max_q_to_kvar=nan, \
+                  in_service=True)
     Creates a dc line.
 
     INPUT:
@@ -2148,7 +2181,7 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
         **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] are possible
 
         **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
-        
+
         **type ** -"p" or "q"
 
     OPTIONAL:

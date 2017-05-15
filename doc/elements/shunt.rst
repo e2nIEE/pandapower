@@ -12,7 +12,7 @@ Create Function
 
 .. autofunction:: pandapower.create_shunt
 
-.. autofunction:: pandapower.create_shunt_as_condensator
+.. autofunction:: pandapower.create_shunt_as_capacitor
 
 
 Input Parameters
