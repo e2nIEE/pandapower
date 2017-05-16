@@ -43,7 +43,7 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 Element Models
 ---------------
 
-pandapower is an element based network calculation tools that supports the following components:
+pandapower is an element based network calculation tool that supports the following components:
 
 	- lines
 	- two-winding and three-winding transformers
