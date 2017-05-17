@@ -25,7 +25,7 @@ def test_convenience_create_functions():
     assert np.isclose(net.res_bus.vm_pu.at[b2], 0.99990833838)
     assert net.load.name.at[l0] == "load"
 
-    sh0 = pp.create_shunt_as_condensator(net, b2, 10e3, loss_factor=0.01, name="shunt")
+    sh0 = pp.create_shunt_as_capacitor(net, b2, 10e3, loss_factor=0.01, name="shunt")
     pp.runpp(net, init="flat")
     assert np.isclose(net.res_shunt.q_kvar.at[sh0], -10,043934174e3)
     assert np.isclose(net.res_shunt.p_kw.at[sh0], 100.43933665)

@@ -2,8 +2,8 @@
 pandapower
 =============
 
-.. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.3.0
-   :target: http://pandapower.readthedocs.io/
+.. image:: https://readthedocs.org/projects/pandapower/badge/?version=develop
+   :target: http://pandapower.readthedocs.io/en/develop/
    :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
@@ -43,7 +43,7 @@ Operation at the Fraunhofer Institute for Wind Energy and Energy System Technolo
 Element Models
 ---------------
 
-pandapower is an element based network calculation tools that supports the following components:
+pandapower is an element based network calculation tool that supports the following components:
 
 	- lines
 	- two-winding and three-winding transformers

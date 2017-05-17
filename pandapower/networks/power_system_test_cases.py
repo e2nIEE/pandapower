@@ -24,9 +24,9 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     If ext_grid_p is a list, it must be in the same order as net.ext_grid.index.
     """
     # cast ref_bus_idx and ext_grid_p as list
-    if type(ref_bus_idx) is not list:
+    if isinstance(ref_bus_idx, list):
         ref_bus_idx = [ref_bus_idx]
-    if type(ext_grid_p) is not list:
+    if isinstance(ext_grid_p, list):
         ext_grid_p = [ext_grid_p]
     for i in ref_bus_idx:
         if i not in net.gen.bus.values and i not in net.ext_grid.bus.values:
@@ -62,7 +62,9 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
 
 def case4gs():
     """
-    This is the 4 bus example from J. J. Grainger and W. D. Stevenson, Power system analysis. McGraw-Hill, 1994. pp. 337-338. Its data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This is the 4 bus example from J. J. Grainger and W. D. Stevenson, Power system analysis. \
+    McGraw-Hill, 1994. pp. 337-338. Its data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
     OUTPUT:
          **net** - Returns the required ieee network case4gs
@@ -78,7 +80,10 @@ def case4gs():
 
 def case6ww():
     """
-    Calls the pickle file case6ww.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. It represents the 6 bus example from pp. 104, 112, 119, 123-124, 549 from A. J. Wood and B. F. Wollenberg, Power generation, operation, and control. John Wiley & Sons, 2012..
+    Calls the pickle file case6ww.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. It represents the 6 bus example from pp. \
+    104, 112, 119, 123-124, 549 from A. J. Wood and B. F. Wollenberg, Power generation, operation, \
+    and control. John Wiley & Sons, 2012..
 
     OUTPUT:
          **net** - Returns the required ieee network case6ww
@@ -94,8 +99,10 @@ def case6ww():
 
 def case9():
     """
-    Calls the pickle file case9.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    This network was published in Anderson and Fouad's book 'Power System Control and Stability' for the first time in 1980.
+    Calls the pickle file case9.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network was published in Anderson and Fouad's book 'Power System Control and Stability' \
+    for the first time in 1980.
 
     OUTPUT:
          **net** - Returns the required ieee network case9
@@ -111,7 +118,8 @@ def case9():
 
 def case14():
     """
-    Calls the pickle file case14.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Calls the pickle file case14.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was converted from IEEE Common Data Format (ieee14cdf.txt) on 20-Sep-2004 by
     cdf2matp, rev. 1.11, to matpower format and finally converted to pandapower format by
     pandapower.converter.from_ppc. The vn_kv was adapted considering the proposed voltage levels in
@@ -131,8 +139,10 @@ def case14():
 
 def case24_ieee_rts():
     """
-    The IEEE 24-bus reliability test system was developed by the IEEE reliability subcommittee and published in 1979.
-    Some more information about this network are given by `Illinois University case 24 <http://icseg.iti.illinois.edu/ieee-24-bus-system/>`_.
+    The IEEE 24-bus reliability test system was developed by the IEEE reliability subcommittee \
+    and published in 1979.
+    Some more information about this network are given by `Illinois University case 24 \
+    <http://icseg.iti.illinois.edu/ieee-24-bus-system/>`_.
     The data origin for this network data is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
     OUTPUT:
@@ -150,8 +160,10 @@ def case24_ieee_rts():
 
 def case30():
     """
-    This function calls the pickle file case30.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Washington case 30 <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_ and `Illinois University case 30 <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
+    This function calls the pickle file case30.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Washington case 30 \
+    <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_ and `Illinois University case 30 <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
 
     OUTPUT:
          **net** - Returns the required ieee network case30
@@ -167,8 +179,11 @@ def case30():
 
 def case33bw():
     """
-    Calls the pickle file case33bw.p which data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `M. Baran, F. Wu, Network reconfiguration in distribution systems for loss reduction and load balancing <http://ieeexplore.ieee.org/document/25627/>`_ IEEE Transactions on Power Delivery, 1989.
+    Calls the pickle file case33bw.p which data is provided by \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `M. Baran, F. Wu, Network reconfiguration in distribution systems \
+    for loss reduction and load balancing \
+    <http://ieeexplore.ieee.org/document/25627/>`_ IEEE Transactions on Power Delivery, 1989.
 
     OUTPUT:
          **net** - Returns the required ieee network case33bw
@@ -184,9 +199,14 @@ def case33bw():
 
 def case39():
     """
-    Calls the pickle file case39.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    This network was published the first time in G. Bills et al., On-line stability analysis study, RP 90-1, E. P. R. I. North American Rockwell Corporation, Edison Electric Institute, Ed. IEEE Press, Oct. 1970,. Some more information about this network are given by `Illinois University case 39 <http://icseg.iti.illinois.edu/ieee-39-bus-system/>`_.
-    Because the Pypower data origin proposes vn_kv=345 for all nodes the transformers connect node of the same voltage level.
+    Calls the pickle file case39.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    This network was published the first time in G. Bills et al., On-line stability analysis \
+    study, RP 90-1, E. P. R. I. North American Rockwell Corporation, Edison Electric Institute, \
+    Ed. IEEE Press, Oct. 1970,. Some more information about this network are given by \
+    `Illinois University case 39 <http://icseg.iti.illinois.edu/ieee-39-bus-system/>`_.
+    Because the Pypower data origin proposes vn_kv=345 for all nodes the transformers connect \
+    node of the same voltage level.
 
     OUTPUT:
          **net** - Returns the required ieee network case39
@@ -203,9 +223,12 @@ def case39():
 def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, vn_kv_area5=230,
            vn_kv_area6=161):
     """
-    This function provides the ieee case57 network with the data origin `PYPOWER case 57 <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Illinois University case 57 <http://icseg.iti.illinois.edu/ieee-57-bus-system/>`_.
-    Because the Pypower data origin proposes no vn_kv some assumption must be made. There are six areas with coinciding voltage level. These are:
+    This function provides the ieee case57 network with the data origin `PYPOWER case 57 \
+    <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Illinois University case 57 \
+    <http://icseg.iti.illinois.edu/ieee-57-bus-system/>`_.
+    Because the Pypower data origin proposes no vn_kv some assumption must be made. There are six \
+    areas with coinciding voltage level. These are:
 
     - area 1 with coinciding voltage level comprises node 1-17
     - area 2 with coinciding voltage level comprises node 18-20
@@ -240,8 +263,14 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
 def case89pegase():
     """
-    Calls the pickle file case89pegase.p which data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    Calls the pickle file case89pegase.p which data is provided by \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and \
+    PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, \
+    F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large \
+    power systems taking into account uncertainty, preventive, and corrective actions, \
+    IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case89pegase
@@ -257,8 +286,11 @@ def case89pegase():
 
 def case118():
     """
-    Calls the pickle file case118.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Washington case 118 <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and `Illinois University case 118 <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
+    Calls the pickle file case118.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by `Washington case 118 \
+    <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and \
+    `Illinois University case 118 <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
 
     OUTPUT:
          **net** - Returns the required ieee network case118
@@ -274,7 +306,8 @@ def case118():
 
 def case145():
     """
-    Calls the pickle file case145.p which data origin is `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    Calls the pickle file case145.p which data origin is \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
     This data is converted by MATPOWER 5.1 using CDF2MPC on 18-May-2016 from 'dd50cdf.txt'.
 
     OUTPUT:
@@ -291,8 +324,11 @@ def case145():
 
 def case300():
     """
-    Calls the pickle file case300.p which data origin is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Washington case 300 <http://www2.ee.washington.edu/research/pstca/pf300/pg_tca300bus.htm>`_ and `Illinois University case 300 <http://icseg.iti.illinois.edu/ieee-300-bus-system/>`_.
+    Calls the pickle file case300.p which data origin is \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    Some more information about this network are given by \
+    `Washington case 300 <http://www2.ee.washington.edu/research/pstca/pf300/pg_tca300bus.htm>`_ \
+    and `Illinois University case 300 <http://icseg.iti.illinois.edu/ieee-300-bus-system/>`_.
 
     OUTPUT:
          **net** - Returns the required ieee network case300
@@ -308,8 +344,14 @@ def case300():
 
 def case1354pegase():
     """
-    This grid represents a part of the European high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    This grid represents a part of the European high voltage transmission network. The data is \
+    provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
+    and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
+    taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
+    Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case1354pegase
@@ -325,8 +367,12 @@ def case1354pegase():
 
 def case1888rte(ref_bus_idx=1246):
     """
-    This case accurately represents the size and complexity of French very high voltage and high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high \
+    voltage transmission network. The data is provided by `MATPOWER \
+    <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016.
 
     OPTIONAL:
 
@@ -356,8 +402,12 @@ def case1888rte(ref_bus_idx=1246):
 
 def case2848rte(ref_bus_idx=271):
     """
-    This case accurately represents the size and complexity of French very high voltage and high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high \
+    voltage transmission network. The data is provided by \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016.
 
     OPTIONAL:
 
@@ -384,8 +434,14 @@ def case2848rte(ref_bus_idx=271):
 
 def case2869pegase():
     """
-    This grid represents a part of the European high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin i the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    This grid represents a part of the European high voltage transmission network. The data is \
+    provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin i the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
+    and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
+    taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
+    Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case2869pegase
@@ -401,7 +457,9 @@ def case2869pegase():
 
 def case3120sp():
     """
-    This case represents the Polish 400, 220 and 110 kV networks during summer 2008 morning peak conditions. The data was provided by Roman Korab <roman.korab@polsl.pl> and to pandapower converted from `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    This case represents the Polish 400, 220 and 110 kV networks during summer 2008 morning peak \
+    conditions. The data was provided by Roman Korab <roman.korab@polsl.pl> and to pandapower \
+    converted from `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
 
     OUTPUT:
          **net** - Returns the required ieee network case3120sp
@@ -417,8 +475,12 @@ def case3120sp():
 
 def case6470rte(ref_bus_idx=5988):
     """
-    This case accurately represents the size and complexity of French very high voltage and high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high \
+    voltage transmission network. The data is provided by \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016.
 
     OPTIONAL:
 
@@ -447,8 +509,12 @@ def case6470rte(ref_bus_idx=5988):
 
 def case6495rte(ref_bus_idx=[6077, 6161, 6305, 6306, 6307, 6308]):
     """
-    This case accurately represents the size and complexity of French very high voltage and high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high \
+    voltage transmission network. The data is provided by \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016.
 
     OPTIONAL:
 
@@ -476,8 +542,12 @@ def case6495rte(ref_bus_idx=[6077, 6161, 6305, 6306, 6307, 6308]):
 
 def case6515rte(ref_bus_idx=6171):
     """
-    This case accurately represents the size and complexity of French very high voltage and high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high \
+    voltage transmission network. The data is provided by `MATPOWER \
+    <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016.
 
     OPTIONAL:
 
@@ -504,8 +574,14 @@ def case6515rte(ref_bus_idx=6171):
 
 def case9241pegase():
     """
-    This grid represents a part of the European high voltage transmission network. The data is provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    This grid represents a part of the European high voltage transmission network. The data is \
+    provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
+    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
+    <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
+    and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
+    taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
+    Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case9241pegase
@@ -521,8 +597,11 @@ def case9241pegase():
 
 def GBreducednetwork():
     """
-    Calls the pickle file GBreducednetwork.p which data is provided by `W. A. Bukhsh, Ken McKinnon, Network data of real transmission networks, April 2013  <http://www.maths.ed.ac.uk/optenergy/NetworkData/reducedGB/>`_.
-    This data is a representative model of electricity transmission network in Great Britain (GB). It was originally developed at the University of Strathclyde in 2010.
+    Calls the pickle file GBreducednetwork.p which data is provided by `W. A. Bukhsh, Ken \
+    McKinnon, Network data of real transmission networks, April 2013  \
+    <http://www.maths.ed.ac.uk/optenergy/NetworkData/reducedGB/>`_.
+    This data is a representative model of electricity transmission network in Great Britain (GB). \
+    It was originally developed at the University of Strathclyde in 2010.
 
     OUTPUT:
          **net** - Returns the required ieee network GBreducednetwork
@@ -539,8 +618,13 @@ def GBreducednetwork():
 
 def GBnetwork():
     """
-    Calls the pickle file GBnetwork.p which data is provided by `W. A. Bukhsh, Ken McKinnon, Network data of real transmission networks, April 2013  <http://www.maths.ed.ac.uk/optenergy/NetworkData/fullGB/>`_.
-    This data represents detailed model of electricity transmission network of Great Britian (GB). It consists of 2224 nodes, 3207 branches and 394 generators. This data is obtained from publically available data on National grid website. The data was originally pointing out by Manolis Belivanis, University of Strathclyde.
+    Calls the pickle file GBnetwork.p which data is provided by `W. A. Bukhsh, Ken McKinnon, \
+    Network data of real transmission networks, April 2013  \
+    <http://www.maths.ed.ac.uk/optenergy/NetworkData/fullGB/>`_.
+    This data represents detailed model of electricity transmission network of Great Britian (GB). \
+    It consists of 2224 nodes, 3207 branches and 394 generators. This data is obtained from \
+    publically available data on National grid website. The data was originally pointing out by \
+    Manolis Belivanis, University of Strathclyde.
 
     OUTPUT:
          **net** - Returns the required ieee network GBreducednetwork
@@ -557,8 +641,12 @@ def GBnetwork():
 
 def iceland():
     """
-    Calls the pickle file iceland.p which data is provided by `W. A. Bukhsh, Ken McKinnon, Network data of real transmission networks, April 2013  <http://www.maths.ed.ac.uk/optenergy/NetworkData/iceland/>`_.
-    This data represents electricity transmission network of Iceland. It consists of 118 nodes, 206 branches and 35 generators. It was originally developed in PSAT format by Patrick McNabb, Durham University in January 2011.
+    Calls the pickle file iceland.p which data is provided by `W. A. Bukhsh, Ken McKinnon, Network \
+    data of real transmission networks, April 2013  \
+    <http://www.maths.ed.ac.uk/optenergy/NetworkData/iceland/>`_.
+    This data represents electricity transmission network of Iceland. It consists of 118 nodes, \
+    206 branches and 35 generators. It was originally developed in PSAT format by Patrick McNabb, \
+    Durham University in January 2011.
 
     OUTPUT:
          **net** - Returns the required ieee network iceland
