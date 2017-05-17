@@ -186,12 +186,12 @@ def opf_task(net):  # pragma: no cover
     control_elms = ['gen', 'sgen', 'load']
     control_elm_names = ['Generator', 'Static Generator', 'Load']
     to_log = _opf_controllables(net, to_log, 'ext_grid', 'External Grid', all_costs)
-    for j in range(len(control_elms)):
-        if len(net[control_elms[j]]):
-            if ('controllable' not in net[control_elms[j]].columns):
-                raise ValueError("net.%s has no 'controllable' column!" % control_elms[j])
-            if (net[control_elms[j]].controllable == True).any():
-                to_log = _opf_controllables(net, to_log, control_elms[j], control_elm_names[j],
+    for j, control_elm in enumerate(control_elms):
+        if len(net[control_elm]):
+            if ('controllable' not in net[control_elm].columns):
+                raise ValueError("net.%s has no 'controllable' column!" % control_elm)
+            if (net[control_elm].controllable == True).any():
+                to_log = _opf_controllables(net, to_log, control_elm, control_elm_names[j],
                                             all_costs)
     if len(net.dcline):  # dcline always is assumed as controllable
         to_log = _opf_controllables(net, to_log, 'dcline', 'DC Line', all_costs)
@@ -205,14 +205,14 @@ def opf_task(net):  # pragma: no cover
         variables += ['load']
         variable_names += ['Load']
         variable_long_names += ['Load']
-    for j in range(len(variables)):
+    for j, variable in enumerate(variables):
         constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
-        constr_col_exist = constr_col[constr_col.isin(net[variables[j]].columns)]
-        constr = net[variables[j]][constr_col_exist].dropna(how='all')
+        constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
+        constr = net[variable][constr_col_exist].dropna(how='all')
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
             constr_exist = True
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
-            for i in constr_col[constr_col.isin(net[variables[j]].columns) == False]:
+            for i in constr_col[constr_col.isin(net[variable].columns) == False]:
                 constr[i] = np.nan
             if (constr.min_p_kw >= constr.max_p_kw).any():
                 logger.warn("The value of min_p_kw must be less than max_p_kw for all " +
@@ -299,9 +299,9 @@ def opf_task(net):  # pragma: no cover
     # --- Branch constraints
     branches = ['trafo', 'line']
     branch_names = ['Trafo', 'Line']
-    for j in range(len(branches)):
-        if "max_loading_percent" in net[branches[j]].columns:
-            constr = net[branches[j]]['max_loading_percent'].dropna()
+    for j, branch in enumerate(branches):
+        if "max_loading_percent" in net[branch].columns:
+            constr = net[branch]['max_loading_percent'].dropna()
             if constr.shape[0] > 0:
                 constr_exist = True
                 to_log += '\n' + "  " + branch_names[j] + " Constraint"
@@ -1512,7 +1512,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
-    
+
     :param net: pandapower network
     :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
     :param zero_length: whether zero length lines will be affected
@@ -1522,11 +1522,11 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
     :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
     :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
     :param min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
-    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance 
+    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
     :param min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
-    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance 
+    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
     :param min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
-    :return: 
+    :return:
     """
 
     if type(elements) != tuple:
