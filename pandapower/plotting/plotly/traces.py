@@ -209,7 +209,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
     # defining lines to be plot
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
-        return None
+        return []
 
     nogolines = set()
     if respect_switches:
@@ -358,7 +358,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     # defining lines to be plot
     trafos = net.trafo.index.tolist() if trafos is None else list(trafos)
     if len(trafos) == 0:
-        return None
+        return []
 
     trafo_buses_with_geodata = net.trafo.hv_bus.isin(net.bus_geodata.index) &\
                                net.trafo.lv_bus.isin(net.bus_geodata.index)
