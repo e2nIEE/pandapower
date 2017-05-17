@@ -1580,11 +1580,11 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                             "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service", "name", "std_type"
                             ]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
-         sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, None, vsc_mv_percent,
+         sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
          pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
          tp_side, tp_st_percent, tp_pos, tp_mid, tp_max,
-         tp_min, bool(in_service), name]
+         tp_min, bool(in_service), name, None]
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
