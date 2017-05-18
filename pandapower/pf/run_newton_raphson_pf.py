@@ -21,7 +21,7 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 
 try:
     from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
-except:
+except ImportError:
     pass
 
 try:
@@ -102,8 +102,7 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     else:
         ## build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-        if recycle["Ybus"]:
-            ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
+        ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
 
     return ppci, Ybus, Yf, Yt
 
@@ -117,10 +116,7 @@ def _get_ibus(ppci):
 
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
-        try:
-            makeYbus = makeYbus_numba
-        except:
-            makeYbus = makeYbus_pypower
+        makeYbus = makeYbus_numba
     else:
         makeYbus = makeYbus_pypower
 

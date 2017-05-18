@@ -19,7 +19,7 @@ from scipy.sparse.linalg import spsolve
 try:
     from pandapower.pf.create_J import create_J, create_J2
     from pandapower.pf.dSbus_dV_numba import dSbus_dV_numba_sparse
-except:
+except ImportError:
     pass
 
 

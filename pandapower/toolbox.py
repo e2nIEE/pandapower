@@ -559,10 +559,6 @@ def convert_format(net):
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
                                "gen": None}
-    if not "_ppc2pd_lookups" in net:
-        net._ppc2pd_lookups = {"bus": None,
-                               "ext_grid": None,
-                               "gen": None}
     if not "_is_elements" in net and "__is_elements" in net:
         net["_is_elements"] = copy.deepcopy(net["__is_elements"])
         net.pop("__is_elements", None)

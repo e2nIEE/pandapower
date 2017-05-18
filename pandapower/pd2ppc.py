@@ -20,9 +20,6 @@ except ImportError:
     pass
 
 import pandapower.auxiliary as aux
-#from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \
-#    _check_connectivity, _create_ppc2pd_bus_lookup, _remove_isolated_elements_from_is_elements,
-#    _select_is_elements, _find_is_elements_numba
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
     _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
@@ -68,7 +65,7 @@ def _pd2ppc(net):
     use_numba = ("numba" in net["_options"] and net["_options"]["numba"] and
                  (net["_options"]["recycle"] is None or
                   not net["_options"]["recycle"]["_is_elements"]))
-    #use_numba = False
+    # use_numba = False
     if use_numba:
         net["_is_elements"] = aux._select_is_elements_numba(net)
     else:
@@ -111,12 +108,7 @@ def _pd2ppc(net):
     # sets buses out of service, which aren't connected to branches / REF buses
     if check_connectivity:
         isolated_nodes, _, _ = aux._check_connectivity(ppc)
-        if use_numba:
-            net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
-        else:
-            aux._create_ppc2pd_bus_lookup(net)
-            aux._remove_isolated_elements_from_is_elements(net, isolated_nodes)
-#             ToDo: The reverse lookup (ppc2pd) needs to be updated in ppc2ppci!
+        net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
     else:
         aux._set_isolated_buses_out_of_service(net, ppc)
 
@@ -152,6 +144,7 @@ def _init_ppc(net):
     net["_ppc"] = ppc
     return ppc
 
+
 def _ppc2ppci(ppc, ppci, net):
     # BUS Sorting and lookups
     # get bus_lookup
@@ -176,7 +169,6 @@ def _ppc2ppci(ppc, ppci, net):
 
     # update lookups (pandapower -> ppci internal)
     _update_lookup_entries(net, bus_lookup, e2i, "bus")
-    # ToDo: The reverse lookup (ppc2pd) also needs to be updated when connectivity_check == True!
 
     if 'areas' in ppc:
         if len(ppc["areas"]) == 0:  # if areas field is empty
