@@ -279,7 +279,10 @@ def _update_ppc(net):
     @return:
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = aux._select_is_elements(net)
+    if net["_options"]["numba"]:
+        net["_is_elements"] = aux._select_is_elements_numba(net)
+    else:
+        net["_is_elements"] = aux._select_is_elements(net)
 
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
