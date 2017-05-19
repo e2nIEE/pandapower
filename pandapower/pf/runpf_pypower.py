@@ -183,7 +183,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     V, success = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
 
     return ppci, success, bus, gen, branch
 

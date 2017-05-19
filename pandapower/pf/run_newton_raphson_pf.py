@@ -16,11 +16,12 @@ from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pf.newtonpf import newtonpf
-from pandapower.pf.pfsoln import pfsoln
+from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
 from pandapower.pf.run_dc_pf import _run_dc_pf
 
 try:
     from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
+    from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_numba
 except ImportError:
     pass
 
@@ -117,8 +118,10 @@ def _get_ibus(ppci):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
         makeYbus = makeYbus_numba
+        pfsoln = pfsoln_numba
     else:
         makeYbus = makeYbus_pypower
+        pfsoln = pfsoln_pypower
 
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
