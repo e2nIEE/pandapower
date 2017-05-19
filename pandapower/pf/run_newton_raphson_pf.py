@@ -10,7 +10,6 @@ from time import time
 from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
 
 from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA, PCID, QCID
-
 from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
