@@ -20,7 +20,7 @@ from pandapower.idx_bus import PD, QD, VM, VA, BUS_TYPE, PQ, REF
 from pandapower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
-from pandapower.pf.pfsoln import pfsoln
+from pandapower.pf.pfsoln_pypower import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 
 try:

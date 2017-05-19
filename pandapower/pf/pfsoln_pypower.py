@@ -21,7 +21,7 @@ from scipy.sparse import csr_matrix
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, Ibus=None):
+def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -92,11 +92,16 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, Ibus=None):
                 gen[on[refgen[0]], PG] - sum(gen[on[refgen[1:len(refgen)]], PG])
 
     ##----- update/compute branch power flows -----
+    out = find(branch[:, BR_STATUS] == 0)        ## out-of-service branches
+    br =  find(branch[:, BR_STATUS]).astype(int) ## in-service branches
 
+    if len(out):
+        raise RuntimeError
     ## complex power at "from" bus
-    Sf = V[ real(branch[:, F_BUS]).astype(int) ] * conj(Yf * V) * baseMVA
+    Sf = V[ real(branch[br, F_BUS]).astype(int) ] * conj(Yf[br, :] * V) * baseMVA
     ## complex power injected at "to" bus
-    St = V[ real(branch[:, T_BUS]).astype(int) ] * conj(Yt * V) * baseMVA
-    branch[ :, [PF, QF, PT, QT] ] = c_[Sf.real, Sf.imag, St.real, St.imag]
+    St = V[ real(branch[br, T_BUS]).astype(int) ] * conj(Yt[br, :] * V) * baseMVA
+    branch[ ix_(br, [PF, QF, PT, QT]) ] = c_[Sf.real, Sf.imag, St.real, St.imag]
+    branch[ ix_(out, [PF, QF, PT, QT]) ] = zeros((len(out), 4))
 
     return bus, gen, branch
