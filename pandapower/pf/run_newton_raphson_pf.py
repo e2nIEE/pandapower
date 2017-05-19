@@ -21,7 +21,7 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 
 try:
     from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
-    from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_numba
+    from pandapower.pf.pfsoln import pfsoln as pfsoln_numba
 except ImportError:
     pass
 
