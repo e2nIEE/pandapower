@@ -149,6 +149,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 calculate_voltage_angles = True
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
+    if init == "results" and len(net.res_bus) == 0:
+        init = "auto"
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]

@@ -6,9 +6,9 @@
 
 import json
 import numbers
-import os
+import os, sys
 import pickle
-import sys
+import copy
 
 import numpy
 import pandas as pd
@@ -35,9 +35,13 @@ def to_pickle(net, filename):
     """
     if not filename.endswith(".p"):
         raise Exception("Please use .p to save pandapower networks!")
+    save_net = dict()
+    for key, item in net.items():
+        if key != "_is_elements":       
+            save_net[key] = {"DF": item.to_dict()} if isinstance(item, 
+                            pd.DataFrame) else item 
     with open(filename, "wb") as f:
-        pickle.dump(dict(net), f, protocol=2) #use protocol 2 for py2 / py3 compatibility
-
+        pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
@@ -152,6 +156,9 @@ def from_pickle(filename, convert=True):
         else:
             net = pickle.load(f)  # without encoding in python 2
     net = pandapowerNet(net)
+    for key, item in net.items():
+        if isinstance(item, dict) and "DF" in item.keys():
+            net[key] = pd.DataFrame.from_dict(item["DF"])
     if convert:
         convert_format(net)
     return net
@@ -262,7 +269,7 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         **net** (dict) - The pandapower format network
 
         **filename** (string) - The absolute or relative path to the input file.
-    
+
     OPTIONAL:
         **respect_switches** (boolean, True) - True: open line switches are being considered
                                                      (no edge between nodes)
@@ -281,3 +288,15 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
         f.write(html_str)
         f.close()
+
+if __name__ == '__main__':
+    import pandapower.networks as nw
+    net = nw.mv_oberrhein()
+    save_net = to_pickle(net, "oberrhein.p")
+    net2 = from_pickle("oberrhein.p")
+    from pandas.util.testing import assert_frame_equal
+    from pandapower.test.toolbox import assert_net_equal, create_test_network
+
+            
+
+    assert_frame_equal(net.shunt, net2.shunt, check_dtype=True, check_like=True)

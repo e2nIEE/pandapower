@@ -58,7 +58,7 @@ def assert_net_equal(a_net, b_net, reindex=False):
             if not (a_net[name] is None and b_net[name] is None):
                 try:
                     pdt.assert_frame_equal(
-                        a_net[name], b_net[name], check_dtype=False, check_like=reindex)
+                        a_net[name], b_net[name], check_dtype=True, check_like=reindex)
                 except AssertionError:
                     pytest.fail("Tables are not equal: %s" % name)
                     status = False

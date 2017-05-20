@@ -27,9 +27,12 @@ def get_testgrids(name, filename):
     from_ppc function via validate_from_ppc.
     """
     pp_path = pp_path = os.path.split(pp.__file__)[0]
-    save_path = os.path.join(pp_path, 'test', 'converter', filename)
-    ppcs = pickle.load(open(save_path, "rb"))
-    return ppcs[name]
+    folder = os.path.join(pp_path, 'test', 'converter')
+    if name == "case2_2_by_code":
+        return pp.from_pickle(os.path.join(folder, name + ".p"))
+    else:
+        ppcs = pickle.load(open(os.path.join(folder, filename), "rb"))
+        return ppcs[name]
 
 
 def test_from_ppc():
@@ -84,5 +87,15 @@ def test_pypower_cases():
 
 
 if __name__ == '__main__':
+    
+#    pp_path = pp_path = os.path.split(pp.__file__)[0]
+#    save_path = os.path.join(pp_path, 'test', 'converter', 'ppc_testgrids.p')
+#    ppcs = pickle.load(open(save_path, "rb"))
+#    del ppcs["case2_2_by_code"]
+#    with open(save_path, "wb") as f:
+#        pickle.dump(ppcs, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
+
+#    ppc = get_testgrids("case2_2", 'ppc_testgrids.p')
+#    net = get_testgrids("case4gs", 'pypower_cases.p')
     pytest.main(["-s"])
 #    pass

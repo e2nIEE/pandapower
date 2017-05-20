@@ -586,6 +586,22 @@ def convert_format(net):
                                   "gen": None,
                                   "branch": None}
     net.version = float(__version__[:3])
+    if not "std_type" in net.trafo3w:
+        net.trafo3w["std_type"] = None
+                   
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            if set(item.columns) == set(new_net[key]):
+                net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+            for col in item.columns:
+                if col in new_net[key].columns:
+                    if int(pd.__version__[2]) < 2:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                           raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                           errors="ignore")
     return net
 
 
