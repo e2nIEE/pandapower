@@ -8,7 +8,6 @@ import json
 import numbers
 import os, sys
 import pickle
-import copy
 
 import numpy
 import pandas as pd
@@ -38,7 +37,7 @@ def to_pickle(net, filename):
     save_net = dict()
     for key, item in net.items():
         if key != "_is_elements":       
-            save_net[key] = {"DF": item.to_dict(), "columns": item.columns,
+            save_net[key] = {"DF": item.to_dict(), "columns": list(item.columns),
                             "dtypes": {col: dt for col, dt in zip(item.columns, 
                                       item.dtypes)}}  \
                             if isinstance(item, pd.DataFrame) else item
@@ -295,12 +294,3 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         f.write(html_str)
         f.close()
 
-if __name__ == '__main__':
-    import pandapower.networks as nw
-    net = nw.mv_oberrhein()
-    net.line["a"] = 2
-    save_net = to_pickle(net, "oberrhein.p")
-    net2 = from_pickle("oberrhein.p", False)
-    from pandas.util.testing import assert_frame_equal
-    from pandapower.test.toolbox import assert_net_equal, create_test_network
-    assert_frame_equal(net.shunt, net2.shunt, check_dtype=True, check_like=True)
