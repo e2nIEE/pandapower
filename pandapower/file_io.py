@@ -38,8 +38,10 @@ def to_pickle(net, filename):
     save_net = dict()
     for key, item in net.items():
         if key != "_is_elements":       
-            save_net[key] = {"DF": item.to_dict()} if isinstance(item, 
-                            pd.DataFrame) else item 
+            save_net[key] = {"DF": item.to_dict(), "columns": item.columns,
+                            "dtypes": {col: dt for col, dt in zip(item.columns, 
+                                      item.dtypes)}}  \
+                            if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
         pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
@@ -157,8 +159,12 @@ def from_pickle(filename, convert=True):
             net = pickle.load(f)  # without encoding in python 2
     net = pandapowerNet(net)
     for key, item in net.items():
-        if isinstance(item, dict) and "DF" in item.keys():
+        if isinstance(item, dict) and "DF" in item:
             net[key] = pd.DataFrame.from_dict(item["DF"])
+            if "columns" in item:
+                net[key] = net[key].reindex_axis(item["columns"], axis=1)
+            if "dtypes" in item:
+                net[key] = net[key].astype(item["dtypes"])
     if convert:
         convert_format(net)
     return net
@@ -292,11 +298,9 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
 if __name__ == '__main__':
     import pandapower.networks as nw
     net = nw.mv_oberrhein()
+    net.line["a"] = 2
     save_net = to_pickle(net, "oberrhein.p")
-    net2 = from_pickle("oberrhein.p")
+    net2 = from_pickle("oberrhein.p", False)
     from pandas.util.testing import assert_frame_equal
     from pandapower.test.toolbox import assert_net_equal, create_test_network
-
-            
-
     assert_frame_equal(net.shunt, net2.shunt, check_dtype=True, check_like=True)
