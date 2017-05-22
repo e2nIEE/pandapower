@@ -1268,26 +1268,9 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses))
                                                         | (net.impedance.to_bus.isin(buses))])
-    elif element == "load":
-        element_table = net.load
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element == "sgen":
-        element_table = net.sgen
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element == "ward":
-        element_table = net.ward
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element == "shunt":
-        element_table = net.shunt
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element == "xward":
-        element_table = net.xward
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element == "ext_grid":
-        element_table = net.ext_grid
-        connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
-    elif element == "gen":
-        element_table = net.gen
+    elif element == "gen" or element == "ext_grid" or element == "xward" or element == "shunt" or element == "ward"\
+            or element == "sgen" or element == "sgen" or element == "load":
+        element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     else:
         raise UserWarning("Unknown element! ", element)
