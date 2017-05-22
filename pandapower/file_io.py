@@ -293,4 +293,3 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
         f.write(html_str)
         f.close()
-
