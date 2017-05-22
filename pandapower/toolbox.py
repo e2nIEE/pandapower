@@ -588,7 +588,7 @@ def convert_format(net):
     net.version = float(__version__[:3])
     if not "std_type" in net.trafo3w:
         net.trafo3w["std_type"] = None
-                   
+
     new_net = create_empty_network()
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
@@ -1250,26 +1250,25 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     if element in ["line", "l"]:
         element = "l"
         element_table = net.line
-        connected_elements = set(net.line.index[net.line.from_bus.isin(buses)
-                                                | net.line.to_bus.isin(buses)])
+        connected_elements = set(net.line.index[net.line.from_bus.isin(buses) |
+                                                net.line.to_bus.isin(buses)])
 
     elif element in ["trafo"]:
         element = "t"
         element_table = net.trafo
-        connected_elements = set(net["trafo"].index[(net.trafo.hv_bus.isin(buses))
-                                                    | (net.trafo.lv_bus.isin(buses))])
+        connected_elements = set(net["trafo"].index[(net.trafo.hv_bus.isin(buses)) |
+                                                    (net.trafo.lv_bus.isin(buses))])
     elif element in ["trafo3w", "t3w"]:
         element = "t3w"
         element_table = net.trafo3w
-        connected_elements = set(net["trafo3w"].index[(net.trafo3w.hv_bus.isin(buses))
-                                                      | (net.trafo3w.mv_bus.isin(buses))
-                                                      | (net.trafo3w.lv_bus.isin(buses))])
+        connected_elements = set(net["trafo3w"].index[(net.trafo3w.hv_bus.isin(buses)) |
+                                                      (net.trafo3w.mv_bus.isin(buses)) |
+                                                      (net.trafo3w.lv_bus.isin(buses))])
     elif element == "impedance":
         element_table = net.impedance
-        connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses))
-                                                        | (net.impedance.to_bus.isin(buses))])
-    elif element == "gen" or element == "ext_grid" or element == "xward" or element == "shunt" or element == "ward"\
-            or element == "sgen" or element == "sgen" or element == "load":
+        connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
+                                                        (net.impedance.to_bus.isin(buses))])
+    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     else:
@@ -1278,8 +1277,8 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     if respect_switches and element in ["l", "t", "t3w"]:
         open_switches = get_connected_switches(net, buses, consider=element, status="open")
         if open_switches:
-            open_and_connected = net.switch.loc[net.switch.index.isin(open_switches)
-                                                & net.switch.element.isin(connected_elements)].index
+            open_and_connected = net.switch.loc[net.switch.index.isin(open_switches) &
+                                                net.switch.element.isin(connected_elements)].index
             connected_elements -= set(net.switch.element[open_and_connected])
 
     if respect_in_service:
