@@ -593,7 +593,7 @@ def convert_format(net):
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
-                if col in new_net[key].columns:
+                if key in new_net and col in new_net[key].columns:
                     if set(item.columns) == set(new_net[key]):
                         net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
                     if int(pd.__version__[2]) < 2:
