@@ -1128,7 +1128,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True):
+def merge_nets(net1, net2, validate=True, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1137,8 +1137,8 @@ def merge_nets(net1, net2, validate=True):
     net = copy.deepcopy(net1)
     net2 = copy.deepcopy(net2)
     if validate:
-        runpp(net1)
-        runpp(net2)
+        runpp(net1, **kwargs)
+        runpp(net2, **kwargs)
 
     def adapt_switches(net, element, offset=0):
         switches = net.switch[net.switch.et == element[0]]  # element[0] == "l" for "line", ect.
@@ -1163,7 +1163,7 @@ def merge_nets(net1, net2, validate=True):
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             net[element] = net1[element].append(net2[element], ignore_index=element != "bus")
     if validate:
-        runpp(net)
+        runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
         dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
                        net2.res_bus.vm_pu.values))
