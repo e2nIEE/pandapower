@@ -848,7 +848,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,
-                    index=None):
+                    index=None, **kwargs):
     """create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,\
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,\
                     max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,\
