@@ -1331,7 +1331,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
     if "t" in consider:
         ct = get_connected_elements(net, "trafo", buses, respect_switches, respect_in_service)
         cb |= set(net.trafo[net.trafo.index.isin(ct)].lv_bus)
-        cb |= set(net.trafo[net.trafo.index.isin(cl)].hv_bus)
+        cb |= set(net.trafo[net.trafo.index.isin(ct)].hv_bus)
 
     if respect_in_service:
         cb -= set(net.bus[~net.bus.in_service].index)
