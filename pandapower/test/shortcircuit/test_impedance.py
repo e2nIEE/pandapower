@@ -38,5 +38,4 @@ def test_impedance_min(impedance_net):
 
 if __name__ == '__main__':
     pytest.main(['test_impedance.py'])
-#    pytest.main([])
 

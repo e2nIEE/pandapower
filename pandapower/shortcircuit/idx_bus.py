@@ -5,14 +5,20 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 # define the indices
-R_EQUIV     = 0
-X_EQUIV     = 1
-KAPPA       = 2
-C_MIN       = 3
-C_MAX       = 4
-IKSS        = 5
-IKSSCV      = 6
-IP          = 7
-IB          = 8
-ITH         = 9
-IK          = 10
+from pandapower.idx_bus import bus_cols as start
+
+R_EQUIV     = start + 0
+X_EQUIV     = start + 1
+KAPPA       = start + 2
+M           = start + 3
+C_MIN       = start + 4
+C_MAX       = start + 5
+IKSS1       = start + 6
+IKSS2       = start + 7
+IKCV        = start + 8
+IP          = start + 9
+IB          = start + 10
+ITH         = start + 11
+IK          = start + 12
+
+bus_cols_sc = 13

@@ -9,19 +9,16 @@ import random as rd
 import pandapower as pp
 
 
-##########################################################
-################## support functions #####################
-##########################################################
-
+# --- support functions
 
 def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
-    '''
+    """
     Creates a Network with transformer and infeeder. The reference bus on the \
     high-voltage side is called "Trafostation_OS". The bus on the low-voltage \
     side is called "main_busbar".
     The voltage levels can be set manually and the transformer parameter can \
     be set with "ti"
-    '''
+    """
     pd_net = pp.create_empty_network()
     NFA2X4x70 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.069, "max_i_ka": 0.270,
                  "type": "ol", "q_mm2": 70}
@@ -59,7 +56,7 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
                          std_type="NAYY 4x150 SE", p_per_load_in_kw=0,
                          q_per_load_in_kvar=0, branchnr=1,
                          l_para_per_km=None):
-    '''
+    """
     Creates a single unsplitted branch on the startbus of n lines. It \
     sequencely adds lines, buses and loads.
 
@@ -68,7 +65,7 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
 
     The branch number could be assigned with branchnr. It will be added to \
     the name ti keep track on the node position
-    '''
+    """
 
     startpoint_bus = 1
     startpoint_line = 1
@@ -97,7 +94,7 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
                                    std_type_branchout_line_1="NAYY 4x50 SE",
                                    std_type_branchout_line_2="NAYY 4x50 SE",
                                    prob_branchout_line_1=0.5, branchnr=1):
-    '''
+    """
     Creates a single unsplitted branch on the startbus. each bus on the main \
     line is connected to a branch out line which connects \
     the loadbus (households).
@@ -115,7 +112,7 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
 
     The branch number could be assigned with branchnr. It will be added to the\
      name ti keep track on the node position
-    '''
+    """
 
     # support function
     startpoint_bus = 1
@@ -167,10 +164,8 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
                 std_type_branchout_line = std_type_branchout_line_1
     return net
 
-            ##########################################################
-            ################### main functions #######################
-            ##########################################################
 
+# --- main functions
 
 def create_kerber_landnetz_freileitung_1(n_lines=13,
                                          l_lines_in_km=0.021, std_type="NFA2X 4x70",
@@ -240,9 +235,9 @@ def create_kerber_landnetz_kabel_2(n_branch_1=12, n_branch_2=2, l_lines_1_in_km=
                                    q_load_in_kvar=0., lenght_branchout_line_1=0.018,
                                    lenght_branchout_line_2=0.033,
                                    std_type_branchout_line="NAYY 4x50", v_os=10.):
-    '''
+    """
     .. note:: It is assumed that every second bus in a branch is a "KV".
-    '''
+    """
     num_lines = [n_branch_1, n_branch_2]
     len_lines = [l_lines_1_in_km, l_lines_2_in_km]
 
@@ -268,9 +263,9 @@ def create_kerber_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
                            q_load_in_kvar=0., length_branchout_line_1=0.015,
                            length_branchout_line_2=0.031,
                            std_type_branchout_line="NAYY 4x50", v_os=10.):
-    '''
+    """
     .. note:: It is assumed that every second bus in a branch is a "KV".
-    '''
+    """
     num_lines = [9, 9, 16, 12, 7, 4]
     len_lines = [0.04, 0.04, 0.029, 0.032, 0.043, 0.064]
 
@@ -293,10 +288,10 @@ def create_kerber_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
 
 def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_in_kw=2., q_load_in_kvar=0.,
                                        trafotype="0.63 MVA 10/0.4 kV", v_os=20.):
-    '''
+    """
     .. note:: Please pay attention, that the linetypes of the branch out house connections are \
     randomly distributed according to the probability 50% between "NAYY 4x50" and "NYY 4x35"
-    '''
+    """
     num_lines = [14, 14, 14, 19, 19, 10, 10, 10, 32, 4]
     len_lines = [0.021, 0.021, 0.021, 0.017, 0.017, 0.025, 0.025, 0.025, 0.011, 0.060]
 
@@ -320,11 +315,11 @@ def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_in_kw=2., q
 
 def create_kerber_vorstadtnetz_kabel_2(std_type="NAYY 4x185", p_load_in_kw=2., q_load_in_kvar=0.,
                                        trafotype="0.63 MVA 10/0.4 kV", v_os=20.):
-    '''
+    """
     .. note:: Please pay attention, that the linetypes of the branch out house \
     connections are randomlydistributed according to the probability 50% between \
     "NAYY 50" and "NYY 35"
-    '''
+    """
 
     num_lines = [15, 15, 15, 20, 20, 11, 11, 32, 5]
     len_lines = [0.023, 0.023, 0.023, 0.020, 0.020,
@@ -347,17 +342,13 @@ def create_kerber_vorstadtnetz_kabel_2(std_type="NAYY 4x185", p_load_in_kw=2., q
 
     return pd_net
 
-"""
-usage(how to import kerber networks):
-
-import pandapower.networks as pn
-
-test_grid = pn.create_kerber_landnetz_freileitung_1()
-test_grid = pn.create_kerber_landnetz_freileitung_2()
-test_grid = pn.create_kerber_landnetz_kabel_1()
-test_grid = pn.create_kerber_landnetz_kabel_2()
-test_grid = pn.create_kerber_dorfnetz()
-test_grid = pn.kb_dorfnetz_trafo()
-test_grid = pn.create_kerber_vorstadtnetz_kabel_1()
-test_grid = pn.create_kerber_vorstadtnetz_kabel_2()
-"""
+# usage(how to import kerber networks):
+# import pandapower.networks as pn
+# test_grid = pn.create_kerber_landnetz_freileitung_1()
+#test_grid = pn.create_kerber_landnetz_freileitung_2()
+#test_grid = pn.create_kerber_landnetz_kabel_1()
+#test_grid = pn.create_kerber_landnetz_kabel_2()
+#test_grid = pn.create_kerber_dorfnetz()
+#test_grid = pn.kb_dorfnetz_trafo()
+#test_grid = pn.create_kerber_vorstadtnetz_kabel_1()
+#test_grid = pn.create_kerber_vorstadtnetz_kabel_2()

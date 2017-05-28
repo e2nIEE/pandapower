@@ -7,7 +7,7 @@
 import warnings
 
 import numpy as np
-from pypower.makeYbus import makeYbus
+from pandapower.pf.makeYbus_pypower import makeYbus
 
 
 class wls_matrix_ops:

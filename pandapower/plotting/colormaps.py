@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
+
 from decimal import Decimal
 
 from matplotlib.colors import LinearSegmentedColormap, Normalize, ListedColormap
@@ -21,11 +22,11 @@ def cmap_discrete(cmap_list):
         - norm - matplotlib norm object
 
     EXAMPLE:
-        >>> from pandapower.plotting import cmap_discrete, create_line_collection, draw_collections
+        >>> from pandapower.plotting import cmap_discrete, create_line_trace, draw_traces
         >>> cmap_list = [((20, 50), "green"), ((50, 70), "yellow"), ((70, 100), "red")]
         >>> cmap, norm = cmap_discrete(cmap_list)
-        >>> lc = create_line_collection(net, cmap=cmap, norm=norm)
-        >>> draw_collections([lc])
+        >>> lc = create_line_trace(net, cmap=cmap, norm=norm)
+        >>> draw_traces([lc])
     """
     # TODO: this implementation is extremely hacky, should be possible to implement this more
     # elegenatly with BoundaryNorm, but I failed in doing so. Works, but should be refactored. LT
@@ -57,11 +58,11 @@ def cmap_continous(cmap_list):
         - norm - matplotlib norm object
 
     EXAMPLE:
-        >>> from pandapower.plotting import cmap_continous, create_bus_collection, draw_collections
+        >>> from pandapower.plotting import cmap_continous, create_bus_trace, draw_traces
         >>> cmap_list = [(0.97, "blue"), (1.0, "green"), (1.03, "red")]
         >>> cmap, norm = cmap_continous(cmap_list)
-        >>> bc = create_bus_collection(net, cmap=cmap, norm=norm)
-        >>> draw_collections([bc])
+        >>> bc = create_bus_trace(net, cmap=cmap, norm=norm)
+        >>> draw_traces([bc])
     """
     min_loading = cmap_list[0][0]
     max_loading = cmap_list[-1][0]

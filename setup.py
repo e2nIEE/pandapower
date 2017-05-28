@@ -16,7 +16,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='1.2.2',
+    version='1.3.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
@@ -24,9 +24,9 @@ setup(
     url='http://www.uni-kassel.de/go/pandapower',
     license='BSD',
     install_requires=["pypower>=5.0.1",
-                      "pandas>=0.17.0",
+                      "pandas>=0.17.0<0.20",
                       "networkx",
-                      "numpy<1.12",
+                      "numpy",
                       "scipy"],
     packages=find_packages(),
     include_package_data=True,

@@ -1,14 +1,20 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
 import warnings
 
+from pandapower.idx_bus import VM
 from pypower.add_userfcn import add_userfcn
-from pypower.idx_bus import VM
 from pypower.ppoption import ppoption
 from scipy.sparse import csr_matrix as sparse
 
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import _add_auxiliary_elements
-from pandapower.pypower_extensions.opf import opf
+from pandapower.opf.opf import opf
 from pandapower.results import _copy_results_ppci_to_ppc, reset_results, \
     _extract_results_opf
 
@@ -25,6 +31,7 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
 
     ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
     net["OPF_converged"] = False
+    net["converged"] = False
     _add_auxiliary_elements(net)
     reset_results(net)
 

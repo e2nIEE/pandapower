@@ -6,18 +6,11 @@
 
 from pandapower.networks.kerber_networks import _create_empty_network_with_transformer, \
     _add_lines_and_loads, _add_lines_with_branched_loads
-"""
- The Kerber extreme networks complement the typical Kerber networks.
 
- Used functions from kerber_networks.py by T.Dess: _create_empty_network_with_transformer,
- _add_lines_and_loads, _add_lines_with_branched_loads (documentation @ kerber_networks.py)
-
- Categories:
-
- I. Kerber networks with extreme lines
-
- II. Kerber networks with extreme lines and high loaded transformer
-"""
+# The Kerber extreme networks complement the typical Kerber networks.
+# Categories:
+# I. Kerber networks with extreme lines
+# II. Kerber networks with extreme lines and high loaded transformer
 
 
 # --- Extreme Landnetze
@@ -241,19 +234,15 @@ def kb_extrem_vorstadtnetz_trafo_2(std_type="NAYY 4x185", p_load_in_kw=2., q_loa
                                                 branchnr=i+1)
     return pd_net
 
-"""
-usage(how to import kerber extreme networks):
-
-import pandapower.networks as pn
-
-test_grid = pn.kb_extrem_landnetz_freileitung()
-test_grid = pn.kb_extrem_landnetz_kabel()
-test_grid = pn.kb_extrem_landnetz_freileitung_trafo()
-test_grid = pn.kb_extrem_landnetz_kabel_trafo()
-test_grid = pn.kb_extrem_dorfnetz()
-test_grid = pn.kb_extrem_dorfnetz_trafo()
-test_grid = pn.kb_extrem_vorstadtnetz_1()
-test_grid = pn.kb_extrem_vorstadtnetz_2()
-test_grid = pn.kb_extrem_vorstadtnetz_trafo_1()
-test_grid = pn.kb_extrem_vorstadtnetz_trafo_2()
-"""
+# how to import kerber extreme networks:
+# import pandapower.networks as pn
+#test_grid = pn.kb_extrem_landnetz_freileitung()
+#test_grid = pn.kb_extrem_landnetz_kabel()
+#test_grid = pn.kb_extrem_landnetz_freileitung_trafo()
+#test_grid = pn.kb_extrem_landnetz_kabel_trafo()
+#test_grid = pn.kb_extrem_dorfnetz()
+#test_grid = pn.kb_extrem_dorfnetz_trafo()
+#test_grid = pn.kb_extrem_vorstadtnetz_1()
+#test_grid = pn.kb_extrem_vorstadtnetz_2()
+#test_grid = pn.kb_extrem_vorstadtnetz_trafo_1()
+#test_grid = pn.kb_extrem_vorstadtnetz_trafo_2()

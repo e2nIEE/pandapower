@@ -9,5 +9,6 @@ Correction factors for generator and branch elements are implemented as defined 
 .. toctree:: 
     :maxdepth: 1
     
-    bus_elements
+    voltage_source
+    current_source
     branch_elements

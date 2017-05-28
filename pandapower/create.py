@@ -10,7 +10,7 @@ from numpy import nan, isnan, arange, dtype, zeros
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-
+from pandapower import __version__
 
 def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     """
@@ -73,6 +73,8 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
                   ("name", dtype(object)),
                   ("q_kvar", "f8"),
                   ("p_kw", "f8"),
+                  ("vn_kv", "f8"),
+                  ("step", "u4"),
                   ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
@@ -281,10 +283,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "_ppc2pd_lookups": {"bus": None,
-                            "ext_grid": None,
-                            "gen": None},
-        "version": 1.2,
+        "version": float(__version__[:3]),
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -301,7 +300,8 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
 def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
                zone=None, in_service=True, max_vm_pu=nan,
                min_vm_pu=nan, **kwargs):
-    """
+    """create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", \
+                  zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
     Adds one bus in table net["bus"].
 
     Busses are the nodes of the network that all other elements connect to.
@@ -312,7 +312,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
-        **index** (int, default None) - Force a specified ID if it is available
+        **index** (int, default None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **vn_kv** (float) - The grid voltage level.
 
@@ -326,7 +326,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
-        **eid** (int) - The index of the created element
+        **index** (int) - The unique ID of the created element
 
     EXAMPLE:
         create_bus(net, name = "bus1")
@@ -368,7 +368,8 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
                  zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan):
-    """
+    """create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None, \
+                    zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
     Adds several buses in table net["bus"] at once.
 
     Busses are the nodal points of the network that all other elements connect to.
@@ -381,7 +382,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
-        **index** (int, default None) - Force a specified ID if it is available
+        **index** (int, default None) - Force specified IDs if available. If None, the indeces higher than the highest already existing index are selected.
 
         **vn_kv** (float) - The grid voltage level.
 
@@ -395,7 +396,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
-        **eid** (int) - The indeces of the created elements
+        **index** (int) - The unique indices ID of the created elements
 
     EXAMPLE:
         create_bus(net, name = "bus1")
@@ -446,7 +447,10 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
                 name=None, scaling=1., index=None,
                 in_service=True, type=None, max_p_kw=nan, min_p_kw=nan,
                 max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
-    """
+    """create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, sn_kva=nan, \
+                   name=None, scaling=1., index=None, \
+                   in_service=True, type=None, max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, \
+                   min_q_kvar=nan, controllable=nan)
     Adds one load in table net["load"].
 
     All loads are modelled in the consumer system, meaning load is positive and generation is
@@ -460,13 +464,13 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
     OPTIONAL:
         **p_kw** (float, default 0) - The real power of the load
 
-        **q_kvar** (float, default 0) - The reactive power of the load
-
         - postive value   -> load
         - negative value  -> generation
-        
+
+        **q_kvar** (float, default 0) - The reactive power of the load
+
         **const_z_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant impedance load at rated voltage
-        
+
         **const_i_percent** (float, default 0) - percentage of p_kw and q_kvar that will be associated to constant current load at rated voltage
 
         **sn_kva** (float, default None) - Nominal power of the load
@@ -477,13 +481,12 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
         **type** (string, None) -  type variable to classify the load
 
-        **index** (int, None) - Force the specified index. If None, the next highest available index
-                                is used
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
-        **index** (int) - The index of the created element
+        **index** (int) - The unique ID of the created element
 
     EXAMPLE:
         create_load(net, bus=0, p_kw=10., q_kvar=2.)
@@ -542,11 +545,40 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
+def create_load_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
+    """
+    Creates a load element from rated power and power factor cos(phi).
+
+    INPUT:
+        **net** - The net within this static generator should be created
+
+        **bus** (int) - The bus id to which the load is connected
+
+        **sn_kva** (float) - rated power of the generator
+
+        **cos_phi** (float) - power factor cos_phi
+
+        **mode** (str) - "ind" for inductive or "cap" for capacitive behaviour
+
+        **kwargs are passed on to the create_load function
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created load
+
+    All elements are modeled from a consumer point of view. Active power will therefore always be
+    positive, reactive power will be negative for inductive behaviour and positive for capacitive
+    behaviour.
+    """
+    from pandapower.toolbox import pq_from_cosphi
+    p_kw, q_kvar = pq_from_cosphi(sn_kva, cos_phi, qmode=mode, pmode="load")
+    return create_load(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
-                max_q_kvar=nan, min_q_kvar=nan, controllable=nan):
-    """
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan):
+    """create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None, \
+                scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan, \
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
     Adds one static generator in table net["sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -563,9 +595,9 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **bus** (int) - The bus id to which the static generator is connected
 
+        **p_kw** (float) - The real power of the static generator  (negative for generation!)
+
     OPTIONAL:
-        **p_kw** (float, default 0) - The real power of the static generator
-        (negative for generation!)
 
         **q_kvar** (float, default 0) - The reactive power of the sgen
 
@@ -573,8 +605,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **name** (string, default None) - The name for this sgen
 
-        **index** (int, None) - Force the specified index. If None, the next highest available index
-                                is used
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
@@ -586,7 +617,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
         powerflow
 
     OUTPUT:
-        **index** - The unique id of the created sgen
+        **index** (int) - The unique ID of the created sgen
 
     EXAMPLE:
         create_sgen(net, 1, p_kw = -120)
@@ -644,13 +675,53 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
         if "controllable" in net.sgen.columns:
             net.sgen.loc[index, "controllable"] = False
 
+    if not isnan(k):
+        if "k" not in net.sgen.columns:
+            net.sgen.loc[:, "k"] = pd.Series()
+
+        net.sgen.loc[index, "k"] = float(k)
+
+    if not isnan(rx):
+        if "rx" not in net.sgen.columns:
+            net.sgen.loc[:, "rx"] = pd.Series()
+
+        net.sgen.loc[index, "rx"] = float(rx)
+
     return index
+
+def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
+    """
+    Creates an sgen element from rated power and power factor cos(phi).
+
+    INPUT:
+        **net** - The net within this static generator should be created
+
+        **bus** (int) - The bus id to which the static generator is connected
+
+        **sn_kva** (float) - rated power of the generator
+
+        **cos_phi** (float) - power factor cos_phi
+
+        **mode** (str) - "ind" for inductive or "cap" for capacitive behaviour
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created sgen
+
+    All elements including generators are modeled from a consumer point of view. Active power
+    will therefore always be negative, reactive power will be negative for inductive behaviour and
+    positive for capacitive behaviour.
+    """
+    from pandapower.toolbox import pq_from_cosphi
+    p_kw, q_kvar = pq_from_cosphi(sn_kva, cos_phi, qmode=mode, pmode="gen")
+    return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan,
                min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None,
                controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True):
-    """
+    """create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan, \
+               min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None, \
+               controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True)
     Adds a generator to the network.
 
     Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
@@ -671,8 +742,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
 
         **name** (string, None) - The name for this generator
 
-        **index** (int, None) - Force the specified index. If None, the next highest available index
-                                is used
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **scaling** (float, 1.0) - scaling factor which for the active power of the generator
 
@@ -692,7 +762,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
         **in_service** (bool, True) - True for in_service or False for out of service
 
     OUTPUT:
-        **index** - The unique id of the created generator
+        **index** (int) - The unique ID of the created generator
 
     EXAMPLE:
         create_gen(net, 1, p_kw = -120, vm_pu = 1.02)
@@ -779,7 +849,10 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,
                     index=None):
-    """
+    """create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,\
+                    s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,\
+                    max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,\
+                    index=None)
     Creates an external grid connection.
 
     External grids represent the higher level power grid connection and are modelled as the slack
@@ -793,7 +866,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     OPTIONAL:
         **vm_pu** (float, default 1.0) - voltage at the slack node in per unit
 
-        **va_degree** (float, default 0.) - name of of the external grid*
+        **va_degree** (float, default 0.) - voltage angle at the slack node in degrees*
 
         **name** (string, default None) - name of of the external grid
 
@@ -814,6 +887,9 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
     """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
     if index and index in net["ext_grid"].index:
         raise UserWarning("An external grid with with index %s already exists" % index)
 
@@ -889,7 +965,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
                 df=1., parallel=1, in_service=True, max_loading_percent=nan):
-    """
+    """ create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,\
+                df=1., parallel=1, in_service=True, max_loading_percent=nan)
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
 
@@ -908,7 +985,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     OPTIONAL:
         **name** (string) - A custom name for this line
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **geodata**
         (array, default None, shape= (,2L)) -
@@ -925,7 +1002,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
-        **line_id** - The unique line_id of the created line
+        **index** (int) - The unique ID of the created line
 
     EXAMPLE:
         create_line(net, "line1", from_bus = 0, to_bus = 1, length_km=0.1,  std_type="NAYY 4x50 SE")
@@ -935,8 +1012,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     # check if bus exist to attach the line to
     for b in [from_bus, to_bus]:
         if b not in net["bus"].index.values:
-            raise UserWarning("Line %s tries to attach to non-existing bus %s"
-                              % (name, b))
+            raise UserWarning("Line %s tries to attach to non-existing bus %s"% (name, b))
 
     if index is None:
         index = get_free_id(net["line"])
@@ -985,7 +1061,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 geodata=None, in_service=True, df=1., parallel=1,
                                 max_loading_percent=nan, **kwargs):
 
-    """
+    """create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km, \
+                                c_nf_per_km, max_i_ka, name=None, index=None, type=None, \
+                                geodata=None, in_service=True, df=1., parallel=1, \
+                                max_loading_percent=nan, **kwargs)
     Creates a line element in net["line"] from line parameters.
 
     INPUT:
@@ -1009,7 +1088,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     OPTIONAL:
         **name** (string) - A custom name for this line
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -1030,7 +1109,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
-        **line_id** - The unique line_id of the created line
+        **index** (int) - The unique ID of the created line
 
     EXAMPLE:
         create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
@@ -1080,7 +1159,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1):
-    """
+    """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True, \
+                       index=None, max_loading_percent=nan, parallel=1)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1100,12 +1180,12 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
-        **trafo_id** - The unique trafo_id of the created transformer
+        **index** (int) - The unique ID of the created transformer
 
     EXAMPLE:
         create_transformer(net, hv_bus = 0, lv_bus = 1, name = "trafo1", std_type = "0.4 MVA 10/0.4 kV")
@@ -1173,7 +1253,12 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        tp_pos=nan, in_service=True, name=None, index=None,
                                        max_loading_percent=nan, parallel=1, **kwargs):
 
-    """
+    """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, \
+                                       vscr_percent, vsc_percent, pfe_kw, i0_percent, \
+                                       shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan, \
+                                       tp_min=nan, tp_st_percent=nan, tp_st_degree=nan, \
+                                       tp_pos=nan, in_service=True, name=None, index=None, \
+                                       max_loading_percent=nan, parallel=1, **kwargs)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1219,7 +1304,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **tp_st_percent** (int) - tap step in percent
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **kwargs** - nothing to see here, go along
 
@@ -1228,7 +1313,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
-        **trafo_id** - The unique trafo_id of the created transformer
+        **index** (int) - The unique ID of the created transformer
 
     EXAMPLE:
         create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_kva=40, vn_hv_kv=110, vn_lv_kv=10, vsc_percent=10, vscr_percent=0.3, pfe_kw=30, i0_percent=0.1, shift_degree=30)
@@ -1283,7 +1368,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan):
-    """
+    """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan, \
+                         in_service=True, index=None, max_loading_percent=nan)
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
 
@@ -1305,12 +1391,12 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
-        **trafo_id** - The unique trafo_id of the created transformer
+        **index** (int) - The unique ID of the created transformer
 
     EXAMPLE:
         create_transformer3w(net, hv_bus = 0, mv_bus = 1, lv_bus = 2, name = "trafo1", std_type = "63/25/38 MVA 110/20/10 kV")
@@ -1382,7 +1468,14 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan,
                                          tp_min=nan, name=None, in_service=True, index=None,
                                          max_loading_percent=nan):
-    """
+    """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
+                                         sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, \
+                                         vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
+                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,\
+                                         shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
+                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan, \
+                                         tp_min=nan, name=None, in_service=True, index=None, \
+                                         max_loading_percent=nan)
     Adds a three-winding transformer in table net["trafo3w"].
 
     Input:
@@ -1481,13 +1574,14 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                             "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
                             "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent",
                             "shift_mv_degree", "shift_lv_degree", "tp_side", "tp_st_percent",
-                            "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service", "name"]] = \
+                            "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service", "name", "std_type"
+                            ]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
          pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
          tp_side, tp_st_percent, tp_pos, tp_mid, tp_max,
-         tp_min, bool(in_service), name]
+         tp_min, bool(in_service), name, None]
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
@@ -1558,13 +1652,14 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
             raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
     elif et == "t3":
-        elm_tab = 'trafo3w'
-        if element not in net[elm_tab].index:
-            raise UserWarning("Unknown trafo3w index")
-        if (not net[elm_tab]["hv_bus"].loc[element] == bus and
-                not net[elm_tab]["mv_bus"].loc[element] == bus and
-                not net[elm_tab]["lv_bus"].loc[element] == bus):
-            raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
+        raise NotImplemented("Switches for three winding transformers are not implemented")
+#        elm_tab = 'trafo3w'
+#        if element not in net[elm_tab].index:
+#            raise UserWarning("Unknown trafo3w index")
+#        if (not net[elm_tab]["hv_bus"].loc[element] == bus and
+#                not net[elm_tab]["mv_bus"].loc[element] == bus and
+#                not net[elm_tab]["lv_bus"].loc[element] == bus):
+#            raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
     elif et == "b":
         if element not in net["bus"].index:
             raise UserWarning("Unknown bus index")
@@ -1588,7 +1683,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=None):
+def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_service=True,
+                 index=None):
     """
     Creates a shunt element
 
@@ -1602,12 +1698,18 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
         **q_kvar** - shunt susceptance in kVAr at v= 1.0 p.u.
 
     OPTIONAL:
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus
+
+        **step** (int, 1) - step of shunt with which power values are multiplied
+
         **name** (str, None) - element name
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
+
     OUTPUT:
-        shunt id
+        **index** (int) - The unique ID of the created shunt
 
     EXAMPLE:
         create_shunt(net, 0, 20)
@@ -1621,16 +1723,43 @@ def create_shunt(net, bus, q_kvar, p_kw=0., name=None, in_service=True, index=No
     if index in net["shunt"].index:
         raise UserWarning("A shunt with index %s already exists" % index)
 
+    if vn_kv is None:
+        vn_kv = net.bus.vn_kv.at[bus]
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "in_service"]] = \
-        [bus, name, p_kw, q_kvar, in_service]
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "in_service"]] = \
+        [bus, name, p_kw, q_kvar, vn_kv, step, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)
 
     return index
+
+def create_shunt_as_capacitor(net, bus, q_kvar, loss_factor, **kwargs):
+    """
+    Creates a shunt element representing a capacitor bank.
+
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** - bus number of bus to whom the shunt is connected to
+
+        **q_kvar** (float) - reactive power of the capacitor bank at rated voltage
+
+        **loss_factor** (float) - loss factor tan(delta) of the capacitor bank
+
+        **kwargs are passed to the create_shunt function
+
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created shunt
+    """
+    q_kvar = -abs(q_kvar) #q is always negative for capacitor
+    p_kw = abs(q_kvar*loss_factor) #p is always positive for active power losses
+    return create_shunt(net, bus, q_kvar=q_kvar , p_kw=p_kw, **kwargs)
+
 
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None, xtf_pu=None,
@@ -1655,6 +1784,9 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None,
 
         impedance id
     """
+    for b in [from_bus, to_bus]:
+        if b not in net["bus"].index.values:
+            raise UserWarning("Impedance %s tries to attach to non-existing bus %s"% (name, b))
 
     if index is None:
         index = get_free_id(net.impedance)
@@ -1773,7 +1905,10 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
                   index=None, name=None, max_p_kw=nan, min_q_from_kvar=nan,
                   min_q_to_kvar=nan, max_q_from_kvar=nan, max_q_to_kvar=nan,
                   in_service=True):
-    """
+    """create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu, \
+                  index=None, name=None, max_p_kw=nan, min_q_from_kvar=nan, \
+                  min_q_to_kvar=nan, max_q_from_kvar=nan, max_q_to_kvar=nan, \
+                  in_service=True)
     Creates a dc line.
 
     INPUT:
@@ -1797,14 +1932,14 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
         "transformer".
 
     OPTIONAL:
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **name** (str, None) - A custom name for this dc line
 
         **in_service** (boolean) - True for in_service or False for out of service
 
     OUTPUT:
-        (int) Index of dc line
+        **index** (int) - The unique ID of the created element
 
     EXAMPLE:
         create_dcline(net, from_bus=0, to_bus=1, p_kw=1e4, loss_percent=1.2, loss_kw=25, vm_from_pu=1.01, vm_to_pu=1.02)
@@ -1945,10 +2080,10 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
     OUTPUT:
-        (int) Index of cost entry
+        **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
         create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
@@ -1963,6 +2098,20 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
     if index in net["piecewise_linear_cost"].index:
         raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
 
+    if not net["polynomial_cost"].loc[
+            (net["polynomial_cost"].element_type == element_type) &
+            (net["polynomial_cost"].element == element) &
+            (net["polynomial_cost"].type == type)].empty:
+        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
+                          (element_type, element))
+
+    if not net["piecewise_linear_cost"].loc[
+            (net["piecewise_linear_cost"].element_type == element_type) &
+            (net["piecewise_linear_cost"].element == element) &
+            (net["piecewise_linear_cost"].type == type)].empty:
+        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
+                          (element_type, element))
+
     p = data_points[:, 0]
     f = data_points[:, 1]
 
@@ -1970,19 +2119,41 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
         raise ValueError("Piecewise linear costs need to be defined in ascending order: " +
                          "p0 < p1 < ... < pn")
 
-    if type == "p":
-        if not (hasattr(net[element_type], "max_p_kw") and hasattr(net[element_type], "min_p_kw")):
-            raise AttributeError("No operational constraints defined for controllable element!")
-        # if not (net[element_type].max_p_kw.at[element] <= max(p) and net[element_type].min_p_kw.at[element] >= min(p)):
-        #     raise ValueError("Cost function must be defined for whole power range of the generator")
-
-    if type == "q":
-        if not (hasattr(net[element_type], "max_q_kvar") or hasattr(net[element_type],
-                                                                    "min_q_kvar")):
-            raise AttributeError("No operational constraints defined!")
-        if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
-                element_type].min_q_kvar.at[element] >= min(p)):
-            raise ValueError("Cost function must be defined for whole power range of the generator")
+    if element_type != 'dcline':
+        if type == "p":
+            if not (hasattr(net[element_type], "max_p_kw") and hasattr(net[element_type],
+                                                                       "min_p_kw")):
+                raise AttributeError("No operational constraints defined for controllable element!")
+            if not (net[element_type].max_p_kw.at[element] <= max(p) and
+                    net[element_type].min_p_kw.at[element] >= min(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
+        if type == "q":
+            if not (hasattr(net[element_type], "max_q_kvar") or hasattr(net[element_type],
+                                                                        "min_q_kvar")):
+                raise AttributeError("No operational constraints defined!")
+            if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
+                    element_type].min_q_kvar.at[element] >= min(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
+    else:
+        if type == "p":
+            if not (hasattr(net[element_type], "max_p_kw")):
+                raise AttributeError("No operational constraints defined for controllable element!")
+            if not (net[element_type].max_p_kw.at[element] <= max(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
+        if type == "q":
+            if not pd.Series([
+                "max_q_to_kvar", "max_q_from_kvar", "min_q_to_kvar", "min_q_from_kvar"]).isin(
+                 net[element_type].columns).all():
+                raise AttributeError("No operational constraints defined!")
+            if not (net[element_type].max_q_to_kvar.at[element] <= max(p) and
+                    net[element_type].max_q_from_kvar.at[element] <= max(p) and
+                    net[element_type].min_q_to_kvar.at[element] <= min(p) and
+                    net[element_type].min_q_from_kvar.at[element] >= min(p)):
+                raise ValueError("Cost function must be defined for whole power range of the "
+                                 "generator")
 
     net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]
@@ -2009,13 +2180,15 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
 
         **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
 
+        **type ** -"p" or "q"
+
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
 
-        **index** (int) - Force a specified ID if it is available
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
     OUTPUT:
-        (int) Index of cost entry
+        **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
         create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
@@ -2027,9 +2200,25 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
     if index in net["polynomial_cost"].index:
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
 
-    if not net["polynomial_cost"][net["polynomial_cost"].element_type == element_type].loc[
-           net["polynomial_cost"].element == element].empty:
-        raise UserWarning("A polynomial_cost for this element already exists")
+    if not net["polynomial_cost"].loc[
+            (net["polynomial_cost"].element_type == element_type) &
+            (net["polynomial_cost"].element == element) &
+            (net["polynomial_cost"].type == type)].empty:
+        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
+                          (element_type, element))
+
+    if not net["piecewise_linear_cost"].loc[
+            (net["piecewise_linear_cost"].element_type == element_type) &
+            (net["piecewise_linear_cost"].element == element) &
+            (net["piecewise_linear_cost"].type == type)].empty:
+        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
+                          (element_type, element))
+# =======
+#     typecosts=  net["polynomial_cost"][net["polynomial_cost"].element_type == element_type]
+#
+#     if not typecosts[typecosts.type == type].loc[typecosts.element == element].empty:
+#         raise UserWarning("A polynomial_cost for this element already exists")
+# >>>>>>> Need to commit for merging my changes to make_objective with steffens changes.
 
     net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
         [type, element, element_type]

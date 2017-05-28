@@ -14,4 +14,6 @@ min_p_kw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
 controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable
+k***;float;:math:`\geq` 0;Ratio of nominal current to short circuit current
+rx***;float;:math:`\geq` 0;R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor
 in_service*;boolean;True / False;specifies if the generator is in service.

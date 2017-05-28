@@ -5,79 +5,117 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from pypower.idx_bus import BASE_KV
+from pandapower.idx_bus import BASE_KV
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
-from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS, IP, ITH, X_EQUIV, IKSSCV
+from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, X_EQUIV, IKSS2, IKCV, M
 from pandapower.auxiliary import _sum_by_group
 
 def _calc_ikss(net, ppc):
     fault = net._options["fault"]
     case = net._options["case"]
-    c = ppc["bus_sc"][:, C_MIN] if case == "min" else ppc["bus_sc"][:, C_MAX]
+    c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
     ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
-    z_equiv = abs(ppc["bus_sc"][:, R_EQUIV] + ppc["bus_sc"][:, X_EQUIV] *1j)
+    z_equiv = abs(ppc["bus"][:, R_EQUIV] + ppc["bus"][:, X_EQUIV] *1j)
     if fault == "3ph":
-        ppc["bus_sc"][:, IKSS] = c / z_equiv  / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
+        ppc["bus"][:, IKSS1] = c / z_equiv  / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"]
     elif fault == "2ph":
-        ppc["bus_sc"][:, IKSS] = c / z_equiv / ppc["bus"][:, BASE_KV] / 2 * ppc["baseMVA"]
+        ppc["bus"][:, IKSS1] = c / z_equiv / ppc["bus"][:, BASE_KV] / 2 * ppc["baseMVA"]
     _current_source_current(net, ppc)
-    ikss = ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV]
-    if net._options["branch_results"]:
-        ppc["branch_sc"][:, [IKSS_F, IKSS_T]] = _branch_currents_from_bus(ppc, ikss, case)
 
 def _current_source_current(net, ppc):
+    ppc["bus"][:, IKCV] = 0
+    ppc["bus"][:, IKSS2] = 0
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    sgen = net.sgen[net._is_elements["sgen"]]
+    if not "motor" in net.sgen.type.values:
+        sgen = net.sgen[net._is_elements["sgen"]]
+    else:
+        sgen = net.sgen[(net._is_elements["sgen"]) & (net.sgen.type != "motor")]
     if len(sgen) == 0:
-        ppc["bus_sc"][:, IKSSCV] = 0.
         return
     if any(pd.isnull(sgen.sn_kva)):
         raise UserWarning("sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
+    baseI = ppc["internal"]["baseI"]
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
-    zbus = ppc["internal"]["zbus"]
-    i_sgen_pu = sgen.sn_kva.values / net.sn_kva * sgen.k.values * -1j
-    buses, i, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
-    i_sgen_bus_pu = np.zeros(ppc["bus"].shape[0], dtype=complex)
-    i_sgen_bus_pu[buses] = i
-    ppc["bus_sc"][:, IKSSCV] = abs(1 / np.diag(zbus) * np.dot(zbus, i_sgen_bus_pu) / ppc["bus"][:, BASE_KV] / np.sqrt(3) * ppc["baseMVA"])
+    Zbus = ppc["internal"]["Zbus"]
+    i_sgen_pu = sgen.sn_kva.values / net.sn_kva * sgen.k.values
+    buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
+    ppc["bus"][buses, IKCV] = ikcv_pu
+    ppc["bus"][:, IKSS2] = abs(1 / np.diag(Zbus) * np.dot(Zbus, ppc["bus"][:, IKCV] *-1j) / baseI)
+    ppc["bus"][buses, IKCV] /= baseI[buses]
 
 def _calc_ip(net, ppc):
-    case = net._options["case"]
-    ppc["bus_sc"][:, IP] = np.sqrt(2) * (ppc["bus_sc"][:, KAPPA] * ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV])
-    if net._options["branch_results"]:
-        ppc["branch_sc"][:, [IP_F, IP_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, IP], case)
+    ip = np.sqrt(2) * (ppc["bus"][:, KAPPA] * ppc["bus"][:, IKSS1] + ppc["bus"][:, IKSS2])
+    ppc["bus"][:, IP] = ip
 
 def _calc_ith(net, ppc):
-    case = net._options["case"]
     tk_s = net["_options"]["tk_s"]
-    kappa = ppc["bus_sc"][:, KAPPA]
+    kappa = ppc["bus"][:, KAPPA]
     f = 50
     n = 1
     m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
     m[np.where(kappa > 1.99)] = 0
-    ppc["bus_sc"][:, ITH] = (ppc["bus_sc"][:, IKSS] + ppc["bus_sc"][:, IKSSCV])  * np.sqrt(m + n)
-    if net._options["branch_results"]:
-        ppc["branch_sc"][:, [ITH_F, ITH_T]] = _branch_currents_from_bus(ppc, ppc["bus_sc"][:, ITH], case)
+    ppc["bus"][:, M] = m
+    ith = (ppc["bus"][:, IKSS1] + ppc["bus"][:, IKSS2])  * np.sqrt(m + n)
+    ppc["bus"][:, ITH] = ith
 
-def _branch_currents_from_bus(ppc, current, case):
-    zbus = ppc["internal"]["zbus"]
+def _calc_branch_currents(net, ppc):
+    case = net._options["case"]
+    Zbus = ppc["internal"]["Zbus"]
     Yf = ppc["internal"]["Yf"]
     Yt = ppc["internal"]["Yf"]
     baseI = ppc["internal"]["baseI"]
-    V = (current * baseI) * zbus
-    fb = np.real(ppc["branch"][:,0]).astype(int)
-    tb = np.real(ppc["branch"][:,1]).astype(int)
-    i_all_f = abs(np.conj(Yf.dot(V)))
-    i_all_t = abs(np.conj(Yt.dot(V)))
-    if case == "max":
-        current_from = np.max(i_all_f, axis=1) / baseI[fb]
-        current_to = np.max(i_all_t, axis=1) / baseI[tb]
-    elif case == "min":
-        i_all_f[i_all_f < 1e-10] = np.inf
-        i_all_t[i_all_t < 1e-10] = np.inf
-        current_from = np.min(i_all_f, axis=1) / baseI[fb]
-        current_to = np.max(i_all_t, axis=1) / baseI[tb]
-    return np.c_[current_from, current_to]
+    n = ppc["bus"].shape[0]
+    fb = np.real(ppc["branch"][:, 0]).astype(int)
+    tb = np.real(ppc["branch"][:, 1]).astype(int)
+    minmax = np.nanmin if case == "min" else np.nanmax
+    #calculate voltage source branch current
+    V_ikss = (ppc["bus"][:, IKSS1] * baseI) * Zbus
+    ikss1_all_f = np.conj(Yf.dot(V_ikss))
+    ikss1_all_t = np.conj(Yt.dot(V_ikss))
+    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = np.nan
+    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = np.nan
+
+    #add current source branch current if there is one
+    current_sources = any(ppc["bus"][:, IKCV]) > 0
+    if current_sources:
+        current = np.tile(-ppc["bus"][:, IKCV], (n,1))
+        np.fill_diagonal(current, current.diagonal() + ppc["bus"][:, IKSS2])
+        V = np.dot((current * baseI), Zbus).T
+        fb = np.real(ppc["branch"][:,0]).astype(int)
+        tb = np.real(ppc["branch"][:,1]).astype(int)
+        ikss2_all_f = np.conj(Yf.dot(V))
+        ikss2_all_t = np.conj(Yt.dot(V))
+        ikss_all_f = abs(ikss1_all_f + ikss2_all_f)
+        ikss_all_t = abs(ikss1_all_t + ikss2_all_t)
+    else:
+        ikss_all_f = abs(ikss1_all_f)
+        ikss_all_t = abs(ikss1_all_t)
+
+    ppc["branch"][:, IKSS_F] = minmax(ikss_all_f, axis=1) / baseI[fb]
+    ppc["branch"][:, IKSS_T] = minmax(ikss_all_t, axis=1) / baseI[tb]
+
+    if net._options["ip"]:
+        kappa = ppc["bus"][:, KAPPA]
+        if current_sources:
+            ip_all_f = np.sqrt(2) * (ikss1_all_f * kappa + ikss2_all_f)
+            ip_all_t = np.sqrt(2) * (ikss1_all_t * kappa + ikss2_all_t)
+        else:
+            ip_all_f = np.sqrt(2) * ikss1_all_f * kappa
+            ip_all_t = np.sqrt(2) * ikss1_all_t * kappa
+
+        ppc["branch"][:, IP_F] = minmax(abs(ip_all_f), axis=1) / baseI[fb]
+        ppc["branch"][:, IP_T] = minmax(abs(ip_all_t), axis=1) / baseI[tb]
+
+    if net._options["ith"]:
+        n = 1
+        m = ppc["bus"][:, M]
+        ith_all_f = ikss_all_f * np.sqrt(m + n)
+        ith_all_t = ikss_all_t * np.sqrt(m + n)
+        ppc["branch"][:, ITH_F] = minmax(ith_all_f, axis=1) / baseI[fb]
+        ppc["branch"][:, ITH_T] = minmax(ith_all_t, axis=1) / baseI[fb]
+
+
+

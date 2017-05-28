@@ -1,6 +1,23 @@
 Change Log
 =============
 
+[1.3.0] - 2017-05-10
+----------------------
+- [ADDED] ZIP loads integrated in power flow
+- [ADDED] numba implementation of dissolving switch buses
+- [ADDED] Current source representation of full converter elements in short circuit calculations
+- [ADDED] Method C for calculation of factor kappa in short circuit calculation
+- [CHANGED] Speedup for calculation of branch short circuit currents
+- [CHANGED] Branch results for minimum short circuit calculations are calculated as minimal currents
+- [ADDED] Interactive plots with plotly
+- [CHANGED] included pypower files for power flow and index files
+- [FIXED] compatibility with numpy 1.12
+- [CHANGED] -1 is a valid value for net.bus_geodata.x
+- [CHANGED] allow transformers with negative xk to provide large scale IEEE cases (RTE, PEGASE, Polish)
+- [ADDED] large scale IEEE cases (RTE, PEGASE, Polish)
+- [ADDED] rated voltage and step variable for shunts
+- [ADDED] lagrange multiplier included in bus results after OPF
+
 [1.2.2] - 2017-03-22
 --------------------
 - [CHANGED] Minor refactoring in pd2ppc
@@ -18,7 +35,7 @@ Change Log
 - [ADDED] parameter parallel for trafo element
 - [ADDED] connectivity check for power flow to deal with disconnected network areas
 - [ADDED] backward/forward sweep power flow algorithm specially suited for radial and weakly-meshed networks
-- [ADDED] linear piece wise and polynomial OPF cost functions 
+- [ADDED] linear piece wise and polynomial OPF cost functions
 - [ADDED] possibility to make loads controllable in OPF
 - [ADDED] to_json and from_json functions to save/load networks with a JSON format
 - [ADDED] generator lookup to allow multiple generators at one bus

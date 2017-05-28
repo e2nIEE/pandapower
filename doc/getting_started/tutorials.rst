@@ -25,7 +25,8 @@ Configure and run a state estimation:
 
 Run a short-circuit calculation according to IEC 60909:
     - `short-circuit calculation <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit.ipynb>`_
-    
+    - `considering renewable energy (2016 revision) <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit_renewables.ipynb>`_
+
 Working with the pandapower standard type library:
     - `standard types <https://github.com/panda-power/pandapower/blob/master/tutorials/std_types.ipynb>`_ 
 
@@ -33,10 +34,14 @@ Running topological searches:
     - `topologic searches <https://github.com/panda-power/pandapower/blob/master/tutorials/topology.ipynb>`_
 
 Plotting pandapower networks:
-    - `basic plotting <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_basic.ipynb>`_
-    - `plotting with colormaps <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_colormaps.ipynb>`_
-    - `plotting without geographical data <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_structural.ipynb>`_
-
+    * matplotlib
+        - `basic plotting <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_basic.ipynb>`_
+        - `plotting with colormaps <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_colormaps.ipynb>`_
+        - `plotting without geographical data <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_structural.ipynb>`_
+    * interactive plots using plotly
+        - `built-in plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_
+        - `custom plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_traces.ipynb>`_
+        - `interactive plots on maps <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_maps.ipynb>`_
     
 To run the tutorials interactively (jupyter module is needed):
 

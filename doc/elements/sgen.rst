@@ -10,6 +10,8 @@ Create Function
 
 .. autofunction:: pandapower.create_sgen
 
+.. autofunction:: pandapower.create_sgen_from_cosphi
+
 Input Parameters
 =====================
 

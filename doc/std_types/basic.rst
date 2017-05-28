@@ -20,11 +20,11 @@ Lines
 Transformers
 -----------------
 
-.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|l|l|
+.. tabularcolumns:: |l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|
 .. csv-table:: 
    :file: trafotypes.csv
    :delim: ;
-   :widths: 60, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15
+   :widths: 60, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15
 
 Three Winding Transformers
 --------------------------------

@@ -6,9 +6,8 @@
 
 import json
 import numbers
-import os
+import os, sys
 import pickle
-import sys
 
 import numpy
 import pandas as pd
@@ -16,7 +15,7 @@ import pandas as pd
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-
+from pandapower.html import _net_to_html
 
 def to_pickle(net, filename):
     """
@@ -35,9 +34,15 @@ def to_pickle(net, filename):
     """
     if not filename.endswith(".p"):
         raise Exception("Please use .p to save pandapower networks!")
+    save_net = dict()
+    for key, item in net.items():
+        if key != "_is_elements":       
+            save_net[key] = {"DF": item.to_dict(), "columns": list(item.columns),
+                            "dtypes": {col: dt for col, dt in zip(item.columns, 
+                                      item.dtypes)}}  \
+                            if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
-        pickle.dump(dict(net), f, protocol=2) #use protocol 2 for py2 / py3 compatibility
-
+        pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
@@ -152,6 +157,13 @@ def from_pickle(filename, convert=True):
         else:
             net = pickle.load(f)  # without encoding in python 2
     net = pandapowerNet(net)
+    for key, item in net.items():
+        if isinstance(item, dict) and "DF" in item:
+            net[key] = pd.DataFrame.from_dict(item["DF"])
+            if "columns" in item:
+                net[key] = net[key].reindex_axis(item["columns"], axis=1)
+            if "dtypes" in item:
+                net[key] = net[key].astype(item["dtypes"])
     if convert:
         convert_format(net)
     return net
@@ -252,3 +264,32 @@ def from_json(filename, convert=True):
             convert_format(net)
         return net
     return None
+
+
+def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
+    """
+    Saves a pandapower Network to an html file.
+
+    INPUT:
+        **net** (dict) - The pandapower format network
+
+        **filename** (string) - The absolute or relative path to the input file.
+
+    OPTIONAL:
+        **respect_switches** (boolean, True) - True: open line switches are being considered
+                                                     (no edge between nodes)
+                                               False: open line switches are being ignored
+
+        **include_lines** (boolean, True) - determines, whether lines get converted to edges
+
+        **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
+
+        **show_tables** (boolean, True) - shows pandapower element tables
+
+    """
+    if not filename.endswith(".html"):
+        raise Exception("Please use .html to save pandapower networks!")
+    with open(filename, "w") as f:
+        html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
+        f.write(html_str)
+        f.close()

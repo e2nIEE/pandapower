@@ -418,5 +418,8 @@ def test_dcopf():
     assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main(["-s"])
     # pytest.main(["test_basic.py", "-xs"])
+    # test_simplest_dispatch()
+    # test_trafo3w_loading()
+    # test_trafo3w_loading()

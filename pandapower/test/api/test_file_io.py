@@ -16,7 +16,7 @@ def test_pickle():
     net_in = create_test_network()
     pp.to_pickle(net_in, "testfile.p")
     net_out = pp.from_pickle("testfile.p")
-    assert_net_equal(net_in, net_out)
+    assert_net_equal(net_in, net_out, True)
     os.remove('testfile.p')
 
 
@@ -40,5 +40,20 @@ def test_json():
     os.remove('testfile.json')
 
 
+def test_html():
+    net_in = create_test_network()
+    pp.to_html(net_in, "testfile.html")
+    os.remove('testfile.html')
+
+
+def test_convert_format():
+    folder = os.path.abspath(os.path.dirname(pp.__file__))
+    net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    pp.runpp(net)
+    assert net.converged
+
+
 if __name__ == "__main__":
-    pytest.main(["test_file_io.py", "-xs"])
+#    folder = os.path.abspath(os.path.dirname(pp.__file__))
+#    net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    pytest.main(["test_file_io.py"])

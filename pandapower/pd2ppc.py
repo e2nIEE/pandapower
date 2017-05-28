@@ -7,20 +7,25 @@
 import copy
 
 import numpy as np
-from pypower.idx_area import PRICE_REF_BUS
-from pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pypower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pypower.idx_gen import GEN_BUS, GEN_STATUS
-from pypower.run_userfcn import run_userfcn
 
-from pandapower.auxiliary import _set_isolated_buses_out_of_service, _write_lookup_to_net, \
-    _check_connectivity, _create_ppc2pd_bus_lookup, _remove_isolated_elements_from_is_elements, _select_is_elements
+from pandapower.idx_area import PRICE_REF_BUS
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.idx_gen import GEN_BUS, GEN_STATUS
+
+try:
+    from pypower.run_userfcn import run_userfcn
+except ImportError:
+    # ToDo: Error only for OPF functions if PYPOWER is not installed
+    pass
+
+import pandapower.auxiliary as aux
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
     _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
-    _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc
+    _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
-from pandapower.make_objective import _make_objective
+from pandapower.opf.make_objective import _make_objective
 
 
 def _pd2ppc(net):
@@ -57,14 +62,20 @@ def _pd2ppc(net):
         **ppci** - The "internal" pypower format network for PF calculations
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = _select_is_elements(net)
+    use_numba = ("numba" in net["_options"] and net["_options"]["numba"] and
+                 (net["_options"]["recycle"] is None or
+                  not net["_options"]["recycle"]["_is_elements"]))
+    # use_numba = False
+    if use_numba:
+        net["_is_elements"] = aux._select_is_elements_numba(net)
+    else:
+        net["_is_elements"] = aux._select_is_elements(net)
 
     # get options
     mode = net["_options"]["mode"]
     check_connectivity = net["_options"]["check_connectivity"]
 
     ppc = _init_ppc(net)
-    _init_lookups(net)
 
     if mode == "opf":
         # additional fields in ppc
@@ -81,6 +92,7 @@ def _pd2ppc(net):
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
         _add_gen_impedances_ppc(net, ppc)
+        _add_motor_impedances_ppc(net, ppc)
     else:
         _calc_loads_and_add_on_ppc(net, ppc)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
@@ -95,12 +107,10 @@ def _pd2ppc(net):
 
     # sets buses out of service, which aren't connected to branches / REF buses
     if check_connectivity:
-        isolated_nodes, _, _ = _check_connectivity(ppc)
-        _create_ppc2pd_bus_lookup(net)
-        _remove_isolated_elements_from_is_elements(net, isolated_nodes)
-        # ToDo: The reverse lookup (ppc2pd) needs to be updated in ppc2ppci!
+        isolated_nodes, _, _ = aux._check_connectivity(ppc)
+        net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
     else:
-        _set_isolated_buses_out_of_service(net, ppc)
+        aux._set_isolated_buses_out_of_service(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
@@ -135,36 +145,22 @@ def _init_ppc(net):
     return ppc
 
 
-def _init_lookups(net):
-    if "_pd2ppc_lookups" not in net:
-        net["_pd2ppc_lookups"] = {"bus": None,
-                                  "gen": None,
-                                  "branch": None}
-
-
 def _ppc2ppci(ppc, ppci, net):
     # BUS Sorting and lookups
-    mode = net._options["mode"]
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # sort busses in descending order of column 1 (namely: 4 (OOS), 3 (REF), 2 (PV), 1 (PQ))
-    ppc_buses = ppc["bus"]
     # get OOS busses and place them at the end of the bus array (there are no OOS busses in the ppci)
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
     ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
 
-    if mode == "sc":
-        ppci['bus_sc'] = ppc['bus_sc'][~oos_busses]
-        ppc['bus_sc'] = np.r_[ppc['bus_sc'][~oos_busses], ppc['bus_sc'][oos_busses]]
-
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
-    aranged_buses = np.arange(len(ppc_buses))
+    aranged_buses = np.arange(len(ppc["bus"]))
 
     # lookup ppc former order -> consecutive order
-    e2i = np.zeros(len(ppc_buses), dtype=int)
+    e2i = np.zeros(len(ppc["bus"]), dtype=int)
     e2i[ppc_former_order] = aranged_buses
 
     # save consecutive indices in ppc and ppci
@@ -173,7 +169,6 @@ def _ppc2ppci(ppc, ppci, net):
 
     # update lookups (pandapower -> ppci internal)
     _update_lookup_entries(net, bus_lookup, e2i, "bus")
-    # ToDo: The reverse lookup (ppc2pd) also needs to be updated when connectivity_check == True!
 
     if 'areas' in ppc:
         if len(ppc["areas"]) == 0:  # if areas field is empty
@@ -205,8 +200,8 @@ def _ppc2ppci(ppc, ppci, net):
 
     # update gen lookups
     _is_elements = net["_is_elements"]
-    eg_end = len(_is_elements['ext_grid'])
-    gen_end = eg_end + len(_is_elements['gen'])
+    eg_end = np.sum(_is_elements['ext_grid'])
+    gen_end = eg_end + np.sum(_is_elements['gen'])
     sgen_end = len(_is_elements["sgen_controllable"]) + gen_end if "sgen_controllable" in _is_elements else gen_end
     load_end = len(_is_elements["load_controllable"]) + sgen_end if "load_controllable" in _is_elements else sgen_end
 
@@ -240,8 +235,6 @@ def _ppc2ppci(ppc, ppci, net):
 
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
-    if mode == "sc":
-        ppci["branch_sc"] = ppc["branch_sc"][brs]
 
     ppci["gen"] = ppc["gen"][gs]
 
@@ -258,13 +251,16 @@ def _update_lookup_entries(net, lookup, e2i, element):
     valid_bus_lookup_entries = lookup >= 0
     # update entries
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
-    _write_lookup_to_net(net, element, lookup)
+    aux._write_lookup_to_net(net, element, lookup)
 
 
 def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     # get buses from pandapower and ppc
     _is_elements = net["_is_elements"]
-    pandapower_index = _is_elements[element].index.values
+    if element in ["sgen_controllable", "load_controllable"]:
+        pandapower_index = net["_is_elements"][element].index.values
+    else:
+        pandapower_index = net[element].index.values[_is_elements[element]]
     ppc_index = sort_gens[ppc_start_index: ppc_end_index]
 
     # init lookup
@@ -272,7 +268,7 @@ def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
 
     # update lookup
     lookup[pandapower_index] = ppc_index
-    _write_lookup_to_net(net, element, lookup)
+    aux._write_lookup_to_net(net, element, lookup)
 
 
 def _update_ppc(net):
@@ -283,7 +279,10 @@ def _update_ppc(net):
     @return:
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = _select_is_elements(net)
+    if net["_options"]["numba"]:
+        net["_is_elements"] = aux._select_is_elements_numba(net)
+    else:
+        net["_is_elements"] = aux._select_is_elements(net)
 
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup

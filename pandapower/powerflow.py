@@ -1,11 +1,18 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.create import create_gen
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
-from pandapower.pypower_extensions.runpf import _runpf
+from pandapower.pf.run_bfswpf import _run_bfswpf
+from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
+from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results
-from pandapower.run_bfswpf import _run_bfswpf
-from pandapower.run_dc_pf import _run_dc_pf
-from pandapower.run_newton_raphson_pf import _run_newton_raphson_pf
 
 
 class AlgorithmUnknown(ppException):
@@ -36,6 +43,7 @@ def _powerflow(net, **kwargs):
     max_iteration = net["_options"]["max_iteration"]
 
     net["converged"] = False
+    net["OPF_converged"] = False
     _add_auxiliary_elements(net)
 
     if (ac and not init == "results") or not ac:
@@ -66,7 +74,7 @@ def _powerflow(net, **kwargs):
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
-        raise LoadflowNotConverged("Power Flow {0} did not converge after {1}!".format(algorithm, max_iteration))
+        raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format(algorithm, max_iteration))
     else:
         net["_ppc"] = result
         net["converged"] = True
@@ -86,7 +94,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         elif algorithm == 'nr':
             result = _run_newton_raphson_pf(ppci, options)
         elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
-            result = _runpf(ppci, options, **kwargs)[0]
+            result = _runpf_pypower(ppci, options, **kwargs)[0]
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     else:
