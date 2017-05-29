@@ -110,8 +110,8 @@ def check_opf_data(net):
                              'max_q_to_kvar'])}
     for element_type in opf_col.keys():
         if len(net[element_type]):
-            missing_col = opf_col[element_type].loc[~opf_col[element_type].isin(net[
-                    element_type].columns)].values
+            missing_col = opf_col[element_type].loc[~opf_col[element_type].isin(
+                net[element_type].columns)].values
             controllable = True
             if element_type in ['gen', 'sgen', 'load']:
                 if 'controllable' not in missing_col:
@@ -598,10 +598,10 @@ def convert_format(net):
                         net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
                     if int(pd.__version__[2]) < 2:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                           raise_on_error=False)
+                                                             raise_on_error=False)
                     else:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                           errors="ignore")
+                                                             errors="ignore")
     return net
 
 
@@ -1161,14 +1161,15 @@ def merge_nets(net1, net2, validate=True, **kwargs):
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            net[element] = net1[element].append(net2[element], ignore_index=element != "bus")
+            net[element] = net1[element].append(net2[element],
+                                                ignore_index=element not in ("bus", "bus_geodata"))
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
         dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
                        net2.res_bus.vm_pu.values))
-        if dev1 > 1e-10 or dev2 > 1e-10:
-            raise UserWarning("Deviation in bus voltages after merging")
+        if dev1 > 1e-9 or dev2 > 1e-9:
+            raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
     return net
 
 
