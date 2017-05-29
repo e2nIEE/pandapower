@@ -117,6 +117,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
                 del nxg[int(u)][int(v)]['key']
             if 'key' in nxg[int(u)][int(v)][0]:
                 del nxg[int(u)][int(v)][0]['key']
+        # ToDo: Insert fallback layout for nxgraph
         coords = list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(nxg, prog='neato').values()))))
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'"%library)
