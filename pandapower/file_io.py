@@ -86,9 +86,9 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json(net, filename):
+def to_json_string(net):
     """
-        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
         will not be saved. Std types will also not be saved.
 
@@ -99,7 +99,7 @@ def to_json(net, filename):
 
         EXAMPLE:
 
-             >>> pp.to_pickle(net, "example.json")
+             >>> json = pp.to_json_string(net)
 
     """
     json_string = "{"
@@ -124,8 +124,28 @@ def to_json(net, filename):
             json_string += '"%s":null,' % k
         else:
             raise UserWarning("could not detect type of %s" % k)
+    json_string = json_string[:-1] + "}\n"
+    return json_string
+
+def to_json(net, filename=None):
+    """
+        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        be saved in ascending order. net elements which name begins with "_" (internal elements)
+        will not be saved. Std types will also not be saved.
+
+        INPUT:
+            **net** (dict) - The pandapower format network
+
+            **filename** (string) - The absolute or relative path to the input file.
+
+        EXAMPLE:
+
+             >>> pp.to_json(net, "example.json")
+
+    """
+    json_string = to_json_string(net)
     with open(filename, "w") as text_file:
-        text_file.write(json_string[:-1] + "}\n")
+        text_file.write(json_string)
 
 
 def from_pickle(filename, convert=True):
