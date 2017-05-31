@@ -67,4 +67,3 @@ def test_suburb_1():
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_synthetic_voltage_control_lv_networks.py"])
-#    test_create_kerber_vorstadtnetz_kabel_2()

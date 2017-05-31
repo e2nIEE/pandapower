@@ -89,30 +89,29 @@ def assert_res_out_of_service(net, idx, name):
 
     Specifications are:
 
-        res_bus["vm_pu"]  		    nan
-        res_bus.va_degree  	    nan
-        res_bus["p_kw"]       	      0
-        res_bus["q_kvar"]        	0
+        res_bus["vm_pu"]  		     nan
+        res_bus.va_degree  	         nan
+        res_bus["p_kw"]       	     0
+        res_bus["q_kvar"]        	  0
 
+        res_line.p_from_kw  		  0
+        res_line.q_from_kvar		  0
+        res_line.p_to_kw		     0
+        res_line.q_to_kvar		     0
+        res_line.i_ka			     0
+        res_line["loading_percent"] 0
 
-        res_line.p_from_kw  		0
-        res_line.q_from_kvar		0
-        res_line.p_to_kw		      0
-        res_line.q_to_kvar		0
-        res_line.i_ka			0
-        res_line["loading_percent"]	0
+        res_trafo			        all 0
 
-        res_trafo			Alles 0
+        res_load			        all 0
 
-        res_load			Alles 0
+        res_ext_grid		        all nan
 
-        res_ext_grid		Alles nan
-
-        res_gen["p_kw"]		     0
-        res_gen-q_kvar 		     0
+        res_gen["p_kw"]		         0
+        res_gen-q_kvar 		         0
         res_gen_va_degree	         nan
 
-        res_sgen 		    Alles	0
+        res_sgen 		           all  0
 
       Future: Elements out of service will not appear in result table!
 
