@@ -37,9 +37,8 @@ def to_pickle(net, filename):
     save_net = dict()
     for key, item in net.items():
         if key != "_is_elements":       
-            save_net[key] = {"DF": item.to_dict(), "columns": list(item.columns),
-                            "dtypes": {col: dt for col, dt in zip(item.columns, 
-                                      item.dtypes)}}  \
+            save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
+                            for col, dt in zip(item.columns, item.dtypes)}}  \
                             if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
         pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
@@ -159,9 +158,15 @@ def from_pickle(filename, convert=True):
     net = pandapowerNet(net)
     for key, item in net.items():
         if isinstance(item, dict) and "DF" in item:
-            net[key] = pd.DataFrame.from_dict(item["DF"])
-            if "columns" in item:
-                net[key] = net[key].reindex_axis(item["columns"], axis=1)
+            df_dict = item["DF"]
+            if "columns" in item["DF"]:
+                net[key] = pd.DataFrame(columns=df_dict["columns"],
+                                                  index=df_dict["index"],
+                                                  data=df_dict["data"])
+            else:
+                net[key] = pd.DataFrame.from_dict(item["DF"])
+                if "columns" in item:
+                    net[key] = net[key].reindex_axis(item["columns"], axis=1)
             if "dtypes" in item:
                 net[key] = net[key].astype(item["dtypes"])
     if convert:
@@ -293,3 +298,10 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
         f.write(html_str)
         f.close()
+        
+if __name__ == '__main__':
+    import pandapower.networks as nw
+    net = nw.mv_oberrhein()
+    path = "C:\\oberrhein2.p"
+    to_pickle(net, path)
+    net2 = from_pickle(path)

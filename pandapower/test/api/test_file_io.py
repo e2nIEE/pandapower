@@ -54,6 +54,4 @@ def test_convert_format():
 
 
 if __name__ == "__main__":
-#    folder = os.path.abspath(os.path.dirname(pp.__file__))
-#    net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
     pytest.main(["test_file_io.py"])

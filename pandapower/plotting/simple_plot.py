@@ -74,12 +74,14 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         bus_size *= mean_distance_between_buses
         ext_grid_size *= mean_distance_between_buses * 1.5
 
-    # if bus geodata is available, but no line geodata
-    use_line_geodata = False if len(net.line_geodata) == 0 else True
 
     # create bus collections ti plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
-    lc = create_line_collection(net, net.line.index, color=line_color, linewidths=line_width,
+
+    # if bus geodata is available, but no line geodata
+    use_line_geodata = False if len(net.line_geodata) == 0 else True
+    in_service_lines = net.line[net.line.in_service==True].index
+    lc = create_line_collection(net, in_service_lines, color=line_color, linewidths=line_width,
                                 use_line_geodata=use_line_geodata)
     collections = [bc, lc]
     eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)

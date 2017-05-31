@@ -316,7 +316,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
         **vn_kv** (float) - The grid voltage level.
 
-        **busgeodata** ((x,y)-tuple, default None) - coordinates used for plotting
+        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
         **type** (string, default "b") - Type of the bus. "n" - auxilary node,
         "b" - busbar, "m" - muff
