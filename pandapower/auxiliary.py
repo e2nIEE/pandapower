@@ -415,6 +415,7 @@ def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pra
 
 
 def _select_is_elements_numba(net, isolated_nodes=None):
+    # is missing sgen_controllable and load_controllable
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
@@ -434,6 +435,10 @@ def _select_is_elements_numba(net, isolated_nodes=None):
         is_elements[element] = element_in_service
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+
+    if net["_options"]["mode"] == "opf":
+        is_elements["load_controllable"] = net._is_elements["load_controllable"]
+        is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
     return is_elements
 
 
