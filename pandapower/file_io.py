@@ -24,7 +24,7 @@ def to_pickle(net, filename):
     INPUT:
         **net** (dict) - The pandapower format network
 
-        **filename** (string) - The absolute or relative path to the input file.
+        **filename** (string) - The absolute or relative path to the output file or an writable file-like objectxs
 
     EXAMPLE:
 
@@ -32,6 +32,9 @@ def to_pickle(net, filename):
         >>> pp.to_pickle(net, "example2.p")  # relative path
 
     """
+    if hasattr(filename, 'write'):
+        pickle.dump(dict(net), filename, protocol=2)
+        return
     if not filename.endswith(".p"):
         raise Exception("Please use .p to save pandapower networks!")
     save_net = dict()
@@ -50,7 +53,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     INPUT:
         **net** (dict) - The pandapower format network
 
-        **filename** (string) - The absolute or relative path to the input file.
+        **filename** (string) - The absolute or relative path to the output file
 
     OPTIONAL:
         **include_empty_tables** (bool, False) - empty element tables are saved as excel sheet
@@ -90,9 +93,9 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json(net, filename):
+def to_json_string(net):
     """
-        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
         will not be saved. Std types will also not be saved.
 
@@ -103,7 +106,7 @@ def to_json(net, filename):
 
         EXAMPLE:
 
-             >>> pp.to_pickle(net, "example.json")
+             >>> json = pp.to_json_string(net)
 
     """
     json_string = "{"
@@ -128,8 +131,31 @@ def to_json(net, filename):
             json_string += '"%s":null,' % k
         else:
             raise UserWarning("could not detect type of %s" % k)
+    json_string = json_string[:-1] + "}\n"
+    return json_string
+
+def to_json(net, filename=None):
+    """
+        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
+        be saved in ascending order. net elements which name begins with "_" (internal elements)
+        will not be saved. Std types will also not be saved.
+
+        INPUT:
+            **net** (dict) - The pandapower format network
+
+            **filename** (string or file) - The absolute or relative path to the output file or file-like object
+
+        EXAMPLE:
+
+             >>> pp.to_json(net, "example.json")
+
+    """
+    json_string = to_json_string(net)
+    if hasattr(filename, 'write'):
+        filename.write(json_string)
+        return
     with open(filename, "w") as text_file:
-        text_file.write(json_string[:-1] + "}\n")
+        text_file.write(json_string)
 
 
 def from_pickle(filename, convert=True):
@@ -137,7 +163,7 @@ def from_pickle(filename, convert=True):
     Load a pandapower format Network from pickle file
 
     INPUT:
-        **filename** (string) - The absolute or relative path to the input file.
+        **filename** (string or file) - The absolute or relative path to the input file or file-like object
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -148,13 +174,18 @@ def from_pickle(filename, convert=True):
         >>> net2 = pp.from_pickle("example2.p") #relative path
 
     """
-    if not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
-    with open(filename, "rb") as f:
+    def read(f):
         if sys.version_info >= (3,0):
-            net = pickle.load(f, encoding='latin1')  # with encoding in python 3
+            return pickle.load(f, encoding='latin1')
         else:
-            net = pickle.load(f)  # without encoding in python 2
+            return pickle.load(f)
+    if hasattr(filename, 'read'):
+        net = read(filename)
+    elif not os.path.isfile(filename):
+        raise UserWarning("File %s does not exist!!" % filename)
+    else:
+        with open(filename, "rb") as f:
+            net = read(f)
     net = pandapowerNet(net)
     for key, item in net.items():
         if isinstance(item, dict) and "DF" in item:
@@ -192,6 +223,9 @@ def from_excel(filename, convert=True):
         >>> net2 = pp.from_excel("example2.xlsx") #relative path
 
     """
+
+    if not os.path.isfile(filename):
+        raise UserWarning("File %s does not exist!!" % filename)
     xls = pd.ExcelFile(filename).parse(sheetname=None)
     par = xls["parameters"]["parameters"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
@@ -225,7 +259,7 @@ def from_json(filename, convert=True):
     Index columns of all pandas DataFrames are sorted in ascending order.
 
     INPUT:
-        **filename** (string) - The absolute or relative path to the input file.
+        **filename** (string or file) - The absolute or relative path to the input file or file-like object
 
     OUTPUT:
         **convert** (bool) - use the convert format function to
@@ -237,39 +271,42 @@ def from_json(filename, convert=True):
         >>> net = pp.from_json("example.json")
 
     """
-    with open(filename) as data_file:
-        data = json.load(data_file)
-        net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
+    if hasattr(filename, 'read'):
+        data = json.load(filename)
+    elif not os.path.isfile(filename):
+        raise UserWarning("File %s does not exist!!" % filename)
+    else:
+        with open(filename) as data_file:
+            data = json.load(data_file)
+        
+    net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
+# checks if field exists in empty network and if yes, matches data type
+    def check_equal_type(name):
+        if name in net:
+            if isinstance(net[name], type(data[name])):
+                return True
+            elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
+                return True
+            else:
+                return False
+        return True
 
-        # checks if field exists in empty network and if yes, matches data type
-        def check_equal_type(name):
-            if name in net:
-                if isinstance(net[name], type(data[name])):
-                    return True
-                elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
-                    return True
-                else:
-                    return False
-            return True
-
-        for k in sorted(data.keys()):
-            if not check_equal_type(k):
-                raise UserWarning("Different data type for existing pandapower field")
-            if isinstance(data[k], dict):
-                if isinstance(net[k], pd.DataFrame):
-                    columns = net[k].columns
-                    net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
-                    net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
-                    net[k] = net[k][columns]
-                else:
-                    net[k] = data[k]
+    for k in sorted(data.keys()):
+        if not check_equal_type(k):
+            raise UserWarning("Different data type for existing pandapower field")
+        if isinstance(data[k], dict):
+            if isinstance(net[k], pd.DataFrame):
+                columns = net[k].columns
+                net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
+                net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
+                net[k] = net[k][columns]
             else:
                 net[k] = data[k]
-        if convert:
-            convert_format(net)
-        return net
-    return None
-
+        else:
+            net[k] = data[k]
+    if convert:
+        convert_format(net)
+    return net
 
 def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
     """
@@ -298,10 +335,3 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
         f.write(html_str)
         f.close()
-        
-if __name__ == '__main__':
-    import pandapower.networks as nw
-    net = nw.mv_oberrhein()
-    path = "C:\\oberrhein2.p"
-    to_pickle(net, path)
-    net2 = from_pickle(path)
