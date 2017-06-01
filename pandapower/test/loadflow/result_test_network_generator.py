@@ -410,7 +410,7 @@ def add_test_shunt(net):
     pz = 120
     qz = -1200
     # one shunt at a bus
-    pp.create_shunt_as_condensator(net, b2, q_kvar=1200, loss_factor=0.1, vn_kv=22., step=2)
+    pp.create_shunt_as_capacitor(net, b2, q_kvar=1200, loss_factor=0.1, vn_kv=22., step=2)
     # add out of service shunt shuold not change the result
     pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
     return net
@@ -442,7 +442,7 @@ if __name__ == '__main__':
     pz = 120
     qz = -1200
     # one shunt at a bus
-    pp.create_shunt_as_condensator(net, b2, q_kvar=1200, loss_factor=0.1, vn_kv=20., step=1)
+    pp.create_shunt_as_capacitor(net, b2, q_kvar=1200, loss_factor=0.1, vn_kv=20., step=1)
     # add out of service shunt shuold not change the result
     pp.create_shunt(net, b2, p_kw=pz, q_kvar=qz, in_service=False)
     # add out of service shunt shuold not change the result

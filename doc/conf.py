@@ -15,12 +15,12 @@ import os
 import sys
 import mock
 
-MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
-                  'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
-                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
-                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm']
-for mod_name in MOCK_MODULES:
-  sys.modules[mod_name] = mock.Mock()
+#MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
+#                  'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
+#                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
+#                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm']
+#for mod_name in MOCK_MODULES:
+#  sys.modules[mod_name] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -80,6 +80,10 @@ release = "1.3.0"
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
+autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
+                  'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
+                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
+                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm']
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 

@@ -6,14 +6,9 @@
 
 import numpy as np
 
-from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options
+from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, _check_if_numba_is_installed
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow
-
-try:
-    from numba import _version as numba_version
-except:
-    pass
 
 try:
     import pplog as logging
@@ -131,17 +126,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     """
         ## check if numba is available and the corresponding flag
     if numba:
-        try:
-            # get numba Version (in order to use it it must be > 0.25)
-            nb_version = float(numba_version.version_version[:4])
-            if nb_version < 0.25:
-                logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
-                numba = False
-
-        except:
-            logger.warning('Warning: Numba cannot be imported.'
-                           ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
-            numba = False
+        numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values) or
@@ -151,7 +136,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     if algorithm not in ['nr', 'bfsw'] and voltage_depend_loads == True:
         logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
                        "loads will be considered as constant power".format(algorithm))
-
 
     ac = True
     mode = "pf"
@@ -165,6 +149,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 calculate_voltage_angles = True
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
+    if init == "results" and len(net.res_bus) == 0:
+        init = "auto"
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
@@ -224,6 +210,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     mode = "pf"
     init = 'flat'
 
+    numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
+
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
     copy_constraints_to_ppc = False
@@ -244,7 +232,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _powerflow(net, **kwargs)
 
 
-def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
+def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
            suppress_warnings=True, r_switch=0.0, delta = 1e-10, **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
@@ -291,6 +279,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     init = "flat"
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+
+    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -343,6 +333,8 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     calculate_voltage_angles = True
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+
+    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,

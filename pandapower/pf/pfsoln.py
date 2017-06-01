@@ -12,16 +12,18 @@
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from numpy import asarray, pi, ones, finfo, c_, real, flatnonzero as find, angle, conj, zeros, complex128
+from numba import jit
+from scipy.sparse import csr_matrix
+
+from pandapower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.idx_bus import VM, VA, PD, QD
 from pandapower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
-from scipy.sparse import csr_matrix
 
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=None):
+def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, Ibus=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -92,14 +94,25 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=None
                 gen[on[refgen[0]], PG] - sum(gen[on[refgen[1:len(refgen)]], PG])
 
     ##----- update/compute branch power flows -----
-    out = find(branch[:, BR_STATUS] == 0)        ## out-of-service branches
-    br =  find(branch[:, BR_STATUS]).astype(int) ## in-service branches
 
     ## complex power at "from" bus
-    Sf = V[ real(branch[br, F_BUS]).astype(int) ] * conj(Yf[br, :] * V) * baseMVA
+    Sf = V[real(branch[:, F_BUS]).astype(int)] * calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA,
+                                                                   Yf.shape[0])
     ## complex power injected at "to" bus
-    St = V[ real(branch[br, T_BUS]).astype(int) ] * conj(Yt[br, :] * V) * baseMVA
-    branch[ ix_(br, [PF, QF, PT, QT]) ] = c_[Sf.real, Sf.imag, St.real, St.imag]
-    branch[ ix_(out, [PF, QF, PT, QT]) ] = zeros((len(out), 4))
-
+    St = V[real(branch[:, T_BUS]).astype(int)] * calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA,
+                                                                   Yt.shape[0])
+    branch[:, [PF, QF, PT, QT]] = c_[Sf.real, Sf.imag, St.real, St.imag]
     return bus, gen, branch
+
+
+@jit(nopython=True, cache=True)
+def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x):  # pragma: no cover
+
+    Sx = zeros(dim_x, dtype=complex128)
+
+    # iterate through sparse matrix
+    for r in range(len(Yy_p) - 1):
+        for k in range(Yy_p[r], Yy_p[r + 1]):
+            Sx[r] += conj(Yy_x[k] * v[Yy_j[k]]) * baseMVA
+
+    return Sx

@@ -6,9 +6,8 @@
 
 import json
 import numbers
-import os
+import os, sys
 import pickle
-import sys
 
 import numpy
 import pandas as pd
@@ -38,9 +37,14 @@ def to_pickle(net, filename):
         return
     if not filename.endswith(".p"):
         raise Exception("Please use .p to save pandapower networks!")
+    save_net = dict()
+    for key, item in net.items():
+        if key != "_is_elements":       
+            save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
+                            for col, dt in zip(item.columns, item.dtypes)}}  \
+                            if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
-        pickle.dump(dict(net), f, protocol=2) #use protocol 2 for py2 / py3 compatibility
-
+        pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
@@ -183,6 +187,19 @@ def from_pickle(filename, convert=True):
         with open(filename, "rb") as f:
             net = read(f)
     net = pandapowerNet(net)
+    for key, item in net.items():
+        if isinstance(item, dict) and "DF" in item:
+            df_dict = item["DF"]
+            if "columns" in item["DF"]:
+                net[key] = pd.DataFrame(columns=df_dict["columns"],
+                                                  index=df_dict["index"],
+                                                  data=df_dict["data"])
+            else:
+                net[key] = pd.DataFrame.from_dict(item["DF"])
+                if "columns" in item:
+                    net[key] = net[key].reindex_axis(item["columns"], axis=1)
+            if "dtypes" in item:
+                net[key] = net[key].astype(item["dtypes"])
     if convert:
         convert_format(net)
     return net
@@ -299,7 +316,7 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         **net** (dict) - The pandapower format network
 
         **filename** (string) - The absolute or relative path to the input file.
-    
+
     OPTIONAL:
         **respect_switches** (boolean, True) - True: open line switches are being considered
                                                      (no edge between nodes)

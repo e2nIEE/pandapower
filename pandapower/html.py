@@ -77,7 +77,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
                   for fb, tb, length, idx, inservice, imax in
                   list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                            net.line.index, net.line.in_service, net.line.max_i_ka))
-                  if inservice == 1 and not idx in nogolines]        
+                  if inservice == 1 and not idx in nogolines]
 
         edges += [{'from': int(fb), 'to': int(tb)}
                   for fb, tb, idx, inservice in
@@ -91,7 +91,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
                   for fb, tb, length, idx, inservice, imax in
                   list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                            net.line.index, net.line.in_service, net.line.max_i_ka))
-                  if inservice != 1 or idx in nogolines]        
+                  if inservice != 1 or idx in nogolines]
 
         edges += [{'from': int(fb), 'to': int(tb), 'dashes': 'true'}
                   for fb, tb, idx, inservice in
@@ -168,8 +168,8 @@ def _net_to_html(net, respect_switches=True, include_lines=True, include_trafos=
 
     tables = []
     if show_tables:
-        for name in ['bus', 'trafo', 'line', 'load', 'ext_grid', 'gen',
-                     'res_bus', 'res_trafo', 'res_line', 'res_load', 'res_ext_grid', 'res_gen']:
+        for name in ['bus', 'trafo', 'line', 'load', 'ext_grid', 'gen', 'sgen',
+                     'res_bus', 'res_trafo', 'res_line', 'res_load', 'res_ext_grid', 'res_gen', 'res_sgen']:
             item = getattr(net, name)
             table = TABLE(TR(*map(TH, item.columns)),
                           *[TR(*map(TD, row)) for row in item.values])

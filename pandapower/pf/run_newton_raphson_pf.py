@@ -10,18 +10,18 @@ from time import time
 from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
 
 from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA, PCID, QCID
-
 from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pf.newtonpf import newtonpf
-from pandapower.pf.pfsoln import pfsoln
+from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
 from pandapower.pf.run_dc_pf import _run_dc_pf
 
 try:
     from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
-except:
+    from pandapower.pf.pfsoln import pfsoln as pfsoln_numba
+except ImportError:
     pass
 
 try:
@@ -102,8 +102,7 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     else:
         ## build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-        if recycle["Ybus"]:
-            ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
+        ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
 
     return ppci, Ybus, Yf, Yt
 
@@ -117,12 +116,11 @@ def _get_ibus(ppci):
 
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
-        try:
-            makeYbus = makeYbus_numba
-        except:
-            makeYbus = makeYbus_pypower
+        makeYbus = makeYbus_numba
+        pfsoln = pfsoln_numba
     else:
         makeYbus = makeYbus_pypower
+        pfsoln = pfsoln_pypower
 
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
 
@@ -138,7 +136,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq, Ibus=Ibus)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, Ibus=Ibus)
 
     return ppci, success, bus, gen, branch
 
