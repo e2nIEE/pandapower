@@ -23,7 +23,7 @@ When calculating maximum short-circuit currents, the impedance of an external gr
 
 .. math::
 
-  z_{k, eg} =& \frac{c_{max}}{s\_sc\_max\_mva} \\[1em]
+  z_{k, eg} =& \frac{c_{max}\cdot v_{N}^2}{s\_sc\_max\_mva} \\[1em]
   x_{k, eg} =& \frac{z_{sg}}{\sqrt{1 + rx\_max^2}} \\[1em]
   r_{k, eg} =& rx\_max \cdot x_{sg} 
   
@@ -34,7 +34,7 @@ In case of minimal short-circuit currents, the impedance is calculated according
 
 .. math::
 
-  z_{k, eg} =& \frac{c_{min}}{s\_sc\_min\_mva} \\[1em]
+  z_{k, eg} =& \frac{c_{min}\cdot v_{N}^2}{s\_sc\_min\_mva} \\[1em]
   x_{k, eg} =& \frac{z_{sg}}{\sqrt{1 + rx\_min^2}} \\[1em]
   r_{k, eg} =& rx\_min \cdot x_{sg} 
 
