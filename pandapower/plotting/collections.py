@@ -206,12 +206,12 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
         lines.append([p1, lp1])
         lines.append([p2, lp2])
         if not infofunc is None:
-            infos.append(i)
-            infos.append(i)
-    lc = LineCollection((lines), color="k", **kwargs)
-    lc.infos = []
-    pc = PatchCollection(circles, match_original=True, **kwargs )
-    pc.infos = infos
+            infos.append(infofunc(i))
+            infos.append(infofunc(i))
+    lc = LineCollection((lines), color="k", picker=picker, **kwargs)
+    lc.info = infos
+    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs )
+    pc.info = infos
     return lc, pc
 
 def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
@@ -228,8 +228,8 @@ def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
             infos.append(infofunc(i))
     load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
     load2 = LineCollection(lines, color="k", **kwargs)
-    load1.infos = infos
-    load2.infos = infos
+    load1.info = infos
+    load2.info = infos
     return load1, load2
 
 
