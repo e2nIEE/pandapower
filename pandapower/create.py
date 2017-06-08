@@ -283,9 +283,6 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "_ppc2pd_lookups": {"bus": None,
-                            "ext_grid": None,
-                            "gen": None},
         "version": float(__version__[:3]),
         "converged": False,
         "name": name,
@@ -319,7 +316,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
         **vn_kv** (float) - The grid voltage level.
 
-        **busgeodata** ((x,y)-tuple, default None) - coordinates used for plotting
+        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
         **type** (string, default "b") - Type of the bus. "n" - auxilary node,
         "b" - busbar, "m" - muff
@@ -487,6 +484,16 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
+        
+        **max_p_kw** (float, default NaN) - Maximum active power load. Only respected for OPF
+        
+        **min_p_kw** (float, default NaN) - Minimum active power load. Only respected for OPF
+        
+        **max_q_kvar** (float, default NaN) - Maximum reactive power load. Only respected for OPF
+        
+        **min_q_kvar** (float, default NaN) - Minimum reactive power load. Only respected for OPF
+        
+        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. Only respected for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -851,7 +858,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
 def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,
-                    index=None):
+                    index=None, **kwargs):
     """create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,\
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,\
                     max_p_kw=nan, min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan,\

@@ -75,10 +75,13 @@ def to_mpc(net, filename=None, init="results", calculate_voltage_angles=False, t
     if not init == "results":
         reset_results(net)
 
+
+
     # select elements in service (time consuming, so we do it once)
     _get_std_options(net, init, calculate_voltage_angles, trafo_model)
     net["_options"]["mode"] = mode
-
+    if mode == "opf":
+        net["_options"]["copy_constraints_to_ppc"] = True
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net)
 

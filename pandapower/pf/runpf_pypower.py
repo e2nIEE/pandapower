@@ -20,7 +20,7 @@ from pandapower.idx_bus import PD, QD, VM, VA, BUS_TYPE, PQ, REF
 from pandapower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
-from pandapower.pf.pfsoln import pfsoln
+from pandapower.pf.pfsoln_pypower import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 
 try:
@@ -183,7 +183,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     V, success = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
 
     return ppci, success, bus, gen, branch
 

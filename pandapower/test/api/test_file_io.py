@@ -16,7 +16,7 @@ def test_pickle():
     net_in = create_test_network()
     pp.to_pickle(net_in, "testfile.p")
     net_out = pp.from_pickle("testfile.p")
-    assert_net_equal(net_in, net_out)
+    assert_net_equal(net_in, net_out, True)
     os.remove('testfile.p')
 
 
@@ -54,4 +54,4 @@ def test_convert_format():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_file_io.py", "-xs"])
+    pytest.main(["test_file_io.py"])

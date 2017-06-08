@@ -193,6 +193,8 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
     for i, trafo in trafo_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
+        if np.all(p1 == p2):
+            continue
         d = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
         off = size*0.35
@@ -206,15 +208,15 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
         lines.append([p1, lp1])
         lines.append([p2, lp2])
         if not infofunc is None:
-            infos.append(i)
-            infos.append(i)
+            infos.append(infofunc(i))
+            infos.append(infofunc(i))
     if kwargs.__contains__("color"):
-        lc = LineCollection((lines), **kwargs)
+        lc = LineCollection((lines), picker=picker, **kwargs)
     else:
-        lc = LineCollection((lines), color="k", **kwargs)
-    lc.infos = []
-    pc = PatchCollection(circles, match_original=True, **kwargs )
-    pc.infos = infos
+        lc = LineCollection((lines), color="k", picker=picker, **kwargs)
+    lc.info = infos
+    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs )
+    pc.info = infos
     return lc, pc
 
 def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
@@ -231,10 +233,28 @@ def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
             infos.append(infofunc(i))
     load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
     load2 = LineCollection(lines, color="k", **kwargs)
-    load1.infos = infos
-    load2.infos = infos
+    load1.info = infos
+    load2.info = infos
     return load1, load2
 
+def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
+                                      **kwargs):
+    lines = []
+    polys = []
+    infos = []
+    for i, ext_grid in net.ext_grid.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
+        p2 = p1 + np.array([0, size])
+        polys.append(Rectangle([p2[0] - size/2, p2[1] - size/2], size, size))
+        lines.append((p1, p2 - np.array([0, size/2])))
+        if infofunc is not None:
+            infos.append(infofunc(i))
+    ext_grid1 = PatchCollection(polys, color="white", edgecolor="black",
+                                hatch="XX", picker=picker, **kwargs)
+    ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
+    ext_grid1.info = infos
+    ext_grid2.info = infos
+    return ext_grid1, ext_grid2
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
     """
@@ -283,6 +303,7 @@ if __name__ == "__main__":
     b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
     pp.create_load(net, b1, p_kw=100)
     pp.create_load(net, b3, p_kw=100)
+    pp.create_ext_grid(net, b4)
 
     pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")
     pp.create_line(net, b2, b4, 2.0, std_type="NAYY 4x50 SE")
@@ -293,5 +314,9 @@ if __name__ == "__main__":
     lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
     lt, bt = create_trafo_symbol_collection(net, size=1.0, linewidth=3.)
     load1, load2 = create_load_symbol_collection(net, linewidth=2.,
-                                            infofunc=lambda x: ("load", x))    
-    draw_collections([bc, lc, lt, bt, load1, load2])
+                                            infofunc=lambda x: ("load", x))
+    eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
+                                            infofunc=lambda x: ("ext_grid", x))
+
+
+    draw_collections([bc, lc, load1, load2, lt, bt, eg1, eg2])
