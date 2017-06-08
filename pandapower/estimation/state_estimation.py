@@ -14,8 +14,7 @@ from scipy.stats import chi2
 from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
     _build_measurement_vectors, _init_ppc
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT, branch_cols
-from pandapower.idx_bus import bus_cols
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pf.runpf_pypower import _get_pf_variables_from_ppci, \
@@ -241,7 +240,7 @@ class state_estimation(object):
         if delta_start is None:
             delta_start = np.zeros(self.net.bus.shape[0])
 
-        # initialize result tables if not existant
+        # initialize result tables if not existent
         _copy_power_flow_results(self.net)
 
         # initialize ppc
@@ -273,7 +272,7 @@ class state_estimation(object):
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
         # matrix calculation object
-        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref, bus_cols, branch_cols)
+        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref)
 
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
