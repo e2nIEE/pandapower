@@ -208,7 +208,10 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
         if not infofunc is None:
             infos.append(i)
             infos.append(i)
-    lc = LineCollection((lines), color="k", **kwargs)
+    if kwargs.__contains__("color"):
+        lc = LineCollection((lines), **kwargs)
+    else:
+        lc = LineCollection((lines), color="k", **kwargs)
     lc.infos = []
     pc = PatchCollection(circles, match_original=True, **kwargs )
     pc.infos = infos
