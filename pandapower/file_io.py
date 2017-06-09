@@ -278,35 +278,82 @@ def from_json(filename, convert=True):
     else:
         with open(filename) as data_file:
             data = json.load(data_file)
-        
-    net = create_empty_network(name=data["name"], f_hz=data["f_hz"])
-# checks if field exists in empty network and if yes, matches data type
+
+    return from_json_dict(data, convert=convert)
+
+
+def from_json_string(json_string, convert=True):
+    """
+    Load a pandapower network from a JSON string.
+    The index of the returned network is not necessarily in the same order as the original network.
+    Index columns of all pandas DataFrames are sorted in ascending order.
+
+    INPUT:
+        **json_string** (string) - The json string representation of the network
+
+    OUTPUT:
+        **convert** (bool) - use the convert format function to
+
+        **net** (dict) - The pandapower format network
+
+    EXAMPLE:
+
+        >>> net = pp.from_json_string(json_str)
+
+    """
+    data = json.loads(json_string)
+    return from_json_dict(data, convert=convert)
+
+
+def from_json_dict(json_dict, convert=True):
+    """
+    Load a pandapower network from a JSON string.
+    The index of the returned network is not necessarily in the same order as the original network.
+    Index columns of all pandas DataFrames are sorted in ascending order.
+
+    INPUT:
+        **json_dict** (json) - The json object representation of the network
+
+    OUTPUT:
+        **convert** (bool) - use the convert format function to
+
+        **net** (dict) - The pandapower format network
+
+    EXAMPLE:
+
+        >>> net = pp.pp.from_json_dict(json.loads(json_str))
+
+    """
+    net = create_empty_network(name=json_dict["name"], f_hz=json_dict["f_hz"])
+
+    # checks if field exists in empty network and if yes, matches data type
     def check_equal_type(name):
         if name in net:
-            if isinstance(net[name], type(data[name])):
+            if isinstance(net[name], type(json_dict[name])):
                 return True
-            elif isinstance(net[name], pd.DataFrame) and isinstance(data[name], dict):
+            elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], dict):
                 return True
             else:
                 return False
         return True
 
-    for k in sorted(data.keys()):
+    for k in sorted(json_dict.keys()):
         if not check_equal_type(k):
             raise UserWarning("Different data type for existing pandapower field")
-        if isinstance(data[k], dict):
+        if isinstance(json_dict[k], dict):
             if isinstance(net[k], pd.DataFrame):
                 columns = net[k].columns
-                net[k] = pd.DataFrame.from_dict(data[k], orient="columns")
+                net[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
                 net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
                 net[k] = net[k][columns]
             else:
-                net[k] = data[k]
+                net[k] = json_dict[k]
         else:
-            net[k] = data[k]
+            net[k] = json_dict[k]
     if convert:
         convert_format(net)
     return net
+
 
 def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
     """
