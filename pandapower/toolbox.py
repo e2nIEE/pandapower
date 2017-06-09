@@ -143,10 +143,10 @@ def check_opf_data(net):
                 _check_plc_full_range(net, element_type)
 
 
-def _opf_controllables(net, to_log, control_elm, control_elm_name, all_costs):
+def _opf_controllables(elm_df, to_log, control_elm, control_elm_name, all_costs):
     """ This is an auxiliary function for opf_task to add controllables data to to_log """
     to_log += '\n' + "  " + control_elm_name
-    for q, r in net[control_elm].iterrows():
+    for q, r in elm_df.iterrows():
         if 'bus' in r:
             to_log += '\n' + "    %i at Node %i" % (q, r.bus)
         else:
@@ -182,26 +182,28 @@ def opf_task(net):  # pragma: no cover
             all_costs.str.at[i] = "c: " + str(costs.c.values[0])
 
     # --- examine logger info
+
+    # --- controllables & costs
     to_log = '\n' + "Cotrollables & Costs:"
+    # dcline always is assumed as controllable
+    to_log = _opf_controllables(net.ext_grid, to_log, 'ext_grid', 'External Grid', all_costs)
+    # check controllables in gen, sgen and load
     control_elms = ['gen', 'sgen', 'load']
     control_elm_names = ['Generator', 'Static Generator', 'Load']
-    to_log = _opf_controllables(net, to_log, 'ext_grid', 'External Grid', all_costs)
     for j, control_elm in enumerate(control_elms):
+        # only for net[control_elm] with len > 0, check_data has checked 'controllable' in columns
         if len(net[control_elm]):
-            if ('controllable' not in net[control_elm].columns):
-                raise ValueError("net.%s has no 'controllable' column!" % control_elm)
-            if (net[control_elm].controllable == True).any():
-                to_log = _opf_controllables(net, to_log, control_elm, control_elm_names[j],
-                                            all_costs)
+            to_log = _opf_controllables(net[control_elm].loc[net[control_elm].controllable],
+                                        to_log, control_elm, control_elm_names[j], all_costs)
     if len(net.dcline):  # dcline always is assumed as controllable
-        to_log = _opf_controllables(net, to_log, 'dcline', 'DC Line', all_costs)
+        to_log = _opf_controllables(net.dcline, to_log, 'dcline', 'DC Line', all_costs)
     to_log += '\n' + "Constraints:"
     constr_exist = False  # stores if there are any constraints
     # --- variables constraints
     variables = ['ext_grid', 'gen', 'sgen']
     variable_names = ['Ext_Grid', 'Gen', 'SGen']
     variable_long_names = ['External Grid', 'Generator', 'Static Generator']
-    if (net['load'].controllable == True).any():
+    if (net['load'].controllable).any():
         variables += ['load']
         variable_names += ['Load']
         variable_long_names += ['Load']
@@ -212,7 +214,7 @@ def opf_task(net):  # pragma: no cover
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
             constr_exist = True
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
-            for i in constr_col[constr_col.isin(net[variable].columns) == False]:
+            for i in constr_col[~constr_col.isin(net[variable].columns)]:
                 constr[i] = np.nan
             if (constr.min_p_kw >= constr.max_p_kw).any():
                 logger.warn("The value of min_p_kw must be less than max_p_kw for all " +
@@ -239,7 +241,7 @@ def opf_task(net):  # pragma: no cover
                               ' [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is ' + \
                               '[%s, %s, %s, %s]' % (constr.min_p_kw[i], constr.max_p_kw[i],
                                                     constr.min_q_kvar[i], constr.max_q_kvar[i])
-    # DC Line constraints
+    # --- DC Line constraints
     constr_col = pd.Series(['max_p_kw', 'min_q_from_kvar', 'max_q_from_kvar', 'min_q_to_kvar',
                             'max_q_to_kvar'])
     constr_col_exist = constr_col[constr_col.isin(net['dcline'].columns)]
@@ -247,7 +249,7 @@ def opf_task(net):  # pragma: no cover
     if (constr.shape[1] > 0) & (constr.shape[0] > 0):
         constr_exist = True
         to_log += '\n' + "  DC Line Constraints"
-        for i in constr_col[constr_col.isin(net['dcline'].columns) == False]:
+        for i in constr_col[~constr_col.isin(net['dcline'].columns)]:
             constr[i] = np.nan
         if (constr.min_q_from_kvar >= constr.max_q_from_kvar).any():
             logger.warn("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
