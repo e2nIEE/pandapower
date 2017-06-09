@@ -227,8 +227,9 @@ def opf_task(net):  # pragma: no cover
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
                           " [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " + \
-                          "[%s, %s, %s, %s]" % (constr.min_p_kw[0], constr.max_p_kw[0],
-                                                constr.min_q_kvar[0], constr.max_q_kvar[0])
+                          "[%s, %s, %s, %s]" % (
+                                  constr.min_p_kw.values[0], constr.max_p_kw.values[0],
+                                  constr.min_q_kvar.values[0], constr.max_q_kvar.values[0])
             else:  # different constraints exist
                 unique_rows = ~constr.duplicated()
                 duplicated_rows = constr.duplicated()
@@ -261,8 +262,9 @@ def opf_task(net):  # pragma: no cover
         if constr.duplicated()[1:].all():  # all with the same constraints
             to_log += '\n' + "    at all DC Line [max_p_kw, min_q_from_kvar, max_q_from_kvar, " + \
                       "min_q_to_kvar, max_q_to_kvar] is [%s, %s, %s, %s, %s]" % \
-                      (constr.max_p_kw[0], constr.min_q_from_kvar[0], constr.max_q_from_kvar[0],
-                       constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
+                      (constr.max_p_kw.values[0], constr.min_q_from_kvar.values[0],
+                       constr.max_q_from_kvar.values[0], constr.min_q_to_kvar.values[0],
+                       constr.max_q_to_kvar.values[0])
         else:  # different constraints exist
             unique_rows = ~constr.duplicated()
             duplicated_rows = constr.duplicated()
@@ -274,9 +276,9 @@ def opf_task(net):  # pragma: no cover
                 to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
                           ' [max_p_kw, min_q_from_kvar, max_q_from_kvar, min_q_to_kvar, ' + \
                           'max_q_to_kvar] is [%s, %s, %s, %s, %s]' % (
-                              constr.max_p_kw[0], constr.min_q_from_kvar[0],
-                              constr.max_q_from_kvar[0],
-                              constr.min_q_to_kvar[0], constr.max_q_to_kvar[0])
+                              constr.max_p_kw.values[0], constr.min_q_from_kvar.values[0],
+                              constr.max_q_from_kvar.values[0],
+                              constr.min_q_to_kvar.values[0], constr.max_q_to_kvar.values[0])
     # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
