@@ -85,6 +85,17 @@ def test_simplest_voltage():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
+    pp.runopp(net, verbose=False, check_connectivity=True)
+    assert net["OPF_converged"]
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert max(net.res_bus.vm_pu) < vm_max
+    assert min(net.res_bus.vm_pu) > vm_min
+
 
 def test_eg_voltage():
     """ Testing a very simple network without transformer for voltage
@@ -340,7 +351,8 @@ def test_opf_sgen_loading():
     assert max(net.res_trafo.loading_percent) < max_trafo_loading
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
-
+    # check connectivity check
+    pp.runopp(net, verbose=False, check_connectivity=True)
 
 def test_unconstrained_line():
     """ Testing a very simple network without transformer for voltage
@@ -418,8 +430,9 @@ def test_dcopf():
     assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
 
 if __name__ == "__main__":
-    pytest.main(["-s"])
+    # pytest.main(["-s"])
     # pytest.main(["test_basic.py", "-xs"])
     # test_simplest_dispatch()
     # test_trafo3w_loading()
     # test_trafo3w_loading()
+    test_opf_sgen_loading()

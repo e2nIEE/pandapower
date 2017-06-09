@@ -27,7 +27,10 @@ def build_igraph_from_pp(net, respect_switches=False):
         graph = build_igraph_from_pp(net
 
     """
-    import igraph as ig
+    try:
+        import igraph as ig
+    except (DeprecationWarning, ImportError):
+        raise ImportError("Please install python-igraph")
     g = ig.Graph(directed=True)
     g.add_vertices(net.bus.shape[0])
     g.vs["label"] = net.bus.index.tolist()  # [s.encode('unicode-escape') for s in net.bus.name.tolist()]

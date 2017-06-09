@@ -22,6 +22,8 @@ def test_3point_pwl():
     pp.create_piecewise_linear_cost(net, 0, "sgen", np.array(
         [[-100, 1], [0, 0], [100, 1], ]), type="q")
 
+    # creating a pwl cost function that actually is realistic: The absolute value of the reactive power has costs.
+
     pp.runopp(net, verbose=False)
 
     # assert abs( net.res_sgen.q_kvar.values ) < 1e-5
