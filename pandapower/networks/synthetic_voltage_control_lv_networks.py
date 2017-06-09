@@ -11,10 +11,12 @@ from numpy import nan, append
 
 def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     """
-    This function creates LV networks from M. Lindner, C. Aigner, R. Witzmann, F. Wirtz, I. Berber,\
-     M. Gödde and R. Frings. "Aktuelle Musternetze zur Untersuchung von Spannungsproblemen in der \
-    Niederspannung". 14. Symposium Energieinnovation TU Graz. 2014
-    which are representative, synthetic grids for voltage control analysis.
+    This function creates a LV network from M. Lindner, C. Aigner, R. Witzmann, F. Wirtz, \
+    I. Berber, M. Gödde and R. Frings. "Aktuelle Musternetze zur Untersuchung von \
+    Spannungsproblemen in der Niederspannung". 14. Symposium Energieinnovation TU Graz. 2014
+    which are representative, synthetic grids for voltage control analysis. According to Lindner \
+    the household loads are 5.1 kW and the special loads are 7.9 kW. The user is suggested to \
+    assume load distribution and load profile generation.
 
     OPTIONAL:
 
