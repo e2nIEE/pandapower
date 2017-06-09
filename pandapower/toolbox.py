@@ -145,7 +145,8 @@ def check_opf_data(net):
 
 def _opf_controllables(elm_df, to_log, control_elm, control_elm_name, all_costs):
     """ This is an auxiliary function for opf_task to add controllables data to to_log """
-    to_log += '\n' + "  " + control_elm_name
+    if len(elm_df):
+        to_log += '\n' + "  " + control_elm_name
     for q, r in elm_df.iterrows():
         if 'bus' in r:
             to_log += '\n' + "    %i at Node %i" % (q, r.bus)
