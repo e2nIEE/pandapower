@@ -200,6 +200,7 @@ def opf_task(net):  # pragma: no cover
         to_log = _opf_controllables(net.dcline, to_log, 'dcline', 'DC Line', all_costs)
     to_log += '\n' + "Constraints:"
     constr_exist = False  # stores if there are any constraints
+
     # --- variables constraints
     variables = ['ext_grid', 'gen', 'sgen']
     variable_names = ['Ext_Grid', 'Gen', 'SGen']
@@ -211,8 +212,9 @@ def opf_task(net):  # pragma: no cover
     for j, variable in enumerate(variables):
         constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
         constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
-        constr = net[variable][constr_col_exist].dropna(how='all')
+        constr = net[variable][constr_col_exist]
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
+            constr = constr.loc[net[variable].loc[net[variable].controllable].index]
             constr_exist = True
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
             for i in constr_col[~constr_col.isin(net[variable].columns)]:
@@ -326,7 +328,7 @@ def opf_task(net):  # pragma: no cover
                                   " max_loading_percent is %s" % (constr[j])
     if not constr_exist:
         to_log += '\n' + "  There are no constraints."
-    # do logger info
+    # --- do logger info
     logger.info(to_log)
 
 
