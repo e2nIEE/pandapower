@@ -286,7 +286,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
     try:
         ax.set_facecolor("white")
     except:
-        pass
+        ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax.set_aspect('equal', 'datalim')

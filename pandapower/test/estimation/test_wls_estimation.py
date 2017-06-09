@@ -184,7 +184,7 @@ def test_3bus_with_transformer():
     pp.create_bus(net, name="bus2", vn_kv=10.)
     pp.create_bus(net, name="bus3", vn_kv=10.)
     pp.create_bus(net, name="bus4", vn_kv=110.)
-    pp.create_ext_grid(net, bus=3)
+    pp.create_ext_grid(net, bus=3, vm_pu = 1.01)
     pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
@@ -193,34 +193,44 @@ def test_3bus_with_transformer():
                                    max_i_ka=1)
     pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV")
 
-    pp.create_measurement(net, "v", "bus", 1.006, .004, bus=0)  # V at bus 1
-    pp.create_measurement(net, "v", "bus", .968, .004, bus=1)   # V at bus 2
+    pp.create_load(net, 1, 450, 300)
+    pp.create_load(net, 2, 350, 200)
+    pp.runpp(net, calculate_voltage_angles=True)
 
-    pp.create_measurement(net, "p", "bus", -501, 10, 1)  # P at bus 2
-    pp.create_measurement(net, "q", "bus", -286, 10, 1)  # Q at bus 2
+    # net.trafo.shift_degree = 0.
 
-    pp.create_measurement(net, "p", "line", 888, 8, 0, 0)   # Pline (bus 1 -> bus 2) at bus 1
-    pp.create_measurement(net, "p", "line", 1173, 8, 0, 1)  # Pline (bus 1 -> bus 3) at bus 1
-    pp.create_measurement(net, "q", "line", 568, 8, 0, 0)   # Qline (bus 1 -> bus 2) at bus 1
-    pp.create_measurement(net, "q", "line", 663, 8, 0, 1)   # Qline (bus 1 -> bus 3) at bus 1
+    pp.create_measurement(net, "v", "bus", 1.009, .004, bus=0)  # V at bus 1
+    pp.create_measurement(net, "v", "bus", 1.006, .004, bus=1)   # V at bus 2
 
-    pp.create_measurement(net, "p", "transformer", 2067, 10, bus=3, element=0)  # transformer meas.
-    pp.create_measurement(net, "q", "transformer", 1228, 10, bus=3, element=0)  # at hv side
+    pp.create_measurement(net, "p", "bus", -691, 10, bus=0)  # P at bus 1
+    pp.create_measurement(net, "q", "bus", -402, 10, bus=0)  # Q at bus 1
+
+    pp.create_measurement(net, "p", "bus", 0., 1.0, bus=2)  # P at bus 3
+    pp.create_measurement(net, "q", "bus", 0., 1.0, bus=2)  # Q at bus 3
+
+    pp.create_measurement(net, "p", "line", 400, 8, 0, 0)   # Pline (bus 1 -> bus 2) at bus 1
+    pp.create_measurement(net, "p", "line", 100, 8, 0, 1)  # Pline (bus 1 -> bus 3) at bus 1
+    pp.create_measurement(net, "q", "line", 250, 8, 0, 0)   # Qline (bus 1 -> bus 2) at bus 1
+    pp.create_measurement(net, "q", "line", 50, 8, 0, 1)   # Qline (bus 1 -> bus 3) at bus 1
+
+    pp.create_measurement(net, "p", "transformer", 1233, 10, bus=3, element=0)  # transformer meas.
+    pp.create_measurement(net, "q", "transformer", 700, 10, bus=3, element=0)  # at hv side
+
+    # alterantive:
+    # pp.create_measurement(net, "p", "bus", 1233, 10, bus=3)  # P at transformer bus
+    # pp.create_measurement(net, "q", "bus", 700, 10, bus=3)  # Q at transformer bus
 
     # 2. Do state estimation
-    success = estimate(net, init='flat')
+    success = estimate(net, init='slack', tolerance=2e-5)  # higher tolerance required
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
-    target_v = np.array([0.98712592369954588, 0.98686806637143187, 0.98654891164725134,
-                         0.98668652867504758])
-    diff_v = target_v - v_result
-    target_delta = np.array([0.56755308073946575, 0.55508269341754568, 0.54096568088774744, 0.0])
-    diff_delta = target_delta - delta_result
+    diff_v = net.res_bus.vm_pu.values - v_result
+    diff_delta = net.res_bus.va_degree.values - delta_result
 
     assert success
-    assert (np.nanmax(abs(diff_v)) < 1e-6)
-    assert (np.nanmax(abs(diff_delta)) < 1e-6)
+    assert (np.nanmax(abs(diff_v)) < 1e-3)
+    assert (np.nanmax(abs(diff_delta)) < 0.09)
 
 
 def test_3bus_with_2_slacks():
@@ -429,7 +439,7 @@ def test_IEEE_case_9_with_bad_data():
     assert (np.nanmax(abs(diff_delta)) < 1e-5)
 
 
-def test_init_slack_with_multiple_transformers():
+def test_init_slack_with_multiple_transformers(angles=True):
     np.random.seed(123)
     net = pp.create_empty_network()
     pp.create_bus(net, 220, index=0)
@@ -451,7 +461,7 @@ def test_init_slack_with_multiple_transformers():
     pp.create_load(net, 5, 900, 500)
     pp.create_load(net, 6, 700, 300)
     pp.create_ext_grid(net, bus=0, vm_pu=1.04, va_degree=10., name="Slack 220 kV")
-    pp.runpp(net)
+    pp.runpp(net, calculate_voltage_angles=angles)
     for bus, row in net.res_bus[net.bus.in_service == True].iterrows():
         pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
         if row.p_kw != 0.:
@@ -466,18 +476,17 @@ def test_init_slack_with_multiple_transformers():
     pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[2], 10., bus=4, element=2)
     pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[3], 10., bus=5, element=3)
     pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[3], 10., bus=5, element=3)
-    success = estimate(net, init='slack')
+    success = estimate(net, init='slack', calculate_voltage_angles=angles)
 
-    diff_v = net.res_bus_est.vm_pu.values - np.asarray([1.044860374, 1.0425606695, 1.0423765983,
-                                                        1.0425110929, 1.0412160717, 1.0294819221,
-                                                        1.0244679562, np.nan])
-    diff_delta = net.res_bus_est.va_degree.values - np.asarray([10., 9.5804972667, 9.5764432027,
-                                                                9.5785762652, -140.5572134472,
-                                                                -140.5248734844, -140.5280590882,
-                                                                np.nan])
+    # pretty high error for vm_pu (half percent!)
     assert success
-    assert (np.nanmax(abs(diff_v)) < 1e-8)
-    assert (np.nanmax(abs(diff_delta)) < 1e-8)
+    assert (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006)
+    assert (np.nanmax(np.abs(net.res_bus.va_degree.values
+                             - net.res_bus_est.va_degree.values)) < 0.006)
+
+
+def test_init_slack_with_multiple_transformers_angles_off():
+    test_init_slack_with_multiple_transformers(False)
 
 
 def test_check_existing_measurements():
