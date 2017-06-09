@@ -31,13 +31,16 @@ class wls_matrix_ops:
         self.B_shunt = None
         self.keep_ix = None
         self.i_ij = None
+        self.fb = None
+        self.tb = None
         self.create_y()
 
     # Function which builds a node admittance matrix out of the topology data
     # In addition, it provides the series admittances of lines as G_series and B_series
     def create_y(self):
-        from_to = np.concatenate((self.ppc["branch"][:, 0].real, self.ppc["branch"][:, 1].real))\
-            .astype(int)
+        self.fb = self.ppc["branch"][:, 0].real.astype(int)
+        self.tb = self.ppc["branch"][:, 1].real.astype(int)
+        from_to = np.concatenate((self.fb, self.tb))
         to_from = from_to[::-1]
 
         with warnings.catch_warnings():
@@ -72,15 +75,20 @@ class wls_matrix_ops:
         vi_vj = np.outer(v, v)
 
         # Power flow from node i to node j
-        p_ij = (np.multiply((self.G_series + self.G_shunt).T, v ** 2).T - vi_vj *
-                (self.G_series * cos_delta + self.B_series * sin_delta))
-        q_ij = (-1 * np.multiply((self.B_series + self.B_shunt).T, v ** 2).T - vi_vj *
-                (self.G_series * sin_delta - self.B_series * cos_delta))
+        # p_ij = (np.multiply((self.G_series + self.G_shunt).T, v ** 2).T - vi_vj *
+        #         (self.G_series * cos_delta + self.B_series * sin_delta))
+        # q_ij = (-1 * np.multiply((self.B_series + self.B_shunt).T, v ** 2).T - vi_vj *
+        #         (self.G_series * sin_delta - self.B_series * cos_delta))
+
+        V = v * np.exp(1j * delta)
+        s_ij = np.zeros_like(deltas, dtype=complex)
+        s_ij[self.fb, self.tb] = V[self.fb] * np.conj(self.Yf * V)
+        s_ij[self.tb, self.fb] = V[self.tb] * np.conj(self.Yt * V)
 
         # Bus powers:
         p_i = np.sum(vi_vj * (self.G * cos_delta + self.B * sin_delta), axis=1)
         q_i = np.sum(vi_vj * (self.G * sin_delta - self.B * cos_delta), axis=1)
-        self.i_ij = np.divide(np.sqrt(np.float64(p_ij ** 2 + q_ij ** 2)).T, v).T
+        self.i_ij = np.divide(np.sqrt(np.float64(s_ij.real ** 2 + s_ij.imag ** 2)).T, v).T
 
         # Build h(x) from measurements
         # [p_i p_ij q_i q_ij U i_ij]
@@ -114,9 +122,9 @@ class wls_matrix_ops:
         q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, bus_cols + Q])
 
         hx = np.hstack((p_i[p_bus_not_nan],
-                        p_ij[p_first_ix, p_second_ix],
+                        s_ij.real[p_first_ix, p_second_ix],
                         q_i[q_bus_not_nan],
-                        q_ij[q_first_ix, q_second_ix],
+                        s_ij.imag[q_first_ix, q_second_ix],
                         v[v_bus_not_nan],
                         self.i_ij[i_first_ix, i_second_ix]))
 
@@ -163,6 +171,7 @@ class wls_matrix_ops:
         # d(P01)/d(theta0) is at position H_dPij_dth_i[0,1]
         # d(P23)/d(theta3) is at position H_dPij_dth_j[2,3]
         # d(P23)/d(theta1) is 0 and not stored in the matrix
+
         H_dPij_dth_i = vi_vj * (G_series * sin_delta - B_series * cos_delta)
         H_dPij_dth_j = - H_dPij_dth_i
 
@@ -179,6 +188,13 @@ class wls_matrix_ops:
         H_dQij_dU_i = (G_series * sin_delta - B_series * cos_delta) * -v - \
                       2 * np.multiply((B_series+B_shunt).T, v).T
         H_dQij_dU_j = np.multiply((G_series * sin_delta - B_series * cos_delta).T, -v).T
+
+        # h_dPij_dth_i = v[self.fb] * v[self.tb] * np.exp(
+        #     1j * (delta[self.fb] - delta[self.tb] + np.pi / 2)) * self.Y_bus[
+        #                    self.fb, self.tb].conj()
+        # h_dPij_dth_j = v[self.fb] * v[self.tb] * np.exp(
+        #     1j * (delta[self.fb] - delta[self.tb] - np.pi / 2)) \
+        #                * self.Y_bus[self.fb, self.tb].conj()
 
         # Submatrices d(Vi)/d(Vi..j)
         H_dU_dU = np.eye(n)  # diagonally 1, otherwise 0

@@ -311,7 +311,7 @@ class state_estimation(object):
                 # prepare next iteration
                 current_iterations += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: %.4f" % current_error)
+                self.logger.debug("Current error: %.7f" % current_error)
 
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
