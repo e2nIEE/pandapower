@@ -82,7 +82,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         pc.set_norm(norm)
         if z is None:
             z = net.res_bus.vm_pu.loc[buses]
-        pc.set_array(z)
+        pc.set_array(np.array(z))
         pc.has_colormap = True
         pc.cbar_title = "Bus Voltage [pu]"
 
@@ -139,7 +139,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True,
             z = net.res_line.loading_percent.loc[lines]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
-        lc.set_array(z)
+        lc.set_array(np.array(z))
         lc.has_colormap = True
         lc.cbar_title = "Line Loading [%]"
     lc.info = info
@@ -249,7 +249,7 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
         lines.append((p1, p2 - np.array([0, size/2])))
         if infofunc is not None:
             infos.append(infofunc(i))
-    ext_grid1 = PatchCollection(polys, color="white", edgecolor="black",
+    ext_grid1 = PatchCollection(polys, facecolor=(1,0,0,0), edgecolor=(0,0,0,1),
                                 hatch="XX", picker=picker, **kwargs)
     ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
     ext_grid1.info = infos
@@ -280,7 +280,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
             cc = copy.copy(c)
             ax.add_collection(cc)
             if plot_colorbars and hasattr(c, "has_colormap"):
-                cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
                 if hasattr(c, "cbar_title"):
                     cbar_load.ax.set_ylabel(c.cbar_title)
     try:
