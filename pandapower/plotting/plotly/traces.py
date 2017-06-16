@@ -4,6 +4,8 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+from itertools import compress
+
 import numpy as np
 import pandas as pd
 
@@ -61,8 +63,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
         **color** (String, "blue") - color of buses in the trace
 
-        **cmap** (String, None) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, 
-        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) 
+        **cmap** (String, None) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd,
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
         alternatively a custom discrete colormap can be used
 
         **cmap_vals** (list, None) - values used for coloring using colormap
@@ -172,7 +174,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
-        **lines** (list, None) - The lines for which the collections are created. 
+        **lines** (list, None) - The lines for which the collections are created.
         If None, all lines in the network are considered.
 
         **width** (int, 1) - line width
@@ -185,7 +187,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
         **color** (String, "grey") - color of lines in the trace
 
-        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend 
+        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
         e.g. groups according to voltage level (as used in `vlevel_plotly`)
 
         **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
@@ -209,7 +211,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
     # defining lines to be plot
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
-        return None
+        return []
 
     nogolines = set()
     if respect_switches:
@@ -218,7 +220,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
     nogolines_mask = net.line.index.isin(nogolines)
 
     lines_mask = net.line.index.isin(lines)
-    lines2plot = net.line[~nogolines_mask & lines_mask]
+    lines2plot_mask = ~nogolines_mask & lines_mask
+    lines2plot = net.line[lines2plot_mask]
 
     use_line_geodata = use_line_geodata if net.line_geodata.shape[0] > 0 else False
     if use_line_geodata:
@@ -246,6 +249,9 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             cmap_vals = net.res_line.loc[lines2plot.index, 'loading_percent'].values
 
         cmap_lines = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
+        cmap_lines = list(compress(cmap_lines, lines2plot_mask)) # select with mask from cmap_lines
+        if infofunc is not None:
+            infofunc = list(compress(infofunc, lines2plot_mask))
 
         line_traces = []
         col_i = 0
@@ -328,7 +334,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
-        **trafos** (list, None) - The trafos for which the collections are created. 
+        **trafos** (list, None) - The trafos for which the collections are created.
         If None, all trafos in the network are considered.
 
         **width** (int, 5) - line width
@@ -339,7 +345,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
 
         **color** (String, "green") - color of lines in the trace
 
-        **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, 
+        **cmap** (bool, False) - name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd,
         Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
 
         **cmap_vals** (list, None) - values used for coloring using colormap
@@ -358,7 +364,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     # defining lines to be plot
     trafos = net.trafo.index.tolist() if trafos is None else list(trafos)
     if len(trafos) == 0:
-        return None
+        return []
 
     trafo_buses_with_geodata = net.trafo.hv_bus.isin(net.bus_geodata.index) &\
                                net.trafo.lv_bus.isin(net.bus_geodata.index)
@@ -433,7 +439,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
                 aspectratio='auto'):
     """
-    plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`, 
+    plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
     :func:`create_trafo_trace`)
     to PLOTLY (see https://plot.ly/python/)
 
@@ -445,7 +451,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **on_map** (bool, False) - enables using mapbox plot in plotly
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
-        
+
             - 'streets'
             - 'bright'
             - 'light'
@@ -458,7 +464,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-        
+
     """
 
     if on_map:

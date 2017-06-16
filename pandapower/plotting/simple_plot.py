@@ -20,48 +20,48 @@ logger = logging.getLogger(__name__)
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
                 scale_size=True, bus_color="b", line_color='grey', trafo_color='g',
-                ext_grid_color='y'):
+                ext_grid_color='y', library = "igraph"):
     """
-        Plots a pandapower network as simple as possible. If no geodata is available, artificial
-        geodata is generated. For advanced plotting see the tutorial
+    Plots a pandapower network as simple as possible. If no geodata is available, artificial
+    geodata is generated. For advanced plotting see the tutorial
 
-        INPUT:
-            **net** - The pandapower format network.
+    INPUT:
+        **net** - The pandapower format network.
 
-        OPTIONAL:
-            **respect_switches** (bool, False) - Respect switches if artificial geodata is created
+    OPTIONAL:
+        **respect_switches** (bool, False) - Respect switches if artificial geodata is created
 
-            **line_width** (float, 1.0) - width of lines
+        **line_width** (float, 1.0) - width of lines
 
-            **bus_size** (float, 1.0) - Relative size of buses to plot.
+        **bus_size** (float, 1.0) - Relative size of buses to plot.
 
-                The value bus_size is multiplied with mean_distance_between_buses, which equals the
-                distance between
-                the max geoocord and the min divided by 200.
-                mean_distance_between_buses = sum((net['bus_geodata'].max()
-                                              - net['bus_geodata'].min()) / 200)
+            The value bus_size is multiplied with mean_distance_between_buses, which equals the
+            distance between
+            the max geoocord and the min divided by 200.
+            mean_distance_between_buses = sum((net['bus_geodata'].max()
+                                          - net['bus_geodata'].min()) / 200)
 
-            **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot.
+        **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot.
 
-                See bus sizes for details. Note: ext_grids are plottet as rectangles
+            See bus sizes for details. Note: ext_grids are plottet as rectangles
 
-            **scale_size** (bool, True) - Flag if bus_size and ext_grid_size will be scaled with
-            respect to grid mean distances
+        **scale_size** (bool, True) - Flag if bus_size and ext_grid_size will be scaled with
+        respect to grid mean distances
 
-            **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette.
-            Usually colors[0] = "b".
+        **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette.
+        Usually colors[0] = "b".
 
-            **line_color** (String, 'grey') - Line Color. Init is grey
+        **line_color** (String, 'grey') - Line Color. Init is grey
 
-            **trafo_color** (String, 'g') - Trafo Color. Init is green
+        **trafo_color** (String, 'g') - Trafo Color. Init is green
 
-            **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
+        **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
     """
     # create geocoord if none are available
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
-        create_generic_coordinates(net, respect_switches=respect_switches)
+        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
 
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord
@@ -74,12 +74,14 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         bus_size *= mean_distance_between_buses
         ext_grid_size *= mean_distance_between_buses * 1.5
 
-    # if bus geodata is available, but no line geodata
-    use_line_geodata = False if len(net.line_geodata) == 0 else True
 
     # create bus collections ti plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
-    lc = create_line_collection(net, net.line.index, color=line_color, linewidths=line_width,
+
+    # if bus geodata is available, but no line geodata
+    use_line_geodata = False if len(net.line_geodata) == 0 else True
+    in_service_lines = net.line[net.line.in_service==True].index
+    lc = create_line_collection(net, in_service_lines, color=line_color, linewidths=line_width,
                                 use_line_geodata=use_line_geodata)
     collections = [bc, lc]
     eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)

@@ -187,27 +187,29 @@ def find_bridges(g, roots):
             if low[parent] >= discovery[grandparent]:
                 bridges.add((grandparent, parent))
             low[grandparent] = min(low[parent], low[grandparent])
-    return bridges
+    return bridges, visited
 
 
 def get_2connected_buses(g, roots):
-    bridges = find_bridges(g, roots)
+    bridges, connected = find_bridges(g, roots)
     if not bridges:
-        return set(g.nodes())
-    visited = set(roots)
-    stack = [(root, root, iter(g[root])) for root in roots]
-    while stack:
-        grandparent, parent, children = stack[-1]
-        try:
-            child = next(children)
-            if child == grandparent or (parent, child) in bridges or (child, parent) in bridges:
-                continue
-            if child not in visited:
-                visited.add(child)
-                stack.append((parent, child, iter(g[child])))
-        except StopIteration:
-            stack.pop()
-    return visited
+        two_connected = connected
+    else:
+        two_connected = set(roots)
+        stack = [(root, root, iter(g[root])) for root in roots]
+        while stack:
+            grandparent, parent, children = stack[-1]
+            try:
+                child = next(children)
+                if child == grandparent or (parent, child) in bridges or \
+                                           (child, parent) in bridges:
+                    continue
+                if child not in two_connected:
+                    two_connected.add(child)
+                    stack.append((parent, child, iter(g[child])))
+            except StopIteration:
+                stack.pop()
+    return connected, two_connected
 
 
 def determine_stubs(net, roots=None, mg=None):
@@ -242,7 +244,7 @@ def determine_stubs(net, roots=None, mg=None):
 #            break
 #        mg.remove_nodes_from(dgo)
 #    n1_buses = mg.nodes()
-    n1_buses = get_2connected_buses(mg, roots)
+    _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
     net.bus.loc[n1_buses, "on_stub"] = False
     net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))

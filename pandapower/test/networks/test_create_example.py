@@ -49,8 +49,8 @@ def test_create_realistic():
     assert len(net.switch[net.switch.type == 'CB']) >= 1
     assert len(net.switch[net.switch.type == 'DS']) >= 1
     assert len(net.switch[net.switch.type == 'LBS']) >= 1
-    assert len(net.switch[net.switch.closed == True]) >= 1
-    assert len(net.switch[net.switch.closed == False]) >= 1
+    assert len(net.switch[net.switch.closed]) >= 1
+    assert len(net.switch[~net.switch.closed]) >= 1
     assert len(net.impedance) >= 1
     assert len(net.xward) >= 1
     assert net.converged

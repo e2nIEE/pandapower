@@ -916,9 +916,8 @@ def test_deviation_from_std_type(test_net, diag_params, report_methods):
               21: {'e_value': '5', 'param': 'max_i_ka', 'std_type_in_lib': True,
                    'std_type_value': 0.105}},
     'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
-                  'std_type_value': 12.2}},
-
-    'trafo3w': {0: {'std_type_in_lib': False}}}
+                  'std_type_value': 12.2}}
+    }
 
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)

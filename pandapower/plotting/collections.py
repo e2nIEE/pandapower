@@ -82,7 +82,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         pc.set_norm(norm)
         if z is None:
             z = net.res_bus.vm_pu.loc[buses]
-        pc.set_array(z)
+        pc.set_array(np.array(z))
         pc.has_colormap = True
         pc.cbar_title = "Bus Voltage [pu]"
 
@@ -94,7 +94,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     return pc
 
 
-def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None, cmap=None,
+def create_line_collection(net, lines=None, use_line_geodata=True, 
+                           infofunc=None, cmap=None,
                            norm=None, picker=False, z=None,
                            cbar_title="Line Loading [%]", **kwargs):
     """
@@ -138,7 +139,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True, infofunc=None
             z = net.res_line.loading_percent.loc[lines]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
-        lc.set_array(z)
+        lc.set_array(np.array(z))
         lc.has_colormap = True
         lc.cbar_title = "Line Loading [%]"
     lc.info = info
@@ -170,6 +171,90 @@ def create_trafo_collection(net, trafos=None, **kwargs):
 
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
 
+def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
+                                   infofunc=None, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower transformers.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **trafos** (list, None) - The transformers for which the collections are created.
+        If None, all transformers in the network are considered.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    """
+    trafo_table = net.trafo if trafos is None else net.trafo.loc[trafos]
+    lines = []
+    circles = []
+    infos = []
+    for i, trafo in trafo_table.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
+        p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
+        if np.all(p1 == p2):
+            continue
+        d = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+        off = size*0.35
+        circ1 = (0.5 - off/d) * (p1 - p2) + p2
+        circ2 = (0.5 + off/d) * (p1 - p2) + p2
+        circles.append(Circle(circ1, size, fc=(1,0,0,0), ec=(0,0,0,1)))
+        circles.append(Circle(circ2, size, fc=(1,0,0,0), ec=(0,0,0,1)))
+
+        lp1 = (0.5 - off/d - size/d) * (p2 - p1) + p1
+        lp2 = (0.5 - off/d - size/d) * (p1 - p2) + p2
+        lines.append([p1, lp1])
+        lines.append([p2, lp2])
+        if not infofunc is None:
+            infos.append(infofunc(i))
+            infos.append(infofunc(i))
+    if kwargs.__contains__("color"):
+        lc = LineCollection((lines), picker=picker, **kwargs)
+    else:
+        lc = LineCollection((lines), color="k", picker=picker, **kwargs)
+    lc.info = infos
+    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs )
+    pc.info = infos
+    return lc, pc
+
+def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
+    lines = []
+    polys = []
+    infos = []
+    off = 1.7
+    for i, load in net.load.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
+        p2 = p1 - np.array([0, size*off])
+        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=np.pi))
+        lines.append((p1, p2 + np.array([0, size/2])))
+        if infofunc is not None:
+            infos.append(infofunc(i))
+    load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
+    load2 = LineCollection(lines, color="k", **kwargs)
+    load1.info = infos
+    load2.info = infos
+    return load1, load2
+
+def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
+                                      **kwargs):
+    lines = []
+    polys = []
+    infos = []
+    for i, ext_grid in net.ext_grid.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
+        p2 = p1 + np.array([0, size])
+        polys.append(Rectangle([p2[0] - size/2, p2[1] - size/2], size, size))
+        lines.append((p1, p2 - np.array([0, size/2])))
+        if infofunc is not None:
+            infos.append(infofunc(i))
+    ext_grid1 = PatchCollection(polys, facecolor=(1,0,0,0), edgecolor=(0,0,0,1),
+                                hatch="XX", picker=picker, **kwargs)
+    ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
+    ext_grid1.info = infos
+    ext_grid2.info = infos
+    return ext_grid1, ext_grid2
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
     """
@@ -195,16 +280,44 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
             cc = copy.copy(c)
             ax.add_collection(cc)
             if plot_colorbars and hasattr(c, "has_colormap"):
-                cbar_load = plt.colorbar(c, extend=c.extend if hasattr(c, "extend") else "neither")
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
                 if hasattr(c, "cbar_title"):
                     cbar_load.ax.set_ylabel(c.cbar_title)
     try:
         ax.set_facecolor("white")
     except:
-        pass
+        ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
     plt.tight_layout()
+
+if __name__ == "__main__":
+    import pandapower as pp
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10, geodata=(5,10))
+    b2 = pp.create_bus(net, 0.4, geodata=(5,15))
+    b3 = pp.create_bus(net, 0.4, geodata=(0,22))
+    b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
+    pp.create_load(net, b1, p_kw=100)
+    pp.create_load(net, b3, p_kw=100)
+    pp.create_ext_grid(net, b4)
+
+    pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")
+    pp.create_line(net, b2, b4, 2.0, std_type="NAYY 4x50 SE")
+    pp.create_transformer(net, b1, b2, std_type="0.63 MVA 10/0.4 kV")
+    pp.create_transformer(net, b3, b4, std_type="0.63 MVA 10/0.4 kV")
+
+    bc = create_bus_collection(net, size=0.2, color="k")
+    lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
+    lt, bt = create_trafo_symbol_collection(net, size=1.0, linewidth=3.)
+    load1, load2 = create_load_symbol_collection(net, linewidth=2.,
+                                            infofunc=lambda x: ("load", x))
+    eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
+                                            infofunc=lambda x: ("ext_grid", x))
+
+
+    draw_collections([bc, lc, load1, load2, lt, bt, eg1, eg2])

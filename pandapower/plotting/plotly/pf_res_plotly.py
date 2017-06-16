@@ -10,7 +10,7 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.mapbox_plot import *
 
-from pandapower import runpp
+from pandapower.run import runpp
 
 try:
     import pplog as logging
@@ -41,11 +41,11 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
         **on_map** (bool, False) - enables using mapbox plot in plotly
         If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
-        **projection** (String, None) - defines a projection from which network geo-data will be transformed to 
+        **projection** (String, None) - defines a projection from which network geo-data will be transformed to
         lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
         **map_style** (str, 'basic') - enables using mapbox plot in plotly
-        
+
             - 'streets'
             - 'bright'
             - 'light'
