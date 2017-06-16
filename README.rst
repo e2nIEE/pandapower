@@ -3,7 +3,7 @@ pandapower
 =============
 
 .. image:: https://readthedocs.org/projects/pandapower/badge/?version=v1.3.1
-   :target: http://pandapower.readthedocs.io/en/develop/
+   :target: http://pandapower.readthedocs.io/en/v1.3.1
    :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/v/pandapower.svg
