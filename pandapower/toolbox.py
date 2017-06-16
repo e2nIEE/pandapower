@@ -1142,6 +1142,7 @@ def merge_nets(net1, net2, validate=True, **kwargs):
     """
     create_continuous_bus_index(net2, start=net1.bus.index.max() + 1)
     net = copy.deepcopy(net1)
+    net1 = copy.deepcopy(net1)
     net2 = copy.deepcopy(net2)
     if validate:
         runpp(net1, **kwargs)
@@ -1169,7 +1170,7 @@ def merge_nets(net1, net2, validate=True, **kwargs):
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             net[element] = net1[element].append(net2[element],
-                                                ignore_index=element not in ("bus", "bus_geodata"))
+                                                ignore_index=element not in ("bus", "bus_geodata", "line_geodata"))
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
