@@ -13,7 +13,8 @@ from matplotlib.patches import Circle, Rectangle, RegularPolygon
 
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          z = None, cmap=None, norm=None, infofunc=None, picker=False, **kwargs):
+                          z = None, cmap=None, norm=None, infofunc=None, picker=False,
+                          geodata_table='bus_geodata', **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -72,8 +73,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             infos.append(infofunc(buses[i]))
         return fig
     patches = [figmaker(x, y, i)
-               for i, (x, y) in enumerate(zip(net.bus_geodata.loc[buses].x.values,
-                                              net.bus_geodata.loc[buses].y.values))
+               for i, (x, y) in enumerate(zip(net[geodata_table].loc[buses].x.values,
+                                              net[geodata_table].loc[buses].y.values))
                if x != np.nan]
     pc = PatchCollection(patches, match_original=True, picker=picker)
     pc.bus_indices = np.array(buses)
@@ -88,15 +89,17 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     pc.patch_type = patch_type
     pc.size = size
+    if 'orientation' in kwargs:
+        pc.orientation = kwargs['orientation']
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
     return pc
 
 
-def create_line_collection(net, lines=None, use_line_geodata=True, 
+def create_line_collection(net, lines=None, use_line_geodata=True,
                            infofunc=None, cmap=None,
-                           norm=None, picker=False, z=None,
+                           norm=None, picker=False, z=None, geodata_table='line_geodata',
                            cbar_title="Line Loading [%]", **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
@@ -114,14 +117,14 @@ def create_line_collection(net, lines=None, use_line_geodata=True,
         **kwargs - key word arguments are passed to the patch function
 
     """
-    lines = net.line_geodata.index.tolist() if lines is None and use_line_geodata else \
+    lines = net[geodata_table].index.tolist() if lines is None and use_line_geodata else \
         net.line.index.tolist() if lines is None and not use_line_geodata else list(lines)
     if len(lines) == 0:
         return None
     if use_line_geodata:
-        data = [(net.line_geodata.coords.loc[line],
+        data = [(net[geodata_table].coords.loc[line],
                  infofunc(line) if infofunc else [])
-                 for line in lines if line in net.line_geodata.index]
+                 for line in lines if line in net[geodata_table].index]
     else:
         data = [([(net.bus_geodata.x.at[a], net.bus_geodata.y.at[a]),
                   (net.bus_geodata.x.at[b], net.bus_geodata.y.at[b])],
