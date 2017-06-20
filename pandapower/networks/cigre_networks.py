@@ -4,6 +4,7 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+from pandas import read_json
 import pandapower as pp
 try:
     import pplog as logging
@@ -111,6 +112,9 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_shunt(net_cigre_hv, bus4, p_kw=0.0, q_kvar=-160000, name='Shunt 4')
     pp.create_shunt(net_cigre_hv, bus5, p_kw=0.0, q_kvar=-80000, name='Shunt 5')
     pp.create_shunt(net_cigre_hv, bus6a, p_kw=0.0, q_kvar=-180000, name='Shunt 6a')
+
+    # Bus geo data
+    net_cigre_hv.bus_geodata = read_json('{"x":{"0":4,"1":8,"2":20,"3":16,"4":12,"5":8,"6":12,"7":4,"8":20,"9":0,"10":8,"11":24,"12":16},"y":{"0":8.0,"1":8.0,"2":8.0,"3":8.0,"4":8.0,"5":6.0,"6":4.5,"7":1.0,"8":1.0,"9":8.0,"10":12.0,"11":8.0,"12":4.5}}')
 
     return net_cigre_hv
 
@@ -260,6 +264,9 @@ def create_cigre_network_mv(with_der=False):
                            type='Battery', max_p_kw=-200, min_p_kw=200)
             pp.create_sgen(net_cigre_mv, bus=bus10, p_kw=-14, sn_kva=14,
                            name='Residential fuel cell 2', type='Residential fuel cell')
+
+    # Bus geo data
+    net_cigre_mv.bus_geodata = read_json('{"x":{"0":7.0,"1":4.0,"2":4.0,"3":4.0,"4":2.5,"5":1.0,"6":1.0,"7":8.0,"8":8.0,"9":6.0,"10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},"y":{"0":16,"1":15,"2":13,"3":11,"4":9,"5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5}}')
     return net_cigre_mv
 
 
@@ -470,5 +477,8 @@ def create_cigre_network_lv():
     pp.create_switch(net_cigre_lv, bus0, busR0, et='b', closed=True, type='CB', name='S1')
     pp.create_switch(net_cigre_lv, bus0, busI0, et='b', closed=True, type='CB', name='S2')
     pp.create_switch(net_cigre_lv, bus0, busC0, et='b', closed=True, type='CB', name='S3')
+
+    # Bus geo data
+    net_cigre_lv.bus_geodata = read_json('{"x":{"0":0.2,"1":0.2,"2":-1.4583333333,"3":-1.4583333333,"4":-1.4583333333,"5":-1.9583333333,"6":-2.7083333333,"7":-2.7083333333,"8":-3.2083333333,"9":-3.2083333333,"10":-3.2083333333,"11":-3.7083333333,"12":-0.9583333333,"13":-1.2083333333,"14":-1.2083333333,"15":-1.2083333333,"16":-1.2083333333,"17":-2.2083333333,"18":-2.7083333333,"19":-3.7083333333,"20":0.2,"21":0.2,"22":0.2,"23":0.2,"24":1.9166666667,"25":1.9166666667,"26":1.9166666667,"27":0.5416666667,"28":0.5416666667,"29":-0.2083333333,"30":-0.2083333333,"31":-0.2083333333,"32":-0.7083333333,"33":3.2916666667,"34":2.7916666667,"35":2.2916666667,"36":3.2916666667,"37":3.7916666667,"38":1.2916666667,"39":0.7916666667,"40":1.7916666667,"41":0.7916666667,"42":0.2916666667,"43":-0.7083333333},"y":{"0":1.0,"1":1.0,"2":2.0,"3":3.0,"4":4.0,"5":5.0,"6":6.0,"7":7.0,"8":8.0,"9":9.0,"10":10.0,"11":11.0,"12":5.0,"13":6.0,"14":7.0,"15":8.0,"16":9.0,"17":8.0,"18":11.0,"19":12.0,"20":1.0,"21":2.0,"22":3.0,"23":1.0,"24":2.0,"25":3.0,"26":4.0,"27":5.0,"28":6.0,"29":7.0,"30":8.0,"31":9.0,"32":10.0,"33":5.0,"34":6.0,"35":7.0,"36":7.0,"37":6.0,"38":7.0,"39":8.0,"40":8.0,"41":9.0,"42":10.0,"43":11.0}}')
 
     return net_cigre_lv
