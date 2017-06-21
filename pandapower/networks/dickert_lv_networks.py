@@ -153,7 +153,9 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
     EXAMPLE:
 
         import pandapower.networks as pn
+
         net = pn.create_dickert_lv_network()
+
         pn.create_dickert_lv_feeders(net, busbar_index=1, customer='multiple')
     """
     # --- paper data - TABLE III and IV
@@ -212,17 +214,17 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
     PowerTech, 2013 IEEE Grenoble.
     This LV network will have one to three feeders connected to MV-LV-Trafo. To connect more feeders
     with respect to the optional given parameters 'feeders_range', 'linetype', 'customer' and
-    'case', the 'create_dickert_lv_feeders' function can be used.
+    'case', the 'create_dickert_lv_feeders' function can be executed.
     The given 'preferred lines for feeders' are used, knowing that there are some other \
     standard types mentioned as well.
 
     Since the paper focusses on LV grids structure, load powers and MV connection are neglected, \
     so that the user should identify appropriate assumptions for trafo and load parameters.
-    'trafo_type_name' and 'trafo_type_data' can be set directly by the user.
+    'trafo_type_name' and 'trafo_type_data' can be set directlyin this function.
     By default, the load powers are calculated with coincidence factor, derived with normal \
     distributed peak system demand, described in Dickert, Schegner - \
     'Residential Load Models for Network Planning Purposes', Modern Electric Power Systems 2010, \
-    Wroclaw, Poland, with the assumptions:
+    Wroclaw, Poland, with the given example assumptions:
         - c_inf = 0.1
         - P_max1 = 10 kW
         - powerfactor = 0.95 ind. (in range of 0.9 to 1)
@@ -233,23 +235,24 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
 
         **linetype** (str, 'cable') - the are different feeders provided for 'cable' or 'C&OHL'
 
-        **customer** (str, 'single') - type of customers ('single' or 'multiple') supplied by the
+        **customer** (str, 'single') - type of customers ('single' or 'multiple') supplied by the \
             feeders
 
         **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'bad')
 
         **trafo_type_name** (str, '0.4 MVA 20/0.4 kV') - name of the HV-MV-Trafo standard type
 
-        **trafo_type_data** (dict, None) - if 'trafo_type_name' is not in pandapower standard
+        **trafo_type_data** (dict, None) - if 'trafo_type_name' is not in pandapower standard \
             types, the data of this new trafo types must be given here in pandapower trafo type way
 
     OUTPUT:
 
-        **net**
+        **net** (pandapowerNet) - Returns the required dickert lv network
 
     EXAMPLE:
 
         import pandapower.networks as pn
+
         net = pn.create_dickert_lv_network()
     """
     # --- create network
