@@ -12,43 +12,9 @@ from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon
 
 
-def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          geodata_table='bus_geodata', **kwargs):
-    """
-    Creates a matplotlib patch collection of pandapower buses.
-
-    Input:
-        **net** (pandapowerNet) - The pandapower network
-
-    OPTIONAL:
-        **buses** (list, None) - The buses for which the collections are created.
-        If None, all buses in the network are considered.
-
-        **size** (int, 5) - patch size
-
-        **marker** (str, "o") - patch marker
-
-        **patch_type** (str, "circle") - patch type, can be
-
-                - "circle" for a circle
-                - "rect" for a rectangle
-                - "poly<n>" for a polygon with n edges
-
-        **infofunc** (function, None) - infofunction for the patch element
-
-        **colors** (list, None) - list of colors for every element
-
-        **cmap** - colormap for the patch colors
-
-        **picker** - picker argument passed to the patch collection
-
-        **kwargs - key word arguments are passed to the patch function
-
-    """
-    buses = net.bus.index.tolist() if buses is None else list(buses)
-    if len(buses) == 0:
-        return None
+def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
+                                 colors=None, z=None, cmap=None, norm=None, infofunc=None,
+                                 picker=False, **kwargs):
     infos = []
 
     if 'height' in kwargs and 'width' in kwargs:
@@ -86,8 +52,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         return fig
 
     patches = [figmaker(x, y, i)
-               for i, (x, y) in enumerate(zip(net[geodata_table].loc[buses].x.values,
-                                              net[geodata_table].loc[buses].y.values))
+               for i, (x, y) in enumerate(coords)
                if x != np.nan]
     pc = PatchCollection(patches, match_original=True, picker=picker)
     pc.bus_indices = np.array(buses)
@@ -107,6 +72,53 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
+    return pc
+
+
+def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
+                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
+                          geodata_table='bus_geodata', **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower buses.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **buses** (list, None) - The buses for which the collections are created.
+        If None, all buses in the network are considered.
+
+        **size** (int, 5) - patch size
+
+        **marker** (str, "o") - patch marker
+
+        **patch_type** (str, "circle") - patch type, can be
+
+                - "circle" for a circle
+                - "rect" for a rectangle
+                - "poly<n>" for a polygon with n edges
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **colors** (list, None) - list of colors for every element
+
+        **cmap** - colormap for the patch colors
+
+        **picker** - picker argument passed to the patch collection
+
+        **kwargs - key word arguments are passed to the patch function
+
+    """
+    buses = net.bus.index.tolist() if buses is None else list(buses)
+    if len(buses) == 0:
+        return None
+
+    coords = zip(net[geodata_table].loc[buses].x.values,
+                 net[geodata_table].loc[buses].y.values)
+
+    pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
+                                      patch_type=patch_type, colors=colors, z=z, cmap=cmap,
+                                      norm=norm, infofunc=infofunc, picker=picker, **kwargs)
     return pc
 
 
