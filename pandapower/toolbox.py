@@ -920,6 +920,9 @@ def drop_inactive_elements(net):
             drop_idx = net[element][net[element].in_service == False].index
             net[element].drop(drop_idx, inplace=True)
 
+    logger.info('dropped %d buses, %d lines, %d trafos' % (
+        len(inactive_buses), len(inactive_lines), len(inactive_trafos)))
+
 
 def drop_buses(net, buses):
     """
@@ -1052,17 +1055,19 @@ def set_isolated_areas_out_of_service(net):
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
     unsupplied = unsupplied_buses(net)
+    logger.info("set %d of %d unsupplied buses out of service" % (
+        len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
     set_element_status(net, unsupplied, False)
 
     for element in ["line", "trafo"]:
-        oos_elements = net.line[net.line.in_service == False].index
+        oos_elements = net.line[~net.line.in_service].index
         oos_switches = net.switch[(net.switch.et == element[0]) &
                                   (net.switch.element.isin(oos_elements))].index
         net.switch.loc[oos_switches, "closed"] = True
 
-        for idx, bus in net.switch[(net.switch.closed == False) & (net.switch.et == element[0])] \
+        for idx, bus in net.switch[~net.switch.closed & (net.switch.et == element[0])] \
                 [["element", "bus"]].values:
-            if net.bus.in_service.at[next_bus(net, bus, idx, element)] == False:
+            if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
 
 
@@ -1170,7 +1175,8 @@ def merge_nets(net1, net2, validate=True, **kwargs):
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             net[element] = net1[element].append(net2[element],
-                                                ignore_index=element not in ("bus", "bus_geodata", "line_geodata"))
+                                                ignore_index=element not in
+                                                             ("bus", "bus_geodata", "line_geodata"))
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
