@@ -209,7 +209,7 @@ def simple_mv_open_ring_net():
     pp.create_switch(net, bus=6, element=5, et='l')
     pp.create_switch(net, bus=1, element=5, et='l')
 
-    net.bus_geodata = DataFrame([[0, 0], [0, 1], [-0.5, 2], [-0.5, 3], [-0.5, 4], [0.5, 4],
-                                 [0.5, 3]], columns=['x', 'y'])
+    net.bus_geodata = DataFrame([[0, 0], [0, -1], [-0.5, -2], [-0.5, -3], [-0.5, -4], [0.5, -4],
+                                 [0.5, -3]], columns=['x', 'y'])
 
     return net
