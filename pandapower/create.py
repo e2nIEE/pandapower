@@ -1102,7 +1102,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **type** (str) - type of line ("oh" for overhead line or "cs" for cable system)
+        **type** (str) - type of line ("ol" for overhead line or "cs" for cable system)
 
         **df** (float) - derating factor: maximal current of line  in relation to nominal current of line (from 0 to 1)
 
