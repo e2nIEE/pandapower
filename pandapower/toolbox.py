@@ -920,6 +920,8 @@ def drop_inactive_elements(net):
             drop_idx = net[element][net[element].in_service == False].index
             net[element].drop(drop_idx, inplace=True)
 
+    drop_isolated_bus_elements(net)
+
     logger.info('dropped %d buses, %d lines, %d trafos' % (
         len(inactive_buses), len(inactive_lines), len(inactive_trafos)))
 
@@ -936,6 +938,19 @@ def drop_buses(net, buses):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+
+
+def drop_isolated_bus_elements(net):
+    dropped = {}
+    for element in 'gen sgen load ext_grid ward xward shunt'.split():
+        if len(net[element]):
+            idx = net[element].loc[
+                net[element].bus.apply(lambda x: x not in net.bus.index.values)].index
+            net[element].drop(idx, inplace=True)
+            if len(idx) > 0:
+                dropped.update({element: len(idx)})
+    if len(dropped) > 0:
+        logger.info('dropped not connected bus elements: %s' % dropped)
 
 
 def drop_elements_at_buses(net, buses):
