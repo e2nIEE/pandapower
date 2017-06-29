@@ -200,7 +200,7 @@ def create_trafo_collection(net, trafos=None, **kwargs):
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
 
 
-def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
+def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
                                    infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
@@ -225,24 +225,26 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
         if np.all(p1 == p2):
             continue
         d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
-
-        off = size * 0.35
+        if size is None:
+#            print(d)
+            size_this = np.sqrt(d)/5
+        off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
-        circles.append(Circle(circ1, size, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
-        circles.append(Circle(circ2, size, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
+        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
+        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
 
-        lp1 = (0.5 - off / d - size / d) * (p2 - p1) + p1
-        lp2 = (0.5 - off / d - size / d) * (p1 - p2) + p2
+        lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
+        lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
         lines.append([p1, lp1])
         lines.append([p2, lp2])
         if not infofunc is None:
             infos.append(infofunc(i))
             infos.append(infofunc(i))
-    if kwargs.__contains__("color"):
-        lc = LineCollection((lines), picker=picker, **kwargs)
-    else:
-        lc = LineCollection((lines), color="k", picker=picker, **kwargs)
+    if len(circles) == 0:
+        return None, None
+    color = kwargs.get("color", "k")
+    lc = LineCollection((lines), color=color, picker=picker, **kwargs)
     lc.info = infos
     pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs)
     pc.info = infos
@@ -347,7 +349,7 @@ if __name__ == "__main__":
 
     bc = create_bus_collection(net, size=0.2, color="k")
     lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
-    lt, bt = create_trafo_symbol_collection(net, size=1.0, linewidth=3.)
+    lt, bt = create_trafo_symbol_collection(net, size=2, linewidth=3.)
     load1, load2 = create_load_symbol_collection(net, linewidth=2.,
                                                  infofunc=lambda x: ("load", x))
     eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
