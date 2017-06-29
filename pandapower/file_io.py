@@ -199,7 +199,13 @@ def from_pickle(filename, convert=True):
                 if "columns" in item:
                     net[key] = net[key].reindex_axis(item["columns"], axis=1)
             if "dtypes" in item:
-                net[key] = net[key].astype(item["dtypes"])
+                try:
+                    #only works with pandas 0.19 or newer
+                    net[key] = net[key].astype(item["dtypes"]) 
+                except:
+                    #works with pandas <0.19
+                    for column in net[key].columns:
+                        net[key][column] = net[key][column].astype(item["dtypes"][column])
     if convert:
         convert_format(net)
     return net
