@@ -230,8 +230,8 @@ def opf_task(net):  # pragma: no cover
                 to_log += '\n' + "    at all " + variable_names[j] + \
                           " [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " + \
                           "[%s, %s, %s, %s]" % (
-                                  constr.min_p_kw.values[0], constr.max_p_kw.values[0],
-                                  constr.min_q_kvar.values[0], constr.max_q_kvar.values[0])
+                              constr.min_p_kw.values[0], constr.max_p_kw.values[0],
+                              constr.min_q_kvar.values[0], constr.max_q_kvar.values[0])
             else:  # different constraints exist
                 unique_rows = ~constr.duplicated()
                 duplicated_rows = constr.duplicated()
@@ -256,10 +256,10 @@ def opf_task(net):  # pragma: no cover
         for i in constr_col[~constr_col.isin(net['dcline'].columns)]:
             constr[i] = np.nan
         if (constr.min_q_from_kvar >= constr.max_q_from_kvar).any():
-            logger.warn("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
+            logger.warning("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
                         "all DC Line. Please observe the pandapower signing system.")
         if (constr.min_q_to_kvar >= constr.max_q_to_kvar).any():
-            logger.warn("The value of min_q_to_kvar must be less than min_q_to_kvar for " +
+            logger.warning("The value of min_q_to_kvar must be less than min_q_to_kvar for " +
                         "all DC Line. Please observe the pandapower signing system.")
         if constr.duplicated()[1:].all():  # all with the same constraints
             to_log += '\n' + "    at all DC Line [max_p_kw, min_q_from_kvar, max_q_from_kvar, " + \
@@ -804,21 +804,21 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             crossing = sum(net["bus"]["zone"].loc[net["line"]["from_bus"]].values !=
                            net["bus"]["zone"].loc[net["line"]["to_bus"]].values)
             if crossing > 0:
-                logger.warn("There have been %i lines with different zones at from- and to-bus"
+                logger.warning("There have been %i lines with different zones at from- and to-bus"
                             % crossing)
         elif element == "trafo":
             net["trafo"]["zone"] = net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values
             crossing = sum(net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values !=
                            net["bus"]["zone"].loc[net["trafo"]["lv_bus"]].values)
             if crossing > 0:
-                logger.warn("There have been %i trafos with different zones at lv_bus and hv_bus"
+                logger.warning("There have been %i trafos with different zones at lv_bus and hv_bus"
                             % crossing)
         elif element == "impedance":
             net["impedance"]["zone"] = net["bus"]["zone"].loc[net["impedance"]["from_bus"]].values
             crossing = sum(net["bus"]["zone"].loc[net["impedance"]["from_bus"]].values !=
                            net["bus"]["zone"].loc[net["impedance"]["to_bus"]].values)
             if crossing > 0:
-                logger.warn("There have been %i impedances with different zones at from_bus and "
+                logger.warning("There have been %i impedances with different zones at from_bus and "
                             "to_bus" % crossing)
         elif element == "shunt":
             net["shunt"]["zone"] = net["bus"]["zone"].loc[net["shunt"]["bus"]].values
@@ -887,11 +887,16 @@ def close_switch_at_line_with_two_open_switches(net):
     Function is usually used when optimizing section points to
     prevent the algorithm from ignoring isolated lines.
     """
+    closed_switches = set()
     nl = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
     for i, switch in nl.groupby("element"):
         if len(switch.index) > 1:  # find all lines that have open switches at both ends
             # and close on of them
             net.switch.at[switch.index[0], "closed"] = 1
+            closed_switches.add(switch.index[0])
+    if len(closed_switches) > 0:
+        logger.info('closed %d switches at line with 2 open switches (switches: %s)' % (
+            len(closed_switches), closed_switches))
 
 
 def drop_inactive_elements(net):
@@ -1069,6 +1074,7 @@ def set_isolated_areas_out_of_service(net):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
+    closed_switches = set()
     unsupplied = unsupplied_buses(net)
     logger.info("set %d of %d unsupplied buses out of service" % (
         len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
@@ -1078,12 +1084,16 @@ def set_isolated_areas_out_of_service(net):
         oos_elements = net.line[~net.line.in_service].index
         oos_switches = net.switch[(net.switch.et == element[0]) &
                                   (net.switch.element.isin(oos_elements))].index
+
+        closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
         net.switch.loc[oos_switches, "closed"] = True
 
         for idx, bus in net.switch[~net.switch.closed & (net.switch.et == element[0])] \
                 [["element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
+    if len(closed_switches) > 0:
+        logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
 
 
 def select_subnet(net, buses, include_switch_buses=False, include_results=False,
@@ -1521,9 +1531,13 @@ def create_replacement_switch_for_branch(net, element, idx):
     bus_i = net[element].from_bus.at[idx]
     bus_j = net[element].to_bus.at[idx]
     in_service = net[element].in_service.at[idx]
+    if element in ['line', 'trafo']:
+        is_closed = all(
+            net.switch.loc[(net.switch.element == idx) & (net.switch.et == element[0]), 'closed'])
+
     switch_name = 'REPLACEMENT_%s_%d' % (element, idx)
-    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=in_service,
-                        type='CB')
+    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b',
+                        closed=in_service and is_closed, type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element, idx))
 
