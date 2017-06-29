@@ -257,10 +257,10 @@ def opf_task(net):  # pragma: no cover
             constr[i] = np.nan
         if (constr.min_q_from_kvar >= constr.max_q_from_kvar).any():
             logger.warning("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
-                        "all DC Line. Please observe the pandapower signing system.")
+                           "all DC Line. Please observe the pandapower signing system.")
         if (constr.min_q_to_kvar >= constr.max_q_to_kvar).any():
             logger.warning("The value of min_q_to_kvar must be less than min_q_to_kvar for " +
-                        "all DC Line. Please observe the pandapower signing system.")
+                           "all DC Line. Please observe the pandapower signing system.")
         if constr.duplicated()[1:].all():  # all with the same constraints
             to_log += '\n' + "    at all DC Line [max_p_kw, min_q_from_kvar, max_q_from_kvar, " + \
                       "min_q_to_kvar, max_q_to_kvar] is [%s, %s, %s, %s, %s]" % \
@@ -805,21 +805,21 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
                            net["bus"]["zone"].loc[net["line"]["to_bus"]].values)
             if crossing > 0:
                 logger.warning("There have been %i lines with different zones at from- and to-bus"
-                            % crossing)
+                               % crossing)
         elif element == "trafo":
             net["trafo"]["zone"] = net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values
             crossing = sum(net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values !=
                            net["bus"]["zone"].loc[net["trafo"]["lv_bus"]].values)
             if crossing > 0:
                 logger.warning("There have been %i trafos with different zones at lv_bus and hv_bus"
-                            % crossing)
+                               % crossing)
         elif element == "impedance":
             net["impedance"]["zone"] = net["bus"]["zone"].loc[net["impedance"]["from_bus"]].values
             crossing = sum(net["bus"]["zone"].loc[net["impedance"]["from_bus"]].values !=
                            net["bus"]["zone"].loc[net["impedance"]["to_bus"]].values)
             if crossing > 0:
                 logger.warning("There have been %i impedances with different zones at from_bus and "
-                            "to_bus" % crossing)
+                               "to_bus" % crossing)
         elif element == "shunt":
             net["shunt"]["zone"] = net["bus"]["zone"].loc[net["shunt"]["bus"]].values
         elif element == "ward":
@@ -1534,10 +1534,13 @@ def create_replacement_switch_for_branch(net, element, idx):
     if element in ['line', 'trafo']:
         is_closed = all(
             net.switch.loc[(net.switch.element == idx) & (net.switch.et == element[0]), 'closed'])
+        is_closed = is_closed and in_service
+    else:
+        is_closed = in_service
 
     switch_name = 'REPLACEMENT_%s_%d' % (element, idx)
-    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b',
-                        closed=in_service and is_closed, type='CB')
+    sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
+                        type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element, idx))
 
