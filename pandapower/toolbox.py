@@ -840,7 +840,7 @@ def create_continuous_bus_index(net, start=0):
     net.bus.index = new_bus_idxs
 
     for element, value in [("line", "from_bus"), ("line", "to_bus"), ("trafo", "hv_bus"),
-                           ("trafo", "lv_bus"), ("sgen", "bus"), ("load", "bus"),
+                           ("trafo", "lv_bus"), ("sgen", "bus"), ("gen", "bus"), ("load", "bus"),
                            ("switch", "bus"), ("ward", "bus"), ("xward", "bus"),
                            ("impedance", "from_bus"), ("impedance", "to_bus"),
                            ("shunt", "bus"), ("ext_grid", "bus")]:
@@ -1187,7 +1187,7 @@ def merge_nets(net1, net2, validate=True, **kwargs):
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res"):
             continue
-        if type(table) == pd.DataFrame and len(table) > 0:
+        if type(table) == pd.DataFrame and (len(table) > 0 or len(net2[element]) > 0):
             if element == "switch":
                 adapt_switches(net2, "line", offset=len(net1.line))
                 adapt_switches(net1, "line")
