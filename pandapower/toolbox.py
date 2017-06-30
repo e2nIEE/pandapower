@@ -1600,23 +1600,5 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
 
         logger.info('set %d %ss out of service' % (k, elm))
 
-def sensitivity(net, buses = "all", lines = "all"):
-
-    if buses == "all":
-        buses = net.bus.index.values
-
-    if lines == "all":
-        lines = net.line.index.values
-
-    pp.runpp(net)
-
-    # get jacobi matrix
-
-    # map back to pp buses
-
-    # get branch jacobi matrix iteratively
-
-
-    # map back to lines
 
 

@@ -216,7 +216,7 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     pimul = r_[
         results["mu"]["nln"]["l"] - results["mu"]["nln"]["u"],
         results["mu"]["lin"]["l"] - results["mu"]["lin"]["u"],
-        -ones(ny),
+        -ones(int(ny > 0)),
         results["mu"]["var"]["l"] - results["mu"]["var"]["u"],
     ]
     raw = {'xr': x, 'pimul': pimul, 'info': info, 'output': output}
