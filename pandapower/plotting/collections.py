@@ -259,7 +259,7 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
 
-def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
+def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_autoaspect=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -293,7 +293,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    ax.set_aspect('equal', 'datalim')
+    if set_autoaspect:
+        ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
     plt.tight_layout()
