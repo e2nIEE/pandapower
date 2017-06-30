@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=1e-10,
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=0,
           **kwargs):
     """
     Runs PANDAPOWER AC Flow
@@ -271,6 +271,17 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
+
+    # Check if all necessary parameters are given:
+    if (not net.sgen.empty) & (not "controllable" in net.sgen.columns):
+        logger.warning('Warning: Please specify sgen["controllable"]\n')
+
+    if (not net.load.empty) & (not "controllable" in net.load.columns):
+        logger.warning('Warning: Please specify load["controllable"]\n')
+
+
+
+
     mode = "opf"
     ac = True
     copy_constraints_to_ppc = True
@@ -324,6 +335,13 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
+
+    if (not net.sgen.empty) & (not "controllable" in net.sgen.columns):
+        logger.warning('Warning: Please specify sgen["controllable"]\n')
+
+    if (not net.load.empty) & (not "controllable" in net.load.columns):
+        logger.warning('Warning: Please specify load["controllable"]\n')
+
     mode = "opf"
     ac = False
     init = "flat"

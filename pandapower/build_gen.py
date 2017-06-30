@@ -364,14 +364,19 @@ def _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask):
 
     delta = net["_options"]["delta"]
 
-    ppc["gen"][eg_end:gen_end, QMIN] = -net["gen"]["max_q_kvar"].values[gen_is_mask] * 1e-3 - delta
-    ppc["gen"][eg_end:gen_end, QMAX] = -net["gen"]["min_q_kvar"].values[gen_is_mask] * 1e-3 + delta
+    if "max_q_kvar" in net["gen"].columns:
+        ppc["gen"][eg_end:gen_end, QMIN] = -net["gen"]["max_q_kvar"].values[gen_is_mask] * 1e-3 - delta
+    if "min_q_kvar" in net["gen"].columns:
+        ppc["gen"][eg_end:gen_end, QMAX] = -net["gen"]["min_q_kvar"].values[gen_is_mask] * 1e-3 + delta
 
 
 def _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask):
     delta = net["_options"]["delta"]
-    ppc["gen"][eg_end:gen_end, PMIN] = -net["gen"]["max_p_kw"].values[gen_is_mask] * 1e-3 + delta
-    ppc["gen"][eg_end:gen_end, PMAX] = -net["gen"]["min_p_kw"].values[gen_is_mask] * 1e-3 - delta
+
+    if "max_p_kw" in net["gen"].columns:
+        ppc["gen"][eg_end:gen_end, PMIN] = -net["gen"]["max_p_kw"].values[gen_is_mask] * 1e-3 + delta
+    if "min_p_kw" in net["gen"].columns:
+        ppc["gen"][eg_end:gen_end, PMAX] = -net["gen"]["min_p_kw"].values[gen_is_mask] * 1e-3 - delta
 
 
 def _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default):
