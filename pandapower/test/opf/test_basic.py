@@ -429,10 +429,39 @@ def test_dcopf():
     logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
     assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
 
+
+
+
+def test_dcopf_pwl():
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, vn_kv=10.)
+    pp.create_bus(net, vn_kv=.4)
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+                  min_q_kvar=-50)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100)
+    # pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", array([[-200, 20000], [-100, 10000], [0, 0]]))
+    # run OPF
+    pp.rundcopp(net, verbose=False)
+    assert net["OPF_converged"]
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
+
+
 if __name__ == "__main__":
     # pytest.main(["-s"])
     # pytest.main(["test_basic.py", "-xs"])
     # test_simplest_dispatch()
     # test_trafo3w_loading()
     # test_trafo3w_loading()
-    test_opf_sgen_loading()
+    test_dcopf_pwl()
