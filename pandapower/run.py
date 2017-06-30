@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=1e-10,
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=0,
           **kwargs):
     """
     Runs PANDAPOWER AC Flow

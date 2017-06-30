@@ -324,6 +324,10 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
+		
+		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. for OPF
+		
+		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -394,6 +398,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
+		
+		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. for OPF
+		
+		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. for OPF
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
@@ -625,6 +633,14 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
+		
+        **max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
+        
+        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
+        
+        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
+        
+        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -770,6 +786,14 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
+		
+		**max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
+        
+        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
+        
+        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
+        
+        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -889,6 +913,14 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **RX_max** - maximal R/X-ratio **
 
         **RK_min** - minimal R/X-ratio **
+		
+		**max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
+        
+        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
+        
+        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
+        
+        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
@@ -1940,13 +1972,24 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
         **vm_to_pu** - (int, None) Index of measured element, if element_type is "line" or
         "transformer".
-
+		
     OPTIONAL:
         **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **name** (str, None) - A custom name for this dc line
 
         **in_service** (boolean) - True for in_service or False for out of service
+		
+		**max_p_kw** - Maximum active power flow. Only respected for OPF
+		
+		**min_q_from_kvar** - Minimum reactive power at from bus. Only respected for OPF
+		
+		**min_q_to_kvar** - Minimum reactive power at to bus. Only respected for OPF
+		
+		**max_q_from_kvar** - Maximum reactive power at from bus. Only respected for OPF
+		
+		**max_q_to_kvar ** - Maximum reactive power at to bus. Only respected for OPF
+
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
