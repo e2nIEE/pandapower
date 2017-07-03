@@ -278,7 +278,7 @@ def test_isolated_in_service_bus_at_oos_line():
     b = pp.create_bus(net, vn_kv=135)
     l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l, "in_service"] = False
-    assert runpp_with_consistency_checks(net)
+    assert runpp_with_consistency_checks(net, init="flat")
 
 
 def test_makeYbus():
