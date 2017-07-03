@@ -10,11 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon
+import pplog
+
+logger = pplog.getLogger(__name__)
 
 
 def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
                                  colors=None, z=None, cmap=None, norm=None, infofunc=None,
-                                 picker=False, **kwargs):
+                                 picker=False, net=None, **kwargs):
     infos = []
 
     if 'height' in kwargs and 'width' in kwargs:
@@ -47,6 +50,8 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
                                      **kwargs)
             else:
                 fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
+        else:
+            logger.error("Wrong patchtype. Please choose a correct patch type.")
         if infofunc:
             infos.append(infofunc(buses[i]))
         return fig
@@ -59,8 +64,10 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
     if cmap:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        if z is None:
+        if z is None and net:
             z = net.res_bus.vm_pu.loc[buses]
+        else:
+            logger.warning("z is None and no net is provided")
         pc.set_array(np.array(z))
         pc.has_colormap = True
         pc.cbar_title = "Bus Voltage [pu]"
@@ -118,7 +125,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
-                                      norm=norm, infofunc=infofunc, picker=picker, **kwargs)
+                                      norm=norm, infofunc=infofunc, picker=picker, net=net, **kwargs)
     return pc
 
 
