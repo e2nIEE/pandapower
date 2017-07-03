@@ -17,7 +17,7 @@ from pandapower import __version__
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

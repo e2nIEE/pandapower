@@ -260,13 +260,13 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     # --- try to run a pandapower powerflow
     try:
         pp.runpp(pp_net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
-    except:
+    except pp.LoadflowNotConverged:
         try:
             pp.runpp(pp_net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
-        except:
+        except pp.LoadflowNotConverged:
             try:
                 pp.runpp(pp_net, trafo_model="pi")
-            except:
+            except pp.LoadflowNotConverged:
                 logger.error('The pandapower powerflow does not converge.')
                 return False
 

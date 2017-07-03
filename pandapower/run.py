@@ -12,7 +12,7 @@ from pandapower.powerflow import _powerflow
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -24,8 +24,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
           **kwargs):
     """
     Runs PANDAPOWER AC Flow
-
-    Note: May raise pandapower.api.run["load"]flowNotConverged
 
     INPUT:
         **net** - The pandapower format network
@@ -238,17 +236,23 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities for generators can be defined in net.sgen / net.gen.
-    net.sgen.controllable / net.gen.controllable signals if a generator is controllable. If False,
-    the active and reactive power are assigned as in a normal power flow. If yes, the following
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
         - net.sgen.min_p_kw / net.sgen.max_p_kw
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
+        - net.load.min_q_kvar / net.load.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
         - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
         - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
         - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+        
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable. 
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
@@ -273,11 +277,36 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     """
 
     # Check if all necessary parameters are given:
-    if (not net.sgen.empty) & (not "controllable" in net.sgen.columns):
-        logger.warning('Warning: Please specify sgen["controllable"]\n')
 
-    if (not net.load.empty) & (not "controllable" in net.load.columns):
-        logger.warning('Warning: Please specify load["controllable"]\n')
+    if (not net.gen.empty) and (("min_p_kw" not in net.gen.columns) or ("max_p_kw" not in net.gen.columns) or (
+        "max_q_kvar" not in net.gen.columns) or ("min_q_kvar" not in net.gen.columns)):
+        raise UserWarning('Warning: Please specify operational constraints for controllable gens')
+
+    if (not net.dcline.empty) and (("min_q_to_kvar" not in net.dcline.columns) or ("max_q_to_kvar" not in net.dcline.columns) or (
+        "min_q_from_kvar" not in net.dcline.columns) or ("max_q_from_kvar" not in net.dcline.columns)):
+        raise UserWarning('Warning: Please specify operational constraints for dclines')
+
+
+    if "controllable" in net.sgen.columns:
+        if net.sgen.controllable.any():
+            if ("min_p_kw" not in net.sgen.columns) or ("max_p_kw" not in net.sgen.columns) or (
+                "max_q_kvar" not in net.sgen.columns) or ("min_q_kvar" not in net.sgen.columns):
+                raise UserWarning('Warning: Please specify operational constraints for controllable sgens')
+        else:
+            logger.debug('No controllable sgens found')
+
+
+    if "controllable" in net.load.columns:
+        if net.load.controllable.any():
+            if ("min_p_kw" not in net.load.columns) or ("max_p_kw" not in net.load.columns) or (
+                "max_q_kvar" not in net.load.columns) or ("min_q_kvar" not in net.load.columns):
+                raise UserWarning('Warning: Please specify operational constraints for controllable loads')
+        else:
+            logger.debug('No controllable loads found')
+
+
+
+
 
 
 

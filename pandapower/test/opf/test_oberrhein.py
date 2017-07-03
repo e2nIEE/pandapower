@@ -8,7 +8,7 @@ import pandapower as pp
 import pandapower.networks as nw
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
