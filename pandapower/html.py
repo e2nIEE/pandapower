@@ -31,7 +31,7 @@ class Tag(object):
 
 def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_trafos=True, images=None):
     """
-     Converts a pandapower network into a graph for vis.js 
+     Converts a pandapower network into a graph for vis.js
      which contains a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
      (Note: only buses with in_service = 1 appear in the graph), edges represent physical
@@ -57,7 +57,6 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
          from pandapower.html import _net_to_graphjs
          print _net_to_graph(net, respect_switches = False)
     """
-
     nodes = [{'id': int(id), 'label': str(id)} for id in net.bus[net.bus.in_service == 1].index]
     edges = []
 

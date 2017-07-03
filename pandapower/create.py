@@ -12,6 +12,7 @@ from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower import __version__
 
+
 def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
@@ -324,9 +325,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
-		
+
 		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. for OPF
-		
+
 		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. for OPF
 
     OUTPUT:
@@ -398,9 +399,9 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
-		
+
 		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. for OPF
-		
+
 		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. for OPF
 
     OUTPUT:
@@ -492,15 +493,15 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
-        
+
         **max_p_kw** (float, default NaN) - Maximum active power load. Only respected for OPF
-        
+
         **min_p_kw** (float, default NaN) - Minimum active power load. Only respected for OPF
-        
+
         **max_q_kvar** (float, default NaN) - Maximum reactive power load. Only respected for OPF
-        
+
         **min_q_kvar** (float, default NaN) - Minimum reactive power load. Only respected for OPF
-        
+
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. Only respected for OPF
 
     OUTPUT:
@@ -633,13 +634,13 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
-		
+
         **max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
-        
+
         **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
-        
+
         **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
-        
+
         **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
     OUTPUT:
@@ -786,13 +787,13 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
-		
+
 		**max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
-        
+
         **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
-        
+
         **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
-        
+
         **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
     OUTPUT:
@@ -913,13 +914,13 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **RX_max** - maximal R/X-ratio **
 
         **RK_min** - minimal R/X-ratio **
-		
+
 		**max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
-        
+
         **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
-        
+
         **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
-        
+
         **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
         \* only considered in loadflow if calculate_voltage_angles = True
@@ -1269,7 +1270,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
-        if type(tp_pos) == float:
+        if isinstance(tp_pos, float):
             net.trafo.tp_pos = net.trafo.tp_pos.astype(float)
     # store dtypes
     dtypes = net.trafo.dtypes
@@ -1972,22 +1973,22 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
         **vm_to_pu** - (int, None) Index of measured element, if element_type is "line" or
         "transformer".
-		
+
     OPTIONAL:
         **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **name** (str, None) - A custom name for this dc line
 
         **in_service** (boolean) - True for in_service or False for out of service
-		
+
 		**max_p_kw** - Maximum active power flow. Only respected for OPF
-		
+
 		**min_q_from_kvar** - Minimum reactive power at from bus. Only respected for OPF
-		
+
 		**min_q_to_kvar** - Minimum reactive power at to bus. Only respected for OPF
-		
+
 		**max_q_from_kvar** - Maximum reactive power at from bus. Only respected for OPF
-		
+
 		**max_q_to_kvar ** - Maximum reactive power at to bus. Only respected for OPF
 
 

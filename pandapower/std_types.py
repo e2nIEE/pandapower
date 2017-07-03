@@ -246,8 +246,10 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     fitting_types = []
     for name, stp in net.std_types[element].items():
         for p, v in list(data.items()):
-            if ((type(v) != float and stp[p] != v) or
-                    (type(v) == float and abs(v - stp[p]) > epsilon)):
+            if isinstance(v, float):
+                if abs(v - stp[p]) > epsilon:
+                    break
+            elif stp[p] != v:
                 break
         else:
             fitting_types.append(name)

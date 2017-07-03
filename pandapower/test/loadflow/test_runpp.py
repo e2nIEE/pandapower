@@ -519,9 +519,9 @@ def test_pvpq_lookup():
     b2 = pp.create_bus(net, vn_kv=0.4, index=2)
     b3 = pp.create_bus(net, vn_kv=0.4, index=3)
 
-    g2 = pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
-    l3 = pp.create_load(net, b2, p_kw=10)
-    e1 = pp.create_ext_grid(net, b3)
+    pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
+    pp.create_load(net, b2, p_kw=10)
+    pp.create_ext_grid(net, b3)
 
     pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.5, std_type="NAYY 4x120 SE")
     pp.create_line(net, from_bus=b1, to_bus=b3, length_km=0.5, std_type="NAYY 4x120 SE")

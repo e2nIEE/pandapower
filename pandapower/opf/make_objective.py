@@ -75,9 +75,9 @@ def _make_objective(ppci, net):
         ppci["gencost"] = zeros((len_gencost, 4 + n_coefficients), dtype=float)
         ppci["gencost"][:, MODEL:COST] = array([2, 0, 0, n_coefficients])
 
-        for type in ["p", "q"]:
+        for cost_type in ["p", "q"]:
 
-            if type == "q":
+            if cost_type == "q":
                 shift_idx = ng
                 sign_corr = -1
             else:
@@ -99,9 +99,9 @@ def _make_objective(ppci, net):
 
                 if len(net.piecewise_linear_cost):
 
-                    if (net.piecewise_linear_cost.type == type).any():
+                    if (net.piecewise_linear_cost.type == cost_type).any():
                         costs = net.piecewise_linear_cost[
-                                net.piecewise_linear_cost.type == type].reset_index(drop=True)
+                                net.piecewise_linear_cost.type == cost_type].reset_index(drop=True)
 
                         if not costs.element[costs.element_type == el].empty:
 
@@ -135,11 +135,11 @@ def _make_objective(ppci, net):
 
         if len(net.polynomial_cost):
 
-            for type in ["p", "q"]:
-                if (net.polynomial_cost.type == type).any():
-                    costs = net.polynomial_cost[net.polynomial_cost.type == type].reset_index(drop=True)
+            for cost_type in ["p", "q"]:
+                if (net.polynomial_cost.type == cost_type).any():
+                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(drop=True)
 
-                    if type == "q":
+                    if cost_type == "q":
                         shift_idx = ng
                         sign_corr = -1
                     else:

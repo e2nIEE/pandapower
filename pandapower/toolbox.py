@@ -918,7 +918,7 @@ def drop_inactive_elements(net):
     drop_buses(net, inactive_buses)
 
     for element in net.keys():
-        if element not in ["bus", "trafo", "line"] and type(net[element]) == pd.DataFrame \
+        if element not in ["bus", "trafo", "line"] and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
             drop_idx = net[element][net[element].in_service == False].index
             net[element].drop(drop_idx, inplace=True)
@@ -1568,7 +1568,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
     :return:
     """
 
-    if type(elements) != tuple:
+    if not isinstance(elements, tuple):
         raise TypeError(
             'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
 
