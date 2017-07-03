@@ -28,7 +28,7 @@ from pypower.pqcost import pqcost
 from pypower.run_userfcn import run_userfcn
 from scipy.sparse import hstack, csr_matrix as sparse
 
-from pypower.opf_model import opf_model 
+from pandapower.opf.opf_model import opf_model
 
 
 def opf_setup(ppc, ppopt):
