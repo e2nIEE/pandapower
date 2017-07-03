@@ -559,7 +559,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
 
     # but also check if they may be the only connection to an ext_grid
     disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][disco, 1] = 4
+    ppc["bus"][disco, 1] = 4.
 
 
 def _write_lookup_to_net(net, element, element_lookup):
