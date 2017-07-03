@@ -15,11 +15,11 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import LoadflowNotConverged
-from pandapower.toolbox import nets_equal
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element, \
     result_test_network_generator
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
+from pandapower.toolbox import nets_equal
 
 
 def test_runpp_init():
@@ -272,6 +272,15 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     iso_buses, iso_p, iso_q = get_isolated(net)
 
 
+def test_isolated_in_service_bus_at_oos_line():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b = pp.create_bus(net, vn_kv=135)
+    l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[l, "in_service"] = False
+    assert runpp_with_consistency_checks(net)
+
+
 def test_makeYbus():
     # tests if makeYbus fails for nets where every bus is connected to each other
     net = pp.create_empty_network()
@@ -335,6 +344,7 @@ def test_pypower_algorithms_iter():
                 raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except(LoadflowNotConverged):
                 raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+
 
 def test_recycle():
     # Note: Only calls recycle functions and tests if load and gen are updated.
@@ -530,6 +540,7 @@ def test_pvpq_lookup():
     pp.runpp(net, numba=False)
 
     assert nets_equal(net, net_numba)
+
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py", "-xs"])
