@@ -12,7 +12,7 @@ from pandapower.test.consistency_checks import consistency_checks
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

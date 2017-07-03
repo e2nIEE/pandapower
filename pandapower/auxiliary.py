@@ -38,12 +38,12 @@ from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 try:
     from numba import _version as numba_version
-except:
+except ImportError:
     pass
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

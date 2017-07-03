@@ -1695,7 +1695,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
             raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
     elif et == "t3":
-        raise NotImplemented("Switches for three winding transformers are not implemented")
+        raise NotImplementedError("Switches for three winding transformers are not implemented")
 #        elm_tab = 'trafo3w'
 #        if element not in net[elm_tab].index:
 #            raise UserWarning("Unknown trafo3w index")

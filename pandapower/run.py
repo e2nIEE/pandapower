@@ -12,7 +12,7 @@ from pandapower.powerflow import _powerflow
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -24,8 +24,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
           **kwargs):
     """
     Runs PANDAPOWER AC Flow
-
-    Note: May raise pandapower.api.run["load"]flowNotConverged
 
     INPUT:
         **net** - The pandapower format network
