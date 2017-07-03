@@ -394,7 +394,7 @@ def test_trafo3w_loading():
     tidx = pp.create_transformer3w(
         net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV', max_loading_percent=120)
     pp.create_load(net, b3, 5e3, controllable=False)
-    id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0)
+    id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0, min_q_kvar=-1e9, max_q_kvar= 1e9)
     pp.create_polynomial_cost(net, id, "load", array([-1, 0]))
     #pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
