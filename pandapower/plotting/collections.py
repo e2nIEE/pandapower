@@ -334,7 +334,10 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
-    plt.tight_layout()
+    try:
+        plt.tight_layout()
+    except:
+        pass
 
 
 if __name__ == "__main__":

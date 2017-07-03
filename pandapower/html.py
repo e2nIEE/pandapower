@@ -106,7 +106,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
                   list(zip(net.trafo.hv_bus, net.trafo.lv_bus,
                            net.trafo.index, net.trafo.in_service))
                   if inservice == 1 and not idx in nogotrafos]
-        for trafo3, t3tab in net.trafo3w.iterrows():
+        for _, t3tab in net.trafo3w.iterrows():
             edges += [{'from': int(bus1),'to': int(bus2),'label': 'trafo3'}
                       for bus1, bus2 in combinations([t3tab.hv_bus, t3tab.mv_bus, t3tab.lv_bus], 2)
                       if t3tab.in_service]

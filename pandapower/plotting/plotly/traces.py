@@ -135,7 +135,7 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
     xs = []
     ys = []
     if use_line_geodata:
-        for line_ind, line in lines.iterrows():
+        for line_ind, _ in lines.iterrows():
             line_coords = net.line_geodata.loc[line_ind, 'coords']
             linex, liney = list(zip(*line_coords))
             xs += linex
@@ -390,7 +390,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
         cmap_colors = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
         trafo_traces = []
         col_i = 0
-        for trafo_ind, trafo in tarfo2plot.iterrows():
+        for _, trafo in tarfo2plot.iterrows():
             trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=cmap_colors[col_i]),
                                   hoverinfo='text', mode='lines', name=trace_name)
 

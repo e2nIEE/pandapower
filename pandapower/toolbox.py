@@ -667,9 +667,8 @@ def _pre_release_changes(net):
     net["trafo"] = net["trafo"].rename(columns={'trafotype': 'std_type', "type": "std_type",
                                                 "un1_kv": "vn_hv_kv", "un2_kv": "vn_lv_kv",
                                                 'vfe_kw': 'pfe_kw', "unh_kv": "vn_hv_kv",
-                                                "unl_kv": "vn_lv_kv", 'trafotype': 'std_type',
-                                                "type": "std_type", 'vfe_kw': 'pfe_kw',
-                                                "uk_percent": "vsc_percent",
+                                                "unl_kv": "vn_lv_kv", "type": "std_type",
+                                                'vfe_kw': 'pfe_kw', "uk_percent": "vsc_percent",
                                                 "ur_percent": "vscr_percent",
                                                 "vnh_kv": "vn_hv_kv", "vnl_kv": "vn_lv_kv"})
     net["trafo3w"] = net["trafo3w"].rename(columns={"unh_kv": "vn_hv_kv", "unm_kv": "vn_mv_kv",
@@ -888,7 +887,7 @@ def close_switch_at_line_with_two_open_switches(net):
     """
     closed_switches = set()
     nl = net.switch[(net.switch.et == 'l') & (net.switch.closed == 0)]
-    for i, switch in nl.groupby("element"):
+    for _, switch in nl.groupby("element"):
         if len(switch.index) > 1:  # find all lines that have open switches at both ends
             # and close on of them
             net.switch.at[switch.index[0], "closed"] = 1
