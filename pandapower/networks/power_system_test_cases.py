@@ -507,7 +507,7 @@ def case6470rte(ref_bus_idx=5988):
     return case6470rte
 
 
-def case6495rte(ref_bus_idx=[6077, 6161, 6305, 6306, 6307, 6308]):
+def case6495rte(ref_bus_idx=None):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by \
@@ -520,7 +520,8 @@ def case6495rte(ref_bus_idx=[6077, 6161, 6305, 6306, 6307, 6308]):
 
         **ref_bus_idx** - Since the MATPOWER case provides a reference bus without connected \
             generator, because a distributed slack is assumed, to convert the data to pandapower, \
-            another bus has been assumed as reference bus. Via 'ref_bus_idx' the User can choose a \
+            another buses (6077, 6161, 6305, 6306, 6307, 6308) has been assumed as reference bus. \
+            Via 'ref_bus_idx' the User can choose a \
             reference bus, which should have a generator connected to. Please be aware that by \
             changing the reference bus to another bus than the proposed default value, maybe a \
             powerflow does not converge anymore!
@@ -533,6 +534,7 @@ def case6495rte(ref_bus_idx=[6077, 6161, 6305, 6306, 6307, 6308]):
 
          net = pn.case6495rte()
     """
+    ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
     case6495rte = pp.from_pickle(os.path.join(_get_cases_path(), "case6495rte.p"))
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
         _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[-1382.35e3, -2894.13e3, -1498.32e3,
