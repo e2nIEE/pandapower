@@ -103,9 +103,9 @@ def check_opf_data(net):
     # --- check necessary opf columns
     opf_col = {
         'ext_grid': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'gen': pd.Series(['controllable', 'min_p_kw', 'max_p_kw']),
-        'sgen': pd.Series(['controllable', 'min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'load': pd.Series(['controllable', 'min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
+        'gen': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
+        'sgen': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
+        'load': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
         'dcline': pd.Series(['max_p_kw', 'min_q_from_kvar', 'min_q_to_kvar', 'max_q_from_kvar',
                              'max_q_to_kvar'])}
     for element_type in opf_col.keys():
