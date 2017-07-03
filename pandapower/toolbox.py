@@ -115,11 +115,11 @@ def check_opf_data(net):
             controllable = True
             if element_type in ['gen', 'sgen', 'load']:
                 if 'controllable' not in missing_col:
-                    if not net[element_type].controllable.any():
+                    if element_type == 'gen':
+                        net[element_type]['controllable'] = True
+                    else:
+                        net[element_type]['controllable'] = False
                         controllable = False
-                else:
-                    raise AttributeError("'controllable' is missing in net." + element_type +
-                                         ".columns")
             if len(missing_col) & controllable:
                 raise AttributeError("These columns are missing in net." + element_type + ": " +
                                      str(['%s' % col for col in missing_col]))
