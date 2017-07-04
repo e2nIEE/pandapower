@@ -10,9 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon
-import pplog
 
-logger = pplog.getLogger(__name__)
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
@@ -233,8 +238,9 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
             continue
         d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
         if size is None:
-#            print(d)
             size_this = np.sqrt(d)/5
+        else:
+            size_this = size
         off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
