@@ -171,7 +171,7 @@ def _calc_trafo_parameter(net, ppc):
     temp_para[:, 7] = trafo["in_service"].values
     if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
-        temp_para[:, 8] = max_load / 100. * trafo.sn_kva.values / 1000. * parallel
+        temp_para[:, 8] = max_load / 100. * trafo.sn_kva.values / 1000. * trafo.df.values * parallel
     return temp_para
 
 
@@ -439,7 +439,7 @@ def _trafo_df_from_trafo3w(net):
                        "i0_percent": ttab.i0_percent, "tp_side": taps[0]["tp_side"],
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
-                       "tp_st_percent": taps[0]["tp_st_percent"], "parallel": 1,
+                       "tp_st_percent": taps[0]["tp_st_percent"], "parallel": 1, "df": 1,
                        "in_service": ttab.in_service, "shift_degree": 0, "max_loading_percent": max_load}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
                                    "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
@@ -447,7 +447,7 @@ def _trafo_df_from_trafo3w(net):
                                    "i0_percent": 0, "tp_side": taps[1]["tp_side"],
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
-                                   "tp_st_percent": taps[1]["tp_st_percent"], "parallel": 1,
+                                   "tp_st_percent": taps[1]["tp_st_percent"], "parallel": 1, "df": 1,
                                    "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree,
                                    "max_loading_percent": max_load}
         trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
@@ -457,7 +457,7 @@ def _trafo_df_from_trafo3w(net):
                                        "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
                                        "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
                                        "tp_pos": taps[2]["tp_pos"], "tp_st_percent": taps[2]["tp_st_percent"],
-                                       "parallel": 1,
+                                       "parallel": 1, "df": 1,
                                        "in_service": ttab.in_service, "shift_degree": ttab.shift_lv_degree,
                                        "max_loading_percent": max_load}
         i += 1
