@@ -85,6 +85,5 @@ def test_pypower_cases():
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')
 
-
 if __name__ == '__main__':
-    pytest.main(["-s"])
+    pytest.main(["test_from_ppc.py"])

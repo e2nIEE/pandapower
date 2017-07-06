@@ -8,9 +8,8 @@
 """Solves a DC power flow.
 """
 
-from numpy import copy, r_, matrix, transpose, real
+from numpy import copy, r_, matrix, transpose, real, array
 from scipy.sparse.linalg import spsolve
-
 
 def dcpf(B, Pbus, Va0, ref, pv, pq):
     """Solves a DC power flow.
@@ -35,6 +34,8 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
     Va = copy(Va0)
 
     ## update angles for non-reference buses
+    if pvpq.shape == (1, 1): #workaround for bug in scipy <0.19
+        pvpq = array(pvpq).flatten()
     Va[pvpq] = real(spsolve(B[pvpq.T, pvpq], transpose(Pbus[pvpq] - B[pvpq.T, ref] * Va0[ref])))
 
     return Va

@@ -12,9 +12,17 @@ from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon
 
 
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
+
 def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
                                  colors=None, z=None, cmap=None, norm=None, infofunc=None,
-                                 picker=False, **kwargs):
+                                 picker=False, net=None, **kwargs):
     infos = []
 
     if 'height' in kwargs and 'width' in kwargs:
@@ -47,6 +55,8 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
                                      **kwargs)
             else:
                 fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
+        else:
+            logger.error("Wrong patchtype. Please choose a correct patch type.")
         if infofunc:
             infos.append(infofunc(buses[i]))
         return fig
@@ -59,8 +69,10 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
     if cmap:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        if z is None:
+        if z is None and net:
             z = net.res_bus.vm_pu.loc[buses]
+        else:
+            logger.warning("z is None and no net is provided")
         pc.set_array(np.array(z))
         pc.has_colormap = True
         pc.cbar_title = "Bus Voltage [pu]"
@@ -118,7 +130,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
-                                      norm=norm, infofunc=infofunc, picker=picker, **kwargs)
+                                      norm=norm, infofunc=infofunc, picker=picker, net=net, **kwargs)
     return pc
 
 
@@ -226,8 +238,9 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
             continue
         d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
         if size is None:
-#            print(d)
             size_this = np.sqrt(d)/5
+        else:
+            size_this = size
         off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
@@ -289,8 +302,7 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
 
-
-def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
+def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -324,10 +336,14 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    ax.set_aspect('equal', 'datalim')
+    if set_aspect:
+        ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
-    plt.tight_layout()
+    try:
+        plt.tight_layout()
+    except:
+        pass
 
 
 if __name__ == "__main__":

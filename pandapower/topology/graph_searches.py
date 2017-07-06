@@ -40,7 +40,7 @@ def connected_component(mg, bus, notravbuses=[]):
     visited = {bus}
     stack = [(bus, iter(mg[bus]))]
     while stack:
-        parent, children = stack[-1]
+        _, children = stack[-1]
         try:
             child = next(children)
             if child not in visited:
@@ -313,7 +313,7 @@ def estimate_voltage_vector(net):
     """
     res_bus = pd.DataFrame(index=net.bus.index, columns=["vm_pu", "va_degree"])
     net_graph = create_nxgraph(net, include_trafos=False)
-    for i, ext_grid in net.ext_grid.iterrows():
+    for _, ext_grid in net.ext_grid.iterrows():
         area = list(connected_component(net_graph, ext_grid.bus))
         res_bus.vm_pu.loc[area] = ext_grid.vm_pu
         res_bus.va_degree.loc[area] = ext_grid.va_degree
