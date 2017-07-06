@@ -1901,6 +1901,41 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None,
     return index
 
 
+def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_kva,
+                                       name=None, in_service=True, index=None):
+    """
+    Creates a series reactor as per-unit impedance
+    :param net: (pandapowerNet) - The pandapower network in which the element is created
+    :param from_bus: (int) - starting bus of the series reactor
+    :param to_bus: (int) - ending bus of the series reactor
+    :param r_ohm: (float) - real part of the impedance in Ohm
+    :param x_ohm: (float) - imaginary part of the impedance in Ohm
+    :param sn_kva: (float) - rated power of the series reactor in kVA
+    :param vn_kv: (float) - rated voltage of the series reactor in kV
+    :return: index of the created element
+    """
+    for b in [from_bus, to_bus]:
+        if b not in net["bus"].index.values:
+            raise UserWarning("Series reactor %s tries to attach to non-existing bus %s"% (name, b))
+
+    if net.bus.at[from_bus, 'vn_kv'] == net.bus.at[to_bus, 'vn_kv']:
+        vn_kv = net.bus.at[from_bus, 'vn_kv']
+    else:
+        raise UserWarning('Unable to infer rated voltage vn_kv for series reactor %s due to '
+                          'different rated voltages of from_bus %d (%.3f p.u.) and '
+                          'to_bus %d (%.3f p.u.)' % (name, from_bus, net.bus.at[from_bus, 'vn_kv'],
+                                                     to_bus, net.bus.at[to_bus, 'vn_kv']))
+
+    base_z_ohm = vn_kv ** 2 / (sn_kva * 1e-3)
+    rft_pu = r_ohm / base_z_ohm
+    xft_pu = x_ohm / base_z_ohm
+
+    index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
+                             sn_kva=sn_kva, name=name, in_service=in_service,
+                             index=index)
+    return index
+
+
 def create_ward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, name=None, in_service=True, index=None):
     """
     Creates a ward equivalent.
