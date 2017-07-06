@@ -14,7 +14,7 @@ from pandapower.powerflow import reset_results, _pd2ppc
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

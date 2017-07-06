@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
                                 BR_R_ASYM, BR_X_ASYM, branch_cols
-from pandapower.idx_bus import BASE_KV, VM, VA, bus_cols
+from pandapower.idx_bus import BASE_KV, VM, VA
 from pandapower.auxiliary import get_values
 
 

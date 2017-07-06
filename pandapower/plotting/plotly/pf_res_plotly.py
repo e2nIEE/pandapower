@@ -10,7 +10,7 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.mapbox_plot import *
 
-from pandapower import runpp
+from pandapower.run import runpp
 
 try:
     import pplog as logging

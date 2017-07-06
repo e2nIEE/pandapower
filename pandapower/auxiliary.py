@@ -38,12 +38,12 @@ from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 try:
     from numba import _version as numba_version
-except:
+except ImportError:
     pass
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -559,7 +559,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
 
     # but also check if they may be the only connection to an ext_grid
     disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][disco, 1] = 4
+    ppc["bus"][disco, 1] = 4.
 
 
 def _write_lookup_to_net(net, element, element_lookup):

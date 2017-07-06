@@ -32,7 +32,7 @@ Synthetic Voltage Control LV Networks
 	:alt: alternate Text
 	:align: center
 
-.. image:: /pics/suburb_1_en.png
+.. image:: /pics/suburb_1_en.PNG
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%

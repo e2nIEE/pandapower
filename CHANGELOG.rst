@@ -1,5 +1,15 @@
 Change Log
 =============
+- [ADDED] Dickert LV Networks
+
+[1.3.1] - 2017-06-16
+----------------------
+- [CHANGED] to_pickle saves only python datatypes and no pickle objects
+- [ADDED] html representation of pandapower nets
+- [ADDED] collections for trafos, loads, ext_grids
+- [CHANGED] renamed create_shunt_as_condensator to create_shunt_as_capacitor
+- [FIXED] mock problem in create docstrings
+- [ADDED] Synthetic Voltage Control LV Networks
 
 [1.3.0] - 2017-05-10
 ----------------------

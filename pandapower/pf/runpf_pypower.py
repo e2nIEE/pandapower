@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 def _runpf_pypower(ppci, options, **kwargs):
     """
-    This is a modified version* of runpf() to run the algorithms gausspf and fdpf from PYPOWER. 
+    This is a modified version* of runpf() to run the algorithms gausspf and fdpf from PYPOWER.
     See PYPOWER documentation for more information.
 
     * mainly the verbose functions and ext2int() int2ext() were deleted
@@ -230,10 +230,10 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
 
             ## convert to PQ bus
             gen[mx, QG] = fixedQg[mx]  ## set Qg to binding
-            for i in range(len(mx)):  ## [one at a time, since they may be at same bus]
-                gen[mx[i], GEN_STATUS] = 0  ## temporarily turn off gen,
-                bi = gen[mx[i], GEN_BUS].astype(int)  ## adjust load accordingly,
-                bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
+            for i in mx:  ## [one at a time, since they may be at same bus]
+                gen[i, GEN_STATUS] = 0  ## temporarily turn off gen,
+                bi = gen[i, GEN_BUS].astype(int)  ## adjust load accordingly,
+                bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[i, [PG, QG]])
 
             if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
                 raise ValueError('Sorry, pandapower cannot enforce Q '
@@ -252,10 +252,10 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     if len(limited) > 0:
         ## restore injections from limited gens [those at Q limits]
         gen[limited, QG] = fixedQg[limited]  ## restore Qg value,
-        for i in range(len(limited)):  ## [one at a time, since they may be at same bus]
-            bi = gen[limited[i], GEN_BUS].astype(int)  ## re-adjust load,
-            bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[limited[i], [PG, QG]]
-            gen[limited[i], GEN_STATUS] = 1  ## and turn gen back on
+        for i in limited:  ## [one at a time, since they may be at same bus]
+            bi = gen[i, GEN_BUS].astype(int)  ## re-adjust load,
+            bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[i, [PG, QG]]
+            gen[i, GEN_STATUS] = 1  ## and turn gen back on
 
     return ppci, success, bus, gen, branch
 

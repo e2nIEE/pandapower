@@ -158,6 +158,24 @@ def test_case1888rte():
     assert net.converged
 
 
+def test_case1888rte_changed_slack():
+    ref_bus_idx = 1233
+    net = pn.case1888rte(ref_bus_idx=ref_bus_idx)
+    assert net.converged
+    pp.runpp(net, trafo_model='pi')
+    assert len(net.bus) == 1888
+    assert len(net.line) + len(net.trafo) == 2531
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 354
+    assert net.ext_grid.bus.at[0] == ref_bus_idx
+    assert net.converged
+
+    ref_bus_idx = [1233, 1854]
+    net = pn.case1888rte(ref_bus_idx=ref_bus_idx)
+    pp.runpp(net, trafo_model='pi')
+    assert list(net.ext_grid.bus) == ref_bus_idx
+    assert net.converged
+
+
 def test_case2848rte():
     net = pn.case2848rte()
     assert net.converged

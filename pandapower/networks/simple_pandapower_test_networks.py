@@ -4,7 +4,10 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+from pandas import DataFrame
+from numpy import array
 import pandapower as pp
+
 
 def panda_four_load_branch():
     """
@@ -45,6 +48,9 @@ def panda_four_load_branch():
     pp.create_load(pd_net, busnr4, 30, 10)
     pp.create_load(pd_net, busnr5, 30, 10)
     pp.create_load(pd_net, busnr6, 30, 10)
+
+    n = busnr6 + 1
+    pd_net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])
 
     return pd_net
 
@@ -99,6 +105,12 @@ def four_loads_with_branches_out():
     pp.create_load(pd_net, busnr9, p_kw=30, q_kvar=10)
     pp.create_load(pd_net, busnr10, p_kw=30, q_kvar=10)
 
+    n1 = 6
+    n2 = 10
+    pd_net.bus_geodata = DataFrame(array([[0]*n1, range(0, -n1, -1)]).T, columns=['x', 'y'])
+    pd_net.bus_geodata = pd_net.bus_geodata.append(DataFrame(
+        array([[1]*(n2-n1), range(-3, -n2+n1-3, -1)]).T, columns=['x', 'y']), ignore_index=True)
+
     return pd_net
 
 
@@ -129,6 +141,9 @@ def simple_four_bus_system():
     pp.create_load(net, busnr4, 30, 10, name="load2")
     pp.create_sgen(net, busnr3, p_kw=-20., q_kvar=-5., name="pv1", sn_kva=30)
     pp.create_sgen(net, busnr4, p_kw=-15., q_kvar=-2., name="pv2", sn_kva=20)
+
+    n = busnr4 + 1
+    net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])
 
     return net
 
@@ -193,5 +208,8 @@ def simple_mv_open_ring_net():
     pp.create_switch(net, bus=6, element=4, et='l')
     pp.create_switch(net, bus=6, element=5, et='l')
     pp.create_switch(net, bus=1, element=5, et='l')
+
+    net.bus_geodata = DataFrame([[0, 0], [0, -1], [-0.5, -2], [-0.5, -3], [-0.5, -4], [0.5, -4],
+                                 [0.5, -3]], columns=['x', 'y'])
 
     return net

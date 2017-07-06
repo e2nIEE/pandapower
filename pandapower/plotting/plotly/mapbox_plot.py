@@ -38,7 +38,7 @@ def _on_map_test(x, y):
         return True
     try:
         location = geolocator.reverse("{0}, {1}".format(x, y), language='en-US')
-    except GeocoderTimedOut as e:
+    except GeocoderTimedOut:
         logger.Error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
                      "try geo_data_to_latlong(net, projection) to transform geodata to lat/long!")
 

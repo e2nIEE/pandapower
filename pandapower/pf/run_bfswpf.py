@@ -406,7 +406,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     if any_trafo_shift:
         branch_noshift = branch.copy()
         branch_noshift[:, SHIFT] = 0
-        Ybus_noshift, Yf_noshift, Yt_noshift = makeYbus(baseMVA, bus, branch_noshift)
+        Ybus_noshift, Yf_noshift, _ = makeYbus(baseMVA, bus, branch_noshift)
     else:
         Ybus_noshift = Ybus.copy()
 
