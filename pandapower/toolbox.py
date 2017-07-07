@@ -1000,6 +1000,7 @@ def fuse_buses(net, b1, b2, drop=True):
     """
     try:
         b2.__iter__
+        b2 = set(b2) - {b1}
     except:
         b2 = [b2]
 
