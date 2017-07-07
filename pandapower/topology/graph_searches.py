@@ -11,7 +11,6 @@ from pandapower.topology.create_graph import create_nxgraph
 
 
 def connected_component(mg, bus, notravbuses=[]):
-
     """
     Finds all buses in a NetworkX graph that are connected to a certain bus.
 
@@ -54,7 +53,6 @@ def connected_component(mg, bus, notravbuses=[]):
 
 
 def connected_components(mg, notravbuses=set()):
-
     """
      Clusters all buses in a NetworkX graph that are connected to each other.
 
@@ -126,8 +124,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
 
 
-def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
-
+def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_switches=True):
     """
      Finds buses, that are not connected to an external grid.
 
@@ -146,8 +143,8 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
          top.unsupplied_buses(net)
     """
 
-    mg = mg or create_nxgraph(net)
-    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service==True].bus.values)
+    mg = mg or create_nxgraph(net, respect_switches=respect_switches)
+    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service == True].bus.values)
     not_supplied = set()
     for cc in nx.connected_components(mg):
         if not set(cc) & slacks:
@@ -164,8 +161,8 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None):
 
 
 def find_bridges(g, roots):
-    discovery = {root:0 for root in roots} # "time" of first discovery of node during search
-    low = {root:0 for root in roots}
+    discovery = {root: 0 for root in roots}  # "time" of first discovery of node during search
+    low = {root: 0 for root in roots}
     visited = set(roots)
     stack = [(root, root, iter(g[root])) for root in roots]
     bridges = set()
@@ -176,7 +173,7 @@ def find_bridges(g, roots):
             if grandparent == child:
                 continue
             if child in visited:
-                if discovery[child] <= discovery[parent]: # back edge
+                if discovery[child] <= discovery[parent]:  # back edge
                     low[parent] = min(low[parent], discovery[child])
             else:
                 low[child] = discovery[child] = len(discovery)
@@ -202,7 +199,7 @@ def get_2connected_buses(g, roots):
             try:
                 child = next(children)
                 if child == grandparent or (parent, child) in bridges or \
-                                           (child, parent) in bridges:
+                                (child, parent) in bridges:
                     continue
                 if child not in two_connected:
                     two_connected.add(child)
@@ -212,8 +209,7 @@ def get_2connected_buses(g, roots):
     return connected, two_connected
 
 
-def determine_stubs(net, roots=None, mg=None):
-
+def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     """
      Finds stubs in a network. Open switches are being ignored. Results are being written in a new
      column in the bus table ("on_stub") and line table ("is_stub") as True/False value.
@@ -234,16 +230,16 @@ def determine_stubs(net, roots=None, mg=None):
 
     """
     if mg is None:
-        mg = create_nxgraph(net, respect_switches=False)
+        mg = create_nxgraph(net, respect_switches=respect_switches)
     # remove buses with degree lower 2 until none left
     roots = roots or set(net.ext_grid.bus)
-#    mg.add_edges_from((a, b) for a, b in zip(list(roots)[:-1], list(roots)[1:]))
-#    while True:
-#        dgo = {g for g, d in list(mg.degree().items()) if d < 2} #- roots
-#        if not dgo:
-#            break
-#        mg.remove_nodes_from(dgo)
-#    n1_buses = mg.nodes()
+    #    mg.add_edges_from((a, b) for a, b in zip(list(roots)[:-1], list(roots)[1:]))
+    #    while True:
+    #        dgo = {g for g, d in list(mg.degree().items()) if d < 2} #- roots
+    #        if not dgo:
+    #            break
+    #        mg.remove_nodes_from(dgo)
+    #    n1_buses = mg.nodes()
     _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
     net.bus.loc[n1_buses, "on_stub"] = False
@@ -251,9 +247,8 @@ def determine_stubs(net, roots=None, mg=None):
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs
 
+
 def lines_on_path(mg, path):
-
-
     """
      Finds all lines that connect a given path of buses.
 
@@ -275,8 +270,8 @@ def lines_on_path(mg, path):
 
     return elements_on_path(mg, path, "l")
 
-def elements_on_path(mg, path, element = "l", multi=True):
 
+def elements_on_path(mg, path, element="l", multi=True):
     """
      Finds all elements that connect a given path of buses.
 
@@ -303,10 +298,11 @@ def elements_on_path(mg, path, element = "l", multi=True):
 
     if multi:
         return [mg[b1][b2][0]["key"] for b1, b2 in zip(path, path[1:])
-                    if mg[b1][b2][0]["type"] == element]
+                if mg[b1][b2][0]["type"] == element]
     else:
         return [mg[b1][b2]["key"] for b1, b2 in zip(path, path[1:])
                 if mg[b1][b2]["type"] == element]
+
 
 def estimate_voltage_vector(net):
     """

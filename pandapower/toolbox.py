@@ -748,6 +748,8 @@ def _pre_release_changes(net):
         net.line["parallel"] = 1
     if "parallel" not in net.trafo:
         net.trafo["parallel"] = 1
+    if "df" not in net.trafo:
+        net.trafo["df"] = 1.
     if "_empty_res_bus" not in net:
         net2 = create_empty_network()
         for key, item in net2.items():
@@ -912,7 +914,7 @@ def drop_inactive_elements(net):
     drop_trafos(net, inactive_trafos)
 
     do_not_delete = set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-        set(net.line.from_bus.values) | set(net.line.to_bus.values)
+                    set(net.line.from_bus.values) | set(net.line.to_bus.values)
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
@@ -923,8 +925,6 @@ def drop_inactive_elements(net):
                 and "in_service" in net[element].columns:
             drop_idx = net[element][~net[element].in_service].index
             net[element].drop(drop_idx, inplace=True)
-
-    drop_isolated_bus_elements(net)
 
     logger.info('dropped %d buses, %d lines, %d trafos' % (
         len(inactive_buses), len(inactive_lines), len(inactive_trafos)))
@@ -943,19 +943,6 @@ def drop_buses(net, buses):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-
-
-def drop_isolated_bus_elements(net):
-    dropped = {}
-    for element in 'gen sgen load ext_grid ward xward shunt'.split():
-        if len(net[element]):
-            idx = net[element].loc[
-                net[element].bus.apply(lambda x: x not in net.bus.index.values)].index
-            net[element].drop(idx, inplace=True)
-            if len(idx) > 0:
-                dropped.update({element: len(idx)})
-    if len(dropped) > 0:
-        logger.info('dropped not connected bus elements: %s' % dropped)
 
 
 def drop_elements_at_buses(net, buses):
@@ -1041,33 +1028,11 @@ def set_element_status(net, buses, in_service):
     """
     net.bus.loc[buses, "in_service"] = in_service
 
-    lines = net.line[(net.line.from_bus.isin(buses)) & (net.line.to_bus.isin(buses))].index
-    net.line.loc[lines, "in_service"] = in_service
-
-    trafos = net.trafo[(net.trafo.hv_bus.isin(buses)) & (net.trafo.lv_bus.isin(buses))].index
-    net.trafo.loc[trafos, "in_service"] = in_service
-
-    impedances = net.impedance[(net.impedance.from_bus.isin(buses)) &
-                               (net.impedance.to_bus.isin(buses))].index
-    net.impedance.loc[impedances, "in_service"] = in_service
-
-    loads = net.load[net.load.bus.isin(buses)].index
-    net.load.loc[loads, "in_service"] = in_service
-
-    sgens = net.sgen[net.sgen.bus.isin(buses)].index
-    net.sgen.loc[sgens, "in_service"] = in_service
-
-    wards = net.ward[net.ward.bus.isin(buses)].index
-    net.ward.loc[wards, "in_service"] = in_service
-
-    xwards = net.xward[net.xward.bus.isin(buses)].index
-    net.xward.loc[xwards, "in_service"] = in_service
-
-    shunts = net.shunt[net.shunt.bus.isin(buses)].index
-    net.shunt.loc[shunts, "in_service"] = in_service
-
-    grids = net.ext_grid[net.ext_grid.bus.isin(buses)].index
-    net.ext_grid.loc[grids, "in_service"] = in_service
+    for element in net.keys():
+        if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
+                and "in_service" in net[element].columns:
+            idx = get_connected_elements(net, element, buses)
+            net[element].loc[idx, 'in_service'] = in_service
 
 
 def set_isolated_areas_out_of_service(net):
@@ -1089,7 +1054,7 @@ def set_isolated_areas_out_of_service(net):
         net.switch.loc[oos_switches, "closed"] = True
 
         for idx, bus in net.switch[
-                ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
+                    ~net.switch.closed & (net.switch.et == element[0])][["element", "bus"]].values:
             if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
                 net[element].at[idx, "in_service"] = False
     if len(closed_switches) > 0:
@@ -1201,7 +1166,7 @@ def merge_nets(net1, net2, validate=True, **kwargs):
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             net[element] = net1[element].append(net2[element],
                                                 ignore_index=element not in
-                                                ("bus", "bus_geodata", "line_geodata"))
+                                                             ("bus", "bus_geodata", "line_geodata"))
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
@@ -1292,6 +1257,11 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.line
         connected_elements = set(net.line.index[net.line.from_bus.isin(buses) |
                                                 net.line.to_bus.isin(buses)])
+
+    elif element in ["dcline"]:
+        element_table = net.dcline
+        connected_elements = set(net.dcline.index[net.dcline.from_bus.isin(buses) |
+                                                  net.dcline.to_bus.isin(buses)])
 
     elif element in ["trafo"]:
         element = "t"
@@ -1468,15 +1438,15 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     cs = set()
     if 'b' in consider:
         cs |= set(net['switch'].index[
-            (net['switch']['bus'].isin(buses) | net['switch']['element'].isin(buses)) &
-            (net['switch']['et'] == 'b') & switch_selection])
+                      (net['switch']['bus'].isin(buses) | net['switch']['element'].isin(buses)) &
+                      (net['switch']['et'] == 'b') & switch_selection])
     if 'l' in consider:
-        cs |= set(net['switch'].index[
-            (net['switch']['bus'].isin(buses)) & (net['switch']['et'] == 'l') & switch_selection])
+        cs |= set(net['switch'].index[(net['switch']['bus'].isin(buses)) & (
+            net['switch']['et'] == 'l') & switch_selection])
 
     if 't' in consider:
-        cs |= set(net['switch'].index[
-                net['switch']['bus'].isin(buses) & (net['switch']['et'] == 't') & switch_selection])
+        cs |= set(net['switch'].index[net['switch']['bus'].isin(buses) & (
+            net['switch']['et'] == 't') & switch_selection])
 
     return cs
 

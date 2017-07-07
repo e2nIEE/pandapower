@@ -40,6 +40,12 @@ def test_convenience_create_functions():
     assert np.isclose(net.res_bus.vm_pu.at[b2], 1.0029376578)
     assert net.sgen.name.at[sg0] == "sgen"
 
+    tol = 1e-6
+    sind = pp.create_series_reactor_as_impedance(net, b1, b2, r_ohm=100, x_ohm=200, sn_kva=100)
+    assert net.impedance.at[sind, 'rft_pu'] - 8.264463e-04 < tol
+    assert net.impedance.at[sind, 'xft_pu'] - 0.001653 < tol
+
+
 def test_nonexistent_bus():
     from functools import partial
     net = pp.create_empty_network()

@@ -115,6 +115,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
                   ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
                   ("parallel", "u4"),
+                  ("df", "f8"),
                   ("in_service", 'bool')],
         "trafo3w": [("name", dtype(object)),
                     ("std_type", dtype(object)),
@@ -1249,7 +1250,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1):
+                       index=None, max_loading_percent=nan, parallel=1, df=1.):
     """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True, \
                        index=None, max_loading_percent=nan, parallel=1)
     Creates a two-winding transformer in table net["trafo"].
@@ -1308,6 +1309,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
+        "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
         })
     for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
@@ -1342,7 +1344,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
                                        tp_pos=nan, in_service=True, name=None, index=None,
-                                       max_loading_percent=nan, parallel=1, **kwargs):
+                                       max_loading_percent=nan, parallel=1, df=1., **kwargs):
 
     """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, \
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent, \
@@ -1430,7 +1432,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
         "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
-        "parallel": parallel
+        "parallel": parallel, "df": df
     }
 
     if ("tp_mid" in v) and (tp_pos is nan):
@@ -1898,6 +1900,41 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None,
     # and preserve dtypes
     _preserve_dtypes(net.impedance, dtypes)
 
+    return index
+
+
+def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_kva,
+                                       name=None, in_service=True, index=None):
+    """
+    Creates a series reactor as per-unit impedance
+    :param net: (pandapowerNet) - The pandapower network in which the element is created
+    :param from_bus: (int) - starting bus of the series reactor
+    :param to_bus: (int) - ending bus of the series reactor
+    :param r_ohm: (float) - real part of the impedance in Ohm
+    :param x_ohm: (float) - imaginary part of the impedance in Ohm
+    :param sn_kva: (float) - rated power of the series reactor in kVA
+    :param vn_kv: (float) - rated voltage of the series reactor in kV
+    :return: index of the created element
+    """
+    for b in [from_bus, to_bus]:
+        if b not in net["bus"].index.values:
+            raise UserWarning("Series reactor %s tries to attach to non-existing bus %s"% (name, b))
+
+    if net.bus.at[from_bus, 'vn_kv'] == net.bus.at[to_bus, 'vn_kv']:
+        vn_kv = net.bus.at[from_bus, 'vn_kv']
+    else:
+        raise UserWarning('Unable to infer rated voltage vn_kv for series reactor %s due to '
+                          'different rated voltages of from_bus %d (%.3f p.u.) and '
+                          'to_bus %d (%.3f p.u.)' % (name, from_bus, net.bus.at[from_bus, 'vn_kv'],
+                                                     to_bus, net.bus.at[to_bus, 'vn_kv']))
+
+    base_z_ohm = vn_kv ** 2 / (sn_kva * 1e-3)
+    rft_pu = r_ohm / base_z_ohm
+    xft_pu = x_ohm / base_z_ohm
+
+    index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
+                             sn_kva=sn_kva, name=name, in_service=in_service,
+                             index=index)
     return index
 
 
