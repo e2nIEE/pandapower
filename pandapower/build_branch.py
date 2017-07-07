@@ -170,7 +170,7 @@ def _calc_trafo_parameter(net, ppc):
     temp_para[:, 2:7] = _calc_branch_values_from_trafo_df(net, ppc)
     temp_para[:, 7] = trafo["in_service"].values
     if any(trafo.df.values <= 0):
-        raise UserWarning("Raiting factor df must be positive. Transformers with false "
+        raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
     if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
