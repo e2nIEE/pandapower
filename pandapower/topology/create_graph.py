@@ -55,7 +55,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
     else:
         mg = nx.Graph()
     nogolines = {}
-    mg.add_nodes_from(net.bus[net.bus.in_service==1].index)
+    mg.add_nodes_from(net.bus.index)
     if include_lines:
         # lines with open switches can be excluded
         if respect_switches:
@@ -99,4 +99,5 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         for b in notravbuses:
             for i in list(mg[b].keys()):
                 del mg[b][i]
+    mg.remove_nodes_from((net.bus[net.bus.in_service==False].index))
     return mg
