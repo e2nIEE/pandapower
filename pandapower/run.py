@@ -18,10 +18,42 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def user_runpp_parameters(passed_parameters, options):
+    default_options = {
+        'algorithm': 'nr',
+        'calculate_voltage_angles': 'auto',
+        'check_connectivity': True,
+        'delta_q': 0,
+        'enforce_q_lims': False,
+        'init': 'auto',
+        'kwargs': {},
+        'max_iteration': 'auto',
+        'numba': True,
+        'r_switch': 0.0,
+        'recycle': None,
+        'tolerance_kva': 1e-05,
+        'trafo_loading': 'current',
+        'trafo_model': 't',
+        'voltage_depend_loads': True,
+        'keep_options': 'auto'
+    }
+
+    user_options = {}
+
+    # first, we copy net._options and then overwrite anything with user-input options
+    # in that way, user-input options
+    for options_dict in (options, passed_parameters):
+        user_options.update({
+            key: val for key, val in options_dict.items()
+            if key in default_options.keys() and val != default_options.get(key, None)})
+
+    return user_options
+
+
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=0,
-          **kwargs):
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
+          delta_q=0, keep_options='auto', **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -120,8 +152,14 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
+        **keep_options** - net._options that are different from default values are preserved. This parameter can be specified once and options will always be keept for this net instead of being reset to default values
+
         ****kwargs** - options to use for PYPOWER.runpf
     """
+    user_params = {}
+    if "_options" in net.keys():
+        if "keep_options" in net._options.keys() and net._options["keep_options"]==True:
+            user_params = user_runpp_parameters(locals(), net._options)
         ## check if numba is available and the corresponding flag
     if numba:
         numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
@@ -161,7 +199,9 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    keep_options=keep_options)
+    net._options.update(user_params)
     _powerflow(net, **kwargs)
 
 
