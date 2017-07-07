@@ -105,6 +105,9 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+    if any(net["trafo"]["df"].values <= 0):
+        raise UserWarning('Transformer rating factor df must be positive. Transformers with false '
+                          'rating factors: %s' % net["trafo"].query('df<=0').index.tolist())
     net["res_trafo"]["loading_percent"] = \
         ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
     net["res_trafo"].index = net["trafo"].index

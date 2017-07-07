@@ -1288,6 +1288,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
+    if df <= 0:
+        raise UserWarning("raiting factor df must be positive: df = %.3f" % df)
+
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": std_type
@@ -1416,6 +1419,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
     for b in [hv_bus, lv_bus]:
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
+
+    if df <= 0:
+        raise UserWarning("raiting factor df must be positive: df = %.3f" % df)
 
     if index is None:
         index = get_free_id(net["trafo"])
