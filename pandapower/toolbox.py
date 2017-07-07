@@ -1048,6 +1048,7 @@ def fuse_buses(net, b1, b2, drop=True):
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     if drop:
         net["bus"].drop(b2, inplace=True)
+        net["bus_geodata"].drop(b2 & set(net.bus_geodata.index), inplace=True)
     return net
 
 
