@@ -921,9 +921,10 @@ def drop_inactive_elements(net):
     drop_buses(net, inactive_buses)
 
     for element in net.keys():
-        if element not in ["bus", "trafo", "line"] and isinstance(net[element], pd.DataFrame) \
+        if element not in ["bus", "trafo", "line", "_equiv_trafo3w"] \
+                and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
-            drop_idx = net[element][~net[element].in_service].index
+            drop_idx = net[element].query("not in_service").index
             net[element].drop(drop_idx, inplace=True)
 
     logger.info('dropped %d buses, %d lines, %d trafos' % (
@@ -1282,6 +1283,9 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
+    elif element in ['_equiv_trafo3w']:
+        # ignore '_equiv_trafo3w'
+        return {}
     else:
         raise UserWarning("Unknown element! ", element)
 
