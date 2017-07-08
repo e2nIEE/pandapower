@@ -45,7 +45,7 @@ def assert_mpc_equal(mpc1, mpc2):
             mpc2['version'], mpc1['version']))
 
 
-def assert_net_equal(a_net, b_net, reindex=False):
+def assert_net_equal(a_net, b_net):
     """Returns True if the given pandapower networks are equal.
     Raises AssertionError if grids are not equal.
     """
@@ -57,8 +57,9 @@ def assert_net_equal(a_net, b_net, reindex=False):
         if name in a_net or name in b_net:
             if not (a_net[name] is None and b_net[name] is None):
                 try:
-                    pdt.assert_frame_equal(
-                        a_net[name], b_net[name], check_dtype=True, check_like=reindex)
+                    df1 = a_net[name].sort_index().sort_index(axis=1)  # workaround for bug in
+                    df2 = b_net[name].sort_index().sort_index(axis=1)  # pandas, dont use
+                    pdt.assert_frame_equal(df1, df2, check_dtype=True)  # check_like here
                 except AssertionError:
                     pytest.fail("Tables are not equal: %s" % name)
                     status = False
@@ -202,7 +203,7 @@ def create_test_network():
     b1 = pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_ext_grid(net, b1)
     b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
-    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4)
+    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4, index=7)
     b4 = pp.create_bus(net, name="bus4", vn_kv=10.)
     pp.create_transformer_from_parameters(net, b4, b2, vsc_percent=3.75,
                                           tp_max=2, vn_lv_kv=0.4,
@@ -225,8 +226,8 @@ def create_test_network():
 
     pp.create_load(net, b2, p_kw=10, q_kvar=0, name="load1")
     pp.create_load(net, b3, p_kw=40, q_kvar=2, name="load2")
-    pp.create_gen(net, 3, p_kw=-200., vm_pu=1.0)
-    pp.create_sgen(net, 2, p_kw=-50, sn_kva=100)
+    pp.create_gen(net, b4, p_kw=-200., vm_pu=1.0)
+    pp.create_sgen(net, b3, p_kw=-50, sn_kva=100)
 
     return net
 
