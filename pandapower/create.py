@@ -293,7 +293,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
     add_basic_std_types(net)
     reset_results(net)
     return net
