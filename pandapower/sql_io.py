@@ -1,57 +1,129 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
+import numpy as np
 import pandas as pd
+
 from pandapower.create import create_empty_network
 
+try:
+    import pplog as logging
+except ImportError:
+    import logging
 
-def from_sql(netname, engine, include_empty_tables=False, include_results=True):
-
-    with engine.connect() as conn, conn.begin():
-        net = create_empty_network()
-        for item, table in net.items():
-            if not isinstance(table,pd.DataFrame) or item.startswith("_"):
-                continue
-            elif item.startswith("res"):
-                if include_results and engine.has_table(netname + "_" + item):
-                    net[item] = pd.read_sql_table(netname + "_" + item, conn)
-           # elif item == "line_geodata":
-            #    geo = pd.DataFrame(index=table.index)
-             #   for i, coord in table.iterrows():
-           #         for nr, (x, y) in enumerate(coord.coords):
-           #             geo.loc[i, "x%u" % nr] = x
-           #             geo.loc[i, "y%u" % nr] = y
-           #     geo.to_sql(net.name+"_"+item,engine)
-
-            elif engine.has_table(netname + "_" + item) or include_empty_tables:
-                net[item] = pd.read_sql_table(netname + "_" + item, conn)
-
-        para = pd.read_sql_table(netname + "_" + "parameters", conn)
-        net.name, net.f_hz, net.version = para['parameters'][0], para['parameters'][1], para["parameters"][2]
-        net.std_types["line"] = pd.read_sql_table('line_std_types', conn)
-        net.std_types["trafo"] = pd.read_sql_table("trafo_std_types", conn)
-        net.std_types["trafo3w"] = pd.read_sql_table("trafo3w_std_types", conn)
-        return net
+logger = logging.getLogger(__name__)
 
 
-def to_sql(net, engine, include_empty_tables=False, include_results=True):
-
+def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
+    dodfs = {}
+    dodfs["parameters"] = pd.DataFrame(columns=["parameter"])
     for item, table in net.items():
-        if not isinstance(table,pd.DataFrame) or item.startswith("_"):
+        # dont save internal variables and results (if not explicitely specified)
+        if item.startswith("_") or (item.startswith("res") and not include_results):
             continue
-        elif item.startswith("res"):
-            if include_results and len(table) > 0:
-                table.to_sql(net.name + "_" + item,
-                             engine, if_exists="replace")
+        # attributes of "primitive" types are just stored in a DataFrame "parameters"
+        elif isinstance(table, (int, float, bool, str)):
+            dodfs["parameters"].loc[item] = net[item]
+        elif item == "std_types":
+            for t in ["line", "trafo", "trafo3w"]:
+                dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+        elif type(table) != pd.DataFrame:
+            logger.warning("Attribute net.%s could not be saved !" % item)
+            continue
+        elif item == "bus_geodata":
+            dodfs[item] = pd.DataFrame(table[["x", "y"]])
         elif item == "line_geodata":
-            geo = pd.DataFrame(index=table.index)
+            geo = pd.DataFrame()
             for i, coord in table.iterrows():
                 for nr, (x, y) in enumerate(coord.coords):
                     geo.loc[i, "x%u" % nr] = x
                     geo.loc[i, "y%u" % nr] = y
-            geo.to_sql(net.name + "_" + item, engine, if_exists="replace")
-        elif len(table) > 0 or include_empty_tables:
-            table.to_sql(net.name + "_" + item, engine, if_exists="replace")
-    parameters = pd.DataFrame(index=["name", "f_hz", "version"], columns=["parameters"],
-                              data=[net.name, net.f_hz, net.version])
-    pd.DataFrame(net.std_types["line"]).T.to_sql('line_std_types', engine, if_exists='append')
-    pd.DataFrame(net.std_types["trafo"]).T.to_sql("trafo_std_types", engine, if_exists='append')
-    pd.DataFrame(net.std_types["trafo3w"]).T.to_sql("trafo3w_std_types", engine, if_exists='append')
-    parameters.to_sql(net.name + "_" + "parameters",engine, if_exists="replace")
+            dodfs[item] = geo    
+        else:
+            dodfs[item] = table
+    return dodfs
+
+
+def from_dict_of_dfs(dodfs):
+    net = create_empty_network()
+    for p, v in dodfs["parameters"].iterrows():
+        net[p] = v.parameter
+    for item, table in dodfs.items():
+        if item == "parameters":
+            continue
+        elif item == "line_geodata":
+            points = len(table.columns) // 2
+            for i, coords in table.iterrows():
+                coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(points)
+                         if pd.notnull(coords["x%u" % nr])]
+                net.line_geodata.loc[i, "coords"] = coord
+        elif item.endswith("_std_types"):
+            net["std_types"][item[:-10]] = table.T.to_dict()
+        else:
+            net[item] = table
+    return net
+
+
+def collect_all_dtypes_df(net):
+    dtypes = []
+    for element, table in net.items():
+        if not hasattr(table, "dtypes"):
+            continue
+        for item, dtype in table.dtypes.iteritems():
+            dtypes.append((element, item, str(dtype)))
+    return pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
+
+
+def restore_all_dtypes(net, dtdf):
+    for _, v in dtdf.iterrows():
+        net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
+    
+
+def to_sql(net, con, include_empty_tables=False, include_results=True):
+    dodfs = to_dict_of_dfs(net, include_results=include_results)
+    dodfs["dtypes"] = collect_all_dtypes_df(net)
+    for name, data in dodfs.items():
+        data.to_sql(name, con, if_exists="replace")
+
+
+def from_sql(con):
+    cursor = con.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    dodfs = dict()
+    for t, in cursor.fetchall():
+        table = pd.read_sql_query("SELECT * FROM %s" % t, con, index_col="index")
+        table.index.name = None
+        dodfs[t] = table
+    net = from_dict_of_dfs(dodfs)
+    restore_all_dtypes(net, dodfs["dtypes"])
+    return net
+
+
+def to_sqlite(net, filename):
+    import sqlite3
+    conn = sqlite3.connect(filename)
+    to_sql(net, conn)
+    conn.close()
+
+
+def from_sqlite(filename, netname=""):
+    import sqlite3
+    con = sqlite3.connect(filename)
+    net = from_sql(con)
+    con.close()
+    return net
+
+
+if __name__ == "__main__":
+    import networks
+    from pandapower.test.toolbox import assert_net_equal
+    net = networks.case9241pegase()
+    to_sqlite(net, "test.db")
+    n = from_sqlite("test.db")
+    assert_net_equal(net, n)
+
+
+                
