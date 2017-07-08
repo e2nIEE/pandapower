@@ -439,6 +439,8 @@ def convert_format(net):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     _pre_release_changes(net)
+    if net.name is None:
+        net.name = ""
     if "sn_kva" not in net:
         net.sn_kva = 1e3
     net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
