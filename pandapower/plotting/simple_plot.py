@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
                 scale_size=True, bus_color="b", line_color='grey', trafo_color='g',
-                ext_grid_color='y', library = "igraph"):
+                ext_grid_color='y', library="igraph"):
     """
     Plots a pandapower network as simple as possible. If no geodata is available, artificial
     geodata is generated. For advanced plotting see the tutorial
@@ -74,13 +74,12 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         bus_size *= mean_distance_between_buses
         ext_grid_size *= mean_distance_between_buses * 1.5
 
-
     # create bus collections ti plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
 
     # if bus geodata is available, but no line geodata
     use_line_geodata = False if len(net.line_geodata) == 0 else True
-    in_service_lines = net.line[net.line.in_service==True].index
+    in_service_lines = net.line[net.line.in_service].index
     nogolines = set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)]) \
         if respect_switches else set()
     plot_lines = in_service_lines.difference(nogolines)
