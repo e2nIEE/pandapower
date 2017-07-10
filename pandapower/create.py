@@ -13,7 +13,7 @@ from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower import __version__
 
 
-def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
+def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
 
@@ -293,7 +293,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
     add_basic_std_types(net)
     reset_results(net)
     net['user_pf_options'] = dict()
