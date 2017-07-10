@@ -19,6 +19,17 @@ logger = logging.getLogger(__name__)
 
 
 def set_user_pf_options(net, overwrite=False, **kwargs):
+    """
+    This function sets the 'user_pf_options' dict for net. These options overrule net._options once
+    they are added to net. These options are used in configuration of load flow calculation.
+    At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
+    To remove user_pf_options, set overwrite=True and provide no additional arguments
+
+    :param net: pandaPower network
+    :param overwrite: specifies whether the user_pf_options is removed before setting new options
+    :param kwargs: load flow options, e. g. tolerance_kva = 1e-3
+    :return: None
+    """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
@@ -33,15 +44,21 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     additional_kwargs = {key: val for key, val in kwargs.items()
                          if key not in standard_parameters}
 
+    # this part is to inform user and to make typos in parameters visible
     if len(additional_kwargs) > 0:
-        logger.info('parameters %s are not in the list of standard options and will be added to '
-                    '"kwargs" option' % list(additional_kwargs.keys()))
-        if 'kwargs' not in net.user_pf_options.keys():
-            net.user_pf_options['kwargs'] = dict()
-        net.user_pf_options['kwargs'].update(additional_kwargs)
+        logger.info('parameters %s are not in the list of standard options' % list(
+            additional_kwargs.keys()))
+
+        net.user_pf_options.update(additional_kwargs)
 
 
 def _passed_runpp_parameters(local_parameters):
+    """
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
+    the user.
+    :param local_parameters: locals() in the runpp() function
+    :return: dictionary of explicitly passed parameters
+    """
     default_parameters = {
         'algorithm': 'nr',
         'calculate_voltage_angles': 'auto',
