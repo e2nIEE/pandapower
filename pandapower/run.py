@@ -18,7 +18,22 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def passed_runpp_parameters(local_parameters):
+def update_user_pf_parameters(net, **kwargs):
+    if 'user_pf_options' in net.keys():
+        net['user_pf_options'] = dict()
+    net.user_pf_options.update(kwargs)
+
+
+def set_user_pf_parameters(net, **kwargs):
+    net['user_pf_options'] = dict()
+    net.user_pf_options.update(kwargs)
+
+
+def clear_user_pf_parameters(net):
+    net['user_pf_options'] = dict()
+
+
+def _passed_runpp_parameters(local_parameters):
     default_parameters = {
         'algorithm': 'nr',
         'calculate_voltage_angles': 'auto',
@@ -34,8 +49,7 @@ def passed_runpp_parameters(local_parameters):
         'tolerance_kva': 1e-05,
         'trafo_loading': 'current',
         'trafo_model': 't',
-        'voltage_depend_loads': True,
-        'keep_options': 'auto'
+        'voltage_depend_loads': True
     }
 
     passed_parameters = {
@@ -156,7 +170,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     # for parameters that are passed by user
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
-        passed_parameters = passed_runpp_parameters(locals())
+        passed_parameters = _passed_runpp_parameters(locals())
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
 
