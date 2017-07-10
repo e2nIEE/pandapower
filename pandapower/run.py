@@ -18,8 +18,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def user_runpp_parameters(passed_parameters, options):
-    default_options = {
+def passed_runpp_parameters(local_parameters):
+    default_parameters = {
         'algorithm': 'nr',
         'calculate_voltage_angles': 'auto',
         'check_connectivity': True,
@@ -38,22 +38,17 @@ def user_runpp_parameters(passed_parameters, options):
         'keep_options': 'auto'
     }
 
-    user_options = {}
+    passed_parameters = {
+            key: val for key, val in local_parameters.items()
+            if key in default_parameters.keys() and val != default_parameters.get(key, None)}
 
-    # first, we copy net._options and then overwrite anything with user-input options
-    # in that way, user-input options
-    for options_dict in (options, passed_parameters):
-        user_options.update({
-            key: val for key, val in options_dict.items()
-            if key in default_options.keys() and val != default_options.get(key, None)})
-
-    return user_options
+    return passed_parameters
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, keep_options='auto', **kwargs):
+          delta_q=0, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -156,10 +151,15 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
-    user_params = {}
-    if "_options" in net.keys():
-        if "keep_options" in net._options.keys() and net._options["keep_options"]==True:
-            user_params = user_runpp_parameters(locals(), net._options)
+
+    # if dict 'user_pf_options' is present in net, these options overrule the net._options except
+    # for parameters that are passed by user
+    overrule_options = {}
+    if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
+        passed_parameters = passed_runpp_parameters(locals())
+        overrule_options = {key: val for key, val in net.user_pf_options.items()
+                            if key not in passed_parameters.keys()}
+
         ## check if numba is available and the corresponding flag
     if numba:
         numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
@@ -190,8 +190,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
-    if keep_options == 'auto':
-        keep_options = False
 
     # init options
     net._options = {}
@@ -201,9 +199,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    keep_options=keep_options)
-    net._options.update(user_params)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+    net._options.update(overrule_options)
     _powerflow(net, **kwargs)
 
 

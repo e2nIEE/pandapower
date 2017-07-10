@@ -296,6 +296,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]))
     add_basic_std_types(net)
     reset_results(net)
+    net['user_pf_options'] = dict()
     return net
 
 
