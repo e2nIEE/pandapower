@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 def set_user_pf_options(net, overwrite=False, **kwargs):
     """
-    This function sets the 'user_pf_options' dict for net. These options overrule net._options once
-    they are added to net. These options are used in configuration of load flow calculation.
+    This function sets the 'user_pf_options' dict for net. These options overrule
+    net.__internal_options once they are added to net. These options are used in configuration of
+    load flow calculation.
     At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
     To remove user_pf_options, set overwrite=True and provide no additional arguments
 
@@ -186,13 +187,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
-        **keep_options** - net._options that are different from default values are preserved. This parameter can be specified once and options will always be keept for this net instead of being reset to default values
-
         ****kwargs** - options to use for PYPOWER.runpf
     """
 
-    # if dict 'user_pf_options' is present in net, these options overrule the net._options except
-    # for parameters that are passed by user
+    # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
+    # except for parameters that are passed by user
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
         passed_parameters = _passed_runpp_parameters(locals())
@@ -231,7 +230,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         max_iteration = default_max_iteration[algorithm]
 
     # init options
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -239,7 +238,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
-    net._options.update(overrule_options)
+    net.__internal_options.update(overrule_options)
     _powerflow(net, **kwargs)
 
 
@@ -296,7 +295,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     max_iteration = None
     tolerance_kva = None
 
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -400,7 +399,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
 
     _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -461,7 +460,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
 
     _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
