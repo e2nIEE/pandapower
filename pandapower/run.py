@@ -18,8 +18,49 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def user_runpp_parameters(passed_parameters, options):
-    default_options = {
+def set_user_pf_options(net, overwrite=False, **kwargs):
+    """
+    This function sets the 'user_pf_options' dict for net. These options overrule
+    net.__internal_options once they are added to net. These options are used in configuration of
+    load flow calculation.
+    At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
+    To remove user_pf_options, set overwrite=True and provide no additional arguments
+
+    :param net: pandaPower network
+    :param overwrite: specifies whether the user_pf_options is removed before setting new options
+    :param kwargs: load flow options, e. g. tolerance_kva = 1e-3
+    :return: None
+    """
+    standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
+                           'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
+                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
+                           'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration']
+
+    if overwrite or 'user_pf_options' not in net.keys():
+        net['user_pf_options'] = dict()
+
+    net.user_pf_options.update({key: val for key, val in kwargs.items()
+                                if key in standard_parameters})
+
+    additional_kwargs = {key: val for key, val in kwargs.items()
+                         if key not in standard_parameters}
+
+    # this part is to inform user and to make typos in parameters visible
+    if len(additional_kwargs) > 0:
+        logger.info('parameters %s are not in the list of standard options' % list(
+            additional_kwargs.keys()))
+
+        net.user_pf_options.update(additional_kwargs)
+
+
+def _passed_runpp_parameters(local_parameters):
+    """
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
+    the user.
+    :param local_parameters: locals() in the runpp() function
+    :return: dictionary of explicitly passed parameters
+    """
+    default_parameters = {
         'algorithm': 'nr',
         'calculate_voltage_angles': 'auto',
         'check_connectivity': True,
@@ -34,26 +75,20 @@ def user_runpp_parameters(passed_parameters, options):
         'tolerance_kva': 1e-05,
         'trafo_loading': 'current',
         'trafo_model': 't',
-        'voltage_depend_loads': True,
-        'keep_options': 'auto'
+        'voltage_depend_loads': True
     }
 
-    user_options = {}
+    passed_parameters = {
+            key: val for key, val in local_parameters.items()
+            if key in default_parameters.keys() and val != default_parameters.get(key, None)}
 
-    # first, we copy net._options and then overwrite anything with user-input options
-    # in that way, user-input options
-    for options_dict in (options, passed_parameters):
-        user_options.update({
-            key: val for key, val in options_dict.items()
-            if key in default_options.keys() and val != default_options.get(key, None)})
-
-    return user_options
+    return passed_parameters
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, keep_options='auto', **kwargs):
+          delta_q=0, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -152,14 +187,17 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
-        **keep_options** - net._options that are different from default values are preserved. This parameter can be specified once and options will always be keept for this net instead of being reset to default values
-
         ****kwargs** - options to use for PYPOWER.runpf
     """
-    user_params = {}
-    if "_options" in net.keys():
-        if "keep_options" in net._options.keys() and net._options["keep_options"]==True:
-            user_params = user_runpp_parameters(locals(), net._options)
+
+    # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
+    # except for parameters that are passed by user
+    overrule_options = {}
+    if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
+        passed_parameters = _passed_runpp_parameters(locals())
+        overrule_options = {key: val for key, val in net.user_pf_options.items()
+                            if key not in passed_parameters.keys()}
+
         ## check if numba is available and the corresponding flag
     if numba:
         numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
@@ -190,20 +228,17 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
-    if keep_options == 'auto':
-        keep_options = False
 
     # init options
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    keep_options=keep_options)
-    net._options.update(user_params)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+    net.__internal_options.update(overrule_options)
     _powerflow(net, **kwargs)
 
 
@@ -260,7 +295,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     max_iteration = None
     tolerance_kva = None
 
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -364,7 +399,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
 
     _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -425,7 +460,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
 
     _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
-    net._options = {}
+    net.__internal_options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,

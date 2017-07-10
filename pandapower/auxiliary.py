@@ -523,15 +523,15 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
 
 
 def _add_options(net, options):
-    double_parameters = set(net._options.keys()) & set(options.keys())
+    double_parameters = set(net.__internal_options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
             "Parameters always have to be unique! The following parameters where specified twice: %s" % double_parameters)
-    net._options.update(options)
+    net.__internal_options.update(options)
 
 
 def _clean_up(net):
-    mode = net._options["mode"]
+    mode = net.__internal_options["mode"]
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
