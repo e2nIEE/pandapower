@@ -443,6 +443,8 @@ def convert_format(net):
         net.name = ""
     if "sn_kva" not in net:
         net.sn_kva = 1e3
+    if "OPF_converged" not in net:
+        net["OPF_converged"] = False
     net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
