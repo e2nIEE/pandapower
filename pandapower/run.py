@@ -230,7 +230,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         max_iteration = default_max_iteration[algorithm]
 
     # init options
-    net.__internal_options = {}
+    #net.__internal_options = {}
+    net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -238,7 +239,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
-    net.__internal_options.update(overrule_options)
+    #net.__internal_options.update(overrule_options)
+    net._options.update(overrule_options)
     _powerflow(net, **kwargs)
 
 
@@ -295,7 +297,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     max_iteration = None
     tolerance_kva = None
 
-    net.__internal_options = {}
+    # net.__internal_options = {}
+    net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -399,7 +402,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
 
     _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
-    net.__internal_options = {}
+    # net.__internal_options = {}
+    net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
@@ -460,7 +464,8 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
 
     _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
-    net.__internal_options = {}
+    # net.__internal_options = {}
+    net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
