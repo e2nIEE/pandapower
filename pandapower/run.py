@@ -18,19 +18,27 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def update_user_pf_parameters(net, **kwargs):
-    if 'user_pf_options' in net.keys():
+def set_user_pf_options(net, overwrite=False, **kwargs):
+    standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
+                           'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
+                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
+                           'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration']
+
+    if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
-    net.user_pf_options.update(kwargs)
 
+    net.user_pf_options.update({key: val for key, val in kwargs.items()
+                                if key in standard_parameters})
 
-def set_user_pf_parameters(net, **kwargs):
-    net['user_pf_options'] = dict()
-    net.user_pf_options.update(kwargs)
+    additional_kwargs = {key: val for key, val in kwargs.items()
+                         if key not in standard_parameters}
 
-
-def clear_user_pf_parameters(net):
-    net['user_pf_options'] = dict()
+    if len(additional_kwargs) > 0:
+        logger.info('parameters %s are not in the list of standard options and will be added to '
+                    '"kwargs" option' % list(additional_kwargs.keys()))
+        if 'kwargs' not in net.user_pf_options.keys():
+            net.user_pf_options['kwargs'] = dict()
+        net.user_pf_options['kwargs'].update(additional_kwargs)
 
 
 def _passed_runpp_parameters(local_parameters):
