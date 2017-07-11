@@ -114,7 +114,7 @@ def check_opf_data(net):
                 net[element_type].columns)].values
             controllable = True
             if element_type in ['gen', 'sgen', 'load']:
-                if 'controllable' not in missing_col:
+                if 'controllable' not in net[element_type].columns:
                     if element_type == 'gen':
                         net[element_type]['controllable'] = True
                     else:
