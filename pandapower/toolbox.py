@@ -392,7 +392,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
         x_keys = [key for key in x.keys() if not key.startswith("_")]
         y_keys = [key for key in y.keys() if not key.startswith("_")]
 
-        if len(set(x_keys) - set(y_keys)) + len(set(y_keys) - set(x_keys)) > 0:
+        if len(set(x_keys) ^ set(y_keys)) > 0:
             logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
             return False
 
