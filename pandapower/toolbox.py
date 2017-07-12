@@ -162,18 +162,26 @@ def _opf_controllables(elm_df, to_log, control_elm, control_elm_name, all_costs)
         with_p_cost = elm_df.loc[elm_p_cost_idx - elm_q_cost_idx].index
         with_q_cost = elm_df.loc[elm_q_cost_idx - elm_p_cost_idx].index
         without_cost = elm_df.loc[set(elm_df.index) - (elm_p_cost_idx | elm_q_cost_idx)].index
-        if len(with_pq_cost):
+        if len(with_pq_cost) and len(with_pq_cost) < len(elm_df):
             to_log += '\n' + '    ' + control_elm_name + ' ' +  \
                 ', '.join(map(str, elm_df.loc[with_pq_cost].index)) + " with p and q costs"
-        if len(with_p_cost):
+        elif len(with_pq_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with p and q costs"
+        if len(with_p_cost) and len(with_p_cost) < len(elm_df):
             to_log += '\n' + '    ' + control_elm_name + ' ' + \
                 ', '.join(map(str, elm_df.loc[with_p_cost].index)) + " with p costs"
-        if len(with_q_cost):
+        elif len(with_p_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with p costs"
+        if len(with_q_cost) and len(with_q_cost) < len(elm_df):
             to_log += '\n' + '    ' + control_elm_name + ' ' + \
                 ', '.join(map(str, elm_df.loc[with_q_cost].index)) + " with q costs"
-        if len(without_cost):
+        elif len(with_q_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with q costs"
+        if len(without_cost) and len(without_cost) < len(elm_df):
             to_log += '\n' + '    ' + control_elm_name + ' ' + \
                 ', '.join(map(str, elm_df.loc[without_cost].index)) + " without costs"
+        elif len(without_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " without costs"
     return to_log
 
 
