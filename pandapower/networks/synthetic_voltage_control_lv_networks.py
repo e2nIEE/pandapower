@@ -29,7 +29,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
 
     EXAMPLE:
 
-        import networks as nw
+        import pandapower.networks as nw
 
         net = nw.create_synthetic_voltage_control_lv_network()
     """

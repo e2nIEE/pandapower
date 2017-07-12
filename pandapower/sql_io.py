@@ -118,7 +118,7 @@ def from_sqlite(filename, netname=""):
 
 
 if __name__ == "__main__":
-    import networks
+    import pandapower.networks
     from pandapower.test.toolbox import assert_net_equal
     net = networks.case9241pegase()
     to_sqlite(net, "test.db")

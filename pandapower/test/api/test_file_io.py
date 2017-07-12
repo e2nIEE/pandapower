@@ -9,7 +9,7 @@ import shutil
 import pytest
 import tempfile
 
-import networks
+import pandapower.networks
 import pandapower as pp
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 
