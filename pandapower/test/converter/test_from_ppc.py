@@ -39,6 +39,7 @@ def test_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
     net_by_code = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
+    pp.set_user_pf_options(net_by_code)     # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
 

@@ -114,7 +114,7 @@ def check_opf_data(net):
                 net[element_type].columns)].values
             controllable = True
             if element_type in ['gen', 'sgen', 'load']:
-                if 'controllable' not in missing_col:
+                if 'controllable' not in net[element_type].columns:
                     if element_type == 'gen':
                         net[element_type]['controllable'] = True
                     else:
@@ -392,7 +392,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
         x_keys = [key for key in x.keys() if not key.startswith("_")]
         y_keys = [key for key in y.keys() if not key.startswith("_")]
 
-        if len(set(x_keys) - set(y_keys)) + len(set(y_keys) - set(x_keys)) > 0:
+        if len(set(x_keys) ^ set(y_keys)) > 0:
             logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
             return False
 
