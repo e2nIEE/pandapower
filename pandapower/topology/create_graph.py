@@ -87,10 +87,13 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                                   "type": "t3"}) for bus1, bus2 in combinations([t3tab.hv_bus,
                                   t3tab.mv_bus, t3tab.lv_bus], 2) if t3tab.in_service)
     if respect_switches:
-        # add bus-bus switches
+        # add edges for closed bus-bus switches
         bs = net.switch[(net.switch.et == "b") & (net.switch.closed == 1)]
-        mg.add_edges_from((int(b), int(e), {"weight": 0, "key": int(i), "type": "s"})
-                           for b, e, i in list(zip(bs.bus, bs.element, bs.index)))
+    else:
+        # add edges for any bus-bus switches
+        bs = net.switch[net.switch.et == "b"]
+    mg.add_edges_from((int(b), int(e), {"weight": 0, "key": int(i), "type": "s"})
+                       for b, e, i in list(zip(bs.bus, bs.element, bs.index)))
 
     # nogobuses are a nogo
     if nogobuses is not None:
