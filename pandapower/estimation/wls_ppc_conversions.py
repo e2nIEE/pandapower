@@ -11,6 +11,7 @@ from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
+from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
@@ -20,12 +21,20 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     net.res_bus.va_degree = delta_start
     # select elements in service and convert pandapower ppc to ppc
     net._options = {}
-    _add_ppc_options(net, check_connectivity=False, init="dc", trafo_model="t",
+    _add_ppc_options(net, check_connectivity=False, init="results", trafo_model="t",
                      copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
                      calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
     net["_is_elements"] = _select_is_elements(net)
     ppc, ppci = _pd2ppc(net)
+
+    # do dc power flow for phase shifting transformers
+    if np.any(net.trafo.shift_degree):
+        vm_backup = ppci["bus"][:, 7].copy()
+        ppci["bus"][:, [2, 3]] = 0.
+        ppci = _run_dc_pf(ppci)
+        ppci["bus"][:, 7] = vm_backup
+
     return ppc, ppci
 
 
@@ -35,7 +44,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     :param net: pandapower net
     :param mapping_table: mapping table pd->ppc
     :param ppci: generated ppci 
-    :param s_ref: reference power
+    :param s_ref: reference power in W
     :return: ppc with added columns
     """
     # set measurements for ppc format
@@ -101,7 +110,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[meas_to.element.values.astype(int), IM_TO_IDX] = meas_to.index.values
 
     p_measurements = net.measurement[(net.measurement.type == "p")
-                                          & (net.measurement.element_type == "line")]
+                                      & (net.measurement.element_type == "line")]
     if len(p_measurements):
         meas_from = p_measurements[(p_measurements.bus.values.astype(int) ==
                                     net.line.from_bus[p_measurements.element]).values]
@@ -117,7 +126,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[meas_to.element.values.astype(int), P_TO_IDX] = meas_to.index.values
 
     q_measurements = net.measurement[(net.measurement.type == "q")
-                                          & (net.measurement.element_type == "line")]
+                                     & (net.measurement.element_type == "line")]
     if len(q_measurements):
         meas_from = q_measurements[(q_measurements.bus.values.astype(int) ==
                                     net.line.from_bus[q_measurements.element]).values]
