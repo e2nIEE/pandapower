@@ -327,17 +327,10 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
-<<<<<<< HEAD
 
-		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. for OPF
+		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
 
-		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. for OPF
-=======
-		
-		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF 
-		
-		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF 
->>>>>>> Updated OPF parameter checks #
+		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -408,17 +401,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
-<<<<<<< HEAD
 
-		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. for OPF
+		 **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
 
-		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. for OPF
-=======
-		
-		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF 
-		
-		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF 
->>>>>>> Updated OPF parameter checks #
+		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
@@ -509,27 +495,15 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
-<<<<<<< HEAD
 
-        **max_p_kw** (float, default NaN) - Maximum active power load. Only respected for OPF
+        **max_p_kw** (float, default NaN) - Maximum active power load - necessary for controllable loads in for OPF
 
-        **min_p_kw** (float, default NaN) - Minimum active power load. Only respected for OPF
+        **min_p_kw** (float, default NaN) - Minimum active power load - necessary for controllable loads in for OPF
 
-        **max_q_kvar** (float, default NaN) - Maximum reactive power load. Only respected for OPF
+        **max_q_kvar** (float, default NaN) - Maximum reactive power load - necessary for controllable loads in for OPF
 
-        **min_q_kvar** (float, default NaN) - Minimum reactive power load. Only respected for OPF
-
-=======
-        
-        **max_p_kw** (float, default NaN) - Maximum active power load - necessary for controllable loads in for OPF 
-        
-        **min_p_kw** (float, default NaN) - Minimum active power load - necessary for controllable loads in for OPF 
-        
-        **max_q_kvar** (float, default NaN) - Maximum reactive power load - necessary for controllable loads in for OPF 
-        
         **min_q_kvar** (float, default NaN) - Minimum reactive power load - necessary for controllable loads in OPF
-        
->>>>>>> Updated OPF parameter checks #
+
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. Only respected for OPF
 
     OUTPUT:
@@ -662,25 +636,14 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
-<<<<<<< HEAD
 
-        **max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
-
-        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
-
-        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
-
-        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
-=======
-		
         **max_p_kw** (float, default NaN) - Maximum active power injection - necessary for controllable sgens in OPF
-        
+
         **min_p_kw** (float, default NaN) - Minimum active power injection - necessary for controllable sgens in OPF
-        
+
         **max_q_kvar** (float, default NaN) - Maximum reactive power injection - necessary for controllable sgens in OPF
-        
+
         **min_q_kvar** (float, default NaN) - Minimum reactive power injection - necessary for controllable sgens in OPF
->>>>>>> Updated OPF parameter checks #
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -826,25 +789,14 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
-<<<<<<< HEAD
 
-		**max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
-
-        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
-
-        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
-
-        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
-=======
-		
 		**max_p_kw** (float, default NaN) - Maximum active power injection - necessary for OPF
-        
+
         **min_p_kw** (float, default NaN) - Minimum active power injection - necessary for OPF
-        
+
         **max_q_kvar** (float, default NaN) - Maximum reactive power injection - necessary for OPF
-        
+
         **min_q_kvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
->>>>>>> Updated OPF parameter checks #
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -2074,13 +2026,13 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
         **in_service** (boolean) - True for in_service or False for out of service
 
 		**max_p_kw** - Maximum active power flow. Only respected for OPF
-		
+
 		**min_q_from_kvar** - Minimum reactive power at from bus. Necessary for OPF
-		
+
 		**min_q_to_kvar** - Minimum reactive power at to bus. Necessary for OPF
-		
+
 		**max_q_from_kvar** - Maximum reactive power at from bus. Necessary for OPF
-		
+
 		**max_q_to_kvar ** - Maximum reactive power at to bus. Necessary for OPF
 
 
