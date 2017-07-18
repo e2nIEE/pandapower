@@ -9,6 +9,7 @@ import numbers
 import os
 import sys
 import pickle
+import pandas as pd
 
 import numpy
 
@@ -40,7 +41,7 @@ def to_pickle(net, filename):
         raise Exception("Please use .p to save pandapower networks!")
     save_net = dict()
     for key, item in net.items():
-        if key != "_is_elements":       
+        if key != "_is_elements":
             save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
                             for col, dt in zip(item.columns, item.dtypes)}}  \
                             if isinstance(item, pd.DataFrame) else item
@@ -220,7 +221,7 @@ def from_pickle(filename, convert=True):
             if "dtypes" in item:
                 try:
                     #only works with pandas 0.19 or newer
-                    net[key] = net[key].astype(item["dtypes"]) 
+                    net[key] = net[key].astype(item["dtypes"])
                 except:
                     #works with pandas <0.19
                     for column in net[key].columns:
