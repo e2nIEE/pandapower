@@ -933,6 +933,9 @@ def drop_inactive_elements(net):
     buses.
     """
     set_isolated_areas_out_of_service(net)
+    drop_out_of_service_elements(net)
+
+def drop_out_of_service_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[~net.line.in_service].index
     drop_lines(net, inactive_lines)
