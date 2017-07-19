@@ -28,7 +28,7 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
 
     # Version from pypower github (bugfix 'transpose')
     """
-    pvpq = matrix(r_[pv, pq])
+    pvpq = r_[pv, pq]
 
     ## initialize result vector
     Va = copy(Va0)
@@ -36,6 +36,8 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
     ## update angles for non-reference buses
     if pvpq.shape == (1, 1): #workaround for bug in scipy <0.19
         pvpq = array(pvpq).flatten()
-    Va[pvpq] = real(spsolve(B[pvpq.T, pvpq], transpose(Pbus[pvpq] - B[pvpq.T, ref] * Va0[ref])))
+    pvpq_matrix = B[pvpq.T,:].tocsc()[:,pvpq]
+    ref_matrix = transpose(Pbus[pvpq] - B[pvpq.T,:].tocsc()[:,ref] * Va0[ref])
+    Va[pvpq] = real(spsolve(pvpq_matrix, ref_matrix))
 
     return Va
