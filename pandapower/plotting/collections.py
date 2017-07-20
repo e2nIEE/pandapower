@@ -89,7 +89,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          geodata_table='bus_geodata', **kwargs):
+                          bus_geodata=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -115,6 +115,9 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         **colors** (list, None) - list of colors for every element
 
         **cmap** - colormap for the patch colors
+        
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+        If None, net["bus_geodata"] is used
 
         **picker** - picker argument passed to the patch collection
 
@@ -124,9 +127,11 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
         return None
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
 
-    coords = zip(net[geodata_table].loc[buses].x.values,
-                 net[geodata_table].loc[buses].y.values)
+    coords = zip(bus_geodata.loc[buses].x.values,
+                 bus_geodata.loc[buses].y.values)
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
@@ -323,6 +328,19 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
 
+
+def add_collections_to_axes(ax, collections, plot_colorbars=True):
+    for c in collections:
+        if c:
+           # cc = copy.copy(c)
+            ax.add_collection(c)
+            if plot_colorbars and hasattr(c, "has_colormap"):
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
+
+
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
@@ -342,15 +360,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
                             wspace=0.02, hspace=0.04)
     ax = ax or plt.gca()
 
-    for c in collections:
-        if c:
-            cc = copy.copy(c)
-            ax.add_collection(cc)
-            if plot_colorbars and hasattr(c, "has_colormap"):
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
+    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars)
+
     try:
         ax.set_facecolor("white")
     except:
