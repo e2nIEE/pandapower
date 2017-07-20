@@ -980,7 +980,7 @@ def drop_trafos(net, trafos):
     i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == "t")]
     net["switch"].drop(i, inplace=True)
 
-    # drop the lines+geodata
+    # drop the trafos
     net["trafo"].drop(trafos, inplace=True)
 
 
@@ -1136,7 +1136,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(p2)
 
 
-def merge_nets(net1, net2, validate=True, **kwargs):
+def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
     """
     Function to concatenate two nets into one data structure. All element tables get new,
     continuous indizes in order to avoid duplicates.
@@ -1178,7 +1178,7 @@ def merge_nets(net1, net2, validate=True, **kwargs):
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
         dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index):].vm_pu.values -
                        net2.res_bus.vm_pu.values))
-        if dev1 > 1e-9 or dev2 > 1e-9:
+        if dev1 > tol or dev2 > tol:
             raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
     return net
 
