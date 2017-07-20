@@ -9,7 +9,7 @@ import shutil
 import pytest
 import tempfile
 
-import networks
+import pandapower.networks as networks
 import pandapower as pp
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 
@@ -55,10 +55,9 @@ def test_json(net_in, tempdir):
 
 
 def test_sqlite(net_in, tempdir):
-    from pandapower.sql_io import to_sqlite, from_sqlite
     filename = os.path.join(tempdir, "testfile.db")
-    to_sqlite(net_in, filename)
-    net_out = from_sqlite(filename)
+    pp.to_sqlite(net_in, filename)
+    net_out = pp.from_sqlite(filename)
     assert_net_equal(net_in, net_out)
 
 
@@ -69,7 +68,7 @@ def test_html(net_in, tempdir):
 
 def test_convert_format():  # TODO what is this thing testing ?
     folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
     pp.runpp(net)
     assert net.converged
 

@@ -6,16 +6,18 @@
 
 import json
 import numbers
-import os, sys
+import os
+import sys
 import pickle
-
-import numpy
 import pandas as pd
 
+import numpy
+
 from pandapower.auxiliary import pandapowerNet
-from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-from pandapower.html import _net_to_html
+from pandapower.html_net import _net_to_html
+from pandapower.io_utils import *
+
 
 def to_pickle(net, filename):
     """
@@ -39,12 +41,13 @@ def to_pickle(net, filename):
         raise Exception("Please use .p to save pandapower networks!")
     save_net = dict()
     for key, item in net.items():
-        if key != "_is_elements":       
+        if key != "_is_elements":
             save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
                             for col, dt in zip(item.columns, item.dtypes)}}  \
                             if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
         pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
+
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
@@ -134,6 +137,7 @@ def to_json_string(net):
     json_string = json_string[:-1] + "}\n"
     return json_string
 
+
 def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
@@ -150,12 +154,28 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    json_string = to_json_string(net)
+    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
+    dict_net["dtypes"] = collect_all_dtypes_df(net)
+    json_string = to_json_string(dict_net)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
     with open(filename, "w") as text_file:
         text_file.write(json_string)
+
+
+def to_sql(net, con, include_empty_tables=False, include_results=True):
+    dodfs = to_dict_of_dfs(net, include_results=include_results)
+    dodfs["dtypes"] = collect_all_dtypes_df(net)
+    for name, data in dodfs.items():
+        data.to_sql(name, con, if_exists="replace")
+
+
+def to_sqlite(net, filename):
+    import sqlite3
+    conn = sqlite3.connect(filename)
+    to_sql(net, conn)
+    conn.close()
 
 
 def from_pickle(filename, convert=True):
@@ -201,7 +221,7 @@ def from_pickle(filename, convert=True):
             if "dtypes" in item:
                 try:
                     #only works with pandas 0.19 or newer
-                    net[key] = net[key].astype(item["dtypes"]) 
+                    net[key] = net[key].astype(item["dtypes"])
                 except:
                     #works with pandas <0.19
                     for column in net[key].columns:
@@ -284,8 +304,16 @@ def from_json(filename, convert=True):
     else:
         with open(filename) as data_file:
             data = json.load(data_file)
-
-    return from_json_dict(data, convert=convert)
+    try:
+        pd_dicts = dicts_to_pandas(data)
+        net = from_dict_of_dfs(pd_dicts)
+        restore_all_dtypes(net, pd_dicts["dtypes"])
+        if convert:
+            convert_format(net)
+        return net
+    except UserWarning:
+        # Can be deleted in the future, maybe now
+        return from_json_dict(data, convert=convert)
 
 
 def from_json_string(json_string, convert=True):
@@ -388,3 +416,24 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
         f.write(html_str)
         f.close()
+
+
+def from_sql(con):
+    cursor = con.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    dodfs = dict()
+    for t, in cursor.fetchall():
+        table = pd.read_sql_query("SELECT * FROM %s" % t, con, index_col="index")
+        table.index.name = None
+        dodfs[t] = table
+    net = from_dict_of_dfs(dodfs)
+    restore_all_dtypes(net, dodfs["dtypes"])
+    return net
+
+
+def from_sqlite(filename, netname=""):
+    import sqlite3
+    con = sqlite3.connect(filename)
+    net = from_sql(con)
+    con.close()
+    return net

@@ -9,7 +9,7 @@ import copy
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon
+from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
 
 
 try:
@@ -89,7 +89,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          geodata_table='bus_geodata', **kwargs):
+                          bus_geodata=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -115,6 +115,9 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         **colors** (list, None) - list of colors for every element
 
         **cmap** - colormap for the patch colors
+        
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+        If None, net["bus_geodata"] is used
 
         **picker** - picker argument passed to the patch collection
 
@@ -124,9 +127,11 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
         return None
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
 
-    coords = zip(net[geodata_table].loc[buses].x.values,
-                 net[geodata_table].loc[buses].y.values)
+    coords = zip(bus_geodata.loc[buses].x.values,
+                 bus_geodata.loc[buses].y.values)
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
@@ -283,6 +288,27 @@ def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
     return load1, load2
 
 
+def create_gen_symbol_collection(net, size=1., infofunc=None, **kwargs):
+    lines = []
+    polys = []
+    infos = []
+    off = 1.7
+    for i, gen in net.gen.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[gen.bus]
+        p2 = p1 - np.array([0, size * off])
+        polys.append(Circle(p2, size))
+        polys.append(Arc(p2 + np.array([-size/6.2, -size/2.6]), size/2, size, theta1=45, theta2=135))
+        polys.append(Arc(p2 + np.array([size/6.2, size/2.6]), size/2, size, theta1=225, theta2=315))
+        lines.append((p1, p2 + np.array([0, size])))
+        if infofunc is not None:
+            infos.append(infofunc(i))
+    gen1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
+    gen2 = LineCollection(lines, color="k", **kwargs)
+    gen1.info = infos
+    gen2.info = infos
+    return gen1, gen2
+
+
 def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
                                       **kwargs):
     lines = []
@@ -301,6 +327,19 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     ext_grid1.info = infos
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
+
+
+def add_collections_to_axes(ax, collections, plot_colorbars=True):
+    for c in collections:
+        if c:
+           # cc = copy.copy(c)
+            ax.add_collection(c)
+            if plot_colorbars and hasattr(c, "has_colormap"):
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
+
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True):
     """
@@ -321,15 +360,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
                             wspace=0.02, hspace=0.04)
     ax = ax or plt.gca()
 
-    for c in collections:
-        if c:
-            cc = copy.copy(c)
-            ax.add_collection(cc)
-            if plot_colorbars and hasattr(c, "has_colormap"):
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
+    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars)
+
     try:
         ax.set_facecolor("white")
     except:
@@ -341,7 +373,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
     try:
-        plt.tight_layout()
+        # plt.tight_layout()
+        plt.show()
     except:
         pass
 
@@ -354,7 +387,7 @@ if __name__ == "__main__":
     b2 = pp.create_bus(net, 0.4, geodata=(5, 15))
     b3 = pp.create_bus(net, 0.4, geodata=(0, 22))
     b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
-    pp.create_load(net, b1, p_kw=100)
+    pp.create_gen(net, b1, p_kw=100)
     pp.create_load(net, b3, p_kw=100)
     pp.create_ext_grid(net, b4)
 
@@ -368,7 +401,9 @@ if __name__ == "__main__":
     lt, bt = create_trafo_symbol_collection(net, size=2, linewidth=3.)
     load1, load2 = create_load_symbol_collection(net, linewidth=2.,
                                                  infofunc=lambda x: ("load", x))
+    gen1, gen2 = create_gen_symbol_collection(net, linewidth=2.,
+                                                 infofunc=lambda x: ("gen", x))
     eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
                                                  infofunc=lambda x: ("ext_grid", x))
 
-    draw_collections([bc, lc, load1, load2, lt, bt, eg1, eg2])
+    draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])

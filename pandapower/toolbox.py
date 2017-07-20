@@ -114,12 +114,19 @@ def check_opf_data(net):
                 net[element_type].columns)].values
             controllable = True
             if element_type in ['gen', 'sgen', 'load']:
-                if 'controllable' not in missing_col:
+                if 'controllable' not in net[element_type].columns:
                     if element_type == 'gen':
                         net[element_type]['controllable'] = True
                     else:
                         net[element_type]['controllable'] = False
                         controllable = False
+                else:
+                    if element_type == 'gen':
+                        net[element_type].controllable.fillna(True, inplace=True)
+                    else:
+                        net[element_type].controllable.fillna(False, inplace=True)
+                        if not net[element_type].controllable.any():
+                            controllable = False
             if len(missing_col) & controllable:
                 raise AttributeError("These columns are missing in net." + element_type + ": " +
                                      str(['%s' % col for col in missing_col]))
@@ -147,15 +154,34 @@ def _opf_controllables(elm_df, to_log, control_elm, control_elm_name, all_costs)
     """ This is an auxiliary function for opf_task to add controllables data to to_log """
     if len(elm_df):
         to_log += '\n' + "  " + control_elm_name
-    for q, r in elm_df.iterrows():
-        if 'bus' in r:
-            to_log += '\n' + "    %i at Node %i" % (q, r.bus)
-        else:
-            to_log += '\n' + "    %i at Nodes %i, %i" % (q, r.from_bus, r.to_bus)
-        idx_cost = all_costs.loc[(all_costs.element == q) &
-                                 (all_costs.element_type == control_elm)].index
-        if len(idx_cost):
-            to_log += " with %s-costs" % all_costs.loc[idx_cost].type.values
+        elm_p_cost_idx = set(all_costs.loc[(all_costs.element_type == control_elm) &
+                                           (all_costs.type == 'p')].element)
+        elm_q_cost_idx = set(all_costs.loc[(all_costs.element_type == control_elm) &
+                                           (all_costs.type == 'q')].element)
+        with_pq_cost = elm_df.loc[elm_p_cost_idx & elm_q_cost_idx].index
+        with_p_cost = elm_df.loc[elm_p_cost_idx - elm_q_cost_idx].index
+        with_q_cost = elm_df.loc[elm_q_cost_idx - elm_p_cost_idx].index
+        without_cost = elm_df.loc[set(elm_df.index) - (elm_p_cost_idx | elm_q_cost_idx)].index
+        if len(with_pq_cost) and len(with_pq_cost) < len(elm_df):
+            to_log += '\n' + '    ' + control_elm_name + ' ' +  \
+                ', '.join(map(str, elm_df.loc[with_pq_cost].index)) + " with p and q costs"
+        elif len(with_pq_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with p and q costs"
+        if len(with_p_cost) and len(with_p_cost) < len(elm_df):
+            to_log += '\n' + '    ' + control_elm_name + ' ' + \
+                ', '.join(map(str, elm_df.loc[with_p_cost].index)) + " with p costs"
+        elif len(with_p_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with p costs"
+        if len(with_q_cost) and len(with_q_cost) < len(elm_df):
+            to_log += '\n' + '    ' + control_elm_name + ' ' + \
+                ', '.join(map(str, elm_df.loc[with_q_cost].index)) + " with q costs"
+        elif len(with_q_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " with q costs"
+        if len(without_cost) and len(without_cost) < len(elm_df):
+            to_log += '\n' + '    ' + control_elm_name + ' ' + \
+                ', '.join(map(str, elm_df.loc[without_cost].index)) + " without costs"
+        elif len(without_cost):
+            to_log += '\n' + '    all %i ' % len(elm_df) + control_elm_name + " without costs"
     return to_log
 
 
@@ -187,10 +213,10 @@ def opf_task(net):  # pragma: no cover
     # --- controllables & costs
     to_log = '\n' + "Cotrollables & Costs:"
     # dcline always is assumed as controllable
-    to_log = _opf_controllables(net.ext_grid, to_log, 'ext_grid', 'External Grid', all_costs)
+    to_log = _opf_controllables(net.ext_grid, to_log, 'ext_grid', 'Ext_Grid', all_costs)
     # check controllables in gen, sgen and load
     control_elms = ['gen', 'sgen', 'load']
-    control_elm_names = ['Generator', 'Static Generator', 'Load']
+    control_elm_names = ['Gen', 'SGen', 'Load']
     for j, control_elm in enumerate(control_elms):
         # only for net[control_elm] with len > 0, check_data has checked 'controllable' in columns
         if len(net[control_elm]):
@@ -202,20 +228,17 @@ def opf_task(net):  # pragma: no cover
     constr_exist = False  # stores if there are any constraints
 
     # --- variables constraints
-    variables = ['ext_grid', 'gen', 'sgen']
-    variable_names = ['Ext_Grid', 'Gen', 'SGen']
-    variable_long_names = ['External Grid', 'Generator', 'Static Generator']
-    if (net['load'].controllable).any():
-        variables += ['load']
-        variable_names += ['Load']
-        variable_long_names += ['Load']
+    variables = ['ext_grid', 'gen', 'sgen', 'load']
+    variable_names = ['Ext_Grid', 'Gen', 'SGen', 'Load']
+    variable_long_names = ['External Grid', 'Generator', 'Static Generator', 'Load']
     for j, variable in enumerate(variables):
         constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
         constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
         constr = net[variable][constr_col_exist]
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
-            constr = constr.loc[net[variable].loc[net[variable].controllable].index]
             constr_exist = True
+            if variable != 'ext_grid':
+                constr = constr.loc[net[variable].loc[net[variable].controllable].index]
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
             for i in constr_col[~constr_col.isin(net[variable].columns)]:
                 constr[i] = np.nan
@@ -910,6 +933,9 @@ def drop_inactive_elements(net):
     buses.
     """
     set_isolated_areas_out_of_service(net)
+    drop_out_of_service_elements(net)
+
+def drop_out_of_service_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[~net.line.in_service].index
     drop_lines(net, inactive_lines)
@@ -918,7 +944,7 @@ def drop_inactive_elements(net):
     drop_trafos(net, inactive_trafos)
 
     do_not_delete = set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-                    set(net.line.from_bus.values) | set(net.line.to_bus.values)
+        set(net.line.from_bus.values) | set(net.line.to_bus.values)
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
@@ -1025,6 +1051,7 @@ def fuse_buses(net, b1, b2, drop=True):
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     if drop:
         net["bus"].drop(b2, inplace=True)
+        net["bus_geodata"].drop(set(b2) & set(net.bus_geodata.index), inplace=True)
     return net
 
 
@@ -1170,9 +1197,8 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
-            net[element] = net1[element].append(net2[element],
-                                                ignore_index=element not in
-                                                             ("bus", "bus_geodata", "line_geodata"))
+            net[element] = net1[element].append(
+                net2[element], ignore_index=element not in ("bus", "bus_geodata", "line_geodata"))
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))

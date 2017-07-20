@@ -6,18 +6,21 @@
 
 import warnings
 import numpy as np
-from pandapower.pf.makeYbus_pypower import makeYbus
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
+try:
+    from pandapower.pf.makeYbus import makeYbus
+except ImportError:
+    from pandapower.pf.makeYbus_pypower import makeYbus
 
 
 class wls_matrix_ops:
     def __init__(self, ppc, slack_buses, non_slack_buses, s_ref):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppc = ppc
-        self.s_ref = s_ref
+        self.baseMVA = s_ref / 1e6
         self.slack_buses = slack_buses
         self.non_slack_buses = non_slack_buses
         self.Y_bus = None
@@ -45,7 +48,7 @@ class wls_matrix_ops:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            Ybus, Yf, Yt = makeYbus(self.s_ref, self.ppc["bus"], self.ppc["branch"])
+            Ybus, Yf, Yt = makeYbus(self.baseMVA, self.ppc["bus"], self.ppc["branch"])
 
         # create relevant matrices
         self.Y_bus = Ybus.toarray()

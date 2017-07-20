@@ -29,7 +29,7 @@ def test_set_user_pf_options():
     old_options = net._options.copy()
     test_options = {key: i for i, key in enumerate(old_options.keys())}
 
-    pp.set_user_pf_options(net, **test_options, hello='bye')
+    pp.set_user_pf_options(net, hello='bye', **test_options)
     test_options.update({'hello': 'bye'})
 
     assert net.user_pf_options == test_options
