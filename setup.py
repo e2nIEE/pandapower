@@ -27,7 +27,9 @@ setup(
                       "pandas>=0.17.0",
                       "networkx",
                       "numpy",
-                      "scipy"],
+                      "scipy",
+                      "numba",
+                      ],
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
