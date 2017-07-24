@@ -117,8 +117,6 @@ def to_json_string(net):
         if k[0] == "_":
             continue
         if isinstance(net[k], pd.DataFrame):
-            if len(net[k]) == 0:  # do not bother saving empty data frames
-                continue
             json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","

@@ -21,6 +21,8 @@ def dicts_to_pandas(json_dict):
     for k in sorted(json_dict.keys()):
         if isinstance(json_dict[k], dict):
             pd_dict[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
+            if pd_dict[k].shape[0] == 0:  # skip empty dataframes
+                continue
             if pd_dict[k].index[0].isdigit():
                 pd_dict[k].set_index(pd_dict[k].index.astype(int64), inplace=True)
         else:
