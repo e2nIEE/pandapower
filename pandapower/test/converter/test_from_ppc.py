@@ -39,6 +39,7 @@ def test_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
     net_by_code = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
+    pp.set_user_pf_options(net_by_code)     # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
 
@@ -85,6 +86,5 @@ def test_pypower_cases():
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')
 
-
 if __name__ == '__main__':
-    pytest.main(["-s"])
+    pytest.main(["test_from_ppc.py"])

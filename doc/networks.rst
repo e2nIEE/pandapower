@@ -19,5 +19,5 @@ You can find documentation for the individual modules here:
     networks/power_system_test_cases
     networks/kerber
     networks/synthetic_voltage_control_lv_networks
-
+    networks/dickert_lv_networks
 

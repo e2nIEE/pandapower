@@ -105,12 +105,13 @@ def _pd2ppc(net):
     # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
 
-    # sets buses out of service, which aren't connected to branches / REF buses
     if check_connectivity:
+        # sets islands (multiple isolated nodes) out of service
         isolated_nodes, _, _ = aux._check_connectivity(ppc)
         net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
-    else:
-        aux._set_isolated_buses_out_of_service(net, ppc)
+
+    # sets buses out of service, which aren't connected to branches / REF buses
+    aux._set_isolated_buses_out_of_service(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc

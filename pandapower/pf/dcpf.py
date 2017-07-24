@@ -4,13 +4,15 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 """Solves a DC power flow.
 """
 
-from numpy import copy, r_, matrix, transpose, real
+from numpy import copy, r_, transpose, real, array
 from scipy.sparse.linalg import spsolve
-
 
 def dcpf(B, Pbus, Va0, ref, pv, pq):
     """Solves a DC power flow.
@@ -29,12 +31,16 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
 
     # Version from pypower github (bugfix 'transpose')
     """
-    pvpq = matrix(r_[pv, pq])
+    pvpq = r_[pv, pq]
 
     ## initialize result vector
     Va = copy(Va0)
 
     ## update angles for non-reference buses
-    Va[pvpq] = real(spsolve(B[pvpq.T, pvpq], transpose(Pbus[pvpq] - B[pvpq.T, ref] * Va0[ref])))
+    if pvpq.shape == (1, 1): #workaround for bug in scipy <0.19
+        pvpq = array(pvpq).flatten()
+    pvpq_matrix = B[pvpq.T,:].tocsc()[:,pvpq]
+    ref_matrix = transpose(Pbus[pvpq] - B[pvpq.T,:].tocsc()[:,ref] * Va0[ref])
+    Va[pvpq] = real(spsolve(pvpq_matrix, ref_matrix))
 
     return Va

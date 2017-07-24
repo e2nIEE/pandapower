@@ -133,7 +133,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
 
     ## quadratic costs
     npol = len(ipol)
-    if any(find(gencost[ipol, NCOST] > 3)):
+    if any(len(gencost[ipol, NCOST] > 3)) and sum(gencost[find(gencost[ipol, NCOST] > 3)][:][NCOST+1:]):
         stderr.write('DC opf cannot handle polynomial costs with higher '
                      'than quadratic order.\n')
     iqdr = find(gencost[ipol, NCOST] == 3)

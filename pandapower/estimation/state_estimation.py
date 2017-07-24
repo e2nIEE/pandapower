@@ -14,8 +14,7 @@ from scipy.stats import chi2
 from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
     _build_measurement_vectors, _init_ppc
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT, branch_cols
-from pandapower.idx_bus import bus_cols
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pf.runpf_pypower import _get_pf_variables_from_ppci, \
@@ -31,7 +30,7 @@ std_logger = logging.getLogger(__name__)
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True):
+             calculate_voltage_angles=True, ref_power=1e6):
     """
     Wrapper function for WLS state estimation.
 
@@ -54,7 +53,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -71,7 +70,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-                    calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
+                    calculate_voltage_angles=True, rn_max_threshold=3.0, ref_power=1e6):
     """
     Wrapper function for bad data removal.
 
@@ -101,7 +100,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -115,11 +114,11 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
     return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
-                                   rn_max_threshold, chi2_prob_false)
+                                   rn_max_threshold)
 
 
 def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-                  calculate_voltage_angles=True, chi2_prob_false=0.05):
+                  calculate_voltage_angles=True, chi2_prob_false=0.05, ref_power=1e6):
     """
     Wrapper function for the chi-squared test.
 
@@ -145,7 +144,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -169,14 +168,15 @@ class state_estimation(object):
     system according to the users needs while one function is used for the actual estimation
     process.
     """
-    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
+    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None, ref_power=1e6):
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
+            # self.logger.setLevel(logging.DEBUG)
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
-        self.s_ref = 1e6
+        self.s_ref = ref_power
         self.s_node_powers = None
         # variables for chi^2 / rn_max tests
         self.hx = None
@@ -241,7 +241,7 @@ class state_estimation(object):
         if delta_start is None:
             delta_start = np.zeros(self.net.bus.shape[0])
 
-        # initialize result tables if not existant
+        # initialize result tables if not existent
         _copy_power_flow_results(self.net)
 
         # initialize ppc
@@ -273,7 +273,7 @@ class state_estimation(object):
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
         # matrix calculation object
-        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref, bus_cols, branch_cols)
+        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref)
 
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
@@ -282,10 +282,10 @@ class state_estimation(object):
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
 
         current_error = 100.
-        current_iterations = 0
+        cur_it = 0
 
-        while current_error > self.tolerance and current_iterations < self.max_iterations:
-            self.logger.debug(" Starting iteration %d" % (1 + current_iterations))
+        while current_error > self.tolerance and cur_it < self.max_iterations:
+            self.logger.debug(" Starting iteration %d" % (1 + cur_it))
             try:
                 # create h(x) for the current iteration
                 h_x = sem.create_hx(v_m, delta)
@@ -310,9 +310,9 @@ class state_estimation(object):
                 v_m = np.squeeze(E[len(non_slack_buses):])
 
                 # prepare next iteration
-                current_iterations += 1
+                cur_it += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: %.4f" % current_error)
+                self.logger.debug("Current error: %.7f" % current_error)
 
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
@@ -322,11 +322,11 @@ class state_estimation(object):
         # print output for results
         if current_error <= self.tolerance:
             successful = True
-            self.logger.info("WLS State Estimation successful (%d iterations)" % current_iterations)
+            self.logger.debug("WLS State Estimation successful (%d iterations)" % cur_it)
         else:
             successful = False
-            self.logger.info("WLS State Estimation not successful (%d/%d iterations)" %
-                             (current_iterations, self.max_iterations))
+            self.logger.debug("WLS State Estimation not successful (%d/%d iterations)" %
+                              (cur_it, self.max_iterations))
 
         # store results for all elements
         # write voltage into ppc
@@ -445,16 +445,16 @@ class state_estimation(object):
 
         if J <= test_thresh:
             self.bad_data_present = False
-            self.logger.info("Chi^2 test passed. No bad data or topology error detected.")
+            self.logger.debug("Chi^2 test passed. No bad data or topology error detected.")
         else:
             self.bad_data_present = True
-            self.logger.info("Chi^2 test failed. Bad data or topology error detected.")
+            self.logger.debug("Chi^2 test failed. Bad data or topology error detected.")
 
         if (v_in_out is not None) and (delta_in_out is not None):
             return self.bad_data_present
 
     def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
-                            calculate_voltage_angles=True, rn_max_threshold=3.0, chi2_prob_false=0.05):
+                            calculate_voltage_angles=True, rn_max_threshold=3.0):
         """
         The function perform_rn_max_test performs a largest normalized residual test for bad data
         identification and removal. It takes two input arguments: v_in_out and delta_in_out.
@@ -506,18 +506,6 @@ class state_estimation(object):
             # Estimate the state with bad data identified in previous iteration
             # removed from set of measurements:
             _ = self.estimate(v_in, delta_in, calculate_voltage_angles)
-            v_in_out = self.net.res_bus_est.vm_pu.values
-            delta_in_out = self.net.res_bus_est.va_degree.values
-
-            # Perform a Chi^2 test to determine whether bad data is to be removed.
-            self.bad_data_present = self.perform_chi2_test(v_in_out, delta_in_out,
-                                                           calculate_voltage_angles=
-                                                           calculate_voltage_angles,
-                                                           chi2_prob_false=chi2_prob_false)
-
-            # If bad data was removed in the previous iterations, return True
-            if not self.bad_data_present:
-                return True
 
             # Try to remove the bad data
             try:
@@ -546,11 +534,13 @@ class state_estimation(object):
                 rN = np.dot(OmegaInv, np.absolute(self.r))
 
                 if max(rN) <= rn_max_threshold:
-                    self.logger.info(
-                        "Largest normalized residual test passed. No bad data detected.")
+                    self.logger.debug("Largest normalized residual test passed. "
+                                      "No bad data detected.")
+                    return True
                 else:
-                    self.logger.info(
-                        "Largest normalized residual test failed. Bad data identified.")
+                    self.logger.debug(
+                        "Largest normalized residual test failed (%.1f > %.1f)."
+                        % (max(rN), rn_max_threshold))
 
                     # Identify bad data: Determine index corresponding to max(rN):
                     idx_rN = np.argsort(rN, axis=0)[-1]
@@ -572,4 +562,4 @@ class state_estimation(object):
             self.logger.debug("rN_max identification threshold: %.2f" % rn_max_threshold)
             num_iterations += 1
 
-        return not self.bad_data_present
+        return False

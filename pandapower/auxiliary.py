@@ -38,12 +38,12 @@ from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 try:
     from numba import _version as numba_version
-except:
+except ImportError:
     pass
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -523,14 +523,17 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
 
 
 def _add_options(net, options):
+    # double_parameters = set(net.__internal_options.keys()) & set(options.keys())
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
             "Parameters always have to be unique! The following parameters where specified twice: %s" % double_parameters)
+    # net.__internal_options.update(options)
     net._options.update(options)
 
 
 def _clean_up(net):
+    # mode = net.__internal_options["mode"]
     mode = net._options["mode"]
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
@@ -559,7 +562,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
 
     # but also check if they may be the only connection to an ext_grid
     disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][disco, 1] = 4
+    ppc["bus"][disco, 1] = 4.
 
 
 def _write_lookup_to_net(net, element, element_lookup):

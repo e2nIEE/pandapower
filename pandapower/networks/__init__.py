@@ -1,3 +1,4 @@
+from pandapower.networks.dickert_lv_networks import *
 from pandapower.networks.synthetic_voltage_control_lv_networks import *
 from pandapower.networks.cigre_networks import *
 from pandapower.networks.create_examples import *

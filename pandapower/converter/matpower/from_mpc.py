@@ -11,7 +11,7 @@ from pandapower.converter.pypower import from_ppc
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

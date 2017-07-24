@@ -48,8 +48,8 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
     EXAMPLE:
 
-    >>> import pandapower.networks
-    >>> net = pandapower.networks.mv_oberrhein("generation")
+    import pandapower.networks
+    net = pandapower.networks.mv_oberrhein("generation")
     """
     if include_substations:
         net = pp.from_pickle(os.path.join(_get_networks_path(), "mv_oberrhein_substations.p"))

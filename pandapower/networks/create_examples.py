@@ -37,10 +37,10 @@ def example_simple():
     pp.create_ext_grid(net, bus1, vm_pu=1.02, va_degree=50)
 
     # create transformer
-    trafo1 = pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer",
+    pp.create_transformer(net, bus3, bus4, name="110kV/20kV transformer",
                                    std_type="25 MVA 110/20 kV")
     # create lines
-    line1 = pp.create_line(net, bus1, bus2, length_km=10,
+    pp.create_line(net, bus1, bus2, length_km=10,
                            std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="Line 1")
     line2 = pp.create_line(net, bus5, bus6, length_km=2.0,
                            std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 2")
@@ -50,16 +50,16 @@ def example_simple():
                            std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 4")
 
     # create bus-bus switches
-    sw1 = pp.create_switch(net, bus2, bus3, et="b", type="CB")
-    sw2 = pp.create_switch(net, bus4, bus5, et="b", type="CB")
+    pp.create_switch(net, bus2, bus3, et="b", type="CB")
+    pp.create_switch(net, bus4, bus5, et="b", type="CB")
 
     # create bus-line switches
-    sw3 = pp.create_switch(net, bus5, line2, et="l", type="LBS", closed=True)
-    sw4 = pp.create_switch(net, bus6, line2, et="l", type="LBS", closed=True)
-    sw5 = pp.create_switch(net, bus6, line3, et="l", type="LBS", closed=True)
-    sw6 = pp.create_switch(net, bus7, line3, et="l", type="LBS", closed=False)
-    sw7 = pp.create_switch(net, bus7, line4, et="l", type="LBS", closed=True)
-    sw8 = pp.create_switch(net, bus5, line4, et="l", type="LBS", closed=True)
+    pp.create_switch(net, bus5, line2, et="l", type="LBS", closed=True)
+    pp.create_switch(net, bus6, line2, et="l", type="LBS", closed=True)
+    pp.create_switch(net, bus6, line3, et="l", type="LBS", closed=True)
+    pp.create_switch(net, bus7, line3, et="l", type="LBS", closed=False)
+    pp.create_switch(net, bus7, line4, et="l", type="LBS", closed=True)
+    pp.create_switch(net, bus5, line4, et="l", type="LBS", closed=True)
 
     # create load
     pp.create_load(net, bus7, p_kw=2000, q_kvar=4000, scaling=0.6, name="load")

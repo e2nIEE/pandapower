@@ -15,7 +15,7 @@ from pandapower.auxiliary import _sum_by_group
 
 try:
     from numba import jit
-except:
+except ImportError:
     pass
 
 
@@ -242,11 +242,11 @@ def _build_bus_ppc(net, ppc):
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 10
+            ppc["bus"][:n_bus, VMAX] = 1.1
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMIN] = 0
+            ppc["bus"][:n_bus, VMIN] = 0.9
 
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 

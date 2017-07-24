@@ -25,12 +25,15 @@ The equation describes the basic formulation of the optimal power flow problem. 
         
 **Generator Flexibilities / Operational power constraints**
 
-The active and reactive power generation of generators and static generators can be defined as a flexibility for the OPF.
+The active and reactive power generation of generators, loads, dc lines and static generators can be defined as a flexibility for the OPF.
 
 .. tabularcolumns:: |p{0.40\linewidth}|p{0.4\linewidth}|
 .. csv-table:: 
    :file: opf_flexibility.csv
    :delim: ;
+
+.. note::
+	Defining operational constraints is indispensable for the OPF, it will not start if contraints are not defined. 
 
 **Network Constraints**
 
@@ -41,7 +44,8 @@ The network constraints contain constraints for bus voltages and branch flows:
    :file: opf_constraints.csv
    :delim: ;
            
-
+The defaults are 100% loading for branch elements and +-0.1 p.u. for bus voltages.
+		   
 Cost functions
 ---------------
 

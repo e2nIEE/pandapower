@@ -35,6 +35,7 @@ High voltage transmission network
    - load (5 elements)
    - ext_grid (1 elements)
    - gen (3 elements)
+   - bus_geodata (13 elements)
  '''
 
 
@@ -63,6 +64,7 @@ Medium voltage distribution network
    - line (15 elements)
    - trafo (2 elements)
    - bus (15 elements)
+   - bus_geodata (15 elements)
  '''
 
 
@@ -102,6 +104,7 @@ Although the case study mentions the High Voltage as 220 kV, we assume 110 kV ag
       - line (15 elements)
       - trafo (2 elements)
       - bus (15 elements)
+      - bus_geodata (15 elements)
     '''
 
 .. image:: /pics/cigre_network_mv_der.png
@@ -143,6 +146,7 @@ considered. Although the case study mentions the High Voltage as 220 kV, we assu
       - line (15 elements)
       - trafo (2 elements)
       - bus (15 elements)
+      - bus_geodata (15 elements)
     '''
 
 .. image:: /pics/cigre_network_mv_der_all.png
@@ -171,6 +175,7 @@ Low voltage distribution network
    - line (37 elements)
    - trafo (3 elements)
    - bus (44 elements)
+   - bus_geodata (44 elements)
  '''
 
 
