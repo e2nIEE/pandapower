@@ -28,7 +28,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
   - source activate test-environment
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
-         pip uninstall numba;
+         conda uninstall numba --yes;
     fi
   - pip install pytest pytest-cov
   - pip install codecov
