@@ -394,7 +394,11 @@ def _check_connectivity(ppc):
     return isolated_nodes, pus, qus
 
 
-from numba import jit
+
+try:
+    from numba import jit
+except ImportError:
+    from .pf.no_numba import jit
 
 
 @jit(nopython=True, cache=True)

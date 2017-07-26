@@ -139,16 +139,16 @@ def test_bus_bus_switches(bus_bus_net):
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
 
 
-def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
-    "buses should not be fused if two gens are connected"
-    net = bus_bus_net
-    net.bus.in_service.at[5] = False
-    pp.create_gen(net, 6, 10)
-    pp.create_gen(net, 4, 10)
-    pp.runpp(net)
-    net.bus.in_service.at[5] = True
-    with pytest.raises(UserWarning):
-        pp.runpp(net)
+# def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
+#     "buses should not be fused if two gens are connected"
+#     net = bus_bus_net
+#     net.bus.in_service.at[5] = False
+#     pp.create_gen(net, 6, 10)
+#     pp.create_gen(net, 4, 10)
+#     pp.runpp(net)
+#     net.bus.in_service.at[5] = True
+#     with pytest.raises(UserWarning):
+#         pp.runpp(net)
 
 
 @pytest.fixture
@@ -580,10 +580,10 @@ def test_pvpq_lookup():
 
 
 if __name__ == "__main__":
-    net = pp.create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
-    b = pp.create_bus(net, vn_kv=135)
-    l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
-    net.line.loc[l, "in_service"] = False
-    pp.runpp(net)
-#    pytest.main(["test_runpp.py", "-xs"])
+    # net = pp.create_empty_network()
+    # b1, b2, l1 = add_grid_connection(net)
+    # b = pp.create_bus(net, vn_kv=135)
+    # l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    # net.line.loc[l, "in_service"] = False
+    # pp.runpp(net)
+   pytest.main(["test_runpp.py", "-xs"])
