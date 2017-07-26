@@ -139,16 +139,16 @@ def test_bus_bus_switches(bus_bus_net):
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
 
 
-# def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
-#     "buses should not be fused if two gens are connected"
-#     net = bus_bus_net
-#     net.bus.in_service.at[5] = False
-#     pp.create_gen(net, 6, 10)
-#     pp.create_gen(net, 4, 10)
-#     pp.runpp(net)
-#     net.bus.in_service.at[5] = True
-#     with pytest.raises(UserWarning):
-#         pp.runpp(net)
+def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
+    "buses should not be fused if two gens are connected"
+    net = bus_bus_net
+    net.bus.in_service.at[5] = False
+    pp.create_gen(net, 6, 10)
+    pp.create_gen(net, 4, 10)
+    pp.runpp(net)
+    net.bus.in_service.at[5] = True
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
 
 
 @pytest.fixture
