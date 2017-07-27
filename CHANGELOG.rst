@@ -9,7 +9,7 @@ Change Log
 - [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
 - [FIXED] state estimation bug with phase shift transformers
 - [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception
-- [ADDED] 
+- [ADDED] geographical data for cigre and IEEE case networks
 - [ADDED] Dickert LV Networks
 
 [1.3.1] - 2017-06-16
