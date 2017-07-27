@@ -490,10 +490,10 @@ def _write_lookup_to_net(net, element, element_lookup):
 
 
 def _check_if_numba_is_installed(numba):
-    numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n'\
-            'Probably the execution is slow.\n'\
-            'Please install numba to gain a massive speedup.\n'\
-            '(or if you like slow execution, set the flag numba=False to avoid this warning!)\n'
+    numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n' \
+                        'Probably the execution is slow.\n' \
+                        'Please install numba to gain a massive speedup.\n' \
+                        '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)\n'
 
     try:
         # get numba Version (in order to use it it must be > 0.25)
@@ -504,7 +504,6 @@ def _check_if_numba_is_installed(numba):
 
     except:
         logger.warning(numba_warning_str)
-
         numba = False
 
     return numba
