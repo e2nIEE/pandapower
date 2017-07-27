@@ -4,11 +4,11 @@
 Save and Load Networks
 ========================
 
-.. tabularcolumns:: |p{0.1\linewidth}|p{0.1\linewidth}|p{0.1\linewidth}|p{0.1\linewidth}|p{0.1\linewidth}|
+.. tabularcolumns:: |l|l|l|l|
 .. csv-table:: 
    :file: fileIO.csv
    :delim: ;
-   :widths: 20, 20, 20, 20, 20
+   :widths: 20, 20, 20, 20
 
 
 
