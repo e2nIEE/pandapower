@@ -200,8 +200,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         ## check if numba is available and the corresponding flag
     if numba:
-        numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
-        check_connectivity = True
+        numba = _check_if_numba_is_installed(numba)
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values) or
@@ -288,7 +287,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     mode = "pf"
     init = 'flat'
 
-    numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
+    numba = _check_if_numba_is_installed(numba)
 
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
@@ -394,7 +393,6 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
 
-#    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -453,8 +451,6 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     calculate_voltage_angles = True
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
-
-    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
     # net.__internal_options = {}
     net._options = {}

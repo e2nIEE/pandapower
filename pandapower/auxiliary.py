@@ -489,20 +489,22 @@ def _write_lookup_to_net(net, element, element_lookup):
     net["_pd2ppc_lookups"][element] = element_lookup
 
 
-def _check_if_numba_is_installed(numba, check_connectivity):
+def _check_if_numba_is_installed(numba):
+    numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n'\
+            'Probably the execution is slow.\n'\
+            'Please install numba to gain a massive speedup.\n'\
+            '(or if you like slow execution, set the flag numba=False to avoid this warning!)\n'
+
     try:
         # get numba Version (in order to use it it must be > 0.25)
         nb_version = float(numba_version.version_version[:4])
         if nb_version < 0.25:
-            logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
+            logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' + numba_warning_str)
             numba = False
 
     except:
-        logger.warning('Warning: Numba cannot be imported.'
-                       ' Numba is disabled. Call runpp() with numba=False to avoid this warning!\n')
-        if check_connectivity:
-            logger.warning('Connectivity check is based on numba and is disabled since numba could not be imported')
-            check_connectivity = False
+        logger.warning(numba_warning_str)
+
         numba = False
 
-    return numba, check_connectivity
+    return numba
