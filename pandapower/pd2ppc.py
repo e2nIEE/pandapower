@@ -62,14 +62,10 @@ def _pd2ppc(net):
         **ppci** - The "internal" pypower format network for PF calculations
     """
     # select elements in service (time consuming, so we do it once)
-    use_numba = ("numba" in net["_options"] and net["_options"]["numba"] and
-                 (net["_options"]["recycle"] is None or
-                  not net["_options"]["recycle"]["_is_elements"]))
-    # use_numba = False
-    if use_numba:
-        net["_is_elements"] = aux._select_is_elements_numba(net)
-    else:
-        net["_is_elements"] = aux._select_is_elements(net)
+    net["_is_elements"] = aux._select_is_elements_numba(net)
+#    if net["_options"]["mode"] == "opf":
+#        is_elements["load_controllable"] = net._is_elements["load_controllable"]
+#        is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
 
     # get options
     mode = net["_options"]["mode"]

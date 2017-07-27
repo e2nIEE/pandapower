@@ -201,6 +201,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         ## check if numba is available and the corresponding flag
     if numba:
         numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
+        check_connectivity = True
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values) or
@@ -329,8 +330,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
         - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
         - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
         - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
-        
-    Controllable loads behave just like controllable static generators. It must be stated if they are controllable. 
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
     Dc lines are controllable per default
 
@@ -384,13 +385,6 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
         else:
             logger.debug('No controllable loads found')
 
-
-
-
-
-
-
-
     mode = "opf"
     ac = True
     copy_constraints_to_ppc = True
@@ -400,9 +394,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
 
-    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
-
-    # net.__internal_options = {}
+#    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,

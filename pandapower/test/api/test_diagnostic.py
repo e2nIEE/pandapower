@@ -14,6 +14,12 @@ import pandapower as pp
 import pandapower.networks as nw
 from pandapower.diagnostic_reports import DiagnosticReports
 
+try:
+    import numba
+    numba_installed = True
+except:
+    numba_installed = False
+
 
 @pytest.fixture(scope='module')
 def test_net():
@@ -929,7 +935,7 @@ def test_deviation_from_std_type(test_net, diag_params, report_methods):
             report_check = False
         assert report_check
 
-
+@pytest.mark.skipif(numba_installed==False, reason="requires numba")
 def test_numba_comparison(test_net, diag_params, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'numba_comparison'
@@ -941,6 +947,7 @@ def test_numba_comparison(test_net, diag_params, report_methods):
         diag_results = {check_function: check_result}
     else:
         diag_results = {}
+    print(diag_results[check_function])
     for element_type in diag_results[check_function]:
         check_results = diag_results[check_function]
         for result_type in check_results[element_type]:
@@ -1069,4 +1076,8 @@ def test_missing_bus_indeces(test_net, diag_params, report_methods):
 #    'wrong_switch_configuration': 'uncertain'}
 
 if __name__ == "__main__":
+#    net = test_net()
+#    params = diag_params()
+#    methods = report_methods()
+#    test_numba_comparison(net, params, methods)
     pytest.main(["test_diagnostic.py", "-xs"])
