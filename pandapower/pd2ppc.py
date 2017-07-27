@@ -63,9 +63,6 @@ def _pd2ppc(net):
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net)
-#    if net["_options"]["mode"] == "opf":
-#        is_elements["load_controllable"] = net._is_elements["load_controllable"]
-#        is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
 
     # get options
     mode = net["_options"]["mode"]

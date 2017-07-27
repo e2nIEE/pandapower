@@ -270,40 +270,6 @@ def get_values(source, selection, lookup):
     """
     return np.array([source[lookup[np.int(k)]] for k in selection])
 
-def _select_is_elements(net):
-    """
-    Selects certain "in_service" elements from net.
-    This is quite time consuming so it is done once at the beginning
-    @param net: pandapower Network
-    @return: _is_elements Certain in service elements
-    :rtype: object
-    """
-    bus_is_mask = net["bus"]["in_service"].values.astype(bool)
-    bus_is = net["bus"][bus_is_mask]
-    bus_is_idx = bus_is.index
-    line_is_mask = net["line"]["in_service"].values.astype(bool)
-    # check if in service elements are at in service buses
-    _is_elements = {
-        "gen": np.in1d(net["gen"].bus.values, bus_is_idx) \
-               & net["gen"]["in_service"].values.astype(bool)
-        , "load": np.in1d(net["load"].bus.values, bus_is_idx) \
-                  & net["load"].in_service.values.astype(bool)
-        , "sgen": np.in1d(net["sgen"].bus.values, bus_is_idx) \
-                  & net["sgen"].in_service.values.astype(bool)
-        , "ward": np.in1d(net["ward"].bus.values, bus_is_idx) \
-                  & net["ward"].in_service.values.astype(bool)
-        , "xward": np.in1d(net["xward"].bus.values, bus_is_idx) \
-                   & net["xward"].in_service.values.astype(bool)
-        , "shunt": np.in1d(net["shunt"].bus.values, bus_is_idx) \
-                   & net["shunt"].in_service.values.astype(bool)
-        , "ext_grid": np.in1d(net["ext_grid"].bus.values, bus_is_idx) \
-                      & net["ext_grid"]["in_service"].values.astype(bool)
-        , "bus_is_idx": bus_is_idx
-        , 'line': net['line'][line_is_mask]
-    }
-
-    return _is_elements
-
 def _check_connectivity(ppc):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
@@ -386,8 +352,10 @@ def _select_is_elements_numba(net, isolated_nodes=None):
     is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
     if net["_options"]["mode"] == "opf" and net._is_elements is not None:
-        is_elements["load_controllable"] = net._is_elements["load_controllable"]
-        is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
+        if "load_controllable" in net._is_elements:
+            is_elements["load_controllable"] = net._is_elements["load_controllable"]
+        if "sgen_controllable" in net._is_elements:
+            is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
     return is_elements
 
 

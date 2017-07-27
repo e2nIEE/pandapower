@@ -947,7 +947,6 @@ def test_numba_comparison(test_net, diag_params, report_methods):
         diag_results = {check_function: check_result}
     else:
         diag_results = {}
-    print(diag_results[check_function])
     for element_type in diag_results[check_function]:
         check_results = diag_results[check_function]
         for result_type in check_results[element_type]:
