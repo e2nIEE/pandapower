@@ -50,7 +50,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-
 class ADict(dict, MutableMapping):
     def __init__(self, *args, **kwargs):
         super(ADict, self).__init__(*args, **kwargs)
@@ -269,6 +268,7 @@ def get_values(source, selection, lookup):
     :return:
     """
     return np.array([source[lookup[np.int(k)]] for k in selection])
+
 
 def _check_connectivity(ppc):
     """
