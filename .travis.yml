@@ -27,7 +27,9 @@ install:
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas networkx numpydoc numba xlsxwriter xlrd
   - source activate test-environment
-#  - pip install pandas==0.19.2
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
+         conda uninstall numba --yes;
+    fi
   - pip install pytest pytest-cov
   - pip install codecov
   - python setup.py install
