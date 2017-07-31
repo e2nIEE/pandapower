@@ -8,6 +8,7 @@ import numpy as np
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, _check_if_numba_is_installed
 from pandapower.optimal_powerflow import _optimal_powerflow
+from pandapower.opf.validate_opf_input import _check_if_all_opf_parameters_are_given
 from pandapower.powerflow import _powerflow
 
 try:
@@ -356,33 +357,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             warnings are suppressed, too.
     """
 
-    # Check if all necessary parameters are given:
-
-    if (not net.gen.empty) and (("min_p_kw" not in net.gen.columns) or ("max_p_kw" not in net.gen.columns) or (
-        "max_q_kvar" not in net.gen.columns) or ("min_q_kvar" not in net.gen.columns)):
-        raise UserWarning('Warning: Please specify operational constraints for controllable gens')
-
-    if (not net.dcline.empty) and (("min_q_to_kvar" not in net.dcline.columns) or ("max_q_to_kvar" not in net.dcline.columns) or (
-        "min_q_from_kvar" not in net.dcline.columns) or ("max_q_from_kvar" not in net.dcline.columns)):
-        raise UserWarning('Warning: Please specify operational constraints for dclines')
-
-
-    if "controllable" in net.sgen.columns:
-        if net.sgen.controllable.any():
-            if ("min_p_kw" not in net.sgen.columns) or ("max_p_kw" not in net.sgen.columns) or (
-                "max_q_kvar" not in net.sgen.columns) or ("min_q_kvar" not in net.sgen.columns):
-                raise UserWarning('Warning: Please specify operational constraints for controllable sgens')
-        else:
-            logger.debug('No controllable sgens found')
-
-
-    if "controllable" in net.load.columns:
-        if net.load.controllable.any():
-            if ("min_p_kw" not in net.load.columns) or ("max_p_kw" not in net.load.columns) or (
-                "max_q_kvar" not in net.load.columns) or ("min_q_kvar" not in net.load.columns):
-                raise UserWarning('Warning: Please specify operational constraints for controllable loads')
-        else:
-            logger.debug('No controllable loads found')
+    _check_if_all_opf_parameters_are_given(net, logger)
 
     mode = "opf"
     ac = True
