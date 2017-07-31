@@ -6,16 +6,18 @@
 
 import json
 import numbers
-import os, sys
+import os
+import sys
 import pickle
+import pandas as pd
 
 import numpy
-import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-from pandapower.html import _net_to_html
+from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
+                                from_dict_of_dfs, restore_all_dtypes
 
 def to_pickle(net, filename):
     """
@@ -39,12 +41,13 @@ def to_pickle(net, filename):
         raise Exception("Please use .p to save pandapower networks!")
     save_net = dict()
     for key, item in net.items():
-        if key != "_is_elements":       
+        if key != "_is_elements":
             save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
                             for col, dt in zip(item.columns, item.dtypes)}}  \
                             if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
         pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
+
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
@@ -67,29 +70,10 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    for item, table in net.items():
-        if item == "bus_geodata":
-            table = pd.DataFrame(table[["x", "y"]])
-        if type(table) != pd.DataFrame or item.startswith("_"):
-            continue
-        elif item.startswith("res"):
-            if include_results and len(table) > 0:
-                table.to_excel(writer, sheet_name=item)
-        elif item == "line_geodata":
-            geo = pd.DataFrame(index=table.index)
-            for i, coord in table.iterrows():
-                for nr, (x, y) in enumerate(coord.coords):
-                    geo.loc[i, "x%u" % nr] = x
-                    geo.loc[i, "y%u" % nr] = y
-            geo.to_excel(writer, sheet_name=item)
-        elif len(table) > 0 or include_empty_tables:
-            table.to_excel(writer, sheet_name=item)
-    parameters = pd.DataFrame(index=["name", "f_hz", "version"], columns=["parameters"],
-                              data=[net.name, net.f_hz, net.version])
-    pd.DataFrame(net.std_types["line"]).T.to_excel(writer, sheet_name="line_std_types")
-    pd.DataFrame(net.std_types["trafo"]).T.to_excel(writer, sheet_name="trafo_std_types")
-    pd.DataFrame(net.std_types["trafo3w"]).T.to_excel(writer, sheet_name="trafo3w_std_types")
-    parameters.to_excel(writer, sheet_name="parameters")
+    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
+    dict_net["dtypes"] = collect_all_dtypes_df(net)
+    for item, table in dict_net.items():
+        table.to_excel(writer, sheet_name=item)
     writer.save()
 
 
@@ -114,8 +98,6 @@ def to_json_string(net):
         if k[0] == "_":
             continue
         if isinstance(net[k], pd.DataFrame):
-            if len(net[k]) == 0:  # do not bother saving empty data frames
-                continue
             json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","
@@ -134,6 +116,7 @@ def to_json_string(net):
     json_string = json_string[:-1] + "}\n"
     return json_string
 
+
 def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
@@ -150,12 +133,28 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    json_string = to_json_string(net)
+    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
+    dict_net["dtypes"] = collect_all_dtypes_df(net)
+    json_string = to_json_string(dict_net)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
     with open(filename, "w") as text_file:
         text_file.write(json_string)
+
+
+def to_sql(net, con, include_empty_tables=False, include_results=True):
+    dodfs = to_dict_of_dfs(net, include_results=include_results)
+    dodfs["dtypes"] = collect_all_dtypes_df(net)
+    for name, data in dodfs.items():
+        data.to_sql(name, con, if_exists="replace")
+
+
+def to_sqlite(net, filename):
+    import sqlite3
+    conn = sqlite3.connect(filename)
+    to_sql(net, conn)
+    conn.close()
 
 
 def from_pickle(filename, convert=True):
@@ -199,7 +198,13 @@ def from_pickle(filename, convert=True):
                 if "columns" in item:
                     net[key] = net[key].reindex_axis(item["columns"], axis=1)
             if "dtypes" in item:
-                net[key] = net[key].astype(item["dtypes"])
+                try:
+                    #only works with pandas 0.19 or newer
+                    net[key] = net[key].astype(item["dtypes"])
+                except:
+                    #works with pandas <0.19
+                    for column in net[key].columns:
+                        net[key][column] = net[key][column].astype(item["dtypes"][column])
     if convert:
         convert_format(net)
     return net
@@ -225,8 +230,19 @@ def from_excel(filename, convert=True):
     """
 
     if not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
+        raise UserWarning("File %s does not exist!" % filename)
     xls = pd.ExcelFile(filename).parse(sheetname=None)
+    try:
+        net = from_dict_of_dfs(xls)
+        restore_all_dtypes(net, xls["dtypes"])
+    except:
+        net = _from_excel_old(xls)
+    if convert:
+        convert_format(net)
+    return net
+
+
+def _from_excel_old(xls):
     par = xls["parameters"]["parameters"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
@@ -246,11 +262,7 @@ def from_excel(filename, convert=True):
                 net.line_geodata.loc[i, "coords"] = coord
         else:
             net[item] = table
-#    net.line.geodata.coords.
-    if convert:
-        convert_format(net)
     return net
-
 
 def from_json(filename, convert=True):
     """
@@ -278,8 +290,16 @@ def from_json(filename, convert=True):
     else:
         with open(filename) as data_file:
             data = json.load(data_file)
-
-    return from_json_dict(data, convert=convert)
+    try:
+        pd_dicts = dicts_to_pandas(data)
+        net = from_dict_of_dfs(pd_dicts)
+        restore_all_dtypes(net, pd_dicts["dtypes"])
+        if convert:
+            convert_format(net)
+        return net
+    except UserWarning:
+        # Can be deleted in the future, maybe now
+        return from_json_dict(data, convert=convert)
 
 
 def from_json_string(json_string, convert=True):
@@ -355,30 +375,22 @@ def from_json_dict(json_dict, convert=True):
     return net
 
 
-def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
-    """
-    Saves a pandapower Network to an html file.
+def from_sql(con):
+    cursor = con.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    dodfs = dict()
+    for t, in cursor.fetchall():
+        table = pd.read_sql_query("SELECT * FROM %s" % t, con, index_col="index")
+        table.index.name = None
+        dodfs[t] = table
+    net = from_dict_of_dfs(dodfs)
+    restore_all_dtypes(net, dodfs["dtypes"])
+    return net
 
-    INPUT:
-        **net** (dict) - The pandapower format network
 
-        **filename** (string) - The absolute or relative path to the input file.
-
-    OPTIONAL:
-        **respect_switches** (boolean, True) - True: open line switches are being considered
-                                                     (no edge between nodes)
-                                               False: open line switches are being ignored
-
-        **include_lines** (boolean, True) - determines, whether lines get converted to edges
-
-        **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
-
-        **show_tables** (boolean, True) - shows pandapower element tables
-
-    """
-    if not filename.endswith(".html"):
-        raise Exception("Please use .html to save pandapower networks!")
-    with open(filename, "w") as f:
-        html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
-        f.write(html_str)
-        f.close()
+def from_sqlite(filename, netname=""):
+    import sqlite3
+    con = sqlite3.connect(filename)
+    net = from_sql(con)
+    con.close()
+    return net

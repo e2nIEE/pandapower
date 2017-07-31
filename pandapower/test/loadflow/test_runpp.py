@@ -15,11 +15,48 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import LoadflowNotConverged
-from pandapower.toolbox import nets_equal
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element, \
     result_test_network_generator
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
+from pandapower.toolbox import nets_equal
+
+
+def test_set_user_pf_options():
+    net = example_simple()
+    pp.runpp(net)
+
+    old_options = net._options.copy()
+    test_options = {key: i for i, key in enumerate(old_options.keys())}
+
+    pp.set_user_pf_options(net, hello='bye', **test_options)
+    test_options.update({'hello': 'bye'})
+
+    assert net.user_pf_options == test_options
+
+    # remove what is in user_pf_options and add hello=world
+    pp.set_user_pf_options(net, overwrite=True, hello='world')
+    assert net.user_pf_options == {'hello': 'world'}
+
+    # check if 'hello' is added to net._options, but other options are untouched
+    pp.runpp(net)
+    assert 'hello' in net._options.keys() and net._options['hello'] == 'world'
+    net._options.pop('hello')
+    assert net._options == old_options
+
+    # check if user_pf_options can be deleted and net._options is as it was before
+    pp.set_user_pf_options(net, overwrite=True, hello='world')
+    pp.set_user_pf_options(net, overwrite=True)
+    assert net.user_pf_options == {}
+    pp.runpp(net)
+    assert 'hello' not in net._options.keys()
+
+    # see if user arguments overrule user_pf_options, but other user_pf_options still have the priority
+    pp.set_user_pf_options(net, tolerance_kva=1e-3, max_iteration=20)
+    pp.runpp(net, tolerance_kva=1e-2)
+    assert net.user_pf_options['tolerance_kva'] == 1e-3
+    assert net._options['tolerance_kva'] == 1e-2
+    assert net._options['max_iteration'] == 20
 
 
 def test_runpp_init():
@@ -148,7 +185,7 @@ def test_two_open_switches():
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
     pp.runpp(net)
-    assert np.isnan(net.res_line.i_ka.at[l2])
+    assert np.isnan(net.res_line.i_ka.at[l2]) or net.res_line.i_ka.at[l2] == 0
 
 
 def test_oos_bus():
@@ -272,6 +309,15 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     iso_buses, iso_p, iso_q = get_isolated(net)
 
 
+def test_isolated_in_service_bus_at_oos_line():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b = pp.create_bus(net, vn_kv=135)
+    l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[l, "in_service"] = False
+    assert runpp_with_consistency_checks(net, init="flat")
+
+
 def test_makeYbus():
     # tests if makeYbus fails for nets where every bus is connected to each other
     net = pp.create_empty_network()
@@ -335,6 +381,7 @@ def test_pypower_algorithms_iter():
                 raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except(LoadflowNotConverged):
                 raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+
 
 def test_recycle():
     # Note: Only calls recycle functions and tests if load and gen are updated.
@@ -519,9 +566,9 @@ def test_pvpq_lookup():
     b2 = pp.create_bus(net, vn_kv=0.4, index=2)
     b3 = pp.create_bus(net, vn_kv=0.4, index=3)
 
-    g2 = pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
-    l3 = pp.create_load(net, b2, p_kw=10)
-    e1 = pp.create_ext_grid(net, b3)
+    pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
+    pp.create_load(net, b2, p_kw=10)
+    pp.create_ext_grid(net, b3)
 
     pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.5, std_type="NAYY 4x120 SE")
     pp.create_line(net, from_bus=b1, to_bus=b3, length_km=0.5, std_type="NAYY 4x120 SE")
@@ -531,5 +578,6 @@ def test_pvpq_lookup():
 
     assert nets_equal(net, net_numba)
 
+
 if __name__ == "__main__":
-    pytest.main(["test_runpp.py", "-xs"])
+   pytest.main(["test_runpp.py"])

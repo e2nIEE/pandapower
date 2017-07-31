@@ -5,50 +5,43 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import os
-
 import pytest
 
+
 import pandapower as pp
-from pandapower.test.toolbox import assert_net_equal, create_test_network
+from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
 
 
-def test_pickle():
-    net_in = create_test_network()
-    pp.to_pickle(net_in, "testfile.p")
-    net_out = pp.from_pickle("testfile.p")
-    assert_net_equal(net_in, net_out, True)
-    os.remove('testfile.p')
-
-
-def test_excel():
-    net_in = create_test_network()
-    net_in.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-    net_in.line_geodata.loc[1, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
-    pp.to_excel(net_in, "testfile.xlsx")
-    net_out = pp.from_excel("testfile.xlsx")
+def test_pickle(net_in, tempdir):
+    filename = os.path.join(tempdir, "testfile.p")
+    pp.to_pickle(net_in, filename)
+    net_out = pp.from_pickle(filename)
     assert_net_equal(net_in, net_out)
-    os.remove('testfile.xlsx')
 
 
-def test_json():
-    net_in = create_test_network()
-    net_in.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-    net_in.line_geodata.loc[1, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
-    pp.to_json(net_in, "testfile.json")
-    net_out = pp.from_json("testfile.json")
-    assert_net_equal(net_in, net_out, reindex=True)
-    os.remove('testfile.json')
+def test_excel(net_in, tempdir):
+    filename = os.path.join(tempdir, "testfile.xlsx")
+    pp.to_excel(net_in, filename)
+    net_out = pp.from_excel(filename)
+    assert_net_equal(net_in, net_out)
 
 
-def test_html():
-    net_in = create_test_network()
-    pp.to_html(net_in, "testfile.html")
-    os.remove('testfile.html')
+def test_json(net_in, tempdir):
+    filename = os.path.join(tempdir, "testfile.json")
+    pp.to_json(net_in, filename)
+    net_out = pp.from_json(filename)
+    assert_net_equal(net_in, net_out)
 
 
-def test_convert_format():
+def test_sqlite(net_in, tempdir):
+    filename = os.path.join(tempdir, "testfile.db")
+    pp.to_sqlite(net_in, filename)
+    net_out = pp.from_sqlite(filename)
+    assert_net_equal(net_in, net_out)
+
+def test_convert_format():  # TODO what is this thing testing ?
     folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net =  pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
     pp.runpp(net)
     assert net.converged
 

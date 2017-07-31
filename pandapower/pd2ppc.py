@@ -62,14 +62,7 @@ def _pd2ppc(net):
         **ppci** - The "internal" pypower format network for PF calculations
     """
     # select elements in service (time consuming, so we do it once)
-    use_numba = ("numba" in net["_options"] and net["_options"]["numba"] and
-                 (net["_options"]["recycle"] is None or
-                  not net["_options"]["recycle"]["_is_elements"]))
-    # use_numba = False
-    if use_numba:
-        net["_is_elements"] = aux._select_is_elements_numba(net)
-    else:
-        net["_is_elements"] = aux._select_is_elements(net)
+    net["_is_elements"] = aux._select_is_elements_numba(net)
 
     # get options
     mode = net["_options"]["mode"]
@@ -105,12 +98,13 @@ def _pd2ppc(net):
     # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
 
-    # sets buses out of service, which aren't connected to branches / REF buses
     if check_connectivity:
+        # sets islands (multiple isolated nodes) out of service
         isolated_nodes, _, _ = aux._check_connectivity(ppc)
         net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
-    else:
-        aux._set_isolated_buses_out_of_service(net, ppc)
+
+    # sets buses out of service, which aren't connected to branches / REF buses
+    aux._set_isolated_buses_out_of_service(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
@@ -279,10 +273,7 @@ def _update_ppc(net):
     @return:
     """
     # select elements in service (time consuming, so we do it once)
-    if net["_options"]["numba"]:
-        net["_is_elements"] = aux._select_is_elements_numba(net)
-    else:
-        net["_is_elements"] = aux._select_is_elements(net)
+    net["_is_elements"] = aux._select_is_elements_numba(net)
 
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup

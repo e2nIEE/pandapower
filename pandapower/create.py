@@ -12,7 +12,8 @@ from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower import __version__
 
-def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
+
+def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     """
     This function initializes the pandapower datastructure.
 
@@ -114,6 +115,7 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
                   ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
                   ("parallel", "u4"),
+                  ("df", "f8"),
                   ("in_service", 'bool')],
         "trafo3w": [("name", dtype(object)),
                     ("std_type", dtype(object)),
@@ -291,9 +293,10 @@ def create_empty_network(name=None, f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
     add_basic_std_types(net)
     reset_results(net)
+    net['user_pf_options'] = dict()
     return net
 
 
@@ -324,6 +327,10 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
+
+		**max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
+
+		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
@@ -394,6 +401,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **zone** (string, None) - grid region
 
         **in_service** (boolean) - True for in_service or False for out of service
+
+		 **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
+
+		**min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
@@ -484,15 +495,15 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
 
         **in_service** (boolean) - True for in_service or False for out of service
-        
-        **max_p_kw** (float, default NaN) - Maximum active power load. Only respected for OPF
-        
-        **min_p_kw** (float, default NaN) - Minimum active power load. Only respected for OPF
-        
-        **max_q_kvar** (float, default NaN) - Maximum reactive power load. Only respected for OPF
-        
-        **min_q_kvar** (float, default NaN) - Minimum reactive power load. Only respected for OPF
-        
+
+        **max_p_kw** (float, default NaN) - Maximum active power load - necessary for controllable loads in for OPF
+
+        **min_p_kw** (float, default NaN) - Minimum active power load - necessary for controllable loads in for OPF
+
+        **max_q_kvar** (float, default NaN) - Maximum reactive power load - necessary for controllable loads in for OPF
+
+        **min_q_kvar** (float, default NaN) - Minimum reactive power load - necessary for controllable loads in OPF
+
         **controllable** (boolean, default NaN) - States, whether a load is controllable or not. Only respected for OPF
 
     OUTPUT:
@@ -625,6 +636,14 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
+
+        **max_p_kw** (float, default NaN) - Maximum active power injection - necessary for controllable sgens in OPF
+
+        **min_p_kw** (float, default NaN) - Minimum active power injection - necessary for controllable sgens in OPF
+
+        **max_q_kvar** (float, default NaN) - Maximum reactive power injection - necessary for controllable sgens in OPF
+
+        **min_q_kvar** (float, default NaN) - Minimum reactive power injection - necessary for controllable sgens in OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -771,6 +790,14 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
+		**max_p_kw** (float, default NaN) - Maximum active power injection - necessary for OPF
+
+        **min_p_kw** (float, default NaN) - Minimum active power injection - necessary for OPF
+
+        **max_q_kvar** (float, default NaN) - Maximum reactive power injection - necessary for OPF
+
+        **min_q_kvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
+
     OUTPUT:
         **index** (int) - The unique ID of the created generator
 
@@ -889,6 +916,14 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **RX_max** - maximal R/X-ratio **
 
         **RK_min** - minimal R/X-ratio **
+
+		**max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
+
+        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
+
+        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for OPF
+
+        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for OPF
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
@@ -1102,7 +1137,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **type** (str) - type of line ("oh" for overhead line or "cs" for cable system)
+        **type** (str) - type of line ("ol" for overhead line or "cs" for cable system)
 
         **df** (float) - derating factor: maximal current of line  in relation to nominal current of line (from 0 to 1)
 
@@ -1168,7 +1203,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1):
+                       index=None, max_loading_percent=nan, parallel=1, df=1.):
     """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True, \
                        index=None, max_loading_percent=nan, parallel=1)
     Creates a two-winding transformer in table net["trafo"].
@@ -1206,6 +1241,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
+    if df <= 0:
+        raise UserWarning("raiting factor df must be positive: df = %.3f" % df)
+
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": std_type
@@ -1227,6 +1265,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
+        "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
         })
     for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
@@ -1237,7 +1276,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         v["tp_pos"] = v["tp_mid"]
     else:
         v["tp_pos"] = tp_pos
-        if type(tp_pos) == float:
+        if isinstance(tp_pos, float):
             net.trafo.tp_pos = net.trafo.tp_pos.astype(float)
     # store dtypes
     dtypes = net.trafo.dtypes
@@ -1261,7 +1300,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
                                        tp_pos=nan, in_service=True, name=None, index=None,
-                                       max_loading_percent=nan, parallel=1, **kwargs):
+                                       max_loading_percent=nan, parallel=1, df=1., **kwargs):
 
     """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, \
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent, \
@@ -1334,6 +1373,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
+    if df <= 0:
+        raise UserWarning("raiting factor df must be positive: df = %.3f" % df)
+
     if index is None:
         index = get_free_id(net["trafo"])
 
@@ -1349,7 +1391,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
         "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
-        "parallel": parallel
+        "parallel": parallel, "df": df
     }
 
     if ("tp_mid" in v) and (tp_pos is nan):
@@ -1662,7 +1704,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
             raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
     elif et == "t3":
-        raise NotImplemented("Switches for three winding transformers are not implemented")
+        raise NotImplementedError("Switches for three winding transformers are not implemented")
 #        elm_tab = 'trafo3w'
 #        if element not in net[elm_tab].index:
 #            raise UserWarning("Unknown trafo3w index")
@@ -1820,6 +1862,41 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_kva, rtf_pu=None,
     return index
 
 
+def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_kva,
+                                       name=None, in_service=True, index=None):
+    """
+    Creates a series reactor as per-unit impedance
+    :param net: (pandapowerNet) - The pandapower network in which the element is created
+    :param from_bus: (int) - starting bus of the series reactor
+    :param to_bus: (int) - ending bus of the series reactor
+    :param r_ohm: (float) - real part of the impedance in Ohm
+    :param x_ohm: (float) - imaginary part of the impedance in Ohm
+    :param sn_kva: (float) - rated power of the series reactor in kVA
+    :param vn_kv: (float) - rated voltage of the series reactor in kV
+    :return: index of the created element
+    """
+    for b in [from_bus, to_bus]:
+        if b not in net["bus"].index.values:
+            raise UserWarning("Series reactor %s tries to attach to non-existing bus %s"% (name, b))
+
+    if net.bus.at[from_bus, 'vn_kv'] == net.bus.at[to_bus, 'vn_kv']:
+        vn_kv = net.bus.at[from_bus, 'vn_kv']
+    else:
+        raise UserWarning('Unable to infer rated voltage vn_kv for series reactor %s due to '
+                          'different rated voltages of from_bus %d (%.3f p.u.) and '
+                          'to_bus %d (%.3f p.u.)' % (name, from_bus, net.bus.at[from_bus, 'vn_kv'],
+                                                     to_bus, net.bus.at[to_bus, 'vn_kv']))
+
+    base_z_ohm = vn_kv ** 2 / (sn_kva * 1e-3)
+    rft_pu = r_ohm / base_z_ohm
+    xft_pu = x_ohm / base_z_ohm
+
+    index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
+                             sn_kva=sn_kva, name=name, in_service=in_service,
+                             index=index)
+    return index
+
+
 def create_ward(net, bus, ps_kw, qs_kvar, pz_kw, qz_kvar, name=None, in_service=True, index=None):
     """
     Creates a ward equivalent.
@@ -1947,6 +2024,18 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
         **name** (str, None) - A custom name for this dc line
 
         **in_service** (boolean) - True for in_service or False for out of service
+
+		**max_p_kw** - Maximum active power flow. Only respected for OPF
+
+		**min_q_from_kvar** - Minimum reactive power at from bus. Necessary for OPF
+
+		**min_q_to_kvar** - Minimum reactive power at to bus. Necessary for OPF
+
+		**max_q_from_kvar** - Maximum reactive power at from bus. Necessary for OPF
+
+		**max_q_to_kvar ** - Maximum reactive power at to bus. Necessary for OPF
+
+
 
     OUTPUT:
         **index** (int) - The unique ID of the created element

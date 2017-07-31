@@ -14,7 +14,7 @@ from pandapower.converter import from_mpc
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 def test_from_mpc():
     case24 = pn.case24_ieee_rts()
+    pp.set_user_pf_options(case24)
     this_file_path = os.path.dirname(os.path.realpath(__file__))
     mat_case_path = os.path.join(this_file_path, 'case24_ieee_rts.mat')
     case24_from_mpc = from_mpc(mat_case_path, f_hz=60, casename_mpc_file='mpc')
@@ -34,4 +35,4 @@ def test_from_mpc():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_from_mpc.py", "-s"])
+    pytest.main(["test_from_mpc.py"])

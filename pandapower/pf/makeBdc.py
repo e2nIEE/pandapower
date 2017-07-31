@@ -17,7 +17,7 @@ from scipy.sparse import csr_matrix as sparse
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)

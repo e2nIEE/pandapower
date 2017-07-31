@@ -9,12 +9,86 @@ import copy
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.patches import Circle, Rectangle, RegularPolygon
+from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
+
+def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
+                                 colors=None, z=None, cmap=None, norm=None, infofunc=None,
+                                 picker=False, net=None, **kwargs):
+    infos = []
+
+    if 'height' in kwargs and 'width' in kwargs:
+        height, width = kwargs['height'], kwargs['width']
+    else:
+        height, width = size, size
+
+    def figmaker(x, y, i):
+        if patch_type == "circle":
+            if colors:
+                fig = Circle((x, y), size, color=colors[i], **kwargs)
+            else:
+                fig = Circle((x, y), size, **kwargs)
+        elif patch_type == 'ellipse':
+            angle = kwargs['angle'] if 'angle' in kwargs else 0
+            if colors:
+                fig = Ellipse((x, y), width=width, height=height, color=colors[i], **kwargs)
+            else:
+                fig = Ellipse((x, y), width=width, height=height, angle=angle, **kwargs)
+        elif patch_type == "rect":
+            if colors:
+                fig = Rectangle([x - width, y - height], 2 * width, 2 * height, color=colors[i],
+                                **kwargs)
+            else:
+                fig = Rectangle([x - width, y - height], 2 * width, 2 * height, **kwargs)
+        elif patch_type.startswith("poly"):
+            edges = int(patch_type[4:])
+            if colors:
+                fig = RegularPolygon([x, y], numVertices=edges, radius=size, color=colors[i],
+                                     **kwargs)
+            else:
+                fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
+        else:
+            logger.error("Wrong patchtype. Please choose a correct patch type.")
+        if infofunc:
+            infos.append(infofunc(buses[i]))
+        return fig
+
+    patches = [figmaker(x, y, i)
+               for i, (x, y) in enumerate(coords)
+               if x != np.nan]
+    pc = PatchCollection(patches, match_original=True, picker=picker)
+    pc.bus_indices = np.array(buses)
+    if cmap:
+        pc.set_cmap(cmap)
+        pc.set_norm(norm)
+        if z is None and net:
+            z = net.res_bus.vm_pu.loc[buses]
+        else:
+            logger.warning("z is None and no net is provided")
+        pc.set_array(np.array(z))
+        pc.has_colormap = True
+        pc.cbar_title = "Bus Voltage [pu]"
+
+    pc.patch_type = patch_type
+    pc.size = size
+    if 'orientation' in kwargs:
+        pc.orientation = kwargs['orientation']
+    if "zorder" in kwargs:
+        pc.set_zorder(kwargs["zorder"])
+    pc.info = infos
+    return pc
 
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          z = None, cmap=None, norm=None, infofunc=None, picker=False,
-                          geodata_table='bus_geodata', **kwargs):
+                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
+                          bus_geodata=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -41,6 +115,9 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
         **cmap** - colormap for the patch colors
 
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+        If None, net["bus_geodata"] is used
+
         **picker** - picker argument passed to the patch collection
 
         **kwargs - key word arguments are passed to the patch function
@@ -49,57 +126,21 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
         return None
-    infos = []
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
 
-    def figmaker(x, y, i):
-        if patch_type=="circle":
-            if colors:
-                fig = Circle((x, y), size, color=colors[i], **kwargs)
-            else:
-                fig = Circle((x, y), size, **kwargs)
-        elif patch_type=="rect":
-            if colors:
-                fig = Rectangle([x - size, y - size], 2*size, 2*size, color=colors[i], **kwargs)
-            else:
-                fig = Rectangle([x - size, y - size], 2*size, 2*size, **kwargs)
-        elif patch_type.startswith("poly"):
-            edges = int(patch_type[4:])
-            if colors:
-                fig = RegularPolygon([x, y], numVertices=edges, radius=size, color=colors[i],
-                                     **kwargs)
-            else:
-                fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
-        if infofunc:
-            infos.append(infofunc(buses[i]))
-        return fig
-    patches = [figmaker(x, y, i)
-               for i, (x, y) in enumerate(zip(net[geodata_table].loc[buses].x.values,
-                                              net[geodata_table].loc[buses].y.values))
-               if x != np.nan]
-    pc = PatchCollection(patches, match_original=True, picker=picker)
-    pc.bus_indices = np.array(buses)
-    if cmap:
-        pc.set_cmap(cmap)
-        pc.set_norm(norm)
-        if z is None:
-            z = net.res_bus.vm_pu.loc[buses]
-        pc.set_array(np.array(z))
-        pc.has_colormap = True
-        pc.cbar_title = "Bus Voltage [pu]"
+    coords = zip(bus_geodata.loc[buses].x.values,
+                 bus_geodata.loc[buses].y.values)
 
-    pc.patch_type = patch_type
-    pc.size = size
-    if 'orientation' in kwargs:
-        pc.orientation = kwargs['orientation']
-    if "zorder" in kwargs:
-        pc.set_zorder(kwargs["zorder"])
-    pc.info = infos
+    pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
+                                      patch_type=patch_type, colors=colors, z=z, cmap=cmap,
+                                      norm=norm, infofunc=infofunc, picker=picker, net=net,
+                                      **kwargs)
     return pc
 
 
-def create_line_collection(net, lines=None, use_line_geodata=True,
-                           infofunc=None, cmap=None,
-                           norm=None, picker=False, z=None, geodata_table='line_geodata',
+def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=False, infofunc=None,
+                           cmap=None, norm=None, picker=False, z=None,
                            cbar_title="Line Loading [%]", **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
@@ -108,29 +149,40 @@ def create_line_collection(net, lines=None, use_line_geodata=True,
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
-        **lines** (list, None) - The lines for which the collections are created. If None, all lines in the network are considered.
+        **lines** (list, None) - The lines for which the collections are created. If None, all lines
+        in the network are considered.
 
-        *use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
+        **line_geodata** (DataFrame, None) - coordinates to use for plotting If None,
+        net["line_geodata"] is used
 
          **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
     """
-    lines = net[geodata_table].index.tolist() if lines is None and use_line_geodata else \
-        net.line.index.tolist() if lines is None and not use_line_geodata else list(lines)
+    lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return None
-    if use_line_geodata:
-        data = [(net[geodata_table].coords.loc[line],
-                 infofunc(line) if infofunc else [])
-                 for line in lines if line in net[geodata_table].index]
-    else:
+    if line_geodata is None:
+        line_geodata = net["line_geodata"]
+    if len(lines) == 0:
+        return None
+
+    if use_bus_geodata:
         data = [([(net.bus_geodata.x.at[a], net.bus_geodata.y.at[a]),
                   (net.bus_geodata.x.at[b], net.bus_geodata.y.at[b])],
                  infofunc(line) if infofunc else [])
                 for line, (a, b) in net.line[["from_bus", "to_bus"]].iterrows()
-                if line in lines and a in net.bus_geodata.index and b in net.bus_geodata.index]
+                if line in lines and a in net.bus_geodata.index.values
+                and b in net.bus_geodata.index.values]
+    else:
+        data = [(line_geodata.coords.loc[line],
+                 infofunc(line) if infofunc else [])
+                for line in lines if line in line_geodata.index.values]
+
+    if len(data) == 0:
+        return None
+
     data, info = list(zip(*data))
 
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
@@ -149,7 +201,7 @@ def create_line_collection(net, lines=None, use_line_geodata=True,
     return lc
 
 
-def create_trafo_collection(net, trafos=None, **kwargs):
+def create_trafo_collection(net, trafos=None, bus_geodata=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -165,16 +217,20 @@ def create_trafo_collection(net, trafos=None, **kwargs):
     """
     trafos = net.trafo if trafos is None else net.trafo.loc[trafos]
 
-    hv_geo = list(zip(net.bus_geodata.loc[trafos["hv_bus"], "x"].values,
-                 net.bus_geodata.loc[trafos["hv_bus"], "y"].values))
-    lv_geo = list(zip(net.bus_geodata.loc[trafos["lv_bus"], "x"].values,
-                 net.bus_geodata.loc[trafos["lv_bus"], "y"].values))
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    hv_geo = list(zip(bus_geodata.loc[trafos["hv_bus"], "x"].values,
+                      bus_geodata.loc[trafos["hv_bus"], "y"].values))
+    lv_geo = list(zip(bus_geodata.loc[trafos["lv_bus"], "x"].values,
+                      bus_geodata.loc[trafos["lv_bus"], "y"].values))
 
     tg = list(zip(hv_geo, lv_geo))
 
     return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
 
-def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
+
+def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
                                    infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
@@ -198,29 +254,33 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=1.,
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
         if np.all(p1 == p2):
             continue
-        d = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+        d = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+        if size is None:
+            size_this = np.sqrt(d) / 5
+        else:
+            size_this = size
+        off = size_this * 0.35
+        circ1 = (0.5 - off / d) * (p1 - p2) + p2
+        circ2 = (0.5 + off / d) * (p1 - p2) + p2
+        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
+        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
 
-        off = size*0.35
-        circ1 = (0.5 - off/d) * (p1 - p2) + p2
-        circ2 = (0.5 + off/d) * (p1 - p2) + p2
-        circles.append(Circle(circ1, size, fc=(1,0,0,0), ec=(0,0,0,1)))
-        circles.append(Circle(circ2, size, fc=(1,0,0,0), ec=(0,0,0,1)))
-
-        lp1 = (0.5 - off/d - size/d) * (p2 - p1) + p1
-        lp2 = (0.5 - off/d - size/d) * (p1 - p2) + p2
+        lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
+        lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
         lines.append([p1, lp1])
         lines.append([p2, lp2])
         if not infofunc is None:
             infos.append(infofunc(i))
             infos.append(infofunc(i))
-    if kwargs.__contains__("color"):
-        lc = LineCollection((lines), picker=picker, **kwargs)
-    else:
-        lc = LineCollection((lines), color="k", picker=picker, **kwargs)
+    if len(circles) == 0:
+        return None, None
+    color = kwargs.get("color", "k")
+    lc = LineCollection((lines), color=color, picker=picker, **kwargs)
     lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs )
+    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs)
     pc.info = infos
     return lc, pc
+
 
 def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
     lines = []
@@ -229,9 +289,9 @@ def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
     off = 1.7
     for i, load in net.load.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
-        p2 = p1 - np.array([0, size*off])
+        p2 = p1 - np.array([0, size * off])
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=np.pi))
-        lines.append((p1, p2 + np.array([0, size/2])))
+        lines.append((p1, p2 + np.array([0, size / 2])))
         if infofunc is not None:
             infos.append(infofunc(i))
     load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
@@ -239,6 +299,30 @@ def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
     load1.info = infos
     load2.info = infos
     return load1, load2
+
+
+def create_gen_symbol_collection(net, size=1., infofunc=None, **kwargs):
+    lines = []
+    polys = []
+    infos = []
+    off = 1.7
+    for i, gen in net.gen.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[gen.bus]
+        p2 = p1 - np.array([0, size * off])
+        polys.append(Circle(p2, size))
+        polys.append(
+            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=45, theta2=135))
+        polys.append(
+            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=225, theta2=315))
+        lines.append((p1, p2 + np.array([0, size])))
+        if infofunc is not None:
+            infos.append(infofunc(i))
+    gen1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
+    gen2 = LineCollection(lines, color="k", **kwargs)
+    gen1.info = infos
+    gen2.info = infos
+    return gen1, gen2
+
 
 def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
                                       **kwargs):
@@ -248,18 +332,31 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     for i, ext_grid in net.ext_grid.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
         p2 = p1 + np.array([0, size])
-        polys.append(Rectangle([p2[0] - size/2, p2[1] - size/2], size, size))
-        lines.append((p1, p2 - np.array([0, size/2])))
+        polys.append(Rectangle([p2[0] - size / 2, p2[1] - size / 2], size, size))
+        lines.append((p1, p2 - np.array([0, size / 2])))
         if infofunc is not None:
             infos.append(infofunc(i))
-    ext_grid1 = PatchCollection(polys, facecolor=(1,0,0,0), edgecolor=(0,0,0,1),
+    ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
                                 hatch="XX", picker=picker, **kwargs)
     ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
     ext_grid1.info = infos
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
 
-def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True):
+
+def add_collections_to_axes(ax, collections, plot_colorbars=True):
+    for c in collections:
+        if c:
+            # cc = copy.copy(c)
+            ax.add_collection(c)
+            if plot_colorbars and hasattr(c, "has_colormap"):
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
+
+
+def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -278,34 +375,34 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True)
                             wspace=0.02, hspace=0.04)
     ax = ax or plt.gca()
 
-    for c in collections:
-        if c:
-            cc = copy.copy(c)
-            ax.add_collection(cc)
-            if plot_colorbars and hasattr(c, "has_colormap"):
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
+    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars)
+
     try:
         ax.set_facecolor("white")
     except:
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    ax.set_aspect('equal', 'datalim')
+    if set_aspect:
+        ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
-    plt.tight_layout()
+    try:
+        # plt.tight_layout()
+        plt.show()
+    except:
+        pass
+
 
 if __name__ == "__main__":
     import pandapower as pp
+
     net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10, geodata=(5,10))
-    b2 = pp.create_bus(net, 0.4, geodata=(5,15))
-    b3 = pp.create_bus(net, 0.4, geodata=(0,22))
+    b1 = pp.create_bus(net, 10, geodata=(5, 10))
+    b2 = pp.create_bus(net, 0.4, geodata=(5, 15))
+    b3 = pp.create_bus(net, 0.4, geodata=(0, 22))
     b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
-    pp.create_load(net, b1, p_kw=100)
+    pp.create_gen(net, b1, p_kw=100)
     pp.create_load(net, b3, p_kw=100)
     pp.create_ext_grid(net, b4)
 
@@ -316,11 +413,12 @@ if __name__ == "__main__":
 
     bc = create_bus_collection(net, size=0.2, color="k")
     lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
-    lt, bt = create_trafo_symbol_collection(net, size=1.0, linewidth=3.)
+    lt, bt = create_trafo_symbol_collection(net, size=2, linewidth=3.)
     load1, load2 = create_load_symbol_collection(net, linewidth=2.,
-                                            infofunc=lambda x: ("load", x))
+                                                 infofunc=lambda x: ("load", x))
+    gen1, gen2 = create_gen_symbol_collection(net, linewidth=2.,
+                                              infofunc=lambda x: ("gen", x))
     eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
-                                            infofunc=lambda x: ("ext_grid", x))
+                                                 infofunc=lambda x: ("ext_grid", x))
 
-
-    draw_collections([bc, lc, load1, load2, lt, bt, eg1, eg2])
+    draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])

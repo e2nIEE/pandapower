@@ -26,7 +26,7 @@ except ImportError:
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         makeYbus = makeYbus_pypower
         pfsoln = pfsoln_pypower
 
-    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
@@ -142,7 +142,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0 = _get_pf_variables_from_ppci(ppci)
 
     qlim = options["enforce_q_lims"]
     limited = []  ## list of indices of gens @ Q lims

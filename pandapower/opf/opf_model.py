@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
 
 """Implements the OPF model object used to encapsulate a given OPF
 problem formulation.
@@ -14,7 +8,8 @@ problem formulation.
 
 from sys import stderr
 
-from numpy import array, zeros, ones, Inf, dot, arange, r_, flatnonzero as find
+from numpy import array, zeros, ones, Inf, dot, arange, r_
+from numpy import flatnonzero as find
 from scipy.sparse import lil_matrix, csr_matrix as sparse
 
 
@@ -26,7 +21,6 @@ class opf_model(object):
     are added to the problem.
 
     @author: Ray Zimmerman (PSERC Cornell)
-    @author: Richard Lincoln
     """
 
     def __init__(self, ppc):
@@ -108,7 +102,7 @@ class opf_model(object):
         self.user_data = {}
 
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         """String representation of the object.
         """
         s = ''
@@ -260,7 +254,7 @@ class opf_model(object):
             self.lin["order"].append(name)
 
 
-    def add_costs(self, name, cp, varsets): # pragma: no cover
+    def add_costs(self, name, cp, varsets):
         """Adds a set of user costs to the model.
 
         Adds a named block of user-defined costs to the model. Each set is
@@ -453,7 +447,7 @@ class opf_model(object):
         mm = ones(nw)                        ## default => no scaling
 
         ## fill in each piece
-        for k in range(self.cost["NS"]): # pragma: no cover
+        for k in range(self.cost["NS"]):
             name = self.cost["order"][k]
             Nk = self.cost["data"]["N"][name]          ## N for kth cost set
             i1 = self.cost["idx"]["i1"][name]          ## starting row index
@@ -493,7 +487,7 @@ class opf_model(object):
             'N': N, 'Cw': Cw, 'H': H, 'dd': dd, 'rh': rh, 'kk': kk, 'mm': mm }
 
 
-    def compute_cost(self, x, name=None): # pragma: no cover
+    def compute_cost(self, x, name=None):
         """ Computes a user-defined cost.
 
         Computes the value of a user defined cost, either for all user
@@ -568,7 +562,7 @@ class opf_model(object):
         return f
 
 
-    def get_cost_params(self, name=None): # pragma: no cover
+    def get_cost_params(self, name=None):
         """Returns the cost parameter struct for user-defined costs.
 
         Requires calling L{build_cost_params} first to build the full set of
@@ -597,9 +591,7 @@ class opf_model(object):
                 nwb = self.cost["idx"]["iN"][name]
                 cp["N"]  = cp["N"][idx, :]
                 cp["Cw"] = cp["Cw"][idx]
-                cp["H"]  = cp["H"][nwa:nwb, nwa:nwb] # workaround
-#               cp["H"]  = cp["H"][idx, idx]
-#+                cp["H"]  = cp["H"][idx] # former indexing [idx,idx] >> why???
+                cp["H"]  = cp["H"][nwa:nwb, nwa:nwb]
                 cp["dd"] = cp["dd"][idx]
                 cp["rh"] = cp["rh"][idx]
                 cp["kk"] = cp["kk"][idx]
@@ -698,7 +690,7 @@ class opf_model(object):
                 v0 = r_[ v0, self.var["data"]["v0"][name] ]
                 vl = r_[ vl, self.var["data"]["vl"][name] ]
                 vu = r_[ vu, self.var["data"]["vu"][name] ]
-        else: # pragma: no cover
+        else:
             if name in self.var["idx"]["N"]:
                 v0 = self.var["data"]["v0"][name]
                 vl = self.var["data"]["vl"][name]

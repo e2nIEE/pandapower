@@ -6,9 +6,10 @@
 
 import pandapower as pp
 import pandapower.networks as nw
+import pytest
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,4 @@ def test_opf_oberrhein():
     assert net["OPF_converged"]
 
 if __name__ == "__main__":
-    net = nw.mv_oberrhein()
-
-#    pytest.main(["test_oberrhein.py", "-xs"])
+    pytest.main(["test_oberrhein.py", "-xs"])

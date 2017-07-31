@@ -12,20 +12,85 @@ from pandapower.powerflow import _powerflow
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
 
 
+def set_user_pf_options(net, overwrite=False, **kwargs):
+    """
+    This function sets the 'user_pf_options' dict for net. These options overrule
+    net.__internal_options once they are added to net. These options are used in configuration of
+    load flow calculation.
+    At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
+    To remove user_pf_options, set overwrite=True and provide no additional arguments
+
+    :param net: pandaPower network
+    :param overwrite: specifies whether the user_pf_options is removed before setting new options
+    :param kwargs: load flow options, e. g. tolerance_kva = 1e-3
+    :return: None
+    """
+    standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
+                           'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
+                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
+                           'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration']
+
+    if overwrite or 'user_pf_options' not in net.keys():
+        net['user_pf_options'] = dict()
+
+    net.user_pf_options.update({key: val for key, val in kwargs.items()
+                                if key in standard_parameters})
+
+    additional_kwargs = {key: val for key, val in kwargs.items()
+                         if key not in standard_parameters}
+
+    # this part is to inform user and to make typos in parameters visible
+    if len(additional_kwargs) > 0:
+        logger.info('parameters %s are not in the list of standard options' % list(
+            additional_kwargs.keys()))
+
+        net.user_pf_options.update(additional_kwargs)
+
+
+def _passed_runpp_parameters(local_parameters):
+    """
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
+    the user.
+    :param local_parameters: locals() in the runpp() function
+    :return: dictionary of explicitly passed parameters
+    """
+    default_parameters = {
+        'algorithm': 'nr',
+        'calculate_voltage_angles': 'auto',
+        'check_connectivity': True,
+        'delta_q': 0,
+        'enforce_q_lims': False,
+        'init': 'auto',
+        'kwargs': {},
+        'max_iteration': 'auto',
+        'numba': True,
+        'r_switch': 0.0,
+        'recycle': None,
+        'tolerance_kva': 1e-05,
+        'trafo_loading': 'current',
+        'trafo_model': 't',
+        'voltage_depend_loads': True
+    }
+
+    passed_parameters = {
+            key: val for key, val in local_parameters.items()
+            if key in default_parameters.keys() and val != default_parameters.get(key, None)}
+
+    return passed_parameters
+
+
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True, delta_q=1e-10,
-          **kwargs):
+          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
+          delta_q=0, **kwargs):
     """
     Runs PANDAPOWER AC Flow
-
-    Note: May raise pandapower.api.run["load"]flowNotConverged
 
     INPUT:
         **net** - The pandapower format network
@@ -124,9 +189,18 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
+
+    # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
+    # except for parameters that are passed by user
+    overrule_options = {}
+    if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
+        passed_parameters = _passed_runpp_parameters(locals())
+        overrule_options = {key: val for key, val in net.user_pf_options.items()
+                            if key not in passed_parameters.keys()}
+
         ## check if numba is available and the corresponding flag
     if numba:
-        numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
+        numba = _check_if_numba_is_installed(numba)
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values) or
@@ -156,6 +230,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         max_iteration = default_max_iteration[algorithm]
 
     # init options
+    #net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -164,6 +239,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+    #net.__internal_options.update(overrule_options)
+    net._options.update(overrule_options)
     _powerflow(net, **kwargs)
 
 
@@ -210,7 +287,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     mode = "pf"
     init = 'flat'
 
-    numba, check_connectivity = _check_if_numba_is_installed(numba, check_connectivity)
+    numba = _check_if_numba_is_installed(numba)
 
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
@@ -220,6 +297,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     max_iteration = None
     tolerance_kva = None
 
+    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -238,17 +316,23 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
-    Flexibilities for generators can be defined in net.sgen / net.gen.
-    net.sgen.controllable / net.gen.controllable signals if a generator is controllable. If False,
-    the active and reactive power are assigned as in a normal power flow. If yes, the following
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
         - net.sgen.min_p_kw / net.sgen.max_p_kw
         - net.sgen.min_q_kvar / net.sgen.max_q_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
+        - net.load.min_q_kvar / net.load.max_q_kvar
         - net.gen.min_p_kw / net.gen.max_p_kw
         - net.gen.min_q_kvar / net.gen.max_q_kvar
         - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
         - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
         - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
 
     Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.bus.min_vm_pu / net.bus.max_vm_pu
@@ -271,6 +355,35 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
+
+    # Check if all necessary parameters are given:
+
+    if (not net.gen.empty) and (("min_p_kw" not in net.gen.columns) or ("max_p_kw" not in net.gen.columns) or (
+        "max_q_kvar" not in net.gen.columns) or ("min_q_kvar" not in net.gen.columns)):
+        raise UserWarning('Warning: Please specify operational constraints for controllable gens')
+
+    if (not net.dcline.empty) and (("min_q_to_kvar" not in net.dcline.columns) or ("max_q_to_kvar" not in net.dcline.columns) or (
+        "min_q_from_kvar" not in net.dcline.columns) or ("max_q_from_kvar" not in net.dcline.columns)):
+        raise UserWarning('Warning: Please specify operational constraints for dclines')
+
+
+    if "controllable" in net.sgen.columns:
+        if net.sgen.controllable.any():
+            if ("min_p_kw" not in net.sgen.columns) or ("max_p_kw" not in net.sgen.columns) or (
+                "max_q_kvar" not in net.sgen.columns) or ("min_q_kvar" not in net.sgen.columns):
+                raise UserWarning('Warning: Please specify operational constraints for controllable sgens')
+        else:
+            logger.debug('No controllable sgens found')
+
+
+    if "controllable" in net.load.columns:
+        if net.load.controllable.any():
+            if ("min_p_kw" not in net.load.columns) or ("max_p_kw" not in net.load.columns) or (
+                "max_q_kvar" not in net.load.columns) or ("min_q_kvar" not in net.load.columns):
+                raise UserWarning('Warning: Please specify operational constraints for controllable loads')
+        else:
+            logger.debug('No controllable loads found')
+
     mode = "opf"
     ac = True
     copy_constraints_to_ppc = True
@@ -279,8 +392,6 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     init = "flat"
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
-
-    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -324,6 +435,13 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
+
+    if (not net.sgen.empty) & (not "controllable" in net.sgen.columns):
+        logger.warning('Warning: Please specify sgen["controllable"]\n')
+
+    if (not net.load.empty) & (not "controllable" in net.load.columns):
+        logger.warning('Warning: Please specify load["controllable"]\n')
+
     mode = "opf"
     ac = False
     init = "flat"
@@ -334,8 +452,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
 
-    _, check_connectivity = _check_if_numba_is_installed(True, check_connectivity)
-
+    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,

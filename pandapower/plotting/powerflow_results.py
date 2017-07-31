@@ -6,7 +6,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+from itertools import combinations
 import pandapower.topology as top
 
 
@@ -23,8 +23,8 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         for lix, line in net.line[net.line.in_service == True].iterrows():
             if line.from_bus not in d.index:
                 continue
-            if not ((net.switch.element == line.name) & (net.switch.closed == False)
-                    & (net.switch.et == 'l')).any():
+            if not ((net.switch.element == line.name) & ~net.switch.closed & (
+                        net.switch.et == 'l')).any():
                 from_bus = line.from_bus
                 to_bus = line.to_bus
                 x = [x0 + d.at[from_bus], x0 + d.at[to_bus]]
@@ -42,19 +42,40 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                         if bus in bus_colors:
                             ax.plot(x, y, 'or', color=bus_colors[bus], ms=3)
                 kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
+        # if plot_transformers:
+        #     if hasattr(plot_transformers, "__iter__"):  # if is a list for example
+        #         transformers = net.trafo.loc[list(plot_transformers)]
+        #     else:
+        #         transformers = net.trafo[net.trafo.in_service == True]
+        #     for _, transformer in transformers.iterrows():
+        #         if transformer.hv_bus not in d.index:
+        #             continue
+        #         ax.plot([x0 + d.loc[transformer.hv_bus],
+        #                  x0 + d.loc[transformer.lv_bus]],
+        #                 [net.res_bus.vm_pu.loc[transformer.hv_bus],
+        #                  net.res_bus.vm_pu.loc[transformer.lv_bus]], color=trafocolor,
+        #                 **{k: v for k, v in kwargs.items() if not k == "color"})
+
+        # trafo geodata
         if plot_transformers:
-            if hasattr(plot_transformers, "__iter__"):  # if is a list for example
-                transformers = net.trafo.loc[list(plot_transformers)]
-            else:
-                transformers = net.trafo[net.trafo.in_service == True]
-            for _, transformer in transformers.iterrows():
-                if transformer.hv_bus not in d.index:
+            for trafo_table in ['trafo', 'trafo3w']:
+                if trafo_table not in net.keys():
                     continue
-                ax.plot([x0 + d.loc[transformer.hv_bus],
-                         x0 + d.loc[transformer.lv_bus]],
-                        [net.res_bus.vm_pu.loc[transformer.hv_bus],
-                         net.res_bus.vm_pu.loc[transformer.lv_bus]], color=trafocolor,
-                        **{k: v for k, v in kwargs.items() if not k == "color"})
+                transformers = net[trafo_table].query('in_service')
+                for tid, tr in transformers.iterrows():
+                    t_buses = [tr[b_col] for b_col in ('lv_bus', 'mv_bus', 'hv_bus') if
+                               b_col in tr.index]
+                    if any([b not in d.index.values or b not in net.res_bus.index.values for b in
+                            t_buses]):
+                        # logger.info('cannot add trafo %d to plot' % tid)
+                        continue
+
+                    for bi, bj in combinations(t_buses, 2):
+                        tr_coords = ([x0 + d.loc[bi], x0 + d.loc[bj]],
+                                     [net.res_bus.at[bi, 'vm_pu'], net.res_bus.at[bj, 'vm_pu']])
+                        ax.plot(*tr_coords, color=trafocolor,
+                                **{k: v for k, v in kwargs.items() if not k == "color"})
+
         if xlabel:
             ax.set_xlabel(xlabel, fontweight="bold", color=(.4, .4, .4))
         if ylabel:
@@ -66,8 +87,8 @@ def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolo
     if ax is None:
         plt.figure(facecolor="white", dpi=80)
         ax = plt.gca()
-    loadings = net["res_%s"%element].loading_percent.values
-    boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis = "range")
+    loadings = net["res_%s" % element].loading_percent.values
+    boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis="range")
     for l in list(boxplot.keys()):
         plt.setp(boxplot[l], lw=3)
         if l == "medians":
@@ -77,9 +98,11 @@ def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolo
         else:
             plt.setp(boxplot[l], color=whiskercolor)
 
+
 if __name__ == "__main__":
     import pandapower as pp
     import pandapower.networks as nw
+
     net = nw.create_cigre_network_mv()
     pp.runpp(net)
     plot_voltage_profile(net, line_loading_weight=True)

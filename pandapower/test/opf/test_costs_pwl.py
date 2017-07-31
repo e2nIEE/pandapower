@@ -13,7 +13,7 @@ import pandapower as pp
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
