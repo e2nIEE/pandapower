@@ -1,0 +1,22 @@
+;Advantage;Disadvantage;"| Example: saving 
+| case9241pegase"
+pickle;| Allows storing of objects;"| - large filesize
+| - Stored objects might become 
+| incompatible when loading
+| with different versions";"| - Savetime:  1.2s
+| - Loadtime: 0.65s
+| - Filesize: 18.4 MB"
+Excel;| Human readable;"| - Long time to save and load
+| - Needs libraries that are not part of 
+| standard python distribution 
+";"| - Savetime: 23.9s
+| - Loadtime: 10.9s
+| - Filesize: 4.9 MB"
+SQL;;;"| - Savetime: 1.32s
+| - Loadtime: 0.6s
+| - Filesize: 5.1 MB"
+json;"| can be interpreted in
+| other languages";"| potential insecurity with additional 
+| translation in json notation";"| -Savetime: 0.19s
+| -Loadtime: 0.79s
+| - Filesize: 5.3 MB"

@@ -13,7 +13,11 @@
 """
 
 from numpy import asarray, pi, ones, finfo, c_, real, flatnonzero as find, angle, conj, zeros, complex128
-from numba import jit
+try:
+    from numba import jit
+except ImportError:
+    from pandapower.pf.no_numba import jit
+
 from scipy.sparse import csr_matrix
 
 from pandapower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT

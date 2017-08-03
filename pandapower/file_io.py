@@ -14,10 +14,10 @@ import pandas as pd
 import numpy
 
 from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-from pandapower.html_net import _net_to_html
-from pandapower.io_utils import *
-
+from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
+                                from_dict_of_dfs, restore_all_dtypes
 
 def to_pickle(net, filename):
     """
@@ -70,29 +70,10 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    for item, table in net.items():
-        if item == "bus_geodata":
-            table = pd.DataFrame(table[["x", "y"]])
-        if type(table) != pd.DataFrame or item.startswith("_"):
-            continue
-        elif item.startswith("res"):
-            if include_results and len(table) > 0:
-                table.to_excel(writer, sheet_name=item)
-        elif item == "line_geodata":
-            geo = pd.DataFrame(index=table.index)
-            for i, coord in table.iterrows():
-                for nr, (x, y) in enumerate(coord.coords):
-                    geo.loc[i, "x%u" % nr] = x
-                    geo.loc[i, "y%u" % nr] = y
-            geo.to_excel(writer, sheet_name=item)
-        elif len(table) > 0 or include_empty_tables:
-            table.to_excel(writer, sheet_name=item)
-    parameters = pd.DataFrame(index=["name", "f_hz", "version"], columns=["parameters"],
-                              data=[net.name, net.f_hz, net.version])
-    pd.DataFrame(net.std_types["line"]).T.to_excel(writer, sheet_name="line_std_types")
-    pd.DataFrame(net.std_types["trafo"]).T.to_excel(writer, sheet_name="trafo_std_types")
-    pd.DataFrame(net.std_types["trafo3w"]).T.to_excel(writer, sheet_name="trafo3w_std_types")
-    parameters.to_excel(writer, sheet_name="parameters")
+    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
+    dict_net["dtypes"] = collect_all_dtypes_df(net)
+    for item, table in dict_net.items():
+        table.to_excel(writer, sheet_name=item)
     writer.save()
 
 
@@ -117,8 +98,6 @@ def to_json_string(net):
         if k[0] == "_":
             continue
         if isinstance(net[k], pd.DataFrame):
-            if len(net[k]) == 0:  # do not bother saving empty data frames
-                continue
             json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","
@@ -251,8 +230,19 @@ def from_excel(filename, convert=True):
     """
 
     if not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
+        raise UserWarning("File %s does not exist!" % filename)
     xls = pd.ExcelFile(filename).parse(sheetname=None)
+    try:
+        net = from_dict_of_dfs(xls)
+        restore_all_dtypes(net, xls["dtypes"])
+    except:
+        net = _from_excel_old(xls)
+    if convert:
+        convert_format(net)
+    return net
+
+
+def _from_excel_old(xls):
     par = xls["parameters"]["parameters"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
     net = create_empty_network(name=name, f_hz=par.at["f_hz"])
@@ -272,11 +262,7 @@ def from_excel(filename, convert=True):
                 net.line_geodata.loc[i, "coords"] = coord
         else:
             net[item] = table
-#    net.line.geodata.coords.
-    if convert:
-        convert_format(net)
     return net
-
 
 def from_json(filename, convert=True):
     """
@@ -387,35 +373,6 @@ def from_json_dict(json_dict, convert=True):
     if convert:
         convert_format(net)
     return net
-
-
-def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
-    """
-    Saves a pandapower Network to an html file.
-
-    INPUT:
-        **net** (dict) - The pandapower format network
-
-        **filename** (string) - The absolute or relative path to the input file.
-
-    OPTIONAL:
-        **respect_switches** (boolean, True) - True: open line switches are being considered
-                                                     (no edge between nodes)
-                                               False: open line switches are being ignored
-
-        **include_lines** (boolean, True) - determines, whether lines get converted to edges
-
-        **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
-
-        **show_tables** (boolean, True) - shows pandapower element tables
-
-    """
-    if not filename.endswith(".html"):
-        raise Exception("Please use .html to save pandapower networks!")
-    with open(filename, "w") as f:
-        html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
-        f.write(html_str)
-        f.close()
 
 
 def from_sql(con):

@@ -33,10 +33,4 @@ def feeder_network():
 
 
 if __name__ == '__main__':
-    net = feeder_network()
-    sc.calc_sc(net, case="min")
-    print(net.res_line_sc.values)
-#    print()
-
     pytest.main(["test_ring.py"])
-#

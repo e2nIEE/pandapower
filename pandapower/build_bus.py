@@ -16,7 +16,7 @@ from pandapower.auxiliary import _sum_by_group
 try:
     from numba import jit
 except ImportError:
-    pass
+    from .pf.no_numba import jit
 
 
 @jit(nopython=True, cache=True)

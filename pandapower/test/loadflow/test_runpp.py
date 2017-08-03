@@ -185,7 +185,7 @@ def test_two_open_switches():
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
     pp.runpp(net)
-    assert np.isnan(net.res_line.i_ka.at[l2])
+    assert np.isnan(net.res_line.i_ka.at[l2]) or net.res_line.i_ka.at[l2] == 0
 
 
 def test_oos_bus():
@@ -612,10 +612,4 @@ def test_pvpq_lookup():
 
 
 if __name__ == "__main__":
-    net = pp.create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
-    b = pp.create_bus(net, vn_kv=135)
-    l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
-    net.line.loc[l, "in_service"] = False
-    pp.runpp(net)
-#    pytest.main(["test_runpp.py", "-xs"])
+   pytest.main(["test_runpp.py"])

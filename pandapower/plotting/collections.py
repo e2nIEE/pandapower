@@ -114,7 +114,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         **colors** (list, None) - list of colors for every element
 
         **cmap** - colormap for the patch colors
-        
+
         **bus_geodata** (DataFrame, None) - coordinates to use for plotting
         If None, net["bus_geodata"] is used
 
@@ -179,6 +179,9 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
         data = [(line_geodata.coords.loc[line],
                  infofunc(line) if infofunc else [])
                 for line in lines if line in line_geodata.index.values]
+
+    if len(data) == 0:
+        return None
 
     data, info = list(zip(*data))
 
