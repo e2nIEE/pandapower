@@ -559,6 +559,38 @@ def test_zip_loads_pf_algorithms():
         assert np.allclose(va_nr, va_alg)
 
 
+def test_zip_loads_results():
+    net = pp.create_empty_network()
+    b0 = pp.create_bus(net, 110)
+    b1 = pp.create_bus(net, 1)
+    b2 = pp.create_bus(net, 1)
+    b3 = pp.create_bus(net, 1)
+
+    pp.create_ext_grid(net, b0)
+
+    tr1 = pp.create_transformer_from_parameters(net, b0, b1, 100, 110, 1, 1.5, 6, 1, 0.3, 0)
+    tr2 = pp.create_transformer_from_parameters(net, b0, b1, 100, 110, 1, 1.5, 6, 1, 0.3, 150,
+                                                in_service=False)
+
+    ln1 = pp.create_line_from_parameters(net, b1, b2, 1, 0.3, 0.3, 0.3, 10)
+    ln2 = pp.create_line_from_parameters(net, b2, b3, 1, 0.3, 0.3, 0.3, 10)
+    ln3 = pp.create_line_from_parameters(net, b3, b1, 1, 0.3, 0.3, 0.3, 10)
+
+    l1 = pp.create_load(net, b2, 2, 0, 0, 100)
+    l2 = pp.create_load(net, b3, 2, 0, 0, 100)
+
+    pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
+
+    pp.runpp(net)
+
+    res_load_1 = copy.deepcopy(net.res_load)
+    net.trafo.loc[[tr1, tr2], 'in_service'] = [False, True]
+
+    pp.runpp(net)
+
+    assert all(net.res_load.p_kw.values == res_load_1.p_kw.values)
+
+
 def test_pvpq_lookup():
     net = pp.create_empty_network()
 
