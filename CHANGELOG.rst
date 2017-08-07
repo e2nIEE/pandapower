@@ -1,5 +1,15 @@
 Change Log
 =============
+
+[1.4.0] - 2017-07-27
+----------------------
+
+- [ADDED] possibility to save networks to an sql database
+- [CAHNGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
+- [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
+- [FIXED] state estimation bug with phase shift transformers
+- [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception
+- [ADDED] geographical data for cigre and IEEE case networks
 - [ADDED] Dickert LV Networks
 
 [1.3.1] - 2017-06-16
