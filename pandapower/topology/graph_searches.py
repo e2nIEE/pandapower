@@ -83,9 +83,10 @@ def connected_components(mg, notravbuses=set()):
         yield cc
         nodes -= cc
     # the above does not work if two notravbuses are directly connected
-    for f, t in mg.edges():
-        if f in notravbuses and t in notravbuses:
-            yield set([f, t])
+    if len(notravbuses) > 0:
+        for f, t in mg.edges():
+            if f in notravbuses and t in notravbuses:
+                yield set([f, t])
 
 
 def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,

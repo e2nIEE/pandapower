@@ -80,8 +80,8 @@ def _passed_runpp_parameters(local_parameters):
     }
 
     passed_parameters = {
-            key: val for key, val in local_parameters.items()
-            if key in default_parameters.keys() and val != default_parameters.get(key, None)}
+        key: val for key, val in local_parameters.items()
+        if key in default_parameters.keys() and val != default_parameters.get(key, None)}
 
     return passed_parameters
 
@@ -205,7 +205,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values) or
-                np.any(net["load"]["const_i_percent"].values)):
+                    np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
     if algorithm not in ['nr', 'bfsw'] and voltage_depend_loads == True:
@@ -231,7 +231,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         max_iteration = default_max_iteration[algorithm]
 
     # init options
-    #net.__internal_options = {}
+    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
@@ -240,7 +240,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
-    #net.__internal_options.update(overrule_options)
+    # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _powerflow(net, **kwargs)
 
@@ -312,7 +312,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
-           suppress_warnings=True, r_switch=0.0, delta = 1e-10, **kwargs):
+           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -355,6 +355,13 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             processed in pypower, ComplexWarnings are raised during the loadflow.
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
+
+        **init** (str, "flat") - init of starting opf vector. Options are "flat" or "pf"
+
+            Starting solution vector (x0) for opf calculations is determined by this flag. Options are:
+            "flat" (default): starting vector is (upper bound - lower bound) / 2
+            "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
+            convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
     """
 
     _check_if_all_opf_parameters_are_given(net, logger)
@@ -364,7 +371,6 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     copy_constraints_to_ppc = True
     trafo_model = "t"
     trafo_loading = 'current'
-    init = "flat"
     enforce_q_lims = True
     recycle = dict(_is_elements=False, ppc=False, Ybus=False)
 
@@ -378,7 +384,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0, delta = 1e-10,
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0, delta=1e-10,
              **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
