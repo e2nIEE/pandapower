@@ -9,6 +9,19 @@ import numbers
 import os
 import sys
 import pickle
+
+import copy
+
+try:
+    from fiona.crs import from_epsg
+    from geopandas import GeoDataFrame, GeoSeries
+    from shapely.geometry import Point, LineString
+    GEOPANDAS_INSTALLED = True
+except:
+    GEOPANDAS_INSTALLED = False
+
+from pandas import lib
+
 import pandas as pd
 
 import numpy
@@ -17,6 +30,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.toolbox import convert_format
 from pandapower.html_net import _net_to_html
 from pandapower.io_utils import *
+from pandas.core.common import _maybe_box_datetimelike
 
 
 def to_pickle(net, filename):
@@ -42,9 +56,18 @@ def to_pickle(net, filename):
     save_net = dict()
     for key, item in net.items():
         if key != "_is_elements":
+            if hasattr(item, "columns") and "geometry" in item.columns:
+                # we convert shapely-objects to primitive data-types on a deepcopy
+                item = copy.deepcopy(item)
+                if key == "bus_geodata" and not isinstance(item.geometry.values[0], tuple):
+                    item["geometry"] = item.geometry.apply(lambda x: (x.x, x.y))
+                elif key == "line_geodata" and not isinstance(item.geometry.values[0], list):
+                    item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
+
             save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
                             for col, dt in zip(item.columns, item.dtypes)}}  \
                             if isinstance(item, pd.DataFrame) else item
+
     with open(filename, "wb") as f:
         pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
@@ -72,7 +95,13 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     for item, table in net.items():
         if item == "bus_geodata":
-            table = pd.DataFrame(table[["x", "y"]])
+            if "geometry" in table.columns:
+                df_dict = {"x": table.x, "y": table.y,
+                           "geometry_x": [x.x for x in net.bus_geodata.geometry],
+                           "geometry_y": [x.y for x in net.bus_geodata.geometry]}
+                table = pd.DataFrame.from_dict(df_dict)
+            else:
+                table = pd.DataFrame(table[["x", "y"]])
         if type(table) != pd.DataFrame or item.startswith("_"):
             continue
         elif item.startswith("res"):
@@ -205,25 +234,49 @@ def from_pickle(filename, convert=True):
         with open(filename, "rb") as f:
             net = read(f)
     net = pandapowerNet(net)
+
+    try:
+        epsg = net.gis_epsg_code
+    except AttributeError:
+        epsg = None
+
     for key, item in net.items():
         if isinstance(item, dict) and "DF" in item:
             df_dict = item["DF"]
-            if "columns" in item["DF"]:
-                net[key] = pd.DataFrame(columns=df_dict["columns"],
-                                                  index=df_dict["index"],
-                                                  data=df_dict["data"])
+            if "columns" in df_dict:
+                if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
+                        and epsg is not None:
+                    # convert primitive data-types to shapely-objects
+                    if key == "bus_geodata":
+                        data = {"x": [row[0] for row in df_dict["data"]],
+                                "y": [row[1] for row in df_dict["data"]]}
+                        geo = [Point(row[2][0], row[2][1]) for row in df_dict["data"]]
+                    elif key == "line_geodata":
+                        data = {"coords": [row[0] for row in df_dict["data"]]}
+                        geo = [LineString(row[1]) for row in df_dict["data"]]
+
+                    net[key] = GeoDataFrame(data, crs=from_epsg(epsg), geometry=geo,
+                                            index=df_dict["index"])
+                else:
+                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_dict["index"],
+                                            data=df_dict["data"])
             else:
-                net[key] = pd.DataFrame.from_dict(item["DF"])
+                # TODO: is this legacy code?
+                net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
                     net[key] = net[key].reindex_axis(item["columns"], axis=1)
+
             if "dtypes" in item:
-                try:
-                    #only works with pandas 0.19 or newer
-                    net[key] = net[key].astype(item["dtypes"])
-                except:
-                    #works with pandas <0.19
-                    for column in net[key].columns:
-                        net[key][column] = net[key][column].astype(item["dtypes"][column])
+                if "geometry" in df_dict["columns"]:
+                    pass
+                else:
+                    try:
+                        #only works with pandas 0.19 or newer
+                        net[key] = net[key].astype(item["dtypes"])
+                    except:
+                        #works with pandas <0.19
+                        for column in net[key].columns:
+                            net[key][column] = net[key][column].astype(item["dtypes"][column])
     if convert:
         convert_format(net)
     return net
