@@ -41,8 +41,9 @@ def test_convert_format():
                                    max_loading_percent=100 * 690)
     # run OPF
     convert_format(net)
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -74,8 +75,9 @@ def test_simplest_voltage():
                                    max_loading_percent=100)
     pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -117,8 +119,9 @@ def test_eg_voltage():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100)
     # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -150,8 +153,9 @@ def test_simplest_dispatch():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
     # run OPF
-    pp.runopp(net, cost_function="linear", verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, cost_function="linear", verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -196,8 +200,9 @@ def test_opf_gen_voltage():
                                    max_loading_percent=100000)
 
     # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_opf_gen_voltage")
@@ -241,8 +246,9 @@ def test_opf_sgen_voltage():
                                    max_loading_percent=1000000)
 
     # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # assert and check result
     logger.debug("test_opf_sgen_voltage")
@@ -339,8 +345,9 @@ def test_opf_sgen_loading():
                                    max_loading_percent=max_line_loading)
 
     # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # assert and check result
     logger.debug("test_opf_sgen_loading")
@@ -374,8 +381,9 @@ def test_unconstrained_line():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)
     pp.create_polynomial_cost(net, 0, "gen", array([-1, 0]))
     # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -401,7 +409,9 @@ def test_trafo3w_loading():
     net.trafo3w.shift_mv_degree.at[tidx] = 80
 
     # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
-    pp.runopp(net, calculate_voltage_angles=False)
+    for init in ["pf", "flat"]:
+        pp.runopp(net, calculate_voltage_angles=False, verbose=False, init=init)
+        assert net["OPF_converged"]
     assert abs(net.res_trafo3w.loading_percent.values - 120) < 1e-3
 
 
@@ -419,8 +429,9 @@ def test_dcopf():
                                    max_loading_percent=100)
     pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     # run OPF
-    pp.rundcopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -447,8 +458,9 @@ def test_dcopf_pwl():
     # pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     pp.create_piecewise_linear_cost(net, 0, "gen", array([[-200, 20000], [-100, 10000], [0, 0]]))
     # run OPF
-    pp.rundcopp(net, verbose=False)
-    assert net["OPF_converged"]
+    for init in ["pf", "flat"]:
+        pp.runopp(net, verbose=False, init=init)
+        assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")

@@ -157,14 +157,17 @@ def _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=None):
     ## evaluate Jacobian
     J11 = dS_dVa[array([pvpq]).T, pvpq].real
     J12 = dS_dVm[array([pvpq]).T, pq].real
-    J21 = dS_dVa[array([pq]).T, pvpq].imag
-    J22 = dS_dVm[array([pq]).T, pq].imag
-
-    J = vstack([
-        hstack([J11, J12]),
-        hstack([J21, J22])
-    ], format="csr")
-
+    if len(pq) > 0:
+        J21 = dS_dVa[array([pq]).T, pvpq].imag
+        J22 = dS_dVm[array([pq]).T, pq].imag
+        J = vstack([
+            hstack([J11, J12]),
+            hstack([J21, J22])
+        ], format="csr")
+    else:
+        J = vstack([
+                hstack([J11, J12])
+                ], format="csr")
     return J
 
 
