@@ -356,7 +356,8 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True):
                     cbar_load.ax.set_ylabel(c.cbar_title)
 
 
-def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True):
+def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
+                     axes_visible=(False, False)):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -381,8 +382,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_facecolor("white")
     except:
         ax.set_axis_bgcolor("white")
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
+    ax.xaxis.set_visible(axes_visible[0])
+    ax.yaxis.set_visible(axes_visible[1])
     if set_aspect:
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
