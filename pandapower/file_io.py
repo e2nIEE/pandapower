@@ -41,10 +41,9 @@ def to_pickle(net, filename):
         raise Exception("Please use .p to save pandapower networks!")
     save_net = dict()
     for key, item in net.items():
-        if key != "_is_elements":
-            save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
-                            for col, dt in zip(item.columns, item.dtypes)}}  \
-                            if isinstance(item, pd.DataFrame) else item
+        save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
+                        for col, dt in zip(item.columns, item.dtypes)}}  \
+                        if isinstance(item, pd.DataFrame) else item
     with open(filename, "wb") as f:
         pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
 
