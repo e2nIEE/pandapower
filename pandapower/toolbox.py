@@ -542,50 +542,68 @@ def convert_format(net):
                                                                  ("c", np.dtype(object))]))
 
     if "cost_per_kw" in net.gen:
-        for index, cost in net.gen.cost_per_kw.iteritems():
-            if not np.isnan(cost):
-                p = net.gen.min_p_kw.at[index]
-                create_piecewise_linear_cost(net, index, "gen", np.array([[p, cost * p], [0, 0]]))
+        if not "piecewise_linear_cost" in net:
+            for index, cost in net.gen.cost_per_kw.iteritems():
+                if not np.isnan(cost):
+                    p = net.gen.min_p_kw.at[index]
+                    create_piecewise_linear_cost(net, index, "gen", np.array([[p, cost * p], [0, 0]]))
 
     if "cost_per_kw" in net.sgen:
-        for index, cost in net.sgen.cost_per_kw.iteritems():
-            if not np.isnan(cost):
-                p = net.sgen.min_p_kw.at[index]
-                create_piecewise_linear_cost(net, index, "sgen", np.array([[p, cost * p], [0, 0]]))
+        if "min_p_kw" not in net.sgen:
+            net.sgen["min_p_kw"] = net.sgen.p_kw
+        if "max_p_kw" not in net.sgen:
+            net.sgen["max_p_kw"] = 0
+        
+        if not "piecewise_linear_cost" in net:
+            for index, cost in net.sgen.cost_per_kw.iteritems():
+                if not np.isnan(cost):
+                    p = net.sgen.min_p_kw.at[index]
+                    create_piecewise_linear_cost(net, index, "sgen", np.array([[p, cost * p], [0, 0]]))
 
     if "cost_per_kw" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kw.iteritems():
-            if not np.isnan(cost):
-                p = net.ext_grid.min_p_kw.at[index]
-                create_piecewise_linear_cost(net, index, "ext_grid",
-                                             np.array([[p, cost * p], [0, 0]]))
+        if "min_p_kw" not in net.ext_grid:
+            net.ext_grid["min_p_kw"] = -1e9
+        if "max_p_kw" not in net.ext_grid:
+            net.ext_grid["max_p_kw"] = 0
+        if not "piecewise_linear_cost" in net:
+            for index, cost in net.ext_grid.cost_per_kw.iteritems():
+                if not np.isnan(cost):
+                    p = net.ext_grid.min_p_kw.at[index]
+                    create_piecewise_linear_cost(net, index, "ext_grid",
+                                                 np.array([[p, cost * p], [0, 0]]))
 
     if "cost_per_kvar" in net.gen:
-        for index, cost in net.gen.cost_per_kvar.iteritems():
-            if not np.isnan(cost):
-                qmin = net.gen.min_q_kvar.at[index]
-                qmax = net.gen.max_q_kvar.at[index]
-                create_piecewise_linear_cost(net, index, "gen",
-                                             np.array([[qmin, cost * qmin], [0, 0],
-                                                       [qmax, cost * qmax]]), type="q")
+        
+        if not "piecewise_linear_cost" in net:
+            for index, cost in net.gen.cost_per_kvar.iteritems():
+                if not np.isnan(cost):
+                    qmin = net.gen.min_q_kvar.at[index]
+                    qmax = net.gen.max_q_kvar.at[index]
+                    create_piecewise_linear_cost(net, index, "gen",
+                                                 np.array([[qmin, cost * qmin], [0, 0],
+                                                           [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.sgen:
-        for index, cost in net.sgen.cost_per_kvar.iteritems():
-            if not np.isnan(cost):
-                qmin = net.sgen.min_q_kvar.at[index]
-                qmax = net.sgen.max_q_kvar.at[index]
-                create_piecewise_linear_cost(net, index, "sgen",
-                                             np.array([[qmin, cost * qmin], [0, 0],
-                                                       [qmax, cost * qmax]]), type="q")
+        
+        if not "piecewise_linear_cost" in net:
+            for index, cost in net.sgen.cost_per_kvar.iteritems():
+                if not np.isnan(cost):
+                    qmin = net.sgen.min_q_kvar.at[index]
+                    qmax = net.sgen.max_q_kvar.at[index]
+                    create_piecewise_linear_cost(net, index, "sgen",
+                                                 np.array([[qmin, cost * qmin], [0, 0],
+                                                           [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kvar.iteritems():
-            if not np.isnan(cost):
-                qmin = net.ext_grid.min_q_kvar.at[index]
-                qmax = net.ext_grid.max_q_kvar.at[index]
-                create_piecewise_linear_cost(net, index, "ext_grid",
-                                             np.array([[qmin, cost * qmin], [0, 0],
-                                                       [qmax, cost * qmax]]), type="q")
+        
+        if not "piecewise_linear_cost" in net:
+            for index, cost in net.ext_grid.cost_per_kvar.iteritems():
+                if not np.isnan(cost):
+                    qmin = net.ext_grid.min_q_kvar.at[index]
+                    qmax = net.ext_grid.max_q_kvar.at[index]
+                    create_piecewise_linear_cost(net, index, "ext_grid",
+                                                 np.array([[qmin, cost * qmin], [0, 0],
+                                                           [qmax, cost * qmax]]), type="q")
 
     if "tp_st_degree" not in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
