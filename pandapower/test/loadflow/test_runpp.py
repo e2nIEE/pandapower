@@ -562,7 +562,7 @@ def test_zip_loads_pf_algorithms():
 def test_zip_loads_results():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=1.)
-    b2 = pp.create_bus(net, vn_kv=1.1)
+    b2 = pp.create_bus(net, vn_kv=1.)
     pp.create_ext_grid(net, b1)
     pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
                                          x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
