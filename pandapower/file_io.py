@@ -4,23 +4,21 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import copy
 import json
 import numbers
 import os
-import sys
 import pickle
-
-import copy
+import sys
 
 try:
     from fiona.crs import from_epsg
     from geopandas import GeoDataFrame, GeoSeries
     from shapely.geometry import Point, LineString
+
     GEOPANDAS_INSTALLED = True
 except:
     GEOPANDAS_INSTALLED = False
-
-from pandas import lib
 
 import pandas as pd
 
@@ -30,7 +28,8 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
 from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
-                                from_dict_of_dfs, restore_all_dtypes
+    from_dict_of_dfs, restore_all_dtypes
+
 
 def to_pickle(net, filename):
     """
@@ -54,21 +53,20 @@ def to_pickle(net, filename):
         raise Exception("Please use .p to save pandapower networks!")
     save_net = dict()
     for key, item in net.items():
-        if key != "_is_elements":
-            if hasattr(item, "columns") and "geometry" in item.columns:
-                # we convert shapely-objects to primitive data-types on a deepcopy
-                item = copy.deepcopy(item)
-                if key == "bus_geodata" and not isinstance(item.geometry.values[0], tuple):
-                    item["geometry"] = item.geometry.apply(lambda x: (x.x, x.y))
-                elif key == "line_geodata" and not isinstance(item.geometry.values[0], list):
-                    item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
+        if hasattr(item, "columns") and "geometry" in item.columns:
+            # we convert shapely-objects to primitive data-types on a deepcopy
+            item = copy.deepcopy(item)
+            if key == "bus_geodata" and not isinstance(item.geometry.values[0], tuple):
+                item["geometry"] = item.geometry.apply(lambda x: (x.x, x.y))
+            elif key == "line_geodata" and not isinstance(item.geometry.values[0], list):
+                item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
 
-            save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
-                            for col, dt in zip(item.columns, item.dtypes)}}  \
-                            if isinstance(item, pd.DataFrame) else item
+        save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
+                                                                 for col, dt in zip(item.columns, item.dtypes)}} \
+            if isinstance(item, pd.DataFrame) else item
 
     with open(filename, "wb") as f:
-        pickle.dump(save_net, f, protocol=2) #use protocol 2 for py2 / py3 compatibility
+        pickle.dump(save_net, f, protocol=2)  # use protocol 2 for py2 / py3 compatibility
 
 
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
@@ -195,11 +193,13 @@ def from_pickle(filename, convert=True):
         >>> net2 = pp.from_pickle("example2.p") #relative path
 
     """
+
     def read(f):
-        if sys.version_info >= (3,0):
+        if sys.version_info >= (3, 0):
             return pickle.load(f, encoding='latin1')
         else:
             return pickle.load(f)
+
     if hasattr(filename, 'read'):
         net = read(filename)
     elif not os.path.isfile(filename):
@@ -245,10 +245,10 @@ def from_pickle(filename, convert=True):
                     pass
                 else:
                     try:
-                        #only works with pandas 0.19 or newer
+                        # only works with pandas 0.19 or newer
                         net[key] = net[key].astype(item["dtypes"])
                     except:
-                        #works with pandas <0.19
+                        # works with pandas <0.19
                         for column in net[key].columns:
                             net[key][column] = net[key][column].astype(item["dtypes"][column])
     if convert:
@@ -309,6 +309,7 @@ def _from_excel_old(xls):
         else:
             net[item] = table
     return net
+
 
 def from_json(filename, convert=True):
     """
