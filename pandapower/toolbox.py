@@ -14,7 +14,7 @@ from pandapower.create import create_empty_network, create_piecewise_linear_cost
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
 from pandapower import __version__
-from pandapower.opf.validate_opf_input import _check_necessary_opf_columns
+from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 
 try:
     import pplog as logging
@@ -101,7 +101,7 @@ def check_opf_data(net):
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which is checked for runopp
     """
-    _check_necessary_opf_columns(net, logger)
+    _check_necessary_opf_parameters(net, logger)
 
     # --- Determine duplicated cost data
     all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
