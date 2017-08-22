@@ -6,9 +6,10 @@
 
 import numpy as np
 
-from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, _check_if_numba_is_installed
+from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, \
+    _check_if_numba_is_installed
 from pandapower.optimal_powerflow import _optimal_powerflow
-from pandapower.opf.validate_opf_input import _check_if_all_opf_parameters_are_given
+from pandapower.opf.validate_opf_input import _check_necessary_opf_columns
 from pandapower.powerflow import _powerflow
 
 try:
@@ -364,7 +365,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
     """
 
-    _check_if_all_opf_parameters_are_given(net, logger)
+    _check_necessary_opf_columns(net, logger)
 
     mode = "opf"
     ac = True
