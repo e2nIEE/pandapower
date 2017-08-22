@@ -9,15 +9,17 @@ import copy
 import numpy as np
 import pandas as pd
 import pytest
+import os
 
 import pandapower as pp
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
-from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, example_simple
+from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
+    example_simple
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_oos_bus_with_is_element, \
-    result_test_network_generator
+from pandapower.test.loadflow.result_test_network_generator import \
+    add_test_oos_bus_with_is_element, result_test_network_generator
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 from pandapower.toolbox import nets_equal
 
@@ -51,7 +53,8 @@ def test_set_user_pf_options():
     pp.runpp(net)
     assert 'hello' not in net._options.keys()
 
-    # see if user arguments overrule user_pf_options, but other user_pf_options still have the priority
+    # see if user arguments overrule user_pf_options, but other user_pf_options still have the
+    # priority
     pp.set_user_pf_options(net, tolerance_kva=1e-3, max_iteration=20)
     pp.runpp(net, tolerance_kva=1e-2)
     assert net.user_pf_options['tolerance_kva'] == 1e-3
@@ -128,7 +131,7 @@ def test_bus_bus_switches(bus_bus_net):
     net = bus_bus_net
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
-           net.res_bus.vm_pu.at[6]
+        net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.in_service.at[5] = False
@@ -281,8 +284,8 @@ def test_connectivity_check_island_with_one_pv_bus():
 
 
 def test_connectivity_check_island_with_multiple_pv_buses():
-    # Network with islands an multiple PV buses in the island ->
-    # Error should be thrown since it would be random to choose just some PV bus as the reference bus
+    # Network with islands an multiple PV buses in the island -> Error should be thrown since it
+    # would be random to choose just some PV bus as the reference bus
     net = create_cigre_network_mv(with_der=False)
     iso_buses, iso_p, iso_q = get_isolated(net)
     assert len(iso_buses) == 0
@@ -352,7 +355,8 @@ def test_test_sn_kva():
         try:
             assert_net_equal(net1, net2)
         except:
-            raise UserWarning("Result difference due to sn_kva after adding %s" % net1.last_added_case)
+            raise UserWarning("Result difference due to sn_kva after adding %s" %
+                              net1.last_added_case)
 
 
 def test_bsfw_algorithm():
@@ -380,13 +384,14 @@ def test_pypower_algorithms_iter():
             except (AssertionError):
                 raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except(LoadflowNotConverged):
-                raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+                raise UserWarning("Power flow did not converge after adding %s" %
+                                  net.last_added_case)
 
 
 def test_recycle():
     # Note: Only calls recycle functions and tests if load and gen are updated.
-    # Todo: To fully test the functionality, it must be checked if the recycle methods are being called
-    # or alternatively if the "non-recycle" functions are not being called.
+    # Todo: To fully test the functionality, it must be checked if the recycle methods are being
+    # called or alternatively if the "non-recycle" functions are not being called.
     net = pp.create_empty_network()
     b1, b2, ln = add_grid_connection(net)
     pl = 1200
@@ -423,13 +428,10 @@ def test_recycle():
     assert np.allclose(net.res_gen.vm_pu.iloc[0], u_set)
 
 
-import os
-
-
 def test_zip_loads_gridcal():
-    ## Tests newton power flow considering zip loads against GridCal's pf result
+    # Tests newton power flow considering zip loads against GridCal's pf result
 
-    ## Results used for benchmarking are obtained using GridCal with the following code:
+    # Results used for benchmarking are obtained using GridCal with the following code:
     # from GridCal.grid.CalculationEngine import *
     #
     # np.set_printoptions(precision=4)
@@ -565,7 +567,7 @@ def test_zip_loads_results():
     b2 = pp.create_bus(net, vn_kv=1.)
     pp.create_ext_grid(net, b1)
     pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
-                                         x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
+                                   x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
     pp.create_load(net, b2, p_kw=2., const_z_percent=0, const_i_percent=100)
 
     pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
@@ -578,6 +580,7 @@ def test_zip_loads_results():
     pp.runpp(net)
 
     assert np.allclose(net.res_load.values, res_load.values)
+
 
 def test_pvpq_lookup():
     net = pp.create_empty_network()
@@ -600,4 +603,4 @@ def test_pvpq_lookup():
 
 
 if __name__ == "__main__":
-   pytest.main(["test_runpp.py"])
+    pytest.main(["test_runpp.py"])
