@@ -61,7 +61,7 @@ def _check_plc_full_range(net, element_type):
     plc_el_q = plc.loc[(plc.element_type == element_type) & (plc.type == 'q')]
     p_idx = []
     q_idx = []
-    if not element_type == 'dcline':
+    if element_type != 'dcline':
         if plc_el_p.shape[0]:
             p_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_p.element_type)) &
@@ -72,7 +72,7 @@ def _check_plc_full_range(net, element_type):
                 (net[element_type].index.isin(plc_el_q.element_type)) &
                 ((net[element_type].min_p_kw < plc_el_q.p[plc_el_q.index.values[0]].min()) |
                  (net[element_type].max_p_kw > plc_el_q.p[plc_el_q.index.values[0]].max()))].index
-    else:
+    else:  # element_type == 'dcline'
         if plc_el_p.shape[0]:
             p_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_p.element_type)) &
@@ -108,6 +108,7 @@ def check_opf_data(net):
         'load': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
         'dcline': pd.Series(['max_p_kw', 'min_q_from_kvar', 'min_q_to_kvar', 'max_q_from_kvar',
                              'max_q_to_kvar'])}
+    error = False
     for element_type in opf_col.keys():
         if len(net[element_type]):
             missing_col = opf_col[element_type].loc[~opf_col[element_type].isin(
@@ -127,9 +128,12 @@ def check_opf_data(net):
                         net[element_type].controllable.fillna(False, inplace=True)
                         if not net[element_type].controllable.any():
                             controllable = False
-            if len(missing_col) & controllable:
-                raise AttributeError("These columns are missing in net." + element_type + ": " +
-                                     str(['%s' % col for col in missing_col]))
+            if bool(len(missing_col)) & controllable:
+                logger.error("These columns are missing in net." + element_type + ": " +
+                             str(['%s' % col for col in missing_col]))
+                error = True
+    if error:
+        raise KeyError("OPF parameters are not set correctly. See error log.")
 
     # --- Determine duplicated cost data
     all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
@@ -553,7 +557,7 @@ def convert_format(net):
             net.sgen["min_p_kw"] = net.sgen.p_kw
         if "max_p_kw" not in net.sgen:
             net.sgen["max_p_kw"] = 0
-        
+
         if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
@@ -573,7 +577,7 @@ def convert_format(net):
                                                  np.array([[p, cost * p], [0, 0]]))
 
     if "cost_per_kvar" in net.gen:
-        
+
         if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
@@ -584,7 +588,7 @@ def convert_format(net):
                                                            [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.sgen:
-        
+
         if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
@@ -595,7 +599,7 @@ def convert_format(net):
                                                            [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.ext_grid:
-        
+
         if not "piecewise_linear_cost" in net:
             for index, cost in net.ext_grid.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
