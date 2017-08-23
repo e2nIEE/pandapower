@@ -87,11 +87,13 @@ def _check_plc_full_range(net, element_type):
                  (net[element_type].max_q_from_kvar > plc_el_q.p[plc_el_q.index.values[0]].max()))
                 ].index
     if len(p_idx):
-        logger.warn("At" + element_type + str(['%d' % idx for idx in p_idx.values]) +
-                    "the piecewise linear costs do not cover full active power range.")
+        logger.warn("At" + element_type + str(p_idx.values) +
+                    "the piecewise linear costs do not cover full active power range. " +
+                    "In OPF the costs will be extrapolated.")
     if len(q_idx):
-        logger.warn("At" + element_type + str(['%d' % idx for idx in q_idx.values]) +
-                    "the piecewise linear costs do not cover full reactive power range.")
+        logger.warn("At" + element_type + str(q_idx.values) +
+                    "the piecewise linear costs do not cover full reactive power range." +
+                    "In OPF the costs will be extrapolated.")
 
 
 def check_opf_data(net):

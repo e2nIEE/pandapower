@@ -27,10 +27,10 @@ def _check_necessary_opf_parameters(net, logger):
                         net[element_type]['controllable'] = False
                         logger.info("'controllable' has been added to %s as False." % element_type)
                         controllable = False
-                else:  # 'ext_grid', 'dcline'
+                else:
                     if element_type == 'gen':
                         net[element_type].controllable.fillna(True, inplace=True)
-                    else:
+                    else:  # 'sgen', 'load'
                         net[element_type].controllable.fillna(False, inplace=True)
                         if not net[element_type].controllable.any():
                             controllable = False
@@ -41,14 +41,14 @@ def _check_necessary_opf_parameters(net, logger):
                         logger.error("These columns are missing in " + element_type + ": " +
                                      str(missing_col))
                         error = True
-                    else:
+                    else:  # "ext_grid" -> no error due to missing columns at ext_grid
                         logger.info("These missing columns in ext_grid are considered in OPF as " +
                                     "+- 1000 TW.: " + str(missing_col))
                 # determine missing values
                 for lim_col in set(opf_col[element_type]) - set(missing_col):
                     if element_type in ['gen', 'sgen', 'load']:
                         controllables = net[element_type].loc[net[element_type].controllable].index
-                    else:
+                    else:  # 'ext_grid', 'dcline'
                         controllables = net[element_type].index
                     if net[element_type][lim_col].loc[controllables].isnull().any():
                         missing_val.append(element_type)
@@ -57,6 +57,7 @@ def _check_necessary_opf_parameters(net, logger):
         logger.info("These elements have missing power constraint values, which are considered " +
                     "in OPF as +- 1000 TW: " + str(missing_val))
 
+    # voltage limits: no error due to missing voltage limits
     if 'min_vm_pu' in net.bus.columns:
         if net.bus.min_vm_pu.isnull().any():
             logger.info("There are missing bus.min_vm_pu values, which are considered in OPF as " +
