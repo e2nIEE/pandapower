@@ -10,7 +10,7 @@ import networkx as nx
 
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                   nogobuses=None, notravbuses=None, multi=True):
+                   include_impedances=True, nogobuses=None, notravbuses=None, multi=True):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
@@ -67,6 +67,10 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                              list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                                  net.line.index, net.line.in_service, net.line.max_i_ka))
                              if inservice == 1 and not idx in nogolines)
+
+    # TODO: change to 'include_impedances' flag
+    # if include_impedances:
+    if include_lines:
         mg.add_edges_from((int(fb), int(tb), {"weight": 0, "key": int(idx), "type": "i",
                                               "path": 1})
                                               for fb, tb, idx, inservice in
@@ -75,8 +79,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                              if inservice == 1)
 
     if include_trafos:
-        nogotrafos = set(net.switch.element[(net.switch.et == "t") &
-                                             (net.switch.closed == 0)])
+        nogotrafos = set(net.switch.element[(net.switch.et == "t") & (net.switch.closed == 0)])
         mg.add_edges_from((int(hvb), int(lvb), {"weight": 0, "key": int(idx), "type": "t"})
                              for hvb, lvb, idx, inservice in
                              list(zip(net.trafo.hv_bus, net.trafo.lv_bus,
