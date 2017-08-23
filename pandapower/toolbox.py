@@ -935,6 +935,7 @@ def drop_inactive_elements(net):
     set_isolated_areas_out_of_service(net)
     drop_out_of_service_elements(net)
 
+
 def drop_out_of_service_elements(net):
     # removes inactive lines and its switches and geodata
     inactive_lines = net.line[~net.line.in_service].index
@@ -948,7 +949,7 @@ def drop_out_of_service_elements(net):
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
-    drop_buses(net, inactive_buses)
+    drop_elements_at_buses(net, inactive_buses)
 
     for element in net.keys():
         if element not in ["bus", "trafo", "line", "_equiv_trafo3w"] \
@@ -983,18 +984,14 @@ def drop_elements_at_buses(net, buses):
     # drop elements connected to buses
     for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                            ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
-                           ("sgen", "bus"), ("load", "bus"),
-                           ("switch", "bus"), ("ext_grid", "bus"),
-                           ("ward", "bus"), ("xward", "bus"),
-                           ("shunt", "bus")]:
+                           ("sgen", "bus"), ("load", "bus"), ("switch", "bus"), ("ext_grid", "bus"),
+                           ("gen", "bus"), ("ward", "bus"), ("xward", "bus"), ("shunt", "bus")]:
         if net[element][value].isin(buses).all:
             eid = net[element][net[element][value].isin(buses)].index
             net[element].drop(eid, inplace=True)
-    # drop busbus switch
-    net["switch"].drop(net["switch"][(net["switch"]["element"].isin(buses)) &
-                                     (net["switch"]["et"] == "b")].index, inplace=True)
+
     # drop buses
-    net["bus"].drop(buses, inplace=True)
+    drop_buses(net, buses)
 
 
 def drop_trafos(net, trafos):

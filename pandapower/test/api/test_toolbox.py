@@ -157,6 +157,19 @@ def test_drop_inactive_elements():
 
     assert sum_of_elements == 0
 
+    net = pp.create_empty_network()
+
+    bus0 = pp.create_bus(net, vn_kv=.4, in_service=True)
+    pp.create_ext_grid(net, bus0, in_service=True)
+    bus1 = pp.create_bus(net, vn_kv=.4, in_service=False)
+    pp.create_line(net, bus0, bus1, length_km=1, in_service=False,
+                   std_type='149-AL1/24-ST1A 10.0')
+    gen0 = pp.create_gen(net, bus=bus1, p_kw=1)
+
+    tb.drop_inactive_elements(net)
+
+    assert gen0 not in net.gen.index
+
 
 def test_get_connected_lines_at_bus():
     net = pp.create_empty_network()
