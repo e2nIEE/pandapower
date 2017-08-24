@@ -867,11 +867,7 @@ def create_continuous_bus_index(net, start=0):
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
 
-    for element, value in [("line", "from_bus"), ("line", "to_bus"), ("trafo", "hv_bus"),
-                           ("trafo", "lv_bus"), ("sgen", "bus"), ("gen", "bus"), ("load", "bus"),
-                           ("switch", "bus"), ("ward", "bus"), ("xward", "bus"),
-                           ("impedance", "from_bus"), ("impedance", "to_bus"),
-                           ("shunt", "bus"), ("ext_grid", "bus")]:
+    for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et == "b"]
@@ -977,15 +973,20 @@ def drop_buses(net, buses):
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
 
 
+def element_bus_tuples():
+    ebt = [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"), ("switch", "bus"),
+           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"), ("sgen", "bus"),
+           ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"), ("ward", "bus"),
+           ("xward", "bus"), ("shunt", "bus")]
+    return ebt
+
+
 def drop_elements_at_buses(net, buses):
     """
     drop elements connected to certain buses and drop the buses as well
     """
     # drop elements connected to buses
-    for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
-                           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
-                           ("sgen", "bus"), ("load", "bus"), ("switch", "bus"), ("ext_grid", "bus"),
-                           ("gen", "bus"), ("ward", "bus"), ("xward", "bus"), ("shunt", "bus")]:
+    for element, value in element_bus_tuples():
         if net[element][value].isin(buses).all:
             eid = net[element][net[element][value].isin(buses)].index
             net[element].drop(eid, inplace=True)
@@ -1032,12 +1033,7 @@ def fuse_buses(net, b1, b2, drop=True):
     except:
         b2 = [b2]
 
-    for element, value in [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
-                           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"),
-                           ("sgen", "bus"), ("load", "bus"),
-                           ("switch", "bus"), ("ext_grid", "bus"),
-                           ("ward", "bus"), ("xward", "bus"),
-                           ("shunt", "bus")]:
+    for element, value in element_bus_tuples():
         i = net[element][net[element][value].isin(b2)].index
         net[element].loc[i, value] = b1
 
