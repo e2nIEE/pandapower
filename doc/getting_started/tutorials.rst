@@ -6,6 +6,9 @@ Tutorials
 
 There are jupyter notebook tutorials on different functionalities of pandapower:
 
+Minimal Example introduction:
+    - `minimal example <https://github.com/panda-power/pandapower/blob/master/tutorials/minimal_example.ipynb>`_
+
 Creating networks:
     - `simple network <https://github.com/panda-power/pandapower/blob/master/tutorials/create_simple.ipynb>`_ 
     - `advanced network <https://github.com/panda-power/pandapower/blob/master/tutorials/create_advanced.ipynb>`_ 
@@ -42,6 +45,9 @@ Plotting pandapower networks:
         - `built-in plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_
         - `custom plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_traces.ipynb>`_
         - `interactive plots on maps <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_maps.ipynb>`_
+    
+Hosting Capacity:
+    - `hosting capacity <https://github.com/panda-power/pandapower/blob/master/tutorials/hosting_capacity.ipynb>`_
     
 To run the tutorials interactively (jupyter module is needed):
 
