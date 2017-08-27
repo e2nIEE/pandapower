@@ -54,7 +54,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
                     net.line.name.at[r.name])
 
 
-def _check_plc_full_range(net, element_type):
+def _check_plc_full_range(net, element_type):  # pragma: no cover
     """ This is an auxiliary function for check_opf_data to check full range of piecewise linear
     cost function """
     plc = net.piecewise_linear_cost
@@ -96,7 +96,7 @@ def _check_plc_full_range(net, element_type):
                     "In OPF the costs will be extrapolated.")
 
 
-def check_opf_data(net):
+def check_opf_data(net):  # pragma: no cover
     """
     This function checks net data ability for opf calculations via runopp.
 
@@ -124,7 +124,7 @@ def check_opf_data(net):
                 _check_plc_full_range(net, element_type)
 
 
-def _opf_controllables(elm_df, to_log, control_elm, control_elm_name, all_costs):
+def _opf_controllables(elm_df, to_log, control_elm, control_elm_name, all_costs):  # pragma: no cover
     """ This is an auxiliary function for opf_task to add controllables data to to_log """
     if len(elm_df):
         to_log += '\n' + "  " + control_elm_name

@@ -102,7 +102,7 @@ class opf_model(object):
         self.user_data = {}
 
 
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         """String representation of the object.
         """
         s = ''
