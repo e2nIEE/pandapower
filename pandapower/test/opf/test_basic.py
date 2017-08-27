@@ -18,6 +18,19 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+@pytest.fixture
+def simple_opf_test_net():
+    net = pp.create_empty_network()
+    pp.create_bus(net, vn_kv=10.)
+    pp.create_bus(net, vn_kv=.4)
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+                  min_q_kvar=-50)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100)
+    return net
 
 def test_convert_format():
     """ Testing a very simple network without transformer for voltage
@@ -415,18 +428,22 @@ def test_trafo3w_loading():
     assert abs(net.res_trafo3w.loading_percent.values - 120) < 1e-3
 
 
-def test_dcopf():
-    # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, vn_kv=10.)
-    pp.create_bus(net, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
-                  min_q_kvar=-50)
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100)
+def test_dcopf_poly(simple_opf_test_net):
+    net = simple_opf_test_net
+    pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
+    # run OPF
+    pp.rundcopp(net, verbose=False)
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
+
+
+def test_opf_poly(simple_opf_test_net):
+    net = simple_opf_test_net
     pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     # run OPF
     for init in ["pf", "flat"]:
@@ -441,26 +458,33 @@ def test_dcopf():
     assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
 
 
-
-
-def test_dcopf_pwl():
+def test_opf_pwl(simple_opf_test_net):
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, vn_kv=10.)
-    pp.create_bus(net, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
-                  min_q_kvar=-50)
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100)
+    net = simple_opf_test_net
     # pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     pp.create_piecewise_linear_cost(net, 0, "gen", array([[-200, 20000], [-100, 10000], [0, 0]]))
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, verbose=False, init=init)
         assert net["OPF_converged"]
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
+
+
+
+def test_dcopf_pwl(simple_opf_test_net):
+    # create net
+    net = simple_opf_test_net
+    # pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", array([[-200, 20000], [-100, 10000], [0, 0]]))
+    # run OPF
+    pp.rundcopp(net, verbose=True)
+    assert net["OPF_converged"]
 
     # check and assert result
     logger.debug("test_simplest_voltage")
