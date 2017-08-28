@@ -6,9 +6,10 @@
 
 import numpy as np
 
-from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, _check_if_numba_is_installed
+from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, \
+    _check_if_numba_is_installed
 from pandapower.optimal_powerflow import _optimal_powerflow
-from pandapower.opf.validate_opf_input import _check_if_all_opf_parameters_are_given
+from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow
 
 try:
@@ -312,7 +313,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
-           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", **kwargs):
+           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True, **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -364,8 +365,9 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
     """
 
-    _check_if_all_opf_parameters_are_given(net, logger)
-
+    _check_necessary_opf_parameters(net, logger)
+    if numba:
+        numba = _check_if_numba_is_installed(numba)
     mode = "opf"
     ac = True
     copy_constraints_to_ppc = True
@@ -380,7 +382,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, numba=numba)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 

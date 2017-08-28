@@ -1,6 +1,6 @@
-===============
+==============================
 Dickert LV Networks
-===============
+==============================
 
 .. autofunction:: pandapower.networks.create_dickert_lv_network
 

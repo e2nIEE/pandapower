@@ -311,22 +311,38 @@ def _check_connectivity(ppc):
         pus = qus = 0
     return isolated_nodes, pus, qus
 
+try:
+    @jit(nopython=True, cache=True)
+    def set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
+        """iterates over elements; returns array where element is of service if element is oos in
+        element table or bus is oos"""
+        for i in range(len(ti)):
+            if tis[i] and bis[ti[i]]:
+                lis[i] = True
 
-@jit(nopython=True, cache=True)
-def set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
-    """iterates over elements; returns array where element is of service if element is oos in
-    element table or bus is oos"""
-    for i in range(len(ti)):
-        if tis[i] and bis[ti[i]]:
-            lis[i] = True
+    @jit(nopython=True, cache=True)
+    def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
+        """determines out of service pp buses by also checking if fused to isolated ppc buses"""
+        for k in range(len(bus_lookup)):
+            if ppc_bus_isolated[bus_lookup[k]]:
+                bus_in_service[k] = False
 
+except RuntimeError:
+    logger.warning("Encountered a problem with numba. It is either not installed or does not have "
+                   "write permissions. Using pure Python versions of set_elements_oos and "
+                   "set_isolated_buses_oos")
 
-@jit(nopython=True, cache=True)
-def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-    """determines out of service pp buses by also checking if fused to isolated ppc buses"""
-    for k in range(len(bus_lookup)):
-        if ppc_bus_isolated[bus_lookup[k]]:
-            bus_in_service[k] = False
+    # todo: rewrite with numpy so it's not extremely slow
+
+    def set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
+        for i in range(len(ti)):
+            if tis[i] and bis[ti[i]]:
+                lis[i] = True
+
+    def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
+        for k in range(len(bus_lookup)):
+            if ppc_bus_isolated[bus_lookup[k]]:
+                bus_in_service[k] = False
 
 
 def _select_is_elements_numba(net, isolated_nodes=None):
@@ -451,6 +467,10 @@ def _add_options(net, options):
 
 def _clean_up(net):
     # mode = net.__internal_options["mode"]
+    
+    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
+    net._is_elements = None
+
     mode = net._options["mode"]
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:

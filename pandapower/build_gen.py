@@ -220,7 +220,7 @@ def _build_gen_opf(net, ppc):
     l_end = sg_end + len(l_is)
 
     q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
-    p_lim_default = 1e9
+    p_lim_default = 1e9  # changes must be considered in check_opf_data
     delta = net["_options"]["delta"]
 
     # initialize generator matrix

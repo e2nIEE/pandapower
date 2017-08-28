@@ -213,12 +213,13 @@ def _build_bus_ppc(net, ppc):
     # init ppc with empty values
 
     ppc["bus"] = np.zeros(shape=(n_bus, bus_cols), dtype=float)
-    ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0., 0.])
+    ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0., 0.])  # changes of
+    # voltage limits (2 and 0) must be considered in check_opf_data
     if mode == "sc":
         from pandapower.shortcircuit.idx_bus import bus_cols_sc
         bus_sc = np.empty(shape=(n_bus, bus_cols_sc), dtype=float)
         bus_sc.fill(np.nan)
-        ppc["bus"] = np.hstack((ppc["bus"], bus_sc ))
+        ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = np.arange(n_bus)
@@ -227,7 +228,7 @@ def _build_bus_ppc(net, ppc):
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
-        BUS_TYPE] = NONE
+               BUS_TYPE] = NONE
 
     if init == "results" and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
@@ -237,16 +238,15 @@ def _build_bus_ppc(net, ppc):
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
 
-
     if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMAX] = 1.1
+            ppc["bus"][:n_bus, VMAX] = 2  # changes of VMAX must be considered in check_opf_data
         if "min_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMIN] = net["bus"].min_vm_pu.values
         else:
-            ppc["bus"][:n_bus, VMIN] = 0.9
+            ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
 
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
@@ -257,7 +257,7 @@ def _calc_loads_and_add_on_ppc(net, ppc):
     '''
     mode = net["_options"]["mode"]
 
-    if mode=="opf":
+    if mode == "opf":
         _calc_loads_and_add_on_ppc_opf(net, ppc)
     else:
         _calc_loads_and_add_on_ppc_pf(net, ppc)
@@ -279,7 +279,8 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
             cz = l["const_z_percent"].values / 100.
             ci = l["const_i_percent"].values / 100.
             if ((cz + ci) > 1).any():
-                raise ValueError("const_z_percent + const_i_percent need to be less or equal to 100%!")
+                raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
+                                 "100%!")
 
             # cumulative sum of constant-current loads
             vl = _is_elements["load"] * l["scaling"].values.T * ci / np.float64(1000.)
@@ -303,7 +304,6 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
         q = np.hstack([q, l["q_kvar"].values * vl])
         p = np.hstack([p, l["p_kw"].values * vl])
         b = np.hstack([b, l["bus"].values])
-
 
     s = net["sgen"]
     if len(s) > 0:
@@ -357,7 +357,7 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
     if not sgen.empty:
         sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
         vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
-             np.float64(1000.)
+            np.float64(1000.)
         sp = sgen["p_kw"].values * vl
         sq = sgen["q_kvar"].values * vl
     else:
@@ -382,7 +382,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     if len(s) > 0:
         vl = _is_elements["shunt"] / np.float64(1000.)
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values)**2
-        q = np.hstack([q, s["q_kvar"].values * s["step"] * v_ratio * vl ])
+        q = np.hstack([q, s["q_kvar"].values * s["step"] * v_ratio * vl])
         p = np.hstack([p, s["p_kw"].values * s["step"] * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
 
@@ -418,15 +418,18 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         ppc["bus"][b, GS] = vp
         ppc["bus"][b, BS] = -vq
 
+
 def _controllable_to_bool(ctrl):
     ctrl_bool = []
     for val in ctrl:
         ctrl_bool.append(val if not np.isnan(val) else False)
     return np.array(ctrl_bool, dtype=bool)
 
+
 def _add_gen_impedances_ppc(net, ppc):
     _add_ext_grid_sc_impedance(net, ppc)
     _add_gen_sc_impedance(net, ppc)
+
 
 def _add_ext_grid_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
@@ -436,15 +439,17 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
-    eg_buses_ppc  = bus_lookup[eg_buses]
+    eg_buses_ppc = bus_lookup[eg_buses]
 
     c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
-    if not "s_sc_%s_mva"%case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for external grid"%case)
-    s_sc = eg["s_sc_%s_mva"%case].values
-    if not "rx_%s"%case in eg:
-        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid"%case)
-    rx = eg["rx_%s"%case].values
+    if not "s_sc_%s_mva" % case in eg:
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " +
+                         "external grid" % case)
+    s_sc = eg["s_sc_%s_mva" % case].values
+    if not "rx_%s" % case in eg:
+        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
+                         case)
+    rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
     x_grid = z_grid / np.sqrt(rx**2 + 1)
@@ -456,6 +461,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
+
 
 def _add_gen_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX
@@ -484,19 +490,20 @@ def _add_gen_sc_impedance(net, ppc):
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
+
 def _add_motor_impedances_ppc(net, ppc):
     sgen = net.sgen[net._is_elements["sgen"]]
-    if not "motor" in sgen.type.values:
+    if "motor" not in sgen.type.values:
         return
-    motor = sgen[sgen.type=="motor"]
+    motor = sgen[sgen.type == "motor"]
     for par in ["sn_kva", "rx", "k"]:
         if any(pd.isnull(motor[par])):
-            raise UserWarning("%s needs to be specified for all motors in net.sgen.%s"%(par, par))
+            raise UserWarning("%s needs to be specified for all motors in net.sgen.%s" % (par, par))
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     motor_buses = motor.bus.values
     motor_buses_ppc = bus_lookup[motor_buses]
 
-    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k #1 us reference voltage in pu
+    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # 1 us reference voltage in pu
     x_motor = z_motor / np.sqrt(motor.rx**2 + 1)
     r_motor = motor.rx * x_motor
     y_motor = 1 / (r_motor + x_motor*1j)
@@ -505,9 +512,11 @@ def _add_motor_impedances_ppc(net, ppc):
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
+
 def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
     kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))
     return kg
+
 
 def _add_c_to_ppc(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
@@ -521,7 +530,7 @@ def _add_c_to_ppc(net, ppc):
         elif lv_tol_percent == 6:
             c_ns = 1.05
         else:
-            raise ValueError("Voltage tolerance in the low voltage grid has" \
-                                        " to be either 6% or 10% according to IEC 60909")
+            raise ValueError("Voltage tolerance in the low voltage grid has" +
+                             " to be either 6% or 10% according to IEC 60909")
         ppc["bus"][lv_buses, C_MAX] = c_ns
         ppc["bus"][lv_buses, C_MIN] = .95

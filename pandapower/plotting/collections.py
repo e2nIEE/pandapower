@@ -129,8 +129,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    coords = zip(bus_geodata.loc[buses].x.values,
-                 bus_geodata.loc[buses].y.values)
+    coords = zip(bus_geodata.loc[buses, "x"].values,
+                 bus_geodata.loc[buses, "y"].values)
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
@@ -169,14 +169,14 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
         return None
 
     if use_bus_geodata:
-        data = [([(net.bus_geodata.x.at[a], net.bus_geodata.y.at[a]),
-                  (net.bus_geodata.x.at[b], net.bus_geodata.y.at[b])],
+        data = [([(net.bus_geodata.at[a, "x"], net.bus_geodata.at[a, "y"]),
+                  (net.bus_geodata.at[b, "x"], net.bus_geodata.at[b, "y"])],
                  infofunc(line) if infofunc else [])
-                for line, (a, b) in net.line[["from_bus", "to_bus"]].iterrows()
-                if line in lines and a in net.bus_geodata.index.values
+                for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
+                if a in net.bus_geodata.index.values
                 and b in net.bus_geodata.index.values]
     else:
-        data = [(line_geodata.coords.loc[line],
+        data = [(line_geodata.loc[line, "coords"],
                  infofunc(line) if infofunc else [])
                 for line in lines if line in line_geodata.index.values]
 
