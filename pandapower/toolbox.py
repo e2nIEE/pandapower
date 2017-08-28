@@ -938,74 +938,112 @@ def drop_out_of_service_elements(net):
     drop_lines(net, inactive_lines)
 
     inactive_trafos = net.trafo[~net.trafo.in_service].index
-    drop_trafos(net, inactive_trafos)
+    drop_trafos(net, inactive_trafos, table='trafo')
 
-    do_not_delete = set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-        set(net.line.from_bus.values) | set(net.line.to_bus.values)
+    inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
+    drop_trafos(net, inactive_trafos3w, table='trafo3w')
+
+    do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
+                    set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
+                    set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
+                    set(net.trafo3w.lv_bus.values)
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
-    drop_elements_at_buses(net, inactive_buses)
+    drop_buses(net, inactive_buses, drop_elements=True)
 
+    # TODO: the following is not necessary anymore?
     for element in net.keys():
-        if element not in ["bus", "trafo", "line", "_equiv_trafo3w"] \
+        if element not in ["bus", "trafo", "trafo3w", "line", "_equiv_trafo3w"] \
                 and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
             drop_idx = net[element].query("not in_service").index
             net[element].drop(drop_idx, inplace=True)
+            if len(drop_idx) > 0:
+                logger.info("dropped %d %s elements!" % (len(drop_idx), element))
 
-    logger.info('dropped %d buses, %d lines, %d trafos' % (
-        len(inactive_buses), len(inactive_lines), len(inactive_trafos)))
 
-
-def drop_buses(net, buses):
+def element_bus_tuples(bus_elements=True, branch_elements=True):
     """
-    Drops buses and by default safely drops all elements connected to them as well.
+    Utility function
+    Provides the tuples of elements and corresponding columns for buses they are connected to
+    :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
+    :param branch_elements: whether branch elements e.g. line, trafo, ... are included
+    :return: set of tuples with element names and column names
+    """
+    ebt = set()
+    if bus_elements:
+        ebt.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+                    ("ward", "bus"), ("xward", "bus"), ("shunt", "bus")])
+    if branch_elements:
+        ebt.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+                    ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
+                    ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
+                    ("trafo3w", "lv_bus")])
+    return ebt
+
+
+def drop_buses(net, buses, drop_elements=True):
+    """
+    Drops specified buses, their bus_geodata and by default safely drops all elements connected to
+    them as well.
     """
     # drop busbus switches
-    i = net["switch"][
-        ((net["switch"]["element"].isin(buses)) | (net["switch"]["bus"].isin(buses))) &
-        (net["switch"]["et"] == "b")].index
+    i = net["switch"][((net["switch"]["element"].isin(buses)) |
+                       (net["switch"]["bus"].isin(buses))) & (net["switch"]["et"] == "b")].index
     net["switch"].drop(i, inplace=True)
 
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+    logger.info('dropped %d buses' % len(buses))
 
-
-def element_bus_tuples():
-    ebt = [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"), ("switch", "bus"),
-           ("impedance", "to_bus"), ("trafo", "hv_bus"), ("trafo", "lv_bus"), ("sgen", "bus"),
-           ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"), ("ward", "bus"),
-           ("xward", "bus"), ("shunt", "bus")]
-    return ebt
+    if drop_elements:
+        for element, column in element_bus_tuples():
+            if any(net[element][column].isin(buses)):
+                eid = net[element][net[element][column].isin(buses)].index
+                if element == 'line':
+                    drop_lines(net, eid)
+                elif element == 'trafo' or element == 'trafo3w':
+                    drop_trafos(net, eid, table=element)
+                else:
+                    net[element].drop(eid, inplace=True)
+                    logger.info("dropped %s elements: %d" % (element, len(eid)))
 
 
 def drop_elements_at_buses(net, buses):
     """
-    drop elements connected to certain buses and drop the buses as well
+    drop elements connected to certain buses
     """
     # drop elements connected to buses
-    for element, value in element_bus_tuples():
-        if net[element][value].isin(buses).all:
-            eid = net[element][net[element][value].isin(buses)].index
-            net[element].drop(eid, inplace=True)
+    for element, column in element_bus_tuples():
+        if any(net[element][column].isin(buses)):
+            eid = net[element][net[element][column].isin(buses)].index
+            if element == 'line':
+                drop_lines(net, eid)
+            elif element == 'trafo' or element == 'trafo3w':
+                drop_trafos(net, eid, table=element)
+            else:
+                net[element].drop(eid, inplace=True)
+                logger.info("dropped %s elements: %d" % (element, len(eid)))
 
-    # drop buses
-    drop_buses(net, buses)
 
-
-def drop_trafos(net, trafos):
+def drop_trafos(net, trafos, table="trafo"):
     """
     Deletes all trafos and in the given list of indices and removes
     any switches connected to it.
     """
+    if table not in ('trafo', 'trafo3w'):
+        raise UserWarning("parameter 'table' must be 'trafo' or 'trafo3w'")
     # drop any switches
-    i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == "t")]
-    net["switch"].drop(i, inplace=True)
+    if table == 'trafo':  # remove as soon as the trafo3w switches are implemented
+        i = net["switch"].index[(net["switch"]["element"].isin(trafos)) &
+                                (net["switch"]["et"] == "t")]
+        net["switch"].drop(i, inplace=True)
 
     # drop the trafos
-    net["trafo"].drop(trafos, inplace=True)
+    net[table].drop(trafos, inplace=True)
+    logger.info("dropped %d %s elements" % (len(trafos), table))
 
 
 def drop_lines(net, lines):
@@ -1020,6 +1058,7 @@ def drop_lines(net, lines):
     # drop the lines+geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
+    logger.info("dropped %d lines" % len(lines))
 
 
 def fuse_buses(net, b1, b2, drop=True):
@@ -1070,6 +1109,12 @@ def set_isolated_areas_out_of_service(net):
     logger.info("set %d of %d unsupplied buses out of service" % (
         len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
     set_element_status(net, unsupplied, False)
+
+    # TODO: remove this loop after unsupplied_buses are fixed
+    for tr3w in net.trafo3w.index.values:
+        tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
+        if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
+            net.trafo3w.loc[tr3w, 'in_service'] = False
 
     for element in ["line", "trafo"]:
         oos_elements = net.line[~net.line.in_service].index

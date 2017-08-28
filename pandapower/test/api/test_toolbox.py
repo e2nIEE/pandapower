@@ -121,41 +121,48 @@ def test_scaling_by_type():
 
 
 def test_drop_inactive_elements():
-    net = pp.create_empty_network()
+    for service in (False, True):
+        net = pp.create_empty_network()
+        bus_sl = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_ext_grid(net, bus_sl, in_service=service)
+        bus0 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_switch(net, bus_sl, bus0, 'b', not service)
+        bus1 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_transformer(net, bus0, bus1, in_service=service,
+                              std_type='63 MVA 110/20 kV')
+        bus2 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_line(net, bus1, bus2, length_km=1, in_service=service,
+                       std_type='149-AL1/24-ST1A 10.0')
+        pp.create_load(net, bus2, p_kw=0., in_service=service)
+        pp.create_sgen(net, bus2, p_kw=0., in_service=service)
+        bus3 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        bus4 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                                3, 3, 3, 1, 1, 1, 5, 1)
+        # drop them
+        tb.drop_inactive_elements(net)
 
-    service = False
+        sum_of_elements = 0
+        for element in net.keys():
+            # skip this one since we expect items here
+            if element == "std_types" or element.startswith("_"):
+                continue
+            try:
+                if service and (element == 'ext_grid' or (element == 'bus' and len(net.bus) == 1)):
+                    # if service==True, the 1 ext_grid and its bus are not dropped
+                    continue
+                sum_of_elements += len(net[element])
+                if len(net[element]) > 0:
+                    print(element)
+            except TypeError:
+                # _ppc is initialized with None and clashes when checking
+                continue
 
-    bus0 = pp.create_bus(net, vn_kv=.4, in_service=service)
-    pp.create_ext_grid(net, bus0, in_service=service)
-
-    bus1 = pp.create_bus(net, vn_kv=.4, in_service=service)
-    pp.create_transformer(net, bus0, bus1, in_service=service,
-                          std_type='63 MVA 110/20 kV')
-
-    bus2 = pp.create_bus(net, vn_kv=.4, in_service=service)
-    pp.create_line(net, bus1, bus2, length_km=1, in_service=service,
-                   std_type='149-AL1/24-ST1A 10.0')
-
-    pp.create_load(net, bus2, p_kw=0., in_service=service)
-    pp.create_sgen(net, bus2, p_kw=0., in_service=service)
-
-    # drop them
-    tb.drop_inactive_elements(net)
-
-    sum_of_elements = 0
-    for element in net.keys():
-        # skip this one since we expect items here
-        if element == "std_types" or element.startswith("_"):
-            continue
-        try:
-            sum_of_elements += len(net[element])
-            if len(net[element]) > 0:
-                print(element)
-        except TypeError:
-            # _ppc is initialized with None and clashes when checking
-            continue
-
-    assert sum_of_elements == 0
+        assert sum_of_elements == 0
+        if service:
+            assert len(net.ext_grid) == 1
+            assert len(net.bus) == 1
+            assert bus_sl in net.bus.index.values
 
     net = pp.create_empty_network()
 
