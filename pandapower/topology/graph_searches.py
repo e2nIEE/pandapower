@@ -145,7 +145,7 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     """
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
-    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service == True].bus.values)
+    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service].bus.values)
     not_supplied = set()
     for cc in nx.connected_components(mg):
         if not set(cc) & slacks:

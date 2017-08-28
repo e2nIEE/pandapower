@@ -9,6 +9,7 @@ import pandapower as pp
 import pytest
 import pandapower.topology as top
 
+
 @pytest.fixture
 def feeder_network():
     net = pp.create_empty_network()
@@ -33,6 +34,7 @@ def test_determine_stubs(feeder_network):
     assert net.bus.on_stub.at[sec_bus] == True
     assert net.line.is_stub.at[sec_line] == True
 
+
 def test_distance(feeder_network):
     net = feeder_network
     dist = top.calc_distance_to_bus(net, 0)
@@ -45,6 +47,25 @@ def test_distance(feeder_network):
     dist = top.calc_distance_to_bus(net, 0)
     assert np.allclose(dist.values, [0, 12, 18, 5])
 
+
+def test_unsupplied_buses():
+    net = pp.create_empty_network()
+
+    bus_sl = pp.create_bus(net, 0.4)
+    pp.create_ext_grid(net, bus_sl)
+
+    bus0 = pp.create_bus(net, 0.4, in_service=False)
+    pp.create_switch(net, bus_sl, bus0, 'b', False)
+
+    bus1 = pp.create_bus(net, 0.4, in_service=True)
+    pp.create_switch(net, bus0, bus1, 'b', False)
+
+    # ext_grid --- open switch --- OOS bus --- open switch --- IS bus
+
+    ub = top.unsupplied_buses(net)
+    assert 1 in ub
+    assert 2 in ub
+
+
 if __name__ == '__main__':
     pytest.main(["test_graph_searches.py"])
-
