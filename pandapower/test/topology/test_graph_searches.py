@@ -49,6 +49,7 @@ def test_distance(feeder_network):
 
 
 def test_unsupplied_buses():
+    # IS ext_grid --- open switch --- OOS bus --- open switch --- IS bus
     net = pp.create_empty_network()
 
     bus_sl = pp.create_bus(net, 0.4)
@@ -60,11 +61,22 @@ def test_unsupplied_buses():
     bus1 = pp.create_bus(net, 0.4, in_service=True)
     pp.create_switch(net, bus0, bus1, 'b', False)
 
-    # ext_grid --- open switch --- OOS bus --- open switch --- IS bus
-
     ub = top.unsupplied_buses(net)
     assert 1 in ub
     assert 2 in ub
+
+    # OOS ext_grid --- closed switch --- IS bus
+    net = pp.create_empty_network()
+
+    bus_sl = pp.create_bus(net, 0.4)
+    pp.create_ext_grid(net, bus_sl, in_service=False)
+
+    bus0 = pp.create_bus(net, 0.4, in_service=True)
+    pp.create_switch(net, bus_sl, bus0, 'b', True)
+
+    ub = top.unsupplied_buses(net)
+    assert 0 in ub
+    assert 1 in ub
 
 
 if __name__ == '__main__':
