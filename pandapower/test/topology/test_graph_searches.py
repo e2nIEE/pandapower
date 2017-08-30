@@ -48,7 +48,9 @@ def test_distance(feeder_network):
     assert np.allclose(dist.values, [0, 12, 18, 5])
 
 
+@pytest.mark.xfail
 def test_unsupplied_buses():
+    # marked as expexted to fail because of the open discussion about how to define unsupplied buses
     # IS ext_grid --- open switch --- OOS bus --- open switch --- IS bus
     net = pp.create_empty_network()
 
