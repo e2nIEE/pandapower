@@ -141,7 +141,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
 def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=False, infofunc=None,
                            cmap=None, norm=None, picker=False, z=None,
-                           cbar_title="Line Loading [%]", **kwargs):
+                           cbar_title="Line Loading [%]", clim=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -194,9 +194,11 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
             z = net.res_line.loading_percent.loc[lines]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
+        if clim is not None:
+            lc.set_clim(clim)
         lc.set_array(np.array(z))
         lc.has_colormap = True
-        lc.cbar_title = "Line Loading [%]"
+        lc.cbar_title = cbar_title
     lc.info = info
     return lc
 
