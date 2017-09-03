@@ -354,7 +354,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     # and preserve dtypes
     _preserve_dtypes(net.bus, dtypes)
 
-    if geodata:
+    if geodata is not None:
         if len(geodata) != 2:
             raise UserWarning("geodata must be given as (x, y) tupel")
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
