@@ -311,38 +311,25 @@ def _check_connectivity(ppc):
         pus = qus = 0
     return isolated_nodes, pus, qus
 
+
+def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
+    for i in range(len(ti)):
+        if tis[i] and bis[ti[i]]:
+            lis[i] = True
+
+
+def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
+    for k in range(len(bus_lookup)):
+        if ppc_bus_isolated[bus_lookup[k]]:
+            bus_in_service[k] = False
+
+
 try:
-    @jit(nopython=True, cache=True)
-    def set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
-        """iterates over elements; returns array where element is of service if element is oos in
-        element table or bus is oos"""
-        for i in range(len(ti)):
-            if tis[i] and bis[ti[i]]:
-                lis[i] = True
-
-    @jit(nopython=True, cache=True)
-    def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-        """determines out of service pp buses by also checking if fused to isolated ppc buses"""
-        for k in range(len(bus_lookup)):
-            if ppc_bus_isolated[bus_lookup[k]]:
-                bus_in_service[k] = False
-
+    set_elements_oos = jit(nopython=True, cache=True)(_python_set_elements_oos)
+    set_isolated_buses_oos = jit(nopython=True, cache=True)(_python_set_isolated_buses_oos)
 except RuntimeError:
-    logger.warning("Encountered a problem with numba. It is either not installed or does not have "
-                   "write permissions. Using pure Python versions of set_elements_oos and "
-                   "set_isolated_buses_oos")
-
-    # todo: rewrite with numpy so it's not extremely slow
-
-    def set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
-        for i in range(len(ti)):
-            if tis[i] and bis[ti[i]]:
-                lis[i] = True
-
-    def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-        for k in range(len(bus_lookup)):
-            if ppc_bus_isolated[bus_lookup[k]]:
-                bus_in_service[k] = False
+    set_elements_oos = jit(nopython=True, cache=False)(_python_set_elements_oos)
+    set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
 def _select_is_elements_numba(net, isolated_nodes=None):
