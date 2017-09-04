@@ -7,9 +7,13 @@
 from itertools import combinations
 
 import networkx as nx
-import pplog
 
-logger = pplog.getLogger(__name__)
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
