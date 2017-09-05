@@ -587,7 +587,6 @@ def test_zip_loads_with_voltage_angles():
     assert np.allclose(net.res_load.values, res_load.values)
 
 
-@pytest.mark.xfail
 def test_xward_buses():
     """
     Issue: xward elements create dummy buses for the load flow, that are cleaned up afterwards.

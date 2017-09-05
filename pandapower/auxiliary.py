@@ -452,9 +452,9 @@ def _add_options(net, options):
     net._options.update(options)
 
 
-def _clean_up(net):
+def _clean_up(net, res=True):
     # mode = net.__internal_options["mode"]
-    
+
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
     net._is_elements = None
 
@@ -462,20 +462,23 @@ def _clean_up(net):
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
-        res_bus.drop(buses_3w, inplace=True)
         net["bus"].drop(buses_3w, inplace=True)
         net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+        if res:
+            res_bus.drop(buses_3w, inplace=True)
 
     if len(net["xward"]) > 0:
         xward_buses = net["xward"]["ad_bus"].values
         net["bus"].drop(xward_buses, inplace=True)
-        res_bus.drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+        if res:
+            res_bus.drop(xward_buses, inplace=True)
 
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
-        net.res_gen.drop(dc_gens, inplace=True)
+        if res:
+            net.res_gen.drop(dc_gens, inplace=True)
 
 
 def _set_isolated_buses_out_of_service(net, ppc):
