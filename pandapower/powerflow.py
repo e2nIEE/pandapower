@@ -74,7 +74,9 @@ def _powerflow(net, **kwargs):
 
     # raise if PF was not successful. If DC -> success is always 1
     if result["success"] != 1:
-        raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format(algorithm, max_iteration))
+        _clean_up(net, res=False)
+        raise LoadflowNotConverged("Power Flow {0} did not converge after "
+                                   "{1} iterations!".format(algorithm, max_iteration))
     else:
         net["_ppc"] = result
         net["converged"] = True

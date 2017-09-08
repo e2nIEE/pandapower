@@ -131,7 +131,7 @@ def test_bus_bus_switches(bus_bus_net):
     net = bus_bus_net
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
-        net.res_bus.vm_pu.at[6]
+           net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.in_service.at[5] = False
@@ -494,13 +494,17 @@ def test_zip_loads_gridcal():
     va_degree_gridcal = np.array([0., -2.3717973886, -2.345654238, -3.6303651197, -2.6713716569])
 
     Ybus_gridcal = np.array(
-        [[10.9589041096 - 25.9973972603j, -3.4246575342 + 7.5342465753j, -3.4246575342 + 7.5342465753j,
+        [[10.9589041096 - 25.9973972603j, -3.4246575342 + 7.5342465753j,
+          -3.4246575342 + 7.5342465753j,
           0.0000000000 + 0.j, -4.1095890411 + 10.9589041096j],
-         [-3.4246575342 + 7.5342465753j, 11.8320802147 - 26.1409476063j, -4.1237113402 + 9.2783505155j,
+         [-3.4246575342 + 7.5342465753j, 11.8320802147 - 26.1409476063j,
+          -4.1237113402 + 9.2783505155j,
           0.0000000000 + 0.j, -4.1237113402 + 9.2783505155j],
-         [-3.4246575342 + 7.5342465753j, -4.1237113402 + 9.2783505155j, 10.4751981427 - 23.1190605054j,
+         [-3.4246575342 + 7.5342465753j, -4.1237113402 + 9.2783505155j,
+          10.4751981427 - 23.1190605054j,
           -2.9268292683 + 6.3414634146j, 0.0000000000 + 0.j],
-         [0.0000000000 + 0.j, 0.0000000000 + 0.j, -2.9268292683 + 6.3414634146j, 7.0505406085 - 15.5948139301j,
+         [0.0000000000 + 0.j, 0.0000000000 + 0.j, -2.9268292683 + 6.3414634146j,
+          7.0505406085 - 15.5948139301j,
           -4.1237113402 + 9.2783505155j],
          [-4.1095890411 + 10.9589041096j, -4.1237113402 + 9.2783505155j, 0.0000000000 + 0.j,
           -4.1237113402 + 9.2783505155j, 12.3570117215 - 29.4856051405j]])
@@ -560,6 +564,7 @@ def test_zip_loads_pf_algorithms():
         assert np.allclose(vm_nr, vm_alg)
         assert np.allclose(va_nr, va_alg)
 
+
 @pytest.mark.xfail
 def test_zip_loads_with_voltage_angles():
     net = pp.create_empty_network()
@@ -580,6 +585,38 @@ def test_zip_loads_with_voltage_angles():
     pp.runpp(net)
 
     assert np.allclose(net.res_load.values, res_load.values)
+
+
+def test_xward_buses():
+    """
+    Issue: xward elements create dummy buses for the load flow, that are cleaned up afterwards.
+    However, if the load flow does not converge, those buses end up staying in the net and don't get
+    removed. This can potentially lead to thousands of dummy buses in net.
+    """
+    net = pp.create_empty_network()
+    bus_sl = pp.create_bus(net, 110, name='ExtGrid')
+    pp.create_ext_grid(net, bus_sl, vm_pu=1)
+    bus_x = pp.create_bus(net, 110, name='XWARD')
+    pp.create_xward(net, bus_x, 0, 0, 0, 0, 0, 10, 1.1)
+    iid = pp.create_impedance(net, bus_sl, bus_x, 0.2, 0.2, 1e3)
+
+    bus_num1 = len(net.bus)
+
+    pp.runpp(net)
+
+    bus_num2 = len(net.bus)
+
+    assert bus_num1 == bus_num2
+
+    # now - make sure that the loadflow doesn't converge:
+    net.impedance.at[iid, 'rft_pu'] = 1
+    pp.create_load(net, bus_x, 1e6, 0)
+    with pytest.raises(LoadflowNotConverged):
+        # here the load flow doesn't converge and there is an extra bus in net
+        pp.runpp(net)
+
+    bus_num3 = len(net.bus)
+    assert bus_num3 == bus_num1
 
 
 def test_pvpq_lookup():
