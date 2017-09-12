@@ -128,7 +128,8 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
 
 
 def fuse_geodata(net):
-    mg = top.create_nxgraph(net, include_lines=False, respect_switches=False)
+    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
+                            respect_switches=False)
     geocoords = set(net.bus_geodata.index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
