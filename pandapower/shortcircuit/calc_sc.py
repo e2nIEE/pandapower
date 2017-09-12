@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith, _calc_branch_currents
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith, _calc_branch_currents, _calc_ikss_1ph
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results
@@ -45,6 +46,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
             - "3ph" for three-phase
 
             - "2ph" for two-phase short-circuits
+            
+            - "1ph" for single-phase-ground 
 
         **case** (str, "max")
 
@@ -86,8 +89,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         print(net.res_bus_sc)
     """
-    if fault not in ["3ph", "2ph"]:
-        raise NotImplementedError("Only 3ph and 2ph short-circuit currents implemented")
+    if fault not in ["3ph", "2ph", "1ph"]:
+        raise NotImplementedError("Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
         logger.warning("aperiodic and thermal short-circuit currents are only implemented for faults far from generators!")
@@ -123,14 +126,21 @@ def _calc_sc(net):
     _add_kappa_to_ppc(net, ppci)
 #    t4 = time.perf_counter()
     _calc_ikss(net, ppci)
+    ppc_0, ppci_0 = _pd2ppc_zero(net)
+    _calc_ybus(ppci_0)
+    _calc_zbus(ppci_0)
+    _calc_rx(net, ppci_0)
+    _add_kappa_to_ppc(net, ppci_0)
+    _calc_ikss_1ph(net, ppci, ppci_0)
     if net["_options"]["ip"]:
         _calc_ip(net, ppci)
     if net["_options"]["ith"]:
         _calc_ith(net, ppci)
-    if net._options["branch_results"]:
-        _calc_branch_currents(net, ppci)
+#   if net._options["branch_results"]:
+#        _calc_branch_currents(net, ppci)
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc)
+    ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
+    _extract_results(net, ppc, ppc_0)
     _clean_up(net)
 #    t5 = time.perf_counter()
 #    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
