@@ -312,21 +312,24 @@ def _check_connectivity(ppc):
     return isolated_nodes, pus, qus
 
 
-@jit(nopython=True, cache=True)
-def set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
-    """iterates over elements; returns array where element is of service if element is oos in
-    element table or bus is oos"""
+def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
     for i in range(len(ti)):
         if tis[i] and bis[ti[i]]:
             lis[i] = True
 
 
-@jit(nopython=True, cache=True)
-def set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-    """determines out of service pp buses by also checking if fused to isolated ppc buses"""
+def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
     for k in range(len(bus_lookup)):
         if ppc_bus_isolated[bus_lookup[k]]:
             bus_in_service[k] = False
+
+
+try:
+    set_elements_oos = jit(nopython=True, cache=True)(_python_set_elements_oos)
+    set_isolated_buses_oos = jit(nopython=True, cache=True)(_python_set_isolated_buses_oos)
+except RuntimeError:
+    set_elements_oos = jit(nopython=True, cache=False)(_python_set_elements_oos)
+    set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
 def _select_is_elements_numba(net, isolated_nodes=None):
@@ -351,7 +354,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
-    if net["_options"]["mode"] == "opf" and net._is_elements is not None:
+    if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
         if "load_controllable" in net._is_elements:
             is_elements["load_controllable"] = net._is_elements["load_controllable"]
         if "sgen_controllable" in net._is_elements:
@@ -449,26 +452,33 @@ def _add_options(net, options):
     net._options.update(options)
 
 
-def _clean_up(net):
+def _clean_up(net, res=True):
     # mode = net.__internal_options["mode"]
+
+    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
+    net._is_elements = None
+
     mode = net._options["mode"]
     res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
-        res_bus.drop(buses_3w, inplace=True)
         net["bus"].drop(buses_3w, inplace=True)
         net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+        if res:
+            res_bus.drop(buses_3w, inplace=True)
 
     if len(net["xward"]) > 0:
         xward_buses = net["xward"]["ad_bus"].values
         net["bus"].drop(xward_buses, inplace=True)
-        res_bus.drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+        if res:
+            res_bus.drop(xward_buses, inplace=True)
 
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
-        net.res_gen.drop(dc_gens, inplace=True)
+        if res:
+            net.res_gen.drop(dc_gens, inplace=True)
 
 
 def _set_isolated_buses_out_of_service(net, ppc):

@@ -1,6 +1,6 @@
-===============
+=============================================
 Synthetic Voltage Control LV Networks
-===============
+=============================================
 
 .. autofunction:: pandapower.networks.create_synthetic_voltage_control_lv_network
 

@@ -83,9 +83,10 @@ def connected_components(mg, notravbuses=set()):
         yield cc
         nodes -= cc
     # the above does not work if two notravbuses are directly connected
-    for f, t in mg.edges():
-        if f in notravbuses and t in notravbuses:
-            yield set([f, t])
+    if len(notravbuses) > 0:
+        for f, t in mg.edges():
+            if f in notravbuses and t in notravbuses:
+                yield set([f, t])
 
 
 def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
@@ -144,7 +145,7 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     """
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
-    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service == True].bus.values)
+    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service].bus.values)
     not_supplied = set()
     for cc in nx.connected_components(mg):
         if not set(cc) & slacks:

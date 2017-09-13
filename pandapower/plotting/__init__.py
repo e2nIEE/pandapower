@@ -4,4 +4,5 @@ from pandapower.plotting.generic_geodata import *
 from pandapower.plotting.powerflow_results import *
 from pandapower.plotting.simple_plot import *
 from pandapower.plotting.plotly import *
+from pandapower.plotting.geo import *
 from pandapower.plotting.to_html import to_html

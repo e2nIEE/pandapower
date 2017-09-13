@@ -220,7 +220,7 @@ def _build_gen_opf(net, ppc):
     l_end = sg_end + len(l_is)
 
     q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
-    p_lim_default = 1e9
+    p_lim_default = 1e9  # changes must be considered in check_opf_data
     delta = net["_options"]["delta"]
 
     # initialize generator matrix
@@ -253,13 +253,13 @@ def _build_gen_opf(net, ppc):
             ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10
 
         if "max_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 - delta)
+            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
             max_p_kw = ppc["gen"][gen_end:sg_end, [PMIN]]
             ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
             ppc["gen"][gen_end:sg_end, [PMIN]] = max_p_kw
 
         if "min_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 + delta)
+            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 - delta)
             min_p_kw = ppc["gen"][gen_end:sg_end, [PMAX]]
             ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
             ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw

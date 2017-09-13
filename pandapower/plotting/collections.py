@@ -129,8 +129,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    coords = zip(bus_geodata.loc[buses].x.values,
-                 bus_geodata.loc[buses].y.values)
+    coords = zip(bus_geodata.loc[buses, "x"].values,
+                 bus_geodata.loc[buses, "y"].values)
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
@@ -141,7 +141,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
 def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=False, infofunc=None,
                            cmap=None, norm=None, picker=False, z=None,
-                           cbar_title="Line Loading [%]", **kwargs):
+                           cbar_title="Line Loading [%]", clim=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -169,14 +169,14 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
         return None
 
     if use_bus_geodata:
-        data = [([(net.bus_geodata.x.at[a], net.bus_geodata.y.at[a]),
-                  (net.bus_geodata.x.at[b], net.bus_geodata.y.at[b])],
+        data = [([(net.bus_geodata.at[a, "x"], net.bus_geodata.at[a, "y"]),
+                  (net.bus_geodata.at[b, "x"], net.bus_geodata.at[b, "y"])],
                  infofunc(line) if infofunc else [])
-                for line, (a, b) in net.line[["from_bus", "to_bus"]].iterrows()
-                if line in lines and a in net.bus_geodata.index.values
+                for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
+                if a in net.bus_geodata.index.values
                 and b in net.bus_geodata.index.values]
     else:
-        data = [(line_geodata.coords.loc[line],
+        data = [(line_geodata.loc[line, "coords"],
                  infofunc(line) if infofunc else [])
                 for line in lines if line in line_geodata.index.values]
 
@@ -194,9 +194,11 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
             z = net.res_line.loading_percent.loc[lines]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
+        if clim is not None:
+            lc.set_clim(clim)
         lc.set_array(np.array(z))
         lc.has_colormap = True
-        lc.cbar_title = "Line Loading [%]"
+        lc.cbar_title = cbar_title
     lc.info = info
     return lc
 
@@ -356,7 +358,8 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True):
                     cbar_load.ax.set_ylabel(c.cbar_title)
 
 
-def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True):
+def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
+                     axes_visible=(False, False)):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -381,8 +384,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_facecolor("white")
     except:
         ax.set_axis_bgcolor("white")
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
+    ax.xaxis.set_visible(axes_visible[0])
+    ax.yaxis.set_visible(axes_visible[1])
     if set_aspect:
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
