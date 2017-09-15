@@ -565,7 +565,7 @@ def test_zip_loads_pf_algorithms():
         assert np.allclose(va_nr, va_alg)
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 def test_zip_loads_with_voltage_angles():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=1.)
