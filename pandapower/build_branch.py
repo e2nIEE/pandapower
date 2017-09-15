@@ -55,7 +55,7 @@ def _build_branch_ppc(net, ppc):
     if "trafo3w" in lookup:
         f, t = lookup["trafo3w"]
         ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A]] = \
-            _calc_trafo3w_parameter_new(net, ppc)
+            _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
         f, t = lookup["impedance"]
         ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_R_ASYM, BR_X_ASYM, BR_STATUS]] = \
@@ -313,14 +313,21 @@ def _branch_df_from_trafo3w(net, ppc, trafo3w_df=None):
     x1 = 0.5 * (x12 + x13 - x23)
     x2 = 0.5 * (x12 + x23 - x13)
     x3 = 0.5 * (x13 + x23 - x12)
-    
+
     x = {1: x1,
          2: x2,
          3: x3}
 
-    g = (trafo3w_df.pfe_kw / s12) * (s12 / net.sn_kva)
-    b = - np.sqrt((trafo3w_df.i0_percent / 100.) ** 2 - (trafo3w_df.pfe_kw / s12) ** 2) * (s12 / net.sn_kva)
+    g = ((trafo3w_df.pfe_kw / trafo3w_df['sn_hv_kva'])
+        * (trafo3w_df['sn_hv_kva'] / net.sn_kva))
+    b = - np.sqrt((trafo3w_df.i0_percent / 100.) ** 2
+                  - (trafo3w_df.pfe_kw / trafo3w_df['sn_hv_kva']) ** 2) * (trafo3w_df['sn_hv_kva']/ net.sn_kva)
     y = - g * 1j + b  # * np.sign(trafo3w_df.i0_percent)
+
+    # g = (trafo3w_df.pfe_kw / s12) * (s12 / net.sn_kva)
+    # b = - np.sqrt((trafo3w_df.i0_percent / 100.) ** 2 - (
+    # trafo3w_df.pfe_kw / s12) ** 2) * (s12 / net.sn_kva)
+    # y = - g * 1j + b  # * np.sign(trafo3w_df.i0_percent)
 
     tap_variables = ["tp_pos", "tp_mid", "tp_max", "tp_min", "tp_st_percent"]
     branch_variables = ['F_BUS', 'T_BUS', 'BR_R', 'BR_X', 'BR_B', 'TAP', 'SHIFT', 'BR_STATUS', 'RATE_A']
