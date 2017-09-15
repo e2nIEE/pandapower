@@ -5,8 +5,8 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from numpy import zeros, array, float, hstack, invert
-from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
+from numpy import zeros, array, float, hstack, invert, conj
+from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, PCID, QCID
 from pandapower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
@@ -155,7 +155,13 @@ def _get_p_q_results(net,  bus_lookup_aranged):
 
 
                 # constant current
-                sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * ci * v
+                ppc = net._ppc
+                ppi = net["bus"].index.values
+                bus_lookup = net["_pd2ppc_lookups"]["bus"]
+                bus_idx = bus_lookup[ppi]
+                i_cc = (ppc["bus"][bus_idx][:, PCID] + 1j * ppc["bus"][bus_idx][:, QCID])[l['bus'].values]
+
+                sl = - v * conj(i_cc) * net._ppc['baseMVA'] * 1e3
                 pl = sl.real
                 net["res_load"]["p_kw"] += pl
                 p = np.hstack([p, pl])
