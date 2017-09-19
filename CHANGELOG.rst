@@ -1,6 +1,12 @@
 Change Log
 =============
 
+
+Unreleased
+----------------------
+- [FIXED] ZIP load issue that led to incorrect calculation of I part with voltage angle shifts
+- [FIXED] Bug that set voltage constraints to 0.9/1.2 if no voltage constraints was given in OPF
+
 [1.4.0] - 2017-07-27
 ----------------------
 
