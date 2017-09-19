@@ -102,11 +102,11 @@ def test_case9_conversion():
 
     pp.runpp(net)
     pp.runpp(net2)
-    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-3)
+    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
     pp.runopp(net)
     pp.runopp(net2)
-    assert pp.nets_equal(net, net2, check_only_results=True)
+    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
 
 if __name__ == '__main__':
