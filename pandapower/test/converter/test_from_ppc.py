@@ -7,9 +7,11 @@
 import pytest
 import os
 import pickle
+from copy import deepcopy
 
 import pandapower as pp
-from pandapower.converter import from_ppc, validate_from_ppc
+import pandapower.networks as pn
+from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 
 try:
     import pplog as logging
@@ -85,6 +87,27 @@ def test_pypower_cases():
     net = from_ppc(ppc, f_hz=60)
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)
     logger.debug('case9 has been checked successfully.')
+
+
+def test_case9_conversion():
+    net = pn.case9()
+    ppc = to_ppc(net)
+    # correction because to_ppc do net export max_loading_percent:
+    ppc["branch"][:, 5] = [250, 250, 150, 300, 150] + [250]*4
+    # correction because voltage limits are set to 1.0 at slack buses
+    ppc["bus"][0, 11] = 0.9
+    ppc["bus"][0, 12] = 1.1
+
+    net2 = from_ppc(ppc)
+
+    pp.runpp(net)
+    pp.runpp(net2)
+    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-3)
+
+    pp.runopp(net)
+    pp.runopp(net2)
+    assert pp.nets_equal(net, net2, check_only_results=True)
+
 
 if __name__ == '__main__':
     pytest.main(["test_from_ppc.py"])
