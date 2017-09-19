@@ -368,21 +368,21 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    if recycle == None:
+    if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
 
     options = {
-        "calculate_voltage_angles": calculate_voltage_angles
-        , "trafo_model": trafo_model
-        , "check_connectivity": check_connectivity
-        , "mode": mode
-        , "copy_constraints_to_ppc": copy_constraints_to_ppc
-        , "r_switch": r_switch
-        , "init": init
-        , "enforce_q_lims": enforce_q_lims
-        , "recycle": recycle
-        , "voltage_depend_loads": voltage_depend_loads
-        , "delta": delta
+        "calculate_voltage_angles": calculate_voltage_angles,
+        "trafo_model": trafo_model,
+        "check_connectivity": check_connectivity,
+        "mode": mode,
+        "copy_constraints_to_ppc": copy_constraints_to_ppc,
+        "r_switch": r_switch,
+        "init": init,
+        "enforce_q_lims": enforce_q_lims,
+        "recycle": recycle,
+        "voltage_depend_loads": voltage_depend_loads,
+        "delta": delta
     }
     _add_options(net, options)
 
@@ -394,12 +394,12 @@ def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
     """
 
     options = {
-        "tolerance_kva": tolerance_kva
-        , "trafo_loading": trafo_loading
-        , "numba": numba
-        , "ac": ac
-        , "algorithm": algorithm
-        , "max_iteration": max_iteration
+        "tolerance_kva": tolerance_kva,
+        "trafo_loading": trafo_loading,
+        "numba": numba,
+        "ac": ac,
+        "algorithm": algorithm,
+        "max_iteration": max_iteration
     }
 
     options.update(kwargs)  # update options with some algorithm-specific parameters
@@ -411,8 +411,8 @@ def _add_opf_options(net, trafo_loading, ac, **kwargs):
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     options = {
-        "trafo_loading": trafo_loading
-        , "ac": ac
+        "trafo_loading": trafo_loading,
+        "ac": ac
     }
 
     options.update(kwargs)  # update options with some algorithm-specific parameters
@@ -425,19 +425,19 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     options = {
-        "fault": fault
-        , "case": case
-        , "lv_tol_percent": lv_tol_percent
-        , "tk_s": tk_s
-        , "topology": topology
-        , "r_fault_ohm": r_fault_ohm
-        , "x_fault_ohm": x_fault_ohm
-        , "kappa": kappa
-        , "ip": ip
-        , "ith": ith
-        , "consider_sgens": consider_sgens
-        , "branch_results": branch_results
-        , "kappa_method": kappa_method
+        "fault": fault,
+        "case": case,
+        "lv_tol_percent": lv_tol_percent,
+        "tk_s": tk_s,
+        "topology": topology,
+        "r_fault_ohm": r_fault_ohm,
+        "x_fault_ohm": x_fault_ohm,
+        "kappa": kappa,
+        "ip": ip,
+        "ith": ith,
+        "consider_sgens": consider_sgens,
+        "branch_results": branch_results,
+        "kappa_method": kappa_method
     }
     _add_options(net, options)
 
@@ -447,7 +447,8 @@ def _add_options(net, options):
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
-            "Parameters always have to be unique! The following parameters where specified twice: %s" % double_parameters)
+            "Parameters always have to be unique! The following parameters where specified " +
+            "twice: %s" % double_parameters)
     # net.__internal_options.update(options)
     net._options.update(options)
 
@@ -503,13 +504,15 @@ def _check_if_numba_is_installed(numba):
     numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n' \
                         'Probably the execution is slow.\n' \
                         'Please install numba to gain a massive speedup.\n' \
-                        '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)\n'
+                        '(or if you prefer slow execution, set the flag numba=False to avoid ' + \
+                        'this warning!)\n'
 
     try:
         # get numba Version (in order to use it it must be > 0.25)
         nb_version = float(numba_version.version_version[:4])
         if nb_version < 0.25:
-            logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' + numba_warning_str)
+            logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
+                           numba_warning_str)
             numba = False
 
     except:
