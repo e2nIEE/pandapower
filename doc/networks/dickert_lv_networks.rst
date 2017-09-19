@@ -4,8 +4,8 @@ Dickert LV Networks
 
 .. autofunction:: pandapower.networks.create_dickert_lv_network
 
-For all given Dickert LV Networks (in numbers: 12) the number of delivery points of tapped line and
-the distance between delivery points is given in this table:
+For all given Dickert LV Networks (in numbers: 12) the number of delivery points of tapped lines
+(n_DP) and the distance between delivery points (d_DP) is given in this table:
 
 .. tabularcolumns:: |l|l|l|l|l|l|
 .. csv-table::
