@@ -388,13 +388,16 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
         # for two networks make sure both have the same keys that do not start with "_"...
         x_keys = [key for key in x.keys() if not key.startswith("_")]
         y_keys = [key for key in y.keys() if not key.startswith("_")]
+        key_union = set(x_keys) | set(y_keys)
+        key_difference = set(x_keys) ^ set(y_keys)
 
-        if len(set(x_keys) ^ set(y_keys)) > 0:
-            logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
-            return False
+        if len(key_difference) > 0:
+            logger.info("Networks entries mismatch at: %s" % key_difference)
+            if not check_only_results:
+                return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in x_keys:
+        for df_name in list(key_union):
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
