@@ -2,10 +2,11 @@ Change Log
 =============
 
 
-Unreleased
+[1.4.1] - 2017-09-19
 ----------------------
 - [FIXED] ZIP load issue that led to incorrect calculation of I part with voltage angle shifts
 - [FIXED] Bug that set voltage constraints to 0.9/1.2 if no voltage constraints was given in OPF
+- [ADDED] possibility to access J matrix after power flow
 
 [1.4.0] - 2017-07-27
 ----------------------
