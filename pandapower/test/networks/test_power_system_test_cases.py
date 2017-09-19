@@ -26,7 +26,9 @@ def test_case6ww():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 6
     assert len(net.line) + len(net.trafo) == 11
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 3
+    n_gen = 3
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -36,7 +38,9 @@ def test_case9():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 9
     assert len(net.line) + len(net.trafo) == 9
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 3
+    n_gen = 3
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -46,7 +50,9 @@ def test_case14():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 14
     assert len(net.line) + len(net.trafo) == 20
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 5
+    n_gen = 5
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -64,7 +70,9 @@ def test_case30():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 30
     assert len(net.line) + len(net.trafo) == 41
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 6
+    n_gen = 6
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -74,7 +82,9 @@ def test_case33bw():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 33
     assert len(net.line) + len(net.trafo) == 37
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 1
+    n_gen = 1
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -84,7 +94,9 @@ def test_case39():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 39
     assert len(net.line) + len(net.trafo) == 46
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 10
+    n_gen = 10
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -94,7 +106,9 @@ def test_case57():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 57
     assert len(net.line) + len(net.trafo) == 80
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 7
+    n_gen = 7
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -104,7 +118,9 @@ def test_case89pegase():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 89
     assert len(net.line) + len(net.trafo) == 210
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 18
+    n_gen = 12
+    assert len(net.ext_grid) + len(net.gen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -114,7 +130,9 @@ def test_case118():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 118
     assert len(net.line) + len(net.trafo) == 186
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 54
+    n_gen = 54
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -124,7 +142,9 @@ def test_case145():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 145
     assert len(net.line) + len(net.trafo) == 453
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 59
+    n_gen = 50
+    assert len(net.ext_grid) + len(net.gen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -134,7 +154,9 @@ def test_case300():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 300
     assert len(net.line) + len(net.trafo) == 411
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 77
+    n_gen = 69
+    assert len(net.ext_grid) + len(net.gen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -144,7 +166,9 @@ def test_case1354pegase():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 1354
     assert len(net.line) + len(net.trafo) == 1991
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 312
+    n_gen = 260
+    assert len(net.ext_grid) + len(net.gen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -155,6 +179,7 @@ def test_case1888rte():
     assert len(net.bus) == 1888
     assert len(net.line) + len(net.trafo) == 2531
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 354
+    assert len(net.polynomial_cost) == 297
     assert net.converged
 
 
@@ -166,6 +191,7 @@ def test_case1888rte_changed_slack():
     assert len(net.bus) == 1888
     assert len(net.line) + len(net.trafo) == 2531
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 354
+    assert len(net.polynomial_cost) == 297
     assert net.ext_grid.bus.at[0] == ref_bus_idx
     assert net.converged
 
@@ -183,6 +209,7 @@ def test_case2848rte():
     assert len(net.bus) == 2848
     assert len(net.line) + len(net.trafo) == 3776
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 670
+    assert len(net.polynomial_cost) == 547
     assert net.converged
 
 
@@ -193,6 +220,7 @@ def test_case2869pegase():
     assert len(net.bus) == 2869
     assert len(net.line) + len(net.trafo) == 4582
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 690
+    assert len(net.polynomial_cost) == 510
     assert net.converged
 
 
@@ -202,7 +230,9 @@ def test_case3120sp():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 3120
     assert len(net.line) + len(net.trafo) == 3693
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 505
+    n_gen = 505
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -213,6 +243,7 @@ def test_case6470rte():
     assert len(net.bus) == 6470
     assert len(net.line) + len(net.trafo) == 9005
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 1578
+    assert len(net.polynomial_cost) == 1330
     assert net.converged
 
 
@@ -222,7 +253,9 @@ def test_case6495rte():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 6495
     assert len(net.line) + len(net.trafo) == 9019
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 1650
+    n_gen = 1650
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+#    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -233,6 +266,7 @@ def test_case6515rte():
     assert len(net.bus) == 6515
     assert len(net.line) + len(net.trafo) == 9037
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 1651
+    assert len(net.polynomial_cost) == 1388
     assert net.converged
 
 
@@ -243,6 +277,7 @@ def test_case9241pegase():
     assert len(net.bus) == 9241
     assert len(net.line) + len(net.trafo) == 16049
     assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 1879
+    assert len(net.polynomial_cost) == 1445
     assert net.converged
 
 
@@ -252,7 +287,9 @@ def test_GBreducednetwork():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 29
     assert len(net.line) + len(net.trafo) == 99
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 66
+    n_gen = 66
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -262,7 +299,9 @@ def test_GBnetwork():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 2224
     assert len(net.line) + len(net.trafo) == 3207
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 431
+    n_gen = 394
+    assert len(net.ext_grid) + len(net.gen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
@@ -272,10 +311,11 @@ def test_iceland():
     pp.runpp(net, trafo_model='pi')
     assert len(net.bus) == 189
     assert len(net.line) + len(net.trafo) == 206
-    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == 35
+    n_gen = 35
+    assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
+    assert len(net.polynomial_cost) == n_gen
     assert net.converged
 
 
 if __name__ == '__main__':
-#    net = pn.case30Q()
     pytest.main(["test_power_system_test_cases.py", "-xs"])
