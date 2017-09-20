@@ -418,7 +418,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
 
 def dataframes_equal(x_df, y_df, tol=1.e-14):
     # eval if two DataFrames are equal, with regard to a tolerance
-    if len(x_df) == len(y_df) and len(x_df.columns) == len(y_df.columns):
+    if x_df.shape == y_df.shape:
         # we use numpy.allclose to grant a tolerance on numerical values
         numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
                                       y_df.select_dtypes(include=[np.number]),
@@ -816,6 +816,8 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
     for element in elements:
         if element == "sgen":
             net["sgen"]["zone"] = net["bus"]["zone"].loc[net["sgen"]["bus"]].values
+        elif element == "gen":
+            net["gen"]["zone"] = net["bus"]["zone"].loc[net["gen"]["bus"]].values
         elif element == "load":
             net["load"]["zone"] = net["bus"]["zone"].loc[net["load"]["bus"]].values
         elif element == "ext_grid":
@@ -829,12 +831,28 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             if crossing > 0:
                 logger.warning("There have been %i lines with different zones at from- and to-bus"
                                % crossing)
+        elif element == "dcline":
+            net["dcline"]["zone"] = net["bus"]["zone"].loc[net["dcline"]["from_bus"]].values
+            crossing = sum(net["bus"]["zone"].loc[net["dcline"]["from_bus"]].values !=
+                           net["bus"]["zone"].loc[net["dcline"]["to_bus"]].values)
+            if crossing > 0:
+                logger.warning("There have been %i dclines with different zones at from- and to-bus"
+                               % crossing)
         elif element == "trafo":
             net["trafo"]["zone"] = net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values
             crossing = sum(net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values !=
                            net["bus"]["zone"].loc[net["trafo"]["lv_bus"]].values)
             if crossing > 0:
                 logger.warning("There have been %i trafos with different zones at lv_bus and hv_bus"
+                               % crossing)
+        elif element == "trafo3w":
+            net["trafo3w"]["zone"] = net["bus"]["zone"].loc[net["trafo3w"]["hv_bus"]].values
+            crossing = sum(net["bus"]["zone"].loc[net["trafo3w"]["hv_bus"]].values !=
+                           net["bus"]["zone"].loc[net["trafo3w"]["lv_bus"]].values) + \
+                sum(net["bus"]["zone"].loc[net["trafo3w"]["hv_bus"]].values !=
+                    net["bus"]["zone"].loc[net["trafo3w"]["mv_bus"]].values)
+            if crossing > 0:
+                logger.warning("There have been %i trafo3ws with different zones at lv_bus and hv_bus"
                                % crossing)
         elif element == "impedance":
             net["impedance"]["zone"] = net["bus"]["zone"].loc[net["impedance"]["from_bus"]].values
@@ -849,6 +867,8 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             net["ward"]["zone"] = net["bus"]["zone"].loc[net["ward"]["bus"]].values
         elif element == "xward":
             net["xward"]["zone"] = net["bus"]["zone"].loc[net["xward"]["bus"]].values
+        elif element == "measurement":
+            net["measurement"]["zone"] = net["bus"]["zone"].loc[net["measurement"]["bus"]].values
         else:
             raise UserWarning("Unkown element %s" % element)
 
