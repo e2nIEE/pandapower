@@ -4,12 +4,12 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-from collections import defaultdict
+from collections import defaultdict, Counter
 from itertools import chain
 
 import numpy as np
 import pandas as pd
-from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, PCID, QCID, bus_cols
+from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
 from pandapower.auxiliary import _sum_by_group
 
 
@@ -283,24 +283,22 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
                                  "100%!")
 
             # cumulative sum of constant-current loads
-            vl = _is_elements["load"] * l["scaling"].values.T * ci / np.float64(1000.)
-            p_ci = l["p_kw"].values * vl
-            q_ci = l["q_kvar"].values * vl
-            b_ci = l["bus"].values
+            b_zip = l["bus"].values
+            load_counter = Counter(b_zip)
 
             bus_lookup = net["_pd2ppc_lookups"]["bus"]
-            b_ci = bus_lookup[b_ci]
-            b_ci, vp_ci, vq_ci = _sum_by_group(b_ci, p_ci, q_ci)
+            b_zip = bus_lookup[b_zip]
+            load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
+            b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
 
-            ppc["bus"][b_ci, PCID] = vp_ci
-            ppc["bus"][b_ci, QCID] = vq_ci
+            for bus, no_loads in load_counter.items():
+                ci_sum[b_zip == bus] /= no_loads
+                cz_sum[b_zip == bus] /= no_loads
 
-        else:
-            cz = 0
-            ci = 0
+            ppc["bus"][b_zip, CID] = ci_sum
+            ppc["bus"][b_zip, CZD] = cz_sum
 
-        cp = (1 - cz - ci)
-        vl = _is_elements["load"] * l["scaling"].values.T * cp / np.float64(1000.)
+        vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
         q = np.hstack([q, l["q_kvar"].values * vl])
         p = np.hstack([p, l["p_kw"].values * vl])
         b = np.hstack([b, l["bus"].values])
@@ -399,16 +397,6 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         q = np.hstack([q, xw["qz_kvar"].values * vl])
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
-
-    # constant-impedance loads if voltage_depend_loads=True
-    l = net["load"]
-    voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-    if len(l) > 0 and voltage_depend_loads:
-        cz = l["const_z_percent"].values / 100.
-        vl = _is_elements["load"] * l["scaling"].values.T * cz / np.float64(1000.)
-        q = np.hstack([q, l["q_kvar"].values * vl])
-        p = np.hstack([p, l["p_kw"].values * vl])
-        b = np.hstack([b, l["bus"].values])
 
     # if array is not empty
     if b.size:

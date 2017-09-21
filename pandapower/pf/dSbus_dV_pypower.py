@@ -16,19 +16,18 @@ from numpy import conj, diag, asmatrix, asarray, zeros
 from scipy.sparse import issparse, csr_matrix as sparse
 
 
-def dSbus_dV(Ybus, V, I=None):
+def dSbus_dV(Ybus, V):
     """Computes partial derivatives of power injection w.r.t. voltage.
     """
 
-    I = zeros(len(V)) if I is None else I
     if issparse(Ybus):
-        return dSbus_dV_sparse(Ybus, V, I)
+        return dSbus_dV_sparse(Ybus, V)
     else:
-        return dSbus_dV_dense(Ybus, V, I)
+        return dSbus_dV_dense(Ybus, V)
 
 
-def dSbus_dV_sparse(Ybus, V, I):
-    Ibus = Ybus * V - I
+def dSbus_dV_sparse(Ybus, V):
+    Ibus = Ybus * V
     ib = range(len(V))
     diagV = sparse((V, (ib, ib)))
     diagIbus = sparse((Ibus, (ib, ib)))
@@ -38,9 +37,9 @@ def dSbus_dV_sparse(Ybus, V, I):
     return dS_dVm, dS_dVa
 
 
-def dSbus_dV_dense(Ybus, V, I):
+def dSbus_dV_dense(Ybus, V):
     # standard code from Pypower (slower than above)
-    Ibus = Ybus * asmatrix(V).T - asmatrix(I).T
+    Ibus = Ybus * asmatrix(V).T
 
     diagV = asmatrix(diag(V))
     diagIbus = asmatrix(diag(asarray(Ibus).flatten()))
