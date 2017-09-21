@@ -88,6 +88,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, ppci):
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
+    J = None
     ## do Newton iterations
     while (not converged and i < max_it):
         ## update iteration counter
@@ -112,10 +113,12 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, ppci):
 
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
+
         F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
+
         converged = _check_for_convergence(F, tol)
 
-    return V, converged, i
+    return V, converged, i, J
 
 
 def _evaluate_Fx(Ybus, V, Sbus, pv, pq):

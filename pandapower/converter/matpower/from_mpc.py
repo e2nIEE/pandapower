@@ -86,7 +86,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         ppc["branch"] = mpc[casename_mpc_file].branch
 
         try:
-            ppc['gencost'] = mpc[casename_mpc_file].mpc.gencost
+            ppc['gencost'] = mpc[casename_mpc_file].gencost
         except:
             logger.info('gencost is not in mpc')
 

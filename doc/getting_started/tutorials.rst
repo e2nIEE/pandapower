@@ -48,7 +48,11 @@ Plotting pandapower networks:
     
 Hosting Capacity:
     - `hosting capacity <https://github.com/panda-power/pandapower/blob/master/tutorials/hosting_capacity.ipynb>`_
-    
+ 
+Internal data structure, Ybus and J matrix:
+    - `internal datastructure <https://github.com/panda-power/pandapower/blob/master/tutorials/internal_datastructure.ipynb>`_
+ 
+ 
 To run the tutorials interactively (jupyter module is needed):
 
 1. Download or clone the pandapower github repository: https://github.com/panda-power/pandapower

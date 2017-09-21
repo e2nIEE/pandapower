@@ -15,7 +15,7 @@ from pandapower.pf.runpf_pypower import _runpf_pypower
 
 def test_to_ppc_and_mpc():
     # pypower cases to validate
-    functions = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39']
+    functions = ['case4gs', 'case6ww', 'case30', 'case39']
     for fn in functions:
         # get pypower grids with results
         ppc_net = get_testgrids(fn, 'pypower_cases.p')
@@ -46,8 +46,9 @@ def test_to_ppc_and_mpc():
             bus_lookup = net["_pd2ppc_lookups"]["bus"]
             # check for equality in bus voltages
             pp_buses = bus_lookup[res_converted_pp['bus'][:, BUS_I].astype(int)]
-            assert np.allclose(res_converted_pp['bus'][pp_buses, VM:VA + 1],
-                               ppc_net['bus'][:, VM:VA + 1])
+            res1 = res_converted_pp['bus'][pp_buses, VM:VA + 1]
+            res2 = ppc_net['bus'][:, VM:VA + 1]
+            assert np.allclose(res1, res2)
         else:
             raise LoadflowNotConverged("Loadflow did not converge!")
 
