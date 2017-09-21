@@ -657,10 +657,9 @@ def test_get_internal():
     _, ppci = _pd2ppc(net)
     baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
 
-    Ibus = np.zeros(len(V))
     pvpq = np.r_[pv, pq]
 
-    J = _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=Ibus)
+    J = _create_J_without_numba(Ybus, V, pvpq, pq)
 
     assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
     # get J for all other algorithms

@@ -24,7 +24,7 @@ except ImportError:
     pass
 
 
-def newtonpf(Ybus, Sbus, V0, pv, pq, options, ppci):
+def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     """Solves the power flow using a full Newton's method.
 
     Solves for bus voltages given the full system admittance matrix (for
