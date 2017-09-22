@@ -15,11 +15,11 @@ from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float
 from pandapower.pf.dSbus_dV_pypower import dSbus_dV
 from scipy.sparse import hstack, vstack, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
+from pandapower.pf.makeSbus import makeSbus
 
 try:
     from pandapower.pf.create_J import create_J, create_J2
     from pandapower.pf.dSbus_dV_numba import dSbus_dV_numba_sparse
-    from pandapower.pf.makeSbus import makeSbus
 except ImportError:
     pass
 
