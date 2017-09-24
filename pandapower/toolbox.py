@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_indices, pandapowerNet
+from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
@@ -388,13 +388,16 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
         # for two networks make sure both have the same keys that do not start with "_"...
         x_keys = [key for key in x.keys() if not key.startswith("_")]
         y_keys = [key for key in y.keys() if not key.startswith("_")]
+        key_union = set(x_keys) | set(y_keys)
+        key_difference = set(x_keys) ^ set(y_keys)
 
-        if len(set(x_keys) ^ set(y_keys)) > 0:
-            logger.info("Networks entries mismatch:", x_keys, " - VS. - ", y_keys)
-            return False
+        if len(key_difference) > 0:
+            logger.info("Networks entries mismatch at: %s" % key_difference)
+            if not check_only_results:
+                return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in x_keys:
+        for df_name in list(key_union):
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
@@ -415,7 +418,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
 
 def dataframes_equal(x_df, y_df, tol=1.e-14):
     # eval if two DataFrames are equal, with regard to a tolerance
-    if len(x_df) == len(y_df) and len(x_df.columns) == len(y_df.columns):
+    if x_df.shape == y_df.shape:
         # we use numpy.allclose to grant a tolerance on numerical values
         numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
                                       y_df.select_dtypes(include=[np.number]),
@@ -813,6 +816,8 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
     for element in elements:
         if element == "sgen":
             net["sgen"]["zone"] = net["bus"]["zone"].loc[net["sgen"]["bus"]].values
+        elif element == "gen":
+            net["gen"]["zone"] = net["bus"]["zone"].loc[net["gen"]["bus"]].values
         elif element == "load":
             net["load"]["zone"] = net["bus"]["zone"].loc[net["load"]["bus"]].values
         elif element == "ext_grid":
@@ -826,12 +831,28 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             if crossing > 0:
                 logger.warning("There have been %i lines with different zones at from- and to-bus"
                                % crossing)
+        elif element == "dcline":
+            net["dcline"]["zone"] = net["bus"]["zone"].loc[net["dcline"]["from_bus"]].values
+            crossing = sum(net["bus"]["zone"].loc[net["dcline"]["from_bus"]].values !=
+                           net["bus"]["zone"].loc[net["dcline"]["to_bus"]].values)
+            if crossing > 0:
+                logger.warning("There have been %i dclines with different zones at from- and to-bus"
+                               % crossing)
         elif element == "trafo":
             net["trafo"]["zone"] = net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values
             crossing = sum(net["bus"]["zone"].loc[net["trafo"]["hv_bus"]].values !=
                            net["bus"]["zone"].loc[net["trafo"]["lv_bus"]].values)
             if crossing > 0:
                 logger.warning("There have been %i trafos with different zones at lv_bus and hv_bus"
+                               % crossing)
+        elif element == "trafo3w":
+            net["trafo3w"]["zone"] = net["bus"]["zone"].loc[net["trafo3w"]["hv_bus"]].values
+            crossing = sum(net["bus"]["zone"].loc[net["trafo3w"]["hv_bus"]].values !=
+                           net["bus"]["zone"].loc[net["trafo3w"]["lv_bus"]].values) + \
+                sum(net["bus"]["zone"].loc[net["trafo3w"]["hv_bus"]].values !=
+                    net["bus"]["zone"].loc[net["trafo3w"]["mv_bus"]].values)
+            if crossing > 0:
+                logger.warning("There have been %i trafo3ws with different zones at lv_bus and hv_bus"
                                % crossing)
         elif element == "impedance":
             net["impedance"]["zone"] = net["bus"]["zone"].loc[net["impedance"]["from_bus"]].values
@@ -846,6 +867,8 @@ def add_zones_to_elements(net, elements=["line", "trafo", "ext_grid", "switch"])
             net["ward"]["zone"] = net["bus"]["zone"].loc[net["ward"]["bus"]].values
         elif element == "xward":
             net["xward"]["zone"] = net["bus"]["zone"].loc[net["xward"]["bus"]].values
+        elif element == "measurement":
+            net["measurement"]["zone"] = net["bus"]["zone"].loc[net["measurement"]["bus"]].values
         else:
             raise UserWarning("Unkown element %s" % element)
 
@@ -1226,9 +1249,10 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 net1.line_geodata.set_index(np.array(ni), inplace=True)
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
-                net2.line_geodata.set_index(np.array(ni), inplace=True)
-            net[element] = net1[element].append(
-                net2[element], ignore_index=element not in ("bus", "bus_geodata", "line_geodata"))
+            ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
+            dtypes = net2[element].dtypes
+            net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
+            _preserve_dtypes(net[element], dtypes)
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))

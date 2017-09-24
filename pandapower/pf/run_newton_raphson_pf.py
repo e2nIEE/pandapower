@@ -111,7 +111,12 @@ def _get_ibus(ppci):
     """
     returns vector of current injections for constant-current loads
     """
-    return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / ppci['baseMVA']
+    i_mag_bus = (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / ppci['baseMVA']
+    i_ang_bus = exp(1j * (pi / 180) * ppci["bus"][:, VA])
+    i_bus = i_mag_bus * i_ang_bus
+    ppci["bus"][:, PCID] = i_bus.real
+    ppci["bus"][:, QCID] = i_bus.imag
+    return i_bus, ppci
 
 
 def _run_ac_pf_without_qlims_enforced(ppci, options):
@@ -130,10 +135,10 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     Sbus = makeSbus(baseMVA, bus, gen)
 
     ## compute complex bus current injections from constant current loads
-    Ibus = _get_ibus(ppci)
+    Ibus, ppci = _get_ibus(ppci)
 
     ## run the newton power  flow
-    V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
+    V, success, _, ppci["internal"]["J"] = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
 
     ## update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, Ibus=Ibus)

@@ -22,7 +22,8 @@ from pandapower.test.loadflow.result_test_network_generator import \
     add_test_oos_bus_with_is_element, result_test_network_generator
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 from pandapower.toolbox import nets_equal
-
+from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
+from pandapower.pf.newtonpf import _create_J_without_numba
 
 def test_set_user_pf_options():
     net = example_simple()
@@ -565,7 +566,7 @@ def test_zip_loads_pf_algorithms():
         assert np.allclose(va_nr, va_alg)
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 def test_zip_loads_with_voltage_angles():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=1.)
@@ -639,5 +640,32 @@ def test_pvpq_lookup():
     assert nets_equal(net, net_numba)
 
 
+def test_get_internal():
+    net = example_simple()
+    # for Newton raphson
+    pp.runpp(net)
+    J_intern = net._ppc["internal"]["J"]
+
+    ppc = net._ppc
+    V_mag = ppc["bus"][:,7][:-2]
+    V_ang = ppc["bus"][:, 8][:-2]
+    V = V_mag * np.exp(1j * V_ang / 180 * np.pi)
+
+    # Get stored Ybus in ppc
+    Ybus = ppc["internal"]["Ybus"]
+
+    _, ppci = _pd2ppc(net)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
+
+    Ibus = np.zeros(len(V))
+    pvpq = np.r_[pv, pq]
+
+    J = _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=Ibus)
+
+    assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
+    # get J for all other algorithms
+
+
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])
+    # test_get_internal()

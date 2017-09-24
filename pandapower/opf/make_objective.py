@@ -105,7 +105,6 @@ def _make_objective(ppci, net):
 
                         if not costs.element[costs.element_type == el].empty:
 
-
                             # cost data to write into gencost
                             el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(
                                     costs.loc[costs.element_type == el].element)].index
@@ -132,12 +131,11 @@ def _make_objective(ppci, net):
                                 ppci["gencost"][elements, NCOST] = n_coefficients / 2
                                 ppci["gencost"][elements, MODEL] = 1
 
-
         if len(net.polynomial_cost):
-
             for cost_type in ["p", "q"]:
                 if (net.polynomial_cost.type == cost_type).any():
-                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(drop=True)
+                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(
+                        drop=True)
 
                     if cost_type == "q":
                         shift_idx = ng
@@ -160,9 +158,10 @@ def _make_objective(ppci, net):
                             if el == "dcline":
                                 idx = dcline_idx
 
-                            el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(\
-                                     costs.loc[costs.element_type == el].element)].index
-                            c = costs.loc[(costs.element_type == el) & (costs.element.isin(el_is))].c.reset_index(drop=True)
+                            el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(
+                                costs.loc[costs.element_type == el].element)].index
+                            c = costs.loc[(costs.element_type == el) &
+                                          (costs.element.isin(el_is))].c.reset_index(drop=True)
 
                             if len(c) > 0:
                                 c = concatenate(c)

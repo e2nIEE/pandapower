@@ -84,6 +84,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
+    J = None
     ## do Newton iterations
     while (not converged and i < max_it):
         ## update iteration counter
@@ -107,9 +108,10 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
         Va = angle(V)  ## we wrapped around with a negative Vm
 
         F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
+
         converged = _check_for_convergence(F, tol)
 
-    return V, converged, i
+    return V, converged, i, J
 
 
 def _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=None):

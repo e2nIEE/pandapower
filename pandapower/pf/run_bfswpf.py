@@ -411,7 +411,7 @@ def _run_bfswpf(ppci, options, **kwargs):
         Ybus_noshift = Ybus.copy()
 
     # get current injections for constant-current loads
-    Ibus = _get_ibus(ppci)
+    Ibus, ppci = _get_ibus(ppci)
 
     # #-----  run the power flow  -----
     V_final, success = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
