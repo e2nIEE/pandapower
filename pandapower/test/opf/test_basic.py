@@ -483,7 +483,7 @@ def test_dcopf_pwl(simple_opf_test_net):
     # pp.create_polynomial_cost(net, 0, "gen", array([-100, 0]))
     pp.create_piecewise_linear_cost(net, 0, "gen", array([[-200, 20000], [-100, 10000], [0, 0]]))
     # run OPF
-    pp.rundcopp(net, verbose=True)
+    pp.rundcopp(net, verbose=False)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -495,8 +495,8 @@ def test_dcopf_pwl(simple_opf_test_net):
 
 
 if __name__ == "__main__":
-    pytest.main(["-s"])
-    # pytest.main(["test_basic.py", "-xs"])
+#    pytest.main(["-s"])
+     pytest.main(["test_basic.py", "-s"])
     # test_simplest_dispatch()
     # test_trafo3w_loading()
     # test_trafo3w_loading()

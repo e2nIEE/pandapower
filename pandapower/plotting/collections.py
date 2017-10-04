@@ -351,7 +351,7 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True):
         if c:
             # cc = copy.copy(c)
             ax.add_collection(c)
-            if plot_colorbars and hasattr(c, "has_colormap"):
+            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
                 extend = c.extend if hasattr(c, "extend") else "neither"
                 cbar_load = plt.colorbar(c, extend=extend, ax=ax)
                 if hasattr(c, "cbar_title"):

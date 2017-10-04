@@ -28,7 +28,7 @@ def run_all_tests():
     """ function executing all tests
     """
     logger = logging.getLogger()
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(logging.CRITICAL)
     pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
     logger.setLevel(logging.INFO)
 

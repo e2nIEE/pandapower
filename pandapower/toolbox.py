@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_indices, pandapowerNet
+from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
@@ -1249,9 +1249,10 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 net1.line_geodata.set_index(np.array(ni), inplace=True)
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
-                net2.line_geodata.set_index(np.array(ni), inplace=True)
-            net[element] = net1[element].append(
-                net2[element], ignore_index=element not in ("bus", "bus_geodata", "line_geodata"))
+            ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
+            dtypes = net2[element].dtypes
+            net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
+            _preserve_dtypes(net[element], dtypes)
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))

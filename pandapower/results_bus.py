@@ -6,7 +6,7 @@
 
 import numpy as np
 from numpy import zeros, array, float, hstack, invert, conj
-from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, PCID, QCID
+from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
 from pandapower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
@@ -140,33 +140,14 @@ def _get_p_q_results(net,  bus_lookup_aranged):
             b = np.hstack([b, l["bus"].values])
 
             if voltage_depend_loads:
-                v = (net.res_bus.vm_pu * np.exp(1j * np.deg2rad(net.res_bus.va_degree))).loc[l['bus'].values].fillna(0)
-                # constant impedance
-                sl = (l["p_kw"].values + 1j * l["q_kvar"].values) * scaling * load_is * cz * (v * np.conj(v))
-                pl = sl.real
+                # constant impedance and constant current
+                vm_l = net.res_bus.vm_pu.loc[l['bus']].values
+                volt_depend = ci * vm_l + cz * vm_l ** 2
+                pl = l["p_kw"].values * scaling * load_is * volt_depend
                 net["res_load"]["p_kw"] += pl
                 p = np.hstack([p, pl])
 
-                ql = sl.imag
-                net["res_load"]["q_kvar"] += ql
-                q = np.hstack([q, ql])
-
-                b = np.hstack([b, l["bus"].values])
-
-
-                # constant current
-                ppc = net._ppc
-                ppi = net["bus"].index.values
-                bus_lookup = net["_pd2ppc_lookups"]["bus"]
-                bus_idx = bus_lookup[ppi]
-                i_cc = (ppc["bus"][bus_idx][:, PCID] + 1j * ppc["bus"][bus_idx][:, QCID])[l['bus'].values]
-
-                sl = - v * conj(i_cc) * net._ppc['baseMVA'] * 1e3
-                pl = sl.real
-                net["res_load"]["p_kw"] += pl
-                p = np.hstack([p, pl])
-
-                ql = sl.imag
+                ql = l["q_kvar"].values * scaling * load_is * volt_depend
                 net["res_load"]["q_kvar"] += ql
                 q = np.hstack([q, ql])
 
@@ -177,7 +158,6 @@ def _get_p_q_results(net,  bus_lookup_aranged):
             net["res_load"]["p_kw"] = pl
             p = np.hstack([p, pl])
             b = np.hstack([b, l["bus"].values])
-
 
         net["res_load"].index = net["load"].index
 

@@ -90,7 +90,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
+    dict_net = to_dict_of_dfs(net, include_results=include_results, create_dtype_df=True)
     dict_net["dtypes"] = collect_all_dtypes_df(net)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)

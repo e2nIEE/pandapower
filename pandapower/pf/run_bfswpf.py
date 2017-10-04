@@ -12,7 +12,7 @@ import scipy as sp
 from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, BR_STATUS, SHIFT
 from pandapower.idx_bus import BUS_I, BUS_TYPE, GS, BS
 from pandapower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
-from pypower.makeSbus import makeSbus
+from pandapower.pf.makeSbus import makeSbus
 from scipy.sparse import csr_matrix, csgraph
 from six import iteritems
 
@@ -20,7 +20,7 @@ from pandapower.auxiliary import ppException
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pf.pfsoln import pfsoln
-from pandapower.pf.run_newton_raphson_pf import _get_Y_bus, _get_ibus
+from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
 from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
 
 
@@ -211,8 +211,8 @@ def _makeYsh_bfsw(bus, branch, baseMVA):
     return Ysh
 
 
-def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, buses_ordered_bfs_nets,
-            enforce_q_lims, tolerance_kva, max_iteration, **kwargs):
+def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
+            options, **kwargs):
     """
     distribution power flow solution according to [1]
     :param DLF: direct-Load-Flow matrix which relates bus current injections to voltage drops from the root bus
@@ -231,7 +231,10 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, b
 
     :return: power flow result
     """
-
+    enforce_q_lims = options["enforce_q_lims"]
+    tolerance_kva = options["tolerance_kva"]
+    max_iteration = options["max_iteration"]
+    voltage_depend_loads = options["voltage_depend_loads"]
     # setting options
     tolerance_mva = tolerance_kva * 1e-3
     max_it = max_iteration  # maximum iterations
@@ -260,7 +263,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, b
     gen_pv = np.in1d(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
     qg_lim = np.zeros(ngen, dtype=bool)  # initialize generators which violated Q limits
 
-    Iinj = np.conj(Sbus / V0) - Ysh * V0 + Ibus  # Initial current injections
+    Iinj = np.conj(Sbus / V0) - Ysh * V0   # Initial current injections
 
     # initiate reference voltage vector
     V_ref = np.ones(nobus, dtype=complex)
@@ -319,8 +322,10 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, b
                     ref, pv, pq = bustypes(bus, gen)
 
             # avoid calling makeSbus, update only Sbus for pv nodes
-            Sbus = makeSbus(baseMVA, bus, gen)
-            Iinj = np.conj(Sbus / V) - Ysh * V + Ibus
+            Sbus = (makeSbus(baseMVA, bus, gen, vm=abs(V))
+                    if voltage_depend_loads else
+                    makeSbus(baseMVA, bus, gen))
+            Iinj = np.conj(Sbus / V) - Ysh * V
             deltaV = DLF * Iinj[mask_root]
             V[mask_root] = V_ref[mask_root] + deltaV
 
@@ -334,7 +339,9 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, b
                 inner_loop_converged = True
 
         # testing termination criterion -
-        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
+        if voltage_depend_loads:
+            Sbus = makeSbus(baseMVA, bus, gen, vm=abs(V))
+        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
         # check tolerance
         converged = _check_for_convergence(F, tolerance_mva)
 
@@ -343,7 +350,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, Ibus, V0, ref, pv, pq, b
                   "{0} iterations.\n".format(n_iter))
 
         # updating injected currents
-        Iinj = np.conj(Sbus / V) - Ysh * V + Ibus
+        Iinj = np.conj(Sbus / V) - Ysh * V
 
     return V, converged
 
@@ -410,13 +417,10 @@ def _run_bfswpf(ppci, options, **kwargs):
     else:
         Ybus_noshift = Ybus.copy()
 
-    # get current injections for constant-current loads
-    Ibus, ppci = _get_ibus(ppci)
-
     # #-----  run the power flow  -----
     V_final, success = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
-                               Sbus, Ibus, V0, ref, pv, pq, buses_ordered_bfs_nets,
-                               enforce_q_lims, tolerance_kva, max_iteration, **kwargs)
+                               Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
+                               options, **kwargs)
 
     # if phase-shifting trafos are present adjust final state vector angles accordingly
     if calculate_voltage_angles and any_trafo_shift:
