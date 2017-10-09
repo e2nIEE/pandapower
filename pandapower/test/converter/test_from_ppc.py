@@ -7,7 +7,6 @@
 import pytest
 import os
 import pickle
-from copy import deepcopy
 
 import pandapower as pp
 import pandapower.networks as pn
@@ -91,19 +90,23 @@ def test_pypower_cases():
 
 def test_case9_conversion():
     net = pn.case9()
-    ppc = to_ppc(net)
-    # correction because to_ppc do net export max_loading_percent:
-    ppc["branch"][:, 5] = [250, 250, 150, 300, 150] + [250]*4
+    # set max_loading_percent to enable line limit conversion
+    net.line["max_loading_percent"] = 100
+    ppc = to_ppc(net, mode="opf")
     # correction because voltage limits are set to 1.0 at slack buses
-    ppc["bus"][0, 11] = 0.9
-    ppc["bus"][0, 12] = 1.1
+    ppc["bus"][0, 12] = 0.9
+    ppc["bus"][0, 11] = 1.1
 
-    net2 = from_ppc(ppc)
+    net2 = from_ppc(ppc, f_hz=net.f_hz)
+    # again add max_loading_percent to enable valid comparison
+    net2.line["max_loading_percent"] = 100
 
+    # compare loadflow results
     pp.runpp(net)
     pp.runpp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
+    # compare optimal powerflow results
     pp.runopp(net)
     pp.runopp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
