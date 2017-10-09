@@ -63,10 +63,10 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
             PV buses as initial solution
             - "results" - voltage vector from net.res_bus is used as initial solution.
 
-        **mode** (str, None) - mode of power flow calculation type ("pf" - power flow or "opf" - \
-        optimal power flow). "mode" influences for instance whether opf cost data will be \
-        converted or which slack bus voltage limits are respected. If "mode" is None, cost data \
-        will be respected via mode="opf" if cost data are existing.
+        **mode** (str, None) - mode of power flow calculation type ("pf" - power flow, "opf" - \
+        optimal power flow or "sc" - short circuit). "mode" influences for instance whether opf \
+        cost data will be converted or which slack bus voltage limits are respected. If "mode" \
+        is None, cost data will be respected via mode="opf" if cost data are existing.
 
     OUTPUT:
 
