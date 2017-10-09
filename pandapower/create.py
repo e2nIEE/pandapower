@@ -588,7 +588,7 @@ def create_load_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
 
         **bus** (int) - The bus id to which the load is connected
 
-        **sn_kva** (float) - rated power of the generator
+        **sn_kva** (float) - rated power of the load
 
         **cos_phi** (float) - power factor cos_phi
 

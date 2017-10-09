@@ -82,6 +82,13 @@ def test_3bus():
     assert (np.nanmax(abs(diff_v)) < 1e-4)
     assert (np.nanmax(abs(diff_delta)) < 1e-4)
 
+    # Backwards check. Use state estimation results for power flow and check for equality
+    net.ext_grid.vm_pu = net.res_bus_est.vm_pu.iloc[0]
+    pp.create_load(net, 0, net.res_bus_est.p_kw.iloc[0], net.res_bus_est.q_kvar.iloc[0])
+    pp.create_load(net, 1, net.res_bus_est.p_kw.iloc[1], net.res_bus_est.q_kvar.iloc[1])
+    pp.create_load(net, 2, net.res_bus_est.p_kw.iloc[2], net.res_bus_est.q_kvar.iloc[2])
+    _compare_pf_and_se_results(net)
+
 
 def test_3bus_with_bad_data():
     net = pp.create_empty_network()
@@ -220,8 +227,9 @@ def test_3bus_with_transformer():
     pp.create_measurement(net, "q", "transformer", r2(net.res_trafo.q_hv_kvar.iloc[0], 10), 10,
                           bus=3, element=0)  # at hv side
 
+
     # 2. Do state estimation
-    success = estimate(net, init='slack', tolerance=5e-5, maximum_iterations=10)
+    success = estimate(net, init='slack', tolerance=5e-5, maximum_iterations=10, calculate_voltage_angles=True)
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
 
@@ -231,6 +239,15 @@ def test_3bus_with_transformer():
     assert success
     assert (np.nanmax(abs(diff_v)) < 6e-4)
     assert (np.nanmax(abs(diff_delta)) < 1.4e-4)
+
+    # Backwards check. Use state estimation results for power flow and check for equality
+    net.load.drop(net.load.index, inplace=True)
+    net.ext_grid.vm_pu = net.res_bus_est.vm_pu.iloc[net.ext_grid.bus.iloc[0]]
+    pp.create_load(net, 0, net.res_bus_est.p_kw.iloc[0], net.res_bus_est.q_kvar.iloc[0])
+    pp.create_load(net, 1, net.res_bus_est.p_kw.iloc[1], net.res_bus_est.q_kvar.iloc[1])
+    pp.create_load(net, 2, net.res_bus_est.p_kw.iloc[2], net.res_bus_est.q_kvar.iloc[2])
+
+    _compare_pf_and_se_results(net)
 
 
 def test_3bus_with_2_slacks():
@@ -525,6 +542,20 @@ def r(v=0.03):
 
 def r2(base, v):
     return np.random.normal(base, v)
+
+
+def _compare_pf_and_se_results(net):
+    pp.runpp(net, calculate_voltage_angles=True)
+    assert (np.allclose(net.res_bus_est.p_kw.values, net.res_bus.p_kw.values, 1e-6))
+    assert (np.allclose(net.res_bus_est.q_kvar.values, net.res_bus.q_kvar.values, 1e-6))
+    assert (np.allclose(net.res_line_est.p_from_kw.values, net.res_line.p_from_kw.values, 1e-6))
+    assert (np.allclose(net.res_line_est.q_from_kvar.values, net.res_line.q_from_kvar.values, 1e-6))
+    assert (np.allclose(net.res_line_est.p_to_kw.values, net.res_line.p_to_kw.values, 1e-6))
+    assert (np.allclose(net.res_line_est.q_to_kvar.values, net.res_line.q_to_kvar.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.p_lv_kw.values, net.res_trafo.p_lv_kw.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.q_lv_kvar.values, net.res_trafo.q_lv_kvar.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.p_hv_kw.values, net.res_trafo.p_hv_kw.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.q_hv_kvar.values, net.res_trafo.q_hv_kvar.values, 1e-6))
 
 
 if __name__ == '__main__':
