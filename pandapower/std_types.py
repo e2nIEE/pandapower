@@ -175,8 +175,9 @@ def available_std_types(net, element="line"):
 
 def parameter_from_std_type(net, parameter, element="line", fill=None):
     """
-    Adds additional parameters, which are not included in the original pandapower datastructure
-    but are available in the standard type database to the panadpower net.
+    Loads standard types data for a parameter, which can be used to add an additional parameter,
+    that is not included in the original pandapower datastructure but is available in the standard
+    type database.
 
     INPUT:
         **net** - pandapower network
