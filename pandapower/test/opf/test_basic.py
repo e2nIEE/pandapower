@@ -493,10 +493,67 @@ def test_dcopf_pwl(simple_opf_test_net):
     logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
     assert abs(100 * net.res_gen.p_kw.values - net.res_cost) < 1e-3
 
+def test_opf_varying_max_line_loading():
+    """ Testing a  simple network with transformer for loading
+    constraints with OPF using a generator """
+
+    # boundaries
+    vm_max = 1.5
+    vm_min = 0.5
+    max_trafo_loading = 800
+    max_line_loading = 13
+
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75, tp_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tp_mid=0, vn_hv_kv=10.0,
+                                          vscr_percent=2.8125, tp_pos=0, tp_side="hv", tp_min=-2,
+                                          tp_st_percent=2.5, i0_percent=0.68751, sn_kva=16.0,
+                                          pfe_kw=0.11, name=None, in_service=True, index=None,
+                                          max_loading_percent=max_trafo_loading)
+
+
+
+    pp.create_sgen(net, 3, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=25,
+                   min_q_kvar=-25)
+    pp.create_sgen(net, 2, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=25,
+                   min_q_kvar=-25)
+    pp.create_polynomial_cost(net, 0, "sgen", array([-10, 0]))
+    pp.create_polynomial_cost(net, 1, "sgen", array([-10, 0]))
+    pp.create_ext_grid(net, 0)
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([-.1, 0]))
+    pp.create_line_from_parameters(net, 1, 2, 1, name="line1", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.200, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=20)
+    pp.create_line_from_parameters(net, 1, 3, 1, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.100, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=10)
+
+    # run OPF
+    pp.runopp(net, verbose=False, init="flat")
+    assert net["OPF_converged"]
+
+    assert sum(net["_ppc"]["branch"][:, 5] - array([ 0.02771281+0.j,  0.00692820+0.j,  0.12800000+0.j])) < 1e-8
+
+
+    # assert and check result
+    logger.debug("test_opf_sgen_loading")
+    logger.debug("res_sgen:\n%s" % net.res_sgen)
+    logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
+    assert net.res_line.loading_percent.at[0] - 20 < 1e-2
+    logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
+    assert net.res_line.loading_percent.at[1] - 10 < 1e-2
+
+
 
 if __name__ == "__main__":
 #    pytest.main(["-s"])
-     pytest.main(["test_basic.py", "-s"])
+    test_opf_varying_max_line_loading()
+     # pytest.main(["test_basic.py", "-s"])
     # test_simplest_dispatch()
     # test_trafo3w_loading()
     # test_trafo3w_loading()
