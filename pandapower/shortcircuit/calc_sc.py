@@ -23,7 +23,7 @@ from pandapower.shortcircuit.results import _extract_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-          ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0., branch_results=True):
+          ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0., branch_results=False):
 
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
@@ -97,6 +97,9 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
                                 "circuit current')
     if topology not in ["meshed", "radial", "auto"]:
         raise ValueError('specify network structure as "meshed", "radial" or "auto"')
+
+    if branch_results:
+        logger.warning("Branch results are in beta mode and might not always be reliable, especially for transformers")
 
     kappa = ith or ip
     net["_options"] = {}
