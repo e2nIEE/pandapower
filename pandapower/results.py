@@ -63,13 +63,13 @@ def reset_results(net):
     # net["res_xward"] = copy.copy(net["_empty_res_xward"])
     # net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
 
-    # net["res_bus"] = copy.copy(net["_empty_res_bus"])
+    net["res_bus"] = copy.copy(net["_empty_res_bus"])
     # net["res_line"] = copy.copy(net["_empty_res_line"])
     # net["res_trafo"] = copy.copy(net["_empty_res_trafo"])
     # net["res_trafo3w"] = copy.copy(net["_empty_res_trafo3w"])
     # net["res_impedance"] = copy.copy(net["_empty_res_impedance"])
 
-    elements_to_init = ["line", "trafo", "trafo3w", "impedance", "bus", "ext_grid",
+    elements_to_init = ["line", "trafo", "trafo3w", "impedance", "ext_grid",
                         "load", "sgen", "shunt", "gen", "ward", "xward", "dcline"]
 
     for element in elements_to_init:
@@ -78,11 +78,11 @@ def reset_results(net):
         res_columns = net[res_empty_element].columns
         # init empty dataframe
         index = net[element].index
-        net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
-        # if len(index):
-        #     net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
-        # else:
-        #     net[res_element] = copy.copy(net[res_empty_element])
+        # net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
+        if len(index):
+            net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
+        else:
+            net[res_element] = copy.copy(net[res_empty_element])
 
 
 
