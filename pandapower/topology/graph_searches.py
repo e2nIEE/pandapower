@@ -167,6 +167,7 @@ def find_bridges(g, roots):
     visited = set(roots)
     stack = [(root, root, iter(g[root])) for root in roots]
     bridges = set()
+    articulation_points = set()
     while stack:
         grandparent, parent, children = stack[-1]
         try:
@@ -184,12 +185,13 @@ def find_bridges(g, roots):
             stack.pop()
             if low[parent] >= discovery[grandparent]:
                 bridges.add((grandparent, parent))
+                articulation_points.add(grandparent)
             low[grandparent] = min(low[parent], low[grandparent])
-    return bridges, visited
+    return bridges, visited, articulation_points
 
 
 def get_2connected_buses(g, roots):
-    bridges, connected = find_bridges(g, roots)
+    bridges, connected, _ = find_bridges(g, roots)
     if not bridges:
         two_connected = connected
     else:
