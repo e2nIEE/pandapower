@@ -706,6 +706,14 @@ def _pre_release_changes(net):
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
                                                     "snm_kva": "sn_mv_kva", "snl_kva": "sn_lv_kva"})
+    for element, old, new in [("trafo", "vnh_kv", "vn_hv_kv"),
+                              ("trafo", "vnl_kv", "vn_lv_kv"),
+                              ("trafo3w", "vnh_kv", "vn_hv_kv"),
+                              ("trafo3w", "vnm_kv", "vn_mv_kv"),
+                              ("trafo3w", "vnl_kv", "vn_lv_kv")]:
+        for std_type, parameters in net.std_types[element].items():
+            if old in parameters:
+                net.std_types[element][std_type][new] = net.std_types[element][std_type].pop(old)
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
