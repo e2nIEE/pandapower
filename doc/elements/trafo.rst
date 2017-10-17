@@ -60,7 +60,6 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 	:width: 30em
 	:align: center
 
-
     
 *Transformer Ratio:*
 
@@ -164,8 +163,11 @@ The values calculated in that way are relative to the rated values of the transf
     \underline{y} &= \underline{y}_m \cdot \frac{Z_{N}}{Z_{ref, trafo}} \\
     \end{align*}
 
-Where the reference voltage :math:`V_{N}` is the nominal voltage at the low voltage side of the transformer and the rated apparent power :math:`S_{N}` is defined system wide in the net object (see :ref:`Unit Systems and Conventions<conventions>`).
+Where the reference voltage :math:`V_{N}` is the nominal voltage at the low voltage side of the transformer and the rated apparent power :math:`S_{N}` is defined system wide in the net object (see :ref:`Unit Systems and Conventions<conventions>`). 
 
+
+.. note::
+    Tap magnitude and angle shift are considered independently of each other. A specific diagonal transformer shift implemented that shifts the complex voltage angle specifically is not implemented in pandapower.
   
 Result Parameters
 ==========================
