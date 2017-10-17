@@ -7,6 +7,7 @@
 import copy
 
 import numpy as np
+import pandas as pd
 
 from pandapower.results_branch import _get_branch_results
 from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buses_out_of_service, \
@@ -53,19 +54,36 @@ def _get_aranged_lookup(net):
 
 
 def reset_results(net):
+    # net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
+    # net["res_load"] = copy.copy(net["_empty_res_load"])
+    # net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
+    # net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
+    # net["res_gen"] = copy.copy(net["_empty_res_gen"])
+    # net["res_ward"] = copy.copy(net["_empty_res_ward"])
+    # net["res_xward"] = copy.copy(net["_empty_res_xward"])
+    # net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
+
     net["res_bus"] = copy.copy(net["_empty_res_bus"])
-    net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
-    net["res_line"] = copy.copy(net["_empty_res_line"])
-    net["res_load"] = copy.copy(net["_empty_res_load"])
-    net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
-    net["res_trafo"] = copy.copy(net["_empty_res_trafo"])
-    net["res_trafo3w"] = copy.copy(net["_empty_res_trafo3w"])
-    net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
-    net["res_impedance"] = copy.copy(net["_empty_res_impedance"])
-    net["res_gen"] = copy.copy(net["_empty_res_gen"])
-    net["res_ward"] = copy.copy(net["_empty_res_ward"])
-    net["res_xward"] = copy.copy(net["_empty_res_xward"])
-    net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
+    # net["res_line"] = copy.copy(net["_empty_res_line"])
+    # net["res_trafo"] = copy.copy(net["_empty_res_trafo"])
+    # net["res_trafo3w"] = copy.copy(net["_empty_res_trafo3w"])
+    # net["res_impedance"] = copy.copy(net["_empty_res_impedance"])
+
+    elements_to_init = ["line", "trafo", "trafo3w", "impedance", "ext_grid",
+                        "load", "sgen", "shunt", "gen", "ward", "xward", "dcline"]
+
+    for element in elements_to_init:
+        res_empty_element = "_empty_res_" + element
+        res_element = "res_" + element
+        res_columns = net[res_empty_element].columns
+        # init empty dataframe
+        index = net[element].index
+        # net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
+        if len(index):
+            net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
+        else:
+            net[res_element] = copy.copy(net[res_empty_element])
+
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
@@ -98,8 +116,8 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
     updated_bus[:n_rows_result, :] = result['bus']
     if n_busses > n_rows_result:
         # keep rows for busses of type NONE
-        updated_bus[n_rows_result:,:bus_cols] = ppc['bus'][n_rows_result:,:]
-    ppc['bus']= updated_bus
+        updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
+    ppc['bus'] = updated_bus
 
     if mode == "sc":
         ppc["bus"][:len(result['bus']), :bus_cols] = result["bus"][:len(result['bus']), :bus_cols]

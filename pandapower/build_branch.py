@@ -706,8 +706,8 @@ def _switch_branches(net, ppc):
     mode = net._options["mode"]
     # get in service elements
     _is_elements = net["_is_elements"]
-    lines_is = _is_elements['line']
     bus_is_idx = _is_elements['bus_is_idx']
+    lines_is_index = _is_elements["line_is_idx"]
 
     # opened bus line switches
     slidx = (net["switch"]["closed"].values == 0) \
@@ -720,6 +720,9 @@ def _switch_branches(net, ppc):
 
     # if non unique elements are in sw_elem (= multiple opened bus line switches)
     if np.count_nonzero(m) < len(sw_elem):
+        if 'line' not in _is_elements:
+            get_is_lines(net)
+        lines_is = _is_elements['line']
         from_bus = lines_is.ix[sw_elem[~m]].from_bus.values
         to_bus = lines_is.ix[sw_elem[~m]].to_bus.values
         # check if branch is already out of service -> ignore switch
@@ -737,10 +740,11 @@ def _switch_branches(net, ppc):
 
             # drop from in service lines as well
             lines_is = lines_is.drop(sw_elem[~m])
+            _is_elements["line_is_idx"] = lines_is.index
 
     # opened switches at in service lines
     slidx = slidx \
-            & (np.in1d(net["switch"]["element"].values, lines_is.index)) \
+            & (np.in1d(net["switch"]["element"].values, lines_is_index)) \
             & (np.in1d(net["switch"]["bus"].values, bus_is_idx))
     nlo = np.count_nonzero(slidx)
 
@@ -879,7 +883,7 @@ def _branches_with_oos_buses(net, ppc):
     # get in service elements
     _is_elements = net["_is_elements"]
     bus_is_idx = _is_elements['bus_is_idx']
-    line_is = _is_elements['line']
+    line_is_idx = _is_elements['line_is_idx']
 
     n_oos_buses = len(net['bus']) - len(bus_is_idx)
 
@@ -890,8 +894,9 @@ def _branches_with_oos_buses(net, ppc):
         # out of service buses
         bus_oos = np.setdiff1d(net['bus'].index.values, bus_is_idx)
         # from buses of line
-        f_bus = line_is.from_bus.values
-        t_bus = line_is.to_bus.values
+        line_buses = net["line"][["from_bus", "to_bus"]].loc[line_is_idx].values
+        f_bus = line_buses[:, 0]
+        t_bus = line_buses[:, 1]
 
         # determine on which side of the line the oos bus is located
         mask_from = np.in1d(f_bus, bus_oos)
@@ -902,8 +907,8 @@ def _branches_with_oos_buses(net, ppc):
         mask_and = mask_to & mask_from
 
         if np.any(mask_and):
-            ppc["branch"][line_is[mask_and].index, BR_STATUS] = 0
-            line_is = line_is[~mask_and]
+            ppc["branch"][line_is_idx[mask_and], BR_STATUS] = 0
+            line_is_idx = line_is_idx[~mask_and]
             f_bus = f_bus[~mask_and]
             t_bus = t_bus[~mask_and]
             mask_from = mask_from[~mask_and]
@@ -919,7 +924,7 @@ def _branches_with_oos_buses(net, ppc):
             ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
-            ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is.index[mask_or]))[0]
+            ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is_idx[mask_or]))[0]
 
             # ls_info = list(map(mapfunc,
             #               line_switches["bus"].values,
@@ -1010,3 +1015,7 @@ def _transformer_correction_factor(vsc, vscr, sn, cmax):
     xt = np.sqrt(zt ** 2 - rt ** 2)
     kt = 0.95 * cmax / (1 + .6 * xt * sn)
     return kt
+
+def get_is_lines(net):
+    _is_elements = net["_is_elements"]
+    _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]

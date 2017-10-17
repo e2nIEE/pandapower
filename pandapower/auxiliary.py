@@ -352,7 +352,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
                              bus_in_service, element_in_service)
         is_elements[element] = element_in_service
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
-    is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+    is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
 
     if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
         if "load_controllable" in net._is_elements:
