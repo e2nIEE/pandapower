@@ -54,23 +54,18 @@ def _get_aranged_lookup(net):
 
 
 def reset_results(net):
-    # net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
-    # net["res_load"] = copy.copy(net["_empty_res_load"])
-    # net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
-    # net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
-    # net["res_gen"] = copy.copy(net["_empty_res_gen"])
-    # net["res_ward"] = copy.copy(net["_empty_res_ward"])
-    # net["res_xward"] = copy.copy(net["_empty_res_xward"])
-    # net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
+    net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
+    net["res_load"] = copy.copy(net["_empty_res_load"])
+    net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
+    net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
+    net["res_gen"] = copy.copy(net["_empty_res_gen"])
+    net["res_ward"] = copy.copy(net["_empty_res_ward"])
+    net["res_xward"] = copy.copy(net["_empty_res_xward"])
+    net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
 
     net["res_bus"] = copy.copy(net["_empty_res_bus"])
-    # net["res_line"] = copy.copy(net["_empty_res_line"])
-    # net["res_trafo"] = copy.copy(net["_empty_res_trafo"])
-    # net["res_trafo3w"] = copy.copy(net["_empty_res_trafo3w"])
-    # net["res_impedance"] = copy.copy(net["_empty_res_impedance"])
 
-    elements_to_init = ["line", "trafo", "trafo3w", "impedance", "ext_grid",
-                        "load", "sgen", "shunt", "gen", "ward", "xward", "dcline"]
+    elements_to_init = ["line", "trafo", "trafo3w", "impedance"]
 
     for element in elements_to_init:
         res_empty_element = "_empty_res_" + element
@@ -78,7 +73,6 @@ def reset_results(net):
         res_columns = net[res_empty_element].columns
         # init empty dataframe
         index = net[element].index
-        # net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
         if len(index):
             net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
         else:
