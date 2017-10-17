@@ -610,6 +610,8 @@ def convert_format(net):
         net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
     if "step" not in net["shunt"]:
         net.shunt["step"] = 1
+    if "max_step" not in net["shunt"]:
+        net.shunt["max_step"] = 1
     if "_pd2ppc_lookups" not in net:
         net["_pd2ppc_lookups"] = {"bus": None,
                                   "gen": None,

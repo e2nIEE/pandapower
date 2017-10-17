@@ -76,6 +76,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                   ("p_kw", "f8"),
                   ("vn_kv", "f8"),
                   ("step", "u4"),
+                  ("max_step", "u4"),
                   ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
@@ -1792,9 +1793,10 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_service=True,
-                 index=None):
-    """
+def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, max_step=1, name=None,
+                 in_service=True, index=None):
+    """create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, max_step=nan, name=None,
+                 in_service=True, index=None)
     Creates a shunt element
 
     INPUT:
@@ -1811,6 +1813,8 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_se
             connected bus
 
         **step** (int, 1) - step of shunt with which power values are multiplied
+
+        **max_step** (boolean, True) - True for in_service or False for out of service
 
         **name** (str, None) - element name
 
@@ -1839,8 +1843,8 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_se
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "in_service"]] = \
-        [bus, name, p_kw, q_kvar, vn_kv, step, in_service]
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "max_step", "in_service"]] = \
+        [bus, name, p_kw, q_kvar, vn_kv, step, max_step, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)
