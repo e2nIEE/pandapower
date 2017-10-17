@@ -5,7 +5,7 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 from math import pi
-from numpy import sign, nan, append, zeros, max, array, power
+from numpy import sign, nan, append, zeros, max, array, power, sqrt
 from pandas import Series, DataFrame, concat
 
 import pandapower as pp
@@ -170,7 +170,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
         if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
            (ppc['branch'][i, 9] == 0):
             Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
-            max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]
+            max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]/sqrt(3)
             if max_i_ka == 0.0:
                 max_i_ka = MAX_VAL
                 logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +

@@ -100,7 +100,7 @@ def copy_std_types(to_net, from_net, element="line", overwrite=True):
 
 def load_std_type(net, name, element="line"):
     """
-    Loads linetype data from the linetypes data base. Issues a warning if
+    Loads standard type data from the linetypes data base. Issues a warning if
     linetype is unknown.
 
     INPUT:
@@ -108,7 +108,7 @@ def load_std_type(net, name, element="line"):
 
         **name** - name of the standard type as string
 
-        **element** - "line" or "trafo"
+        **element** - "line", "trafo" or "trafo3w"
 
     OUTPUT:
         **typedata** - dictionary containing type data
@@ -175,8 +175,9 @@ def available_std_types(net, element="line"):
 
 def parameter_from_std_type(net, parameter, element="line", fill=None):
     """
-    Adds additional parameters, which are not included in the original pandapower datastructure
-    but are available in the standard type database to the panadpower net.
+    Loads standard types data for a parameter, which can be used to add an additional parameter,
+    that is not included in the original pandapower datastructure but is available in the standard
+    type database.
 
     INPUT:
         **net** - pandapower network
@@ -188,8 +189,15 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
         **fill** - fill-value that is assigned to all lines/trafos without
             a value for the parameter, either because the line/trafo has no type or because the
             type does not have a value for the parameter
+
+    EXAMPLE:
+        import pandapower as pp
+        import pandapower.networks as pn
+
+        net = pn.simple_mv_open_ring_net()
+        pp.parameter_from_std_type(net, "q_mm2")
     """
-    if not parameter in net[element]:
+    if parameter not in net[element]:
         net[element][parameter] = fill
     for typ in net[element].std_type.unique():
         if pd.isnull(typ) or not std_type_exists(net, typ, element):
