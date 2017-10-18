@@ -491,7 +491,7 @@ def _add_motor_impedances_ppc(net, ppc):
     motor_buses = motor.bus.values
     motor_buses_ppc = bus_lookup[motor_buses]
 
-    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # 1 us reference voltage in pu
+    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
     x_motor = z_motor / np.sqrt(motor.rx**2 + 1)
     r_motor = motor.rx * x_motor
     y_motor = 1 / (r_motor + x_motor*1j)
