@@ -496,6 +496,17 @@ def convert_format(net):
                                                                    ("va_from_degree", "f8"),
                                                                    ("vm_to_pu", "f8"),
                                                                    ("va_to_degree", "f8")]))
+    if len(net["_empty_res_line"]) < 10:
+        net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
+                                                                 ("q_from_kvar", "f8"),
+                                                                 ("p_to_kw", "f8"),
+                                                                 ("q_to_kvar", "f8"),
+                                                                 ("pl_kw", "f8"),
+                                                                 ("ql_kvar", "f8"),
+                                                                 ("i_from_ka", "f8"),
+                                                                 ("i_to_ka", "f8"),
+                                                                 ("i_ka", "f8"),
+                                                                 ("loading_percent", "f8")]))
     if "version" not in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
