@@ -203,7 +203,7 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
     return lc
 
 
-def create_trafo_collection(net, trafos=None, bus_geodata=None, **kwargs):
+def create_trafo_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -229,7 +229,12 @@ def create_trafo_collection(net, trafos=None, bus_geodata=None, **kwargs):
 
     tg = list(zip(hv_geo, lv_geo))
 
-    return LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
+    info = [infofunc(tr) if infofunc else [] for tr in trafos.index.values]
+
+    lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
+    lc.info = info
+
+    return lc
 
 
 def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,

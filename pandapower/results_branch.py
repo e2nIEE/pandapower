@@ -42,36 +42,41 @@ def _get_branch_flows(ppc):
 
 
 def _get_line_results(net, ppc, i_ft):
+    # create res_line_vals which are written to the pandas dataframe
     ac = net["_options"]["ac"]
 
     if not "line" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["line"]
     pf_kw = ppc["branch"][f:t, PF].real * 1e3
-    qf_kvar = ppc["branch"][f:t, QF].real * 1e3
-    net["res_line"]["p_from_kw"] = pf_kw
-    if ac:
-        net["res_line"]["q_from_kvar"] = qf_kvar
+    q_from_kvar = ppc["branch"][f:t, QF].real * 1e3
+    p_from_kw = pf_kw
 
     pt_kw = ppc["branch"][f:t, PT].real * 1e3
-    qt_kvar = ppc["branch"][f:t, QT].real * 1e3
-    net["res_line"]["p_to_kw"] = pt_kw
-    if ac:
-        net["res_line"]["q_to_kvar"] = qt_kvar
+    q_to_kvar = ppc["branch"][f:t, QT].real * 1e3
+    p_to_kw = pt_kw
 
     if ac:
-        net["res_line"]["pl_kw"] = pf_kw + pt_kw
-        net["res_line"]["ql_kvar"] = qf_kvar + qt_kvar
+        pl_kw = pf_kw + pt_kw
+        ql_kvar = q_from_kvar + q_to_kvar
+    else:
+        pl_kw = np.zeros_like(pf_kw)
+        ql_kvar = np.zeros_like(q_from_kvar)
 
     i_ka = np.max(i_ft[f:t], axis=1)
-    net["res_line"]["i_from_ka"] = i_ft[f:t][:, 0]
-    net["res_line"]["i_to_ka"] = i_ft[f:t][:, 1]
+    i_from_ka = i_ft[f:t][:, 0]
+    i_to_ka = i_ft[f:t][:, 1]
     i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
             net["line"]["parallel"].values
 
-    net["res_line"]["i_ka"] = i_ka
-    net["res_line"]["loading_percent"] = i_ka / i_max * 100
-    net["res_line"].index = net["line"].index
+    loading_percent = i_ka / i_max * 100
+
+    # create numpy array which can be directly written to pandas dataframe
+    res_line_vals = np.vstack([p_from_kw, q_from_kvar, p_to_kw, q_to_kvar,
+                               pl_kw, ql_kvar, i_from_ka, i_to_ka, i_ka, loading_percent])
+
+    # write to line
+    net["res_line"]._data.blocks[0].values = res_line_vals
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):
@@ -81,21 +86,22 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     if not "trafo" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
-    phv_kw = ppc["branch"][f:t, PF].real * 1e3
-    plv_kw = ppc["branch"][f:t, PT].real * 1e3
-    net["res_trafo"]["p_hv_kw"] = phv_kw
-    net["res_trafo"]["p_lv_kw"] = plv_kw
+    p_hv_kw = ppc["branch"][f:t, PF].real * 1e3
+    p_lv_kw = ppc["branch"][f:t, PT].real * 1e3
 
     if ac:
-        qhv_kvar = ppc["branch"][f:t, QF].real * 1e3
-        qlv_kvar = ppc["branch"][f:t, QT].real * 1e3
-        net["res_trafo"]["q_hv_kvar"] = qhv_kvar
-        net["res_trafo"]["q_lv_kvar"] = qlv_kvar
-        net["res_trafo"]["pl_kw"] = phv_kw + plv_kw
-        net["res_trafo"]["ql_kvar"] = qhv_kvar + qlv_kvar
+        q_hv_kvar = ppc["branch"][f:t, QF].real * 1e3
+        q_lv_kvar = ppc["branch"][f:t, QT].real * 1e3
+        pl_kw = p_hv_kw + p_lv_kw
+        ql_kvar = q_hv_kvar + q_lv_kvar
+    else:
+        q_hv_kvar = np.zeros_like(p_hv_kw)
+        q_lv_kvar = np.zeros_like(p_lv_kw)
+        pl_kw = np.zeros_like(p_lv_kw)
+        ql_kvar = np.zeros_like(p_lv_kw)
 
-    net["res_trafo"]["i_hv_ka"] = i_ft[:, 0][f:t]
-    net["res_trafo"]["i_lv_ka"] = i_ft[:, 1][f:t]
+    i_hv_ka = i_ft[:, 0][f:t]
+    i_lv_ka = i_ft[:, 1][f:t]
     if trafo_loading == "current":
         lds_trafo = i_ft[f:t] * net["trafo"][["vn_hv_kv", "vn_lv_kv"]].values * 1000. * np.sqrt(3) \
                     / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100.
@@ -108,9 +114,15 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     if any(net["trafo"]["df"].values <= 0):
         raise UserWarning('Transformer rating factor df must be positive. Transformers with false '
                           'rating factors: %s' % net["trafo"].query('df<=0').index.tolist())
-    net["res_trafo"]["loading_percent"] = \
+    loading_percent = \
         ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
-    net["res_trafo"].index = net["trafo"].index
+
+    # create numpy array which can be directly written to pandas dataframe
+    res_trafo_vals = np.vstack([p_hv_kw, q_hv_kvar, p_lv_kw, q_lv_kvar, pl_kw,
+                                ql_kvar, i_hv_ka, i_lv_ka, loading_percent])
+
+    # write to element
+    net["res_trafo"]._data.blocks[0].values = res_trafo_vals
 
 
 def _get_trafo3w_results(net, ppc, s_ft, i_ft):
@@ -128,26 +140,30 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     pmv_kw = ppc["branch"][hv:mv, PT].real * 1e3
     plv_kw = ppc["branch"][mv:lv, PT].real * 1e3
 
-    net["res_trafo3w"]["p_hv_kw"] = phv_kw
-    net["res_trafo3w"]["p_mv_kw"] = pmv_kw
-    net["res_trafo3w"]["p_lv_kw"] = plv_kw
+    p_hv_kw = phv_kw
+    p_mv_kw = pmv_kw
+    p_lv_kw = plv_kw
 
     if ac:
-        qhv_kvar = ppc["branch"][f:hv, QF].real * 1e3
-        qmv_kvar = ppc["branch"][hv:mv, QT].real * 1e3
-        qlv_kvar = ppc["branch"][mv:lv, QT].real * 1e3
-        net["res_trafo3w"]["q_hv_kvar"] = qhv_kvar
-        net["res_trafo3w"]["q_mv_kvar"] = qmv_kvar
-        net["res_trafo3w"]["q_lv_kvar"] = qlv_kvar
-        net["res_trafo3w"]["pl_kw"] = phv_kw + pmv_kw + plv_kw
-        net["res_trafo3w"]["ql_kvar"] = qhv_kvar + qmv_kvar + qlv_kvar
+        q_hv_kvar = ppc["branch"][f:hv, QF].real * 1e3
+        q_mv_kvar = ppc["branch"][hv:mv, QT].real * 1e3
+        q_lv_kvar = ppc["branch"][mv:lv, QT].real * 1e3
+        pl_kw = phv_kw + pmv_kw + plv_kw
+        ql_kvar = q_hv_kvar + q_mv_kvar + q_lv_kvar
+    else:
+        zeros = np.zeros_like(phv_kw)
+        q_hv_kvar = zeros
+        q_mv_kvar = zeros
+        q_lv_kvar = zeros
+        pl_kw = zeros
+        ql_kvar = zeros
 
     i_h = i_ft[:, 0][f:hv]
     i_m = i_ft[:, 1][hv:mv]
     i_l = i_ft[:, 1][mv:lv]
-    net["res_trafo3w"]["i_hv_ka"] = i_h
-    net["res_trafo3w"]["i_mv_ka"] = i_m
-    net["res_trafo3w"]["i_lv_ka"] = i_l
+    i_hv_ka = i_h
+    i_mv_ka = i_m
+    i_lv_ka = i_l
 
     t3 = net["trafo3w"]
     if trafo_loading == "current":
@@ -163,8 +179,14 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
-    net["res_trafo3w"]["loading_percent"] = ld_trafo
-    net["res_trafo3w"].index = net["trafo3w"].index
+    loading_percent = ld_trafo
+
+    # create numpy array which can be directly written to pandas dataframe
+    res_trafo3w_vals = np.vstack([p_hv_kw, q_hv_kvar, p_mv_kw, q_mv_kvar, p_lv_kw,
+                                  q_lv_kvar, pl_kw, ql_kvar, i_hv_ka, i_mv_ka, i_lv_ka, loading_percent])
+
+    # write to element
+    net["res_trafo3w"]._data.blocks[0].values = res_trafo3w_vals
 
 
 def _get_impedance_results(net, ppc, i_ft):
@@ -175,20 +197,32 @@ def _get_impedance_results(net, ppc, i_ft):
     f, t = net._pd2ppc_lookups["branch"]["impedance"]
     pf_kw = ppc["branch"][f:t, (PF)].real * 1e3
     pt_kw = ppc["branch"][f:t, (PT)].real * 1e3
-    net["res_impedance"]["p_from_kw"] = pf_kw
-    net["res_impedance"]["p_to_kw"] = pt_kw
+    p_from_kw = pf_kw
+    p_to_kw = pt_kw
 
     if ac:
-        qf_kvar = ppc["branch"][f:t, (QF)].real * 1e3
-        qt_kvar = ppc["branch"][f:t, (QT)].real * 1e3
-        net["res_impedance"]["q_from_kvar"] = qf_kvar
-        net["res_impedance"]["q_to_kvar"] = qt_kvar
-        net["res_impedance"]["ql_kvar"] = qf_kvar + qt_kvar
-        net["res_impedance"]["pl_kw"] = pf_kw + pt_kw
+        q_from_kvar = ppc["branch"][f:t, (QF)].real * 1e3
+        q_to_kvar = ppc["branch"][f:t, (QT)].real * 1e3
+        ql_kvar = q_from_kvar + q_to_kvar
+        pl_kw = pf_kw + pt_kw
+    else:
+        zeros = np.zeros_like(p_from_kw)
+        # this looks like a pyramid
+        q_from_kvar = zeros
+        q_to_kvar = zeros
+        ql_kvar = zeros
+        pl_kw = zeros
+        # zeros
 
-    net["res_impedance"]["i_from_ka"] = i_ft[f:t][:, 0]
-    net["res_impedance"]["i_to_ka"] = i_ft[f:t][:, 1]
-    net["res_impedance"].index = net["impedance"].index
+    i_from_ka = i_ft[f:t][:, 0]
+    i_to_ka = i_ft[f:t][:, 1]
+
+    # create numpy array which can be directly written to pandas dataframe
+    res_impedance_vals = np.vstack([p_from_kw, q_from_kvar, p_to_kw, q_to_kvar,
+                                    pl_kw, ql_kvar, i_from_ka, i_to_ka])
+
+    # write to element
+    net["res_impedance"]._data.blocks[0].values = res_impedance_vals
 
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):

@@ -47,7 +47,7 @@ def three_bus_example():
 
 def test_max_branch_results(three_bus_example):
     net = three_bus_example
-    sc.calc_sc(net, case="max", ip=True, ith=True)
+    sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([0.53746061, 0.50852707, 0.4988896]))
     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.49593034,  0.4988896 ]))
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.92787443,  0.9251165 ]))
@@ -55,7 +55,7 @@ def test_max_branch_results(three_bus_example):
 
 def test_min_branch_results(three_bus_example):
     net = three_bus_example
-    sc.calc_sc(net, case="min", ip=True, ith=True)
+    sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, np.array([ 0.43248784,  0.41156533,  0.40431286]))
     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([ 0.39171613,  0.40431286]))
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([ 0.72795118,  0.74576565]))
