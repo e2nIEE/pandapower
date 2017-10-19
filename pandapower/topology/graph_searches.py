@@ -125,7 +125,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
 
 
-def unsupplied_buses(net, mg=None, in_service_only=False, slack_buses=None, respect_switches=True):
+def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_switches=True):
     """
      Finds buses, that are not connected to an external grid.
 
@@ -135,11 +135,10 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slack_buses=None, resp
      OPTIONAL:
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
 
-        **in_service_only** (boolean, False) - Fixes whether only in service buses should be
+        **in_service_only** (boolean, False) - Defines whether only in service buses should be
             included in unsupplied_buses.
 
-        **slack_buses** (boolean, False) - Here you can give the buses of the considered
-            external_grids.
+        **slacks** (boolean, False) - buses which are considered as root / slack buses
 
         **respect_switches** (boolean, True) - Fixes how to consider switches - only in case of no
             given mg.
@@ -154,10 +153,10 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slack_buses=None, resp
     """
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
-    slack_buses = slack_buses or set(net.ext_grid[net.ext_grid.in_service].bus.values)
+    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service].bus.values)
     not_supplied = set()
     for cc in nx.connected_components(mg):
-        if not set(cc) & slack_buses:
+        if not set(cc) & slacks:
             not_supplied.update(set(cc))
 
     buses_remove = set()
