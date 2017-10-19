@@ -125,7 +125,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus))
 
 
-def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_switches=True):
+def unsupplied_buses(net, mg=None, in_service_only=False, slack_buses=None, respect_switches=True):
     """
      Finds buses, that are not connected to an external grid.
 
@@ -138,7 +138,8 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
         **in_service_only** (boolean, False) - Fixes whether only in service buses should be
             included in unsupplied_buses.
 
-        **slacks** (boolean, False) - Here you can give the considered external_grids.
+        **slack_buses** (boolean, False) - Here you can give the buses of the considered
+            external_grids.
 
         **respect_switches** (boolean, True) - Fixes how to consider switches - only in case of no
             given mg.
@@ -153,10 +154,10 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     """
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
-    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service].bus.values)
+    slack_buses = slack_buses or set(net.ext_grid[net.ext_grid.in_service].bus.values)
     not_supplied = set()
     for cc in nx.connected_components(mg):
-        if not set(cc) & slacks:
+        if not set(cc) & slack_buses:
             not_supplied.update(set(cc))
 
     buses_remove = set()
