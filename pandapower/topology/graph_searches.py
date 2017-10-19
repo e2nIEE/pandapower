@@ -135,6 +135,14 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
      OPTIONAL:
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
 
+        **in_service_only** (boolean, False) - Fixes whether only in service buses should be
+            included in unsupplied_buses.
+
+        **slacks** (boolean, False) - Here you can give the considered external_grids.
+
+        **respect_switches** (boolean, True) - Fixes how to consider switches - only in case of no
+            given mg.
+
      OUTPUT:
         **ub** (set) - unsupplied buses
 

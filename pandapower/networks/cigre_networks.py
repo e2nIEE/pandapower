@@ -141,7 +141,7 @@ def create_cigre_network_mv(with_der=False):
     "Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources”, 2014.
 
     OPTIONAL:
-        **with_der** (Bool or str, False) - Range of DER consideration, which should be in
+        **with_der** (boolean or str, False) - Range of DER consideration, which should be in
             (False, "pv_wind", "all"). The DER types, dimensions and locations are taken from CIGRE
             CaseStudy: "DER in Medium Voltage Systems"
 

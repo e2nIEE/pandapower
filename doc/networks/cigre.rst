@@ -23,8 +23,8 @@ High voltage transmission network
 
  import pandapower.networks as pn
 
- # You have to specify a length for the connection line between buses 6a and 6b
- net = pn.create_cigre_network_hv(length_km_6a_6b)
+ # You may specify a length for the connection line between buses 6a and 6b
+ net = pn.create_cigre_network_hv(length_km_6a_6b=0.1)
 
  '''
  This pandapower network includes the following parameter tables:
