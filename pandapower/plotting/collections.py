@@ -4,8 +4,6 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
-import copy
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
@@ -21,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
                                  colors=None, z=None, cmap=None, norm=None, infofunc=None,
-                                 picker=False, net=None, **kwargs):
+                                 picker=False, net=None, cbar_title="Bus Voltage [pu]", **kwargs):
     infos = []
 
     if 'height' in kwargs and 'width' in kwargs:
@@ -74,7 +72,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
             logger.warning("z is None and no net is provided")
         pc.set_array(np.array(z))
         pc.has_colormap = True
-        pc.cbar_title = "Bus Voltage [pu]"
+        pc.cbar_title = cbar_title
 
     pc.patch_type = patch_type
     pc.size = size
@@ -88,7 +86,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          bus_geodata=None, **kwargs):
+                          bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -135,7 +133,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
                                       norm=norm, infofunc=infofunc, picker=picker, net=net,
-                                      **kwargs)
+                                      cbar_title=cbar_title, **kwargs)
     return pc
 
 
@@ -354,7 +352,6 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
 def add_collections_to_axes(ax, collections, plot_colorbars=True):
     for c in collections:
         if c:
-            # cc = copy.copy(c)
             ax.add_collection(c)
             if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
                 extend = c.extend if hasattr(c, "extend") else "neither"
