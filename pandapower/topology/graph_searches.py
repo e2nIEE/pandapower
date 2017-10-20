@@ -197,13 +197,11 @@ def find_bridges(g, roots, with_articulation_points=False):
                     articulation_points.add(grandparent)
             low[grandparent] = min(low[parent], low[grandparent])
 
-    if with_articulation_points:
-        return bridges, visited, articulation_points
-    return bridges, visited
+    return bridges, visited, articulation_points
 
 
 def get_2connected_buses(g, roots):
-    bridges, connected = find_bridges(g, roots)
+    bridges, connected, _ = find_bridges(g, roots)
     if not bridges:
         two_connected = connected
     else:
