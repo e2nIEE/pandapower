@@ -169,7 +169,7 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     return not_supplied
 
 
-def find_bridges(g, roots):
+def find_bridges(g, roots, with_articulation_points=False):
     discovery = {root: 0 for root in roots}  # "time" of first discovery of node during search
     low = {root: 0 for root in roots}
     visited = set(roots)
@@ -193,13 +193,17 @@ def find_bridges(g, roots):
             stack.pop()
             if low[parent] >= discovery[grandparent]:
                 bridges.add((grandparent, parent))
-                articulation_points.add(grandparent)
+                if with_articulation_points:
+                    articulation_points.add(grandparent)
             low[grandparent] = min(low[parent], low[grandparent])
-    return bridges, visited, articulation_points
+
+    if with_articulation_points:
+        return bridges, visited, articulation_points
+    return bridges, visited
 
 
 def get_2connected_buses(g, roots):
-    bridges, connected, _ = find_bridges(g, roots)
+    bridges, connected = find_bridges(g, roots)
     if not bridges:
         two_connected = connected
     else:
