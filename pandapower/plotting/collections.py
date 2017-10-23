@@ -251,6 +251,8 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
     lines = []
     circles = []
     infos = []
+    color = kwargs.get("color", "k")
+    del kwargs["color"]
     for i, trafo in trafo_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
@@ -264,8 +266,8 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
         off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
-        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
-        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=(0, 0, 0, 1)))
+        circles.append(Circle(circ1, size_this, fc=(1, 0, 0, 0), ec=color))
+        circles.append(Circle(circ2, size_this, fc=(1, 0, 0, 0), ec=color))
 
         lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
         lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
@@ -276,7 +278,6 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
             infos.append(infofunc(i))
     if len(circles) == 0:
         return None, None
-    color = kwargs.get("color", "k")
     lc = LineCollection((lines), color=color, picker=picker, **kwargs)
     lc.info = infos
     pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs)
