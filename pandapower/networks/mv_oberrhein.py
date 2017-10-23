@@ -69,5 +69,6 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         net.trafo.tp_pos.loc[hv_trafos] = [0, 0]
     else:
         raise ValueError("Unknown scenario %s - chose 'load' or 'generation'"%scenario)
+
     pp.runpp(net)
     return net

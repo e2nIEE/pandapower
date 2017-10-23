@@ -76,6 +76,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                   ("p_kw", "f8"),
                   ("vn_kv", "f8"),
                   ("step", "u4"),
+                  ("max_step", "u4"),
                   ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
@@ -649,20 +650,24 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **in_service** (boolean) - True for in_service or False for out of service
 
+        **max_p_kw** (float, NaN) - Maximum active power injection - necessary for \
+            controllable sgens in OPF
+
+        **min_p_kw** (float, NaN) - Minimum active power injection - necessary for \
+            controllable sgens in OPF
+
+        **max_q_kvar** (float, NaN) - Maximum reactive power injection - necessary for \
+            controllable sgens in OPF
+
+        **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for \
+            controllable sgens in OPF
+
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
         powerflow
 
-        **max_p_kw** (float, default NaN) - Maximum active power injection - necessary for \
-            controllable sgens in OPF
+        **k** (float, NaN) - Ratio of nominal current to short circuit current
 
-        **min_p_kw** (float, default NaN) - Minimum active power injection - necessary for \
-            controllable sgens in OPF
-
-        **max_q_kvar** (float, default NaN) - Maximum reactive power injection - necessary for \
-            controllable sgens in OPF
-
-        **min_q_kvar** (float, default NaN) - Minimum reactive power injection - necessary for \
-            controllable sgens in OPF
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -932,13 +937,13 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **Sk_max** - maximal short circuit apparent power **
+        **Sk_max** - maximal short circuit apparent power to calculate internal impedance of ext_grid for short circuit calculations
 
-        **SK_min** - maximal short circuit apparent power **
+        **SK_min** - maximal short circuit apparent power to calculate internal impedance of ext_grid for short circuit calculations
 
-        **RX_max** - maximal R/X-ratio **
+        **RX_max** - maximal R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
 
-        **RK_min** - minimal R/X-ratio **
+        **RK_min** - minimal R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
 
         **max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
 
@@ -951,8 +956,6 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             OPF
 
         \* only considered in loadflow if calculate_voltage_angles = True
-
-        \** only needed for short circuit calculations
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage = 1.03)
@@ -1790,9 +1793,10 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_service=True,
-                 index=None):
-    """
+def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, max_step=1, name=None,
+                 in_service=True, index=None):
+    """create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, max_step=nan, name=None,
+                 in_service=True, index=None)
     Creates a shunt element
 
     INPUT:
@@ -1809,6 +1813,8 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_se
             connected bus
 
         **step** (int, 1) - step of shunt with which power values are multiplied
+
+        **max_step** (boolean, True) - True for in_service or False for out of service
 
         **name** (str, None) - element name
 
@@ -1837,8 +1843,8 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, name=None, in_se
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "in_service"]] = \
-        [bus, name, p_kw, q_kvar, vn_kv, step, in_service]
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "max_step", "in_service"]] = \
+        [bus, name, p_kw, q_kvar, vn_kv, step, max_step, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)

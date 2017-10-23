@@ -87,11 +87,12 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
     buses_with_geodata = net.bus.index.isin(net.bus_geodata.index)
     buses2plot = buses2plot & buses_with_geodata
+    bus_plot_index = net.bus.index[buses2plot]
 
-    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[buses2plot, 'x'].tolist(),
-                                    net.bus_geodata.loc[buses2plot, 'y'].tolist())
+    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
+                                    net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
-    bus_trace['text'] = net.bus.loc[buses2plot, 'name'] if infofunc is None else infofunc
+    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
@@ -110,9 +111,9 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 logger.error("There are no power flow results for buses voltage magnitudes which are default for bus "
                              "colormap coloring..."
                              "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_bus.loc[buses2plot, 'vm_pu'].values
+            cmap_vals = net.res_bus.loc[bus_plot_index, 'vm_pu'].values
 
-        cmap_vals = net.res_bus.loc[buses2plot, 'vm_pu'] if cmap_vals is None else cmap_vals
+        cmap_vals = net.res_bus.loc[bus_plot_index, 'vm_pu'] if cmap_vals is None else cmap_vals
 
         cmin = cmin if cmin else cmap_vals.min()
         cmax = cmax if cmax else cmap_vals.max()

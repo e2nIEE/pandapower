@@ -59,6 +59,6 @@ def _get_trafo3w_results(net, ppc):
         hv = int(f + (t - f) / 3)
         mv = int(f + 2 * (t - f) / 3)
         lv = t
-        net.res_trafo3w_sc["ikss_hv_ka"] = ppc["branch"][f:hv, IKSS_F].real * 1e3
-        net.res_trafo3w_sc = ppc["branch"][hv:mv, IKSS_T].real * 1e3
-        net.res_trafo3w_sc = ppc["branch"][mv:lv, IKSS_T].real * 1e3
+        net.res_trafo3w_sc["ikss_hv_ka"] = ppc["branch"][f:hv, IKSS_F].real 
+        net.res_trafo3w_sc["ikss_mv_ka"] = ppc["branch"][hv:mv, IKSS_T].real
+        net.res_trafo3w_sc["ikss_lv_ka"] = ppc["branch"][mv:lv, IKSS_T].real

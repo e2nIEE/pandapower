@@ -241,7 +241,7 @@ def from_pickle(filename, convert=True):
                     net[key] = net[key].reindex_axis(item["columns"], axis=1)
 
             if "dtypes" in item:
-                if "geometry" in df_dict["columns"]:
+                if "columns" in df_dict and "geometry" in df_dict["columns"]:
                     pass
                 else:
                     try:

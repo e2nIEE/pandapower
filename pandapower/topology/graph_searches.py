@@ -135,6 +135,14 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
      OPTIONAL:
         **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
 
+        **in_service_only** (boolean, False) - Defines whether only in service buses should be
+            included in unsupplied_buses.
+
+        **slacks** (boolean, False) - buses which are considered as root / slack buses
+
+        **respect_switches** (boolean, True) - Fixes how to consider switches - only in case of no
+            given mg.
+
      OUTPUT:
         **ub** (set) - unsupplied buses
 
@@ -161,12 +169,13 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     return not_supplied
 
 
-def find_bridges(g, roots):
+def find_bridges(g, roots, with_articulation_points=False):
     discovery = {root: 0 for root in roots}  # "time" of first discovery of node during search
     low = {root: 0 for root in roots}
     visited = set(roots)
     stack = [(root, root, iter(g[root])) for root in roots]
     bridges = set()
+    articulation_points = set()
     while stack:
         grandparent, parent, children = stack[-1]
         try:
@@ -184,12 +193,15 @@ def find_bridges(g, roots):
             stack.pop()
             if low[parent] >= discovery[grandparent]:
                 bridges.add((grandparent, parent))
+                if with_articulation_points:
+                    articulation_points.add(grandparent)
             low[grandparent] = min(low[parent], low[grandparent])
-    return bridges, visited
+
+    return bridges, visited, articulation_points
 
 
 def get_2connected_buses(g, roots):
-    bridges, connected = find_bridges(g, roots)
+    bridges, connected, _ = find_bridges(g, roots)
     if not bridges:
         two_connected = connected
     else:

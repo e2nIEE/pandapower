@@ -496,6 +496,17 @@ def convert_format(net):
                                                                    ("va_from_degree", "f8"),
                                                                    ("vm_to_pu", "f8"),
                                                                    ("va_to_degree", "f8")]))
+    if len(net["_empty_res_line"]) < 10:
+        net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
+                                                                 ("q_from_kvar", "f8"),
+                                                                 ("p_to_kw", "f8"),
+                                                                 ("q_to_kvar", "f8"),
+                                                                 ("pl_kw", "f8"),
+                                                                 ("ql_kvar", "f8"),
+                                                                 ("i_from_ka", "f8"),
+                                                                 ("i_to_ka", "f8"),
+                                                                 ("i_ka", "f8"),
+                                                                 ("loading_percent", "f8")]))
     if "version" not in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
@@ -610,6 +621,8 @@ def convert_format(net):
         net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
     if "step" not in net["shunt"]:
         net.shunt["step"] = 1
+    if "max_step" not in net["shunt"]:
+        net.shunt["max_step"] = 1
     if "_pd2ppc_lookups" not in net:
         net["_pd2ppc_lookups"] = {"bus": None,
                                   "gen": None,
@@ -706,6 +719,14 @@ def _pre_release_changes(net):
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
                                                     "snm_kva": "sn_mv_kva", "snl_kva": "sn_lv_kva"})
+    for element, old, new in [("trafo", "vnh_kv", "vn_hv_kv"),
+                              ("trafo", "vnl_kv", "vn_lv_kv"),
+                              ("trafo3w", "vnh_kv", "vn_hv_kv"),
+                              ("trafo3w", "vnm_kv", "vn_mv_kv"),
+                              ("trafo3w", "vnl_kv", "vn_lv_kv")]:
+        for std_type, parameters in net.std_types[element].items():
+            if old in parameters:
+                net.std_types[element][std_type][new] = net.std_types[element][std_type].pop(old)
     if "name" not in net.switch.columns:
         net.switch["name"] = None
     net["switch"] = net["switch"].rename(columns={'element_type': 'et'})
@@ -1249,8 +1270,9 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 net1.line_geodata.set_index(np.array(ni), inplace=True)
                 ni = [net2.line.index.get_loc(ix) + len(net1.line)
                       for ix in net2["line_geodata"].index]
+                net2.line_geodata.set_index(np.array(ni), inplace=True)
             ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
-            dtypes = net2[element].dtypes
+            dtypes = net1[element].dtypes
             net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
     if validate:
