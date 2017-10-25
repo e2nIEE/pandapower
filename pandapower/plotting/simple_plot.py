@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                scale_size=True, bus_color="b", line_color='grey', trafo_color='g',
+                scale_size=True, bus_color="b", line_color='grey', trafo_color='k',
                 ext_grid_color='y', library="igraph"):
     """
     Plots a pandapower network as simple as possible. If no geodata is available, artificial
