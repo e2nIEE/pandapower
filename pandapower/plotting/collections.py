@@ -277,7 +277,7 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
         lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
         lines.append([p1, lp1])
         lines.append([p2, lp2])
-        if infofunc not is None:
+        if infofunc is not None:
             infos.append(infofunc(i))
             infos.append(infofunc(i))
     if len(circles) == 0:
