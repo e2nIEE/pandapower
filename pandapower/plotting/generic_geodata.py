@@ -89,7 +89,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
     if "bus_geodata" in net and net.bus_geodata.shape[0]:
         print("Please delete all geodata. This function cannot be used with pre-existing geodata.")
         return
-    if not "bus_geodata" in net:
+    if not "bus_geodata" in net or net.bus_geodata is None:
         net.bus_geodata = pd.DataFrame(columns=["x", "y"])
     gnet = copy.deepcopy(net)
     gnet.bus = gnet.bus[gnet.bus.in_service == True]
