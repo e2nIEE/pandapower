@@ -1,6 +1,7 @@
 Change Log
 =============
 
+- [ADDED] additional MV line standard types
 
 [1.4.1] - 2017-09-19
 ----------------------
