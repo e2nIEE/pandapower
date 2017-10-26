@@ -639,6 +639,26 @@ def test_pvpq_lookup():
 
     assert nets_equal(net, net_numba)
 
+def test_result_index_unsorted():
+    net = pp.create_empty_network()
+
+    b1 = pp.create_bus(net, vn_kv=0.4, index=4)
+    b2 = pp.create_bus(net, vn_kv=0.4, index=2)
+    b3 = pp.create_bus(net, vn_kv=0.4, index=3)
+
+    pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
+    pp.create_load(net, b2, p_kw=10)
+    pp.create_ext_grid(net, b3)
+
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.5, std_type="NAYY 4x120 SE")
+    pp.create_line(net, from_bus=b1, to_bus=b3, length_km=0.5, std_type="NAYY 4x120 SE")
+    net_recycle = copy.deepcopy(net)
+    pp.runpp(net_recycle)
+    pp.runpp(net_recycle, recycle=dict(_is_elements=True, ppc=True, Ybus=True))
+    pp.runpp(net)
+
+    assert nets_equal(net, net_recycle, tol=1e-12)
+
 
 def test_get_internal():
     net = example_simple()

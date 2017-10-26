@@ -191,12 +191,15 @@ def find_bridges(g, roots, with_articulation_points=False):
                 stack.append((parent, child, iter(g[child])))
         except StopIteration:
             stack.pop()
-            if low[parent] >= discovery[grandparent]:
+            if low[parent] > discovery[grandparent]:
                 bridges.add((grandparent, parent))
                 if with_articulation_points:
                     articulation_points.add(grandparent)
+            elif with_articulation_points and low[parent] == discovery[grandparent]:
+                articulation_points.add(grandparent)
             low[grandparent] = min(low[parent], low[grandparent])
 
+    if with_articulation_points: articulation_points -= set(roots)
     return bridges, visited, articulation_points
 
 

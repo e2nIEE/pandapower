@@ -161,18 +161,22 @@ def _update_gen_ppc(net, ppc):
     q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
 
     # add ext grid / slack data
-    ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
-    ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
+    ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
+    ext_grid_idx_ppc = ext_grid_lookup[eg_is.index]
+    ppc["gen"][ext_grid_idx_ppc, VG] = eg_is["vm_pu"].values
+    ppc["gen"][ext_grid_idx_ppc, GEN_STATUS] = eg_is["in_service"].values
 
     # set bus values for external grid buses
     if calculate_voltage_angles:
-        eg_buses = bus_lookup[eg_is["bus"].values]
-        ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
+        # eg_buses = bus_lookup[eg_is["bus"].values]
+        ppc["bus"][ext_grid_idx_ppc, VA] = eg_is["va_degree"].values
 
     # add generator / pv data
     if gen_end > eg_end:
-        ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
-        ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
+        gen_lookup = net["_pd2ppc_lookups"]["gen"]
+        gen_idx_ppc = gen_lookup[gen_is.index]
+        ppc["gen"][gen_idx_ppc, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
+        ppc["gen"][gen_idx_ppc, VG] = gen_is["vm_pu"].values
 
         # set bus values for generator buses
         gen_buses = bus_lookup[gen_is["bus"].values]
@@ -184,8 +188,11 @@ def _update_gen_ppc(net, ppc):
 
     # add extended ward pv node data
     if xw_end > gen_end:
-        _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default,
-                                  update_lookup=False)
+        # ToDo: this must be tested in combination with recycle. Maybe the placement of the updated value in ppc["gen"]
+        # ToDo: is wrong. -> I'll better raise en error
+        raise NotImplementedError("xwards in combination with recycle is not properly implemented")
+        # _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default,
+        #                           update_lookup=False)
 
 
 def _build_gen_opf(net, ppc):
