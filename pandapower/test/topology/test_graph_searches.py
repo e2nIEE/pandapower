@@ -77,9 +77,7 @@ def test_unsupplied_buses():
     assert ub == {0, 1}
 
 
-@pytest.mark.xfail
 def test_find_bridges(feeder_network):
-    # marked to fail because of bug in find_bridges
     net = feeder_network
     bus0 = pp.create_bus(net, vn_kv=20.0)
     bus1 = pp.create_bus(net, vn_kv=20.0)
@@ -87,7 +85,7 @@ def test_find_bridges(feeder_network):
     for fb, tb in [(3, bus0), (bus0, bus1), (bus0, bus2)]:
         pp.create_line(net, fb, tb, length_km=1.0, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     mg = top.create_nxgraph(net, respect_switches=False)
-    bridges, _, articulation_points = top.find_bridges(mg, net.ext_grid.bus)
+    bridges, _, articulation_points = top.find_bridges(mg, net.ext_grid.bus, True)
     assert bridges == set([(3, 4), (4, 5), (4, 6)])
     assert articulation_points == set([3, 4])
 

@@ -9,9 +9,9 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
-from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
-from pandapower.auxiliary import _sum_by_group
 
+from pandapower.auxiliary import _sum_by_group
+from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
 
 try:
     from numba import jit
@@ -20,7 +20,7 @@ except ImportError:
 
 
 @jit(nopython=True, cache=True)
-def ds_find(ar, bus): # pragma: no cover
+def ds_find(ar, bus):  # pragma: no cover
     while True:
         p = ar[bus]
         if p == bus:
@@ -30,7 +30,7 @@ def ds_find(ar, bus): # pragma: no cover
 
 
 @jit(nopython=True, cache=True)
-def ds_union(ar, bus1, bus2, bus_is_pv): # pragma: no cover
+def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
     if root1 == root2:
@@ -44,7 +44,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv): # pragma: no cover
 
 
 @jit(nopython=True, cache=True)
-def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service): # pragma: no cover
+def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
         if not switch_closed[i] or not switch_et_bus[i]:
             continue
@@ -329,7 +329,6 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
-
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
 
@@ -355,7 +354,7 @@ def _calc_loads_and_add_on_ppc_opf(net, ppc):
     if not sgen.empty:
         sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
         vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
-            np.float64(1000.)
+             np.float64(1000.)
         sp = sgen["p_kw"].values * vl
         sq = sgen["q_kvar"].values * vl
     else:
@@ -379,7 +378,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     s = net["shunt"]
     if len(s) > 0:
         vl = _is_elements["shunt"] / np.float64(1000.)
-        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values)**2
+        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2
         q = np.hstack([q, s["q_kvar"].values * s["step"] * v_ratio * vl])
         p = np.hstack([p, s["p_kw"].values * s["step"] * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
@@ -440,12 +439,12 @@ def _add_ext_grid_sc_impedance(net, ppc):
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
-    x_grid = z_grid / np.sqrt(rx**2 + 1)
+    x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
     eg["x"] = x_grid
 
-    y_grid = 1 / (r_grid + x_grid*1j)
+    y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
@@ -467,12 +466,12 @@ def _add_gen_sc_impedance(net, ppc):
     vn_gen = gen.vn_kv.values
     sn_gen = gen.sn_kva.values
 
-    z_r = vn_net**2 / sn_gen * 1e3
+    z_r = vn_net ** 2 / sn_gen * 1e3
     x_gen = gen.xdss.values / 100 * z_r
     r_gen = gen.rdss.values / 100 * z_r
 
     kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
-    y_gen = 1 / ((r_gen + x_gen*1j) * kg)
+    y_gen = 1 / ((r_gen + x_gen * 1j) * kg)
 
     buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen.real, y_gen.imag)
     ppc["bus"][buses, GS] = gs
@@ -492,9 +491,9 @@ def _add_motor_impedances_ppc(net, ppc):
     motor_buses_ppc = bus_lookup[motor_buses]
 
     z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
-    x_motor = z_motor / np.sqrt(motor.rx**2 + 1)
+    x_motor = z_motor / np.sqrt(motor.rx ** 2 + 1)
     r_motor = motor.rx * x_motor
-    y_motor = 1 / (r_motor + x_motor*1j)
+    y_motor = 1 / (r_motor + x_motor * 1j)
 
     buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
     ppc["bus"][buses, GS] = gs
