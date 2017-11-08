@@ -254,9 +254,7 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
     lines = []
     circles = []
     infos = []
-    color = kwargs.get("color", "k")
-    if "color" in kwargs:
-        del kwargs["color"]
+    color = kwargs.pop("color", "k")
     for i, trafo in trafo_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values

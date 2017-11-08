@@ -22,6 +22,8 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
 
         **name** (string, None) - name for the network
 
+        **sn_kva** (float, 1e3) - reference apparent power for per unit system
+
     OUTPUT:
         **net** (attrdict) - PANDAPOWER attrdict with empty tables:
 
@@ -1161,7 +1163,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **max_i_ka** (float) - maximum thermal current in kA
 
-
     OPTIONAL:
         **name** (string) - A custom name for this line
 
@@ -1172,7 +1173,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **type** (str) - type of line ("ol" for overhead line or "cs" for cable system)
 
-        **df** (float) - derating factor: maximal current of line  in relation to nominal current \
+        **df** (float) - derating factor: maximal current of line in relation to nominal current \
             of line (from 0 to 1)
 
         **parallel** (integer) - number of parallel line systems
@@ -1266,6 +1267,11 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
             higher than the highest already existing index is selected.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **parallel** (integer) - number of parallel transformers
+
+        **df** (float) - derating factor: maximal current of transformer in relation to nominal \
+            current of transformer (from 0 to 1)
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -1394,16 +1400,21 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **tp_min** (int, nan):  minimal allowed tap position
 
-        **tp_st_percent** (int) - tap step in percent
+        **tp_st_percent** (float) - tap step size for voltage magnitude in percent
+
+        **tp_st_degree** (float) - tap step size for voltage angle in degree*
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **df** (float) - derating factor: maximal current of transformer in relation to nominal \
+            current of transformer (from 0 to 1)
+
         **kwargs** - nothing to see here, go along
 
         \* only considered in loadflow if calculate_voltage_angles = True
-
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -1420,7 +1431,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
     if df <= 0:
-        raise UserWarning("raiting factor df must be positive: df = %.3f" % df)
+        raise UserWarning("derating factor df must be positive: df = %.3f" % df)
 
     if index is None:
         index = get_free_id(net["trafo"])
