@@ -2,6 +2,7 @@ Change Log
 =============
 
 - [ADDED] additional MV line standard types
+- [FIXED] kerber extrem vorstadtnetz mv bus voltage
 
 [1.4.1] - 2017-09-19
 ----------------------
