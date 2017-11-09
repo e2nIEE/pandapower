@@ -287,7 +287,7 @@ def create_kerber_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
 
 
 def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_in_kw=2., q_load_in_kvar=0.,
-                                       trafotype="0.63 MVA 10/0.4 kV", v_os=20.):
+                                       trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
     """
     .. note:: Please pay attention, that the linetypes of the branch out house connections are \
     randomly distributed according to the probability 50% between "NAYY 4x50" and "NYY 4x35"
@@ -314,7 +314,7 @@ def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_in_kw=2., q
 
 
 def create_kerber_vorstadtnetz_kabel_2(std_type="NAYY 4x185", p_load_in_kw=2., q_load_in_kvar=0.,
-                                       trafotype="0.63 MVA 10/0.4 kV", v_os=20.):
+                                       trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
     """
     .. note:: Please pay attention, that the linetypes of the branch out house \
     connections are randomlydistributed according to the probability 50% between \
