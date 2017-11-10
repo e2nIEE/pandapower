@@ -169,17 +169,36 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     return not_supplied
 
 
-def find_bridges(g, roots, with_articulation_points=False):
+def find_basic_graph_characteristics(g, roots, characteristics):
+    """
+    Determines basic characteristics of the given graph like connected buses, stubs, bridges,
+    and articulation points.
+
+    .. note::
+
+        This is the base function for find_graph_characteristics. Please use the latter
+        function instead!
+    """
+    connected = 'connected' in characteristics
+    stub_buses = 'stub_buses' in characteristics
+    bridges = {'bridges', 'required_bridges'} & set(characteristics)
+    articulation_points = {'articulation_points', 'notn1_areas'} & set(characteristics)
+    notn1_starts = 'notn1_areas' in characteristics
+
+    char_dict = {'connected': set(), 'stub_buses': set(), 'bridges': set(),
+                 'articulation_points': set(), 'notn1_starts': set()}
+
     discovery = {root: 0 for root in roots}  # "time" of first discovery of node during search
     low = {root: 0 for root in roots}
     visited = set(roots)
+    path = []
     stack = [(root, root, iter(g[root])) for root in roots]
-    bridges = set()
-    articulation_points = set()
     while stack:
         grandparent, parent, children = stack[-1]
         try:
             child = next(children)
+            if stub_buses:
+                path.append(child)  # keep track of movement through the graph
             if grandparent == child:
                 continue
             if child in visited:
@@ -191,37 +210,129 @@ def find_bridges(g, roots, with_articulation_points=False):
                 stack.append((parent, child, iter(g[child])))
         except StopIteration:
             stack.pop()
-            if low[parent] > discovery[grandparent]:
-                bridges.add((grandparent, parent))
-                if with_articulation_points:
-                    articulation_points.add(grandparent)
-            elif with_articulation_points and low[parent] == discovery[grandparent]:
-                articulation_points.add(grandparent)
+            if low[parent] >= discovery[grandparent]:
+                # Articulation points and start of not n-1 safe buses
+                if grandparent not in roots:
+                    if articulation_points:
+                        char_dict['articulation_points'].add(grandparent)
+                    if notn1_starts:
+                        char_dict['notn1_starts'].add(parent)
+                if low[parent] > discovery[grandparent]:
+                    # Bridges
+                    if bridges:
+                        char_dict['bridges'].add((grandparent, parent))
+
+                    # Stub buses
+                    if stub_buses:
+                        if path[-1] == grandparent:
+                            path.pop()
+                            stub = path.pop()
+                            char_dict['stub_buses'].add(stub)
+                        else:
+                            while path[-1] != grandparent:
+                                stub = path.pop()
+                                char_dict['stub_buses'].add(stub)
             low[grandparent] = min(low[parent], low[grandparent])
 
-    if with_articulation_points: articulation_points -= set(roots)
-    return bridges, visited, articulation_points
+    if connected:
+        char_dict['connected'] = visited
+    return char_dict
+
+
+def find_graph_characteristics(g, roots, characteristics):
+    """
+    Finds and returns different characteristics of the given graph which can be specified.
+
+    INPUT:
+        **g** (NetworkX graph) - Graph of the network
+
+        **roots** (list) - Roots of the graphsearch
+
+        **characteristics** (list) - List of characteristics this function determines and returns
+
+        .. note::
+
+            Possible characteristics:
+
+            - 'connected' - All buses which have a connection to at least one of the roots
+            - 'stub_buses' - Buses which lie on a stub
+            - 'bridges' - Edges which lead to disconnected areas if they get removed
+            - 'required_bridges' - Bridges which are strictly needed to connect a specific bus
+            - 'articulation_points' - Buses which lead to disconnected areas if they get removed
+            - 'notn1_areas' - Areas which aren't connected if one specific bus gets removed
+
+    EXAMPLE::
+
+        import topology as top
+        g = top.create_nxgraph(net, respect_switches=False)
+        char_dict = top.find_graph_characteristics(g, roots=[0, 3], characteristics=['connected', 'stub_buses'])
+    """
+    char_dict = find_basic_graph_characteristics(g, roots, characteristics)
+
+    required_bridges = 'required_bridges' in characteristics
+    notn1_areas = 'notn1_areas' in characteristics
+
+    if not required_bridges and not notn1_areas:
+        return {key: char_dict[key] for key in characteristics}
+
+    char_dict.update({'required_bridges': dict(), 'notn1_areas': dict()})
+
+    visited = set(roots)
+    visited_bridges = []
+    notn1_area_start = None
+    curr_notn1_area = []
+
+    stack = [(root, root, iter(g[root])) for root in roots]
+    while stack:
+        grandparent, parent, children = stack[-1]
+        try:
+            child = next(children)
+            if child == grandparent:
+                continue
+            if child not in visited:
+                visited.add(child)
+                stack.append((parent, child, iter(g[child])))
+                if required_bridges and ((parent, child) in char_dict['bridges'] or
+                                         (child, parent) in char_dict['bridges']):
+                    visited_bridges.append((parent, child))
+
+                if notn1_areas:
+                    if child in char_dict['notn1_starts'] and not notn1_area_start:
+                        notn1_area_start = parent
+                    if notn1_area_start:
+                        curr_notn1_area.append(child)
+
+        except StopIteration:
+            stack.pop()
+            if required_bridges and ((parent, grandparent) in char_dict['bridges'] or
+                                     (grandparent, parent) in char_dict['bridges']):
+                if len(visited_bridges) > 0:
+                    char_dict['required_bridges'][parent] = visited_bridges[:]
+                    visited_bridges.pop()
+
+            if notn1_areas and grandparent == notn1_area_start:
+                if grandparent in char_dict["notn1_areas"]:
+                    char_dict["notn1_areas"][grandparent].update(set(curr_notn1_area[:]))
+                else:
+                    char_dict["notn1_areas"][grandparent] = set(curr_notn1_area[:])
+                curr_notn1_area.clear()
+                notn1_area_start = None
+
+    return {key: char_dict[key] for key in characteristics}
 
 
 def get_2connected_buses(g, roots):
-    bridges, connected, _ = find_bridges(g, roots)
-    if not bridges:
-        two_connected = connected
-    else:
-        two_connected = set(roots)
-        stack = [(root, root, iter(g[root])) for root in roots]
-        while stack:
-            grandparent, parent, children = stack[-1]
-            try:
-                child = next(children)
-                if child == grandparent or (parent, child) in bridges or \
-                                (child, parent) in bridges:
-                    continue
-                if child not in two_connected:
-                    two_connected.add(child)
-                    stack.append((parent, child, iter(g[child])))
-            except StopIteration:
-                stack.pop()
+    """
+    Get all buses which have at least two connections to the roots
+
+    INPUT:
+        **g** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network
+
+        **roots** - Roots of the graphsearch
+    """
+    char_dict = find_graph_characteristics(g, roots, characteristics=['connected', 'stub_buses'])
+    connected, stub_buses = char_dict['connected'], char_dict['stub_buses']
+    two_connected = connected - stub_buses
     return connected, two_connected
 
 

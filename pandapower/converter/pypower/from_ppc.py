@@ -65,7 +65,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
 
         ppc_net = case4gs.case4gs()
 
-        pp_net = cv.from_ppc(ppc_net, f_hz=60)
+        pp_net = pc.from_ppc(ppc_net, f_hz=60)
 
     """
     # --- catch common failures

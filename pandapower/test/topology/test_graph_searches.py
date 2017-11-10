@@ -77,17 +77,38 @@ def test_unsupplied_buses():
     assert ub == {0, 1}
 
 
-def test_find_bridges(feeder_network):
+def test_graph_characteristics(feeder_network):
+    # adapt network
     net = feeder_network
     bus0 = pp.create_bus(net, vn_kv=20.0)
     bus1 = pp.create_bus(net, vn_kv=20.0)
     bus2 = pp.create_bus(net, vn_kv=20.0)
-    for fb, tb in [(3, bus0), (bus0, bus1), (bus0, bus2)]:
+    bus3 = pp.create_bus(net, vn_kv=20.0)
+    bus4 = pp.create_bus(net, vn_kv=20.0)
+    bus5 = pp.create_bus(net, vn_kv=20.0)
+    bus6 = pp.create_bus(net, vn_kv=20.0)
+    new_connections = [(3, bus0), (bus0, bus1), (bus0, bus2), (1, bus3), (2, bus4), (bus3, bus4),
+                       (bus4, bus5), (bus4, bus6), (bus5, bus6)]
+    for fb, tb in new_connections:
         pp.create_line(net, fb, tb, length_km=1.0, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+
+    # get characteristics
     mg = top.create_nxgraph(net, respect_switches=False)
-    bridges, _, articulation_points = top.find_bridges(mg, net.ext_grid.bus, True)
-    assert bridges == set([(3, 4), (4, 5), (4, 6)])
-    assert articulation_points == set([3, 4])
+    characteristics = ["bridges", "articulation_points", "connected", "stub_buses",
+                       "required_bridges", "notn1_areas"]
+    char_dict = top.find_graph_characteristics(mg, net.ext_grid.bus, characteristics)
+    bridges = char_dict["bridges"]
+    articulation_points = char_dict["articulation_points"]
+    connected = char_dict["connected"]
+    stub_buses = char_dict["stub_buses"]
+    required_bridges = char_dict["required_bridges"]
+    notn1_areas = char_dict["notn1_areas"]
+    assert bridges == {(3, 4), (4, 5), (4, 6)}
+    assert articulation_points == {8, 3, 4}
+    assert connected == {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+    assert stub_buses == {4, 5, 6}
+    assert required_bridges == {4: [(3, 4)], 5: [(3, 4), (4, 5)], 6: [(3, 4), (4, 6)]}
+    assert notn1_areas == {8: {9, 10}, 3: {4, 5, 6}}
 
 
 if __name__ == '__main__':
