@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
+import copy
 
 try:
     import pplog as logging
@@ -352,6 +353,7 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
 def add_collections_to_axes(ax, collections, plot_colorbars=True):
     for c in collections:
         if c:
+            c = copy.copy(c)
             ax.add_collection(c)
             if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
                 extend = c.extend if hasattr(c, "extend") else "neither"
@@ -392,12 +394,6 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
-    try:
-        # plt.tight_layout()
-        plt.show()
-    except:
-        pass
-    return ax
 
 
 if __name__ == "__main__":
