@@ -12,12 +12,14 @@ import pandapower.topology as top
 
 def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance from Slack [km]",
                          ylabel="Voltage [pu]", x0=0, trafocolor="r", bus_colors=None,
-                         line_loading_weight=False, **kwargs):
+                         line_loading_weight=False, voltage_column=None, bus_size=3, **kwargs):
     if ax is None:
         plt.figure(facecolor="white", dpi=120)
         ax = plt.gca()
     if not net.converged:
         raise ValueError("no results in this pandapower network")
+    if voltage_column is None:
+        voltage_column = net.res_bus.vm_pu
     for eg in net.ext_grid[net.ext_grid.in_service == True].bus:
         d = top.calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service == True].iterrows():
@@ -29,7 +31,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                 to_bus = line.to_bus
                 x = [x0 + d.at[from_bus], x0 + d.at[to_bus]]
                 try:
-                    y = [net.res_bus.vm_pu.at[from_bus], net.res_bus.vm_pu.at[to_bus]]
+                    y = [voltage_column.at[from_bus], voltage_column.at[to_bus]]
                 except:
                     raise UserWarning
                 if "linewidth" in kwargs or not line_loading_weight:
@@ -40,7 +42,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                 if bus_colors is not None:
                     for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
-                            ax.plot(x, y, 'or', color=bus_colors[bus], ms=3)
+                            ax.plot(x, y, 'or', color=bus_colors[bus], ms=bus_size)
                 kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
         # if plot_transformers:
         #     if hasattr(plot_transformers, "__iter__"):  # if is a list for example
@@ -52,8 +54,8 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         #             continue
         #         ax.plot([x0 + d.loc[transformer.hv_bus],
         #                  x0 + d.loc[transformer.lv_bus]],
-        #                 [net.res_bus.vm_pu.loc[transformer.hv_bus],
-        #                  net.res_bus.vm_pu.loc[transformer.lv_bus]], color=trafocolor,
+        #                 [voltage_column.loc[transformer.hv_bus],
+        #                  voltage_column.loc[transformer.lv_bus]], color=trafocolor,
         #                 **{k: v for k, v in kwargs.items() if not k == "color"})
 
         # trafo geodata
