@@ -1045,6 +1045,11 @@ def drop_elements_at_buses(net, buses):
     """
     drop elements connected to certain buses
     """
+    # If there is a bus1 -bus2 switch, this will delete the switch when we select bus 2.
+    if any(net['switch']['element'].isin(buses)):
+        eid = net['switch'][net['switch']['element'].isin(buses)].index
+        net['switch'].drop(eid, inplace=True)
+        
     # drop elements connected to buses
     for element, column in element_bus_tuples():
         if any(net[element][column].isin(buses)):
@@ -1320,7 +1325,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
         bc = ["from_bus", "to_bus"]
     elif et == 'trafo':
         bc = ["hv_bus", "lv_bus"]
-    elif et == "switch":
+    elif et == "switch" and list(net[et].loc[element_id,["et"]].values)==['b']:   # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
         raise Exception("unknown element type")
@@ -1402,7 +1407,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     return connected_elements
 
 
-def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=True,
+def get_connected_buses(net, buses, consider=("l", "s", "t","t3"), respect_switches=True,
                         respect_in_service=False):
     """
      Returns buses connected to given buses. The source buses will NOT be returned.
@@ -1463,7 +1468,14 @@ def get_connected_buses(net, buses, consider=("l", "s", "t"), respect_switches=T
             (in_service_constr)])
         cb |= set(net.trafo[net.trafo.index.isin(connected_lvb_trafos)].lv_bus)
         cb |= set(net.trafo[net.trafo.index.isin(connected_hvb_trafos)].hv_bus)
-
+    
+    # Gives the lv mv and hv buses of a 3 winding transformer
+    if "t3" in consider:
+        ct3 = get_connected_elements(net, "trafo3w", buses, respect_switches, respect_in_service)
+        cb |= set(net.trafo3w[net.trafo3w.index.isin(ct3)].lv_bus)
+        cb |= set(net.trafo3w[net.trafo3w.index.isin(ct3)].mv_bus)
+        cb |= set(net.trafo3w[net.trafo3w.index.isin(ct3)].hv_bus)
+    
     if respect_in_service:
         cb -= set(net.bus[~net.bus.in_service].index)
 
