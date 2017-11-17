@@ -1,6 +1,7 @@
 Change Log
 =============
 
+- [ADDED] generalized add_zones_to_elements() toolbox function add_column_from_node_to_elements()
 - [ADDED] additional MV line standard types
 - [FIXED] kerber extrem vorstadtnetz mv bus voltage
 
