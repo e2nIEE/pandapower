@@ -2078,20 +2078,16 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
 
         **to_bus** (int) - ID of the bus on the other side which the line will be connected with
 
-        **p_kw** - (float) Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
-        "A" for I. Generation is a positive bus power injection, consumption negative.
+        **p_kw** - (float) Active power transmitted from 'from_bus' to 'to_bus'
 
-        **loss_percent** - (float) Standard deviation in the same unit as the measurement.
+        **loss_percent** - (float) Relative transmission loss in percent of active power
+            transmission
 
-        **loss_kw** - (int) Index of bus. Determines the position of the measurement for
-        line/transformer measurements (bus == from_bus: measurement at from_bus;
-        same for to_bus)
+        **loss_kw** - (float) Total transmission loss in kW
 
-        **vm_from_pu** - (int, None) Index of measured element, if element_type is "line" or
-        "transformer".
+        **vm_from_pu** - (float) Voltage setpoint at from bus
 
-        **vm_to_pu** - (int, None) Index of measured element, if element_type is "line" or
-        "transformer".
+        **vm_to_pu** - (float) Voltage setpoint at to bus
 
     OPTIONAL:
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
