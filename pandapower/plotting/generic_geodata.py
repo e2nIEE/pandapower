@@ -45,9 +45,12 @@ def build_igraph_from_pp(net, respect_switches=False):
     g.es["weight"] = net.line.length_km.values
 
     # add trafos
-    for tix in net.trafo.index:
-        t = net.trafo.ix[tix]
-        g.add_edge(pp_bus_mapping[t.hv_bus], pp_bus_mapping[t.lv_bus], weight=0.01)
+    for _, trafo in net.trafo.iterrows():
+        g.add_edge(pp_bus_mapping[trafo.hv_bus], pp_bus_mapping[trafo.lv_bus], weight=0.01)
+
+    for _, trafo3w in net.trafo3w.iterrows():
+        g.add_edge(pp_bus_mapping[trafo3w.hv_bus], pp_bus_mapping[trafo3w.lv_bus], weight=0.01)
+        g.add_edge(pp_bus_mapping[trafo3w.hv_bus], pp_bus_mapping[trafo3w.mv_bus], weight=0.01)
 
     # add switches
     bs = net.switch[(net.switch.et == "b") & (net.switch.closed == 1)] if respect_switches else \

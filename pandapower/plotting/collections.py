@@ -397,6 +397,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         plt.show()
     except:
         pass
+    return ax
 
 
 if __name__ == "__main__":
