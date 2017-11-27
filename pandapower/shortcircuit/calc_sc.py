@@ -120,7 +120,11 @@ def _calc_sc(net):
 #    t1 = time.perf_counter()
     _calc_ybus(ppci)
 #    t2 = time.perf_counter()
-    _calc_zbus(ppci)
+    try:
+        _calc_zbus(ppci)
+    except Exception as e:
+        _clean_up(net)
+        raise(e)
     _calc_rx(net, ppci)
 #    t3 = time.perf_counter()
     _add_kappa_to_ppc(net, ppci)
