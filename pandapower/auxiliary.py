@@ -387,6 +387,15 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     _add_options(net, options)
 
 
+def _check_bus_index_and_print_warning_if_high(net):
+    max_bus = max(net.bus.index.values)
+    if max_bus > 100000:
+        logger.warning(
+            "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
+            " Try resetting the bus indices with the toolbox function "
+            "create_continous_bus_index()" % max_bus)
+
+
 def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
                     algorithm, max_iteration, **kwargs):
     """
