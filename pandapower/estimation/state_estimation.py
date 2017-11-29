@@ -1,66 +1,184 @@
-__author__ = 'menke, nbornhorst'
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
+
 import numpy as np
-import logging
-import pandas as pd
-import warnings
-from scipy.stats import chi2
-from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.run import _pd2ppc, _select_is_elements
-from pandapower.results import _set_buses_out_of_service
-from pandapower.auxiliary import get_values
-from pandapower.toolbox import convert_format
-from pypower.ext2int import ext2int
-from pypower.int2ext import int2ext
+
+
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
+from scipy.stats import chi2
+
+from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
+    _build_measurement_vectors, _init_ppc
+from pandapower.estimation.results import _copy_power_flow_results, _rename_results
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.auxiliary import _add_pf_options, get_values
+from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
+from pandapower.pf.runpf_pypower import _get_pf_variables_from_ppci, \
+    _store_results_from_pf_in_ppci
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
+from pandapower.topology import estimate_voltage_vector
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+std_logger = logging.getLogger(__name__)
 
 
-def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10):
+def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
+             calculate_voltage_angles=True, ref_power=1e6):
     """
     Wrapper function for WLS state estimation.
-    :param net: The net within this line should be created.
-    :param init Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses,
-    'results' uses the values from res_bus_est if available and 'slack' considers the slack bus
-    voltage and angle as the initial values. Default is 'flat'.
-    :param tolerance: (float) - When the change between iterations is less than tolerance,
-            the process stops. Default is 1e-6.
-    :param maximum_iterations: (int) - Maximum number of iterations. Default is 10.
-    :return: (bool) Was the state estimation successful?
+
+    INPUT:
+        **net** - The net within this line should be created.
+
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+
+    OPTIONAL:
+        **tolerance** - (float) - When the maximum state change between iterations is less than
+        tolerance, the process stops. Default is 1e-6.
+
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        shifts in transformers, if init is 'slack'. Default is True.
+
+    OUTPUT:
+        **successful** (boolean) - Was the state estimation successful?
     """
-    net = convert_format(net)
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
     v_start = None
     delta_start = None
     if init == 'results':
-        if not np.any(np.isnan(net.res_bus_est.vm_pu)) \
-                and not np.any(np.isnan(net.res_bus_est.va_degree)):
-            v_start = net.res_bus_est.vm_pu
-            delta_start = net.res_bus_est.va_degree
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
     elif init == 'slack':
-        v_start = np.ones(len(net.bus)) * net.res_bus.vm_pu[net.ext_grid.bus].values[0]
-        delta_start = np.full(len(net.bus), net.res_bus.va_degree[net.ext_grid.bus].values[0])
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
-    return wls.estimate(v_start, delta_start)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles)
 
 
-class state_estimation:
+def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
+                    calculate_voltage_angles=True, rn_max_threshold=3.0, ref_power=1e6):
+    """
+    Wrapper function for bad data removal.
+
+    INPUT:
+        **net** - The net within this line should be created.
+
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+
+    OPTIONAL:
+        **tolerance** - (float) - When the maximum state change between iterations is less than
+        tolerance, the process stops. Default is 1e-6.
+
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        shifts in transformers, if init is 'slack'. Default is True.
+
+        **rn_max_threshold** (float) - Identification threshold to determine
+        if the largest normalized residual reflects a bad measurement
+        (default value of 3.0)
+
+        **chi2_prob_false** (float) - probability of error / false alarms
+        (default value: 0.05)
+
+    OUTPUT:
+        **successful** (boolean) - Was the state estimation successful?
+    """
+    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
+    v_start = None
+    delta_start = None
+    if init == 'results':
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
+                                   rn_max_threshold)
+
+
+def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
+                  calculate_voltage_angles=True, chi2_prob_false=0.05, ref_power=1e6):
+    """
+    Wrapper function for the chi-squared test.
+
+    INPUT:
+        **net** - The net within this line should be created.
+
+        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
+        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+
+    OPTIONAL:
+        **tolerance** - (float) - When the maximum state change between iterations is less than
+        tolerance, the process stops. Default is 1e-6.
+
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+
+        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+        shifts in transformers, if init is 'slack'. Default is True.
+
+        **chi2_prob_false** (float) - probability of error / false alarms
+        (default value: 0.05)
+
+    OUTPUT:
+        **bad_data_detected** (boolean) - Returns true if bad data has been detected
+    """
+    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
+    v_start = None
+    delta_start = None
+    if init == 'results':
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return wls.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
+                                 chi2_prob_false)
+
+
+class state_estimation(object):
     """
     Any user of the estimation module only needs to use the class state_estimation. It contains all
     relevant functions to control and operator the module. Two functions are used to configure the
     system according to the users needs while one function is used for the actual estimation
     process.
     """
-    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
+    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None, ref_power=1e6):
         self.logger = logger
         if self.logger is None:
-            self.logger = logging.getLogger("wls_se")
+            self.logger = std_logger
+            # self.logger.setLevel(logging.DEBUG)
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
-        self.s_ref = 1e6
+        self.s_ref = ref_power
         self.s_node_powers = None
-        # for chi square test
+        # variables for chi^2 / rn_max tests
         self.hx = None
         self.R_inv = None
         self.H = None
@@ -68,52 +186,52 @@ class state_estimation:
         self.Gm = None
         self.r = None
         self.V = None
+        self.pp_meas_indices = None
         self.delta = None
-        self.s_bus_kva = None
         self.bad_data_present = None
-        # offset to accommodate pypower - pandapower differences (additional columns)
-        self.br_col_offset = 6
 
-    def estimate(self, v_start=None, delta_start=None):
+    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
         """
-        The function estimate is the main function of the module. It takes two input arguments: u_in
-        and delta_in. These are the initial state variables for the estimation process. Usually they
-        can be initialized in a "flat-start" condition: All voltages being 1.0 pu and all voltage
-        angles being 0 degrees. If the estimation is applied continuously, using the results from
-        the last estimation as the starting condition for the current estimation can decrease the
-        amount of iterations needed to estimate the current state. Returned is a boolean value,
-        which is true after a successful estimation and false otherwise.
+        The function estimate is the main function of the module. It takes up to three input
+        arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
+        state variables for the estimation process. Usually they can be initialized in a
+        "flat-start" condition: All voltages being 1.0 pu and all voltage angles being 0 degrees.
+        In this case, the parameters can be left at their default values (None). If the estimation
+        is applied continuously, using the results from the last estimation as the starting
+        condition for the current estimation can decrease the  amount of iterations needed to
+        estimate the current state. The third parameter defines whether all voltage angles are
+        calculated absolutely, including phase shifts from transformers. If only the relative
+        differences between buses are required, this parameter can be set to False. Returned is a
+        boolean value, which is true after a successful estimation and false otherwise.
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
 
-        Input:
-
+        INPUT:
             **net** - The net within this line should be created
 
             **v_start** (np.array, shape=(1,), optional) - Vector with initial values for all
-            voltage magnitudes
-            in p.u. (sorted by bus index)
+            voltage magnitudes in p.u. (sorted by bus index)
 
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
-            voltage angles
-            in degrees (sorted by bus index)
+            voltage angles in degrees (sorted by bus index)
 
-        Return:
+        OPTIONAL:
+            **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
+            phase shifts in transformers Default is True.
 
+        OUTPUT:
             **successful** (boolean) - True if the estimation process was successful
 
         Optional estimation variables:
-
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
 
-        Example:
-
+        EXAMPLE:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
 
         """
         if self.net is None:
-            raise Exception("Component was not initialized with a network.")
+            raise UserWarning("Component was not initialized with a network.")
 
         # add initial values for V and delta
         # node voltages
@@ -123,416 +241,191 @@ class state_estimation:
         if delta_start is None:
             delta_start = np.zeros(self.net.bus.shape[0])
 
-        # initialize the ppc bus with the initial values given
-        vm_backup, va_backup = self.net.res_bus.vm_pu.copy(), self.net.res_bus.va_degree.copy()
-        self.net.res_bus.vm_pu = v_start
-        self.net.res_bus.vm_pu[self.net.bus.index[self.net.bus.in_service == False]] = np.nan
-        self.net.res_bus.va_degree = delta_start
+        # initialize result tables if not existent
+        _copy_power_flow_results(self.net)
 
-        # select elements in service and convert pandapower ppc to ppc
-        is_elems = _select_is_elements(self.net)
-        ppc, _, mapping_table = _pd2ppc(self.net, is_elems, init_results=True)
-        br_cols = ppc["branch"].shape[1]
-        bs_cols = ppc["bus"].shape[1]
+        # initialize ppc
+        ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
+        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
 
-        self.net.res_bus.vm_pu = vm_backup
-        self.net.res_bus.va_degree = va_backup
+        # add measurements to ppci structure
+        ppci = _add_measurements_to_ppc(self.net, mapping_table, ppci, self.s_ref)
 
-        # add 6 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev
-        bus_append = np.full((ppc["bus"].shape[0], 6), np.nan, dtype=ppc["bus"].dtype)
-
-        v_measurements = self.net.measurement[(self.net.measurement.type == "v")
-                                              & (self.net.measurement.element_type == "bus")]
-        if len(v_measurements):
-            bus_positions = mapping_table[v_measurements.bus.values.astype(int)]
-            bus_append[bus_positions, 0] = v_measurements.value.values
-            bus_append[bus_positions, 1] = v_measurements.std_dev.values
-
-        p_measurements = self.net.measurement[(self.net.measurement.type == "p")
-                                              & (self.net.measurement.element_type == "bus")]
-        if len(p_measurements):
-            bus_positions = mapping_table[p_measurements.bus.values.astype(int)]
-            bus_append[bus_positions, 2] = p_measurements.value.values * 1e3 / self.s_ref
-            bus_append[bus_positions, 3] = p_measurements.std_dev.values * 1e3 / self.s_ref
-
-        q_measurements = self.net.measurement[(self.net.measurement.type == "q")
-                                              & (self.net.measurement.element_type == "bus")]
-        if len(q_measurements):
-            bus_positions = mapping_table[q_measurements.bus.values.astype(int)]
-            bus_append[bus_positions, 4] = q_measurements.value.values * 1e3 / self.s_ref
-            bus_append[bus_positions, 5] = q_measurements.std_dev.values * 1e3 / self.s_ref
-
-        # add virtual measurements for artificial buses, which were created because
-        # of an open line switch. p/q are 0. and std dev is 1. (small value)
-        new_in_line_buses = np.setdiff1d(np.arange(ppc["bus"].shape[0]),
-                                         mapping_table[mapping_table >= 0])
-        bus_append[new_in_line_buses, 2] = 0.
-        bus_append[new_in_line_buses, 3] = 1.
-        bus_append[new_in_line_buses, 4] = 0.
-        bus_append[new_in_line_buses, 5] = 1.
-
-        # add 12 columns to mpc[branch] for Im_from, Im_from std dev, Im_to, Im_to std dev,
-        # P_from, P_from std dev, P_to, P_to std dev, Q_from,Q_from std dev,  Q_to, Q_to std dev
-        branch_append = np.full((ppc["branch"].shape[0], 12), np.nan, dtype=ppc["branch"].dtype)
-
-        i_measurements = self.net.measurement[(self.net.measurement.type == "i")
-                                              & (self.net.measurement.element_type == "line")]
-        if len(i_measurements):
-            meas_from = i_measurements[(i_measurements.bus.values.astype(int) ==
-                                        self.net.line.from_bus[i_measurements.element]).values]
-            meas_to = i_measurements[(i_measurements.bus.values.astype(int) ==
-                                      self.net.line.to_bus[i_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            i_a_to_pu_from = (self.net.bus.vn_kv[meas_from.bus] * 1e3 / self.s_ref).values
-            i_a_to_pu_to = (self.net.bus.vn_kv[meas_to.bus] * 1e3 / self.s_ref).values
-            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu_from
-            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu_from
-            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu_to
-            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu_to
-
-        p_measurements = self.net.measurement[(self.net.measurement.type == "p")
-                                              & (self.net.measurement.element_type == "line")]
-        if len(p_measurements):
-            meas_from = p_measurements[(p_measurements.bus.values.astype(int) ==
-                                        self.net.line.from_bus[p_measurements.element]).values]
-            meas_to = p_measurements[(p_measurements.bus.values.astype(int) ==
-                                      self.net.line.to_bus[p_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            branch_append[ix_from, 4] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 5] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 6] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 7] = meas_to.std_dev.values * 1e3 / self.s_ref
-
-        q_measurements = self.net.measurement[(self.net.measurement.type == "q")
-                                              & (self.net.measurement.element_type == "line")]
-        if len(q_measurements):
-            meas_from = q_measurements[(q_measurements.bus.values.astype(int) ==
-                                        self.net.line.from_bus[q_measurements.element]).values]
-            meas_to = q_measurements[(q_measurements.bus.values.astype(int) ==
-                                      self.net.line.to_bus[q_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            branch_append[ix_from, 8] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 9] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
-
-        i_tr_measurements = self.net.measurement[(self.net.measurement.type == "i")
-                                                 & (self.net.measurement.element_type ==
-                                                 "transformer")]
-        if len(i_tr_measurements):
-            meas_from = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
-                                           self.net.trafo.hv_bus[i_tr_measurements.element]).values]
-            meas_to = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
-                                         self.net.trafo.lv_bus[i_tr_measurements.element]).values]
-            ix_from = meas_from.element.values.astype(int)
-            ix_to = meas_to.element.values.astype(int)
-            i_a_to_pu_from = (self.net.bus.vn_kv[meas_from.bus] * 1e3 / self.s_ref).values
-            i_a_to_pu_to = (self.net.bus.vn_kv[meas_to.bus] * 1e3 / self.s_ref).values
-            branch_append[ix_from, 0] = meas_from.value.values * i_a_to_pu_from
-            branch_append[ix_from, 1] = meas_from.std_dev.values * i_a_to_pu_from
-            branch_append[ix_to, 2] = meas_to.value.values * i_a_to_pu_to
-            branch_append[ix_to, 3] = meas_to.std_dev.values * i_a_to_pu_to
-
-        p_tr_measurements = self.net.measurement[(self.net.measurement.type == "p") &
-                                                 (self.net.measurement.element_type ==
-                                                  "transformer")]
-        if len(p_tr_measurements):
-            meas_from = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
-                                           self.net.trafo.hv_bus[p_tr_measurements.element]).values]
-            meas_to = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
-                                         self.net.trafo.lv_bus[p_tr_measurements.element]).values]
-            ix_from = len(self.net.line) + meas_from.element.values.astype(int)
-            ix_to = len(self.net.line) + meas_to.element.values.astype(int)
-            branch_append[ix_from, 4] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 5] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 6] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 7] = meas_to.std_dev.values * 1e3 / self.s_ref
-
-        q_tr_measurements = self.net.measurement[(self.net.measurement.type == "q") &
-                                                 (self.net.measurement.element_type ==
-                                                 "transformer")]
-        if len(q_tr_measurements):
-            meas_from = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
-                                           self.net.trafo.hv_bus[q_tr_measurements.element]).values]
-            meas_to = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
-                                         self.net.trafo.lv_bus[q_tr_measurements.element]).values]
-            ix_from = len(self.net.line) + meas_from.element.values.astype(int)
-            ix_to = len(self.net.line) + meas_to.element.values.astype(int)
-            branch_append[ix_from, 8] = meas_from.value.values * 1e3 / self.s_ref
-            branch_append[ix_from, 9] = meas_from.std_dev.values * 1e3 / self.s_ref
-            branch_append[ix_to, 10] = meas_to.value.values * 1e3 / self.s_ref
-            branch_append[ix_to, 11] = meas_to.std_dev.values * 1e3 / self.s_ref
-
-        ppc["bus"] = np.hstack((ppc["bus"], bus_append))
-        ppc["branch"] = np.hstack((ppc["branch"], branch_append))
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ppc_i = ext2int(ppc)
-
-        p_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 2])
-        p_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 4])
-        p_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 6])
-        q_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 4])
-        q_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 8])
-        q_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 10])
-        v_bus_not_nan = ~np.isnan(ppc_i["bus"][:, bs_cols + 0])
-        i_line_f_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 0])
-        i_line_t_not_nan = ~np.isnan(ppc_i["branch"][:, br_cols + 2])
-
-        # piece together our measurement vector z
-        z = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 2],
-                            ppc_i["branch"][p_line_f_not_nan, br_cols + 4],
-                            ppc_i["branch"][p_line_t_not_nan, br_cols + 6],
-                            ppc_i["bus"][q_bus_not_nan, bs_cols + 4],
-                            ppc_i["branch"][q_line_f_not_nan, br_cols + 8],
-                            ppc_i["branch"][q_line_t_not_nan, br_cols + 10],
-                            ppc_i["bus"][v_bus_not_nan, bs_cols + 0],
-                            ppc_i["branch"][i_line_f_not_nan, br_cols + 0],
-                            ppc_i["branch"][i_line_t_not_nan, br_cols + 2]
-                            )).real.astype(np.float64)
+        # calculate relevant vectors from ppci measurements
+        z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
 
         # number of nodes
-        n_active = len(np.where(ppc_i["bus"][:, 1] != 4)[0])
-        slack_bus = np.where(ppc_i["bus"][:, 1] == 3)[0][0]
+        n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
+        slack_buses = np.where(ppci["bus"][:, 1] == 3)[0]
 
         # Check if observability criterion is fulfilled and the state estimation is possible
         if len(z) < 2 * n_active - 1:
             self.logger.error("System is not observable (cancelling)")
             self.logger.error("Measurements available: %d. Measurements required: %d" %
-                          (len(z), 2 * n_active - 1))
+                              (len(z), 2 * n_active - 1))
             return False
 
-        # Matrix calculation object
-        sem = wls_matrix_ops(ppc_i, slack_bus, self.s_ref, bs_cols, br_cols)
+        # set the starting values for all active buses
+        v_m = ppci["bus"][:, 7]
+        delta = ppci["bus"][:, 8] * np.pi / 180  # convert to rad
+        delta_masked = np.ma.array(delta, mask=False)
+        delta_masked.mask[slack_buses] = True
+        non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
-        # Set the starting values for all active buses
-        v_m = ppc_i["bus"][:, 7]
-        delta = ppc_i["bus"][:, 8] * np.pi / 180  # convert to rad
+        # matrix calculation object
+        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref)
 
         # state vector
-        E = np.concatenate((delta[:slack_bus], delta[slack_bus + 1:], v_m))
+        E = np.concatenate((delta_masked.compressed(), v_m))
 
-        # Covariance matrix R
-        r_cov = np.concatenate((ppc_i["bus"][p_bus_not_nan, bs_cols + 3],
-                                ppc_i["branch"][p_line_f_not_nan, br_cols + 5],
-                                ppc_i["branch"][p_line_t_not_nan, br_cols + 7],
-                                ppc_i["bus"][q_bus_not_nan, bs_cols + 5],
-                                ppc_i["branch"][q_line_f_not_nan, br_cols + 9],
-                                ppc_i["branch"][q_line_t_not_nan, br_cols + 11],
-                                ppc_i["bus"][v_bus_not_nan, bs_cols + 1],
-                                ppc_i["branch"][i_line_f_not_nan, br_cols + 1],
-                                ppc_i["branch"][i_line_t_not_nan, br_cols + 3]
-                                )).real.astype(np.float64)
-
+        # invert covariance matrix
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
 
-        current_error = 100
-        current_iterations = 0
+        current_error = 100.
+        cur_it = 0
 
-        while current_error > self.tolerance and current_iterations < self.max_iterations:
-            self.logger.debug("Iteration %d" % (1 + current_iterations))
+        while current_error > self.tolerance and cur_it < self.max_iterations:
+            self.logger.debug(" Starting iteration %d" % (1 + cur_it))
+            try:
+                # create h(x) for the current iteration
+                h_x = sem.create_hx(v_m, delta)
 
-            # create h(x) for the current iteration
-            h_x = sem.create_hx(v_m, delta)
+                # residual r
+                r = csr_matrix(z - h_x).T
 
-            # Residual r
-            r = csr_matrix(z - h_x)
+                # jacobian matrix H
+                H = csr_matrix(sem.create_jacobian(v_m, delta))
 
-            # Jacobian matrix H
-            H = csr_matrix(sem.create_jacobian(v_m, delta))
+                # gain matrix G_m
+                # G_m = H^t * R^-1 * H
+                G_m = H.T * (r_inv * H)
 
-            # if not np.linalg.cond(H) < 1 / sys.float_info.epsilon:
-            #    self.logger.error("Error in matrix H")
+                # state vector difference d_E
+                # d_E = G_m^-1 * (H' * R^-1 * r)
+                d_E = spsolve(G_m, H.T * (r_inv * r))
+                E += d_E
 
-            # Gain matrix G_m
-            # G_m = H^t * R^-1 * H
-            G_m = H.T * (r_inv * H)
+                # update V/delta
+                delta[non_slack_buses] = E[:len(non_slack_buses)]
+                v_m = np.squeeze(E[len(non_slack_buses):])
 
-            # State Vector difference d_E
-            # d_E = G_m^-1 * (H' * R^-1 * r)
-            d_E = spsolve(G_m, H.T * (r_inv * r.T))
-            E += d_E
+                # prepare next iteration
+                cur_it += 1
+                current_error = np.max(np.abs(d_E))
+                self.logger.debug("Current error: %.7f" % current_error)
 
-            # Update V/delta
-            delta[:slack_bus] = E[:slack_bus]
-            delta[slack_bus + 1:] = E[slack_bus:n_active - 1]
-            v_m = np.squeeze(E[n_active - 1:])
+            except np.linalg.linalg.LinAlgError:
+                self.logger.error("A problem appeared while using the linear algebra methods."
+                                  "Check and change the measurement set.")
+                return False
 
-            current_iterations += 1
-            current_error = np.max(np.abs(d_E))
-            self.logger.debug("Error: " + str(current_error))
-
-        # Print output for results
-        self.logger.debug("Finished (" + str(current_iterations) + "/" + str(self.max_iterations) +
-                          " iterations)")
-
+        # print output for results
         if current_error <= self.tolerance:
             successful = True
-            self.logger.debug("==> Successful")
+            self.logger.debug("WLS State Estimation successful (%d iterations)" % cur_it)
         else:
             successful = False
-            self.logger.debug("==> Not successful")
+            self.logger.debug("WLS State Estimation not successful (%d/%d iterations)" %
+                              (cur_it, self.max_iterations))
 
+        # store results for all elements
         # write voltage into ppc
-        ppc_i["bus"][:, 7] = v_m
-        ppc_i["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
+        ppci["bus"][:, 7] = v_m
+        ppci["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
 
-        # calculate bus powers
+        # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
-        ppc_i["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
-        ppc_i["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
+        ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
+        ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
+
+        # calculate line results (in ppc_i)
+        s_ref, bus, gen, branch = _get_pf_variables_from_ppci(ppci)[0:4]
+        out = np.flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
+        br = np.flatnonzero(branch[:, BR_STATUS]).astype(int)  # in-service branches
+        # complex power at "from" bus
+        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(sem.Yf[br, :] * v_cpx) * s_ref
+        # complex power injected at "to" bus
+        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) * s_ref
+        branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
+        branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
+        ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
 
         # convert to pandapower indices
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            ppc = int2ext(ppc_i)
-            _set_buses_out_of_service(ppc)
+        ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
-        # Store bus powers in kVa:
-        self.s_bus_kva = ppc["bus"][:, 2] + 1j * ppc["bus"][:, 3] * self.s_ref / 1e3
+        # extract results from ppc
+        _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
+                        numba=True, ac=True, algorithm='nr', max_iteration="auto")
+        _extract_results(self.net, ppc)
 
-        # Store results, overwrite old results
-        self.net.res_bus_est = pd.DataFrame(columns=["vm_pu", "va_degree", "p_kw", "q_kvar"],
-                                            index=self.net.bus.index)
-        self.net.res_line_est = pd.DataFrame(columns=["p_from_kw", "q_from_kvar", "p_to_kw",
-                                                      "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
-                                                      "i_to_ka", "i_ka", "loading_percent"],
-                                             index=self.net.line.index)
+        # restore backup of previous results
+        _rename_results(self.net)
 
-        bus_idx = mapping_table[self.net["bus"].index.values]
-        self.net["res_bus_est"]["vm_pu"] = ppc["bus"][bus_idx][:, 7]
-        self.net["res_bus_est"]["va_degree"] = ppc["bus"][bus_idx][:, 8]
-
-        self.net.res_bus_est.p_kw = -  get_values(ppc["bus"][:, 2], self.net.bus.index,
-                                                  mapping_table) * self.s_ref / 1e3
+        # additionally, write bus results (these are not written in _extract_results)
+        self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index,
+                                                 mapping_table) * self.s_ref / 1e3
         self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
                                                    mapping_table) * self.s_ref / 1e3
-        self._calc_line_results()
 
-        # Store some variables required for Chi^2 and r_N_max test:
-        self.R_inv = r_inv
+        # store variables required for chi^2 and r_N_max test:
+        self.R_inv = r_inv.toarray()
+        self.Gm = G_m.toarray()
+        self.r = r.toarray()
+        self.H = H.toarray()
+        self.Ht = self.H.T
         self.hx = h_x
-        self.H = H
-        self.Ht = H.T
-        self.Gm = G_m
-        self.r = r
         self.V = v_m
         self.delta = delta
-
         return successful
 
-    def _calc_line_results(self):
-        """
-        Calculates complex line currents at both bus sides and saves them in the result table
-        """
-        # calculate impedances and complex voltages
-        Zij = self.net.line['length_km'] * (self.net.line['r_ohm_per_km'] + 1j
-                                            * self.net.line['x_ohm_per_km'])
-        Zcbij = 0.5j * 2 * np.pi * 50 * self.net.line['c_nf_per_km'] * 1e-9
-        V = self.net.res_bus_est.vm_pu * self.net.bus.vn_kv * 1e3 \
-            * np.exp(1j * np.pi / 180 * self.net.res_bus_est.va_degree)
-        fb = self.net.line.from_bus
-        tb = self.net.line.to_bus
-        # calculate line currents of from bus side
-        line_currents_from = ((V[fb].values - V[tb].values) / np.sqrt(3) / Zij + V[fb].values
-                              * Zcbij).values
-        open_lines_from = self.net.switch.element.loc[
-            (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
-        line_currents_from[open_lines_from.values] = 0.
-        charging_from = open_lines_from[open_lines_from.index[
-            self.net.line.to_bus.loc[open_lines_from].values ==
-            self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
-                                                                   False)].values]].values
-        line_currents_from[charging_from] = V[self.net.line.ix[charging_from].from_bus].values \
-                                            * Zcbij[charging_from] * (1 + Zij[charging_from])
-        # calculate line currents on to bus side
-        line_currents_to = ((V[tb].values - V[fb].values) / np.sqrt(3) / Zij + V[tb].values
-                            * Zcbij).values
-        open_lines_to = self.net.switch.element.loc[
-            (self.net.switch.et == 'l') & (self.net.switch.closed == False)]
-        line_currents_to[open_lines_to.values] = 0.
-        charging_to = open_lines_to[open_lines_to.index[
-            self.net.line.from_bus.loc[open_lines_to].values ==
-            self.net.switch.bus.loc[(self.net.switch.et == 'l') & (self.net.switch.closed ==
-                                                                   False)].values]].values
-        line_currents_to[charging_to] = V[self.net.line.ix[charging_to].to_bus] \
-                                        * Zcbij[charging_to] * (1 + Zij[charging_to])
-        # derive other values
-        line_powers_from = np.sqrt(3) * V[fb].values * np.conj(line_currents_from) / 1e3
-        line_powers_to = np.sqrt(3) * V[tb].values * np.conj(line_currents_to) / 1e3
-        self.net.res_line_est.i_from_ka = np.abs(line_currents_from) / 1e3
-        self.net.res_line_est.i_to_ka = np.abs(line_currents_to) / 1e3
-        self.net.res_line_est.i_ka = np.fmax(self.net.res_line_est.i_from_ka,
-                                         self.net.res_line_est.i_to_ka)
-        self.net.res_line_est.loading_percent = self.net.res_line_est.i_ka * 100. \
-                                                / self.net.line.imax_ka.values \
-                                                / self.net.line.df.values \
-                                                / self.net.line.parallel.values
-        self.net.res_line_est.p_from_kw = line_powers_from.real
-        self.net.res_line_est.q_from_kvar = line_powers_from.imag
-        self.net.res_line_est.p_to_kw = line_powers_to.real
-        self.net.res_line_est.q_to_kvar = line_powers_to.imag
-        self.net.res_line_est.pl_kw = self.net.res_line_est.p_from_kw + \
-                                      self.net.res_line_est.p_to_kw
-        self.net.res_line_est.ql_kvar = self.net.res_line_est.q_from_kvar + \
-                                        self.net.res_line_est.q_to_kvar
-
-    def perform_chi2_test(self, v_in_out=None, delta_in_out=None):
+    def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
+                          calculate_voltage_angles=True, chi2_prob_false=0.05):
         """
         The function perform_chi2_test performs a Chi^2 test for bad data and topology error
         detection. The function can be called with the optional input arguments v_in_out and
         delta_in_out. Then, the Chi^2 test is performed after calling the function estimate using
         them as input arguments. It can also be called without these arguments if it is called
         from the same object with which estimate had been called beforehand. Then, the Chi^2 test is
-        performed for the states estimated by the funtion estimate and stored internally in a
-        member variable of the class state_estimation. For bad data detection, the function
+        performed for the states estimated by the funtion estimate and the result, the existence of bad data,
+        is given back as a boolean. As a optional argument the probability
+        of a false measurement can be provided additionally. For bad data detection, the function
         perform_rn_max_test is more powerful and should be the function of choice. For topology
         error detection, however, perform_chi2_test should be used.
 
-        Input:
+        INPUT:
+            **v_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage magnitudes in p.u. (sorted by bus index)
 
-            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            magnitudes in p.u. (sorted by bus index)
+            **delta_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage angles in degrees (sorted by bus index)
 
-            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            angles in Rad (sorted by bus index)
+        OPTIONAL:
+            **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+            shifts in transformers, if init is 'slack'. Default is True.
 
+            **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
-        Return:
+        OUTPUT:
+            **successful** (boolean) - True if bad data has been detected
 
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            magnitudes in p.u. (sorted by bus index)
-
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage
-            angles in Rad (sorted by bus index)
-
-            **successful** (boolean) - True if the estimation process was successful
-
-        Example:
-
-            perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+        EXAMPLE:
+            perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
 
         """
-        # If desired, estimate the state first:
-        if (v_in_out is not None) and (delta_in_out is not None):
-            successful = self.estimate(v_in_out, delta_in_out)
-            v_in_out = self.net.res_bus_est.vm_pu.values
-            delta_in_out = self.net.res_bus_est.va_degree.values
+        # 'flat'-start conditions
+        if v_in_out is None:
+            v_in_out = np.ones(self.net.bus.shape[0])
+        if delta_in_out is None:
+            delta_in_out = np.zeros(self.net.bus.shape[0])
 
-        if ((v_in_out is not None) and (delta_in_out is None)) \
-                or ((v_in_out is None) and (delta_in_out is not None)):
-            self.logger.error("Both V and delta have to be defined or none of them! Cancelling...")
-            return
+        # perform SE
+        self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
         # Performance index J(hx)
-        J = np.dot(np.transpose(self.r), np.dot(self.R_inv, self.r))
+        J = np.dot(self.r.T, np.dot(self.R_inv, self.r))
 
         # Number of measurements
         m = len(self.net.measurement)
@@ -541,137 +434,132 @@ class state_estimation:
         n = len(self.V) + len(self.delta) - 1
 
         # Chi^2 test threshold
-        test_thresh = chi2.ppf(0.95, m - n)
+        test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
 
         # Print results
-        self.logger.info("-----------------------")
-        self.logger.info("Result of Chi^2 test:")
-        self.logger.info("Number of measurements:")
-        self.logger.info(m)
-        self.logger.info("Number of state variables:")
-        self.logger.info(n)
-        self.logger.info("Performance index:")
-        self.logger.info(J)
-        self.logger.info("Chi^2 test threshold:")
-        self.logger.info(test_thresh)
+        self.logger.debug("Result of Chi^2 test:")
+        self.logger.debug("Number of measurements: %d" % m)
+        self.logger.debug("Number of state variables: %d" % n)
+        self.logger.debug("Performance index: %.2f" % J)
+        self.logger.debug("Chi^2 test threshold: %.2f" % test_thresh)
 
         if J <= test_thresh:
             self.bad_data_present = False
-            self.logger.info("Chi^2 test passed --> no bad data or topology error detected.")
+            self.logger.debug("Chi^2 test passed. No bad data or topology error detected.")
         else:
             self.bad_data_present = True
-            self.logger.info("Chi^2 test failed --> bad data or topology error detected.")
+            self.logger.debug("Chi^2 test failed. Bad data or topology error detected.")
 
         if (v_in_out is not None) and (delta_in_out is not None):
-            return v_in_out, delta_in_out, successful
+            return self.bad_data_present
 
-    def perform_rn_max_test(self, v_in_out, delta_in_out):
+    def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
+                            calculate_voltage_angles=True, rn_max_threshold=3.0):
         """
         The function perform_rn_max_test performs a largest normalized residual test for bad data
         identification and removal. It takes two input arguments: v_in_out and delta_in_out.
         These are the initial state variables for the combined estimation and bad data
         identification and removal process. They can be initialized as described above, e.g.,
-        using “flat start”. In an iterative process, the function performs a state estimation,
-        identifies a bad data measurement, removes it from the set of measurements, performs the
-        state estimation again, and so on and so forth until no further bad data measurements are
-        detected. The return values are the same as for the function estimate.
+        using a "flat" start. In an iterative process, the function performs a state estimation,
+        identifies a bad data measurement, removes it from the set of measurements
+        (only if the rn_max threshold is violated by the largest residual of all measurements,
+        which can be modified), performs the state estimation again,
+        and so on and so forth until no further bad data measurements are detected.
 
-        Input:
+        INPUT:
+            **v_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage magnitudes in p.u. (sorted by bus index)
 
-            **v_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            magnitudes in p.u. (sorted by bus index)
+            **delta_in_out** (np.array, shape=(1,), optional) - Vector with initial values for all
+            voltage angles in degrees (sorted by bus index)
 
-            **delta_in_out** (np.array, shape=(1,)) - Vector with initial values for all voltage
-            angles in Rad (sorted by bus index)
+        OPTIONAL:
+            **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
+            shifts in transformers, if init is 'slack'. Default is True.
 
+            **rn_max_threshold** (float) - Identification threshold to determine
+            if the largest normalized residual reflects a bad measurement
+            (standard value of 3.0)
 
-        Return:
+            **chi2_prob_false** (float) - probability of error / false alarms
+            (standard value: 0.05)
 
-            **V** (np.array, shape=(1,)) - Vector with estimated values for all voltage magnitudes
-            in p.u. (sorted by bus index)
+        OUTPUT:
+            **successful** (boolean) - True if all bad data could be removed
 
-            **delta** (np.array, shape=(1,)) - Vector with estimated values for all voltage angles
-            in Rad (sorted by bus index)
-
-            **successful** (boolean) - True if the estimation process was successful
-
-        Example:
-
-            perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+        EXAMPLE:
+            perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
 
         """
+        # 'flat'-start conditions
+        if v_in_out is None:
+            v_in_out = np.ones(self.net.bus.shape[0])
+        if delta_in_out is None:
+            delta_in_out = np.zeros(self.net.bus.shape[0])
+
         num_iterations = 0
 
         v_in = v_in_out
         delta_in = delta_in_out
 
-        self.bad_data_present = True
-
-        while self.bad_data_present and (num_iterations < 11):
+        while num_iterations <= 10:
             # Estimate the state with bad data identified in previous iteration
             # removed from set of measurements:
-            successful = self.estimate(v_in, delta_in)
-            v_in_out = self.net.res_bus_est.vm_pu.values
-            delta_in_out = self.net.res_bus_est.va_degree.values * 180 / np.pi
+            _ = self.estimate(v_in, delta_in, calculate_voltage_angles)
 
-            # Perform a Chi^2 test to determine whether bad data is to be removed.
-            # Til now, r_N_max test is used only for the identification:
-            self.perform_chi2_test()
+            # Try to remove the bad data
+            try:
+                # Error covariance matrix:
+                R = np.linalg.inv(self.R_inv)
 
-            # Error covariance matrix:
-            R = np.linalg.inv(self.R_inv)
+                # todo for future debugging: this line's results have changed with the ppc
+                # overhaul in April 2017 after commit 9ae5b8f42f69ae39f8c8cf (which still works)
+                # there are differences of < 1e-10 for the Omega entries which cause
+                # the function to work far worse. As of now it is unclear if it's just numerical
+                # accuracy to blame or an error in the code. a sort in the ppc creation function
+                # was removed which caused this issue
+                # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
+                # (S is the sensitivity matrix: r = S*e):
+                Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
 
-            # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
-            # (S is the sensitivity matrix: r = S*e):
-            Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
+                # Diagonalize \Omega:
+                Omega = np.diag(np.diag(Omega))
 
-            # Diagonalize \Omega:
-            Omega = np.diag(np.diag(Omega))
+                # Compute squareroot (|.| since some -0.0 produced nans):
+                Omega = np.sqrt(np.absolute(Omega))
 
-            # Compute squareroot (|.| since some -0.0 produced nans):
-            Omega = np.sqrt(np.absolute(Omega))
+                OmegaInv = np.linalg.inv(Omega)
 
-            OmegaInv = np.linalg.inv(Omega)
+                # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
+                rN = np.dot(OmegaInv, np.absolute(self.r))
 
-            # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
-            rN = np.dot(OmegaInv, np.absolute(self.r))
+                if max(rN) <= rn_max_threshold:
+                    self.logger.debug("Largest normalized residual test passed. "
+                                      "No bad data detected.")
+                    return True
+                else:
+                    self.logger.debug(
+                        "Largest normalized residual test failed (%.1f > %.1f)."
+                        % (max(rN), rn_max_threshold))
 
-            if max(rN) <= 5.0:
-                self.logger.info("Largest normalized residual test passed "
-                                 "--> no bad data detected.")
-            else:
-                self.logger.info("Largest normalized residual test failed --> bad data identified.")
+                    # Identify bad data: Determine index corresponding to max(rN):
+                    idx_rN = np.argsort(rN, axis=0)[-1]
 
-            if self.bad_data_present:
-                # Identify bad data: Determine index corresponding to max(rN):
-                idx_rN = np.argsort(rN)[len(rN) - 1]
+                    # Determine pandapower index of measurement to be removed:
+                    meas_idx = self.pp_meas_indices[idx_rN]
 
-                # Sort measurement indexes:
-                sorted_meas_idxs = np.concatenate(
-                    (self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
-                        self.net.measurement['element_type'] == 'bus')].index,
-                     self.net.measurement.loc[(self.net.measurement['type'] == 'p') & (
-                         self.net.measurement['element_type'] == 'line')].index,
-                     self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
-                         self.net.measurement['element_type'] == 'bus')].index,
-                     self.net.measurement.loc[(self.net.measurement['type'] == 'q') & (
-                         self.net.measurement['element_type'] == 'line')].index,
-                     self.net.measurement.loc[(self.net.measurement['type'] == 'v') & (
-                         self.net.measurement['element_type'] == 'bus')].index,
-                     self.net.measurement.loc[(self.net.measurement['type'] == 'i') & (
-                         self.net.measurement['element_type'] == 'line')].index))
+                    # Remove bad measurement:
+                    self.logger.debug("Removing measurement: %s"
+                                      % self.net.measurement.loc[meas_idx].values[0])
+                    self.net.measurement.drop(meas_idx, inplace=True)
+                    self.logger.debug("Bad data removed from the set of measurements.")
 
-                # Determine index of measurement to be removed:
-                meas_idx = sorted_meas_idxs[idx_rN]
+            except np.linalg.linalg.LinAlgError:
+                self.logger.error("A problem appeared while using the linear algebra methods."
+                                  "Check and change the measurement set.")
+                return False
 
-                # Remove bad measurement:
-                self.net.measurement.drop(meas_idx, inplace=True)
-                self.logger.info("Bad data removed from the set of measurements.")
-                self.logger.info("----------------------------------------------")
-            else:
-                self.logger.info("No bad data removed from the set of measurements.")
-                self.logger.info("Finished, successful.")
-
+            self.logger.debug("rN_max identification threshold: %.2f" % rn_max_threshold)
             num_iterations += 1
 
-        return v_in_out, delta_in_out, successful
+        return False

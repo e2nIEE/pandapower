@@ -1,26 +1,57 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
 
+import os
+from math import isnan
+
+import numpy as np
 import pandas.util.testing as pdt
+import pytest
+import tempfile
+import shutil
+
 import pandapower as pp
 import pandapower.test
-import numpy as np
-from math import isnan
-import pytest
-import os
+import pandapower.networks as networks
+
+try:
+    import pplog as logging
+except:
+    import logging
 
 
 def run_all_tests():
-    """ function exdecuting all tests
+    """ function executing all tests
     """
-    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)),"-s"])
+    logger = logging.getLogger()
+    logger.setLevel(logging.CRITICAL)
+    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
+    logger.setLevel(logging.INFO)
+
+
+@pytest.fixture(scope="module", params=[1])  # TODO
+def net_in(request):
+    if request.param == 1:
+        net = create_test_network()
+        net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
+        net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
+        return net
+    if request.param == 2:
+        return networks.case145()
+
+@pytest.yield_fixture(scope="module")
+def tempdir():
+    # we create a temporary folder to store all test files and remove it afterwards
+    tmp = tempfile.mkdtemp()
+    yield tmp
+    shutil.rmtree(tmp)
+
 
 def assert_mpc_equal(mpc1, mpc2):
-
     for name in ['bus', 'gen', 'branch', 'baseMVA']:
         try:
             assert np.allclose(mpc1[name], mpc2[name])
@@ -40,15 +71,16 @@ def assert_net_equal(a_net, b_net):
     Raises AssertionError if grids are not equal.
     """
     status = True
-    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'line_geodata', 'trafo', 'switch', 'trafo3w',
-                'gen', 'ext_grid', 'res_line', 'res_bus', 'res_sgen', 'res_gen', 'res_load', 'res_ext_grid', 'res_trafo']
-
+    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata',
+                'trafo', 'switch', 'trafo3w', 'gen', 'ext_grid', 'res_line', 'res_bus', 'res_sgen',
+                'res_gen', 'res_shunt', 'res_load', 'res_ext_grid', 'res_trafo']
     for name in namelist:
         if name in a_net or name in b_net:
             if not (a_net[name] is None and b_net[name] is None):
                 try:
-                    pdt.assert_frame_equal(
-                        a_net[name], b_net[name], check_dtype=False)
+                    df1 = a_net[name].sort_index().sort_index(axis=1)  # workaround for bug in
+                    df2 = b_net[name].sort_index().sort_index(axis=1)  # pandas, dont use
+                    pdt.assert_frame_equal(df1, df2, check_dtype=True)  # check_like here
                 except AssertionError:
                     pytest.fail("Tables are not equal: %s" % name)
                     status = False
@@ -79,30 +111,29 @@ def assert_res_out_of_service(net, idx, name):
 
     Specifications are:
 
-        res_bus["vm_pu"]  		    nan
-        res_bus.va_degree  	    nan
-        res_bus["p_kw"]       	      0
-        res_bus["q_kvar"]        	0
+        res_bus["vm_pu"]  		     nan
+        res_bus.va_degree  	         nan
+        res_bus["p_kw"]       	     0
+        res_bus["q_kvar"]        	  0
 
+        res_line.p_from_kw  		  0
+        res_line.q_from_kvar		  0
+        res_line.p_to_kw		     0
+        res_line.q_to_kvar		     0
+        res_line.i_ka			     0
+        res_line["loading_percent"] 0
 
-        res_line.p_from_kw  		0
-        res_line.q_from_kvar		0
-        res_line.p_to_kw		      0
-        res_line.q_to_kvar		0
-        res_line.i_ka			0
-        res_line["loading_percent"]	0
+        res_trafo			        all 0
 
-        res_trafo			Alles 0
+        res_load			        all 0
 
-        res_load			Alles 0
+        res_ext_grid		        all nan
 
-        res_ext_grid		Alles nan
-
-        res_gen["p_kw"]		     0
-        res_gen-q_kvar 		     0
+        res_gen["p_kw"]		         0
+        res_gen-q_kvar 		         0
         res_gen_va_degree	         nan
 
-        res_sgen 		    Alles	0
+        res_sgen 		           all  0
 
       Future: Elements out of service will not appear in result table!
 
@@ -137,6 +168,7 @@ def assert_res_out_of_service(net, idx, name):
         raise
 
     return status
+
 
 # TODO Future res_out_of_service:
 #    try:
@@ -192,32 +224,31 @@ def create_test_network():
     b1 = pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_ext_grid(net, b1)
     b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
-    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4)
+    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4, index=7)
     b4 = pp.create_bus(net, name="bus4", vn_kv=10.)
-    pp.create_transformer_from_parameters(net, b4, b2, vsc_percent= 3.75,
-                                          tp_max= 2, vn_lv_kv= 0.4,
-                                          shift_degree= 150, tp_mid= 0,
-                                          vn_hv_kv= 10.0, vscr_percent= 2.8125,
-                                          tp_pos= 0, tp_side="hv", tp_min= -2,
-                                          tp_st_percent= 2.5, i0_percent= 0.68751,
-                                          sn_kva= 16.0, pfe_kw= 0.11, name=None, 
+    pp.create_transformer_from_parameters(net, b4, b2, vsc_percent=3.75,
+                                          tp_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tp_mid=0,
+                                          vn_hv_kv=10.0, vscr_percent=2.8125,
+                                          tp_pos=0, tp_side="hv", tp_min=-2,
+                                          tp_st_percent=2.5, i0_percent=0.68751,
+                                          sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None)
-#0.016 MVA 10/0.4 kV ET 16/23  SGB
+    # 0.016 MVA 10/0.4 kV ET 16/23  SGB
 
-    pp.create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km= 0.2067,
-                   ices= 0.389985, c_nf_per_km= 720.0, imax_ka= 0.328, 
-                   x_ohm_per_km= 0.1897522, geodata=np.array([[1, 2], [3, 4]]))
-#NAYY 1x150RM 0.6/1kV ir
-    pp.create_line_from_parameters(net, b1, b4, 1, name="line2", r_ohm_per_km= 0.876,
-                  c_nf_per_km= 260.0, imax_ka= 0.123, x_ohm_per_km= 0.1159876) 
+    pp.create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km=0.2067,
+                                   ices=0.389985, c_nf_per_km=720.0, max_i_ka=0.328,
+                                   x_ohm_per_km=0.1897522, geodata=np.array([[1, 2], [3, 4]]))
+    # NAYY 1x150RM 0.6/1kV ir
+    pp.create_line_from_parameters(net, b1, b4, 1, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)
 
+    # NAYSEY 3x35rm/16 6/10kV
 
-#NAYSEY 3x35rm/16 6/10kV
-                   
     pp.create_load(net, b2, p_kw=10, q_kvar=0, name="load1")
     pp.create_load(net, b3, p_kw=40, q_kvar=2, name="load2")
-    pp.create_gen(net, 3, p_kw=-200., vm_pu=1.0)
-    pp.create_sgen(net, 2, p_kw=-50, sn_kva=100)
+    pp.create_gen(net, b4, p_kw=-200., vm_pu=1.0)
+    pp.create_sgen(net, b3, p_kw=-50, sn_kva=100)
 
     return net
 
@@ -225,8 +256,9 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = pp.from_pickle(os.path.abspath(os.path.dirname(pandapower.test.__file__))+"\\testgrid.p")
-#    net = pp.file_io.from_pickle("testgrid.p")
+    folder = os.path.abspath(os.path.dirname(pandapower.test.__file__))
+    net = pp.from_pickle(os.path.join(folder, "loadflow", "testgrid.p"))
+    #    net = pp.file_io.from_pickle("testgrid.p")
 
     return net
 
@@ -236,7 +268,7 @@ def add_grid_connection(net, vn_kv=20., zone=None):
     """
     b1 = pp.create_bus(net, vn_kv=vn_kv, zone=zone)
     pp.create_ext_grid(net, b1, vm_pu=1.01)
-    b2 = pp.get_free_id(net.bus) + 2 #shake up the indices so that non-consecutive indices are tested
+    b2 = pp.get_free_id(net.bus) + 2  # shake up the indices so that non-consecutive indices are tested
     b2 = pp.create_bus(net, vn_kv=vn_kv, zone=zone, index=b2)
     l1 = create_test_line(net, b1, b2)
     return b1, b2, l1
@@ -244,14 +276,9 @@ def add_grid_connection(net, vn_kv=20., zone=None):
 
 def create_test_line(net, b1, b2, in_service=True):
     return pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                          c_nf_per_km=300, imax_ka=.2, df=.8,
-                                          in_service=in_service,index=pp.get_free_id(net.line) + 1)
+                                          c_nf_per_km=300, max_i_ka=.2, df=.8,
+                                          in_service=in_service, index=pp.get_free_id(net.line) + 1)
+
 
 if __name__ == "__main__":
-    net_nr = create_test_network2()
-#    pp.to_pickle(net_nr, "testgrid.p")
-#    pp.rundcpp(net_nr)
-#    net_dc = create_test_network2()
-#    pp.runpp(net_dc)
-#    
     run_all_tests()

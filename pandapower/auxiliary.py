@@ -1,17 +1,56 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import pandas as pd
-import numpy as np
+# Additional copyright for modified code by Brendan Curran-Johnson (ADict class):
+# Copyright (c) 2013 Brendan Curran-Johnson
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
+
 from collections import MutableMapping
+
+import numpy as np
+import pandas as pd
+import scipy as sp
 import six
+
+from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+
+try:
+    from numba import jit
+    from numba import _version as numba_version
+except ImportError:
+    from .pf.no_numba import jit
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ADict(dict, MutableMapping):
-
     def __init__(self, *args, **kwargs):
         super(ADict, self).__init__(*args, **kwargs)
 
@@ -138,12 +177,11 @@ class ADict(dict, MutableMapping):
         )
 
 
-class PandapowerNet(ADict):
-
+class pandapowerNet(ADict):
     def __init__(self, *args, **kwargs):
-        super(PandapowerNet, self).__init__(*args, **kwargs)
+        super(pandapowerNet, self).__init__(*args, **kwargs)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         r = "This pandapower network includes the following parameter tables:"
         par = []
         res = []
@@ -229,4 +267,256 @@ def get_values(source, selection, lookup):
     value array from the selection.
     :return:
     """
-    return np.array([source[lookup[k]] for k in selection])
+    return np.array([source[lookup[np.int(k)]] for k in selection])
+
+
+def _check_connectivity(ppc):
+    """
+    Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
+    :param ppc: pypower case file
+    :return:
+    """
+    nobranch = ppc['branch'].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
+
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+
+    # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
+    # search at this bus
+    bus_from = np.hstack([bus_from, slacks])
+    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
+
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
+                                       (bus_from, bus_to)),
+                                      shape=(nobus + 1, nobus + 1))
+
+    reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
+    # TODO: the former impl. excluded ppc buses that are already oos, but is this necessary ?
+    # if so: bus_not_reachable = np.hstack([ppc['bus'][:, BUS_TYPE] != 4, np.array([False])])
+    bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
+    bus_not_reachable[reachable] = False
+    isolated_nodes = np.where(bus_not_reachable)[0]
+    if len(isolated_nodes) > 0:
+        logger.debug("There are isolated buses in the network!")
+        # set buses in ppc out of service
+        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
+
+        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+        if pus > 0 or qus > 0:
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+    else:
+        pus = qus = 0
+    return isolated_nodes, pus, qus
+
+
+def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
+    for i in range(len(ti)):
+        if tis[i] and bis[ti[i]]:
+            lis[i] = True
+
+
+def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
+    for k in range(len(bus_lookup)):
+        if ppc_bus_isolated[bus_lookup[k]]:
+            bus_in_service[k] = False
+
+
+try:
+    set_elements_oos = jit(nopython=True, cache=True)(_python_set_elements_oos)
+    set_isolated_buses_oos = jit(nopython=True, cache=True)(_python_set_isolated_buses_oos)
+except RuntimeError:
+    set_elements_oos = jit(nopython=True, cache=False)(_python_set_elements_oos)
+    set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
+
+
+def _select_is_elements_numba(net, isolated_nodes=None):
+    # is missing sgen_controllable and load_controllable
+    max_bus_idx = np.max(net["bus"].index.values)
+    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    if isolated_nodes is not None and len(isolated_nodes) > 0:
+        ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
+        ppc_bus_isolated[isolated_nodes] = True
+        set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
+
+    is_elements = dict()
+    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid"]:
+        len_ = len(net[element].index)
+        element_in_service = np.zeros(len_, dtype=bool)
+        if len_ > 0:
+            element_df = net[element]
+            set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
+                             bus_in_service, element_in_service)
+        is_elements[element] = element_in_service
+    is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
+    is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+
+    if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
+        if "load_controllable" in net._is_elements:
+            is_elements["load_controllable"] = net._is_elements["load_controllable"]
+        if "sgen_controllable" in net._is_elements:
+            is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
+    return is_elements
+
+
+def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
+                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, delta=1e-10,
+                     voltage_depend_loads=False):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    if recycle is None:
+        recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
+
+    options = {
+        "calculate_voltage_angles": calculate_voltage_angles,
+        "trafo_model": trafo_model,
+        "check_connectivity": check_connectivity,
+        "mode": mode,
+        "copy_constraints_to_ppc": copy_constraints_to_ppc,
+        "r_switch": r_switch,
+        "init": init,
+        "enforce_q_lims": enforce_q_lims,
+        "recycle": recycle,
+        "voltage_depend_loads": voltage_depend_loads,
+        "delta": delta
+    }
+    _add_options(net, options)
+
+
+def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
+                    algorithm, max_iteration, **kwargs):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+
+    options = {
+        "tolerance_kva": tolerance_kva,
+        "trafo_loading": trafo_loading,
+        "numba": numba,
+        "ac": ac,
+        "algorithm": algorithm,
+        "max_iteration": max_iteration
+    }
+
+    options.update(kwargs)  # update options with some algorithm-specific parameters
+    _add_options(net, options)
+
+
+def _add_opf_options(net, trafo_loading, ac, **kwargs):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    options = {
+        "trafo_loading": trafo_loading,
+        "ac": ac
+    }
+
+    options.update(kwargs)  # update options with some algorithm-specific parameters
+    _add_options(net, options)
+
+
+def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
+                    x_fault_ohm, kappa, ip, ith, consider_sgens, branch_results, kappa_method):
+    """
+    creates dictionary for pf, opf and short circuit calculations from input parameters.
+    """
+    options = {
+        "fault": fault,
+        "case": case,
+        "lv_tol_percent": lv_tol_percent,
+        "tk_s": tk_s,
+        "topology": topology,
+        "r_fault_ohm": r_fault_ohm,
+        "x_fault_ohm": x_fault_ohm,
+        "kappa": kappa,
+        "ip": ip,
+        "ith": ith,
+        "consider_sgens": consider_sgens,
+        "branch_results": branch_results,
+        "kappa_method": kappa_method
+    }
+    _add_options(net, options)
+
+
+def _add_options(net, options):
+    # double_parameters = set(net.__internal_options.keys()) & set(options.keys())
+    double_parameters = set(net._options.keys()) & set(options.keys())
+    if len(double_parameters) > 0:
+        raise UserWarning(
+            "Parameters always have to be unique! The following parameters where specified " +
+            "twice: %s" % double_parameters)
+    # net.__internal_options.update(options)
+    net._options.update(options)
+
+
+def _clean_up(net, res=True):
+    # mode = net.__internal_options["mode"]
+
+    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
+    net._is_elements = None
+
+    mode = net._options["mode"]
+    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
+    if len(net["trafo3w"]) > 0:
+        buses_3w = net.trafo3w["ad_bus"].values
+        net["bus"].drop(buses_3w, inplace=True)
+        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+        if res:
+            res_bus.drop(buses_3w, inplace=True)
+
+    if len(net["xward"]) > 0:
+        xward_buses = net["xward"]["ad_bus"].values
+        net["bus"].drop(xward_buses, inplace=True)
+        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+        if res:
+            res_bus.drop(xward_buses, inplace=True)
+
+    if len(net["dcline"]) > 0:
+        dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
+        net.gen.drop(dc_gens, inplace=True)
+        if res:
+            net.res_gen.drop(dc_gens, inplace=True)
+
+
+def _set_isolated_buses_out_of_service(net, ppc):
+    # set disconnected buses out of service
+    # first check if buses are connected to branches
+    disco = np.setxor1d(ppc["bus"][:, 0].astype(int),
+                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
+
+    # but also check if they may be the only connection to an ext_grid
+    disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
+    ppc["bus"][disco, 1] = 4.
+
+
+def _write_lookup_to_net(net, element, element_lookup):
+    """
+    Updates selected lookups in net
+    """
+    net["_pd2ppc_lookups"][element] = element_lookup
+
+
+def _check_if_numba_is_installed(numba):
+    numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n' \
+                        'Probably the execution is slow.\n' \
+                        'Please install numba to gain a massive speedup.\n' \
+                        '(or if you prefer slow execution, set the flag numba=False to avoid ' + \
+                        'this warning!)\n'
+
+    try:
+        # get numba Version (in order to use it it must be > 0.25)
+        nb_version = float(numba_version.version_version[:4])
+        if nb_version < 0.25:
+            logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
+                           numba_warning_str)
+            numba = False
+
+    except:
+        logger.warning(numba_warning_str)
+        numba = False
+
+    return numba

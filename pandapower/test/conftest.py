@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 by University of Kassel and Fraunhofer Institute for Wind Energy and Energy
-# System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed by a 
-# BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
+# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
+# by a BSD-style license that can be found in the LICENSE file.
 
-import pytest
-import pandapower as pp
 import numpy as np
-from pandapower.test.result_test_network_generator import result_test_network_generator
+import pytest
+
+import pandapower as pp
+from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 
 @pytest.fixture(scope="session")
@@ -43,4 +44,4 @@ def result_test_network():
 
 if __name__ == '__main__':
     net = result_test_network()
-    pp.rundcpp(net)
+    # pp.rundcpp(net)
