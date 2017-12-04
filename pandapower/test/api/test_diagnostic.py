@@ -216,9 +216,14 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'bus': [(0, 'in_service', 'no', 'boolean')],
          'gen': [(0, 'in_service', '1', 'boolean')],
-         'sgen': [(2, 'in_service', '0', 'boolean'), (3, 'in_service', '0.0', 'boolean')],
-         'switch': [(1, 'closed', 'False', 'boolean'), (3, 'closed', 'False', 'boolean'),
-                    (4, 'closed', 'None', 'boolean'), (5, 'closed', 10, 'boolean')],
+         'line': [(0, 'in_service', -1, 'boolean')],
+         'load': [(0, 'in_service', 10, 'boolean')],
+         'sgen': [(2, 'in_service', '0', 'boolean'),
+                  (3, 'in_service', '0.0', 'boolean')],
+         'switch': [(1, 'closed', 'False', 'boolean'),
+                    (3, 'closed', 'False', 'boolean'),
+                    (4, 'closed', 'None', 'boolean'),
+                    (5, 'closed', 10, 'boolean')],
          'trafo': [(0, 'in_service', 'True', 'boolean')],
          'trafo3w': [(0, 'in_service', 'nan', 'boolean')]}
 
