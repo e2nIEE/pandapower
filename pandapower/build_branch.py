@@ -483,7 +483,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
 
     INPUT:
         **net** - The pandapower format network
-    
+
         **trafo** (Dataframe) - The dataframe in pd_net["structure"]["trafo"]
         which contains transformer calculation values.
 
@@ -491,7 +491,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
         **vn_hv_kv** (1d array, float) - The adusted high voltages
 
         **vn_lv_kv** (1d array, float) - The adjusted low voltages
-        
+
         **trafo_shift** (1d array, float) - phase shift angle
 
     """
@@ -679,7 +679,7 @@ def _calc_xward_parameter(net, ppc):
 def _gather_branch_switch_info(bus, branch_id, branch_type, net):
     # determine at which end the switch is located
     # 1 = to-bus/lv-bus; 0 = from-bus/hv-bus
-
+    branch_id = int(branch_id)
     if branch_type == "l":
         branch_bus = net["line"]["to_bus"].at[branch_id]
         is_to_bus = int(branch_bus == bus)

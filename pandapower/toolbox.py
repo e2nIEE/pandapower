@@ -1253,7 +1253,8 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         switches = net.switch[net.switch.et == element[0]]  # element[0] == "l" for "line", ect.
         new_index = [net[element].index.get_loc(ix) + offset
                      for ix in switches.element.values]
-        net.switch.loc[switches.index, "element"] = new_index
+        if len(new_index):
+            net.switch.loc[switches.index, "element"] = new_index
 
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res"):
@@ -1458,7 +1459,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3"), respect_swit
 
     if "t" in consider:
         in_service_constr = net.trafo.in_service if respect_in_service else True
-        opened_trafos = set(net.switch.loc[(~net.switch.closed) & (net.switch.et == "l")
+        opened_trafos = set(net.switch.loc[(~net.switch.closed) & (net.switch.et == "t")
                                            ].element.unique()) if respect_switches else {}
         connected_hvb_trafos = set(net.trafo.index[
             (net.trafo.hv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
@@ -1466,15 +1467,15 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3"), respect_swit
         connected_lvb_trafos = set(net.trafo.index[
             (net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(opened_trafos) &
             (in_service_constr)])
-        cb |= set(net.trafo[net.trafo.index.isin(connected_lvb_trafos)].lv_bus)
-        cb |= set(net.trafo[net.trafo.index.isin(connected_hvb_trafos)].hv_bus)
+        cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
+        cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
 
     # Gives the lv mv and hv buses of a 3 winding transformer
     if "t3" in consider:
         ct3 = get_connected_elements(net, "trafo3w", buses, respect_switches, respect_in_service)
-        cb |= set(net.trafo3w[net.trafo3w.index.isin(ct3)].lv_bus)
-        cb |= set(net.trafo3w[net.trafo3w.index.isin(ct3)].mv_bus)
-        cb |= set(net.trafo3w[net.trafo3w.index.isin(ct3)].hv_bus)
+        cb |= set(net.trafo3w.loc[ct3].hv_bus.values)
+        cb |= set(net.trafo3w.loc[ct3].mv_bus.values)
+        cb |= set(net.trafo3w.loc[ct3].lv_bus.values)
 
     if respect_in_service:
         cb -= set(net.bus[~net.bus.in_service].index)

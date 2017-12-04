@@ -119,6 +119,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
     if notravbuses is not None:
         for b in notravbuses:
             for i in list(mg[b].keys()):
-                del mg[b][i]
+                try:
+                    del mg[b][i] #networkx versions < 2.0
+                except:
+                    del mg._adj[b][i] #networkx versions 2.0
     mg.remove_nodes_from(net.bus[~net.bus.in_service].index)
     return mg
