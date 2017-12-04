@@ -46,7 +46,7 @@ def connected_component(mg, bus, notravbuses=[]):
             if child not in visited:
                 yield child
                 visited.add(child)
-                if not child in notravbuses:
+                if child not in notravbuses:
                     stack.append((child, iter(mg[child])))
         except StopIteration:
             stack.pop()
@@ -61,7 +61,7 @@ def connected_components(mg, notravbuses=set()):
 
 
      OPTIONAL:
-     **notravbuses** (set) - Indeces of notravbuses: lines connected to these buses are
+     **notravbuses** (set) - Indices of notravbuses: lines connected to these buses are
                                        not being considered in the graph
 
      OUTPUT:
