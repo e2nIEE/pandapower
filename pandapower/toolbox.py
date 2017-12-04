@@ -1407,7 +1407,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
     return connected_elements
 
 
-def get_connected_buses(net, buses, consider=("l", "s", "t","t3"), respect_switches=True,
+def get_connected_buses(net, buses, consider=("l", "s", "t", "t3"), respect_switches=True,
                         respect_in_service=False):
     """
      Returns buses connected to given buses. The source buses will NOT be returned.
