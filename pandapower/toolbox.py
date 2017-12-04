@@ -1253,7 +1253,8 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         switches = net.switch[net.switch.et == element[0]]  # element[0] == "l" for "line", ect.
         new_index = [net[element].index.get_loc(ix) + offset
                      for ix in switches.element.values]
-        net.switch.loc[switches.index, "element"] = new_index
+        if len(new_index):
+            net.switch.loc[switches.index, "element"] = new_index
 
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res"):
