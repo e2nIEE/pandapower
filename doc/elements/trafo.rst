@@ -33,11 +33,7 @@ Input Parameters
    :file: trafo_par.csv
    :delim: ;
    :widths: 15, 10, 25, 40
-
-.. |br| raw:: html
-
-   <br />
-   
+  
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
