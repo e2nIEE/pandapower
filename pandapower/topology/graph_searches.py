@@ -138,7 +138,7 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
         **in_service_only** (boolean, False) - Defines whether only in service buses should be
             included in unsupplied_buses.
 
-        **slacks** (boolean, False) - buses which are considered as root / slack buses
+        **slacks** (set, None) - buses which are considered as root / slack buses
 
         **respect_switches** (boolean, True) - Fixes how to consider switches - only in case of no
             given mg.
