@@ -196,8 +196,8 @@ class TestInvalidValues:
         net.sgen.loc[3, 'in_service'] = '0.0'
         net.sgen.loc[4, 'in_service'] = 1
         net.gen.loc[0, 'in_service'] = '1'
-        net.load.loc[0, 'in_service'] = 10
-        net.line.loc[0, 'in_service'] = -1
+        net.load.loc[0, 'in_service'] = '10'
+        net.line.loc[0, 'in_service'] = '-1'
         net.bus.loc[0, 'in_service'] = 'no'
         net.trafo.loc[0, 'in_service'] = 'True'
         net.trafo3w.loc[0, 'in_service'] = None
@@ -206,7 +206,7 @@ class TestInvalidValues:
         net.switch.loc[2, 'closed'] = False
         net.switch.loc[3, 'closed'] = 'False'
         net.switch.loc[4, 'closed'] = None
-        net.switch.loc[5, 'closed'] = 10
+        net.switch.loc[5, 'closed'] = '10'
 
         check_result = pp.invalid_values(net)
         if check_result:
@@ -216,14 +216,14 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'bus': [(0, 'in_service', 'no', 'boolean')],
          'gen': [(0, 'in_service', '1', 'boolean')],
-         'line': [(0, 'in_service', -1, 'boolean')],
-         'load': [(0, 'in_service', 10, 'boolean')],
+         'line': [(0, 'in_service', '-1', 'boolean')],
+         'load': [(0, 'in_service', '10', 'boolean')],
          'sgen': [(2, 'in_service', '0', 'boolean'),
                   (3, 'in_service', '0.0', 'boolean')],
          'switch': [(1, 'closed', 'False', 'boolean'),
                     (3, 'closed', 'False', 'boolean'),
                     (4, 'closed', 'None', 'boolean'),
-                    (5, 'closed', 10, 'boolean')],
+                    (5, 'closed', '10', 'boolean')],
          'trafo': [(0, 'in_service', 'True', 'boolean')],
          'trafo3w': [(0, 'in_service', 'nan', 'boolean')]}
 
