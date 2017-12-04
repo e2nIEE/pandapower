@@ -1,9 +1,22 @@
 Change Log
 =============
 
-- [ADDED] generalized add_zones_to_elements() toolbox function add_column_from_node_to_elements()
+[1.4.2] - 2017-12-?
+----------------------
+- [ADDED] compatbility with networkx 2.0 (see #82)
+- [ADDED] compatibility with pandas 0.21 (see #83)
+- [CHANGED] implementation of ZIP loads changed to constant current magnitude paradigm (see #62)
+- [ADDED] max_step parameter for shunt
+- [ADDED] added warning for large bus index values
+- [FIXED] bug in short-circuit results of trafo3w
+- [FIXED] bugfix in find_bridges and refactoring
+- [CHANGED] faster implementation of result cleanup
+- [CHANGED] faster implementation of line index handling in power flow
+- [FIXED] bug in plotly label display (#75)
+- [ADDED] several fixes, extensions, tests for toolbox
 - [ADDED] additional MV line standard types
 - [FIXED] kerber extrem vorstadtnetz mv bus voltage
+- [FIXED] removed incorrect estimation result tables for load, sgen, gen 
 
 [1.4.1] - 2017-09-19
 ----------------------
