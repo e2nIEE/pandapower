@@ -277,7 +277,13 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    xls = pd.ExcelFile(filename).parse(sheetname=None)
+    try:
+        # pandas 0.21
+        xls = pd.ExcelFile(filename).parse(sheet_name=None)
+    except:
+        # pandas < 0.21
+        xls = pd.ExcelFile(filename).parse(sheetname=None)
+
     try:
         net = from_dict_of_dfs(xls)
         restore_all_dtypes(net, xls["dtypes"])
