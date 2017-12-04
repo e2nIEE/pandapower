@@ -315,7 +315,8 @@ def find_graph_characteristics(g, roots, characteristics):
                     char_dict["notn1_areas"][grandparent].update(set(curr_notn1_area[:]))
                 else:
                     char_dict["notn1_areas"][grandparent] = set(curr_notn1_area[:])
-                curr_notn1_area.clear()
+                print(type(curr_notn1_area))
+                del curr_notn1_area[:]
                 notn1_area_start = None
 
     return {key: char_dict[key] for key in characteristics}
