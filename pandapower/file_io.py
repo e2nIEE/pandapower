@@ -278,11 +278,11 @@ def from_excel(filename, convert=True):
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
     try:
-        # pandas 0.21
-        xls = pd.ExcelFile(filename).parse(sheet_name=None)
-    except:
         # pandas < 0.21
         xls = pd.ExcelFile(filename).parse(sheetname=None)
+    except:
+        # pandas 0.21
+        xls = pd.ExcelFile(filename).parse(sheet_name=None)
 
     try:
         net = from_dict_of_dfs(xls)
