@@ -681,10 +681,9 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
     # 1 = to-bus/lv-bus; 0 = from-bus/hv-bus
     branch_id = int(branch_id)
     if branch_type == "l":
-        print(branch_id)
         branch_bus = net["line"]["to_bus"].at[branch_id]
         is_to_bus = int(branch_bus == bus)
-        return is_to_bus, bus, net["line"].index.get_loc(int(branch_id))
+        return is_to_bus, bus, net["line"].index.get_loc(branch_id)
     else:
         branch_bus = net["trafo"]["lv_bus"].at[branch_id]
         is_to_bus = int(branch_bus == bus)
