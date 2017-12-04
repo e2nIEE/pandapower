@@ -74,7 +74,7 @@ Installation notes can be found `here <http://pandapower.readthedocs.io/en/lates
 
 If you are interested in getting release notes for new pandapower versions, please subscribe to the pandapower `mailing list <http://www.uni-kassel.de/go/pandapower>`_.
 
-There is a project to develop a GUI for pandapower: https://github.com/Tooblippe/pandapower_gui - developers wanted!
+There is a project to develop a GUI for pandapower: https://github.com/johaack/pandapower_gui - developers wanted!
 
 Citing pandapower
 ==================
