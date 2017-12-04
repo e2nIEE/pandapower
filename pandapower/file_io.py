@@ -238,7 +238,7 @@ def from_pickle(filename, convert=True):
                 # TODO: is this legacy code?
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    net[key] = net[key].reindex_axis(item["columns"], axis=1)
+                    net[key] = net[key].reindex(item["columns"], axis=1)
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:

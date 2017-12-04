@@ -230,7 +230,7 @@ def change_std_type(net, eid, name, element="line"):
     table = net[element]
     for column in table.columns:
         if column in type_param:
-            table.set_value(eid, column, type_param[column])
+            table.at[eid, column] = type_param[column]
     table.at[eid, "std_type"] = name
 
 

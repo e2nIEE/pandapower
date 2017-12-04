@@ -435,7 +435,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex_axis(net["bus"].columns, axis=1)
+    net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex(net["bus"].columns, axis=1)
 
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
@@ -1563,7 +1563,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
             net.trafo3w.tp_pos = net.trafo3w.tp_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
+    net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
