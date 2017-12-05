@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[1.4.2] - 2017-12-?
+[1.4.2] - 2017-12-05
 ----------------------
 - [ADDED] compatbility with networkx 2.0 (see #82)
 - [ADDED] compatibility with pandas 0.21 (see #83)
