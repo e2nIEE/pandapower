@@ -246,7 +246,7 @@ def find_graph_characteristics(g, roots, characteristics):
     INPUT:
         **g** (NetworkX graph) - Graph of the network
 
-        **roots** (list) - Roots of the graphsearch
+        **roots** (list) - Root buses of the graphsearch
 
         **characteristics** (list) - List of characteristics this function determines and returns
 
@@ -254,12 +254,31 @@ def find_graph_characteristics(g, roots, characteristics):
 
             Possible characteristics:
 
-            - 'connected' - All buses which have a connection to at least one of the roots
-            - 'stub_buses' - Buses which lie on a stub
-            - 'bridges' - Edges which lead to disconnected areas if they get removed
-            - 'required_bridges' - Bridges which are strictly needed to connect a specific bus
+            - 'connected' - All buses which have a connection to at least one of the root buses
             - 'articulation_points' - Buses which lead to disconnected areas if they get removed
+            - 'bridges' - Edges which lead to disconnected areas if they get removed
+            - 'stub_buses' - Buses which arent't connected if one specific edge gets removed
+            - 'required_bridges' - Bridges which are strictly needed to connect a specific bus
             - 'notn1_areas' - Areas which aren't connected if one specific bus gets removed
+
+    OUTPUT:
+
+        **char_dict** (dict) - dictionary which contains the wanted characteristics
+
+        ======================= ================================================================
+        key                     dict value
+        ======================= ================================================================
+        'connected'             set of all connected buses
+        'articulation_points'   set of all articulation points
+        'bridges'               set of tuples which represent start and end bus of each bridge
+        'stub_buses'            set of all buses which lie on a stub
+        'required_bridges'      dict of all buses which are connected via at least one bridge.
+                                The dict values contain a set of bridges which are needed to 
+                                connect the key buses
+        'notn1_areas'           dict of not n-1 safe areas. The dict values contain a set of 
+                                not n-1 safe buses which aren't connected if the key bus gets 
+                                removed
+        ======================= ================================================================
 
     EXAMPLE::
 
