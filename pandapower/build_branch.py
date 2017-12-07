@@ -595,16 +595,25 @@ def _trafo_df_from_trafo3w(net):
         for k in range(3):
             taps[k]["tp_side"] = None
 
+        trafo3w_tap_location = ttab.tap_location
+
         if pd.notnull(ttab.tp_side):
             if ttab.tp_side == "hv" or ttab.tp_side == 0:
                 tp_trafo = 0
             elif ttab.tp_side == "mv":
                 tp_trafo = 1
             elif ttab.tp_side == "lv":
-                tp_trafo = 3
+                tp_trafo = 2
             for tv in tap_variables:
                 taps[tp_trafo][tv] = ttab[tv]
-            taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
+            # where the tap is located
+            if trafo3w_tap_location == 'bus':
+                taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
+            elif trafo3w_tap_location == 'star_point':
+                taps[tp_trafo]["tp_side"] = "lv" if tp_trafo == 0 else "hv"
+            else:
+                raise ValueError('trafo3w_tap_location must be either "star_point" or "bus", '
+                                 'but is %s' % trafo3w_tap_location)
 
         max_load = ttab.max_loading_percent if "max_loading_percent" in ttab else 0
 
