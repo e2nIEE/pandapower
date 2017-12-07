@@ -611,6 +611,7 @@ def _trafo_df_from_trafo3w(net):
                 taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
             elif trafo3w_tap_location == 'star_point':
                 taps[tp_trafo]["tp_side"] = "lv" if tp_trafo == 0 else "hv"
+                taps[tp_trafo]["tp_pos"] = 2 * taps[tp_trafo]['tp_mid']-taps[tp_trafo]["tp_pos"]
             else:
                 raise ValueError('trafo3w_tap_location must be either "star_point" or "bus", '
                                  'but is %s' % trafo3w_tap_location)
