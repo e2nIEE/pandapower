@@ -273,10 +273,10 @@ def find_graph_characteristics(g, roots, characteristics):
         'bridges'               set of tuples which represent start and end bus of each bridge
         'stub_buses'            set of all buses which lie on a stub
         'required_bridges'      dict of all buses which are connected via at least one bridge.
-                                The dict values contain a set of bridges which are needed to 
+                                The dict values contain a set of bridges which are needed to
                                 connect the key buses
-        'notn1_areas'           dict of not n-1 safe areas. The dict values contain a set of 
-                                not n-1 safe buses which aren't connected if the key bus gets 
+        'notn1_areas'           dict of not n-1 safe areas. The dict values contain a set of
+                                not n-1 safe buses which aren't connected if the key bus gets
                                 removed
         ======================= ================================================================
 

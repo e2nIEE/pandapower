@@ -429,7 +429,7 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     return ext_grid1, ext_grid2
 
 
-def create_line_switch_symbol_collection(net, size=1, distance_to_bus=5, use_line_geodata=False,
+def create_line_switch_symbol_collection(net, size=1, distance_to_bus=3, use_line_geodata=False,
                                          **kwargs):
     """
     Creates a matplotlib patch collection of pandapower switches.
@@ -451,6 +451,8 @@ def create_line_switch_symbol_collection(net, size=1, distance_to_bus=5, use_lin
     """
     lbs_switches = net.switch.index[net.switch.et == "l"]
 
+    color = kwargs.pop("color", "k")
+
     switch_patches = []
     for switch in lbs_switches:
         sb = net.switch.bus.loc[switch]
@@ -465,12 +467,19 @@ def create_line_switch_symbol_collection(net, size=1, distance_to_bus=5, use_lin
             logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
 
+        # switch bus coordinates
         x_sb = net.bus_geodata.x.loc[sb]
         y_sb = net.bus_geodata.y.loc[sb]
+
+        x_ta = 0
+        y_ta = 0
+
+        use_bus_geodata = False
 
         if use_line_geodata:
             if line.name in net.line_geodata.index:
                 line_coords = net.line_geodata.coords.loc[line.name]
+                # check, which end of the line is nearer to the switch bus
                 if len(line_coords) > 2:
                     if abs(line_coords[0][0] - x_sb) < 0.01:
                         x_ta = line_coords[1][0]
@@ -479,27 +488,36 @@ def create_line_switch_symbol_collection(net, size=1, distance_to_bus=5, use_lin
                         x_ta = line_coords[-2][0]
                         y_ta = line_coords[-2][1]
                 else:
-                    x_ta = net.bus_geodata.x.loc[target_bus]
-                    y_ta = net.bus_geodata.y.loc[target_bus]
-        else:
+                    use_bus_geodata = True
+            else:
+                use_bus_geodata = True
+
+        if not use_line_geodata or use_bus_geodata:
             x_ta = net.bus_geodata.x.loc[target_bus]
             y_ta = net.bus_geodata.y.loc[target_bus]
 
+        # vector from switch bus to target bus
         vec_x = x_ta - x_sb
         vec_y = y_ta - y_sb
 
+        # distance of vector
         dist = np.sqrt(vec_x**2 + vec_y**2)
 
+        # position of switch symbol
         pos_x = x_sb + vec_x/dist * distance_to_bus
         pos_y = y_sb + vec_y/dist * distance_to_bus
 
+        # rotation of switch symbol
         angle = np.arctan2(vec_y, vec_x)
         rotation = Affine2D().rotate_around(pos_x, pos_y, angle)
 
-        col = "black" if net.switch.closed.loc[switch] else "white"
+        # color switch by state
+        col = color if net.switch.closed.loc[switch] else "white"
 
+        # create switch patch (switch size is respected to center the switch on the line)
         patch = Rectangle((pos_x - size/2, pos_y - size/2), size, size, facecolor=col,
-                          edgecolor='black')
+                          edgecolor=color)
+        # apply rotation
         patch.set_transform(rotation)
 
         switch_patches.append(patch)
