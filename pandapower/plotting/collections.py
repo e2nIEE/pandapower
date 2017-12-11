@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
+from matplotlib.transforms import Affine2D
 
 try:
     import pplog as logging
@@ -347,6 +348,85 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     ext_grid1.info = infos
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
+
+
+def create_line_switch_symbol_collection(net, size=1, distance_to_bus=5, use_line_geodata=False,
+                                         **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower switches.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+
+        **size** (float, 1) - Size of the switch patches
+
+        **distance_to_bus** (float, 5) - Distance of the switch patch from the bus patch
+
+        **use_line_geodata** (bool, False) - If True, line coordinates are used to identify the
+                                             switch position
+
+        **kwargs - Key word arguments are passed to the patch function
+
+    """
+    lbs_switches = net.switch.index[(net.switch.type=="LBS") & (net.switch.et=="l")]
+
+    switch_patches = []
+    for switch in lbs_switches:
+        sb = net.switch.bus.loc[switch]
+        line = net.line.loc[net.switch.element.loc[switch]]
+        fb = line.from_bus
+        tb = line.to_bus
+
+        line_buses = set([fb, tb])
+        target_bus = list(line_buses - set([sb]))[0]
+
+        if sb not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
+            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+            continue
+
+        x_sb = net.bus_geodata.x.loc[sb]
+        y_sb = net.bus_geodata.y.loc[sb]
+
+        if use_line_geodata:
+            if line.name in net.line_geodata.index:
+                line_coords = net.line_geodata.coords.loc[line.name]
+                if len(line_coords) > 2:
+                    if abs(line_coords[0][0] - x_sb) < 0.01:
+                        x_ta = line_coords[1][0]
+                        y_ta = line_coords[1][1]
+                    else:
+                        x_ta = line_coords[-2][0]
+                        y_ta = line_coords[-2][1]
+                else:
+                    x_ta = net.bus_geodata.x.loc[target_bus]
+                    y_ta = net.bus_geodata.y.loc[target_bus]
+        else:
+            x_ta = net.bus_geodata.x.loc[target_bus]
+            y_ta = net.bus_geodata.y.loc[target_bus]
+
+        vec_x = x_ta - x_sb
+        vec_y = y_ta - y_sb
+
+        dist = np.sqrt(vec_x**2 + vec_y**2)
+
+        pos_x = x_sb + vec_x/dist * distance_to_bus
+        pos_y = y_sb + vec_y/dist * distance_to_bus
+
+        angle = np.arctan2(vec_y, vec_x)
+        rotation = Affine2D().rotate_around(pos_x, pos_y, angle)
+
+        col = "black" if net.switch.closed.loc[switch] else "white"
+
+        patch = Rectangle((pos_x - size/2, pos_y - size/2), size, size, facecolor=col,
+                          edgecolor='black')
+        patch.set_transform(rotation)
+
+        switch_patches.append(patch)
+
+    switches = PatchCollection(switch_patches, match_original=True, **kwargs)
+    return switches
 
 
 def add_collections_to_axes(ax, collections, plot_colorbars=True):
