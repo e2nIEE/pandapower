@@ -297,6 +297,76 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
     return lc, pc
 
 
+def create_trafo3w_symbol_collection(net, trafo3ws=None, picker=False, size=None,
+                                     infofunc=None, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower transformers.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **trafo3ws** (list, None) - The three winding transformers for which the collections are
+            created. If None, all three winding transformers in the network are considered.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+
+        **pc** - patch collection
+    """
+    trafo3w_table = net.trafo3w if trafo3ws is None else net.trafo3w.loc[trafo3ws]
+    lines = []
+    circles = []
+    infos = []
+    color = kwargs.pop("color", "k")
+    for i, trafo3w in trafo3w_table.iterrows():
+        # get bus geodata
+        p1 = net.bus_geodata[["x", "y"]].loc[trafo3w.hv_bus].values
+        p2 = net.bus_geodata[["x", "y"]].loc[trafo3w.mv_bus].values
+        p3 = net.bus_geodata[["x", "y"]].loc[trafo3w.lv_bus].values
+        if np.all(p1 == p2) and np.all(p1 == p3):
+            continue
+        p = np.array([p1, p2, p3])
+        # determine center of buses and minimum distance center-buses
+        center = sum(p)/3
+        d = np.linalg.norm(p-center, axis=1)
+        r = d.min()/3
+        # determine closest bus to center and vector from center to circle midpoint in closest
+        # direction
+        closest = d.argmin()
+        to_closest = (p[closest] - center)/d[closest] * 2*r/3
+        # determine vectors from center to circle midpoint
+        order = list(range(closest, 3)) + list(range(closest))
+        cm = np.empty((3, 2))
+        cm[order.pop(0)] = to_closest
+        ang = 2*np.pi/3  # 120 degree
+        cm[order.pop(0)] = np.dot(np.array([[np.cos(ang), np.sin(ang)],
+                                           [-np.sin(ang), np.cos(ang)]]), to_closest)
+        cm[order.pop(0)] = np.dot(np.array([[np.cos(-ang), np.sin(-ang)],
+                                           [-np.sin(-ang), np.cos(-ang)]]), to_closest)
+        # determine midpoints of circles
+        m = center + cm
+        # determine endpoints of circles
+        e = (center - p) * (1 - 5*r/3/d).reshape(3, 1) + p
+        # save circle and line collection data
+        for i in range(3):
+            circles.append(Circle(m[i], r, fc=(1, 0, 0, 0), ec=color))
+            lines.append([p[i], e[i]])
+
+        if infofunc is not None:
+            infos.append(infofunc(i))
+            infos.append(infofunc(i))
+    if len(circles) == 0:
+        return None, None
+    lc = LineCollection((lines), color=color, picker=picker, **kwargs)
+    lc.info = infos
+    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs)
+    pc.info = infos
+    return lc, pc
+
+
 def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
     lines = []
     polys = []

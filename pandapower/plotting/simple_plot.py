@@ -7,7 +7,7 @@
 import matplotlib.pyplot as plt
 
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
-    create_trafo_symbol_collection, draw_collections
+    create_trafo_symbol_collection, create_trafo3w_symbol_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
@@ -87,22 +87,35 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         if respect_switches else set()
     plot_lines = in_service_lines.difference(nogolines)
 
+    # create line collections
     lc = create_line_collection(net, plot_lines, color=line_color, linewidths=line_width,
                                 use_bus_geodata=use_bus_geodata)
     collections = [bc, lc]
+
+    # create ext_grid collections
     eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
     if len(eg_buses_with_geo_coordinates) > 0:
         sc = create_bus_collection(net, eg_buses_with_geo_coordinates, patch_type="rect",
                                    size=ext_grid_size, color=ext_grid_color, zorder=11)
         collections.append(sc)
-    # create trafo collection if trafo is available
 
+    # create trafo collection if trafo is available
     trafo_buses_with_geo_coordinates = [t for t, trafo in net.trafo.iterrows()
                                         if trafo.hv_bus in net.bus_geodata.index and
                                         trafo.lv_bus in net.bus_geodata.index]
     if len(trafo_buses_with_geo_coordinates) > 0:
         tc = create_trafo_symbol_collection(net, trafo_buses_with_geo_coordinates,
                                             color=trafo_color)
+        collections.append(tc[0])
+        collections.append(tc[1])
+
+    # create trafo3w collection if trafo3w is available
+    trafo3w_buses_with_geo_coordinates = [
+        t for t, trafo3w in net.trafo3w.iterrows() if trafo3w.hv_bus in net.bus_geodata.index and
+        trafo3w.mv_bus in net.bus_geodata.index and trafo3w.lv_bus in net.bus_geodata.index]
+    if len(trafo3w_buses_with_geo_coordinates) > 0:
+        tc = create_trafo3w_symbol_collection(net, trafo3w_buses_with_geo_coordinates,
+                                              color=trafo_color)
         collections.append(tc[0])
         collections.append(tc[1])
 
