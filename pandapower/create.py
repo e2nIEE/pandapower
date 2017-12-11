@@ -325,7 +325,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
         **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
-        **type** (string, default "b") - Type of the bus. "n" - auxilary node,
+        **type** (string, default "b") - Type of the bus. "n" - node,
         "b" - busbar, "m" - muff
 
         **zone** (string, None) - grid region
@@ -435,9 +435,9 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    try: 
+    try:
         net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex(net["bus"].columns, axis=1)
-    except: #legacy for pandas <0.21
+    except:  # legacy for pandas <0.21
         net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex_axis(net["bus"].columns, axis=1)
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
@@ -671,7 +671,8 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
-        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -941,23 +942,25 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **Sk_max** - maximal short circuit apparent power to calculate internal impedance of ext_grid for short circuit calculations
+        **s_sc_max_mva** (float, NaN) - maximal short circuit apparent power to calculate internal \
+            impedance of ext_grid for short circuit calculations
 
-        **SK_min** - maximal short circuit apparent power to calculate internal impedance of ext_grid for short circuit calculations
+        **s_sc_min_mva** (float, NaN) - minimal short circuit apparent power to calculate internal \
+            impedance of ext_grid for short circuit calculations
 
-        **RX_max** - maximal R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
+        **rx_max** (float, NaN) - maximal R/X-ratio to calculate internal impedance of ext_grid \
+            for short circuit calculations
 
-        **RK_min** - minimal R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
+        **rx_min** (float, NaN) - minimal R/X-ratio to calculate internal impedance of ext_grid \
+            for short circuit calculations
 
-        **max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
+        **max_p_kw** (float, NaN) - Maximum active power injection. Only respected for OPF
 
-        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
+        **min_p_kw** (float, NaN) - Minimum active power injection. Only respected for OPF
 
-        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for \
-            OPF
+        **max_q_kvar** (float, NaN) - Maximum reactive power injection. Only respected for OPF
 
-        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for \
-            OPF
+        **min_q_kvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
@@ -1570,7 +1573,6 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     except: #legacy for pandas <0.21
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
-
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
             net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
@@ -1859,8 +1861,9 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, max_step=1, name
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "max_step", "in_service"]] = \
-        [bus, name, p_kw, q_kvar, vn_kv, step, max_step, in_service]
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "max_step",
+                          "in_service"]] = [bus, name, p_kw, q_kvar, vn_kv, step, max_step,
+                                            in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)
