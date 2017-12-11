@@ -1,6 +1,8 @@
 Change Log
 =============
 
+[ADDED] create_nxgraph: respect_switches includes transformer switches
+
 [1.4.2] - 2017-12-05
 ----------------------
 - [ADDED] compatbility with networkx 2.0 (see #82)
