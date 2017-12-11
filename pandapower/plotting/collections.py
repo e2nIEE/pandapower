@@ -121,6 +121,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
         **kwargs - key word arguments are passed to the patch function
 
+    OUTPUT:
+        **pc** - patch collection
     """
     buses = net.bus.index.tolist() if buses is None else list(buses)
     if len(buses) == 0:
@@ -128,8 +130,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     if bus_geodata is None:
         bus_geodata = net["bus_geodata"]
 
-    coords = zip(bus_geodata.loc[buses, "x"].values,
-                 bus_geodata.loc[buses, "y"].values)
+    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
 
     pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
                                       patch_type=patch_type, colors=colors, z=z, cmap=cmap,
@@ -149,15 +150,17 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
 
     OPTIONAL:
         **lines** (list, None) - The lines for which the collections are created. If None, all lines
-        in the network are considered.
+            in the network are considered.
 
         **line_geodata** (DataFrame, None) - coordinates to use for plotting If None,
-        net["line_geodata"] is used
+            net["line_geodata"] is used
 
          **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
+    OUTPUT:
+        **lc** - line collection
     """
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
@@ -211,10 +214,12 @@ def create_trafo_collection(net, trafos=None, bus_geodata=None, infofunc=None, *
 
     OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created.
-        If None, all transformers in the network are considered.
+            If None, all transformers in the network are considered.
 
         **kwargs - key word arguments are passed to the patch function
 
+    OUTPUT:
+        **lc** - line collection
     """
     trafos = net.trafo if trafos is None else net.trafo.loc[trafos]
 
@@ -246,10 +251,14 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
 
     OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created.
-        If None, all transformers in the network are considered.
+            If None, all transformers in the network are considered.
 
         **kwargs - key word arguments are passed to the patch function
 
+    OUTPUT:
+        **lc** - line collection
+
+        **pc** - patch collection
     """
     trafo_table = net.trafo if trafos is None else net.trafo.loc[trafos]
     lines = []
@@ -370,7 +379,7 @@ def create_line_switch_symbol_collection(net, size=1, distance_to_bus=5, use_lin
         **kwargs - Key word arguments are passed to the patch function
 
     """
-    lbs_switches = net.switch.index[(net.switch.type=="LBS") & (net.switch.et=="l")]
+    lbs_switches = net.switch.index[net.switch.et == "l"]
 
     switch_patches = []
     for switch in lbs_switches:

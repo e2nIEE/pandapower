@@ -56,6 +56,9 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         **trafo_color** (String, 'k') - Trafo Color. Init is black
 
         **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
+
+    OUTPUT:
+        **ax** - axes of figure
     """
     # create geocoord if none are available
     if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
@@ -74,7 +77,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         bus_size *= mean_distance_between_buses
         ext_grid_size *= mean_distance_between_buses * 1.5
 
-    # create bus collections ti plot
+    # create bus collections to plot
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
 
     # if bus geodata is available, but no line geodata
@@ -103,8 +106,9 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(tc[0])
         collections.append(tc[1])
 
-    draw_collections(collections)
+    ax = draw_collections(collections)
     plt.show()
+    return ax
 
 
 if __name__ == "__main__":
