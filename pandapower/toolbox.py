@@ -1605,6 +1605,10 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
         qsign = 1
     elif qmode == "cap":
         qsign = -1
+    elif qmode == "ohm":
+        qsign = 1
+        if cosphi != 1:
+            raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
     else:
         raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
 
@@ -1618,6 +1622,22 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     p = psign * s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
+
+
+def cosphi_from_pq(p, q):
+    """
+    Analog to pq_from_cosphi, but other way around.
+    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+    """
+    if p == 0:
+        cosphi = np.nan
+        logger.warn("A cosphi from p=0 is undefined.")
+    else:
+        cosphi = np.cos(np.arctan(q/p))
+    s = (p**2 + q**2)**0.5
+    pmode = ["undef", "load", "gen"][int(np.sign(p))]
+    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    return cosphi, s, qmode, pmode
 
 
 def create_replacement_switch_for_branch(net, element, idx):

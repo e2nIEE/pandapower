@@ -1,6 +1,8 @@
 Change Log
 =============
 
+[ADDED] sgen collections and ration functionality for sgen and load collections
+[ADDED] cosphi_from_pq toolbox function
 [ADDED] create_nxgraph: respect_switches includes transformer switches
 
 [1.4.2] - 2017-12-05
