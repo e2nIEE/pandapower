@@ -18,6 +18,14 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def _rotate_dim2(arr, ang):
+    """
+    :param arr: array with 2 dimensions
+    :param ang: angle [rad]
+    """
+    return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
+
+
 def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
                                  colors=None, z=None, cmap=None, norm=None, infofunc=None,
                                  picker=False, net=None, cbar_title="Bus Voltage [pu]", **kwargs):
@@ -342,10 +350,8 @@ def create_trafo3w_symbol_collection(net, trafo3ws=None, picker=False, size=None
         cm = np.empty((3, 2))
         cm[order.pop(0)] = to_closest
         ang = 2*np.pi/3  # 120 degree
-        cm[order.pop(0)] = np.dot(np.array([[np.cos(ang), np.sin(ang)],
-                                           [-np.sin(ang), np.cos(ang)]]), to_closest)
-        cm[order.pop(0)] = np.dot(np.array([[np.cos(-ang), np.sin(-ang)],
-                                           [-np.sin(-ang), np.cos(-ang)]]), to_closest)
+        cm[order.pop(0)] = _rotate_dim2(to_closest, ang)
+        cm[order.pop(0)] = _rotate_dim2(to_closest, -ang)
         # determine midpoints of circles
         m = center + cm
         # determine endpoints of circles
@@ -367,16 +373,18 @@ def create_trafo3w_symbol_collection(net, trafo3ws=None, picker=False, size=None
     return lc, pc
 
 
-def create_load_symbol_collection(net, size=1., infofunc=None, **kwargs):
+def create_load_symbol_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
     lines = []
     polys = []
     infos = []
     off = 1.7
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
     for i, load in net.load.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
-        p2 = p1 - np.array([0, size * off])
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=np.pi))
-        lines.append((p1, p2 + np.array([0, size / 2])))
+        p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
+        p3 = p1 + _rotate_dim2(np.array([0, size * (off-0.5)]), ang[i])
+        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-ang[i]))
+        lines.append((p1, p3))
         if infofunc is not None:
             infos.append(infofunc(i))
     load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
@@ -407,6 +415,38 @@ def create_gen_symbol_collection(net, size=1., infofunc=None, **kwargs):
     gen1.info = infos
     gen2.info = infos
     return gen1, gen2
+
+
+def create_sgen_symbol_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    lines = []
+    polys = []
+    infos = []
+    off = 1.7
+    rect_size = size*0.4
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
+    for i, sgen in net.sgen.iterrows():
+        p1 = net.bus_geodata[["x", "y"]].loc[sgen.bus]
+        p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
+        p3 = p1 + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
+        p4 = p2 + _rotate_dim2(np.array([rect_size, -rect_size/4]), ang[i])
+        p5 = p2 + _rotate_dim2(np.array([-rect_size, rect_size/4]), ang[i])
+        p6 = p4 + _rotate_dim2(np.array([0, -rect_size/2]), ang[i])
+        p7 = p6 + + _rotate_dim2(np.array([-2.5*rect_size, 0]), ang[i])
+        p8 = p5 + _rotate_dim2(np.array([0, rect_size/2]), ang[i])
+        p9 = p8 + + _rotate_dim2(np.array([2.5*rect_size, 0]), ang[i])
+        polys.append(Circle(p2, size))
+        polys.append(RegularPolygon(p4, numVertices=3, radius=rect_size, orientation=-ang[i]))
+        polys.append(RegularPolygon(p5, numVertices=3, radius=rect_size, orientation=np.pi-ang[i]))
+        lines.append((p1, p3))
+        lines.append((p6, p7))
+        lines.append((p8, p9))
+        if infofunc is not None:
+            infos.append(infofunc(i))
+    sgen1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
+    sgen2 = LineCollection(lines, color="k", **kwargs)
+    sgen1.info = infos
+    sgen2.info = infos
+    return sgen1, sgen2
 
 
 def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
@@ -578,30 +618,33 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
 
 
 if __name__ == "__main__":
-    import pandapower as pp
+    if 0:
+        import pandapower as pp
 
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10, geodata=(5, 10))
-    b2 = pp.create_bus(net, 0.4, geodata=(5, 15))
-    b3 = pp.create_bus(net, 0.4, geodata=(0, 22))
-    b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
-    pp.create_gen(net, b1, p_kw=100)
-    pp.create_load(net, b3, p_kw=100)
-    pp.create_ext_grid(net, b4)
+        net = pp.create_empty_network()
+        b1 = pp.create_bus(net, 10, geodata=(5, 10))
+        b2 = pp.create_bus(net, 0.4, geodata=(5, 15))
+        b3 = pp.create_bus(net, 0.4, geodata=(0, 22))
+        b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
+        pp.create_gen(net, b1, p_kw=100)
+        pp.create_load(net, b3, p_kw=100)
+        pp.create_ext_grid(net, b4)
 
-    pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")
-    pp.create_line(net, b2, b4, 2.0, std_type="NAYY 4x50 SE")
-    pp.create_transformer(net, b1, b2, std_type="0.63 MVA 10/0.4 kV")
-    pp.create_transformer(net, b3, b4, std_type="0.63 MVA 10/0.4 kV")
+        pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")
+        pp.create_line(net, b2, b4, 2.0, std_type="NAYY 4x50 SE")
+        pp.create_transformer(net, b1, b2, std_type="0.63 MVA 10/0.4 kV")
+        pp.create_transformer(net, b3, b4, std_type="0.63 MVA 10/0.4 kV")
 
-    bc = create_bus_collection(net, size=0.2, color="k")
-    lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
-    lt, bt = create_trafo_symbol_collection(net, size=2, linewidth=3.)
-    load1, load2 = create_load_symbol_collection(net, linewidth=2.,
-                                                 infofunc=lambda x: ("load", x))
-    gen1, gen2 = create_gen_symbol_collection(net, linewidth=2.,
-                                              infofunc=lambda x: ("gen", x))
-    eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
-                                                 infofunc=lambda x: ("ext_grid", x))
+        bc = create_bus_collection(net, size=0.2, color="k")
+        lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
+        lt, bt = create_trafo_symbol_collection(net, size=2, linewidth=3.)
+        load1, load2 = create_load_symbol_collection(net, linewidth=2.,
+                                                     infofunc=lambda x: ("load", x))
+        gen1, gen2 = create_gen_symbol_collection(net, linewidth=2.,
+                                                  infofunc=lambda x: ("gen", x))
+        eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
+                                                     infofunc=lambda x: ("ext_grid", x))
 
-    draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])
+        draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])
+    else:
+        pass

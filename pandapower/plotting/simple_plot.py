@@ -7,7 +7,8 @@
 import matplotlib.pyplot as plt
 
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
-    create_trafo_symbol_collection, create_trafo3w_symbol_collection, create_line_switch_symbol_collection, draw_collections
+    create_trafo_symbol_collection, create_trafo3w_symbol_collection, \
+    create_line_switch_symbol_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
