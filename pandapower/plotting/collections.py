@@ -422,24 +422,25 @@ def create_sgen_symbol_collection(net, size=1., infofunc=None, orientation=np.pi
     polys = []
     infos = []
     off = 1.7
-    rect_size = size*0.4
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
+    r_traingle = size*0.4
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.sgen.shape[0]
     for i, sgen in net.sgen.iterrows():
-        p1 = net.bus_geodata[["x", "y"]].loc[sgen.bus]
-        p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
-        p3 = p1 + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
-        p4 = p2 + _rotate_dim2(np.array([rect_size, -rect_size/4]), ang[i])
-        p5 = p2 + _rotate_dim2(np.array([-rect_size, rect_size/4]), ang[i])
-        p6 = p4 + _rotate_dim2(np.array([0, -rect_size/2]), ang[i])
-        p7 = p6 + + _rotate_dim2(np.array([-2.5*rect_size, 0]), ang[i])
-        p8 = p5 + _rotate_dim2(np.array([0, rect_size/2]), ang[i])
-        p9 = p8 + + _rotate_dim2(np.array([2.5*rect_size, 0]), ang[i])
-        polys.append(Circle(p2, size))
-        polys.append(RegularPolygon(p4, numVertices=3, radius=rect_size, orientation=-ang[i]))
-        polys.append(RegularPolygon(p5, numVertices=3, radius=rect_size, orientation=np.pi-ang[i]))
-        lines.append((p1, p3))
-        lines.append((p6, p7))
-        lines.append((p8, p9))
+        bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
+        mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
+        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
+        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_traingle, -r_traingle/4]), ang[i])
+        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_traingle, r_traingle/4]), ang[i])
+        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_traingle/2]), ang[i])  # dropped perpendicular foot of triangle1
+        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5*r_traingle, 0]), ang[i])
+        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_traingle/2]), ang[i])
+        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5*r_traingle, 0]), ang[i])
+        polys.append(Circle(mp_circ, size))
+        polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_traingle, orientation=-ang[i]))
+        polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_traingle,
+                                    orientation=np.pi-ang[i]))
+        lines.append((bus_geo, circ_edge))
+        lines.append((perp_foot1, line_end1))
+        lines.append((perp_foot2, line_end2))
         if infofunc is not None:
             infos.append(infofunc(i))
     sgen1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
