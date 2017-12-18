@@ -856,7 +856,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
     """
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
-    elements = elements if elements is not None else [be[0] for be in list(element_bus_tuples())]
+    elements = elements if elements is not None else [be[0] for be in element_bus_tuples()]
     elements_to_replace = elements if replace else [el for el in elements if column not in
                                                     net[el].columns]
     # bus elements
