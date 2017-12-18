@@ -220,7 +220,7 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
 
     Since the paper focusses on LV grids structure, load powers and MV connection are neglected, \
     so that the user should identify appropriate assumptions for trafo and load parameters.
-    'trafo_type_name' and 'trafo_type_data' can be set directlyin this function.
+    'trafo_type_name' and 'trafo_type_data' can be set directly by the user.
     By default, the load powers are calculated with coincidence factor, derived with normal \
     distributed peak system demand, described in Dickert, Schegner - \
     'Residential Load Models for Network Planning Purposes', Modern Electric Power Systems 2010, \
