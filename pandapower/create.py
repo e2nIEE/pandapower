@@ -535,7 +535,7 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
     if index is None:
         index = get_free_id(net["load"])
     if index in net["load"].index:
-        raise UserWarning("A load with the id %s already exists" % id)
+        raise UserWarning("A load with the id %s already exists" % index)
 
     # store dtypes
     dtypes = net.load.dtypes
