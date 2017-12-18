@@ -600,8 +600,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
     try:
-        # plt.tight_layout()
-        plt.show()
+        # ToDo: Why is here a try excpect block?
+        plt.draw()
     except:
         pass
     return ax

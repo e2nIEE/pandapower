@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
                 switch_size=1.0, switch_distance=1.0, plot_line_switches=False,
                 scale_size=True, bus_color="b", line_color='grey', trafo_color='k',
-                ext_grid_color='y', switch_color='k', library="igraph"):
+                ext_grid_color='y', switch_color='k', library="igraph", show_plot=True):
     """
     Plots a pandapower network as simple as possible. If no geodata is available, artificial
     geodata is generated. For advanced plotting see the tutorial
@@ -70,6 +70,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
 
         **switch_color** (String, 'k') - Switch Color. Init is black
+
+        **plot_show** (bool, True) - Shows plot at the end of plotting
 
     OUTPUT:
         **ax** - axes of figure
@@ -147,7 +149,8 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(sc)
 
     ax = draw_collections(collections)
-    plt.show()
+    if show_plot:
+        plt.show()
     return ax
 
 
