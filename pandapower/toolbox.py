@@ -631,6 +631,10 @@ def convert_format(net):
     if "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
 
+    if "time_resolution" not in net:
+        # for storages
+        time_resolution = 1.0
+
     new_net = create_empty_network()
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):

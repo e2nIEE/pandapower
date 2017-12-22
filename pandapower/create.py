@@ -13,7 +13,7 @@ from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower import __version__
 
 
-def create_empty_network(name="", f_hz=50., sn_kva=1e3):
+def create_empty_network(name="", f_hz=50., sn_kva=1e3, time_resolution=1.0):
     """
     This function initializes the pandapower datastructure.
 
@@ -23,6 +23,8 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
         **name** (string, None) - name for the network
 
         **sn_kva** (float, 1e3) - reference apparent power for per unit system
+
+        ***time_resolution*** ToDO
 
     OUTPUT:
         **net** (attrdict) - PANDAPOWER attrdict with empty tables:
@@ -792,7 +794,7 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
-def create_battery(net, bus, p_kw, e_max_kwh, q_kvar=0, sn_kva=nan, name=None, index=None,
+def create_storage(net, bus, p_kw, e_max_kwh, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
                 max_q_kvar=nan, min_q_kvar=nan, soc_kwh=nan, e_min_kwh=0.0, rx=nan):
     """

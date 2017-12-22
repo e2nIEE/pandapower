@@ -310,7 +310,7 @@ def _calc_pq_elements_and_add_on_ppc_pf(net, ppc):
         p = np.hstack([p, s["p_kw"].values * vl])
         b = np.hstack([b, s["bus"].values])
 
-    bat = net["battery"]
+    bat = net["storage"]
     if len(bat) > 0:
         # ToDo: Limit p_kw according to SOC and max E_kwh
         # Note: p_kw depends on the timestep resolution -> implement a resolution factor in options

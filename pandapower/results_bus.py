@@ -175,7 +175,7 @@ def _get_p_q_results(net,  bus_lookup_aranged):
         b = np.hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
 
-    bat = net["battery"]
+    bat = net["storage"]
     if len(bat) > 0:
         battery_is = _is_elements["battery"]
         scaling = bat["scaling"].values
