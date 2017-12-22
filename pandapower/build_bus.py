@@ -251,19 +251,19 @@ def _build_bus_ppc(net, ppc):
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_loads_and_add_on_ppc(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc):
     '''
     wrapper function to call either the PF or the OPF version
     '''
     mode = net["_options"]["mode"]
 
     if mode == "opf":
-        _calc_loads_and_add_on_ppc_opf(net, ppc)
+        _calc_pq_elements_and_add_on_ppc_opf(net, ppc)
     else:
-        _calc_loads_and_add_on_ppc_pf(net, ppc)
+        _calc_pq_elements_and_add_on_ppc_pf(net, ppc)
 
 
-def _calc_loads_and_add_on_ppc_pf(net, ppc):
+def _calc_pq_elements_and_add_on_ppc_pf(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
@@ -310,6 +310,15 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
         p = np.hstack([p, s["p_kw"].values * vl])
         b = np.hstack([b, s["bus"].values])
 
+    bat = net["battery"]
+    if len(bat) > 0:
+        # ToDo: Limit p_kw according to SOC and max E_kwh
+        # Note: p_kw depends on the timestep resolution -> implement a resolution factor in options
+        vl = _is_elements["battery"] * bat["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, s["q_kvar"].values * vl])
+        p = np.hstack([p, s["p_kw"].values * vl])
+        b = np.hstack([b, s["bus"].values])
+
     w = net["ward"]
     if len(w) > 0:
         vl = _is_elements["ward"] / np.float64(1000.)
@@ -333,7 +342,7 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
         ppc["bus"][b, QD] = vq
 
 
-def _calc_loads_and_add_on_ppc_opf(net, ppc):
+def _calc_pq_elements_and_add_on_ppc_opf(net, ppc):
     """ we need to exclude controllable sgens from the bus table
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]

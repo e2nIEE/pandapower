@@ -175,6 +175,20 @@ def _get_p_q_results(net,  bus_lookup_aranged):
         b = np.hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
 
+    bat = net["battery"]
+    if len(bat) > 0:
+        battery_is = _is_elements["battery"]
+        scaling = bat["scaling"].values
+        pbat = sg["p_kw"].values * scaling * battery_is
+        net["res_sgen"]["p_kw"] = pbat
+        p = np.hstack([p, pbat])
+        if ac:
+            qbat = sg["q_kvar"].values * scaling * battery_is
+            net["res_sgen"]["q_kvar"] = qbat
+            q = np.hstack([q, qbat])
+        b = np.hstack([b, bat["bus"].values])
+        net["res_battery"].index = net["battery"].index
+
     w = net["ward"]
     if len(w) > 0:
         ward_is = _is_elements["ward"]
