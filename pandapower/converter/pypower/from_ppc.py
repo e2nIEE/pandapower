@@ -5,7 +5,8 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 from math import pi
-from numpy import sign, nan, append, zeros, max, array, power, sqrt
+from numpy import sign, nan, append, zeros, array, power, sqrt
+from numpy import max as max_
 from pandas import Series, DataFrame, concat
 
 import pandapower as pp
@@ -437,21 +438,21 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                 diff_res_gen[i:next_i, 1] = sum(diff_res_gen[i:next_i, 1])
         # logger info
         logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
-                     "%.2e pu" % max(abs(diff_res_bus[:, 0])))
+                     "%.2e pu" % max_(abs(diff_res_bus[:, 0])))
         logger.debug("Maximum voltage angle difference between pypower and pandapower: "
-                     "%.2e degree" % max(abs(diff_res_bus[:, 1])))
+                     "%.2e degree" % max_(abs(diff_res_bus[:, 1])))
         logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
-                     "%.2e kW" % max(abs(diff_res_branch[:, [0, 2]] * 1e3)))
+                     "%.2e kW" % max_(abs(diff_res_branch[:, [0, 2]] * 1e3)))
         logger.debug("Maximum branch flow reactive power difference between pypower and "
-                     "pandapower: %.2e kVAr" % max(abs(diff_res_branch[:, [1, 3]] * 1e3)))
+                     "pandapower: %.2e kVAr" % max_(abs(diff_res_branch[:, [1, 3]] * 1e3)))
         logger.debug("Maximum active power generation difference between pypower and pandapower: "
-                     "%.2e kW" % max(abs(diff_res_gen[:, 0] * 1e3)))
+                     "%.2e kW" % max_(abs(diff_res_gen[:, 0] * 1e3)))
         logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
-                     "%.2e kVAr" % max(abs(diff_res_gen[:, 1] * 1e3)))
-        if (max(abs(diff_res_bus[:, 0])) < 1e-3) & (max(abs(diff_res_bus[:, 1])) < 1e-3) & \
-                (max(abs(diff_res_branch[:, [0, 2]])) < 1e-3) & \
-                (max(abs(diff_res_branch[:, [1, 3]])) < 1e-3) & \
-                (max(abs(diff_res_gen)) > 1e-1).any():
+                     "%.2e kVAr" % max_(abs(diff_res_gen[:, 1] * 1e3)))
+        if (max_(abs(diff_res_bus[:, 0])) < 1e-3) & (max_(abs(diff_res_bus[:, 1])) < 1e-3) & \
+                (max_(abs(diff_res_branch[:, [0, 2]])) < 1e-3) & \
+                (max_(abs(diff_res_branch[:, [1, 3]])) < 1e-3) & \
+                (max_(abs(diff_res_gen)) > 1e-1).any():
             logger.debug("The active/reactive power generation difference possibly results "
                          "because of a pypower error. Please validate "
                          "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
@@ -459,14 +460,14 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         if isinstance(max_diff_values, dict):
             if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
                        'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
-                return (max(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
-                        (max(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
-                        (max(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
+                return (max_(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
+                        (max_(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
+                        (max_(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
                             1e3) & \
-                        (max(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
+                        (max_(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
                             1e3) & \
-                        (max(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
-                        (max(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
+                        (max_(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
+                        (max_(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
             else:
                 logger.debug('Not all requried dict keys are provided.')
         else:
