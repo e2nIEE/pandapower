@@ -213,7 +213,7 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
     return lc
 
 
-def create_trafo_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo_as_line_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -249,7 +249,7 @@ def create_trafo_collection(net, trafos=None, bus_geodata=None, infofunc=None, *
     return lc
 
 
-def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
+def create_trafo_collection(net, trafos=None, picker=False, size=None,
                                    infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
@@ -305,7 +305,7 @@ def create_trafo_symbol_collection(net, trafos=None, picker=False, size=None,
     return lc, pc
 
 
-def create_trafo3w_symbol_collection(net, trafo3ws=None, picker=False, size=None,
+def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
                                      infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
@@ -373,7 +373,7 @@ def create_trafo3w_symbol_collection(net, trafo3ws=None, picker=False, size=None
     return lc, pc
 
 
-def create_load_symbol_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
     lines = []
     polys = []
     infos = []
@@ -394,7 +394,7 @@ def create_load_symbol_collection(net, size=1., infofunc=None, orientation=np.pi
     return load1, load2
 
 
-def create_gen_symbol_collection(net, size=1., infofunc=None, **kwargs):
+def create_gen_collection(net, size=1., infofunc=None, **kwargs):
     lines = []
     polys = []
     infos = []
@@ -417,7 +417,7 @@ def create_gen_symbol_collection(net, size=1., infofunc=None, **kwargs):
     return gen1, gen2
 
 
-def create_sgen_symbol_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
     lines = []
     polys = []
     infos = []
@@ -450,7 +450,7 @@ def create_sgen_symbol_collection(net, size=1., infofunc=None, orientation=np.pi
     return sgen1, sgen2
 
 
-def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
+def create_ext_grid_collection(net, size=1., infofunc=None, picker=False,
                                       **kwargs):
     lines = []
     polys = []
@@ -470,8 +470,7 @@ def create_ext_grid_symbol_collection(net, size=1., infofunc=None, picker=False,
     return ext_grid1, ext_grid2
 
 
-def create_line_switch_symbol_collection(net, size=1, distance_to_bus=3, use_line_geodata=False,
-                                         **kwargs):
+def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower switches.
 
@@ -627,12 +626,12 @@ if __name__ == "__main__":
 
         bc = create_bus_collection(net, size=0.2, color="k")
         lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
-        lt, bt = create_trafo_symbol_collection(net, size=2, linewidth=3.)
-        load1, load2 = create_load_symbol_collection(net, linewidth=2.,
+        lt, bt = create_trafo_collection(net, size=2, linewidth=3.)
+        load1, load2 = create_load_collection(net, linewidth=2.,
                                                      infofunc=lambda x: ("load", x))
-        gen1, gen2 = create_gen_symbol_collection(net, linewidth=2.,
+        gen1, gen2 = create_gen_collection(net, linewidth=2.,
                                                   infofunc=lambda x: ("gen", x))
-        eg1, eg2 = create_ext_grid_symbol_collection(net, size=2.,
+        eg1, eg2 = create_ext_grid_collection(net, size=2.,
                                                      infofunc=lambda x: ("ext_grid", x))
 
         draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])

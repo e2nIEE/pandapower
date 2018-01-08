@@ -7,8 +7,8 @@
 import matplotlib.pyplot as plt
 
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
-    create_trafo_symbol_collection, create_trafo3w_symbol_collection, \
-    create_line_switch_symbol_collection, draw_collections
+    create_trafo_collection, create_trafo3w_collection, \
+    create_line_switch_collection, draw_collections
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
@@ -126,7 +126,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
                                         if trafo.hv_bus in net.bus_geodata.index and
                                         trafo.lv_bus in net.bus_geodata.index]
     if len(trafo_buses_with_geo_coordinates) > 0:
-        tc = create_trafo_symbol_collection(net, trafo_buses_with_geo_coordinates,
+        tc = create_trafo_collection(net, trafo_buses_with_geo_coordinates,
                                             color=trafo_color)
         collections.append(tc[0])
         collections.append(tc[1])
@@ -136,13 +136,13 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         t for t, trafo3w in net.trafo3w.iterrows() if trafo3w.hv_bus in net.bus_geodata.index and
         trafo3w.mv_bus in net.bus_geodata.index and trafo3w.lv_bus in net.bus_geodata.index]
     if len(trafo3w_buses_with_geo_coordinates) > 0:
-        tc = create_trafo3w_symbol_collection(net, trafo3w_buses_with_geo_coordinates,
+        tc = create_trafo3w_collection(net, trafo3w_buses_with_geo_coordinates,
                                               color=trafo_color)
         collections.append(tc[0])
         collections.append(tc[1])
 
     if plot_line_switches:
-        sc = create_line_switch_symbol_collection(net, size=switch_size,
+        sc = create_line_switch_collection(net, size=switch_size,
                                                   distance_to_bus=switch_distance,
                                                   use_line_geodata=not use_bus_geodata, zorder=12,
                                                   color=switch_color)
