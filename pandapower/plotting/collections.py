@@ -213,7 +213,7 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
     return lc
 
 
-def create_trafo_as_line_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
