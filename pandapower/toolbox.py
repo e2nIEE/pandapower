@@ -832,8 +832,7 @@ def _pre_release_changes(net):
     net.switch.closed = net.switch.closed.astype(bool)
 
 
-def add_column_from_node_to_elements(net, column, replace, elements=None,
-                                     branch_bus=["from_bus", "hv_bus"]):
+def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None):
     """
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
@@ -854,6 +853,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
     EXAMPLE:
         compare to add_zones_to_elements()
     """
+    branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
     elements = elements if elements is not None else [be[0] for be in element_bus_tuples()]
@@ -882,12 +882,9 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
                                "%s data at from-/hv- and to-/lv-bus" % column)
 
 
-def add_zones_to_elements(net, replace=True, elements=["line", "trafo", "ext_grid", "switch"],
-                          **kwargs):
-    """
-    Adds zones to elements, inferring them from the zones of buses they are
-    connected to.
-    """
+def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
+    """ Adds zones to elements, inferring them from the zones of buses they are connected to. """
+    elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
