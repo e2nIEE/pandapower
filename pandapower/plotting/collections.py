@@ -598,11 +598,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
-    try:
-        # ToDo: Why is here a try excpect block?
-        plt.draw()
-    except:
-        pass
+    plt.draw()
     return ax
 
 
