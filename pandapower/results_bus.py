@@ -57,6 +57,8 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         p = hstack([p, psg])
         b = hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
+        
+    # TODO: storages?!
 
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
     b_ppc = bus_lookup_aranged[b_pp]
@@ -175,19 +177,19 @@ def _get_p_q_results(net,  bus_lookup_aranged):
         b = np.hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
 
-    bat = net["storage"]
-    if len(bat) > 0:
-        battery_is = _is_elements["battery"]
-        scaling = bat["scaling"].values
-        pbat = sg["p_kw"].values * scaling * battery_is
-        net["res_sgen"]["p_kw"] = pbat
-        p = np.hstack([p, pbat])
+    stor = net["storage"]
+    if len(stor) > 0:
+        stor_is = _is_elements["storage"]
+        scaling = stor["scaling"].values
+        pstor = stor["p_kw"].values * scaling * stor_is
+        net["res_storage"]["p_kw"] = pstor
+        p = np.hstack([p, pstor])
         if ac:
-            qbat = sg["q_kvar"].values * scaling * battery_is
-            net["res_sgen"]["q_kvar"] = qbat
-            q = np.hstack([q, qbat])
-        b = np.hstack([b, bat["bus"].values])
-        net["res_battery"].index = net["battery"].index
+            qstor = stor["q_kvar"].values * scaling * stor_is
+            net["res_storage"]["q_kvar"] = qstor
+            q = np.hstack([q, qstor])
+        b = np.hstack([b, stor["bus"].values])
+        net["res_storage"].index = net["storage"].index
 
     w = net["ward"]
     if len(w) > 0:

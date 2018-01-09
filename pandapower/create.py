@@ -58,19 +58,15 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3, time_resolution=1.0):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
-        "battery": [("name", dtype(object)),
+        "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_kw", "f8"),
                     ("q_kvar", "f8"),
                     ("sn_kva", "f8"),
+                    ("soc", "f8"),
+                    ("min_e_kwh", "f8"),
+                    ("max_e_kwh", "f8"),
                     ("scaling", "f8"),
-                    ("min_p_kw", "f8"),
-                    ("max_p_kw", "f8"),
-                    ("min_q_kvar", "f8"),
-                    ("max_q_kvar", "f8"),
-                    ("soc_kwh", "f8"),
-                    ("e_max_kwh", "f8"),
-                    ("e_min_kwh", "f8"),
                     ("in_service", 'bool'),
                     ("type", dtype(object))],
         "gen": [("name", dtype(object)),
@@ -267,9 +263,9 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3, time_resolution=1.0):
                             ("q_kvar", "f8")],
         "_empty_res_sgen": [("p_kw", "f8"),
                             ("q_kvar", "f8")],
-        "_empty_res_battery": [("p_kw", "f8"),
+        "_empty_res_storage": [("p_kw", "f8"),
                                ("q_kvar", "f8"),
-                               ("soc_kwh", "f8")],
+                               ("soc", "f8")],
         "_empty_res_gen": [("p_kw", "f8"),
                            ("q_kvar", "f8"),
                            ("va_degree", "f8"),
@@ -794,45 +790,132 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
-def create_storage(net, bus, p_kw, e_max_kwh, q_kvar=0, sn_kva=nan, name=None, index=None,
-                scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
-                max_q_kvar=nan, min_q_kvar=nan, soc_kwh=nan, e_min_kwh=0.0, rx=nan):
-    """
-
-    "battery": [("name", dtype(object)),
-                    ("bus", "i8"),
-                    ("p_kw", "f8"),
-                    ("q_kvar", "f8"),
-                    ("sn_kva", "f8"),
-                    ("scaling", "f8"),
-                    ("min_p_kw", "f8"),
-                    ("max_p_kw", "f8"),
-                    ("min_q_kvar", "f8"),
-                    ("max_q_kvar", "f8"),
-                    ("soc_kwh", "f8"),
-                    ("e_max_kwh", "f8"),
-                    ("e_min_kwh", "f8"),
-                    ("in_service", 'bool'),
-                    ("type", dtype(object))],
-
-    ToDo
+def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+                   min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan):
+    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+                   min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
+    Adds a storage to the network.
+    
+    In order to simulate a storage system it is possible to use sgens or loads to model the 
+    discharging or charging state. The power of a storage can be positive or negative, so the use
+    of either a sgen or a load is (per definition of the elements) not correct.
+    To overcome this issue, a storage element can be created.
+    
+    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    default power flow calculations, the state of charge (SOC) is not updated during any power flow
+    calculation.
+    The implementation of energy content related parameters in the storage element allows to create
+    customized, time dependend simulations by running several power flow calculations and updating
+    variables manually.
 
     INPUT:
-        ToDo
+        **net** - The net within this storage should be created
+
+        **bus** (int) - The bus id to which the storage is connected
+
+        **p_kw** (float) - The momentary real power of the storage \
+            (positive for charging, negative for discharging)
+        
+        **max_e_kwh** (float) - The maximum energy content of the storage \
+            (maximum charge level)
 
     OPTIONAL:
+        **q_kvar** (float, default 0) - The reactive power of the storage
 
-        ToDo
+        **sn_kva** (float, default None) - Nominal power of the storage
+        
+        **soc** (float, NaN) - The state of charge of the storage
+        
+        **min_e_kwh** (float, 0) - The minimum energy content of the storage \
+            (minimum charge level)
+
+        **name** (string, default None) - The name for this storage
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the storage
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **max_p_kw** (float, NaN) - Maximum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_p_kw** (float, NaN) - Minimum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **max_q_kvar** (float, NaN) - Maximum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for a \
+            controllable storage in OPF
 
     OUTPUT:
-        ToDo
+        **index** (int) - The unique ID of the created storage
 
     EXAMPLE:
-        create_sgen(net, 1, p_kw = -120)
+        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc = 1.0, min_e_kwh = 5)
 
     """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    # ToDo: Copy from sgen and modify
+    if index is None:
+        index = get_free_id(net["storage"])
+
+    if index in net["storage"].index:
+        raise UserWarning("A storage with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.storage.dtypes
+
+    net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
+                            "min_p_kw", "max_p_kw", "min_q_kvar", "max_q_kvar",
+                            "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
+        [name, bus, p_kw, q_kvar, sn_kva, scaling,
+         min_p_kw, max_p_kw, min_q_kvar, max_q_kvar,
+         soc, min_e_kwh, max_e_kwh, bool(in_service), type]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.storage, dtypes)
+    
+    # check for OPF parameters and add columns to network table
+    if not isnan(min_p_kw):
+        if "min_p_kw" not in net.sgen.columns:
+            net.sgen.loc[:, "min_p_kw"] = pd.Series()
+
+        net.sgen.loc[index, "min_p_kw"] = float(min_p_kw)
+
+    if not isnan(max_p_kw):
+        if "max_p_kw" not in net.sgen.columns:
+            net.sgen.loc[:, "max_p_kw"] = pd.Series()
+
+        net.sgen.loc[index, "max_p_kw"] = float(max_p_kw)
+
+    if not isnan(min_q_kvar):
+        if "min_q_kvar" not in net.sgen.columns:
+            net.sgen.loc[:, "min_q_kvar"] = pd.Series()
+
+        net.sgen.loc[index, "min_q_kvar"] = float(min_q_kvar)
+
+    if not isnan(max_q_kvar):
+        if "max_q_kvar" not in net.sgen.columns:
+            net.sgen.loc[:, "max_q_kvar"] = pd.Series()
+
+        net.sgen.loc[index, "max_q_kvar"] = float(max_q_kvar)
+
+    if not isnan(controllable):
+        if "controllable" not in net.sgen.columns:
+            net.sgen.loc[:, "controllable"] = pd.Series()
+
+        net.sgen.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.sgen.columns:
+            net.sgen.loc[index, "controllable"] = False
 
     return index
 
