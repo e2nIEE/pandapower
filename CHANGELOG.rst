@@ -1,6 +1,11 @@
 Change Log
 =============
 
+[CHANGED] change of collection function names
+[ADDED] sgen collections and ration functionality for sgen and load collections
+[ADDED] cosphi_from_pq toolbox function
+[ADDED] create_nxgraph: respect_switches includes transformer switches
+
 [1.4.2] - 2017-12-05
 ----------------------
 - [ADDED] compatbility with networkx 2.0 (see #82)
@@ -16,7 +21,7 @@ Change Log
 - [ADDED] several fixes, extensions, tests for toolbox
 - [ADDED] additional MV line standard types
 - [FIXED] kerber extrem vorstadtnetz mv bus voltage
-- [FIXED] removed incorrect estimation result tables for load, sgen, gen 
+- [FIXED] removed incorrect estimation result tables for load, sgen, gen
 
 [1.4.1] - 2017-09-19
 ----------------------
