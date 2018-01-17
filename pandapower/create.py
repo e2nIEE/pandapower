@@ -146,6 +146,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                     ("tp_min", "i4"),
                     ("tp_max", "i4"),
                     ("tp_st_percent", "f8"),
+                    ("tp_st_degree", "f8"),
                     ("tp_pos", "i4"),
                     ("tap_location", dtype(object)),
                     ("in_service", 'bool')],
@@ -326,7 +327,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
         **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
-        **type** (string, default "b") - Type of the bus. "n" - auxilary node,
+        **type** (string, default "b") - Type of the bus. "n" - node,
         "b" - busbar, "m" - muff
 
         **zone** (string, None) - grid region
@@ -436,9 +437,9 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    try: 
+    try:
         net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex(net["bus"].columns, axis=1)
-    except: #legacy for pandas <0.21
+    except:  # legacy for pandas <0.21
         net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex_axis(net["bus"].columns, axis=1)
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
@@ -536,7 +537,7 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
     if index is None:
         index = get_free_id(net["load"])
     if index in net["load"].index:
-        raise UserWarning("A load with the id %s already exists" % id)
+        raise UserWarning("A load with the id %s already exists" % index)
 
     # store dtypes
     dtypes = net.load.dtypes
@@ -672,7 +673,8 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
-        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -942,23 +944,25 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **Sk_max** - maximal short circuit apparent power to calculate internal impedance of ext_grid for short circuit calculations
+        **s_sc_max_mva** (float, NaN) - maximal short circuit apparent power to calculate internal \
+            impedance of ext_grid for short circuit calculations
 
-        **SK_min** - maximal short circuit apparent power to calculate internal impedance of ext_grid for short circuit calculations
+        **s_sc_min_mva** (float, NaN) - minimal short circuit apparent power to calculate internal \
+            impedance of ext_grid for short circuit calculations
 
-        **RX_max** - maximal R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
+        **rx_max** (float, NaN) - maximal R/X-ratio to calculate internal impedance of ext_grid \
+            for short circuit calculations
 
-        **RK_min** - minimal R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
+        **rx_min** (float, NaN) - minimal R/X-ratio to calculate internal impedance of ext_grid \
+            for short circuit calculations
 
-        **max_p_kw** (float, default NaN) - Maximum active power injection. Only respected for OPF
+        **max_p_kw** (float, NaN) - Maximum active power injection. Only respected for OPF
 
-        **min_p_kw** (float, default NaN) - Minimum active power injection. Only respected for OPF
+        **min_p_kw** (float, NaN) - Minimum active power injection. Only respected for OPF
 
-        **max_q_kvar** (float, default NaN) - Maximum reactive power injection. Only respected for \
-            OPF
+        **max_q_kvar** (float, NaN) - Maximum reactive power injection. Only respected for OPF
 
-        **min_q_kvar** (float, default NaN) - Minimum reactive power injection. Only respected for \
-            OPF
+        **min_q_kvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
@@ -1555,7 +1559,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0,
         "tap_location": tap_location
     })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
@@ -1572,7 +1576,6 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     except: #legacy for pandas <0.21
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
-
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
             net.trafo3w.loc[:, "max_loading_percent"] = pd.Series()
@@ -1587,7 +1590,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent,
                                          vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None,
-                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan,
+                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
+                                         tp_mid=nan, tp_max=nan,
                                          tp_min=nan, name=None, in_service=True, index=None,
                                          max_loading_percent=nan, tap_location='bus'):
     """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
@@ -1595,7 +1599,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
                                          vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,\
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
-                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan, \
+                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
+                                         tp_mid=nan, tp_max=nan, \
                                          tp_min=nan, name=None, in_service=True, index=None, \
                                          max_loading_percent=nan)
     Adds a three-winding transformer in table net["trafo3w"].
@@ -1646,6 +1651,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         **shift_lv_degree** (float, 0) - angle shift to low voltage side*
 
         **tp_st_percent** (float) - Tap step in percent
+
+        **tp_st_degree** (float) - Tap phase shift angle in degrees
 
         **tp_side** (string, None) - "hv", "mv", "lv"
 
@@ -1701,13 +1708,13 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                             "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
                             "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent",
                             "shift_mv_degree", "shift_lv_degree", "tp_side", "tp_st_percent",
-                            "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service", "name",
-                            "std_type", "tap_location" ]] = \
+                            "tp_st_degree", "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service",
+                            "name", "std_type", "tap_location" ]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
          pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
-         tp_side, tp_st_percent, tp_pos, tp_mid, tp_max,
+         tp_side, tp_st_percent, tp_st_degree, tp_pos, tp_mid, tp_max,
          tp_min, bool(in_service), name, None, tap_location]
 
     # and preserve dtypes
@@ -1861,8 +1868,9 @@ def create_shunt(net, bus, q_kvar, p_kw=0., vn_kv=None, step=1, max_step=1, name
     # store dtypes
     dtypes = net.shunt.dtypes
 
-    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "max_step", "in_service"]] = \
-        [bus, name, p_kw, q_kvar, vn_kv, step, max_step, in_service]
+    net.shunt.loc[index, ["bus", "name", "p_kw", "q_kvar", "vn_kv", "step", "max_step",
+                          "in_service"]] = [bus, name, p_kw, q_kvar, vn_kv, step, max_step,
+                                            in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.shunt, dtypes)

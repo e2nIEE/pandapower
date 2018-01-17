@@ -595,6 +595,8 @@ def convert_format(net):
 
     if "tp_st_degree" not in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
     if "_pd2ppc_lookups" not in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
@@ -832,8 +834,7 @@ def _pre_release_changes(net):
     net.switch.closed = net.switch.closed.astype(bool)
 
 
-def add_column_from_node_to_elements(net, column, replace, elements=None,
-                                     branch_bus=["from_bus", "hv_bus"]):
+def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None):
     """
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
@@ -854,9 +855,10 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
     EXAMPLE:
         compare to add_zones_to_elements()
     """
+    branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
-    elements = elements if elements is not None else [be[0] for be in list(element_bus_tuples())]
+    elements = elements if elements is not None else [be[0] for be in element_bus_tuples()]
     elements_to_replace = elements if replace else [el for el in elements if column not in
                                                     net[el].columns]
     # bus elements
@@ -882,12 +884,9 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
                                "%s data at from-/hv- and to-/lv-bus" % column)
 
 
-def add_zones_to_elements(net, replace=True, elements=["line", "trafo", "ext_grid", "switch"],
-                          **kwargs):
-    """
-    Adds zones to elements, inferring them from the zones of buses they are
-    connected to.
-    """
+def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
+    """ Adds zones to elements, inferring them from the zones of buses they are connected to. """
+    elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
@@ -1605,6 +1604,10 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
         qsign = 1
     elif qmode == "cap":
         qsign = -1
+    elif qmode == "ohm":
+        qsign = 1
+        if cosphi != 1:
+            raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
     else:
         raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
 
@@ -1618,6 +1621,22 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     p = psign * s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
+
+
+def cosphi_from_pq(p, q):
+    """
+    Analog to pq_from_cosphi, but other way around.
+    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+    """
+    if p == 0:
+        cosphi = np.nan
+        logger.warn("A cosphi from p=0 is undefined.")
+    else:
+        cosphi = np.cos(np.arctan(q/p))
+    s = (p**2 + q**2)**0.5
+    pmode = ["undef", "load", "gen"][int(np.sign(p))]
+    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    return cosphi, s, qmode, pmode
 
 
 def create_replacement_switch_for_branch(net, element, idx):
