@@ -23,7 +23,8 @@ from pandapower.shortcircuit.results import _extract_results
 
 
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-          ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0., branch_results=False):
+            ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
+            branch_results=False):
 
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
@@ -90,7 +91,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         raise NotImplementedError("Only 3ph and 2ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
-        logger.warning("aperiodic and thermal short-circuit currents are only implemented for faults far from generators!")
+        logger.warning("aperiodic and thermal short-circuit currents are only implemented for "
+                       "faults far from generators!")
 
     if case not in ['max', 'min']:
         raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
@@ -99,19 +101,20 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         raise ValueError('specify network structure as "meshed", "radial" or "auto"')
 
     if branch_results:
-        logger.warning("Branch results are in beta mode and might not always be reliable, especially for transformers")
+        logger.warning("Branch results are in beta mode and might not always be reliable, "
+                       "especially for transformers")
 
     kappa = ith or ip
     net["_options"] = {}
-    _add_ppc_options(net, calculate_voltage_angles=False,
-                             trafo_model="pi", check_connectivity=False,
-                             mode="sc", copy_constraints_to_ppc=False,
-                             r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
+    _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
+                     check_connectivity=False, mode="sc", copy_constraints_to_ppc=False,
+                     r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
                     consider_sgens=False, branch_results=branch_results)
     _calc_sc(net)
+
 
 def _calc_sc(net):
 #    t0 = time.perf_counter()
