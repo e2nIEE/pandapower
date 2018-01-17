@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
 from matplotlib.transforms import Affine2D
+from itertools import combinations
 
 try:
     import pplog as logging
@@ -244,6 +245,49 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     info = [infofunc(tr) if infofunc else [] for tr in trafos.index.values]
 
     lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
+    lc.info = info
+
+    return lc
+
+
+def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None,
+                                         **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower 3W-transformers.
+    This function can be used to create line collections for voltage fall diagrams.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **trafos** (list, None) - The 3W-transformers for which the collections are created.
+            If None, all 3W-transformers in the network are considered.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+    """
+    trafos = net.trafo3w if trafos is None else net.trafo3w.loc[trafos]
+
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    hv_geo, mv_geo, lv_geo = (list(zip(*(bus_geodata.loc[trafos[column], var].values
+                                         for var in ['x', 'y'])))
+                              for column in ['hv_bus', 'mv_bus', 'lv_bus'])
+
+    # create 3 connection lines, each of 2 points, for every trafo3w
+    tg = [x for c in [list(combinations(y, 2))
+                      for y in zip(hv_geo, mv_geo, lv_geo)]
+          for x in c]
+
+    # 3 times infofunc for every trafo
+    info = [infofunc(x) if infofunc else []
+            for tr in [(t, t, t) for t in trafos.index.values]
+            for x in tr]
+
+    lc = LineCollection(tg, **kwargs)
     lc.info = info
 
     return lc
