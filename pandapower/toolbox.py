@@ -595,6 +595,8 @@ def convert_format(net):
 
     if "tp_st_degree" not in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
     if "_pd2ppc_lookups" not in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,

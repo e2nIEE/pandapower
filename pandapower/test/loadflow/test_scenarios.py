@@ -141,6 +141,7 @@ def test_two_gens_at_one_bus():
     assert net.res_gen.p_kw.at[g1] == p1
     assert net.res_gen.p_kw.at[g2] == p2
 
+
 def test_transformer_phase_shift():
     net = pp.create_empty_network()
     for side in ["hv", "lv"]:
@@ -149,7 +150,8 @@ def test_transformer_phase_shift():
         b3 = pp.create_bus(net, vn_kv=0.4)
         pp.create_ext_grid(net, b1)
         pp.create_transformer_from_parameters(net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, side,
-                                              0, 2, -2, 1.25, 10, 0)
+                                              # 0, 2, -2, 1.25, 10, 0)
+                                              0, 2, -2, 0, 10, 0)
         pp.create_transformer_from_parameters(net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
     pp.runpp(net, init="dc", calculate_voltage_angles=True)
     b2a_angle = net.res_bus.va_degree.at[1]
@@ -164,6 +166,93 @@ def test_transformer_phase_shift():
     assert np.isclose(b3a_angle - net.res_bus.va_degree.at[2], 10)
     assert np.isclose(b2b_angle - net.res_bus.va_degree.at[4], -10)
     assert np.isclose(b3b_angle - net.res_bus.va_degree.at[5], -10)
+
+
+def test_transformer_phase_shift_complex():
+    test_ref = (0.99967, -30.7163)
+    test_tap_pos = {
+        'hv': (0.9617, -31.1568),
+        'lv': (1.0391, -30.3334)
+    }
+    test_tap_neg = {
+        'hv': (1.0407, -30.2467),
+        'lv': (0.9603, -31.1306)
+    }
+    for side in ["hv", "lv"]:
+        net = pp.create_empty_network()
+        b1 = pp.create_bus(net, vn_kv=110.)
+        pp.create_ext_grid(net, b1)
+        b2 = pp.create_bus(net, vn_kv=20.)
+        pp.create_load(net, b2, 1e4)
+        pp.create_transformer_from_parameters(net, hv_bus=b1, lv_bus=b2, sn_kva=40000, vn_hv_kv=110,
+                                              vn_lv_kv=20, vscr_percent=0.1, vsc_percent=5,
+                                              pfe_kw=0, i0_percent=0.1, shift_degree=30,
+                                              tp_side=side, tp_mid=0, tp_max=2, tp_min=-2,
+                                              tp_st_percent=2, tp_st_degree=10, tp_pos=0)
+        pp.runpp(net, init="dc", calculate_voltage_angles=True)
+        assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
+
+        net.trafo.tp_pos.at[0] = 2
+        pp.runpp(net, init="dc", calculate_voltage_angles=True)
+        assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_pos[side][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_pos[side][1], rtol=1e-4)
+
+        net.trafo.tp_pos.at[0] = -2
+        pp.runpp(net, init="dc", calculate_voltage_angles=True)
+        assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_neg[side][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_neg[side][1], rtol=1e-4)
+
+
+def test_transformer3w_phase_shift():
+    test_ref = ((0.9995, -31.003), (0.9996, -60.764))
+    test_tap_pos = {
+        'hv': ((0.9615, -31.466), (0.9617, -61.209)),
+        'mv': ((1.0389, -30.620), (0.9996, -60.764)),
+        'lv': ((0.9995, -31.003), (1.039, -60.381))
+    }
+    test_tap_neg = {
+        'hv': ((1.0405, -30.511), (1.0406, -60.291)),
+        'mv': ((0.9602, -31.417), (0.9996, -60.764)),
+        'lv': ((0.9995, -31.003), (0.9603, -61.178))
+    }
+    for side in ["hv", "mv", "lv"]:
+        net = pp.create_empty_network()
+        b1 = pp.create_bus(net, vn_kv=110.)
+        pp.create_ext_grid(net, b1)
+        b2 = pp.create_bus(net, vn_kv=20.)
+        pp.create_load(net, b2, 1e4)
+        b3 = pp.create_bus(net, vn_kv=0.4)
+        pp.create_load(net, b3, 1e3)
+        pp.create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=b3, vn_hv_kv=110,
+                                                vn_mv_kv=20, vn_lv_kv=0.4, sn_hv_kva=40000,
+                                                sn_mv_kva=30000, sn_lv_kva=10000,
+                                                vsc_hv_percent=5, vsc_mv_percent=5,
+                                                vsc_lv_percent=5, vscr_hv_percent=0.1,
+                                                vscr_mv_percent=0.1, vscr_lv_percent=0.1, pfe_kw=0,
+                                                i0_percent=0.1, shift_mv_degree=30,
+                                                shift_lv_degree=60, tp_side=side, tp_st_percent=2,
+                                                tp_st_degree=10, tp_pos=0, tp_mid=0, tp_min=-2,
+                                                tp_max=2)
+        pp.runpp(net, init="dc", calculate_voltage_angles=True)
+        assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[0][1], rtol=1e-4)
+        assert np.isclose(net.res_bus.vm_pu.at[b3], test_ref[1][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b3], test_ref[1][1], rtol=1e-4)
+
+        net.trafo3w.tp_pos.at[0] = 2
+        pp.runpp(net, init="dc", calculate_voltage_angles=True)
+        assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_pos[side][0][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_pos[side][0][1], rtol=1e-4)
+        assert np.isclose(net.res_bus.vm_pu.at[b3], test_tap_pos[side][1][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b3], test_tap_pos[side][1][1], rtol=1e-4)
+
+        net.trafo3w.tp_pos.at[0] = -2
+        pp.runpp(net, init="dc", calculate_voltage_angles=True)
+        assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_neg[side][0][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_neg[side][0][1], rtol=1e-4)
+        assert np.isclose(net.res_bus.vm_pu.at[b3], test_tap_neg[side][1][0], rtol=1e-4)
+        assert np.isclose(net.res_bus.va_degree.at[b3], test_tap_neg[side][1][1], rtol=1e-4)
 
 if __name__ == "__main__":   
     pytest.main(["test_scenarios.py"])
