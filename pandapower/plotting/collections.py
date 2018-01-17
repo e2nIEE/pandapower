@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
-import copy
 from matplotlib.transforms import Affine2D
+import copy
 
 try:
     import pplog as logging
@@ -148,8 +148,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     return pc
 
 
-def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=False, 
-                           bus_geodata=None, infofunc=None,
+def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
+                           use_bus_geodata=False, infofunc=None,
                            cmap=None, norm=None, picker=False, z=None,
                            cbar_title="Line Loading [%]", clim=None, **kwargs):
     """
@@ -177,16 +177,18 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
         return None
     if line_geodata is None:
         line_geodata = net["line_geodata"]
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
     if len(lines) == 0:
         return None
 
     if use_bus_geodata:
-        data = [([(net.bus_geodata.at[a, "x"], net.bus_geodata.at[a, "y"]),
-                  (net.bus_geodata.at[b, "x"], net.bus_geodata.at[b, "y"])],
+        data = [([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
+                  (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
                  infofunc(line) if infofunc else [])
                 for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
-                if a in net.bus_geodata.index.values
-                and b in net.bus_geodata.index.values]
+                if a in bus_geodata.index.values
+                and b in bus_geodata.index.values]
     else:
         data = [(line_geodata.loc[line, "coords"],
                  infofunc(line) if infofunc else [])
