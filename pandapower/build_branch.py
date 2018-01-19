@@ -649,7 +649,7 @@ def _trafo_df_from_trafo3w(net):
                 taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
             else:
                 taps[tp_trafo]["tp_side"] = "lv" if tp_trafo == 0 else "hv"
-                taps[tp_trafo]["tp_pos"] = 2 * taps[tp_trafo]['tp_mid'] - taps[tp_trafo]["tp_pos"]
+                taps[tp_trafo]["tp_st_degree"] += 180
 
         max_load = ttab.max_loading_percent if "max_loading_percent" in ttab else 0
 
