@@ -469,7 +469,8 @@ def _clean_up(net, res=True):
     net._is_elements = None
 
     mode = net._options["mode"]
-    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
+    if res:
+        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
         net["bus"].drop(buses_3w, inplace=True)
