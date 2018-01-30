@@ -192,11 +192,13 @@ class pandapowerNet(ADict):
                 else:
                     par.append(tb)
         for tb in par:
-            r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+            length = len(self[tb])
+            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         if res:
             r += "\n and the following results tables:"
             for tb in res:
-                r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+                length = len(self[tb])
+                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         return r
 
 
