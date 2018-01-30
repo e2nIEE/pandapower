@@ -507,6 +507,18 @@ def convert_format(net):
                                                                  ("i_to_ka", "f8"),
                                                                  ("i_ka", "f8"),
                                                                  ("loading_percent", "f8")]))
+    if "storage" not in net:
+        net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                         ("bus", "i8"),
+                                                         ("p_kw", "f8"),
+                                                         ("q_kvar", "f8"),
+                                                         ("sn_kva", "f8"),
+                                                         ("soc", "f8"),
+                                                         ("min_e_kwh", "f8"),
+                                                         ("max_e_kwh", "f8"),
+                                                         ("scaling", "f8"),
+                                                         ("in_service", 'bool'),
+                                                         ("type", np.dtype(object))]))
     if "version" not in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
@@ -1393,7 +1405,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load"]:
+    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element in ['_equiv_trafo3w']:
