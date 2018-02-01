@@ -277,6 +277,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
     circles = []
     infos = []
     color = kwargs.pop("color", "k")
+    linewidths = kwargs.pop("linewidths", 2.)
     for i, trafo in trafo_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
@@ -302,9 +303,9 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
             infos.append(infofunc(i))
     if len(circles) == 0:
         return None, None
-    lc = LineCollection((lines), color=color, picker=picker, **kwargs)
+    lc = LineCollection((lines), color=color, picker=picker, linewidths=linewidths, **kwargs)
     lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs)
+    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
     pc.info = infos
     return lc, pc
 
@@ -333,6 +334,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
     circles = []
     infos = []
     color = kwargs.pop("color", "k")
+    linewidth = kwargs.pop("linewidths", 2.)
     for i, trafo3w in trafo3w_table.iterrows():
         # get bus geodata
         p1 = net.bus_geodata[["x", "y"]].loc[trafo3w.hv_bus].values
@@ -370,9 +372,9 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
             infos.append(infofunc(i))
     if len(circles) == 0:
         return None, None
-    lc = LineCollection((lines), color=color, picker=picker, **kwargs)
+    lc = LineCollection((lines), color=color, picker=picker, linewidths=linewidth, **kwargs)
     lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, **kwargs)
+    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidth, **kwargs)
     pc.info = infos
     return lc, pc
 
@@ -381,7 +383,7 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     lines = []
     polys = []
     infos = []
-    off = 1.7
+    off = 2.
     ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
     for i, load in net.load.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
@@ -426,21 +428,21 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     polys = []
     infos = []
     off = 1.7
-    r_traingle = size*0.4
+    r_triangle = size*0.4
     ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.sgen.shape[0]
     for i, sgen in net.sgen.iterrows():
         bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
         mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
         circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
-        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_traingle, -r_traingle/4]), ang[i])
-        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_traingle, r_traingle/4]), ang[i])
-        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_traingle/2]), ang[i])  # dropped perpendicular foot of triangle1
-        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5*r_traingle, 0]), ang[i])
-        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_traingle/2]), ang[i])
-        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5*r_traingle, 0]), ang[i])
+        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_triangle, -r_triangle/4]), ang[i])
+        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_triangle, r_triangle/4]), ang[i])
+        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_triangle/2]), ang[i])  # dropped perpendicular foot of triangle1
+        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5*r_triangle, 0]), ang[i])
+        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_triangle/2]), ang[i])
+        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5*r_triangle, 0]), ang[i])
         polys.append(Circle(mp_circ, size))
-        polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_traingle, orientation=-ang[i]))
-        polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_traingle,
+        polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_triangle, orientation=-ang[i]))
+        polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_triangle,
                                     orientation=np.pi-ang[i]))
         lines.append((bus_geo, circ_edge))
         lines.append((perp_foot1, line_end1))
@@ -454,20 +456,19 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     return sgen1, sgen2
 
 
-def create_ext_grid_collection(net, size=1., infofunc=None, picker=False,
-                                      **kwargs):
+def create_ext_grid_collection(net, size=1., orientation=0, infofunc=None, picker=False, **kwargs):
     lines = []
     polys = []
     infos = []
     for i, ext_grid in net.ext_grid.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
-        p2 = p1 + np.array([0, size])
+        p2 = p1 + _rotate_dim2(np.array([0, size]), orientation)
         polys.append(Rectangle([p2[0] - size / 2, p2[1] - size / 2], size, size))
-        lines.append((p1, p2 - np.array([0, size / 2])))
+        lines.append((p1, p2 - _rotate_dim2(np.array([0, size / 2]), orientation)))
         if infofunc is not None:
             infos.append(infofunc(i))
     ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
-                                hatch="XX", picker=picker, **kwargs)
+                                hatch="XXX", picker=picker, **kwargs)
     ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
     ext_grid1.info = infos
     ext_grid2.info = infos
