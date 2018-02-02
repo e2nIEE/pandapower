@@ -89,11 +89,13 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         net = create_generic_coordinates(net)
 
     """
+
     if "bus_geodata" in net and net.bus_geodata.shape[0]:
         print("Please delete all geodata. This function cannot be used with pre-existing geodata.")
         return
     if not "bus_geodata" in net or net.bus_geodata is None:
         net.bus_geodata = pd.DataFrame(columns=["x", "y"])
+
     gnet = copy.deepcopy(net)
     gnet.bus = gnet.bus[gnet.bus.in_service == True]
     if library == "igraph":
@@ -126,7 +128,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'"%library)
     net.bus_geodata.x = coords[0]
     net.bus_geodata.y = coords[1]
-    net.bus_geodata.index = net.bus.index
+    net.bus_geodata.index = gnet.bus.index
     return net
 
 
