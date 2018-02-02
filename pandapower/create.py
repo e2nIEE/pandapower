@@ -996,7 +996,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         if "s_sc_max_mva" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "s_sc_max_mva"] = pd.Series()
 
-        net.ext_grid.at[:, "s_sc_max_mva"] = float(s_sc_max_mva)
+        net.ext_grid.at[index, "s_sc_max_mva"] = float(s_sc_max_mva)
 
     if not isnan(s_sc_min_mva):
         if "s_sc_min_mva" not in net.ext_grid.columns:
