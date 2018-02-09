@@ -32,36 +32,23 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
                                  picker=False, net=None, cbar_title="Bus Voltage [pu]", **kwargs):
     infos = []
 
-    if 'height' in kwargs and 'width' in kwargs:
-        height, width = kwargs['height'], kwargs['width']
-    else:
-        height, width = size, size
+    if not 'height' in kwargs and not 'width' in kwargs:
+        kwargs['height'] = kwargs['width'] = 2 * size
+    if patch_type == "rectangle":
+        kwargs['height'] *= 2
+        kwargs['width'] *= 2
 
     def figmaker(x, y, i):
-        if patch_type == "circle":
-            if colors:
-                fig = Circle((x, y), size, color=colors[i], **kwargs)
-            else:
-                fig = Circle((x, y), size, **kwargs)
-        elif patch_type == 'ellipse':
+        if colors:
+            kwargs["color"] = colors[i]
+        if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
             angle = kwargs['angle'] if 'angle' in kwargs else 0
-            if colors:
-                fig = Ellipse((x, y), width=width, height=height, color=colors[i], **kwargs)
-            else:
-                fig = Ellipse((x, y), width=width, height=height, angle=angle, **kwargs)
+            fig = Ellipse((x, y), angle=angle, **kwargs)
         elif patch_type == "rect":
-            if colors:
-                fig = Rectangle([x - width, y - height], 2 * width, 2 * height, color=colors[i],
-                                **kwargs)
-            else:
-                fig = Rectangle([x - width, y - height], 2 * width, 2 * height, **kwargs)
+            fig = Rectangle([x - kwargs['width'] // 2, y - kwargs['height'] // 2], **kwargs)
         elif patch_type.startswith("poly"):
             edges = int(patch_type[4:])
-            if colors:
-                fig = RegularPolygon([x, y], numVertices=edges, radius=size, color=colors[i],
-                                     **kwargs)
-            else:
-                fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
+            fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
         else:
             logger.error("Wrong patchtype. Please choose a correct patch type.")
         if infofunc:

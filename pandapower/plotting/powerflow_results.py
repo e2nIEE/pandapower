@@ -120,10 +120,6 @@ def voltage_profile_to_bus_geodata(net, voltages=None):
     return bgd
 
 
-def plot_voltage_profile2(net):
-    pass
-
-
 if __name__ == "__main__":
     import pandapower as pp
     import pandapower.networks as nw
@@ -144,10 +140,10 @@ if __name__ == "__main__":
             c = plotting.create_line_collection(net, lines=l, use_bus_geodata=True, color=color,
                                                 bus_geodata=bgd)
             ax.add_collection(c)
-            ax.scatter(bgd["x"], bgd["y"])
+#            ax.scatter(bgd["x"], bgd["y"])
             ax.autoscale_view(True, True, True)
 
-    h = 0.01
-    bc = plotting.create_bus_collection(net, buses=net.ext_grid.bus.values, width=h / ax.get_data_ratio(), height=h, bus_geodata=bgd)
-    ax.add_collection(bc)
+    h = 0.02
+#    bc = plotting.create_bus_collection(net, buses=net.ext_grid.bus.values, width=h / ax.get_data_ratio(), height=h, bus_geodata=bgd)
+#    ax.add_collection(bc)
 
