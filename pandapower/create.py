@@ -872,12 +872,10 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
     # store dtypes
     dtypes = net.storage.dtypes
-
+        
     net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
-                            "min_p_kw", "max_p_kw", "min_q_kvar", "max_q_kvar",
                             "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
         [name, bus, p_kw, q_kvar, sn_kva, scaling,
-         min_p_kw, max_p_kw, min_q_kvar, max_q_kvar,
          soc, min_e_kwh, max_e_kwh, bool(in_service), type]
 
     # and preserve dtypes

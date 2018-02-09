@@ -347,8 +347,15 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
-            
-        # TODO: storages in opf?!
+        
+        stor = net["storage"]
+        if not stor.empty:
+            stor["controllable"] = _controllable_to_bool(stor["controllable"])
+            vl = (_is_elements["storage"] & ~stor["controllable"]) * stor["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, stor["q_kvar"].values * vl])
+            p = np.hstack([p, stor["p_kw"].values * vl])
+            b = np.hstack([b, stor["bus"].values])
 
     # sum up p & q of bus elements
     # if array is not empty

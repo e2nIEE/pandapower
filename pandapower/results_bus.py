@@ -58,7 +58,25 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         b = hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
         
-    # TODO: storages?!
+    stor = net["storage"]
+    if len(stor) > 0:
+        stor_is = _is_elements["storage"]
+        stor_ctrl = stor["controllable"].values
+        scaling = stor["scaling"].values
+        pstor = stor["p_kw"].values * scaling * stor_is * invert(stor_ctrl)
+        qstor = stor["q_kvar"].values * scaling * stor_is * invert(stor_ctrl)
+        if any(stor_ctrl):
+            # get storage index in ppc
+            stidx_ppc = net._pd2ppc_lookups["storage_controllable"][_is_elements["storage_controllable"].index]
+            pstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, PG] * 1000
+            qstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, QG] * 1000
+
+        net["res_storage"]["p_kw"] = pstor
+        net["res_storage"]["q_kvar"] = qstor
+        q = hstack([q, qstor])
+        p = hstack([p, pstor])
+        b = hstack([b, stor["bus"].values])
+        net["res_storage"].index = net["storage"].index
 
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
     b_ppc = bus_lookup_aranged[b_pp]

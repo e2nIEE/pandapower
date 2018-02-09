@@ -14,18 +14,6 @@ from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, 
 
 def _build_gen_ppc(net, ppc):
     '''
-    wrapper function to call either the PF or the OPF version
-    '''
-    # options
-    mode = net["_options"]["mode"]
-    if mode == "opf":
-        _build_gen_opf(net, ppc)
-    else:
-        _build_gen_pf(net, ppc)
-
-
-def _build_gen_pf(net, ppc):
-    '''
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be float afterwards.
 
@@ -36,32 +24,237 @@ def _build_gen_pf(net, ppc):
     '''
 
     mode = net["_options"]["mode"]
+    
+    # if mode == power flow or short circuit...
+    if mode == "pf" or mode == "sc":
 
-    # get in service elements
-    _is_elements = net["_is_elements"]
-    eg_is_mask = _is_elements['ext_grid']
-    gen_is_mask = _is_elements['gen']
-
-    eg_end = np.sum(eg_is_mask)
-    gen_end = eg_end + np.sum(gen_is_mask)
-    xw_end = gen_end + len(net["xward"])
-
-    # define default q limits
-    q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
-    p_lim_default = 1e9
-
-    _init_ppc_gen(ppc, xw_end, q_lim_default)
-    if mode == "sc":
-        return
-    _build_pp_ext_grid(net, ppc, eg_is_mask, eg_end)
-
-    # add generator / pv data
-    if gen_end > eg_end:
-        _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_default)
-
-    # add extended ward pv node data
-    if xw_end > gen_end:
-        _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default)
+        # get in service elements
+        _is_elements = net["_is_elements"]
+        eg_is_mask = _is_elements['ext_grid']
+        gen_is_mask = _is_elements['gen']
+    
+        eg_end = np.sum(eg_is_mask)
+        gen_end = eg_end + np.sum(gen_is_mask)
+        xw_end = gen_end + len(net["xward"])
+    
+        # define default q limits
+        q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
+        p_lim_default = 1e9
+    
+        _init_ppc_gen(ppc, xw_end, q_lim_default)
+        if mode == "sc":
+            return
+        _build_pp_ext_grid(net, ppc, eg_is_mask, eg_end)
+    
+        # add generator / pv data
+        if gen_end > eg_end:
+            _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_default)
+    
+        # add extended ward pv node data
+        if xw_end > gen_end:
+            _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default)
+    
+    # if mode == optimal power flow...
+    if mode == "opf":
+        
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
+    
+        if len(net.dcline) > 0:
+            ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
+        # get in service elements
+        _is_elements = net["_is_elements"]
+        eg_is = net["ext_grid"][_is_elements['ext_grid']]
+        gen_is = net["gen"][_is_elements['gen']]
+        sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
+            if "controllable" in net.sgen.columns else DataFrame()
+        l_is = net.load[(net.load.in_service & net.load.controllable) == True] \
+            if "controllable" in net.load.columns else DataFrame()
+        stor_is = net.storage[(net.storage.in_service & net.storage.controllable) == True] \
+            if "controllable" in net.storage.columns else DataFrame()
+    
+        _is_elements["sgen_controllable"] = sg_is
+        _is_elements["load_controllable"] = l_is
+        _is_elements["storage_controllable"] = stor_is
+        eg_end = len(eg_is)
+        gen_end = eg_end + len(gen_is)
+        sg_end = gen_end + len(sg_is)
+        l_end = sg_end + len(l_is)
+        stor_end = l_end + len(stor_is)
+    
+        q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
+        p_lim_default = 1e9  # changes must be considered in check_opf_data
+        delta = net["_options"]["delta"]
+    
+        # initialize generator matrix
+        ppc["gen"] = zeros(shape=(l_end, 21), dtype=float)
+        ppc["gen"][:] = array([0, 0, 0, q_lim_default, -q_lim_default, 1., 1., 1, p_lim_default,
+                                  -p_lim_default, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    
+        # add sgens first so pv bus types won't be overwritten
+        if sg_end > gen_end:
+            gen_buses = bus_lookup[sg_is["bus"].values]
+            
+            ppc["gen"][gen_end:sg_end, GEN_BUS] = gen_buses
+            ppc["gen"][gen_end:sg_end, PG] = - sg_is["p_kw"].values * 1e-3 * sg_is["scaling"].values
+            ppc["gen"][gen_end:sg_end, QG] = sg_is["q_kvar"].values * 1e-3 * sg_is["scaling"].values
+    
+            # set bus values for generator buses
+            ppc["bus"][gen_buses, BUS_TYPE] = PQ
+    
+            # set constraints for controllable sgens
+            if "min_q_kvar" in sg_is.columns:
+                ppc["gen"][gen_end:sg_end, QMAX] = - (sg_is["min_q_kvar"].values * 1e-3 - delta)
+                max_q_kvar = ppc["gen"][gen_end:sg_end, [QMIN]]
+                ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
+                ppc["gen"][gen_end:sg_end, [QMIN]] = max_q_kvar
+    
+            if "max_q_kvar" in sg_is.columns:
+                ppc["gen"][gen_end:sg_end, QMIN] = - (sg_is["max_q_kvar"].values * 1e-3 + delta)
+                min_q_kvar = ppc["gen"][gen_end:sg_end, [QMAX]]
+                ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
+                ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10 # TODO Why this? (M.Scharf, 2018-02)
+    
+            if "max_p_kw" in sg_is.columns:
+                ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
+                max_p_kw = ppc["gen"][gen_end:sg_end, [PMIN]]
+                ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
+                ppc["gen"][gen_end:sg_end, [PMIN]] = max_p_kw
+    
+            if "min_p_kw" in sg_is.columns:
+                ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 - delta)
+                min_p_kw = ppc["gen"][gen_end:sg_end, [PMAX]]
+                ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
+                ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw
+    
+        # add controllable loads
+        if l_end > sg_end:
+            load_buses = bus_lookup[l_is["bus"].values]
+    
+            ppc["gen"][sg_end:l_end, GEN_BUS] = load_buses
+            ppc["gen"][sg_end:l_end, PG] = - l_is["p_kw"].values * 1e-3 * l_is["scaling"].values
+            ppc["gen"][sg_end:l_end, QG] = l_is["q_kvar"].values * 1e-3 * l_is["scaling"].values
+    
+            # set bus values for controllable loads
+            ppc["bus"][load_buses, BUS_TYPE] = PQ
+    
+            # set constraints for controllable loads
+            if "min_q_kvar" in l_is.columns:
+                ppc["gen"][sg_end:l_end, QMAX] = - (l_is["min_q_kvar"].values * 1e-3 - delta)
+                max_q_kvar = ppc["gen"][sg_end:l_end, [QMIN]]
+                ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
+                ppc["gen"][sg_end:l_end, [QMIN]] = max_q_kvar
+    
+            if "max_q_kvar" in l_is.columns:
+                ppc["gen"][sg_end:l_end, QMIN] = - (l_is["max_q_kvar"].values * 1e-3 + delta)
+                min_q_kvar = ppc["gen"][sg_end:l_end, [QMAX]]
+                ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
+                ppc["gen"][sg_end:l_end, [QMAX]] = min_q_kvar
+    
+            if "min_p_kw" in l_is.columns:
+                ppc["gen"][sg_end:l_end, PMIN] = - (l_is["max_p_kw"].values * 1e-3 + delta)
+                max_p_kw = ppc["gen"][sg_end:l_end, [PMIN]]
+                ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
+                ppc["gen"][sg_end:l_end, [PMIN]] = max_p_kw
+    
+            if "max_p_kw" in l_is.columns:
+                ppc["gen"][sg_end:l_end, PMAX] = - (l_is["min_p_kw"].values * 1e-3 - delta)
+                min_p_kw = ppc["gen"][sg_end:l_end, [PMAX]]
+                ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
+                ppc["gen"][sg_end:l_end, [PMAX]] = min_p_kw
+        
+        # add controllable storages
+        if stor_end > l_end:
+            stor_buses = bus_lookup[stor_is["bus"].values]
+            
+            ppc["gen"][l_end:stor_end, GEN_BUS] = stor_buses
+            ppc["gen"][l_end:stor_end, PG] = - stor_is["p_kw"].values * 1e-3 * stor_is["scaling"].values
+            ppc["gen"][l_end:stor_end, QG] = stor_is["q_kvar"].values * 1e-3 * stor_is["scaling"].values
+    
+            # set bus values for generator buses
+            ppc["bus"][stor_buses, BUS_TYPE] = PQ
+    
+            # set constraints for controllable sgens
+            if "min_q_kvar" in stor_is.columns:
+                ppc["gen"][l_end:stor_end, QMAX] = - (stor_is["min_q_kvar"].values * 1e-3 - delta)
+                max_q_kvar = ppc["gen"][l_end:stor_end, [QMIN]]
+                ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
+                ppc["gen"][l_end:stor_end, [QMIN]] = max_q_kvar
+    
+            if "max_q_kvar" in stor_is.columns:
+                ppc["gen"][l_end:stor_end, QMIN] = - (stor_is["max_q_kvar"].values * 1e-3 + delta)
+                min_q_kvar = ppc["gen"][l_end:stor_end, [QMAX]]
+                ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
+                ppc["gen"][l_end:stor_end, [QMAX]] = min_q_kvar
+    
+            if "max_p_kw" in stor_is.columns:
+                ppc["gen"][l_end:stor_end, PMIN] = - (stor_is["max_p_kw"].values * 1e-3 + delta)
+                max_p_kw = ppc["gen"][l_end:stor_end, [PMIN]]
+                ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
+                ppc["gen"][l_end:stor_end, [PMIN]] = max_p_kw
+    
+            if "min_p_kw" in stor_is.columns:
+                ppc["gen"][l_end:stor_end, PMAX] = - (stor_is["min_p_kw"].values * 1e-3 - delta)
+                min_p_kw = ppc["gen"][l_end:stor_end, [PMAX]]
+                ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
+                ppc["gen"][l_end:stor_end, [PMAX]] = min_p_kw
+    
+        # add ext grid / slack data
+        ppc["gen"][:eg_end, GEN_BUS] = bus_lookup[eg_is["bus"].values]
+        ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
+        ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
+        if "max_p_kw" in eg_is.columns:
+            ppc["gen"][:eg_end, PMIN] = - (eg_is["max_p_kw"].values * 1e-3 - delta)
+            max_p_kw = ppc["gen"][:eg_end, [PMIN]]
+            ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
+            ppc["gen"][:eg_end, [PMIN]] = max_p_kw
+    
+        if "min_p_kw" in eg_is.columns:
+            ppc["gen"][:eg_end, PMAX] = - (eg_is["min_p_kw"].values * 1e-3 + delta)
+            min_p_kw = ppc["gen"][:eg_end, [PMAX]]
+            ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
+            ppc["gen"][:eg_end, [PMAX]] = min_p_kw
+    
+        if "min_q_kvar" in eg_is.columns:
+            ppc["gen"][:eg_end, QMAX] = - (eg_is["min_q_kvar"].values * 1e-3 - delta)
+            max_q_kvar = ppc["gen"][:eg_end, [QMIN]]
+            ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
+            ppc["gen"][:eg_end, [QMIN]] = max_q_kvar
+    
+        if "max_q_kvar" in eg_is.columns:
+            ppc["gen"][:eg_end, QMIN] = - (eg_is["max_q_kvar"].values * 1e-3 + delta)
+            min_q_kvar = ppc["gen"][:eg_end, [QMAX]]
+            ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
+            ppc["gen"][:eg_end, [QMAX]] = min_q_kvar - 1e-10
+    
+        # set bus values for external grid buses
+        eg_buses = bus_lookup[eg_is["bus"].values]
+        if calculate_voltage_angles:
+            ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
+        ppc["bus"][eg_buses, BUS_TYPE] = REF
+        ppc["bus"][eg_buses, VM] = eg_is["vm_pu"].values
+    
+        # REF busses don't have flexible voltages by definition:
+        ppc["bus"][eg_buses, VMAX] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
+        ppc["bus"][eg_buses, VMIN] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
+    
+        # add generator / pv data
+        if gen_end > eg_end:
+            ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
+            ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
+            ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
+    
+            # set bus values for generator buses
+            gen_buses = bus_lookup[gen_is["bus"].values]
+            ppc["bus"][gen_buses, BUS_TYPE] = PV
+            ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
+    
+            # set constraints for PV generators
+            _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
+            _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
+    
+            _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
+            _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
 
 
 def _init_ppc_gen(ppc, xw_end, q_lim_default):
@@ -193,176 +386,6 @@ def _update_gen_ppc(net, ppc):
         raise NotImplementedError("xwards in combination with recycle is not properly implemented")
         # _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default,
         #                           update_lookup=False)
-
-
-def _build_gen_opf(net, ppc):
-    '''
-    Takes the empty ppc network and fills it with the gen values. The gen
-    datatype will be float afterwards.
-
-    **INPUT**:
-        **net** -The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
-    '''
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
-
-    if len(net.dcline) > 0:
-        ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
-    # get in service elements
-    _is_elements = net["_is_elements"]
-    eg_is = net["ext_grid"][_is_elements['ext_grid']]
-    gen_is = net["gen"][_is_elements['gen']]
-    sg_is = net.sgen[(net.sgen.in_service & net.sgen.controllable) == True] \
-        if "controllable" in net.sgen.columns else DataFrame()
-    l_is = net.load[(net.load.in_service & net.load.controllable) == True] \
-        if "controllable" in net.load.columns else DataFrame()
-
-    _is_elements["sgen_controllable"] = sg_is
-    _is_elements["load_controllable"] = l_is
-    eg_end = len(eg_is)
-    gen_end = eg_end + len(gen_is)
-    sg_end = gen_end + len(sg_is)
-    l_end = sg_end + len(l_is)
-
-    q_lim_default = 1e9  # which is 1000 TW - should be enough for distribution grids.
-    p_lim_default = 1e9  # changes must be considered in check_opf_data
-    delta = net["_options"]["delta"]
-
-    # initialize generator matrix
-    ppc["gen"] = zeros(shape=(l_end, 21), dtype=float)
-    ppc["gen"][:] = array([0, 0, 0, q_lim_default, -q_lim_default, 1., 1., 1, p_lim_default,
-                              -p_lim_default, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-
-    # add sgens first so pv bus types won't be overwritten
-    if sg_end > gen_end:
-        ppc["gen"][gen_end:sg_end, GEN_BUS] = bus_lookup[sg_is["bus"].values]
-        ppc["gen"][gen_end:sg_end, PG] = - sg_is["p_kw"].values * 1e-3 * sg_is["scaling"].values
-        ppc["gen"][gen_end:sg_end, QG] = sg_is["q_kvar"].values * 1e-3 * sg_is["scaling"].values
-
-        # set bus values for generator buses
-        gen_buses = bus_lookup[sg_is["bus"].values]
-        ppc["bus"][gen_buses, BUS_TYPE] = PQ
-
-
-        # set constraints for PV generators
-        if "min_q_kvar" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, QMAX] = - (sg_is["min_q_kvar"].values * 1e-3 - delta)
-            max_q_kvar = ppc["gen"][gen_end:sg_end, [QMIN]]
-            ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-            ppc["gen"][gen_end:sg_end, [QMIN]] = max_q_kvar
-
-        if "max_q_kvar" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, QMIN] = - (sg_is["max_q_kvar"].values * 1e-3 + delta)
-            min_q_kvar = ppc["gen"][gen_end:sg_end, [QMAX]]
-            ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-            ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10
-
-        if "max_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
-            max_p_kw = ppc["gen"][gen_end:sg_end, [PMIN]]
-            ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
-            ppc["gen"][gen_end:sg_end, [PMIN]] = max_p_kw
-
-        if "min_p_kw" in sg_is.columns:
-            ppc["gen"][gen_end:sg_end, PMAX] = - (sg_is["min_p_kw"].values * 1e-3 - delta)
-            min_p_kw = ppc["gen"][gen_end:sg_end, [PMAX]]
-            ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
-            ppc["gen"][gen_end:sg_end, [PMAX]] = min_p_kw
-
-    # add controllable loads
-    if l_end > sg_end:
-        load_buses = bus_lookup[l_is["bus"].values]
-
-        ppc["gen"][sg_end:l_end, GEN_BUS] = load_buses
-        ppc["gen"][sg_end:l_end, PG] = - l_is["p_kw"].values * 1e-3 * l_is["scaling"].values
-        ppc["gen"][sg_end:l_end, QG] = l_is["q_kvar"].values * 1e-3 * l_is["scaling"].values
-
-        # set bus values for controllable loads
-        ppc["bus"][load_buses, BUS_TYPE] = PQ
-
-        # set constraints for controllable loads
-        if "min_q_kvar" in l_is.columns:
-            ppc["gen"][sg_end:l_end, QMAX] = - (l_is["min_q_kvar"].values * 1e-3 - delta)
-            max_q_kvar = ppc["gen"][sg_end:l_end, [QMIN]]
-            ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-            ppc["gen"][sg_end:l_end, [QMIN]] = max_q_kvar
-
-        if "max_q_kvar" in l_is.columns:
-            ppc["gen"][sg_end:l_end, QMIN] = - (l_is["max_q_kvar"].values * 1e-3 + delta)
-            min_q_kvar = ppc["gen"][sg_end:l_end, [QMAX]]
-            ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-            ppc["gen"][sg_end:l_end, [QMAX]] = min_q_kvar
-
-        if "min_p_kw" in l_is.columns:
-            ppc["gen"][sg_end:l_end, PMIN] = - (l_is["max_p_kw"].values * 1e-3 + delta)
-            max_p_kw = ppc["gen"][sg_end:l_end, [PMIN]]
-            ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
-            ppc["gen"][sg_end:l_end, [PMIN]] = max_p_kw
-
-        if "max_p_kw" in l_is.columns:
-            ppc["gen"][sg_end:l_end, PMAX] = - (l_is["min_p_kw"].values * 1e-3 - delta)
-            min_p_kw = ppc["gen"][sg_end:l_end, [PMAX]]
-            ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
-            ppc["gen"][sg_end:l_end, [PMAX]] = min_p_kw
-
-    # add ext grid / slack data
-    ppc["gen"][:eg_end, GEN_BUS] = bus_lookup[eg_is["bus"].values]
-    ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
-    ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
-    if "max_p_kw" in eg_is.columns:
-        ppc["gen"][:eg_end, PMIN] = - (eg_is["max_p_kw"].values * 1e-3 - delta)
-        max_p_kw = ppc["gen"][:eg_end, [PMIN]]
-        ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
-        ppc["gen"][:eg_end, [PMIN]] = max_p_kw
-
-    if "min_p_kw" in eg_is.columns:
-        ppc["gen"][:eg_end, PMAX] = - (eg_is["min_p_kw"].values * 1e-3 + delta)
-        min_p_kw = ppc["gen"][:eg_end, [PMAX]]
-        ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
-        ppc["gen"][:eg_end, [PMAX]] = min_p_kw
-
-    if "min_q_kvar" in eg_is.columns:
-        ppc["gen"][:eg_end, QMAX] = - (eg_is["min_q_kvar"].values * 1e-3 - delta)
-        max_q_kvar = ppc["gen"][:eg_end, [QMIN]]
-        ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-        ppc["gen"][:eg_end, [QMIN]] = max_q_kvar
-
-    if "max_q_kvar" in eg_is.columns:
-        ppc["gen"][:eg_end, QMIN] = - (eg_is["max_q_kvar"].values * 1e-3 + delta)
-        min_q_kvar = ppc["gen"][:eg_end, [QMAX]]
-        ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-        ppc["gen"][:eg_end, [QMAX]] = min_q_kvar - 1e-10
-
-    # set bus values for external grid buses
-    eg_buses = bus_lookup[eg_is["bus"].values]
-    if calculate_voltage_angles:
-        ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
-    ppc["bus"][eg_buses, BUS_TYPE] = REF
-    ppc["bus"][eg_buses, VM] = eg_is["vm_pu"].values
-
-    # REF busses don't have flexible voltages by definition:
-    ppc["bus"][eg_buses, VMAX] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
-    ppc["bus"][eg_buses, VMIN] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
-
-    # add generator / pv data
-    if gen_end > eg_end:
-        ppc["gen"][eg_end:gen_end, GEN_BUS] = bus_lookup[gen_is["bus"].values]
-        ppc["gen"][eg_end:gen_end, PG] = - gen_is["p_kw"].values * 1e-3 * gen_is["scaling"].values
-        ppc["gen"][eg_end:gen_end, VG] = gen_is["vm_pu"].values
-
-        # set bus values for generator buses
-        gen_buses = bus_lookup[gen_is["bus"].values]
-        ppc["bus"][gen_buses, BUS_TYPE] = PV
-        ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
-
-        # set constraints for PV generators
-        _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
-        _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
-
-        _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
-        _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default)
 
 
 def _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask):
