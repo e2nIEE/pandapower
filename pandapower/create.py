@@ -117,6 +117,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                   ("tp_st_percent", "f8"),
                   ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
+                  ("tp_phase_shifter", 'bool'),
                   ("parallel", "u4"),
                   ("df", "f8"),
                   ("in_service", 'bool')],
@@ -1320,7 +1321,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
         })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree",
+               "tp_phase_shifter"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
@@ -1351,8 +1353,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent,
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
-                                       tp_pos=nan, in_service=True, name=None, index=None,
-                                       max_loading_percent=nan, parallel=1, df=1., **kwargs):
+                                       tp_pos=nan, tp_phase_shifter=False, in_service=True,
+                                       name=None, index=None, max_loading_percent=nan, parallel=1,
+                                       df=1., **kwargs):
 
     """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, \
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent, \
@@ -1455,7 +1458,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
         "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
-        "parallel": parallel, "df": df
+        "tp_phase_shifter": tp_phase_shifter, "parallel": parallel, "df": df
     }
 
     if ("tp_mid" in v) and (tp_pos is nan):

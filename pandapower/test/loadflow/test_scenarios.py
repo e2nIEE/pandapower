@@ -151,8 +151,8 @@ def test_transformer_phase_shift():
         pp.create_ext_grid(net, b1)
         pp.create_transformer_from_parameters(net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, side,
                                               # 0, 2, -2, 1.25, 10, 0)
-                                              0, 2, -2, 0, 10, 0)
-        pp.create_transformer_from_parameters(net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
+                                              0, 2, -2, 0, 10, 0, True)
+        pp.create_transformer_from_parameters(net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20, tp_phase_shifter=True)
     pp.runpp(net, init="dc", calculate_voltage_angles=True)
     b2a_angle = net.res_bus.va_degree.at[1]
     b3a_angle = net.res_bus.va_degree.at[2]

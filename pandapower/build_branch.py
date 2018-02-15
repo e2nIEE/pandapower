@@ -511,9 +511,13 @@ def _calc_tap_from_dataframe(net, trafo_df):
     sin=lambda x: np.sin(np.deg2rad(x))
     arctan=lambda x: np.rad2deg(np.arctan(x))
 
-    tp_st_degree = trafo_df["tp_st_degree"].values if "tp_st_degree" in trafo_df.columns else np.zeros(len(trafo_df))
-    phase_shifters_os = (trafo_df["tp_st_percent"].values==0) & np.isfinite(tp_st_degree) & (tp_st_degree!=0) & (trafo_df["tp_side"].values == "hv")
-    # tap_complex_os = np.isfinite(trafo_df["tp_st_percent"].values) & ("tp_st_degree" in trafo_df.columns) & np.isfinite(trafo_df["tp_st_degree"].values) & (trafo_df["tp_st_degree"].values!=0) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv")
+    # not_decalred_phase_shifters = ~trafo_df["tp_phase_shifter"].fillna(False).values & np.isfinite(trafo_df["tp_st_degree"].values) & (trafo_df["tp_st_degree"].values!=0) & (np.isnan(trafo_df["tp_st_percent"].values) | (trafo_df["tp_st_percent"].values==0))
+    # if any(not_decalred_phase_shifters):
+    #     print("trafos %s are not declared as phase shifters" % trafo_df[not_decalred_phase_shifters].index.values)
+    #     raise UserWarning("trafos %s are not declared as phase shifters" % trafo_df[not_decalred_phase_shifters].index.values)
+
+    # Changing voltage on high voltage side
+    phase_shifters_os = trafo_df["tp_phase_shifter"].fillna(False).values & (trafo_df["tp_side"].values == "hv")
     tap_complex_os = np.isfinite(trafo_df["tp_st_percent"].values) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv") & ~phase_shifters_os
     if any(tap_complex_os):
         tp_steps = trafo_df["tp_st_percent"].values[tap_complex_os] * tp_diff[tap_complex_os] / 100
@@ -526,17 +530,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
     if any(phase_shifters_os):
         trafo_shift[phase_shifters_os] += tp_diff[phase_shifters_os] * trafo_df["tp_st_degree"].values[phase_shifters_os]
 
-    # tap_os = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv") & (("tp_st_degree" in trafo_df.columns) & ~np.isfinite(trafo_df["tp_st_degree"].values) | (trafo_df["tp_st_degree"].values==0))
-    # if any(tap_os):
-    #     print('hi')
-    #     os_steps = trafo_df["tp_st_percent"].values[tap_os]
-    #     vnh[tap_os] *= np.ones((tap_os.sum()), dtype=np.float) + tp_diff[tap_os] * os_steps / 100.
-    #     if calculate_voltage_angles and "tp_st_degree" in trafo_df:
-    #         ps_os = tap_os & np.isfinite(trafo_df["tp_st_degree"].values)
-    #         trafo_shift[ps_os] += tp_diff[ps_os] * trafo_df["tp_st_degree"].values[ps_os]
-
-    phase_shifters_us = (trafo_df["tp_st_percent"].values == 0) & np.isfinite(tp_st_degree) & (tp_st_degree != 0) & (trafo_df["tp_side"].values == "lv")
-    # tap_complex_us = np.isfinite(trafo_df["tp_st_percent"].values) & ("tp_st_degree" in trafo_df.columns) & np.isfinite(trafo_df["tp_st_degree"].values) & (trafo_df["tp_st_degree"].values != 0) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv")
+    # Changing Voltage on low-voltage side
+    phase_shifters_us = trafo_df["tp_phase_shifter"].values & (trafo_df["tp_side"].values == "lv")
     tap_complex_us = np.isfinite(trafo_df["tp_st_percent"].values) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv") & ~phase_shifters_us
     if any(tap_complex_us):
         tp_steps = trafo_df["tp_st_percent"].values[tap_complex_us] * tp_diff[tap_complex_us] / 100
@@ -549,15 +544,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
     if any(phase_shifters_us):
         trafo_shift[phase_shifters_us] -= tp_diff[phase_shifters_us] * trafo_df["tp_st_degree"].values[phase_shifters_us]
 
-    # Changing Voltage on low-voltage side
-    # tap_us = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv") & (("tp_st_degree" in trafo_df.columns) & ~np.isfinite(trafo_df["tp_st_degree"].values) | (trafo_df["tp_st_degree"].values==0))
-    # if any(tap_us):
-    #     print('bye')
-    #     us_steps = trafo_df["tp_st_percent"].values[tap_us]
-    #     vnl[tap_us] *= np.ones((tap_us.sum()), dtype=np.float) + tp_diff[tap_us] * us_steps / 100.
-    #     if calculate_voltage_angles and "tp_st_degree" in trafo_df:
-    #         ps_us = tap_us & np.isfinite(trafo_df["tp_st_degree"].values)
-    #         trafo_shift[ps_us] -= tp_diff[ps_us] * trafo_df["tp_st_degree"].values[ps_us]
     return vnh, vnl, trafo_shift
 
 
@@ -651,42 +637,47 @@ def _trafo_df_from_trafo3w(net):
         max_load = ttab.max_loading_percent if "max_loading_percent" in ttab else 0
 
         trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
-                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv, "vscr_percent": vscr_2w[0],
-                       "vsc_percent": vsc_2w[0], "pfe_kw": ttab.pfe_kw,
+                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv,
+                       "vscr_percent": vscr_2w[0], "vsc_percent": vsc_2w[0], "pfe_kw": ttab.pfe_kw,
                        "i0_percent": ttab.i0_percent, "tp_side": taps[0]["tp_side"],
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
-                       "tp_st_percent": taps[0]["tp_st_percent"], "tp_st_degree": taps[0]["tp_st_degree"],
-                       "parallel": 1, "df": 1,
-                       "in_service": ttab.in_service, "shift_degree": 0, "max_loading_percent": max_load}
+                       "tp_st_percent": taps[0]["tp_st_percent"],
+                       "tp_st_degree": taps[0]["tp_st_degree"], "tp_phase_shifter": False,
+                       "parallel": 1, "df": 1, "in_service": ttab.in_service, "shift_degree": 0,
+                       "max_loading_percent": max_load}
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
-                                   "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv,
-                                   "vscr_percent": vscr_2w[1], "vsc_percent": vsc_2w[1], "pfe_kw": 0,
-                                   "i0_percent": 0, "tp_side": taps[1]["tp_side"],
+                                   "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv,
+                                   "vn_lv_kv": ttab.vn_mv_kv, "vscr_percent": vscr_2w[1],
+                                   "vsc_percent": vsc_2w[1], "pfe_kw": 0, "i0_percent": 0,
+                                   "tp_side": taps[1]["tp_side"],
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
                                    "tp_st_percent": taps[1]["tp_st_percent"],
                                    "tp_st_degree": taps[1]["tp_st_degree"],
-                                   "parallel": 1, "df": 1,
-                                   "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree,
+                                   "tp_phase_shifter": False, "parallel": 1, "df": 1,
+                                   "in_service": ttab.in_service,
+                                   "shift_degree": ttab.shift_mv_degree,
                                    "max_loading_percent": max_load}
         trafos2w[i + 2 * nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus,
                                        "sn_kva": ttab.sn_lv_kva,
-                                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": vscr_2w[2],
-                                       "vsc_percent": vsc_2w[2], "pfe_kw": 0, "i0_percent": 0,
-                                       "tp_side": taps[2]["tp_side"], "tp_mid": taps[2]["tp_mid"],
-                                       "tp_max": taps[2]["tp_max"], "tp_min": taps[2]["tp_min"],
-                                       "tp_pos": taps[2]["tp_pos"],
+                                       "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv,
+                                       "vscr_percent": vscr_2w[2], "vsc_percent": vsc_2w[2],
+                                       "pfe_kw": 0, "i0_percent": 0, "tp_side": taps[2]["tp_side"],
+                                       "tp_mid": taps[2]["tp_mid"], "tp_max": taps[2]["tp_max"],
+                                       "tp_min": taps[2]["tp_min"], "tp_pos": taps[2]["tp_pos"],
                                        "tp_st_percent": taps[2]["tp_st_percent"],
                                        "tp_st_degree": taps[2]["tp_st_degree"],
-                                       "parallel": 1, "df": 1,
-                                       "in_service": ttab.in_service, "shift_degree": ttab.shift_lv_degree,
+                                       "tp_phase_shifter": False,
+                                       "parallel": 1, "df": 1, "in_service": ttab.in_service,
+                                       "shift_degree": ttab.shift_lv_degree,
                                        "max_loading_percent": max_load}
         i += 1
     trafo_df = pd.DataFrame(trafos2w).T
     for var in list(tap_variables) + ["i0_percent", "sn_kva", "vsc_percent", "vscr_percent",
                                       "vn_hv_kv", "vn_lv_kv", "pfe_kw", "max_loading_percent"]:
         trafo_df[var] = pd.to_numeric(trafo_df[var])
+    trafo_df['tp_phase_shifter'] = trafo_df.tp_phase_shifter.astype('bool')
     return trafo_df
 
 

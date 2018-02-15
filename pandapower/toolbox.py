@@ -742,6 +742,11 @@ def _pre_release_changes(net):
                                                       "ua_degree": "va_degree"})
     if "in_service" not in net["ext_grid"].columns:
         net["ext_grid"]["in_service"] = 1
+    if "tp_phase_shifter" not in net["trafo"].columns:
+        # infer to still have the same behavior
+        net["trafo"]["tp_phase_shifter"] = False
+        is_tp_phase_shifter = (net.trafo.tp_st_degree.values!=0) & np.isfinite(net.trafo.tp_st_degree.values) & ((net.trafo.tp_st_percent.values==0) | np.isnan(net.trafo.tp_st_percent.values))
+        net["trafo"]["tp_phase_shifter"].values[is_tp_phase_shifter] = True
     if "shift_mv_degree" not in net["trafo3w"].columns:
         net["trafo3w"]["shift_mv_degree"] = 0
     if "shift_lv_degree" not in net["trafo3w"].columns:
