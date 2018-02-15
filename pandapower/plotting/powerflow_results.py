@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from itertools import combinations
 import pandapower.topology as top
+import pandas as pd
+import networkx as nx
 
 
 def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance from Slack [km]",
@@ -101,12 +103,47 @@ def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolo
             plt.setp(boxplot[l], color=whiskercolor)
 
 
+def voltage_profile_to_bus_geodata(net, voltages=None):
+    if voltages is None:
+        if not net.converged:
+            raise ValueError("no results in this pandapower network")
+        voltages = net.res_bus.vm_pu
+
+    mg =  top.create_nxgraph(net, respect_switches=True)
+    first_eg = net.ext_grid.bus.values[0]
+    mg.add_edges_from([(first_eg, y, {"weight": 0}) for y in net.ext_grid.bus.values[1:]])
+    dist = pd.Series(nx.single_source_dijkstra_path_length(mg, first_eg))
+
+    bgd = pd.DataFrame({"x": dist.loc[net.bus.index.values].values,
+                        "y": voltages.loc[net.bus.index.values].values},
+                       index=net.bus.index)
+    return bgd
+
+
 if __name__ == "__main__":
     import pandapower as pp
     import pandapower.networks as nw
+    import pandas as pd
+    import networkx as nx
+    import plotting
 
-    net = nw.create_cigre_network_mv()
+    net = nw.mv_oberrhein()
     pp.runpp(net)
-    plot_voltage_profile(net, line_loading_weight=True)
-    plot_loading(net)
-    plt.show()
+    mg =  top.create_nxgraph(net, respect_switches=True)
+    feeders = list(top.connected_components(mg, notravbuses=set(net.trafo.lv_bus.values)))
+    lines_with_open_switches = set(net.switch.query("not closed and et == 'l'").element.values)
+    
+    fig, axs = plt.subplots(2)
+    for bgd, ax in zip([net.bus_geodata, voltage_profile_to_bus_geodata(net)], axs):
+        for color, f in zip(["C0", "C1", "C2", "C3"], feeders):
+            l = set(net.line.index[net.line.from_bus.isin(f)]) - lines_with_open_switches
+            c = plotting.create_line_collection(net, lines=l, use_bus_geodata=True, color=color,
+                                                bus_geodata=bgd)
+            ax.add_collection(c)
+#            ax.scatter(bgd["x"], bgd["y"])
+            ax.autoscale_view(True, True, True)
+
+    h = 0.02
+#    bc = plotting.create_bus_collection(net, buses=net.ext_grid.bus.values, width=h / ax.get_data_ratio(), height=h, bus_geodata=bgd)
+#    ax.add_collection(bc)
+
