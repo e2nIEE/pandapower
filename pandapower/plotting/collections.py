@@ -288,13 +288,18 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
             for x in tr]
 
     lc = LineCollection(tg, **kwargs)
+    # from matplotlib.colors import ListedColormap, BoundaryNorm
+    # cmap = ListedColormap(['r', 'g', 'b'])
+    # norm = BoundaryNorm([-3, -1, 1, 3], cmap.N)
+    # lc = LineCollection(tg, cmap=cmap, norm=norm, **kwargs)
+    # lc.set_array(np.tile([-2, 0, 2], len(trafos)))
     lc.info = info
 
     return lc
 
 
 def create_trafo_collection(net, trafos=None, picker=False, size=None,
-                                   infofunc=None, **kwargs):
+                            infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -350,7 +355,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
 
 
 def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
-                                     infofunc=None, **kwargs):
+                              infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -382,24 +387,24 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
             continue
         p = np.array([p1, p2, p3])
         # determine center of buses and minimum distance center-buses
-        center = sum(p)/3
-        d = np.linalg.norm(p-center, axis=1)
-        r = d.min()/3
+        center = sum(p) / 3
+        d = np.linalg.norm(p - center, axis=1)
+        r = d.min() / 3
         # determine closest bus to center and vector from center to circle midpoint in closest
         # direction
         closest = d.argmin()
-        to_closest = (p[closest] - center)/d[closest] * 2*r/3
+        to_closest = (p[closest] - center) / d[closest] * 2 * r / 3
         # determine vectors from center to circle midpoint
         order = list(range(closest, 3)) + list(range(closest))
         cm = np.empty((3, 2))
         cm[order.pop(0)] = to_closest
-        ang = 2*np.pi/3  # 120 degree
+        ang = 2 * np.pi / 3  # 120 degree
         cm[order.pop(0)] = _rotate_dim2(to_closest, ang)
         cm[order.pop(0)] = _rotate_dim2(to_closest, -ang)
         # determine midpoints of circles
         m = center + cm
         # determine endpoints of circles
-        e = (center - p) * (1 - 5*r/3/d).reshape(3, 1) + p
+        e = (center - p) * (1 - 5 * r / 3 / d).reshape(3, 1) + p
         # save circle and line collection data
         for i in range(3):
             circles.append(Circle(m[i], r, fc=(1, 0, 0, 0), ec=color))
@@ -422,11 +427,11 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     polys = []
     infos = []
     off = 1.7
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.load.shape[0]
     for i, load in net.load.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
-        p3 = p1 + _rotate_dim2(np.array([0, size * (off-0.5)]), ang[i])
+        p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-ang[i]))
         lines.append((p1, p3))
         if infofunc is not None:
@@ -466,22 +471,23 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     polys = []
     infos = []
     off = 1.7
-    r_traingle = size*0.4
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.sgen.shape[0]
+    r_traingle = size * 0.4
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.sgen.shape[0]
     for i, sgen in net.sgen.iterrows():
         bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
         mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
-        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
-        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_traingle, -r_traingle/4]), ang[i])
-        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_traingle, r_traingle/4]), ang[i])
-        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_traingle/2]), ang[i])  # dropped perpendicular foot of triangle1
-        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5*r_traingle, 0]), ang[i])
-        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_traingle/2]), ang[i])
-        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5*r_traingle, 0]), ang[i])
+        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off - 1)]), ang[i])
+        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_traingle, -r_traingle / 4]), ang[i])
+        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_traingle, r_traingle / 4]), ang[i])
+        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_traingle / 2]),
+                                            ang[i])  # dropped perpendicular foot of triangle1
+        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_traingle, 0]), ang[i])
+        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_traingle / 2]), ang[i])
+        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_traingle, 0]), ang[i])
         polys.append(Circle(mp_circ, size))
         polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_traingle, orientation=-ang[i]))
         polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_traingle,
-                                    orientation=np.pi-ang[i]))
+                                    orientation=np.pi - ang[i]))
         lines.append((bus_geo, circ_edge))
         lines.append((perp_foot1, line_end1))
         lines.append((perp_foot2, line_end2))
@@ -494,8 +500,7 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     return sgen1, sgen2
 
 
-def create_ext_grid_collection(net, size=1., infofunc=None, picker=False,
-                                      **kwargs):
+def create_ext_grid_collection(net, size=1., infofunc=None, picker=False, **kwargs):
     lines = []
     polys = []
     infos = []
@@ -563,7 +568,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
                 # check, which end of the line is nearer to the switch bus
                 if len(line_coords) > 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
-                            abs(line_coords[0][1] - pos_sb[1]) < 0.01:
+                                    abs(line_coords[0][1] - pos_sb[1]) < 0.01:
                         pos_ta = np.array([line_coords[1][0], line_coords[1][1]])
                     else:
                         pos_ta = np.array([line_coords[-2][0], line_coords[-2][1]])
@@ -588,7 +593,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         col = color if net.switch.closed.loc[switch] else "white"
 
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size/2, pos_sw[1] - size/2), size, size, facecolor=col,
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col,
                           edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
@@ -668,11 +673,11 @@ if __name__ == "__main__":
         lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
         lt, bt = create_trafo_collection(net, size=2, linewidth=3.)
         load1, load2 = create_load_collection(net, linewidth=2.,
-                                                     infofunc=lambda x: ("load", x))
+                                              infofunc=lambda x: ("load", x))
         gen1, gen2 = create_gen_collection(net, linewidth=2.,
-                                                  infofunc=lambda x: ("gen", x))
+                                           infofunc=lambda x: ("gen", x))
         eg1, eg2 = create_ext_grid_collection(net, size=2.,
-                                                     infofunc=lambda x: ("ext_grid", x))
+                                              infofunc=lambda x: ("ext_grid", x))
 
         draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])
     else:

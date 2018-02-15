@@ -344,7 +344,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     EXAMPLE:
         create_bus(net, name = "bus1")
     """
-    if index and index in net["bus"].index:
+    if index is not None and index in net["bus"].index:
         raise UserWarning("A bus with index %s already exists" % index)
 
     if index is None:
@@ -419,7 +419,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     EXAMPLE:
         create_bus(net, name = "bus1")
     """
-    if index:
+    if index is not None:
         for idx in index:
             if idx in net.bus.index:
                 raise UserWarning("A bus with index %s already exists" % index)
@@ -972,7 +972,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if index and index in net["ext_grid"].index:
+    if index is not None and index in net["ext_grid"].index:
         raise UserWarning("An external grid with with index %s already exists" % index)
 
     if index is None:

@@ -516,7 +516,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
     # tap_complex_os = np.isfinite(trafo_df["tp_st_percent"].values) & ("tp_st_degree" in trafo_df.columns) & np.isfinite(trafo_df["tp_st_degree"].values) & (trafo_df["tp_st_degree"].values!=0) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv")
     tap_complex_os = np.isfinite(trafo_df["tp_st_percent"].values) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv") & ~phase_shifters_os
     if any(tap_complex_os):
-        print('hello')
         tp_steps = trafo_df["tp_st_percent"].values[tap_complex_os] * tp_diff[tap_complex_os] / 100
         tp_angles = trafo_df["tp_st_degree"].fillna(0).values[tap_complex_os] if "tp_st_degree" in trafo_df.columns else np.zeros(len(tp_steps))
         u1 = vnh[tap_complex_os]
@@ -525,7 +524,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
         trafo_shift[tap_complex_os] += arctan(du*sin(tp_angles)/(u1+du*cos(tp_angles)))
 
     if any(phase_shifters_os):
-        print('hihi')
         trafo_shift[phase_shifters_os] += tp_diff[phase_shifters_os] * trafo_df["tp_st_degree"].values[phase_shifters_os]
 
     # tap_os = np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv") & (("tp_st_degree" in trafo_df.columns) & ~np.isfinite(trafo_df["tp_st_degree"].values) | (trafo_df["tp_st_degree"].values==0))
@@ -541,7 +539,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
     # tap_complex_us = np.isfinite(trafo_df["tp_st_percent"].values) & ("tp_st_degree" in trafo_df.columns) & np.isfinite(trafo_df["tp_st_degree"].values) & (trafo_df["tp_st_degree"].values != 0) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv")
     tap_complex_us = np.isfinite(trafo_df["tp_st_percent"].values) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv") & ~phase_shifters_us
     if any(tap_complex_us):
-        print('goodbye')
         tp_steps = trafo_df["tp_st_percent"].values[tap_complex_us] * tp_diff[tap_complex_us] / 100
         tp_angles = trafo_df["tp_st_degree"].fillna(0).values[tap_complex_us] if "tp_st_degree" in trafo_df.columns else np.zeros(len(tp_steps))
         u1 = vnl[tap_complex_us]
