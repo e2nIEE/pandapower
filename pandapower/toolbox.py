@@ -1310,7 +1310,7 @@ def get_element_index(net, element, name, exact_match=True):
     OPTIONAL:
       **exact_match** (boolean, True) - True: Expects exactly one match, raises
                                                 UserWarning otherwise.
-                                        False: returns all indices matching the name/pattern
+                                        False: returns all indices containing the name
 
     OUTPUT:
       **index** - The indices of matching element(s).
@@ -1323,7 +1323,7 @@ def get_element_index(net, element, name, exact_match=True):
             raise UserWarning("Duplicate %s names for %s" % (element, name))
         return idx[0]
     else:
-        return net[element][net[element]["name"].str.match(name, as_indexer=True)].index
+        return net[element][net[element]["name"].str.contains(name)].index
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):

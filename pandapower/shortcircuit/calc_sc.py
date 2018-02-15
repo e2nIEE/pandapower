@@ -126,7 +126,7 @@ def _calc_sc(net):
     try:
         _calc_zbus(ppci)
     except Exception as e:
-        _clean_up(net)
+        _clean_up(net, res=False)
         raise(e)
     _calc_rx(net, ppci)
 #    t3 = time.perf_counter()

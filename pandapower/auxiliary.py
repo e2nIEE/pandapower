@@ -192,11 +192,13 @@ class pandapowerNet(ADict):
                 else:
                     par.append(tb)
         for tb in par:
-            r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+            length = len(self[tb])
+            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         if res:
             r += "\n and the following results tables:"
             for tb in res:
-                r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+                length = len(self[tb])
+                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         return r
 
 
@@ -469,7 +471,8 @@ def _clean_up(net, res=True):
     net._is_elements = None
 
     mode = net._options["mode"]
-    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
+    if res:
+        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
         net["bus"].drop(buses_3w, inplace=True)
