@@ -616,7 +616,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
         "100 MVA 220/110 kV":
         {"i0_percent": 0.06,
             "pfe_kw": 55,
@@ -632,7 +633,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
 
         # compare to IFT Ingenieurbüro data and Schlabbach book
         "63 MVA 110/20 kV":
@@ -650,7 +652,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
         "40 MVA 110/20 kV":
         {"i0_percent": 0.08,
             "pfe_kw": 31,
@@ -666,7 +669,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
         "25 MVA 110/20 kV":
         {"i0_percent": 0.071,
             "pfe_kw": 29,
@@ -682,7 +686,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
         "63 MVA 110/10 kV":
         {"sn_kva": 63000,
             "vn_hv_kv": 110,
@@ -698,7 +703,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
         "40 MVA 110/10 kV":
         {"sn_kva": 40000,
             "vn_hv_kv": 110,
@@ -714,7 +720,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
             "25 MVA 110/10 kV":
         {"sn_kva": 25000,
             "vn_hv_kv": 110,
@@ -730,7 +737,8 @@ def add_basic_std_types(net):
             "tp_min": -9,
             "tp_max": 9,
             "tp_st_degree": 0,
-            "tp_st_percent": 1.5},
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
         # Tafo20/0.4
         # 0.25 MVA 20/0.4 kV 0.45 Trafo Union
         "0.25 MVA 20/0.4 kV":
@@ -748,7 +756,8 @@ def add_basic_std_types(net):
             "tp_min": -2,
             "tp_max": 2,
             "tp_st_degree": 0,
-            "tp_st_percent": 2.5},
+            "tp_st_percent": 2.5,
+            "tp_phase_shifter": False},
         # 0.4 MVA 20/0.4 kV Trafo Union
         "0.4 MVA 20/0.4 kV":
         {"sn_kva": 400, "vn_hv_kv": 20, "vn_lv_kv": 0.4,
@@ -763,7 +772,8 @@ def add_basic_std_types(net):
             "tp_min": -2,
             "tp_max": 2,
             "tp_st_degree": 0,
-            "tp_st_percent": 2.5},
+            "tp_st_percent": 2.5,
+            "tp_phase_shifter": False},
         # 0.63 MVA 20/0.4 kV Trafo Union
         "0.63 MVA 20/0.4 kV":
         {"sn_kva": 630,
@@ -780,7 +790,8 @@ def add_basic_std_types(net):
             "tp_min": -2,
             "tp_max": 2,
             "tp_st_degree": 0,
-            "tp_st_percent": 2.5},
+            "tp_st_percent": 2.5,
+            "tp_phase_shifter": False},
         # Tafo10/0.4:
         # 0.25 MVA 10/0.4 kV 0.4 Trafo Union wnr
         "0.25 MVA 10/0.4 kV":
@@ -798,7 +809,8 @@ def add_basic_std_types(net):
             "tp_min": -2,
             "tp_max": 2,
             "tp_st_degree": 0,
-            "tp_st_percent": 2.5},
+            "tp_st_percent": 2.5,
+            "tp_phase_shifter": False},
         # 0.4 MVA 10/0.4 kV Trafo Union wnr
         "0.4 MVA 10/0.4 kV":
         {"sn_kva": 400,
@@ -815,7 +827,8 @@ def add_basic_std_types(net):
             "tp_min": -2,
             "tp_max": 2,
             "tp_st_degree": 0,
-            "tp_st_percent": 2.5},
+            "tp_st_percent": 2.5,
+            "tp_phase_shifter": False},
         # 0.63 MVA 10/0.4 kV Trafo Union wnr
         "0.63 MVA 10/0.4 kV":
         {"sn_kva": 630,
@@ -832,7 +845,8 @@ def add_basic_std_types(net):
             "tp_min": -2,
             "tp_max": 2,
             "tp_st_degree": 0,
-            "tp_st_percent": 2.5},
+            "tp_st_percent": 2.5,
+            "tp_phase_shifter": False},
     }
     create_std_types(net, data=trafotypes, element="trafo")
 

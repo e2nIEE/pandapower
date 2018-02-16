@@ -9,6 +9,8 @@ import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
 from matplotlib.transforms import Affine2D
+from itertools import combinations
+import copy
 
 try:
     import pplog as logging
@@ -31,36 +33,23 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
                                  picker=False, net=None, cbar_title="Bus Voltage [pu]", **kwargs):
     infos = []
 
-    if 'height' in kwargs and 'width' in kwargs:
-        height, width = kwargs['height'], kwargs['width']
-    else:
-        height, width = size, size
+    if not 'height' in kwargs and not 'width' in kwargs:
+        kwargs['height'] = kwargs['width'] = 2 * size
+    if patch_type == "rectangle":
+        kwargs['height'] *= 2
+        kwargs['width'] *= 2
 
     def figmaker(x, y, i):
-        if patch_type == "circle":
-            if colors:
-                fig = Circle((x, y), size, color=colors[i], **kwargs)
-            else:
-                fig = Circle((x, y), size, **kwargs)
-        elif patch_type == 'ellipse':
+        if colors:
+            kwargs["color"] = colors[i]
+        if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
             angle = kwargs['angle'] if 'angle' in kwargs else 0
-            if colors:
-                fig = Ellipse((x, y), width=width, height=height, color=colors[i], **kwargs)
-            else:
-                fig = Ellipse((x, y), width=width, height=height, angle=angle, **kwargs)
+            fig = Ellipse((x, y), angle=angle, **kwargs)
         elif patch_type == "rect":
-            if colors:
-                fig = Rectangle([x - width, y - height], 2 * width, 2 * height, color=colors[i],
-                                **kwargs)
-            else:
-                fig = Rectangle([x - width, y - height], 2 * width, 2 * height, **kwargs)
+            fig = Rectangle([x - kwargs['width'] // 2, y - kwargs['height'] // 2], **kwargs)
         elif patch_type.startswith("poly"):
             edges = int(patch_type[4:])
-            if colors:
-                fig = RegularPolygon([x, y], numVertices=edges, radius=size, color=colors[i],
-                                     **kwargs)
-            else:
-                fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
+            fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
         else:
             logger.error("Wrong patchtype. Please choose a correct patch type.")
         if infofunc:
@@ -147,7 +136,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     return pc
 
 
-def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=False, infofunc=None,
+def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
+                           use_bus_geodata=False, infofunc=None,
                            cmap=None, norm=None, picker=False, z=None,
                            cbar_title="Line Loading [%]", clim=None, **kwargs):
     """
@@ -175,16 +165,18 @@ def create_line_collection(net, lines=None, line_geodata=None, use_bus_geodata=F
         return None
     if line_geodata is None:
         line_geodata = net["line_geodata"]
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
     if len(lines) == 0:
         return None
 
     if use_bus_geodata:
-        data = [([(net.bus_geodata.at[a, "x"], net.bus_geodata.at[a, "y"]),
-                  (net.bus_geodata.at[b, "x"], net.bus_geodata.at[b, "y"])],
+        data = [([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
+                  (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
                  infofunc(line) if infofunc else [])
                 for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
-                if a in net.bus_geodata.index.values
-                and b in net.bus_geodata.index.values]
+                if a in bus_geodata.index.values
+                and b in bus_geodata.index.values]
     else:
         data = [(line_geodata.loc[line, "coords"],
                  infofunc(line) if infofunc else [])
@@ -249,8 +241,56 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     return lc
 
 
+def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None,
+                                         **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower 3W-transformers.
+    This function can be used to create line collections for voltage fall diagrams.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **trafos** (list, None) - The 3W-transformers for which the collections are created.
+            If None, all 3W-transformers in the network are considered.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+    """
+    trafos = net.trafo3w if trafos is None else net.trafo3w.loc[trafos]
+
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    hv_geo, mv_geo, lv_geo = (list(zip(*(bus_geodata.loc[trafos[column], var].values
+                                         for var in ['x', 'y'])))
+                              for column in ['hv_bus', 'mv_bus', 'lv_bus'])
+
+    # create 3 connection lines, each of 2 points, for every trafo3w
+    tg = [x for c in [list(combinations(y, 2))
+                      for y in zip(hv_geo, mv_geo, lv_geo)]
+          for x in c]
+
+    # 3 times infofunc for every trafo
+    info = [infofunc(x) if infofunc else []
+            for tr in [(t, t, t) for t in trafos.index.values]
+            for x in tr]
+
+    lc = LineCollection(tg, **kwargs)
+    # from matplotlib.colors import ListedColormap, BoundaryNorm
+    # cmap = ListedColormap(['r', 'g', 'b'])
+    # norm = BoundaryNorm([-3, -1, 1, 3], cmap.N)
+    # lc = LineCollection(tg, cmap=cmap, norm=norm, **kwargs)
+    # lc.set_array(np.tile([-2, 0, 2], len(trafos)))
+    lc.info = info
+
+    return lc
+
+
 def create_trafo_collection(net, trafos=None, picker=False, size=None,
-                                   infofunc=None, **kwargs):
+                            infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -307,7 +347,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
 
 
 def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
-                                     infofunc=None, **kwargs):
+                              infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -340,24 +380,24 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
             continue
         p = np.array([p1, p2, p3])
         # determine center of buses and minimum distance center-buses
-        center = sum(p)/3
-        d = np.linalg.norm(p-center, axis=1)
-        r = d.min()/3
+        center = sum(p) / 3
+        d = np.linalg.norm(p - center, axis=1)
+        r = d.min() / 3
         # determine closest bus to center and vector from center to circle midpoint in closest
         # direction
         closest = d.argmin()
-        to_closest = (p[closest] - center)/d[closest] * 2*r/3
+        to_closest = (p[closest] - center) / d[closest] * 2 * r / 3
         # determine vectors from center to circle midpoint
         order = list(range(closest, 3)) + list(range(closest))
         cm = np.empty((3, 2))
         cm[order.pop(0)] = to_closest
-        ang = 2*np.pi/3  # 120 degree
+        ang = 2 * np.pi / 3  # 120 degree
         cm[order.pop(0)] = _rotate_dim2(to_closest, ang)
         cm[order.pop(0)] = _rotate_dim2(to_closest, -ang)
         # determine midpoints of circles
         m = center + cm
         # determine endpoints of circles
-        e = (center - p) * (1 - 5*r/3/d).reshape(3, 1) + p
+        e = (center - p) * (1 - 5 * r / 3 / d).reshape(3, 1) + p
         # save circle and line collection data
         for i in range(3):
             circles.append(Circle(m[i], r, fc=(1, 0, 0, 0), ec=color))
@@ -384,7 +424,7 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     for i, load in net.load.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
-        p3 = p1 + _rotate_dim2(np.array([0, size * (off-0.5)]), ang[i])
+        p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-ang[i]))
         lines.append((p1, p3))
         if infofunc is not None:
@@ -520,7 +560,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
                 # check, which end of the line is nearer to the switch bus
                 if len(line_coords) > 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
-                            abs(line_coords[0][1] - pos_sb[1]) < 0.01:
+                                    abs(line_coords[0][1] - pos_sb[1]) < 0.01:
                         pos_ta = np.array([line_coords[1][0], line_coords[1][1]])
                     else:
                         pos_ta = np.array([line_coords[-2][0], line_coords[-2][1]])
@@ -545,7 +585,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         col = color if net.switch.closed.loc[switch] else "white"
 
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size/2, pos_sw[1] - size/2), size, size, facecolor=col,
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col,
                           edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
@@ -559,6 +599,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 def add_collections_to_axes(ax, collections, plot_colorbars=True):
     for c in collections:
         if c:
+            c = copy.copy(c)
             ax.add_collection(c)
             if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
                 extend = c.extend if hasattr(c, "extend") else "neither"
@@ -625,11 +666,11 @@ if __name__ == "__main__":
         lc = create_line_collection(net, use_line_geodata=False, color="k", linewidth=3.)
         lt, bt = create_trafo_collection(net, size=2, linewidth=3.)
         load1, load2 = create_load_collection(net, linewidth=2.,
-                                                     infofunc=lambda x: ("load", x))
+                                              infofunc=lambda x: ("load", x))
         gen1, gen2 = create_gen_collection(net, linewidth=2.,
-                                                  infofunc=lambda x: ("gen", x))
+                                           infofunc=lambda x: ("gen", x))
         eg1, eg2 = create_ext_grid_collection(net, size=2.,
-                                                     infofunc=lambda x: ("ext_grid", x))
+                                              infofunc=lambda x: ("ext_grid", x))
 
         draw_collections([bc, lc, load1, load2, gen1, gen2, lt, bt, eg1, eg2])
     else:
