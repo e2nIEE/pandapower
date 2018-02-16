@@ -684,6 +684,30 @@ def test_get_internal():
     assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
     # get J for all other algorithms
 
+def test_storage_pf():
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, vn_kv=0.4)
+    b2 = pp.create_bus(net, vn_kv=0.4)
+    
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE")
+    
+    pp.create_ext_grid(net, b2)
+    pp.create_load(net, b1, p_kw=10)
+    pp.create_sgen(net, b1, p_kw=-10)
+    
+    # test generator behaviour
+    pp.create_storage(net, b1, p_kw=-10, max_e_kwh=10)
+    
+    res_gen_beh = runpp_with_consistency_checks(net)
+    
+    # test load behaviour
+    net["storage"].p_kw.iloc[0] = 10
+    
+    res_load_beh = runpp_with_consistency_checks(net)
+    
+    assert res_gen_beh and res_load_beh
+    
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])
