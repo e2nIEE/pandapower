@@ -251,79 +251,113 @@ def _build_bus_ppc(net, ppc):
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_loads_and_add_on_ppc(net, ppc):
-    '''
-    wrapper function to call either the PF or the OPF version
-    '''
-    mode = net["_options"]["mode"]
-
-    if mode == "opf":
-        _calc_loads_and_add_on_ppc_opf(net, ppc)
-    else:
-        _calc_loads_and_add_on_ppc_pf(net, ppc)
-
-
-def _calc_loads_and_add_on_ppc_pf(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     # get in service elements
+    # _is_elements = check if element is at a bus & if element is in service
     _is_elements = net["_is_elements"]
+    
+    # distinguish calculation modes
+    mode = net["_options"]["mode"]
+    
+    # if mode == powerflow...
+    if mode == "pf":
+        l = net["load"]
+        if len(l) > 0:
+            voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+            if voltage_depend_loads:
+                cz = l["const_z_percent"].values / 100.
+                ci = l["const_i_percent"].values / 100.
+                if ((cz + ci) > 1).any():
+                    raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
+                                     "100%!")
+    
+                # cumulative sum of constant-current loads
+                b_zip = l["bus"].values
+                load_counter = Counter(b_zip)
+    
+                bus_lookup = net["_pd2ppc_lookups"]["bus"]
+                b_zip = bus_lookup[b_zip]
+                load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
+                b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
+    
+                for bus, no_loads in load_counter.items():
+                    ci_sum[b_zip == bus] /= no_loads
+                    cz_sum[b_zip == bus] /= no_loads
+    
+                ppc["bus"][b_zip, CID] = ci_sum
+                ppc["bus"][b_zip, CZD] = cz_sum
+    
+            vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, l["q_kvar"].values * vl])
+            p = np.hstack([p, l["p_kw"].values * vl])
+            b = np.hstack([b, l["bus"].values])
+    
+        sgen = net["sgen"]
+        if len(sgen) > 0:
+            vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, sgen["q_kvar"].values * vl])
+            p = np.hstack([p, sgen["p_kw"].values * vl])
+            b = np.hstack([b, sgen["bus"].values])
+    
+        stor = net["storage"]
+        if len(stor) > 0:
+            # TODO: Limit p_kw according to SOC and max_e_kwh/min_e_kwh
+            # Note: p_kw depends on the timestep resolution -> implement a resolution factor in options
+            # Note: SOC during power flow not updated, time domain introduction would lead to \
+            #   paradigm shift in pandapower
+            #   --> energy content of storage is currently neglected!
+            vl = _is_elements["storage"] * stor["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, stor["q_kvar"].values * vl])
+            p = np.hstack([p, stor["p_kw"].values * vl])
+            b = np.hstack([b, stor["bus"].values])
+    
+        w = net["ward"]
+        if len(w) > 0:
+            vl = _is_elements["ward"] / np.float64(1000.)
+            q = np.hstack([q, w["qs_kvar"].values * vl])
+            p = np.hstack([p, w["ps_kw"].values * vl])
+            b = np.hstack([b, w["bus"].values])
+    
+        xw = net["xward"]
+        if len(xw) > 0:
+            vl = _is_elements["xward"] / np.float64(1000.)
+            q = np.hstack([q, xw["qs_kvar"].values * vl])
+            p = np.hstack([p, xw["ps_kw"].values * vl])
+            b = np.hstack([b, xw["bus"].values])
+            
+    # if mode == optimal power flow...
+    if mode == "opf":
+        l = net["load"]
+        if not l.empty:
+            l["controllable"] = _controllable_to_bool(l["controllable"])
+            vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, l["q_kvar"].values * vl])
+            p = np.hstack([p, l["p_kw"].values * vl])
+            b = np.hstack([b, l["bus"].values])
+    
+        sgen = net["sgen"]
+        if not sgen.empty:
+            sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
+            vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, sgen["q_kvar"].values * vl])
+            p = np.hstack([p, sgen["p_kw"].values * vl])
+            b = np.hstack([b, sgen["bus"].values])
+        
+        stor = net["storage"]
+        if not stor.empty:
+            stor["controllable"] = _controllable_to_bool(stor["controllable"])
+            vl = (_is_elements["storage"] & ~stor["controllable"]) * stor["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, stor["q_kvar"].values * vl])
+            p = np.hstack([p, stor["p_kw"].values * vl])
+            b = np.hstack([b, stor["bus"].values])
 
-    l = net["load"]
-
-    # element_is = check if element is at a bus in service & element is in service
-    if len(l) > 0:
-        voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-        if voltage_depend_loads:
-            cz = l["const_z_percent"].values / 100.
-            ci = l["const_i_percent"].values / 100.
-            if ((cz + ci) > 1).any():
-                raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
-                                 "100%!")
-
-            # cumulative sum of constant-current loads
-            b_zip = l["bus"].values
-            load_counter = Counter(b_zip)
-
-            bus_lookup = net["_pd2ppc_lookups"]["bus"]
-            b_zip = bus_lookup[b_zip]
-            load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
-            b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
-
-            for bus, no_loads in load_counter.items():
-                ci_sum[b_zip == bus] /= no_loads
-                cz_sum[b_zip == bus] /= no_loads
-
-            ppc["bus"][b_zip, CID] = ci_sum
-            ppc["bus"][b_zip, CZD] = cz_sum
-
-        vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, l["q_kvar"].values * vl])
-        p = np.hstack([p, l["p_kw"].values * vl])
-        b = np.hstack([b, l["bus"].values])
-
-    s = net["sgen"]
-    if len(s) > 0:
-        vl = _is_elements["sgen"] * s["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, s["q_kvar"].values * vl])
-        p = np.hstack([p, s["p_kw"].values * vl])
-        b = np.hstack([b, s["bus"].values])
-
-    w = net["ward"]
-    if len(w) > 0:
-        vl = _is_elements["ward"] / np.float64(1000.)
-        q = np.hstack([q, w["qs_kvar"].values * vl])
-        p = np.hstack([p, w["ps_kw"].values * vl])
-        b = np.hstack([b, w["bus"].values])
-
-    xw = net["xward"]
-    if len(xw) > 0:
-        vl = _is_elements["xward"] / np.float64(1000.)
-        q = np.hstack([q, xw["qs_kvar"].values * vl])
-        p = np.hstack([p, xw["ps_kw"].values * vl])
-        b = np.hstack([b, xw["bus"].values])
-
+    # sum up p & q of bus elements
     # if array is not empty
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -331,41 +365,6 @@ def _calc_loads_and_add_on_ppc_pf(net, ppc):
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
-
-
-def _calc_loads_and_add_on_ppc_opf(net, ppc):
-    """ we need to exclude controllable sgens from the bus table
-    """
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # get in service elements
-    _is_elements = net["_is_elements"]
-
-    l = net["load"]
-    if not l.empty:
-        l["controllable"] = _controllable_to_bool(l["controllable"])
-        vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / np.float64(1000.)
-        lp = l["p_kw"].values * vl
-        lq = l["q_kvar"].values * vl
-    else:
-        lp = []
-        lq = []
-
-    sgen = net["sgen"]
-    if not sgen.empty:
-        sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
-        vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
-             np.float64(1000.)
-        sp = sgen["p_kw"].values * vl
-        sq = sgen["q_kvar"].values * vl
-    else:
-        sp = []
-        sq = []
-
-    b = bus_lookup[np.hstack([l["bus"].values, sgen["bus"].values])]
-    b, vp, vq = _sum_by_group(b, np.hstack([lp, sp]), np.hstack([lq, sq]))
-
-    ppc["bus"][b, PD] = vp
-    ppc["bus"][b, QD] = vq
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc):

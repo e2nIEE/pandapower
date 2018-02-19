@@ -57,6 +57,7 @@ def reset_results(net):
     net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
     net["res_load"] = copy.copy(net["_empty_res_load"])
     net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
+    net["res_storage"] = copy.copy(net["_empty_res_storage"])
     net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
     net["res_gen"] = copy.copy(net["_empty_res_gen"])
     net["res_ward"] = copy.copy(net["_empty_res_ward"])
