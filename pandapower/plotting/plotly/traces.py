@@ -37,7 +37,7 @@ def _in_ipynb():
 
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
                      trace_name='buses', legendgroup=None, cmap=None, cmap_vals=None,
-                     cbar_title=None, cmin=None, cmax=None):
+                     cbar_title=None, cmin=None, cmax=None, colormap_column="vm_pu"):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -75,6 +75,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
         **cmax** (float, None) - colorbar range maximum
 
+        **colormap_column** (str, "vm_pu") - set color of bus according to this variable
+
     """
     color = get_plotly_color(color)
 
@@ -111,9 +113,9 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 logger.error("There are no power flow results for buses voltage magnitudes which are default for bus "
                              "colormap coloring..."
                              "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_bus.loc[bus_plot_index, 'vm_pu'].values
+            cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column].values
 
-        cmap_vals = net.res_bus.loc[bus_plot_index, 'vm_pu'] if cmap_vals is None else cmap_vals
+        cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column] if cmap_vals is None else cmap_vals
 
         cmin = cmin if cmin else cmap_vals.min()
         cmax = cmax if cmax else cmap_vals.max()

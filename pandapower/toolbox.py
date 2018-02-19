@@ -612,6 +612,10 @@ def convert_format(net):
 
     if "tp_st_degree" not in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
+    if "tap_at_star_point" not in net.trafo3w:
+        net.trafo3w["tap_at_star_point"] = False
     if "_pd2ppc_lookups" not in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
@@ -759,6 +763,11 @@ def _pre_release_changes(net):
                                                       "ua_degree": "va_degree"})
     if "in_service" not in net["ext_grid"].columns:
         net["ext_grid"]["in_service"] = 1
+    if "tp_phase_shifter" not in net["trafo"].columns:
+        # infer to still have the same behavior
+        net["trafo"]["tp_phase_shifter"] = False
+        is_tp_phase_shifter = (net.trafo.tp_st_degree.values!=0) & np.isfinite(net.trafo.tp_st_degree.values) & ((net.trafo.tp_st_percent.values==0) | np.isnan(net.trafo.tp_st_percent.values))
+        net["trafo"]["tp_phase_shifter"].values[is_tp_phase_shifter] = True
     if "shift_mv_degree" not in net["trafo3w"].columns:
         net["trafo3w"]["shift_mv_degree"] = 0
     if "shift_lv_degree" not in net["trafo3w"].columns:
@@ -853,8 +862,7 @@ def _pre_release_changes(net):
     net.switch.closed = net.switch.closed.astype(bool)
 
 
-def add_column_from_node_to_elements(net, column, replace, elements=None,
-                                     branch_bus=["from_bus", "hv_bus"]):
+def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None):
     """
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
@@ -875,6 +883,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
     EXAMPLE:
         compare to add_zones_to_elements()
     """
+    branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
     elements = elements if elements is not None else [be[0] for be in element_bus_tuples()]
@@ -903,12 +912,9 @@ def add_column_from_node_to_elements(net, column, replace, elements=None,
                                "%s data at from-/hv- and to-/lv-bus" % column)
 
 
-def add_zones_to_elements(net, replace=True, elements=["line", "trafo", "ext_grid", "switch"],
-                          **kwargs):
-    """
-    Adds zones to elements, inferring them from the zones of buses they are
-    connected to.
-    """
+def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
+    """ Adds zones to elements, inferring them from the zones of buses they are connected to. """
+    elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
@@ -1050,7 +1056,7 @@ def drop_buses(net, buses, drop_elements=True):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-    logger.info('dropped %d buses' % len(buses))
+    logger.info('dropped %d buses: %s' % (len(buses), buses))
 
     if drop_elements:
         for element, column in element_bus_tuples():
@@ -1141,8 +1147,8 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     if drop:
-        net["bus"].drop(b2, inplace=True)
-        net["bus_geodata"].drop(set(b2) & set(net.bus_geodata.index), inplace=True)
+        # drop_elements=False because the elements must be connected to new buses now
+        drop_buses(net, b2, drop_elements=False)
     return net
 
 
@@ -1325,7 +1331,7 @@ def get_element_index(net, element, name, exact_match=True):
     OPTIONAL:
       **exact_match** (boolean, True) - True: Expects exactly one match, raises
                                                 UserWarning otherwise.
-                                        False: returns all indices matching the name/pattern
+                                        False: returns all indices containing the name
 
     OUTPUT:
       **index** - The indices of matching element(s).
@@ -1338,7 +1344,7 @@ def get_element_index(net, element, name, exact_match=True):
             raise UserWarning("Duplicate %s names for %s" % (element, name))
         return idx[0]
     else:
-        return net[element][net[element]["name"].str.match(name, as_indexer=True)].index
+        return net[element][net[element]["name"].str.contains(name)].index
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):
