@@ -498,10 +498,10 @@ def _calc_tap_from_dataframe(net, trafo_df):
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
     mode = net["_options"]["mode"]
     # Changing Voltage on high-voltage side
-    trafo_shift = trafo_df["shift_degree"].values.astype(float) if calculate_voltage_angles else \
+    trafo_shift = trafo_df["shift_degree"].values if calculate_voltage_angles else \
         np.zeros(len(trafo_df))
-    vnh = copy.copy(trafo_df["vn_hv_kv"].values.astype(float))
-    vnl = copy.copy(trafo_df["vn_lv_kv"].values.astype(float))
+    vnh = copy.copy(trafo_df["vn_hv_kv"].values)
+    vnl = copy.copy(trafo_df["vn_lv_kv"].values)
     if mode == "sc":
         return vnh, vnl, trafo_shift
 

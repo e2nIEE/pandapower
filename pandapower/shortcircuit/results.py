@@ -27,9 +27,10 @@ def _initialize_result_tables(net):
 def _get_bus_results(net, ppc, ppc_0):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
-    net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] +  ppc["bus"][ppc_index, IKSS2]
     if net["_options"]["fault"] == "1ph":
-        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] +  ppc["bus"][ppc_index, IKSS2]
+        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1]
+    else:
+        net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
     if net._options["ith"]:
@@ -61,6 +62,6 @@ def _get_trafo3w_results(net, ppc):
         hv = int(f + (t - f) / 3)
         mv = int(f + 2 * (t - f) / 3)
         lv = t
-        net.res_trafo3w_sc["ikss_hv_ka"] = ppc["branch"][f:hv, IKSS_F].real * 1e3
-        net.res_trafo3w_sc = ppc["branch"][hv:mv, IKSS_T].real * 1e3
-        net.res_trafo3w_sc = ppc["branch"][mv:lv, IKSS_T].real * 1e3
+        net.res_trafo3w_sc["ikss_hv_ka"] = ppc["branch"][f:hv, IKSS_F].real 
+        net.res_trafo3w_sc["ikss_mv_ka"] = ppc["branch"][hv:mv, IKSS_T].real
+        net.res_trafo3w_sc["ikss_lv_ka"] = ppc["branch"][mv:lv, IKSS_T].real
