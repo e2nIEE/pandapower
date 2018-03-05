@@ -7,7 +7,6 @@
 import os
 import pytest
 
-
 import pandapower as pp
 from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
 
@@ -28,6 +27,9 @@ def test_excel(net_in, tempdir):
 
 def test_json(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.json")
+    # check if restore_all_dtypes works properly:
+    net_in.line['test'] = 123
+    net_in.res_line['test'] = 123
     pp.to_json(net_in, filename)
     net_out = pp.from_json(filename)
     assert_net_equal(net_in, net_out)
@@ -38,6 +40,7 @@ def test_sqlite(net_in, tempdir):
     pp.to_sqlite(net_in, filename)
     net_out = pp.from_sqlite(filename)
     assert_net_equal(net_in, net_out)
+
 
 def test_convert_format():  # TODO what is this thing testing ?
     folder = os.path.abspath(os.path.dirname(pp.__file__))
