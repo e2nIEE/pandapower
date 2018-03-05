@@ -22,7 +22,7 @@ except ImportError:
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
     _update_trafo_trafo3w_ppc
-from pandapower.build_bus import _build_bus_ppc, _calc_loads_and_add_on_ppc, \
+from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
 from pandapower.opf.make_objective import _make_objective
@@ -88,7 +88,7 @@ def _pd2ppc(net):
         _add_gen_impedances_ppc(net, ppc)
         _add_motor_impedances_ppc(net, ppc)
     else:
-        _calc_loads_and_add_on_ppc(net, ppc)
+        _calc_pq_elements_and_add_on_ppc(net, ppc)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
         _calc_shunts_and_add_on_ppc(net, ppc)
 
@@ -199,6 +199,7 @@ def _ppc2ppci(ppc, ppci, net):
     gen_end = eg_end + np.sum(_is_elements['gen'])
     sgen_end = len(_is_elements["sgen_controllable"]) + gen_end if "sgen_controllable" in _is_elements else gen_end
     load_end = len(_is_elements["load_controllable"]) + sgen_end if "load_controllable" in _is_elements else sgen_end
+    storage_end = len(_is_elements["storage_controllable"]) + load_end if "storage_controllable" in _is_elements else load_end
 
     if eg_end > 0:
         _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions)
@@ -208,6 +209,8 @@ def _ppc2ppci(ppc, ppci, net):
         _build_gen_lookups(net, "sgen_controllable", gen_end, sgen_end, new_gen_positions)
     if load_end > sgen_end:
         _build_gen_lookups(net, "load_controllable", sgen_end, load_end, new_gen_positions)
+    if storage_end > load_end:
+        _build_gen_lookups(net, "storage_controllable", load_end, storage_end, new_gen_positions)
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -252,7 +255,7 @@ def _update_lookup_entries(net, lookup, e2i, element):
 def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     # get buses from pandapower and ppc
     _is_elements = net["_is_elements"]
-    if element in ["sgen_controllable", "load_controllable"]:
+    if element in ["sgen_controllable", "load_controllable", "storage_controllable"]:
         pandapower_index = net["_is_elements"][element].index.values
     else:
         pandapower_index = net[element].index.values[_is_elements[element]]
@@ -281,7 +284,7 @@ def _update_ppc(net):
     ppc = net["_ppc"]
     ppci = copy.deepcopy(ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
-    _calc_loads_and_add_on_ppc(net, ppc)
+    _calc_pq_elements_and_add_on_ppc(net, ppc)
     # adds P and Q for shunts, wards and xwards (to PQ nodes)
     _calc_shunts_and_add_on_ppc(net, ppc)
     # updates values for gen

@@ -5,11 +5,11 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from numpy import zeros, array, float, hstack, invert, conj
-from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
-from pandapower.idx_gen import PG, QG
+from numpy import zeros, array, float, hstack, invert
 
 from pandapower.auxiliary import _sum_by_group
+from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
+from pandapower.idx_gen import PG, QG
 
 
 def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
@@ -57,6 +57,26 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         p = hstack([p, psg])
         b = hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
+
+    stor = net["storage"]
+    if len(stor) > 0:
+        stor_is = _is_elements["storage"]
+        stor_ctrl = stor["controllable"].values
+        scaling = stor["scaling"].values
+        pstor = stor["p_kw"].values * scaling * stor_is * invert(stor_ctrl)
+        qstor = stor["q_kvar"].values * scaling * stor_is * invert(stor_ctrl)
+        if any(stor_ctrl):
+            # get storage index in ppc
+            stidx_ppc = net._pd2ppc_lookups["storage_controllable"][_is_elements["storage_controllable"].index]
+            pstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, PG] * 1000
+            qstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, QG] * 1000
+
+        net["res_storage"]["p_kw"] = pstor
+        net["res_storage"]["q_kvar"] = qstor
+        q = hstack([q, qstor])
+        p = hstack([p, pstor])
+        b = hstack([b, stor["bus"].values])
+        net["res_storage"].index = net["storage"].index
 
     b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
     b_ppc = bus_lookup_aranged[b_pp]
@@ -109,7 +129,7 @@ def _get_bus_results(net, ppc, bus_pq):
         net["res_bus"]["lam_q"] = ppc["bus"][bus_idx][:, LAM_Q]
 
 
-def _get_p_q_results(net,  bus_lookup_aranged):
+def _get_p_q_results(net, bus_lookup_aranged):
     ac = net["_options"]["ac"]
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
@@ -175,6 +195,20 @@ def _get_p_q_results(net,  bus_lookup_aranged):
         b = np.hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
 
+    stor = net["storage"]
+    if len(stor) > 0:
+        stor_is = _is_elements["storage"]
+        scaling = stor["scaling"].values
+        pstor = stor["p_kw"].values * scaling * stor_is
+        net["res_storage"]["p_kw"] = pstor
+        p = np.hstack([p, pstor])
+        if ac:
+            qstor = stor["q_kvar"].values * scaling * stor_is
+            net["res_storage"]["q_kvar"] = qstor
+            q = np.hstack([q, qstor])
+        b = np.hstack([b, stor["bus"].values])
+        net["res_storage"].index = net["storage"].index
+
     w = net["ward"]
     if len(w) > 0:
         ward_is = _is_elements["ward"]
@@ -220,7 +254,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         shunt_is = _is_elements["shunt"]
         u_shunt = ppc["bus"][sidx, VM]
         step = s["step"]
-        v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values)**2
+        v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values) ** 2
         u_shunt = np.nan_to_num(u_shunt)
         p_shunt = u_shunt ** 2 * net["shunt"]["p_kw"].values * shunt_is * v_ratio * step
         net["res_shunt"]["p_kw"] = p_shunt

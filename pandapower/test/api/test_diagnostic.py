@@ -33,6 +33,7 @@ def diag_params():
         "overload_scaling_factor": 0.001,
         "lines_min_length_km": 0,
         "lines_min_z_ohm": 0,
+        "impedance_min_z_pu": 0,
         "nom_voltage_tolerance": 0.3,
         "numba_tolerance": 1e-5}
     return diag_params
@@ -45,6 +46,8 @@ def report_methods():
     "disconnected_elements": "diag_report.report_disconnected_elements()",
     "different_voltage_levels_connected": "diag_report.report_different_voltage_levels_connected()",
     "lines_with_impedance_close_to_zero": "diag_report.report_lines_with_impedance_close_to_zero()",
+    "xward_with_impedance_close_to_zero": "diag_report.report_xward_with_impedance_close_to_zero()",
+    "impedance_with_impedance_close_to_zero": "diag_report.report_impedance_with_impedance_close_to_zero()",
     "nominal_voltages_dont_match": "diag_report.report_nominal_voltages_dont_match()",
     "invalid_values": "diag_report.report_invalid_values()",
     "overload": "diag_report.report_overload()",
@@ -598,6 +601,96 @@ def test_lines_with_impedance_close_to_zero(test_net, diag_params, report_method
     check_result = pp.lines_with_impedance_close_to_zero(net,
                                                          diag_params['lines_min_length_km'],
                                                          diag_params['lines_min_z_ohm'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert check_function not in diag_results
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+
+def test_xward_with_impedance_close_to_zero(test_net, diag_params, report_methods):
+    net = copy.deepcopy(test_net)
+    check_function = 'xward_with_impedance_close_to_zero'
+    diag_params = copy.deepcopy(diag_params)
+    report_methods = copy.deepcopy(report_methods)
+    net.xward.x_ohm = 0
+    check_result = pp.xward_with_impedance_close_to_zero(net, diag_params['lines_min_z_ohm'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert diag_results[check_function] == [0, 1]
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+    net.xward.x_ohm = 1
+    check_result = pp.xward_with_impedance_close_to_zero(net, diag_params['lines_min_z_ohm'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert check_function not in diag_results
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+
+def test_impedance_with_impedance_close_to_zero(test_net, diag_params, report_methods):
+    net = copy.deepcopy(test_net)
+    check_function = 'impedance_with_impedance_close_to_zero'
+    diag_params = copy.deepcopy(diag_params)
+    report_methods = copy.deepcopy(report_methods)
+    net.impedance.rft_pu = 0
+    net.impedance.xft_pu = 0
+    net.impedance.rtf_pu = 0
+    net.impedance.xtf_pu = 0
+    check_result = pp.impedance_with_impedance_close_to_zero(net, diag_params['impedance_min_z_pu'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert diag_results[check_function] == net.impedance.index.values.tolist()
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+    net.impedance.rft_pu = 1
+    net.impedance.xft_pu = 1
+    net.impedance.rtf_pu = 1
+    net.impedance.xtf_pu = 1
+    check_result = pp.impedance_with_impedance_close_to_zero(net, diag_params['impedance_min_z_pu'])
     if check_result:
         diag_results = {check_function: check_result}
     else:

@@ -141,11 +141,10 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(tc[0])
         collections.append(tc[1])
 
-    if plot_line_switches:
-        sc = create_line_switch_collection(net, size=switch_size,
-                                                  distance_to_bus=switch_distance,
-                                                  use_line_geodata=not use_bus_geodata, zorder=12,
-                                                  color=switch_color)
+    if plot_line_switches and len(net.switch):
+        sc = create_line_switch_collection(
+            net, size=switch_size, distance_to_bus=switch_distance,
+            use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
         collections.append(sc)
 
     ax = draw_collections(collections)

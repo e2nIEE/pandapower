@@ -192,11 +192,13 @@ class pandapowerNet(ADict):
                 else:
                     par.append(tb)
         for tb in par:
-            r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+            length = len(self[tb])
+            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         if res:
             r += "\n and the following results tables:"
             for tb in res:
-                r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+                length = len(self[tb])
+                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         return r
 
 
@@ -343,7 +345,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
     is_elements = dict()
-    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid"]:
+    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
         if len_ > 0:
@@ -359,6 +361,8 @@ def _select_is_elements_numba(net, isolated_nodes=None):
             is_elements["load_controllable"] = net._is_elements["load_controllable"]
         if "sgen_controllable" in net._is_elements:
             is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
+        if "storage_controllable" in net._is_elements:
+            is_elements["storage_controllable"] = net._is_elements["storage_controllable"]
     return is_elements
 
 
@@ -469,7 +473,8 @@ def _clean_up(net, res=True):
     net._is_elements = None
 
     mode = net._options["mode"]
-    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
+    if res:
+        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
         net["bus"].drop(buses_3w, inplace=True)

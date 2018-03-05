@@ -27,7 +27,7 @@ def consistency_checks(net, rtol=1e-5):
 
 def indices_consistent(net):
     for element in ["bus", "load", "ext_grid", "sgen", "trafo", "trafo3w", "line", "shunt",
-                    "ward", "xward", "impedance", "gen", "dcline"]:
+                    "ward", "xward", "impedance", "gen", "dcline", "storage"]:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
         assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
@@ -78,6 +78,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
     for idx, tab in net.sgen.iterrows():
         bus_p.at[tab.bus] += net.res_sgen.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_sgen.q_kvar.at[idx]
+        
+    for idx, tab in net.storage.iterrows():
+        bus_p.at[tab.bus] += net.res_storage.p_kw.at[idx]
+        bus_q.at[tab.bus] += net.res_storage.q_kvar.at[idx]
 
     for idx, tab in net.shunt.iterrows():
         bus_p.at[tab.bus] += net.res_shunt.p_kw.at[idx]

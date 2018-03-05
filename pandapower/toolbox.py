@@ -496,6 +496,11 @@ def convert_format(net):
                                                                    ("va_from_degree", "f8"),
                                                                    ("vm_to_pu", "f8"),
                                                                    ("va_to_degree", "f8")]))
+    if "_empty_res_storage" not in net:
+        net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
+                                                                   ("q_kvar", "f8"),
+                                                                   ("soc", "f8")]))
+
     if len(net["_empty_res_line"]) < 10:
         net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
                                                                  ("q_from_kvar", "f8"),
@@ -507,6 +512,18 @@ def convert_format(net):
                                                                  ("i_to_ka", "f8"),
                                                                  ("i_ka", "f8"),
                                                                  ("loading_percent", "f8")]))
+    if "storage" not in net:
+        net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                         ("bus", "i8"),
+                                                         ("p_kw", "f8"),
+                                                         ("q_kvar", "f8"),
+                                                         ("sn_kva", "f8"),
+                                                         ("soc", "f8"),
+                                                         ("min_e_kwh", "f8"),
+                                                         ("max_e_kwh", "f8"),
+                                                         ("scaling", "f8"),
+                                                         ("in_service", 'bool'),
+                                                         ("type", np.dtype(object))]))
     if "version" not in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
@@ -595,6 +612,10 @@ def convert_format(net):
 
     if "tp_st_degree" not in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
+    if "tap_at_star_point" not in net.trafo3w:
+        net.trafo3w["tap_at_star_point"] = False
     if "_pd2ppc_lookups" not in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
@@ -630,6 +651,10 @@ def convert_format(net):
     net.version = float(__version__[:3])
     if "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
+
+    if "time_resolution" not in net:
+        # for storages
+        time_resolution = 1.0
 
     new_net = create_empty_network()
     for key, item in net.items():
@@ -738,6 +763,11 @@ def _pre_release_changes(net):
                                                       "ua_degree": "va_degree"})
     if "in_service" not in net["ext_grid"].columns:
         net["ext_grid"]["in_service"] = 1
+    if "tp_phase_shifter" not in net["trafo"].columns:
+        # infer to still have the same behavior
+        net["trafo"]["tp_phase_shifter"] = False
+        is_tp_phase_shifter = (net.trafo.tp_st_degree.values!=0) & np.isfinite(net.trafo.tp_st_degree.values) & ((net.trafo.tp_st_percent.values==0) | np.isnan(net.trafo.tp_st_percent.values))
+        net["trafo"]["tp_phase_shifter"].values[is_tp_phase_shifter] = True
     if "shift_mv_degree" not in net["trafo3w"].columns:
         net["trafo3w"]["shift_mv_degree"] = 0
     if "shift_lv_degree" not in net["trafo3w"].columns:
@@ -1026,7 +1056,7 @@ def drop_buses(net, buses, drop_elements=True):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-    logger.info('dropped %d buses' % len(buses))
+    logger.info('dropped %d buses: %s' % (len(buses), buses))
 
     if drop_elements:
         for element, column in element_bus_tuples():
@@ -1117,8 +1147,8 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
     if drop:
-        net["bus"].drop(b2, inplace=True)
-        net["bus_geodata"].drop(set(b2) & set(net.bus_geodata.index), inplace=True)
+        # drop_elements=False because the elements must be connected to new buses now
+        drop_buses(net, b2, drop_elements=False)
     return net
 
 
@@ -1301,7 +1331,7 @@ def get_element_index(net, element, name, exact_match=True):
     OPTIONAL:
       **exact_match** (boolean, True) - True: Expects exactly one match, raises
                                                 UserWarning otherwise.
-                                        False: returns all indices matching the name/pattern
+                                        False: returns all indices containing the name
 
     OUTPUT:
       **index** - The indices of matching element(s).
@@ -1314,7 +1344,7 @@ def get_element_index(net, element, name, exact_match=True):
             raise UserWarning("Duplicate %s names for %s" % (element, name))
         return idx[0]
     else:
-        return net[element][net[element]["name"].str.match(name, as_indexer=True)].index
+        return net[element][net[element]["name"].str.contains(name)].index
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):
@@ -1386,7 +1416,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load"]:
+    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element in ['_equiv_trafo3w']:

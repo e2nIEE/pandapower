@@ -56,6 +56,17 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
+        "storage": [("name", dtype(object)),
+                    ("bus", "i8"),
+                    ("p_kw", "f8"),
+                    ("q_kvar", "f8"),
+                    ("sn_kva", "f8"),
+                    ("soc", "f8"),
+                    ("min_e_kwh", "f8"),
+                    ("max_e_kwh", "f8"),
+                    ("scaling", "f8"),
+                    ("in_service", 'bool'),
+                    ("type", dtype(object))],
         "gen": [("name", dtype(object)),
                 ("bus", "u4"),
                 ("p_kw", "f8"),
@@ -117,6 +128,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                   ("tp_st_percent", "f8"),
                   ("tp_st_degree", "f8"),
                   ("tp_pos", "i4"),
+                  ("tp_phase_shifter", 'bool'),
                   ("parallel", "u4"),
                   ("df", "f8"),
                   ("in_service", 'bool')],
@@ -146,7 +158,9 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                     ("tp_min", "i4"),
                     ("tp_max", "i4"),
                     ("tp_st_percent", "f8"),
+                    ("tp_st_degree", "f8"),
                     ("tp_pos", "i4"),
+                    ("tap_at_star_point", 'bool'),
                     ("in_service", 'bool')],
         "impedance": [("name", dtype(object)),
                       ("from_bus", "u4"),
@@ -208,7 +222,6 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
 
-
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
                            ("va_degree", "f8"),
@@ -251,6 +264,9 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                             ("q_kvar", "f8")],
         "_empty_res_sgen": [("p_kw", "f8"),
                             ("q_kvar", "f8")],
+        "_empty_res_storage": [("p_kw", "f8"),
+                               ("q_kvar", "f8"),
+                               ("soc", "f8")],
         "_empty_res_gen": [("p_kw", "f8"),
                            ("q_kvar", "f8"),
                            ("va_degree", "f8"),
@@ -342,7 +358,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
     EXAMPLE:
         create_bus(net, name = "bus1")
     """
-    if index and index in net["bus"].index:
+    if index is not None and index in net["bus"].index:
         raise UserWarning("A bus with index %s already exists" % index)
 
     if index is None:
@@ -417,7 +433,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     EXAMPLE:
         create_bus(net, name = "bus1")
     """
-    if index:
+    if index is not None:
         for idx in index:
             if idx in net.bus.index:
                 raise UserWarning("A bus with index %s already exists" % index)
@@ -775,6 +791,134 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
+def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+                   min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan):
+    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+                   min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
+    Adds a storage to the network.
+    
+    In order to simulate a storage system it is possible to use sgens or loads to model the 
+    discharging or charging state. The power of a storage can be positive or negative, so the use
+    of either a sgen or a load is (per definition of the elements) not correct.
+    To overcome this issue, a storage element can be created.
+    
+    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    default power flow calculations, the state of charge (SOC) is not updated during any power flow
+    calculation.
+    The implementation of energy content related parameters in the storage element allows to create
+    customized, time dependend simulations by running several power flow calculations and updating
+    variables manually.
+
+    INPUT:
+        **net** - The net within this storage should be created
+
+        **bus** (int) - The bus id to which the storage is connected
+
+        **p_kw** (float) - The momentary real power of the storage \
+            (positive for charging, negative for discharging)
+        
+        **max_e_kwh** (float) - The maximum energy content of the storage \
+            (maximum charge level)
+
+    OPTIONAL:
+        **q_kvar** (float, default 0) - The reactive power of the storage
+
+        **sn_kva** (float, default None) - Nominal power of the storage
+        
+        **soc** (float, NaN) - The state of charge of the storage
+        
+        **min_e_kwh** (float, 0) - The minimum energy content of the storage \
+            (minimum charge level)
+
+        **name** (string, default None) - The name for this storage
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the storage
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **max_p_kw** (float, NaN) - Maximum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_p_kw** (float, NaN) - Minimum active power injection - necessary for a \
+            controllable storage in OPF
+
+        **max_q_kvar** (float, NaN) - Maximum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+        **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for a \
+            controllable storage in OPF
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created storage
+
+    EXAMPLE:
+        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc = 1.0, min_e_kwh = 5)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["storage"])
+
+    if index in net["storage"].index:
+        raise UserWarning("A storage with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.storage.dtypes
+        
+    net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
+                            "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
+        [name, bus, p_kw, q_kvar, sn_kva, scaling,
+         soc, min_e_kwh, max_e_kwh, bool(in_service), type]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.storage, dtypes)
+    
+    # check for OPF parameters and add columns to network table
+    if not isnan(min_p_kw):
+        if "min_p_kw" not in net.sgen.columns:
+            net.sgen.loc[:, "min_p_kw"] = pd.Series()
+
+        net.sgen.loc[index, "min_p_kw"] = float(min_p_kw)
+
+    if not isnan(max_p_kw):
+        if "max_p_kw" not in net.sgen.columns:
+            net.sgen.loc[:, "max_p_kw"] = pd.Series()
+
+        net.sgen.loc[index, "max_p_kw"] = float(max_p_kw)
+
+    if not isnan(min_q_kvar):
+        if "min_q_kvar" not in net.sgen.columns:
+            net.sgen.loc[:, "min_q_kvar"] = pd.Series()
+
+        net.sgen.loc[index, "min_q_kvar"] = float(min_q_kvar)
+
+    if not isnan(max_q_kvar):
+        if "max_q_kvar" not in net.sgen.columns:
+            net.sgen.loc[:, "max_q_kvar"] = pd.Series()
+
+        net.sgen.loc[index, "max_q_kvar"] = float(max_q_kvar)
+
+    if not isnan(controllable):
+        if "controllable" not in net.sgen.columns:
+            net.sgen.loc[:, "controllable"] = pd.Series()
+
+        net.sgen.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.sgen.columns:
+            net.sgen.loc[index, "controllable"] = False
+
+    return index
+
+
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan,
                min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None,
                controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True):
@@ -844,10 +988,10 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
 
-#    if bus in net.gen.bus.values:
-#        raise UserWarning(
-#            "There is already a generator at bus %u, only one voltage controlling " % bus +
-#            "element (ext_grid, gen) is allowed per bus.")
+    #    if bus in net.gen.bus.values:
+    #        raise UserWarning(
+    #            "There is already a generator at bus %u, only one voltage controlling " % bus +
+    #            "element (ext_grid, gen) is allowed per bus.")
 
     if index is None:
         index = get_free_id(net["gen"])
@@ -858,7 +1002,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     # store dtypes
     dtypes = net.gen.dtypes
 
-    net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva",  "type", "in_service",
+    net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva", "type", "in_service",
                         "scaling"]] = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service),
                                        scaling]
 
@@ -890,7 +1034,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
             net.gen.loc[:, "controllable"] = pd.Series(False)
         net.gen.loc[index, "controllable"] = bool(controllable)
     elif "controllable" in net.gen.columns:
-            net.gen.loc[index, "controllable"] = False
+        net.gen.loc[index, "controllable"] = False
 
     if not isnan(vn_kv):
         if "vn_kv" not in net.gen.columns:
@@ -970,7 +1114,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if index and index in net["ext_grid"].index:
+    if index is not None and index in net["ext_grid"].index:
         raise UserWarning("An external grid with with index %s already exists" % index)
 
     if index is None:
@@ -996,7 +1140,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         if "s_sc_max_mva" not in net.ext_grid.columns:
             net.ext_grid.loc[:, "s_sc_max_mva"] = pd.Series()
 
-        net.ext_grid.at[:, "s_sc_max_mva"] = float(s_sc_max_mva)
+        net.ext_grid.at[index, "s_sc_max_mva"] = float(s_sc_max_mva)
 
     if not isnan(s_sc_min_mva):
         if "s_sc_min_mva" not in net.ext_grid.columns:
@@ -1144,7 +1288,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1,
                                 max_loading_percent=nan, **kwargs):
-
     """create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km, \
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None, \
                                 geodata=None, in_service=True, df=1., parallel=1, \
@@ -1317,8 +1460,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "parallel": parallel,
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
-        })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
+    })
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree",
+               "tp_phase_shifter"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
@@ -1349,9 +1493,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent,
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
-                                       tp_pos=nan, in_service=True, name=None, index=None,
-                                       max_loading_percent=nan, parallel=1, df=1., **kwargs):
-
+                                       tp_pos=nan, tp_phase_shifter=False, in_service=True,
+                                       name=None, index=None, max_loading_percent=nan, parallel=1,
+                                       df=1., **kwargs):
     """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn_lv_kv, \
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent, \
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan, \
@@ -1453,7 +1597,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
         "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
-        "parallel": parallel, "df": df
+        "tp_phase_shifter": tp_phase_shifter, "parallel": parallel, "df": df
     }
 
     if ("tp_mid" in v) and (tp_pos is nan):
@@ -1481,7 +1625,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan,
-                         in_service=True, index=None, max_loading_percent=nan):
+                         in_service=True, index=None, max_loading_percent=nan,
+                         tap_at_star_point=False):
     """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan, \
                          in_service=True, index=None, max_loading_percent=nan)
     Creates a three-winding transformer in table net["trafo3w"].
@@ -1505,6 +1650,9 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
         **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
             position (tp_mid)
+
+        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
+            3W-transformer or at the bus
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -1554,9 +1702,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "shift_mv_degree": ti["shift_mv_degree"] if "shift_mv_degree" in ti else 0,
-        "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0
+        "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0,
+        "tap_at_star_point": tap_at_star_point
     })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
@@ -1570,7 +1719,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     dd = pd.DataFrame(v, index=[index])
     try:
         net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except: #legacy for pandas <0.21
+    except:  # legacy for pandas <0.21
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
@@ -1587,15 +1736,17 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent,
                                          vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None,
-                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan,
+                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
+                                         tp_mid=nan, tp_max=nan,
                                          tp_min=nan, name=None, in_service=True, index=None,
-                                         max_loading_percent=nan):
+                                         max_loading_percent=nan, tap_at_star_point=False):
     """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
                                          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, \
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
                                          vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,\
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
-                                         tp_st_percent=nan, tp_pos=nan, tp_mid=nan, tp_max=nan, \
+                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
+                                         tp_mid=nan, tp_max=nan, \
                                          tp_min=nan, name=None, in_service=True, index=None, \
                                          max_loading_percent=nan)
     Adds a three-winding transformer in table net["trafo3w"].
@@ -1647,6 +1798,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **tp_st_percent** (float) - Tap step in percent
 
+        **tp_st_degree** (float) - Tap phase shift angle in degrees
+
         **tp_side** (string, None) - "hv", "mv", "lv"
 
         **tp_mid** (int, nan) - default tap position
@@ -1657,6 +1810,9 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tp_mid)
+
+        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
+            3W-transformer or at the bus
 
         **name** (string, None) - Name of the 3-winding transformer
 
@@ -1701,14 +1857,14 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                             "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
                             "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent",
                             "shift_mv_degree", "shift_lv_degree", "tp_side", "tp_st_percent",
-                            "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service", "name", "std_type"
-                            ]] = \
+                            "tp_st_degree", "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service",
+                            "name", "std_type", "tap_at_star_point" ]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
          pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
-         tp_side, tp_st_percent, tp_pos, tp_mid, tp_max,
-         tp_min, bool(in_service), name, None]
+         tp_side, tp_st_percent, tp_st_degree, tp_pos, tp_mid, tp_max,
+         tp_min, bool(in_service), name, None, tap_at_star_point]
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
@@ -1781,13 +1937,13 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
             raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
     elif et == "t3":
         raise NotImplementedError("Switches for three winding transformers are not implemented")
-#        elm_tab = 'trafo3w'
-#        if element not in net[elm_tab].index:
-#            raise UserWarning("Unknown trafo3w index")
-#        if (not net[elm_tab]["hv_bus"].loc[element] == bus and
-#                not net[elm_tab]["mv_bus"].loc[element] == bus and
-#                not net[elm_tab]["lv_bus"].loc[element] == bus):
-#            raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
+    #        elm_tab = 'trafo3w'
+    #        if element not in net[elm_tab].index:
+    #            raise UserWarning("Unknown trafo3w index")
+    #        if (not net[elm_tab]["hv_bus"].loc[element] == bus and
+    #                not net[elm_tab]["mv_bus"].loc[element] == bus and
+    #                not net[elm_tab]["lv_bus"].loc[element] == bus):
+    #            raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
     elif et == "b":
         if element not in net["bus"].index:
             raise UserWarning("Unknown bus index")
@@ -1892,7 +2048,7 @@ def create_shunt_as_capacitor(net, bus, q_kvar, loss_factor, **kwargs):
         **index** (int) - The unique ID of the created shunt
     """
     q_kvar = -abs(q_kvar)  # q is always negative for capacitor
-    p_kw = abs(q_kvar*loss_factor)  # p is always positive for active power losses
+    p_kw = abs(q_kvar * loss_factor)  # p is always positive for active power losses
     return create_shunt(net, bus, q_kvar=q_kvar, p_kw=p_kw, **kwargs)
 
 
@@ -2144,10 +2300,10 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     dtypes = net.dcline.dtypes
 
     net.dcline.loc[index, ["name", "from_bus", "to_bus", "p_kw", "loss_percent", "loss_kw",
-                           "vm_from_pu", "vm_to_pu",  "max_p_kw", "min_q_from_kvar",
-                           "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "in_service"]]\
+                           "vm_from_pu", "vm_to_pu", "max_p_kw", "min_q_from_kvar",
+                           "min_q_to_kvar", "max_q_from_kvar", "max_q_to_kvar", "in_service"]] \
         = [name, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu, vm_to_pu,
-           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar,  in_service]
+           max_p_kw, min_q_from_kvar, min_q_to_kvar, max_q_from_kvar, max_q_to_kvar, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.dcline, dtypes)
@@ -2280,16 +2436,16 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
         raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
 
     if not net["polynomial_cost"].loc[
-            (net["polynomial_cost"].element_type == element_type) &
-            (net["polynomial_cost"].element == element) &
-            (net["polynomial_cost"].type == type)].empty:
+        (net["polynomial_cost"].element_type == element_type) &
+        (net["polynomial_cost"].element == element) &
+        (net["polynomial_cost"].type == type)].empty:
         raise UserWarning("A polynomial_cost for %s with index %s already exists" %
                           (element_type, element))
 
     if not net["piecewise_linear_cost"].loc[
-            (net["piecewise_linear_cost"].element_type == element_type) &
-            (net["piecewise_linear_cost"].element == element) &
-            (net["piecewise_linear_cost"].type == type)].empty:
+        (net["piecewise_linear_cost"].element_type == element_type) &
+        (net["piecewise_linear_cost"].element == element) &
+        (net["piecewise_linear_cost"].type == type)].empty:
         raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
                           (element_type, element))
 
@@ -2314,7 +2470,7 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
                                                                         "min_q_kvar")):
                 raise AttributeError("No operational constraints defined!")
             if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
-                    element_type].min_q_kvar.at[element] >= min(p)):
+                element_type].min_q_kvar.at[element] >= min(p)):
                 raise ValueError("Cost function must be defined for whole power range of the "
                                  "generator")
     else:
@@ -2327,7 +2483,7 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
         if type == "q":
             if not pd.Series([
                 "max_q_to_kvar", "max_q_from_kvar", "min_q_to_kvar", "min_q_from_kvar"]).isin(
-                 net[element_type].columns).all():
+                net[element_type].columns).all():
                 raise AttributeError("No operational constraints defined!")
             if not (net[element_type].max_q_to_kvar.at[element] <= max(p) and
                     net[element_type].max_q_from_kvar.at[element] <= max(p) and
@@ -2384,16 +2540,16 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
 
     if not net["polynomial_cost"].loc[
-            (net["polynomial_cost"].element_type == element_type) &
-            (net["polynomial_cost"].element == element) &
-            (net["polynomial_cost"].type == type)].empty:
+        (net["polynomial_cost"].element_type == element_type) &
+        (net["polynomial_cost"].element == element) &
+        (net["polynomial_cost"].type == type)].empty:
         raise UserWarning("A polynomial_cost for %s with index %s already exists" %
                           (element_type, element))
 
     if not net["piecewise_linear_cost"].loc[
-            (net["piecewise_linear_cost"].element_type == element_type) &
-            (net["piecewise_linear_cost"].element == element) &
-            (net["piecewise_linear_cost"].type == type)].empty:
+        (net["piecewise_linear_cost"].element_type == element_type) &
+        (net["piecewise_linear_cost"].element == element) &
+        (net["piecewise_linear_cost"].type == type)].empty:
         raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
                           (element_type, element))
 
