@@ -97,7 +97,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json_string(net):
+def to_json_string(net, default_handler=None):
     """
         Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -118,7 +118,7 @@ def to_json_string(net):
         if k[0] == "_":
             continue
         if isinstance(net[k], pd.DataFrame):
-            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
+            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns", default_handler=default_handler))
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","
         elif isinstance(net[k], dict):
@@ -137,7 +137,7 @@ def to_json_string(net):
     return json_string
 
 
-def to_json(net, filename=None):
+def to_json(net, filename=None, default_handler=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -155,7 +155,7 @@ def to_json(net, filename=None):
     """
     dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
     dict_net["dtypes"] = collect_all_dtypes_df(net)
-    json_string = to_json_string(dict_net)
+    json_string = to_json_string(dict_net, default_handler=default_handler)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
