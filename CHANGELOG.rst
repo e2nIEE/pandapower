@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[1.4.4 develop] - 2018-03-06
+----------------------
+- [FIXED] plotly hover function for edges (only if use_line_geodata == False)
+
 [1.4.3] - 2018-02-06
 ----------------------
 - [CHANGED] change of collection function names
