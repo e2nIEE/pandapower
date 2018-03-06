@@ -62,7 +62,6 @@ def test_restore_all_dtypes():
     restore_all_dtypes(net, dtdf)
 
 
-@pytest.mark.xfail
 def test_to_json_dtypes(tempdir):
     filename = os.path.join(tempdir, "testfile.json")
     net = create_test_network()
