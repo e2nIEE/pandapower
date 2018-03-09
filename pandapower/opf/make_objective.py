@@ -171,12 +171,12 @@ def _make_objective(ppci, net):
                                 elements = idx[el_is] + shift_idx
                                 n_gencost = ppci["gencost"].shape[1]
 
-                            elcosts = costs[costs.element_type == el]
-                            elcosts.index = elcosts.element
-                            if el in ["load", "dcline"]:
-                                ppci["gencost"][elements, COST:(COST + n_c):] = - c
-                            else:
-                                ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
+                                elcosts = costs[costs.element_type == el]
+                                elcosts.index = elcosts.element
+                                if el in ["load", "dcline"]:
+                                    ppci["gencost"][elements, COST:(COST + n_c):] = - c
+                                else:
+                                    ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
 
                             ppci["gencost"][elements, NCOST] = n_coefficients
                             ppci["gencost"][elements, MODEL] = 2

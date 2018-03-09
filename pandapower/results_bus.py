@@ -21,7 +21,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     l = net["load"]
     if len(l) > 0:
         load_is = _is_elements["load"]
-        load_ctrl = l["controllable"].values
+        load_ctrl = (l.in_service & l.controllable).values
         scaling = l["scaling"].values
         pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
         ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)

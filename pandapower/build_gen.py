@@ -72,7 +72,7 @@ def _build_gen_ppc(net, ppc):
             if "controllable" in net.load.columns else DataFrame()
         stor_is = net.storage[(net.storage.in_service & net.storage.controllable) == True] \
             if "controllable" in net.storage.columns else DataFrame()
-    
+
         _is_elements["sgen_controllable"] = sg_is
         _is_elements["load_controllable"] = l_is
         _is_elements["storage_controllable"] = stor_is

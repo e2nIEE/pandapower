@@ -569,7 +569,7 @@ def test_storage_opf():
     
     # test elements static
     pp.create_ext_grid(net, b2)
-    pp.create_load(net, b1, p_kw=75, controllable=False)
+    pp.create_load(net, b1, p_kw=7.5, controllable=False)
     pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=-10, min_p_kw=-25,
                    max_q_kvar=25, min_q_kvar=-25)
     
@@ -578,8 +578,8 @@ def test_storage_opf():
     #                  min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
     pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=0, min_p_kw=-25,
                    max_q_kvar=25, min_q_kvar=-25)
-    pp.create_load(net, b1, p_kw=25, controllable=True, max_p_kw=25, min_p_kw=0,
-                   max_q_kvar=25, min_q_kvar=-25)
+    pp.create_load(net, b1, p_kw=2.5, controllable=True, max_p_kw=2.5, min_p_kw=0,
+                   max_q_kvar=2.5, min_q_kvar=-2.5)
     
     # costs
     pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 3, 0]))
@@ -601,7 +601,7 @@ def test_storage_opf():
 
 
 if __name__ == "__main__":
-#    pytest.main(["-s"])
+    # pytest.main(['-s', __file__])
     test_storage_opf()
     #test_opf_varying_max_line_loading()
      # pytest.main(["test_basic.py", "-s"])
