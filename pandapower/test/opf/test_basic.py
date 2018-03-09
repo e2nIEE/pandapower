@@ -549,10 +549,61 @@ def test_opf_varying_max_line_loading():
     assert net.res_line.loading_percent.at[1] - 10 < 1e-2
 
 
+def test_storage_opf():
+    """ Testing a simple network with storage to ensure the correct behaviour
+    of the storage OPF-Functions """
+    
+    # boundaries
+    vm_max = 1.1
+    vm_min = 0.9
+    max_line_loading_percent = 100
+    
+    # create network
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE", 
+                   max_loading_percent=max_line_loading_percent)
+    
+    # test elements static
+    pp.create_ext_grid(net, b2)
+    pp.create_load(net, b1, p_kw=75, controllable=False)
+    pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=-10, min_p_kw=-25,
+                   max_q_kvar=25, min_q_kvar=-25)
+    
+    # test elements 
+    #pp.create_storage(net, b1, p_kw=-25, max_e_kwh=50, controllable=True, max_p_kw=0,
+    #                  min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
+    pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=0, min_p_kw=-25,
+                   max_q_kvar=25, min_q_kvar=-25)
+    pp.create_load(net, b1, p_kw=25, controllable=True, max_p_kw=25, min_p_kw=0,
+                   max_q_kvar=25, min_q_kvar=-25)
+    
+    # costs
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 3, 0]))
+    #pp.create_polynomial_cost(net, 0, "load", array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", array([0, 2, 0]))
+    #pp.create_polynomial_cost(net, 0, "storage", array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 1, "sgen", array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 1, "load", array([0, -1, 0]))
+    
+    # test storage generator behaviour
+    #net["storage"].in_service.iloc[0] = True
+    #net["storage"].p_kw.iloc[0] = -25
+    net["sgen"].in_service.iloc[1] = False  
+    net["load"].in_service.iloc[1] = False # TODO "shape mismatch" error
+    
+    pp.runopp(net, verbose=True)
+    #consistency_checks(net)
+    assert net["OPF_converged"]
+
 
 if __name__ == "__main__":
 #    pytest.main(["-s"])
-    test_opf_varying_max_line_loading()
+    test_storage_opf()
+    #test_opf_varying_max_line_loading()
      # pytest.main(["test_basic.py", "-s"])
     # test_simplest_dispatch()
     # test_trafo3w_loading()
