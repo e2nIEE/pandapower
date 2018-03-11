@@ -9,7 +9,7 @@ from time import time
 
 from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
 
-from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA, PCID, QCID
+from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
 from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
@@ -107,13 +107,6 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     return ppci, Ybus, Yf, Yt
 
 
-def _get_ibus(ppci):
-    """
-    returns vector of current injections for constant-current loads
-    """
-    return (- ppci["bus"][:, PCID] + 1.j * ppci["bus"][:, QCID]) / ppci['baseMVA']
-
-
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     if options["numba"]:
         makeYbus = makeYbus_numba
@@ -129,14 +122,12 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     ## compute complex bus power injections [generation - load]
     Sbus = makeSbus(baseMVA, bus, gen)
 
-    ## compute complex bus current injections from constant current loads
-    Ibus = _get_ibus(ppci)
-
     ## run the newton power  flow
-    V, success, _ = newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=Ibus)
+
+    V, success, _, ppci["internal"]["J"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, Ibus=Ibus)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
 
     return ppci, success, bus, gen, branch
 

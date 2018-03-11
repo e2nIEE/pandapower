@@ -1,5 +1,51 @@
 Change Log
 =============
+
+[1.4.4 develop] - 2018-03-06
+----------------------
+- [FIXED] plotly hover function for edges (only if use_line_geodata == False)
+
+[1.4.3] - 2018-02-06
+----------------------
+- [CHANGED] change of collection function names
+- [ADDED] sgen collections and ration functionality for sgen and load collections
+- [ADDED] cosphi_from_pq toolbox function
+- [ADDED] create_nxgraph: respect_switches includes transformer switches
+
+[1.4.2] - 2017-12-05
+----------------------
+- [ADDED] compatbility with networkx 2.0 (see #82)
+- [ADDED] compatibility with pandas 0.21 (see #83)
+- [CHANGED] implementation of ZIP loads changed to constant current magnitude paradigm (see #62)
+- [ADDED] max_step parameter for shunt
+- [ADDED] added warning for large bus index values
+- [FIXED] bug in short-circuit results of trafo3w
+- [FIXED] bugfix in find_bridges and refactoring
+- [CHANGED] faster implementation of result cleanup
+- [CHANGED] faster implementation of line index handling in power flow
+- [FIXED] bug in plotly label display (#75)
+- [ADDED] several fixes, extensions, tests for toolbox
+- [ADDED] additional MV line standard types
+- [FIXED] kerber extrem vorstadtnetz mv bus voltage
+- [FIXED] removed incorrect estimation result tables for load, sgen, gen
+
+[1.4.1] - 2017-09-19
+----------------------
+- [FIXED] ZIP load issue that led to incorrect calculation of I part with voltage angle shifts
+- [FIXED] Bug that set voltage constraints to 0.9/1.2 if no voltage constraints was given in OPF
+- [ADDED] possibility to access J matrix after power flow
+- [ADDED] opf cost conversion
+- [ADDED] opf costs in power system test cases
+
+[1.4.0] - 2017-07-27
+----------------------
+
+- [ADDED] possibility to save networks to an sql database
+- [CAHNGED] major change in fileIO: all networks are converted to a uniform dataframe only version before they are saved as excel, json or sql. Old files can still be loaded, but all files saved with v1.4 can only be loaded with v1.4!
+- [FIXED] all tests now pass if numba is not installed (although pandapower might be slow without numba)
+- [FIXED] state estimation bug with phase shift transformers
+- [CHANGED] OPF now raises specific warning if parameters are missing instead of generic exception
+- [ADDED] geographical data for cigre and IEEE case networks
 - [ADDED] Dickert LV Networks
 
 [1.3.1] - 2017-06-16

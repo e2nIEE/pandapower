@@ -16,11 +16,11 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='1.3.1',
+    version='1.4.3',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
-    long_description = long_description,
+    long_description=long_description,
     url='http://www.uni-kassel.de/go/pandapower',
     license='BSD',
     install_requires=["pypower>=5.0.1",

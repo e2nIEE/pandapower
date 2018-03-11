@@ -5,32 +5,12 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import os
-import shutil
 import pytest
-import tempfile
+import pandas as pd
 
-import pandapower.networks as networks
 import pandapower as pp
-from pandapower.test.toolbox import assert_net_equal, create_test_network
-
-
-@pytest.yield_fixture(scope="module")
-def tempdir():
-    # we create a temporary folder to store all test files and remove it afterwards
-    tmp = tempfile.mkdtemp()
-    yield tmp
-    shutil.rmtree(tmp)
-
-
-@pytest.fixture(scope="module", params=[1])  # TODO
-def net_in(request):
-    if request.param == 1:
-        net = create_test_network()
-        net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-        net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
-        return net
-    if request.param == 2:
-        return networks.case145()
+from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
+from pandapower.io_utils import collect_all_dtypes_df, restore_all_dtypes
 
 
 def test_pickle(net_in, tempdir):
@@ -61,16 +41,40 @@ def test_sqlite(net_in, tempdir):
     assert_net_equal(net_in, net_out)
 
 
-def test_html(net_in, tempdir):
-    filename = os.path.join(tempdir, "testfile.html")
-    pp.to_html(net_in, filename)
-
-
 def test_convert_format():  # TODO what is this thing testing ?
     folder = os.path.abspath(os.path.dirname(pp.__file__))
     net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
     pp.runpp(net)
     assert net.converged
+
+
+def test_restore_all_dtypes():
+    net = create_test_network()
+    pp.runpp(net)
+    net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
+    net['test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
+    net.line['test'] = 123
+    net.res_line['test'] = 123
+    net.bus['test'] = 123
+    net.res_bus['test'] = 123
+    net.res_load['test'] = 123
+    dtdf = collect_all_dtypes_df(net)
+    restore_all_dtypes(net, dtdf)
+
+
+def test_to_json_dtypes(tempdir):
+    filename = os.path.join(tempdir, "testfile.json")
+    net = create_test_network()
+    pp.runpp(net)
+    net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
+    net['test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
+    net.line['test'] = 123
+    net.res_line['test'] = 123
+    net.bus['test'] = 123
+    net.res_bus['test'] = 123
+    net.res_load['test'] = 123
+    pp.to_json(net, filename)
+    net1 = pp.from_json(filename)
 
 
 if __name__ == "__main__":

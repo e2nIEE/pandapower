@@ -15,6 +15,7 @@ from numpy import array, angle, exp, linalg, conj, r_, Inf, arange, zeros, float
 from pandapower.pf.dSbus_dV_pypower import dSbus_dV
 from scipy.sparse import hstack, vstack, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
+from pandapower.pf.makeSbus import makeSbus
 
 try:
     from pandapower.pf.create_J import create_J, create_J2
@@ -23,7 +24,7 @@ except ImportError:
     pass
 
 
-def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
+def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     """Solves the power flow using a full Newton's method.
 
     Solves for bus voltages given the full system admittance matrix (for
@@ -47,14 +48,17 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
     tol = options['tolerance_kva'] * 1e-3
     max_it = options["max_iteration"]
     numba = options["numba"]
+    voltage_depend_loads = options["voltage_depend_loads"]
+
+    baseMVA = ppci['baseMVA']
+    bus = ppci['bus']
+    gen = ppci['gen']
 
     ## initialize
     i = 0
     V = V0
     Va = angle(V)
     Vm = abs(V)
-
-    Ibus = zeros(len(V)) if Ibus is None else Ibus
 
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
@@ -80,10 +84,11 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
     j6 = j4 + npq  ## j5:j6 - V mag of pq buses
 
     ## evaluate F(x0)
-    F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
+    F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
     converged = _check_for_convergence(F, tol)
 
     Ybus = Ybus.tocsr()
+    J = None
     ## do Newton iterations
     while (not converged and i < max_it):
         ## update iteration counter
@@ -91,9 +96,9 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
 
         # use numba if activated
         if numba:
-            J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, Ibus=Ibus)
+            J = _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq)
         else:
-            J = _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=Ibus)
+            J = _create_J_without_numba(Ybus, V, pvpq, pq)
 
         dx = -1 * spsolve(J, F)
         ## update voltage
@@ -106,25 +111,28 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, options, Ibus=None):
         Vm = abs(V)  ## update Vm and Va again in case
         Va = angle(V)  ## we wrapped around with a negative Vm
 
-        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=Ibus)
+        if voltage_depend_loads:
+            Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
+
+        F = _evaluate_Fx(Ybus, V, Sbus, pv, pq)
+
         converged = _check_for_convergence(F, tol)
 
-    return V, converged, i
+    return V, converged, i, J
 
 
-def _evaluate_Fx(Ybus, V, Sbus, pv, pq, Ibus=None):
-    Ibus = zeros(len(V)) if Ibus is None else Ibus
+def _evaluate_Fx(Ybus, V, Sbus, pv, pq):
     ## evalute F(x)
-    mis = V * conj(Ybus * V - Ibus) - Sbus
+    mis = V * conj(Ybus * V) - Sbus
     F = r_[mis[pv].real,
            mis[pq].real,
            mis[pq].imag]
     return F
 
 
-def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, Ibus=None):
+def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq):
 
-    Ibus = zeros(len(V), dtype=complex128) if Ibus is None else -Ibus
+    Ibus = zeros(len(V), dtype=complex128)
     # create Jacobian from fast calc of dS_dV
     dVm_x, dVa_x = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), Ibus)
 
@@ -149,22 +157,24 @@ def _create_J_with_numba(Ybus, V, pvpq, pq, createJ, pvpq_lookup, npv, npq, Ibus
     return J
 
 
-def _create_J_without_numba(Ybus, V, pvpq, pq, Ibus=None):
-    Ibus = zeros(len(V)) if Ibus is None else Ibus
+def _create_J_without_numba(Ybus, V, pvpq, pq):
     # create Jacobian with standard pypower implementation.
-    dS_dVm, dS_dVa = dSbus_dV(Ybus, V, I=Ibus)
+    dS_dVm, dS_dVa = dSbus_dV(Ybus, V)
 
     ## evaluate Jacobian
     J11 = dS_dVa[array([pvpq]).T, pvpq].real
     J12 = dS_dVm[array([pvpq]).T, pq].real
-    J21 = dS_dVa[array([pq]).T, pvpq].imag
-    J22 = dS_dVm[array([pq]).T, pq].imag
-
-    J = vstack([
-        hstack([J11, J12]),
-        hstack([J21, J22])
-    ], format="csr")
-
+    if len(pq) > 0:
+        J21 = dS_dVa[array([pq]).T, pvpq].imag
+        J22 = dS_dVm[array([pq]).T, pq].imag
+        J = vstack([
+            hstack([J11, J12]),
+            hstack([J21, J22])
+        ], format="csr")
+    else:
+        J = vstack([
+                hstack([J11, J12])
+                ], format="csr")
     return J
 
 

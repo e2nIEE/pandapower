@@ -6,15 +6,16 @@
 
 import warnings
 
-from pandapower.idx_bus import VM
 from pypower.add_userfcn import add_userfcn
 from pypower.ppoption import ppoption
 from scipy.sparse import csr_matrix as sparse
 
 from pandapower.auxiliary import ppException, _clean_up
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.powerflow import _add_auxiliary_elements
+from pandapower.idx_bus import VM
 from pandapower.opf.opf import opf
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
+from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc, reset_results, \
     _extract_results_opf
 
@@ -28,8 +29,9 @@ class OPFNotConverged(ppException):
 
 def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     ac = net["_options"]["ac"]
+    init = net["_options"]["init"]
 
-    ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, **kwargs)
+    ppopt = ppoption(VERBOSE=verbose, OPF_FLOW_LIM=2, PF_DC=not ac, INIT=init, **kwargs)
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -42,6 +44,8 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     if len(net.dcline) > 0:
         ppci = add_userfcn(ppci, 'formulation', _add_dcline_constraints, args=net)
 
+    if init == "pf":
+        ppci = _run_pf_before_opf(net, ppci)
     if suppress_warnings:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -85,3 +89,10 @@ def _add_dcline_constraints(om, net):
 
     ## add them to the model
     om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])
+
+
+def _run_pf_before_opf(net, ppci):
+#    net._options["numba"] = True
+    net._options["tolerance_kva"] = 1e-5
+    net._options["max_iteration"] = 10
+    return _run_newton_raphson_pf(ppci, net["_options"])

@@ -14,6 +14,12 @@ import pandapower as pp
 import pandapower.networks as nw
 from pandapower.diagnostic_reports import DiagnosticReports
 
+try:
+    import numba
+    numba_installed = True
+except:
+    numba_installed = False
+
 
 @pytest.fixture(scope='module')
 def test_net():
@@ -27,6 +33,7 @@ def diag_params():
         "overload_scaling_factor": 0.001,
         "lines_min_length_km": 0,
         "lines_min_z_ohm": 0,
+        "impedance_min_z_pu": 0,
         "nom_voltage_tolerance": 0.3,
         "numba_tolerance": 1e-5}
     return diag_params
@@ -39,6 +46,8 @@ def report_methods():
     "disconnected_elements": "diag_report.report_disconnected_elements()",
     "different_voltage_levels_connected": "diag_report.report_different_voltage_levels_connected()",
     "lines_with_impedance_close_to_zero": "diag_report.report_lines_with_impedance_close_to_zero()",
+    "xward_with_impedance_close_to_zero": "diag_report.report_xward_with_impedance_close_to_zero()",
+    "impedance_with_impedance_close_to_zero": "diag_report.report_impedance_with_impedance_close_to_zero()",
     "nominal_voltages_dont_match": "diag_report.report_nominal_voltages_dont_match()",
     "invalid_values": "diag_report.report_invalid_values()",
     "overload": "diag_report.report_overload()",
@@ -190,8 +199,8 @@ class TestInvalidValues:
         net.sgen.loc[3, 'in_service'] = '0.0'
         net.sgen.loc[4, 'in_service'] = 1
         net.gen.loc[0, 'in_service'] = '1'
-        net.load.loc[0, 'in_service'] = 10
-        net.line.loc[0, 'in_service'] = -1
+        net.load.loc[0, 'in_service'] = '10'
+        net.line.loc[0, 'in_service'] = '-1'
         net.bus.loc[0, 'in_service'] = 'no'
         net.trafo.loc[0, 'in_service'] = 'True'
         net.trafo3w.loc[0, 'in_service'] = None
@@ -200,7 +209,7 @@ class TestInvalidValues:
         net.switch.loc[2, 'closed'] = False
         net.switch.loc[3, 'closed'] = 'False'
         net.switch.loc[4, 'closed'] = None
-        net.switch.loc[5, 'closed'] = 10
+        net.switch.loc[5, 'closed'] = '10'
 
         check_result = pp.invalid_values(net)
         if check_result:
@@ -210,9 +219,14 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'bus': [(0, 'in_service', 'no', 'boolean')],
          'gen': [(0, 'in_service', '1', 'boolean')],
-         'sgen': [(2, 'in_service', '0', 'boolean'), (3, 'in_service', '0.0', 'boolean')],
-         'switch': [(1, 'closed', 'False', 'boolean'), (3, 'closed', 'False', 'boolean'),
-                    (4, 'closed', 'None', 'boolean'), (5, 'closed', 10, 'boolean')],
+         'line': [(0, 'in_service', '-1', 'boolean')],
+         'load': [(0, 'in_service', '10', 'boolean')],
+         'sgen': [(2, 'in_service', '0', 'boolean'),
+                  (3, 'in_service', '0.0', 'boolean')],
+         'switch': [(1, 'closed', 'False', 'boolean'),
+                    (3, 'closed', 'False', 'boolean'),
+                    (4, 'closed', 'None', 'boolean'),
+                    (5, 'closed', '10', 'boolean')],
          'trafo': [(0, 'in_service', 'True', 'boolean')],
          'trafo3w': [(0, 'in_service', 'nan', 'boolean')]}
 
@@ -604,6 +618,96 @@ def test_lines_with_impedance_close_to_zero(test_net, diag_params, report_method
         assert report_check
 
 
+def test_xward_with_impedance_close_to_zero(test_net, diag_params, report_methods):
+    net = copy.deepcopy(test_net)
+    check_function = 'xward_with_impedance_close_to_zero'
+    diag_params = copy.deepcopy(diag_params)
+    report_methods = copy.deepcopy(report_methods)
+    net.xward.x_ohm = 0
+    check_result = pp.xward_with_impedance_close_to_zero(net, diag_params['lines_min_z_ohm'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert diag_results[check_function] == [0, 1]
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+    net.xward.x_ohm = 1
+    check_result = pp.xward_with_impedance_close_to_zero(net, diag_params['lines_min_z_ohm'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert check_function not in diag_results
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+
+def test_impedance_with_impedance_close_to_zero(test_net, diag_params, report_methods):
+    net = copy.deepcopy(test_net)
+    check_function = 'impedance_with_impedance_close_to_zero'
+    diag_params = copy.deepcopy(diag_params)
+    report_methods = copy.deepcopy(report_methods)
+    net.impedance.rft_pu = 0
+    net.impedance.xft_pu = 0
+    net.impedance.rtf_pu = 0
+    net.impedance.xtf_pu = 0
+    check_result = pp.impedance_with_impedance_close_to_zero(net, diag_params['impedance_min_z_pu'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert diag_results[check_function] == net.impedance.index.values.tolist()
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+    net.impedance.rft_pu = 1
+    net.impedance.xft_pu = 1
+    net.impedance.rtf_pu = 1
+    net.impedance.xtf_pu = 1
+    check_result = pp.impedance_with_impedance_close_to_zero(net, diag_params['impedance_min_z_pu'])
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert check_function not in diag_results
+
+    for bool_value in [True, False]:
+        diag_report = DiagnosticReports(net, diag_results, diag_params, compact_report=bool_value)
+        report_check = None
+        try:
+            eval(report_methods[check_function])
+            report_check = True
+        except:
+            report_check = False
+        assert report_check
+
+
 def test_nominal_voltages_dont_match(test_net, diag_params, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'nominal_voltages_dont_match'
@@ -929,7 +1033,7 @@ def test_deviation_from_std_type(test_net, diag_params, report_methods):
             report_check = False
         assert report_check
 
-
+@pytest.mark.skipif(numba_installed==False, reason="requires numba")
 def test_numba_comparison(test_net, diag_params, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'numba_comparison'
@@ -1069,4 +1173,8 @@ def test_missing_bus_indeces(test_net, diag_params, report_methods):
 #    'wrong_switch_configuration': 'uncertain'}
 
 if __name__ == "__main__":
+#    net = test_net()
+#    params = diag_params()
+#    methods = report_methods()
+#    test_numba_comparison(net, params, methods)
     pytest.main(["test_diagnostic.py", "-xs"])

@@ -29,7 +29,7 @@ log_message_sep = ("\n --------\n")
 
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
                overload_scaling_factor=0.001, lines_min_length_km=0, lines_min_z_ohm=0,
-               nom_voltage_tolerance=0.3, numba_tolerance=1e-5):
+               impedance_min_z_pu=0, nom_voltage_tolerance=0.3, numba_tolerance=1e-5):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -83,6 +83,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                       "disconnected_elements(net)",
                       "different_voltage_levels_connected(net)",
                       "lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm)",
+                      "xward_with_impedance_close_to_zero(net, lines_min_z_ohm)",
+                      "impedance_with_impedance_close_to_zero(net, impedance_min_z_pu)",
                       "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
                       "invalid_values(net)",
                       "overload(net, overload_scaling_factor)",
@@ -101,11 +103,13 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
 
     diag_results = {}
     for diag_function in diag_functions:
-        if (diag_function in bus_index_dependent_checks) and ("missing_bus_indeces" in diag_results.keys()):
+        if (diag_function in bus_index_dependent_checks) and (
+                    "missing_bus_indeces" in diag_results.keys()):
             diag_result = "check skipped"
         elif 'invalid_values' in diag_results.keys():
             if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen'])
-                                                                      & set(diag_results['invalid_values'].keys())):
+                                                                          & set(
+                    diag_results['invalid_values'].keys())):
                 diag_result = "check skipped"
             else:
                 diag_result = eval(diag_function)
@@ -120,6 +124,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "overload_scaling_factor": overload_scaling_factor,
         "lines_min_length_km": lines_min_length_km,
         "lines_min_z_ohm": lines_min_z_ohm,
+        "impedance_min_z_pu": impedance_min_z_pu,
         "nom_voltage_tolerance": nom_voltage_tolerance,
         "numba_tolerance": numba_tolerance
     }
@@ -467,7 +472,8 @@ def missing_bus_indeces(net):
         for i, row in net[element].iterrows():
             for bus_name in element_bus_names[element]:
                 if row[bus_name] not in bus_indeces:
-                    if not ((element == "switch") and (bus_name == "element") and (row.et in ['l', 't'])):
+                    if not ((element == "switch") and (bus_name == "element") and (
+                                row.et in ['l', 't'])):
                         element_check.append((i, bus_name, row[bus_name]))
         if element_check:
             check_results[element] = element_check
@@ -532,6 +538,50 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
         return list(implausible_lines.index)
 
 
+def xward_with_impedance_close_to_zero(net, impedance_min_z_ohm):
+    """
+    Checks, if there are lines with an impedance value of zero
+
+     INPUT:
+        **net** (pandapowerNet)         - pandapower network
+
+
+     OUTPUT:
+        **implausible_lines** (list)    - list that contains the indeces of all lines with an
+                                          impedance value of zero.
+
+
+    """
+    implausible_xwards = net.xward[(net.xward.x_ohm <= impedance_min_z_ohm)
+                                   | ((net.xward.r_ohm + net.xward.x_ohm) <= impedance_min_z_ohm)]
+
+    if len(implausible_xwards) > 0:
+        return list(implausible_xwards.index)
+
+
+def impedance_with_impedance_close_to_zero(net, impedance_min_z_pu):
+    """
+    Checks, if there are lines with an impedance value of zero
+
+     INPUT:
+        **net** (pandapowerNet)         - pandapower network
+
+
+     OUTPUT:
+        **implausible_lines** (list)    - list that contains the indeces of all lines with an
+                                          impedance value of zero.
+
+
+    """
+    implausible_impedance = net.impedance[
+        ((net.impedance.xft_pu + net.impedance.xtf_pu) <= impedance_min_z_pu)
+        | ((net.impedance.xft_pu + net.impedance.xtf_pu +
+            net.impedance.rft_pu + net.impedance.rtf_pu) <= impedance_min_z_pu)]
+
+    if len(implausible_impedance) > 0:
+        return list(implausible_impedance.index)
+
+
 def nominal_voltages_dont_match(net, nom_voltage_tolerance):
     """
     Checks, if there are components whose nominal voltages differ from the nominal voltages of the
@@ -577,9 +627,9 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         hv_bus_vn_kv = net.bus.vn_kv.at[trafo.hv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo.lv_bus]
 
-        if abs(1-(trafo.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
+        if abs(1 - (trafo.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
             hv_bus_violation = True
-        if abs(1-(trafo.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
+        if abs(1 - (trafo.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
             lv_bus_violation = True
         if hv_bus_violation and lv_bus_violation:
             trafo_voltages = np.array(([trafo.vn_hv_kv, trafo.vn_lv_kv]))
@@ -615,11 +665,11 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         mv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.mv_bus]
         lv_bus_vn_kv = net.bus.vn_kv.at[trafo3w.lv_bus]
 
-        if abs(1-(trafo3w.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
+        if abs(1 - (trafo3w.vn_hv_kv / hv_bus_vn_kv)) > nom_voltage_tolerance:
             hv_bus_violation = True
-        if abs(1-(trafo3w.vn_mv_kv / mv_bus_vn_kv)) > nom_voltage_tolerance:
+        if abs(1 - (trafo3w.vn_mv_kv / mv_bus_vn_kv)) > nom_voltage_tolerance:
             mv_bus_violation = True
-        if abs(1-(trafo3w.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
+        if abs(1 - (trafo3w.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
             lv_bus_violation = True
         if hv_bus_violation and mv_bus_violation and lv_bus_violation:
             trafo_voltages = np.array(([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv]))
@@ -800,12 +850,13 @@ def numba_comparison(net, numba_tolerance):
             result_numba_true = copy.deepcopy(net)
             runpp(net, numba=False)
             result_numba_false = copy.deepcopy(net)
-            res_keys = [key for key in result_numba_true.keys() if (key in ['res_bus', 'res_ext_grid',
-                                                                            'res_gen', 'res_impedance',
-                                                                            'res_line', 'res_load',
-                                                                            'res_sgen', 'res_shunt',
-                                                                            'res_trafo', 'res_trafo3w',
-                                                                            'res_ward', 'res_xward'])]
+            res_keys = [key for key in result_numba_true.keys() if
+                        (key in ['res_bus', 'res_ext_grid',
+                                 'res_gen', 'res_impedance',
+                                 'res_line', 'res_load',
+                                 'res_sgen', 'res_shunt',
+                                 'res_trafo', 'res_trafo3w',
+                                 'res_ward', 'res_xward'])]
             for key in res_keys:
                 diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
                 if any(diffs.any()):
@@ -882,7 +933,8 @@ def parallel_switches(net):
     """
     parallel_switches = []
     compare_parameters = ['bus', 'element']
-    parallels_bus_and_element = list(net.switch.groupby(compare_parameters).count().query('et > 1').index)
+    parallels_bus_and_element = list(
+        net.switch.groupby(compare_parameters).count().query('et > 1').index)
     for bus, element in parallels_bus_and_element:
         parallel_switches.append(list(net.switch[(net.switch.bus == bus)
                                                  & (net.switch.element == element)].index))

@@ -4,8 +4,16 @@ Generic Coordinates
 
 If there are no geocoordinates in a network, generic coordinates can be created. There are two possibilities:
 
-    - with python-igraph: http:/igraph.org/python/ (recommended)
-    - with networkx and graphviz (http:/www.graphviz.org)
+1. igraph (http:/igraph.org/python) (recommended) based on
+    - python-igraph
+    - pycairo
+
+2. graphviz (http:/www.graphviz.org) based on 
+    - networkx
+    - graphviz
+
+Two avoid having two compile C libraries, precompiled wheels are available on https://www.lfd.uci.edu/%7Egohlke/pythonlibs/ (unofficial)
+
 
 Generically created geocoordinates can then be plotted in the same way as real geocoordinates.
 

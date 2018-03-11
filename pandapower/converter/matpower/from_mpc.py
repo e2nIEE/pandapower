@@ -86,7 +86,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
         ppc["branch"] = mpc[casename_mpc_file].branch
 
         try:
-            ppc['gencost'] = mpc[casename_mpc_file].mpc.gencost
+            ppc['gencost'] = mpc[casename_mpc_file].gencost
         except:
             logger.info('gencost is not in mpc')
 
@@ -97,6 +97,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
     ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
+
 
 if "__main__" == __name__:
     pass

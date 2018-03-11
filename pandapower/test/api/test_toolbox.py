@@ -121,41 +121,61 @@ def test_scaling_by_type():
 
 
 def test_drop_inactive_elements():
+    for service in (False, True):
+        net = pp.create_empty_network()
+        bus_sl = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_ext_grid(net, bus_sl, in_service=service)
+        bus0 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_switch(net, bus_sl, bus0, 'b', not service)
+        bus1 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_transformer(net, bus0, bus1, in_service=service,
+                              std_type='63 MVA 110/20 kV')
+        bus2 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_line(net, bus1, bus2, length_km=1, in_service=service,
+                       std_type='149-AL1/24-ST1A 10.0')
+        pp.create_load(net, bus2, p_kw=0., in_service=service)
+        pp.create_sgen(net, bus2, p_kw=0., in_service=service)
+        bus3 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        bus4 = pp.create_bus(net, vn_kv=.4, in_service=service)
+        pp.create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                                3, 3, 3, 1, 1, 1, 5, 1)
+        # drop them
+        tb.drop_inactive_elements(net)
+
+        sum_of_elements = 0
+        for element in net.keys():
+            # skip this one since we expect items here
+            if element == "std_types" or element.startswith("_"):
+                continue
+            try:
+                if service and (element == 'ext_grid' or (element == 'bus' and len(net.bus) == 1)):
+                    # if service==True, the 1 ext_grid and its bus are not dropped
+                    continue
+                sum_of_elements += len(net[element])
+                if len(net[element]) > 0:
+                    print(element)
+            except TypeError:
+                # _ppc is initialized with None and clashes when checking
+                continue
+
+        assert sum_of_elements == 0
+        if service:
+            assert len(net.ext_grid) == 1
+            assert len(net.bus) == 1
+            assert bus_sl in net.bus.index.values
+
     net = pp.create_empty_network()
 
-    service = False
-
-    bus0 = pp.create_bus(net, vn_kv=.4, in_service=service)
-    pp.create_ext_grid(net, bus0, in_service=service)
-
-    bus1 = pp.create_bus(net, vn_kv=.4, in_service=service)
-    pp.create_transformer(net, bus0, bus1, in_service=service,
-                          std_type='63 MVA 110/20 kV')
-
-    bus2 = pp.create_bus(net, vn_kv=.4, in_service=service)
-    pp.create_line(net, bus1, bus2, length_km=1, in_service=service,
+    bus0 = pp.create_bus(net, vn_kv=.4, in_service=True)
+    pp.create_ext_grid(net, bus0, in_service=True)
+    bus1 = pp.create_bus(net, vn_kv=.4, in_service=False)
+    pp.create_line(net, bus0, bus1, length_km=1, in_service=False,
                    std_type='149-AL1/24-ST1A 10.0')
+    gen0 = pp.create_gen(net, bus=bus1, p_kw=1)
 
-    pp.create_load(net, bus2, p_kw=0., in_service=service)
-    pp.create_sgen(net, bus2, p_kw=0., in_service=service)
-
-    # drop them
     tb.drop_inactive_elements(net)
 
-    sum_of_elements = 0
-    for element in net.keys():
-        # skip this one since we expect items here
-        if element == "std_types" or element.startswith("_"):
-            continue
-        try:
-            sum_of_elements += len(net[element])
-            if len(net[element]) > 0:
-                print(element)
-        except TypeError:
-            # _ppc is initialized with None and clashes when checking
-            continue
-
-    assert sum_of_elements == 0
+    assert gen0 not in net.gen.index
 
 
 def test_get_connected_lines_at_bus():
@@ -441,6 +461,110 @@ def test_replace_zero_branches_with_switches():
     assert ~net.impedance.in_service.at[1]
     assert net.impedance.in_service.at[2]
 
+def test_next_bus():
+    net = pp.create_empty_network()
+
+    bus0 = pp.create_bus(net, vn_kv=110)
+    bus1 = pp.create_bus(net, vn_kv=20)
+    bus2 = pp.create_bus(net, vn_kv=10)
+    bus3 = pp.create_bus(net, vn_kv=0.4)
+    bus4 = pp.create_bus(net, vn_kv=0.4)
+    bus5 = pp.create_bus(net, vn_kv=20)
+    
+    trafo0 = pp.create_transformer3w(net, hv_bus = bus0,mv_bus=bus1, lv_bus = bus2, name='trafo0',std_type='63/25/38 MVA 110/20/10 kV')
+    trafo1= pp.create_transformer(net,hv_bus=bus2,lv_bus=bus3,std_type='0.4 MVA 10/0.4 kV')
+    
+    line1=pp.create_line(net, from_bus=bus3, to_bus=bus4,length_km=20.1,std_type='24-AL1/4-ST1A 0.4',name='line1')
+        
+    #switch0=pp.create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable now
+    switch1=pp.create_switch(net,bus= bus1, element=bus5,et='b')
+    switch2=pp.create_switch(net, bus = bus2, element = trafo1, et = 't')
+    switch3=pp.create_switch(net,bus = bus3, element= line1,et='l')
+    
+    #assert tb.next_bus(net,bus0,trafo0,et='trafo3w')==bus1                         # not implemented in existing toolbox
+    #assert tb.next_bus(net,bus0,trafo0,et='trafo3w',choice_for_trafo3w='lv')==bus2 # not implemented in existing toolbox
+    assert tb.next_bus(net,bus1,switch1,et='switch')==bus5  # Switch with bus2bus connection
+    #assert not tb.next_bus(net,bus2,switch2,et='switch')==bus3  # Switch with bus2trafo connection:- gives trasformer id instead of bus id
+    assert tb.next_bus(net,bus2,trafo1,et='trafo') ==bus3
+    #assert tb.next_bus(net,bus3,switch3,et='switch') ==bus4  # Switch with bus2line connection :- gives line id instead of bus id
+    assert tb.next_bus(net,bus3,line1,et='line') == bus4
+
+
+def test_get_connected_buses():
+    net = pp.create_empty_network()
+
+    bus0 = pp.create_bus(net, vn_kv=110)
+    bus1 = pp.create_bus(net, vn_kv=20)
+    bus2 = pp.create_bus(net, vn_kv=10)
+    bus3 = pp.create_bus(net, vn_kv=0.4)
+    bus4 = pp.create_bus(net, vn_kv=0.4)
+    bus5 = pp.create_bus(net, vn_kv=20)
+    
+    trafo0 = pp.create_transformer3w(net, hv_bus = bus0,mv_bus=bus1, lv_bus = bus2, name='trafo0',std_type='63/25/38 MVA 110/20/10 kV')
+    trafo1= pp.create_transformer(net,hv_bus=bus2,lv_bus=bus3,std_type='0.4 MVA 10/0.4 kV')
+    
+    line1=pp.create_line(net, from_bus=bus3, to_bus=bus4,length_km=20.1,std_type='24-AL1/4-ST1A 0.4',name='line1')
+        
+    #switch0=pp.create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable 
+    switch1=pp.create_switch(net,bus= bus1, element=bus5,et='b')
+    switch2=pp.create_switch(net, bus = bus2, element = trafo1, et = 't')
+    switch3=pp.create_switch(net,bus = bus3, element= line1,et='l')
+    
+    assert list(tb.get_connected_buses(net,[bus0]))==[bus1,bus2]     # trafo3w has not been implemented in the function
+    assert list(tb.get_connected_buses(net,[bus1]))==[bus0,bus2,bus5] # trafo3w has not been implemented in the function 
+    assert list(tb.get_connected_buses(net,[bus2]))==[bus0,bus1,bus3] # trafo3w has not been implemented in the function
+    assert list(tb.get_connected_buses(net,[bus3]))==[bus2,bus4]
+    assert list(tb.get_connected_buses(net,[bus4]))==[bus3]
+    assert list(tb.get_connected_buses(net,[bus5]))==[bus1]
+    
+    assert list(tb.get_connected_buses(net,[bus0,bus1]))==[bus2,bus5]
+    assert list(tb.get_connected_buses(net,[bus2,bus3]))==[bus0,bus1,bus4]
+    
+def test_drop_elements_at_buses():
+    net = pp.create_empty_network()
+
+    bus0 = pp.create_bus(net, vn_kv=110)
+    bus1 = pp.create_bus(net, vn_kv=20)
+    bus2 = pp.create_bus(net, vn_kv=10)
+    bus3 = pp.create_bus(net, vn_kv=0.4)
+    bus4 = pp.create_bus(net, vn_kv=0.4)
+    bus5 = pp.create_bus(net, vn_kv=20)
+    
+    trafo0 = pp.create_transformer3w(net, hv_bus = bus0,mv_bus=bus1, lv_bus = bus2, name='trafo0',std_type='63/25/38 MVA 110/20/10 kV')
+    trafo1= pp.create_transformer(net,hv_bus=bus2,lv_bus=bus3,std_type='0.4 MVA 10/0.4 kV')
+    
+    line1=pp.create_line(net, from_bus=bus3, to_bus=bus4,length_km=20.1,std_type='24-AL1/4-ST1A 0.4',name='line1')
+        
+    #switch0=pp.create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable now
+    switch1=pp.create_switch(net,bus= bus1, element=bus5,et='b')
+    switch2=pp.create_switch(net, bus = bus2, element = trafo1, et = 't')
+    switch3=pp.create_switch(net,bus = bus3, element= line1,et='l')
+    # bus id needs to be entered as iterable, not done in the function
+    tb.drop_elements_at_buses(net,[bus5])
+    assert len(net.switch)==  2          # it should be 2 since switch is connected to bus5 but if we add "element" column for switch it would delete this
+    assert len(net.trafo)==1
+    assert len(net.trafo3w)==1
+    assert len(net.line)== 1
+    tb.drop_elements_at_buses(net,[bus4])
+    assert len(net.switch)==  1
+    assert len(net.line)== 0
+    assert len(net.trafo)==1
+    assert len(net.trafo3w)==1    
+    tb.drop_elements_at_buses(net,[bus3])
+    assert len(net.switch)==  0
+    assert len(net.line)== 0
+    assert len(net.trafo)==0
+    assert len(net.trafo3w)==1  
+    tb.drop_elements_at_buses(net,[bus2])
+    assert len(net.switch)==  0
+    assert len(net.line)== 0
+    assert len(net.trafo)==0
+    assert len(net.trafo3w)==0  
+    tb.drop_elements_at_buses(net,[bus1])
+    assert len(net.switch)==  0
+    assert len(net.line)== 0
+    assert len(net.trafo)==0
+    assert len(net.trafo3w)==0    
 
 if __name__ == "__main__":
     pytest.main(["test_toolbox.py", "-xs"])

@@ -14,46 +14,29 @@ import pandapower.networks as pn
 def test_create_simple():
     net = pn.example_simple()
     pp.runpp(net)
-
-    assert len(net.bus) >= 1
-    assert len(net.line) >= 1
-    assert len(net.gen) >= 1
-    assert len(net.sgen) >= 1
-    assert len(net.shunt) >= 1
-    assert len(net.trafo) >= 1
-    assert len(net.load) >= 1
-    assert len(net.ext_grid) >= 1
-    assert len(net.switch[net.switch.et == 'l']) >= 1
-    assert len(net.switch[net.switch.et == 'b']) >= 1
     assert net.converged
+    for element in ["bus", "line", "gen", "sgen", "shunt", "trafo", "load", "ext_grid"]:
+        assert len(net[element]) >= 1
+    for et in ["l", "b"]:
+        assert len(net.switch[net.switch.et == et]) >= 1
 
 
 def test_create_realistic():
     net = pn.example_multivoltage()
     pp.runpp(net)
-
-    all_vn_kv = pd.Series([380, 110, 20, 10, 0.4])
-    assert net.bus.vn_kv.isin(all_vn_kv).all()
-    assert len(net.bus) >= 1
-    assert len(net.line) >= 1
-    assert len(net.gen) >= 1
-    assert len(net.sgen) >= 1
-    assert len(net.shunt) >= 1
-    assert len(net.trafo) >= 1
-    assert len(net.trafo3w) >= 1
-    assert len(net.load) >= 1
-    assert len(net.ext_grid) >= 1
-    assert len(net.switch[net.switch.et == 'l']) >= 1
-    assert len(net.switch[net.switch.et == 'b']) >= 1
-    assert len(net.switch[net.switch.et == 't']) >= 1
-    assert len(net.switch[net.switch.type == 'CB']) >= 1
-    assert len(net.switch[net.switch.type == 'DS']) >= 1
-    assert len(net.switch[net.switch.type == 'LBS']) >= 1
+    assert net.converged
+    for element in ["bus", "line", "gen", "sgen", "shunt", "trafo", "trafo3w", "load", "ext_grid",
+                    "impedance", "xward"]:
+        assert len(net[element]) >= 1
+    for et in ["l", "b", "t"]:
+        assert len(net.switch[net.switch.et == et]) >= 1
+    for type_ in ["CB", "DS", "LBS"]:
+        assert len(net.switch[net.switch.type == type_]) >= 1
     assert len(net.switch[net.switch.closed]) >= 1
     assert len(net.switch[~net.switch.closed]) >= 1
-    assert len(net.impedance) >= 1
-    assert len(net.xward) >= 1
-    assert net.converged
+    all_vn_kv = pd.Series([380, 110, 20, 10, 0.4])
+    assert net.bus.vn_kv.isin(all_vn_kv).all()
+
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_create_example.py"])

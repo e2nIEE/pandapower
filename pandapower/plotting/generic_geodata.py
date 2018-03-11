@@ -45,9 +45,12 @@ def build_igraph_from_pp(net, respect_switches=False):
     g.es["weight"] = net.line.length_km.values
 
     # add trafos
-    for tix in net.trafo.index:
-        t = net.trafo.ix[tix]
-        g.add_edge(pp_bus_mapping[t.hv_bus], pp_bus_mapping[t.lv_bus], weight=0.01)
+    for _, trafo in net.trafo.iterrows():
+        g.add_edge(pp_bus_mapping[trafo.hv_bus], pp_bus_mapping[trafo.lv_bus], weight=0.01)
+
+    for _, trafo3w in net.trafo3w.iterrows():
+        g.add_edge(pp_bus_mapping[trafo3w.hv_bus], pp_bus_mapping[trafo3w.lv_bus], weight=0.01)
+        g.add_edge(pp_bus_mapping[trafo3w.hv_bus], pp_bus_mapping[trafo3w.mv_bus], weight=0.01)
 
     # add switches
     bs = net.switch[(net.switch.et == "b") & (net.switch.closed == 1)] if respect_switches else \
@@ -86,11 +89,13 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         net = create_generic_coordinates(net)
 
     """
+
     if "bus_geodata" in net and net.bus_geodata.shape[0]:
         print("Please delete all geodata. This function cannot be used with pre-existing geodata.")
         return
-    if not "bus_geodata" in net:
+    if not "bus_geodata" in net or net.bus_geodata is None:
         net.bus_geodata = pd.DataFrame(columns=["x", "y"])
+
     gnet = copy.deepcopy(net)
     gnet.bus = gnet.bus[gnet.bus.in_service == True]
     if library == "igraph":
@@ -123,12 +128,13 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'"%library)
     net.bus_geodata.x = coords[0]
     net.bus_geodata.y = coords[1]
-    net.bus_geodata.index = net.bus.index
+    net.bus_geodata.index = gnet.bus.index
     return net
 
 
 def fuse_geodata(net):
-    mg = top.create_nxgraph(net, include_lines=False, respect_switches=False)
+    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
+                            respect_switches=False)
     geocoords = set(net.bus_geodata.index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:

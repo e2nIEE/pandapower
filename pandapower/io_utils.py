@@ -95,4 +95,7 @@ def collect_all_dtypes_df(net):
 
 def restore_all_dtypes(net, dtdf):
     for _, v in dtdf.iterrows():
-        net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
+        try:
+            net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
+        except KeyError:
+            logger.error('Error while setting dtype of %s[%s]' % (v.element, v.column))

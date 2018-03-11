@@ -7,7 +7,8 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace, draw_traces
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
+    create_trafo_trace, draw_traces, create_edge_center_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 from pandapower.run import runpp
@@ -113,7 +114,6 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                  'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].astype(str) + ' kA' + '<br>' +
                  'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].astype(str) + ' kA' + '<br>'
                  ).tolist()
-    line_traces = []
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
                                     infofunc=hoverinfo,
@@ -122,6 +122,9 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                                     cmin=0,
                                     cmax=100,
                                     cbar_title='Line Loading [%]')
+    line_center_trace = []
+    if use_line_geodata == False:
+        line_center_trace = create_edge_center_trace(line_traces, infofunc=hoverinfo)
 
     # ----- Trafos ------
     idx = net.trafo.index
@@ -133,6 +136,9 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                  ).tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)
+    trafo_center_trace = []
+    if use_line_geodata == False:
+        trafo_center_trace = create_edge_center_trace(trafo_traces, infofunc=hoverinfo)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
@@ -141,7 +147,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                                       color='grey', size=bus_size * 2, trace_name='external_grid',
                                       patch_type=marker_type)
 
-    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
+    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace + line_center_trace+ trafo_center_trace,
                 showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
 
 

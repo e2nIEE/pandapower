@@ -16,7 +16,9 @@ tp_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low vo
 tp_mid;integer;;rated tap position
 tp_min;integer;;minimum tap position
 tp_max;integer;;maximum tap position
-tp_st_percent;float;:math:`>` 0;tap step size [%]
+tp_st_percent;float;:math:`>` 0;tap step size for voltage magnitude [%]
+tp_st_degree;float;:math:`\geq` 0;tap step size for voltage angle
 tp_pos;integer;;current position of tap changer
 max_loading_percent**;float;:math:`>` 0;Maximum loading of the transformer with respect to sn_kva and its corresponding current at 1.0 p.u.
+df;float;1 :math:`\geq` df :math:`>`0;derating factor: maximal current of transformer in relation to nominal current of transformer (from 0 to 1)
 in_service*;boolean;True / False;specifies if the transformer is in service.

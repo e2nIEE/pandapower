@@ -5,13 +5,14 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import numpy as np
-from pandapower.auxiliary import _select_is_elements, _add_ppc_options
+from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
+from pandapower.build_branch import get_is_lines
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
@@ -25,7 +26,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
                      copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
                      calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
-    net["_is_elements"] = _select_is_elements(net)
+    net["_is_elements"] = _select_is_elements_numba(net)
     ppc, ppci = _pd2ppc(net)
 
     # do dc power flow for phase shifting transformers
@@ -144,6 +145,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     # determine number of lines in ppci["branch"]
     # out of service lines and lines with open switches at both ends are not in the ppci
     _is_elements = net["_is_elements"]
+    if "line" not in _is_elements:
+        get_is_lines(net)
     lines_is = _is_elements['line']
     bus_is_idx = _is_elements['bus_is_idx']
     slidx = (net["switch"]["closed"].values == 0) \

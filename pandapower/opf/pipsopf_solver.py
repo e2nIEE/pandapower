@@ -79,6 +79,7 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     costtol = ppopt['PDIPM_COSTTOL']
     max_it  = ppopt['PDIPM_MAX_IT']
     max_red = ppopt['SCPDIPM_RED_IT']
+    init = ppopt['INIT']
     step_control = (ppopt['OPF_ALG'] == 565)  ## OPF_ALG == 565, PIPS-sc
     if feastol == 0:
         feastol = ppopt['OPF_VIOLATION']
@@ -107,26 +108,28 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     A, l, u = om.linear_constraints()
 
     ## bounds on optimization vars
-    _, xmin, xmax = om.getv()
+    x0, xmin, xmax = om.getv()
 
     ## build admittance matrices
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
 
-    ## try to select an interior initial point
-    ll, uu = xmin.copy(), xmax.copy()
-    ll[xmin == -Inf] = -1e10   ## replace Inf with numerical proxies
-    uu[xmax ==  Inf] =  1e10
-    x0 = (ll + uu) / 2
-    Varefs = bus[bus[:, BUS_TYPE] == REF, VA] * (pi / 180)
-    ## angles set to first reference angle
-    x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
-    if ny > 0:
-        ipwl = find(gencost[:, MODEL] == PW_LINEAR)
-#         PQ = r_[gen[:, PMAX], gen[:, QMAX]]
-#         c = totcost(gencost[ipwl, :], PQ[ipwl])
-        c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, NCOST+2*gencost[ipwl, NCOST])]    ## largest y-value in CCV data
-        x0[vv["i1"]["y"]:vv["iN"]["y"]] = max(c) + 0.1 * abs(max(c))
-#        x0[vv["i1"]["y"]:vv["iN"]["y"]] = c + 0.1 * abs(c)
+    ## try to select an interior initial point if init is not available from a previous powerflow
+    if init != "pf":
+        ll, uu = xmin.copy(), xmax.copy()
+        ll[xmin == -Inf] = -1e10   ## replace Inf with numerical proxies
+        uu[xmax ==  Inf] =  1e10
+        x0 = (ll + uu) / 2
+        Varefs = bus[bus[:, BUS_TYPE] == REF, VA] * (pi / 180)
+        ## angles set to first reference angle
+        x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
+        if ny > 0:
+            ipwl = find(gencost[:, MODEL] == PW_LINEAR)
+    #         PQ = r_[gen[:, PMAX], gen[:, QMAX]]
+    #         c = totcost(gencost[ipwl, :], PQ[ipwl])
+            c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, NCOST+2*gencost[ipwl, NCOST])]    ## largest y-value in CCV data
+            x0[vv["i1"]["y"]:vv["iN"]["y"]] = max(c) + 0.1 * abs(max(c))
+    #        x0[vv["i1"]["y"]:vv["iN"]["y"]] = c + 0.1 * abs(c)
+
 
     ## find branches with flow limits
     il = find((branch[:, RATE_A] != 0) & (branch[:, RATE_A] < 1e10))

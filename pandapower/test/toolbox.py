@@ -11,9 +11,12 @@ from math import isnan
 import numpy as np
 import pandas.util.testing as pdt
 import pytest
+import tempfile
+import shutil
 
 import pandapower as pp
 import pandapower.test
+import pandapower.networks as networks
 
 try:
     import pplog as logging
@@ -25,9 +28,27 @@ def run_all_tests():
     """ function executing all tests
     """
     logger = logging.getLogger()
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(logging.CRITICAL)
     pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
     logger.setLevel(logging.INFO)
+
+
+@pytest.fixture(scope="module", params=[1])  # TODO
+def net_in(request):
+    if request.param == 1:
+        net = create_test_network()
+        net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
+        net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
+        return net
+    if request.param == 2:
+        return networks.case145()
+
+@pytest.yield_fixture(scope="module")
+def tempdir():
+    # we create a temporary folder to store all test files and remove it afterwards
+    tmp = tempfile.mkdtemp()
+    yield tmp
+    shutil.rmtree(tmp)
 
 
 def assert_mpc_equal(mpc1, mpc2):
