@@ -8,6 +8,7 @@ def _check_necessary_opf_parameters(net, logger):
         'gen': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
         'sgen': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
         'load': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
+        'storage': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
         'dcline': pd.Series(['max_p_kw', 'min_q_from_kvar', 'min_q_to_kvar', 'max_q_from_kvar',
                              'max_q_to_kvar'])}
     missing_val = []
@@ -18,7 +19,7 @@ def _check_necessary_opf_parameters(net, logger):
                 net[element_type].columns)].values
             # --- ensure "controllable" as column
             controllable = True
-            if element_type in ['gen', 'sgen', 'load']:
+            if element_type in ['gen', 'sgen', 'load', 'storage']:
                 if 'controllable' not in net[element_type].columns:
                     if element_type == 'gen':
                         net[element_type]['controllable'] = True
@@ -46,7 +47,7 @@ def _check_necessary_opf_parameters(net, logger):
                                     "+- 1000 TW.: " + str(missing_col))
                 # determine missing values
                 for lim_col in set(opf_col[element_type]) - set(missing_col):
-                    if element_type in ['gen', 'sgen', 'load']:
+                    if element_type in ['gen', 'sgen', 'load', 'storage']:
                         controllables = net[element_type].loc[net[element_type].controllable].index
                     else:  # 'ext_grid', 'dcline'
                         controllables = net[element_type].index

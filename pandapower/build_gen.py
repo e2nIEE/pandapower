@@ -87,7 +87,7 @@ def _build_gen_ppc(net, ppc):
         delta = net["_options"]["delta"]
     
         # initialize generator matrix
-        ppc["gen"] = zeros(shape=(l_end, 21), dtype=float)
+        ppc["gen"] = zeros(shape=(stor_end, 21), dtype=float)
         ppc["gen"][:] = array([0, 0, 0, q_lim_default, -q_lim_default, 1., 1., 1, p_lim_default,
                                   -p_lim_default, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     

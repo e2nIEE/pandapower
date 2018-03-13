@@ -10,6 +10,7 @@ from numpy import array
 import pandapower as pp
 from pandapower.test.toolbox import add_grid_connection
 from pandapower.toolbox import convert_format
+from pandapower.test.consistency_checks import consistency_checks
 
 try:
     import pplog as logging
@@ -574,8 +575,8 @@ def test_storage_opf():
                    max_q_kvar=25, min_q_kvar=-25)
     
     # test elements 
-    #pp.create_storage(net, b1, p_kw=-25, max_e_kwh=50, controllable=True, max_p_kw=0,
-    #                  min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
+    pp.create_storage(net, b1, p_kw=-25, max_e_kwh=50, controllable=True, max_p_kw=0,
+                      min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
     pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=0, min_p_kw=-25,
                    max_q_kvar=25, min_q_kvar=-25)
     pp.create_load(net, b1, p_kw=2.5, controllable=True, max_p_kw=2.5, min_p_kw=0,
@@ -583,21 +584,51 @@ def test_storage_opf():
     
     # costs
     pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 3, 0]))
-    #pp.create_polynomial_cost(net, 0, "load", array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 0, "load", array([0, -1, 0]))
     pp.create_polynomial_cost(net, 0, "sgen", array([0, 2, 0]))
-    #pp.create_polynomial_cost(net, 0, "storage", array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 0, "storage", array([0, 1, 0]))
     pp.create_polynomial_cost(net, 1, "sgen", array([0, 1, 0]))
     pp.create_polynomial_cost(net, 1, "load", array([0, -1, 0]))
     
     # test storage generator behaviour
-    #net["storage"].in_service.iloc[0] = True
-    #net["storage"].p_kw.iloc[0] = -25
-    net["sgen"].in_service.iloc[1] = False  
-    net["load"].in_service.iloc[1] = False # TODO "shape mismatch" error
+    net["storage"].in_service.iloc[0] = True
+    net["storage"].p_kw.iloc[0] = -25
+    net["sgen"].in_service.iloc[1] = False    
+    net["load"].in_service.iloc[1] = False
     
     pp.runopp(net, verbose=True)
     #consistency_checks(net)
     assert net["OPF_converged"]
+    
+    '''
+    net["storage"].in_service.iloc[0] = False
+    net["storage"].p_kw.iloc[0] = -25
+    net["sgen"].in_service.iloc[1] = True
+    net["load"].in_service.iloc[1] = False    
+    
+    pp.runopp(net, verbose=True)
+    assert net["OPF_converged"]
+    
+    # test storage load behaviour
+    net["storage"].in_service.iloc[0] = True
+    net["storage"].p_kw.iloc[0] = 25
+    net["storage"].max_p_kw.iloc[0] = 25
+    net["storage"].min_p_kw.iloc[0] = 0
+    net["polynomial_cost"].c.iloc[2] = array([0, -1, 0])
+    net["sgen"].in_service.iloc[1] = False
+    net["load"].in_service.iloc[1] = False 
+    
+    pp.runopp(net, verbose=True)
+    assert net["OPF_converged"]
+    
+    net["storage"].in_service.iloc[0] = False
+    net["storage"].p_kw.iloc[0] = -25
+    net["sgen"].in_service.iloc[1] = False
+    net["load"].in_service.iloc[1] = True 
+    
+    pp.runopp(net, verbose=True)
+    assert net["OPF_converged"]
+    '''
 
 
 if __name__ == "__main__":
