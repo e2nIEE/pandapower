@@ -579,17 +579,22 @@ def test_storage_opf():
                       min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
     pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=0, min_p_kw=-25,
                    max_q_kvar=25, min_q_kvar=-25)
-    pp.create_load(net, b1, p_kw=2.5, controllable=True, max_p_kw=2.5, min_p_kw=0,
-                   max_q_kvar=2.5, min_q_kvar=-2.5)
+    #pp.create_load(net, b1, p_kw=2.5, controllable=True, max_p_kw=2.5, min_p_kw=0,
+    #               max_q_kvar=2.5, min_q_kvar=-2.5)
+    pp.create_load(net, b1, p_kw=25, controllable=True, max_p_kw=25, min_p_kw=0,
+                   max_q_kvar=25, min_q_kvar=-25)
+    
     
     # costs
     pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 3, 0]))
-    pp.create_polynomial_cost(net, 0, "load", array([0, -1, 0]))
+    #pp.create_polynomial_cost(net, 0, "load", array([0, -1, 0]))
+    # TODO - OPF error wenn Kosten für non-controllable PQ-Element zugewiesen
+    # Knackpunkt: make_objective.py, Z.47ff.
     pp.create_polynomial_cost(net, 0, "sgen", array([0, 2, 0]))
     pp.create_polynomial_cost(net, 0, "storage", array([0, 1, 0]))
     pp.create_polynomial_cost(net, 1, "sgen", array([0, 1, 0]))
-    pp.create_polynomial_cost(net, 1, "load", array([0, -1, 0]))
-    
+    pp.create_polynomial_cost(net, 1, "load", array([0, -3, 0]))
+
     # test storage generator behaviour
     net["storage"].in_service.iloc[0] = True
     net["storage"].p_kw.iloc[0] = -25
@@ -600,7 +605,10 @@ def test_storage_opf():
     #consistency_checks(net)
     assert net["OPF_converged"]
     
-    '''
+    res_stor_p_kw = net["res_storage"].p_kw.iloc[0]
+    res_stor_q_kvar = net["res_storage"].q_kvar.iloc[0]
+    res_cost_stor = net["res_cost"]
+
     net["storage"].in_service.iloc[0] = False
     net["storage"].p_kw.iloc[0] = -25
     net["sgen"].in_service.iloc[1] = True
@@ -609,26 +617,50 @@ def test_storage_opf():
     pp.runopp(net, verbose=True)
     assert net["OPF_converged"]
     
+    res_sgen_p_kw = net["res_sgen"].p_kw.iloc[1]
+    res_sgen_q_kvar = net["res_sgen"].q_kvar.iloc[1]
+    res_cost_sgen = net["res_cost"]
+    
+    # assert storage generator behaviour
+    assert abs(res_stor_p_kw - res_sgen_p_kw) < 1e-5
+    assert abs(res_stor_q_kvar - res_sgen_q_kvar) < 1e-5
+    assert abs(res_cost_stor - res_cost_sgen) < 1e-5
+    
     # test storage load behaviour
     net["storage"].in_service.iloc[0] = True
     net["storage"].p_kw.iloc[0] = 25
     net["storage"].max_p_kw.iloc[0] = 25
     net["storage"].min_p_kw.iloc[0] = 0
-    net["polynomial_cost"].c.iloc[2] = array([0, -1, 0])
+    net["storage"].max_q_kvar.iloc[0] = 25
+    net["storage"].min_q_kvar.iloc[0] = -25
+    net["polynomial_cost"].c.iloc[2] = net["polynomial_cost"].c.iloc[4]
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False 
     
     pp.runopp(net, verbose=True)
     assert net["OPF_converged"]
     
+    res_stor_p_kw = net["res_storage"].p_kw.iloc[0]
+    res_stor_q_kvar = net["res_storage"].q_kvar.iloc[0]
+    res_cost_stor = net["res_cost"]
+    
     net["storage"].in_service.iloc[0] = False
-    net["storage"].p_kw.iloc[0] = -25
+    net["storage"].p_kw.iloc[0] = 25
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = True 
     
     pp.runopp(net, verbose=True)
     assert net["OPF_converged"]
-    '''
+    
+    res_load_p_kw = net["res_load"].p_kw.iloc[1]
+    res_load_q_kvar = net["res_load"].q_kvar.iloc[1]
+    res_cost_load = net["res_cost"]
+    
+    # assert storage load behaviour
+    # TODO - keine Übereinstimmung!
+    assert abs(res_stor_p_kw - res_load_p_kw) < 1e-5
+    assert abs(res_stor_q_kvar - res_load_q_kvar) < 1e-5
+    assert abs(res_cost_stor - res_cost_load) < 1e-5
 
 
 if __name__ == "__main__":
