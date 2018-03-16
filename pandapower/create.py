@@ -1459,13 +1459,13 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
         "df": df,
-        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
+        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0,
+        "tp_phase_shifter": ti["tp_phase_shifter"] if "tp_phase_shifter" in ti
+                            and pd.notnull(ti["tp_phase_shifter"]) else False
     })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree",
-               "tp_phase_shifter"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
-
     if ("tp_mid" in v) and (tp_pos is nan):
         v["tp_pos"] = v["tp_mid"]
     else:
