@@ -15,8 +15,14 @@ try:
     import pplog as logging
 except ImportError:
     import logging
-
 logger = logging.getLogger(__name__)
+
+try:
+    from pypower import ppoption, runpf
+    ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
+    pypower_import = True
+except ImportError:
+    pypower_import = False
 
 
 def _create_costs(net, ppc, gen_lookup, type, idx):
@@ -53,6 +59,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
         **f_hz** (float, 50) - The frequency of the network.
 
         **validate_conversion** (bool, False) - If True, validate_from_ppc is run after conversion.
+            For running the validation, the ppc must already contain the pypower
+            powerflow results or pypower must be importable.
 
     OUTPUT:
 
@@ -78,7 +86,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    net = pp.create_empty_network(f_hz=f_hz)
+    net = pp.create_empty_network(f_hz=f_hz, sn_kva=baseMVA*1e3)
 
     # --- bus data -> create buses, sgen, load, shunt
     for i in range(len(ppc['bus'])):
@@ -218,7 +226,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
 
             pp.create_transformer_from_parameters(
                 net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
-                vn_lv_kv=vn_lv_kv, vsc_percent=sign(xk) * zk * sn / 1e3, vscr_percent=rk * sn / 1e3,
+                vn_lv_kv=vn_lv_kv, vsc_percent=sign(xk) * zk * sn / 1e3 * 100 / baseMVA,
+                vscr_percent=rk * sn / 1e3 * 100 / baseMVA,
                 pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
                 tp_st_percent=abs(ratio_1) if ratio_1 else nan,
                 tp_pos=sign(ratio_1) if ratio_1 else nan,
@@ -263,7 +272,8 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
     INPUT:
 
-        **ppc_net** - The pypower case file which already contains the pypower powerflow results.
+        **ppc_net** - The pypower case file, which must already contain the pypower powerflow
+            results or pypower must be importable.
 
         **pp_net** - The pandapower network.
 
@@ -293,6 +303,11 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         ppc_net.
     """
     # --- check pypower powerflow success, if possible
+    if pypower_import:
+        try:
+            ppc_net = runpf.runpf(ppc_net, ppopt)[0]
+        except:
+            logger.debug("The pypower runpf did not work.")
     ppc_success = True
     if 'success' in ppc_net.keys():
         if ppc_net['success'] != 1:
@@ -314,161 +329,161 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
                 pp.runpp(pp_net, trafo_model="pi")
             except pp.LoadflowNotConverged:
                 logger.error('The pandapower powerflow does not converge.')
-                return False
 
     # --- prepare powerflow result comparison by reordering pp results as they are in ppc results
-    if (ppc_success) & (pp_net.converged):
+    if not ((ppc_success) & (pp_net.converged)):
+        return False
 
-        # --- store pypower powerflow results
-        ppc_res_branch = ppc_net['branch'][:, 13:17]
-        ppc_res_bus = ppc_net['bus'][:, 7:9]
-        ppc_res_gen = ppc_net['gen'][:, 1:3]
+    # --- store pypower powerflow results
+    ppc_res_branch = ppc_net['branch'][:, 13:17]
+    ppc_res_bus = ppc_net['bus'][:, 7:9]
+    ppc_res_gen = ppc_net['gen'][:, 1:3]
 
-        # --- pandapower bus result table
-        pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
+    # --- pandapower bus result table
+    pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
 
-        # --- pandapower gen result table
-        pp_res_gen = zeros([1, 2])
-        # consideration of parallel generators via storing how much generators have been considered
-        # each node
-        already_used_gen = Series(zeros([pp_net.bus.shape[0]]), index=pp_net.bus.index).astype(int)
-        GENS = DataFrame(ppc_net['gen'][:, [0]].astype(int))
-        change_q_compare = []
-        for i, j in GENS.iterrows():
-            current_bus_idx = pp.get_element_index(pp_net, 'bus', name=j[0])
-            current_bus_type = int(ppc_net['bus'][current_bus_idx, 1])
-            # ext_grid
-            if current_bus_type == 3:
-                if already_used_gen.at[current_bus_idx] == 0:
-                    pp_res_gen = append(pp_res_gen, array(pp_net.res_ext_grid[
-                        pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                        already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
-                    already_used_gen.at[current_bus_idx] += 1
-                else:
-                    pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
-                        pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                        already_used_gen.at[current_bus_idx]-1].reshape((1, 2)), 0)
-                    already_used_gen.at[current_bus_idx] += 1
-                    change_q_compare += [j[0]]
-            # gen
-            elif current_bus_type == 2:
-                pp_res_gen = append(pp_res_gen, array(pp_net.res_gen[
-                    pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+    # --- pandapower gen result table
+    pp_res_gen = zeros([1, 2])
+    # consideration of parallel generators via storing how much generators have been considered
+    # each node
+    already_used_gen = Series(zeros([pp_net.bus.shape[0]]), index=pp_net.bus.index).astype(int)
+    GENS = DataFrame(ppc_net['gen'][:, [0]].astype(int))
+    change_q_compare = []
+    for i, j in GENS.iterrows():
+        current_bus_idx = pp.get_element_index(pp_net, 'bus', name=j[0])
+        current_bus_type = int(ppc_net['bus'][current_bus_idx, 1])
+        # ext_grid
+        if current_bus_type == 3:
+            if already_used_gen.at[current_bus_idx] == 0:
+                pp_res_gen = append(pp_res_gen, array(pp_net.res_ext_grid[
+                    pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']])[
                     already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
-                if already_used_gen.at[current_bus_idx] > 0:
-                    change_q_compare += [j[0]]
                 already_used_gen.at[current_bus_idx] += 1
-            # sgen
-            elif current_bus_type == 1:
+            else:
                 pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
                     pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                    already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
+                    already_used_gen.at[current_bus_idx]-1].reshape((1, 2)), 0)
                 already_used_gen.at[current_bus_idx] += 1
-        pp_res_gen = pp_res_gen[1:, :]  # delete initial zero row
+                change_q_compare += [j[0]]
+        # gen
+        elif current_bus_type == 2:
+            pp_res_gen = append(pp_res_gen, array(pp_net.res_gen[
+                pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+                already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
+            if already_used_gen.at[current_bus_idx] > 0:
+                change_q_compare += [j[0]]
+            already_used_gen.at[current_bus_idx] += 1
+        # sgen
+        elif current_bus_type == 1:
+            pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
+                pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
+                already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
+            already_used_gen.at[current_bus_idx] += 1
+    pp_res_gen = pp_res_gen[1:, :]  # delete initial zero row
 
-        # --- pandapower branch result table
-        pp_res_branch = zeros([1, 4])
-        # consideration of parallel branches via storing how much branches have been considered
-        # each node-to-node-connection
-        init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1).drop_duplicates()
-        init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1).drop_duplicates()
-        init1['hv_bus'] = nan
-        init1['lv_bus'] = nan
-        init2['from_bus'] = nan
-        init2['to_bus'] = nan
-        already_used_branches = concat([init1, init2], axis=0)
-        already_used_branches['number'] = zeros([already_used_branches.shape[0], 1]).astype(int)
-        BRANCHES = DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
-        for i in BRANCHES.index:
-            from_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_net['branch'][i, 0]))
-            to_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_net['branch'][i, 1]))
-            from_vn_kv = ppc_net['bus'][from_bus, 9]
-            to_vn_kv = ppc_net['bus'][to_bus, 9]
-            ratio = BRANCHES[2].at[i]
-            angle = BRANCHES[3].at[i]
-            # from line results
-            if (from_vn_kv == to_vn_kv) & ((ratio == 0) | (ratio == 1)) & (angle == 0):
-                pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
-                    (pp_net.line.from_bus == from_bus) &
-                    (pp_net.line.to_bus == to_bus)]
-                    [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']])[
-                    int(already_used_branches.number.loc[
-                       (already_used_branches.from_bus == from_bus) &
-                       (already_used_branches.to_bus == to_bus)].values)].reshape(1, 4), 0)
-                already_used_branches.number.loc[(already_used_branches.from_bus == from_bus) &
-                                                 (already_used_branches.to_bus == to_bus)] += 1
-            # from trafo results
-            else:
-                if from_vn_kv >= to_vn_kv:
-                    pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                        (pp_net.trafo.hv_bus == from_bus) &
-                        (pp_net.trafo.lv_bus == to_bus)]
-                        [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']])[
-                        int(already_used_branches.number.loc[
-                            (already_used_branches.hv_bus == from_bus) &
-                            (already_used_branches.lv_bus == to_bus)].values)].reshape(1, 4), 0)
-                    already_used_branches.number.loc[(already_used_branches.hv_bus == from_bus) &
-                                                     (already_used_branches.lv_bus == to_bus)] += 1
-                else:  # switch hv-lv-connection of pypower connection buses
-                    pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
-                        (pp_net.trafo.hv_bus == to_bus) &
-                        (pp_net.trafo.lv_bus == from_bus)]
-                        [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']])[
-                        int(already_used_branches.number.loc[
-                            (already_used_branches.hv_bus == to_bus) &
-                            (already_used_branches.lv_bus == from_bus)].values)].reshape(1, 4), 0)
-                    already_used_branches.number.loc[
-                        (already_used_branches.hv_bus == to_bus) &
-                        (already_used_branches.lv_bus == from_bus)] += 1
-        pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
-
-        # --- do the powerflow result comparison
-        diff_res_bus = ppc_res_bus - pp_res_bus
-        diff_res_branch = ppc_res_branch - pp_res_branch * 1e-3
-        diff_res_gen = ppc_res_gen + pp_res_gen * 1e-3
-        # comparison of buses with several generator units only as q sum
-        GEN_uniq = GENS.drop_duplicates()
-        for i in GEN_uniq.loc[GEN_uniq[0].isin(change_q_compare)].index:
-            next_is = GEN_uniq.index[GEN_uniq.index > i]
-            if len(next_is) > 0:
-                next_i = next_is[0]
-            else:
-                next_i = GENS.index[-1] + 1
-            if (next_i - i) > 1:
-                diff_res_gen[i:next_i, 1] = sum(diff_res_gen[i:next_i, 1])
-        # logger info
-        logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
-                     "%.2e pu" % max_(abs(diff_res_bus[:, 0])))
-        logger.debug("Maximum voltage angle difference between pypower and pandapower: "
-                     "%.2e degree" % max_(abs(diff_res_bus[:, 1])))
-        logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
-                     "%.2e kW" % max_(abs(diff_res_branch[:, [0, 2]] * 1e3)))
-        logger.debug("Maximum branch flow reactive power difference between pypower and "
-                     "pandapower: %.2e kVAr" % max_(abs(diff_res_branch[:, [1, 3]] * 1e3)))
-        logger.debug("Maximum active power generation difference between pypower and pandapower: "
-                     "%.2e kW" % max_(abs(diff_res_gen[:, 0] * 1e3)))
-        logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
-                     "%.2e kVAr" % max_(abs(diff_res_gen[:, 1] * 1e3)))
-        if (max_(abs(diff_res_bus[:, 0])) < 1e-3) & (max_(abs(diff_res_bus[:, 1])) < 1e-3) & \
-                (max_(abs(diff_res_branch[:, [0, 2]])) < 1e-3) & \
-                (max_(abs(diff_res_branch[:, [1, 3]])) < 1e-3) & \
-                (max_(abs(diff_res_gen)) > 1e-1).any():
-            logger.debug("The active/reactive power generation difference possibly results "
-                         "because of a pypower error. Please validate "
-                         "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
-        # give a return
-        if isinstance(max_diff_values, dict):
-            if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
-                       'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
-                return (max_(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
-                        (max_(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
-                        (max_(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
-                            1e3) & \
-                        (max_(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
-                            1e3) & \
-                        (max_(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
-                        (max_(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
-            else:
-                logger.debug('Not all requried dict keys are provided.')
+    # --- pandapower branch result table
+    pp_res_branch = zeros([1, 4])
+    # consideration of parallel branches via storing how much branches have been considered
+    # each node-to-node-connection
+    init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1).drop_duplicates()
+    init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1).drop_duplicates()
+    init1['hv_bus'] = nan
+    init1['lv_bus'] = nan
+    init2['from_bus'] = nan
+    init2['to_bus'] = nan
+    already_used_branches = concat([init1, init2], axis=0)
+    already_used_branches['number'] = zeros([already_used_branches.shape[0], 1]).astype(int)
+    BRANCHES = DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
+    for i in BRANCHES.index:
+        from_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_net['branch'][i, 0]))
+        to_bus = pp.get_element_index(pp_net, 'bus', name=int(ppc_net['branch'][i, 1]))
+        from_vn_kv = ppc_net['bus'][from_bus, 9]
+        to_vn_kv = ppc_net['bus'][to_bus, 9]
+        ratio = BRANCHES[2].at[i]
+        angle = BRANCHES[3].at[i]
+        # from line results
+        if (from_vn_kv == to_vn_kv) & ((ratio == 0) | (ratio == 1)) & (angle == 0):
+            pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
+                (pp_net.line.from_bus == from_bus) &
+                (pp_net.line.to_bus == to_bus)]
+                [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']])[
+                int(already_used_branches.number.loc[
+                   (already_used_branches.from_bus == from_bus) &
+                   (already_used_branches.to_bus == to_bus)].values)].reshape(1, 4), 0)
+            already_used_branches.number.loc[(already_used_branches.from_bus == from_bus) &
+                                             (already_used_branches.to_bus == to_bus)] += 1
+        # from trafo results
         else:
-            logger.debug("'max_diff_values' must be a dict.")
+            if from_vn_kv >= to_vn_kv:
+                pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
+                    (pp_net.trafo.hv_bus == from_bus) &
+                    (pp_net.trafo.lv_bus == to_bus)]
+                    [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']])[
+                    int(already_used_branches.number.loc[
+                        (already_used_branches.hv_bus == from_bus) &
+                        (already_used_branches.lv_bus == to_bus)].values)].reshape(1, 4), 0)
+                already_used_branches.number.loc[(already_used_branches.hv_bus == from_bus) &
+                                                 (already_used_branches.lv_bus == to_bus)] += 1
+            else:  # switch hv-lv-connection of pypower connection buses
+                pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
+                    (pp_net.trafo.hv_bus == to_bus) &
+                    (pp_net.trafo.lv_bus == from_bus)]
+                    [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']])[
+                    int(already_used_branches.number.loc[
+                        (already_used_branches.hv_bus == to_bus) &
+                        (already_used_branches.lv_bus == from_bus)].values)].reshape(1, 4), 0)
+                already_used_branches.number.loc[
+                    (already_used_branches.hv_bus == to_bus) &
+                    (already_used_branches.lv_bus == from_bus)] += 1
+    pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
+
+    # --- do the powerflow result comparison
+    diff_res_bus = ppc_res_bus - pp_res_bus
+    diff_res_branch = ppc_res_branch - pp_res_branch * 1e-3
+    diff_res_gen = ppc_res_gen + pp_res_gen * 1e-3
+    # comparison of buses with several generator units only as q sum
+    GEN_uniq = GENS.drop_duplicates()
+    for i in GEN_uniq.loc[GEN_uniq[0].isin(change_q_compare)].index:
+        next_is = GEN_uniq.index[GEN_uniq.index > i]
+        if len(next_is) > 0:
+            next_i = next_is[0]
+        else:
+            next_i = GENS.index[-1] + 1
+        if (next_i - i) > 1:
+            diff_res_gen[i:next_i, 1] = sum(diff_res_gen[i:next_i, 1])
+    # logger info
+    logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
+                 "%.2e pu" % max_(abs(diff_res_bus[:, 0])))
+    logger.debug("Maximum voltage angle difference between pypower and pandapower: "
+                 "%.2e degree" % max_(abs(diff_res_bus[:, 1])))
+    logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
+                 "%.2e kW" % max_(abs(diff_res_branch[:, [0, 2]] * 1e3)))
+    logger.debug("Maximum branch flow reactive power difference between pypower and "
+                 "pandapower: %.2e kVAr" % max_(abs(diff_res_branch[:, [1, 3]] * 1e3)))
+    logger.debug("Maximum active power generation difference between pypower and pandapower: "
+                 "%.2e kW" % max_(abs(diff_res_gen[:, 0] * 1e3)))
+    logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
+                 "%.2e kVAr" % max_(abs(diff_res_gen[:, 1] * 1e3)))
+    if (max_(abs(diff_res_bus[:, 0])) < 1e-3) & (max_(abs(diff_res_bus[:, 1])) < 1e-3) & \
+            (max_(abs(diff_res_branch[:, [0, 2]])) < 1e-3) & \
+            (max_(abs(diff_res_branch[:, [1, 3]])) < 1e-3) & \
+            (max_(abs(diff_res_gen)) > 1e-1).any():
+        logger.debug("The active/reactive power generation difference possibly results "
+                     "because of a pypower error. Please validate "
+                     "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
+    # give a return
+    if isinstance(max_diff_values, dict):
+        if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
+                   'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
+            return (max_(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
+                    (max_(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
+                    (max_(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
+                        1e3) & \
+                    (max_(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
+                        1e3) & \
+                    (max_(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
+                    (max_(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
+        else:
+            logger.debug('Not all requried dict keys are provided.')
+    else:
+        logger.debug("'max_diff_values' must be a dict.")
