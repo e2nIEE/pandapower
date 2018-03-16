@@ -1,5 +1,6 @@
 Change Log
 =============
+- [FIXED] from_ppc trafo parameter calculation now also considers baseMVA != 100
 
 [1.4.4 develop] - 2018-03-06
 ----------------------

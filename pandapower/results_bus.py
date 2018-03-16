@@ -41,7 +41,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     sg = net["sgen"]
     if len(sg) > 0:
         sgen_is = _is_elements["sgen"]
-        sgen_ctrl = sg["controllable"].values
+        sgen_ctrl = (sg.in_service & sg.controllable).values
         scaling = sg["scaling"].values
         psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
         qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
@@ -61,7 +61,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
     stor = net["storage"]
     if len(stor) > 0:
         stor_is = _is_elements["storage"]
-        stor_ctrl = stor["controllable"].values
+        stor_ctrl = (stor.in_service & stor.controllable).values
         scaling = stor["scaling"].values
         pstor = stor["p_kw"].values * scaling * stor_is * invert(stor_ctrl)
         qstor = stor["q_kvar"].values * scaling * stor_is * invert(stor_ctrl)
