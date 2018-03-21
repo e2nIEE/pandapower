@@ -470,7 +470,7 @@ def _clean_up(net, res=True):
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
-    net._is_elements = None
+    # net._is_elements = None
 
     mode = net._options["mode"]
     if res:
