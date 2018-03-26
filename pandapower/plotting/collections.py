@@ -453,7 +453,8 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
     return lc, pc
 
 
-def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    load_table = net.load if loads is None else net.load.loc[loads]
     """
     Creates a matplotlib patch collection of pandapower loads.
 
@@ -480,7 +481,8 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     infos = []
     off = 2.
     ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
-    for i, load in net.load.iterrows():
+    color = kwargs.pop("color", "k")
+    for i, load in load_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
         p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
@@ -488,8 +490,8 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
         lines.append((p1, p3))
         if infofunc is not None:
             infos.append(infofunc(i))
-    load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
-    load2 = LineCollection(lines, color="k", **kwargs)
+    load1 = PatchCollection(polys, facecolor="w", edgecolor=color, **kwargs)
+    load2 = LineCollection(lines, color=color, **kwargs)
     load1.info = infos
     load2.info = infos
     return load1, load2
@@ -536,7 +538,8 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
     return gen1, gen2
 
 
-def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    sgen_table = net.sgen if sgens is None else net.sgen.loc[sgens]
     """
     Creates a matplotlib patch collection of pandapower sgen.
 
@@ -564,7 +567,8 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     off = 1.7
     r_triangle = size*0.4
     ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.sgen.shape[0]
-    for i, sgen in net.sgen.iterrows():
+    color = kwargs.pop("color", "k")
+    for i, sgen in sgen_table.iterrows():
         bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
         mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
         circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
@@ -617,6 +621,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     lines = []
     polys = []
     infos = []
+    color = kwargs.pop("color", "k")
     for i, ext_grid in net.ext_grid.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size]), orientation)
@@ -625,8 +630,8 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
         if infofunc is not None:
             infos.append(infofunc(i))
     ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
-                                hatch="XXX", picker=picker, **kwargs)
-    ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
+                                hatch="XXX", picker=picker, color=color, **kwargs)
+    ext_grid2 = LineCollection(lines, color=color, picker=picker, **kwargs)
     ext_grid1.info = infos
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
