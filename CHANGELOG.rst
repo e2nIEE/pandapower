@@ -6,6 +6,7 @@ Change Log
 - [FIXED] plotly hover function for edges (only if use_line_geodata == False)
 - [FIXED] from_ppc trafo parameter calculation now also considers baseMVA != 100
 - [FIXED] update create_collection docstrings
+- [CHANGED] update HV/MV transformer standard type data
 
 [1.4.3] - 2018-02-06
 ----------------------

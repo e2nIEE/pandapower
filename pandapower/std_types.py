@@ -5,6 +5,12 @@
 # by a BSD-style license that can be found in the LICENSE file.
 
 import pandas as pd
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_std_type(net, data, name, element="line", overwrite=True):
@@ -116,6 +122,10 @@ def load_std_type(net, name, element="line"):
     """
     library = net.std_types[element]
     if name in library:
+        if name in ["%i MVA 110/%i0 kV" % (i1, i2) for i1 in [63, 40, 25] for i2 in [1, 2]]:
+            logger.warning("Be aware that the transformator parameters of '%s' " % name +
+                           "has changed. The old parameter values are available in " +
+                           "'%s' on an interim basis." % (name+" v1.4.3 and older"))
         return library[name]
     else:
         raise UserWarning("Unknown standard %s type %s" % (element, name))
@@ -638,6 +648,109 @@ def add_basic_std_types(net):
 
         # compare to IFT Ingenieurbüro data and Schlabbach book
         "63 MVA 110/20 kV":
+        {"i0_percent": 0.04,
+            "pfe_kw": 22,
+            "vscr_percent": 0.32,
+            "sn_kva": 63000,
+            "vn_lv_kv": 20.0,
+            "vn_hv_kv": 110.0,
+            "vsc_percent": 18,
+            "shift_degree": 150,
+            "vector_group": "YNd5",
+            "tp_side": "hv",
+            "tp_mid": 0,
+            "tp_min": -9,
+            "tp_max": 9,
+            "tp_st_degree": 0,
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
+        "40 MVA 110/20 kV":
+        {"i0_percent": 0.05,
+            "pfe_kw": 18,
+            "vscr_percent": 0.34,
+            "sn_kva": 40000,
+            "vn_lv_kv": 20.0,
+            "vn_hv_kv": 110.0,
+            "vsc_percent": 16.2,
+            "shift_degree": 150,
+            "vector_group": "YNd5",
+            "tp_side": "hv",
+            "tp_mid": 0,
+            "tp_min": -9,
+            "tp_max": 9,
+            "tp_st_degree": 0,
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
+        "25 MVA 110/20 kV":
+        {"i0_percent": 0.07,
+            "pfe_kw": 14,
+            "vscr_percent": 0.41,
+            "sn_kva": 25000,
+            "vn_lv_kv": 20.0,
+            "vn_hv_kv": 110.0,
+            "vsc_percent": 12,
+            "shift_degree": 150,
+            "vector_group": "YNd5",
+            "tp_side": "hv",
+            "tp_mid": 0,
+            "tp_min": -9,
+            "tp_max": 9,
+            "tp_st_degree": 0,
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
+        "63 MVA 110/10 kV":
+        {"sn_kva": 63000,
+            "vn_hv_kv": 110,
+            "vn_lv_kv": 10,
+            "vsc_percent": 18,
+            "vscr_percent": 0.32,
+            "pfe_kw": 22,
+            "i0_percent": 0.04,
+            "shift_degree": 150,
+            "vector_group": "YNd5",
+            "tp_side": "hv",
+            "tp_mid": 0,
+            "tp_min": -9,
+            "tp_max": 9,
+            "tp_st_degree": 0,
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
+        "40 MVA 110/10 kV":
+        {"sn_kva": 40000,
+            "vn_hv_kv": 110,
+            "vn_lv_kv": 10,
+            "vsc_percent": 16.2,
+            "vscr_percent": 0.34,
+            "pfe_kw": 18,
+            "i0_percent": 0.05,
+            "shift_degree": 150,
+            "vector_group": "YNd5",
+            "tp_side": "hv",
+            "tp_mid": 0,
+            "tp_min": -9,
+            "tp_max": 9,
+            "tp_st_degree": 0,
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
+        "25 MVA 110/10 kV":
+        {"sn_kva": 25000,
+            "vn_hv_kv": 110,
+            "vn_lv_kv": 10,
+            "vsc_percent": 12,
+            "vscr_percent": 0.41,
+            "pfe_kw": 14,
+            "i0_percent": 0.07,
+            "shift_degree": 150,
+            "vector_group": "YNd5",
+            "tp_side": "hv",
+            "tp_mid": 0,
+            "tp_min": -9,
+            "tp_max": 9,
+            "tp_st_degree": 0,
+            "tp_st_percent": 1.5,
+            "tp_phase_shifter": False},
+        # deprecated old parameter data
+        "63 MVA 110/20 kV v1.4.3 and older":
         {"i0_percent": 0.086,
             "pfe_kw": 33,
             "vscr_percent": 0.322,
@@ -654,7 +767,7 @@ def add_basic_std_types(net):
             "tp_st_degree": 0,
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
-        "40 MVA 110/20 kV":
+        "40 MVA 110/20 kV v1.4.3 and older":
         {"i0_percent": 0.08,
             "pfe_kw": 31,
             "vscr_percent": 0.302,
@@ -671,7 +784,7 @@ def add_basic_std_types(net):
             "tp_st_degree": 0,
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
-        "25 MVA 110/20 kV":
+        "25 MVA 110/20 kV v1.4.3 and older":
         {"i0_percent": 0.071,
             "pfe_kw": 29,
             "vscr_percent": 0.282,
@@ -688,7 +801,7 @@ def add_basic_std_types(net):
             "tp_st_degree": 0,
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
-        "63 MVA 110/10 kV":
+        "63 MVA 110/10 kV v1.4.3 and older":
         {"sn_kva": 63000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
@@ -705,7 +818,7 @@ def add_basic_std_types(net):
             "tp_st_degree": 0,
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
-        "40 MVA 110/10 kV":
+        "40 MVA 110/10 kV v1.4.3 and older":
         {"sn_kva": 40000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
@@ -722,7 +835,7 @@ def add_basic_std_types(net):
             "tp_st_degree": 0,
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
-            "25 MVA 110/10 kV":
+        "25 MVA 110/10 kV v1.4.3 and older":
         {"sn_kva": 25000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
