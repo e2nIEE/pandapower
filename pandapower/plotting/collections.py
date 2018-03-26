@@ -28,12 +28,63 @@ def _rotate_dim2(arr, ang):
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
 
-def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
-                                 colors=None, z=None, cmap=None, norm=None, infofunc=None,
-                                 picker=False, net=None, cbar_title="Bus Voltage [pu]", **kwargs):
+def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
+                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
+                          bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower buses.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **buses** (list, None) - The buses for which the collections are created.
+            If None, all buses in the network are considered.
+
+        **size** (int, 5) - patch size
+
+        **marker** (str, "o") - patch marker
+
+        **patch_type** (str, "circle") - patch type, can be
+
+                - "circle" for a circle
+                - "rect" for a rectangle
+                - "poly<n>" for a polygon with n edges
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **colors** (list, None) - list of colors for every element
+
+        **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
+            cmap. If None net.res_bus.vm_pu is used.
+
+        **cmap** (ListedColormap, None) - colormap for the patch colors
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+        **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **pc** - patch collection
+    """
+    buses = net.bus.index.tolist() if buses is None else list(buses)
+    if len(buses) == 0:
+        return None
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
+
     infos = []
 
-    if not 'height' in kwargs and not 'width' in kwargs:
+    if 'height' not in kwargs and 'width' not in kwargs:
         kwargs['height'] = kwargs['width'] = 2 * size
     if patch_type == "rectangle":
         kwargs['height'] *= 2
@@ -79,60 +130,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
-    return pc
 
-
-def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
-    """
-    Creates a matplotlib patch collection of pandapower buses.
-
-    Input:
-        **net** (pandapowerNet) - The pandapower network
-
-    OPTIONAL:
-        **buses** (list, None) - The buses for which the collections are created.
-        If None, all buses in the network are considered.
-
-        **size** (int, 5) - patch size
-
-        **marker** (str, "o") - patch marker
-
-        **patch_type** (str, "circle") - patch type, can be
-
-                - "circle" for a circle
-                - "rect" for a rectangle
-                - "poly<n>" for a polygon with n edges
-
-        **infofunc** (function, None) - infofunction for the patch element
-
-        **colors** (list, None) - list of colors for every element
-
-        **cmap** - colormap for the patch colors
-
-        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
-        If None, net["bus_geodata"] is used
-
-        **picker** - picker argument passed to the patch collection
-
-        **kwargs - key word arguments are passed to the patch function
-
-    OUTPUT:
-        **pc** - patch collection
-    """
-    buses = net.bus.index.tolist() if buses is None else list(buses)
-    if len(buses) == 0:
-        return None
-    if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
-
-    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
-
-    pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
-                                      patch_type=patch_type, colors=colors, z=z, cmap=cmap,
-                                      norm=norm, infofunc=infofunc, picker=picker, net=net,
-                                      cbar_title=cbar_title, **kwargs)
     return pc
 
 
@@ -150,10 +148,28 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         **lines** (list, None) - The lines for which the collections are created. If None, all lines
             in the network are considered.
 
-        **line_geodata** (DataFrame, None) - coordinates to use for plotting If None,
+        **line_geodata** (DataFrame, None) - coordinates to use for plotting. If None,
             net["line_geodata"] is used
 
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+        **use_bus_geodata** (bool, False) - Defines whether bus or line geodata are used.
+
          **infofunc** (function, None) - infofunction for the patch element
+
+        **cmap** - colormap for the patch colors
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
+            cmap. If None net.res_bus.vm_pu is used.
+
+        **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -202,6 +218,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         lc.has_colormap = True
         lc.cbar_title = cbar_title
     lc.info = info
+
     return lc
 
 
@@ -215,6 +232,11 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created.
             If None, all transformers in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+         **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -253,6 +275,11 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     OPTIONAL:
         **trafos** (list, None) - The 3W-transformers for which the collections are created.
             If None, all 3W-transformers in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+         **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -301,6 +328,13 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
         **trafos** (list, None) - The transformers for which the collections are created.
             If None, all transformers in the network are considered.
 
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **size** (int, None) - size of transformer symbol circles. Should be >0 and
+            < 0.35*bus_distance
+
+         **infofunc** (function, None) - infofunction for the patch element
+
         **kwargs - key word arguments are passed to the patch function
 
     OUTPUT:
@@ -341,13 +375,13 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
         return None, None
     lc = LineCollection((lines), color=color, picker=picker, linewidths=linewidths, **kwargs)
     lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
+    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths,
+                         **kwargs)
     pc.info = infos
     return lc, pc
 
 
-def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
-                              infofunc=None, **kwargs):
+def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -357,6 +391,10 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
     OPTIONAL:
         **trafo3ws** (list, None) - The three winding transformers for which the collections are
             created. If None, all three winding transformers in the network are considered.
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+         **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -416,6 +454,27 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
 
 
 def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower loads.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
+            increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **load1** - patch collection
+
+        **load2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
@@ -437,6 +496,24 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
 
 
 def create_gen_collection(net, size=1., infofunc=None, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower gens.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **gen1** - patch collection
+
+        **gen2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
@@ -460,6 +537,27 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
 
 
 def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower sgen.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
+            increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **sgen1** - patch collection
+
+        **sgen2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
@@ -492,7 +590,30 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     return sgen1, sgen2
 
 
-def create_ext_grid_collection(net, size=1., orientation=0, infofunc=None, picker=False, **kwargs):
+def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower ext_grid.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **orientation** (float, 0) - orientation of load collection. 0 is directed upwards,
+            increasing values lead to clockwise direction changes.
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **ext_grid1** - patch collection
+
+        **ext_grid2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
@@ -529,6 +650,8 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
         **kwargs - Key word arguments are passed to the patch function
 
+    OUTPUT:
+        **switches** - patch collection
     """
     lbs_switches = net.switch.index[net.switch.et == "l"]
 
@@ -620,6 +743,16 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         **figsize** (tuple, (10,8)) - figsize of the matplotlib figure
 
         **ax** (axis, None) - matplotlib axis object to plot into, new axis is created if None
+
+        **plot_colorbars** (bool, True) - defines whether colorbars should be plotted
+
+        **set_aspect** (bool, True) - defines whether 'equal' and 'datalim' aspects of axis scaling
+            should be set.
+
+        **axes_visible** (tuple, (False, False)) - defines visibility of (xaxis, yaxis)
+
+    OUTPUT:
+        **ax** - matplotlib axes
     """
 
     if not ax:
