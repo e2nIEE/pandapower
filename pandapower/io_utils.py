@@ -39,7 +39,7 @@ def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
         if item.startswith("_") or (item.startswith("res") and not include_results):
             continue
         # attributes of "primitive" types are just stored in a DataFrame "parameters"
-        elif isinstance(table, (int, float, bool, str)):
+        elif isinstance(table, (int, float, bool, str, dict)) and item != 'std_types':
             dodfs["parameters"].loc[item] = net[item]
         elif item == "std_types":
             for t in ["line", "trafo", "trafo3w"]:

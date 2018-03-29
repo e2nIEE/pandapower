@@ -1161,8 +1161,11 @@ def set_element_status(net, buses, in_service):
     for element in net.keys():
         if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
-            idx = get_connected_elements(net, element, buses)
-            net[element].loc[idx, 'in_service'] = in_service
+            try:
+                idx = get_connected_elements(net, element, buses)
+                net[element].loc[idx, 'in_service'] = in_service
+            except:
+                pass
 
 
 def set_isolated_areas_out_of_service(net):
