@@ -1050,9 +1050,9 @@ def element_bus_tuples(bus_elements=True, branch_elements=True):
 def pp_elements(bus=True, bus_elements=True, branch_elements=True):
     """ Returns the list of pandapower elements. """
     if bus:
-        return ["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)]
+        return set(["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
     else:
-        return [el[0] for el in element_bus_tuples(bus_elements, branch_elements)]
+        return set([el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
 
 
 def drop_buses(net, buses, drop_elements=True):
