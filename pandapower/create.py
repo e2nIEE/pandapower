@@ -798,12 +798,12 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
     Adds a storage to the network.
-    
-    In order to simulate a storage system it is possible to use sgens or loads to model the 
+
+    In order to simulate a storage system it is possible to use sgens or loads to model the
     discharging or charging state. The power of a storage can be positive or negative, so the use
     of either a sgen or a load is (per definition of the elements) not correct.
     To overcome this issue, a storage element can be created.
-    
+
     As pandapower is not a time dependend simulation tool and there is no time domain parameter in
     default power flow calculations, the state of charge (SOC) is not updated during any power flow
     calculation.
@@ -818,7 +818,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
         **p_kw** (float) - The momentary real power of the storage \
             (positive for charging, negative for discharging)
-        
+
         **max_e_kwh** (float) - The maximum energy content of the storage \
             (maximum charge level)
 
@@ -826,9 +826,9 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
         **q_kvar** (float, default 0) - The reactive power of the storage
 
         **sn_kva** (float, default None) - Nominal power of the storage
-        
+
         **soc** (float, NaN) - The state of charge of the storage
-        
+
         **min_e_kwh** (float, 0) - The minimum energy content of the storage \
             (minimum charge level)
 
@@ -854,7 +854,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
         **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for a \
             controllable storage in OPF
-            
+
         **controllable** (bool, NaN) - Whether this storage is controllable by the optimal
         powerflow
 
@@ -876,7 +876,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
     # store dtypes
     dtypes = net.storage.dtypes
-        
+
     net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
                             "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
         [name, bus, p_kw, q_kvar, sn_kva, scaling,
@@ -884,7 +884,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
     # and preserve dtypes
     _preserve_dtypes(net.storage, dtypes)
-    
+
     # check for OPF parameters and add columns to network table
     if not isnan(min_p_kw):
         if "min_p_kw" not in net.storage.columns:
@@ -1485,6 +1485,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+    # tp_phase_shifter default False
+    net.trafo.tp_phase_shifter.fillna(False, inplace=True)
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)

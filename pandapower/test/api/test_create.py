@@ -107,6 +107,20 @@ def test_nonexistent_bus():
             func()
 
 
+def test_tp_phase_shifter_default():
+    expected_default = False
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
+    if "tp_phase_shifter" in data:
+        del data["tp_phase_shifter"]
+    pp.create_std_type(net, data, "without_tp_shifter_info", "trafo")
+    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
+    pp.create_transformer(net, 0, 1, "without_tp_shifter_info")
+    assert (net.trafo.tp_phase_shifter == expected_default).all()
+
+
 if __name__ == '__main__':
 #    test_convenience_create_functions()
      pytest.main(["test_create.py"])
