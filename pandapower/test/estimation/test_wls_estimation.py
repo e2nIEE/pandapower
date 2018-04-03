@@ -199,7 +199,7 @@ def test_3bus_with_transformer():
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
                                    max_i_ka=1)
-    pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV")
+    pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV v1.4.3 and older")
 
     pp.create_load(net, 1, 450, 300)
     pp.create_load(net, 2, 350, 200)
@@ -466,8 +466,8 @@ def test_init_slack_with_multiple_transformers(angles=True):
     pp.create_bus(net, 10, index=5)
     pp.create_bus(net, 10, index=6)
     pp.create_bus(net, 10, index=7, in_service=False)
-    pp.create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV", in_service=False)
-    pp.create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV")
+    pp.create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV v1.4.3 and older", in_service=False)
+    pp.create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV v1.4.3 and older")
     pp.create_transformer(net, 0, 1, std_type="100 MVA 220/110 kV")
     pp.create_line(net, 1, 2, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
     pp.create_line(net, 1, 3, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")

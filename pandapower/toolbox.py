@@ -766,8 +766,11 @@ def _pre_release_changes(net):
     if "tp_phase_shifter" not in net["trafo"].columns:
         # infer to still have the same behavior
         net["trafo"]["tp_phase_shifter"] = False
-        is_tp_phase_shifter = (net.trafo.tp_st_degree.values!=0) & np.isfinite(net.trafo.tp_st_degree.values) & ((net.trafo.tp_st_percent.values==0) | np.isnan(net.trafo.tp_st_percent.values))
-        net["trafo"]["tp_phase_shifter"].values[is_tp_phase_shifter] = True
+        if "tp_st_degree" in net["trafo"]:
+            is_tp_phase_shifter = \
+                (net.trafo.tp_st_degree.values!=0)  & np.isfinite(net.trafo.tp_st_degree.values) \
+                & ((net.trafo.tp_st_percent.values==0) | np.isnan(net.trafo.tp_st_percent.values))
+            net["trafo"]["tp_phase_shifter"].values[is_tp_phase_shifter] = True
     if "shift_mv_degree" not in net["trafo3w"].columns:
         net["trafo3w"]["shift_mv_degree"] = 0
     if "shift_lv_degree" not in net["trafo3w"].columns:
@@ -870,11 +873,12 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     INPUT:
         **net** (pandapowerNet) - the pandapower net that will be changed
 
-        **column** (string) - name of column that should be copied from bus to element table
+        **column** (string) - name of column that should be copied from the bus table to the element
+            table
 
-        **replace** (boolean) - if True, an existing column in element table will be overwritten
+        **replace** (boolean) - if True, an existing column in the element table will be overwritten
 
-        **elements** (list) - list of elements that should get the column values from bus
+        **elements** (list) - list of elements that should get the column values from the bus table
 
         **branch_bus** (list) - defines which bus should be considered for branch elements.
             'branch_bus' must have the length of 2. One entry must be 'from_bus' or 'to_bus', the
@@ -886,7 +890,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
-    elements = elements if elements is not None else [be[0] for be in element_bus_tuples()]
+    elements = elements if elements is not None else pp_elements(bus=False)
     elements_to_replace = elements if replace else [el for el in elements if column not in
                                                     net[el].columns]
     # bus elements
@@ -1043,6 +1047,14 @@ def element_bus_tuples(bus_elements=True, branch_elements=True):
     return ebt
 
 
+def pp_elements(bus=True, bus_elements=True, branch_elements=True):
+    """ Returns the list of pandapower elements. """
+    if bus:
+        return set(["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
+    else:
+        return set([el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
+
+
 def drop_buses(net, buses, drop_elements=True):
     """
     Drops specified buses, their bus_geodata and by default safely drops all elements connected to
@@ -1056,7 +1068,7 @@ def drop_buses(net, buses, drop_elements=True):
     # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-    logger.info('dropped %d buses: %s' % (len(buses), buses))
+#    logger.info('dropped %d buses: %s' % (len(buses), buses))
 
     if drop_elements:
         for element, column in element_bus_tuples():
@@ -1068,7 +1080,7 @@ def drop_buses(net, buses, drop_elements=True):
                     drop_trafos(net, eid, table=element)
                 else:
                     net[element].drop(eid, inplace=True)
-                    logger.info("dropped %s elements: %d" % (element, len(eid)))
+#                    logger.info("dropped %s elements: %d" % (element, len(eid)))
 
 
 def drop_elements_at_buses(net, buses):

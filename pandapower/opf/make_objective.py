@@ -125,7 +125,9 @@ def _make_objective(ppci, net):
 
                                 ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
 
-                                if el in ["load", "dcline"]:    # TODO: Storage?!
+                                # gencost for storages: positive costs in pandapower per definition
+                                # --> storage gencosts are similar to sgen gencosts
+                                if el in ["load", "dcline"]:
                                     ppci["gencost"][elements, COST+1:COST +
                                                     n_piece_lin_coefficients+1:2] = - f * 1e3
                                 else:
@@ -179,6 +181,9 @@ def _make_objective(ppci, net):
 
                                 elcosts = costs[costs.element_type == el]
                                 elcosts.index = elcosts.element
+                                
+                                # gencost for storages: positive costs in pandapower per definition
+                                # --> storage gencosts are similar to sgen gencosts
                                 if el in ["load", "dcline"]:
                                     ppci["gencost"][elements, COST:(COST + n_c):] = - c
                                 else:

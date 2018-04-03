@@ -107,13 +107,21 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     return ppci, Ybus, Yf, Yt
 
 
-def _run_ac_pf_without_qlims_enforced(ppci, options):
+def _get_numba_functions(ppci, options):
+    """
+    pfsoln from pypower maybe slow in some cases. This function chooses the fastest for the given pf calculation
+    """
     if options["numba"]:
         makeYbus = makeYbus_numba
         pfsoln = pfsoln_numba
     else:
         makeYbus = makeYbus_pypower
         pfsoln = pfsoln_pypower
+    return makeYbus, pfsoln
+
+
+def _run_ac_pf_without_qlims_enforced(ppci, options):
+    makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
     baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
 
