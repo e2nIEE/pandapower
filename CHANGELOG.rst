@@ -8,6 +8,7 @@ Change Log
 - [CHANGED] update create_collection docstrings
 - [CHANGED] update HV/MV transformer standard type data
 - [ADDED] pp_elements() toolbox function
+- [ADDED] new parameter g_us_per_km to model dielectric losses in lines
 
 [1.4.3] - 2018-02-06
 ----------------------

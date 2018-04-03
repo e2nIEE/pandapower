@@ -69,7 +69,7 @@ The elements in the equivalent circuit are calculated from the parameters in the
 
    \begin{align*}
     \underline{Z} &= (r\_ohm\_per\_km + j \cdot x\_ohm\_per\_km) \cdot \frac{length\_km}{parallel}  \\
-    \underline{Y}&= j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^-9 \cdot length\_km \cdot parallel
+    \underline{Y}&= (g\_us\_per\_km \cdot 1 \cdot 10^-6 + j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^-9) \cdot length\_km \cdot parallel
    \end{align*}
     
 The power system frequency :math:`f` is defined when creating an empty network, the default value is :math:`f = 50 Hz`.
