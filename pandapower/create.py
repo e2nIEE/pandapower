@@ -1265,10 +1265,11 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         "c_nf_per_km": lineparam["c_nf_per_km"],
         "max_i_ka": lineparam["max_i_ka"]
     })
+    v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+
     if "type" in lineparam:
-        v.update({"type": lineparam["type"]})
-    if not "g_us_per_km" in lineparam:
-        v.update({"g_us_per_km": 0.})
+        v["type"] = lineparam["type"]
+        
 
     # store dtypes
     dtypes = net.line.dtypes
