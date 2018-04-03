@@ -1268,7 +1268,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "type" in lineparam:
         v.update({"type": lineparam["type"]})
     if not "g_us_per_km" in lineparam:
-        v.update({"g_us_per_km": 0})
+        v.update({"g_us_per_km": 0.})
 
     # store dtypes
     dtypes = net.line.dtypes
