@@ -35,7 +35,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     :width: 25em
 
 .. image:: https://www.iee.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/fraunhofer-iee.gif
-   :target: https://www.iee.fraunhofer.de/en.html
+    :target: https://www.iee.fraunhofer.de/en.html
     :width: 25em
 
 |
