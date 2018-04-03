@@ -1213,7 +1213,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **std_type** (string) - The linetype of a standard line pre-defined in standard_linetypes.
 
     OPTIONAL:
-        **name** (string) - A custom name for this line
+        **name** (string, None) - A custom name for this line
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -1224,12 +1224,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **df** (float) - derating factor: maximal current of line in relation to nominal current \
+        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current \
             of line (from 0 to 1)
 
-        **parallel** (integer) - number of parallel line systems
+        **parallel** (integer, 1) - number of parallel line systems
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -1297,7 +1297,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 max_loading_percent=nan, **kwargs):
     """create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km, \
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None, \
-                                geodata=None, in_service=True, df=1., parallel=1, \
+                                geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,\
                                 max_loading_percent=nan, **kwargs)
     Creates a line element in net["line"] from line parameters.
 
@@ -1314,24 +1314,26 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
-        **c_nf_per_km** (float) - line capacitance in nF per km
-
+        **c_nf_per_km** (float) - line capacitance in nano Farad per km
+       
         **max_i_ka** (float) - maximum thermal current in kA
 
     OPTIONAL:
-        **name** (string) - A custom name for this line
+        **name** (string, None) - A custom name for this line
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **type** (str) - type of line ("ol" for overhead line or "cs" for cable system)
+        **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
 
-        **df** (float) - derating factor: maximal current of line in relation to nominal current \
+        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current \
             of line (from 0 to 1)
 
-        **parallel** (integer) - number of parallel line systems
+        **g_us_per_km** (float, 0) - line conductance in micro Siemens per km
+            
+        **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
         (array, default None, shape= (,2L)) -
