@@ -71,8 +71,10 @@ def result_test_network_generator_dcpp(sn_kva=1e3):
 def add_test_line(net):
     b1, b2, l1 = add_grid_connection(net, zone="test_line")
     net.line.parallel.at[l1] = 2
+    net.line.g_us_per_km.at[l1] = 1
     pp.create_load(net, b2, p_kw=1200, q_kvar=1100)
     l2 = create_test_line(net, b1, b2)
+    net.line.g_us_per_km.at[l2] = 1
     pp.create_switch(net, b2, l2, et="l", closed=False)
     create_test_line(net, b1, b2, in_service=False)
     net.last_added_case = "test_line"

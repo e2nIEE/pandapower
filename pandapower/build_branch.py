@@ -150,8 +150,10 @@ def _calc_line_parameter(net, ppc):
         if net["_options"]["case"] == "min":
             t[:, 2] *= _end_temperature_correction_factor(net)
     else:
-        t[:, 4] = (2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR *
+        b = (2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR *
                    length * parallel)
+        g = line["g_us_per_km"].values * 1e-6 * baseR * length * parallel
+        t[:, 4] = b - g * 1j
     t[:, 5] = line["in_service"].values
     if copy_constraints_to_ppc:
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0

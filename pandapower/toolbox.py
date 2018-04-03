@@ -672,6 +672,8 @@ def convert_format(net):
                     else:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
                                                              errors="ignore")
+    if not "g_us_per_km" in net.line:
+        net.line["g_us_per_km"] = 0.
     return net
 
 
