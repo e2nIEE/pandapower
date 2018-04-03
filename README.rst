@@ -28,14 +28,14 @@ pandapower combines the data analysis library `pandas <http://pandas.pydata.org>
 aimed at automation of analysis and optimization in power systems.
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
-Operation at the Fraunhofer Institute for Wind Energy and Energy System Technology (IWES), Kassel.
+Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
     :width: 25em
 
-.. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
-   :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
+.. image:: https://www.iee.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/fraunhofer-iee.gif
+   :target: https://www.iee.fraunhofer.de/en.html
     :width: 25em
 
 |
