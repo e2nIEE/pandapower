@@ -30,11 +30,11 @@ aimed at automation of analysis and optimization in power systems.
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
-.. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
+.. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/e2n.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
     :width: 25em
 
-.. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f2c5bc4575.gif
+.. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/iee.png
     :target: https://www.iee.fraunhofer.de/en.html
     :width: 25em
 
