@@ -1316,7 +1316,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **c_nf_per_km** (float) - line capacitance in nano Farad per km
        
-        **max_i_ka** (float) - maximum thermal current in kA
+        **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
         **name** (string, None) - A custom name for this line
@@ -1331,7 +1331,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **df** (float, 1) - derating factor: maximal current of line in relation to nominal current \
             of line (from 0 to 1)
 
-        **g_us_per_km** (float, 0) - line conductance in micro Siemens per km
+        **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
             
         **parallel** (integer, 1) - number of parallel line systems
 
@@ -1340,8 +1340,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         The linegeodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
-
-        **kwargs** - nothing to see here, go along
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -1573,8 +1571,6 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
-
-        **kwargs** - nothing to see here, go along
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
