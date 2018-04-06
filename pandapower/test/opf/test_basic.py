@@ -663,8 +663,8 @@ def test_storage_opf():
 
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
-    #test_storage_opf()
+    #pytest.main(['-s', __file__])
+    test_storage_opf()
     #test_opf_varying_max_line_loading()
      # pytest.main(["test_basic.py", "-s"])
     # test_simplest_dispatch()

@@ -8,6 +8,7 @@
 # Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
 # by a BSD-style license that can be found in the LICENSE file.
 
+import pandas as pd
 from numpy import zeros, array, concatenate, power
 from pandapower.idx_cost import MODEL, NCOST, COST
 
@@ -77,50 +78,51 @@ def _make_objective(ppci, net):
         ppci["gencost"] = zeros((len_gencost, 4 + n_coefficients), dtype=float)
         ppci["gencost"][:, MODEL:COST] = array([2, 0, 0, n_coefficients])
 
-        for cost_type in ["p", "q"]:
+        if len(net.piecewise_linear_cost):
+            for cost_type in ["p", "q"]:
+                if (net.piecewise_linear_cost.type == cost_type).any():
+                    costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == cost_type].reset_index(
+                        drop=True)
 
-            if cost_type == "q":
-                shift_idx = ng
-                sign_corr = -1
-            else:
-                shift_idx = 0
-                sign_corr = 1
+                    if cost_type == "q":
+                        shift_idx = ng
+                        sign_corr = -1
+                    else:
+                        shift_idx = 0
+                        sign_corr = 1
 
-            for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
-
-                if el == "gen":
-                    idx = gen_idx
-                elif el == "sgen":
-                    idx = sgen_idx
-                elif el == "ext_grid":
-                    idx = eg_idx
-                elif el == "load":
-                    idx = load_idx
-                elif el == "storage":
-                    idx = stor_idx
-                elif el == "dcline":
-                    idx = dcline_idx
-
-                if len(net.piecewise_linear_cost):
-
-                    if (net.piecewise_linear_cost.type == cost_type).any():
-                        costs = net.piecewise_linear_cost[
-                                net.piecewise_linear_cost.type == cost_type].reset_index(drop=True)
+                    # for element types with costs defined
+                    #for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
+                    for el in pd.unique(costs.element_type):
 
                         if not costs.element[costs.element_type == el].empty:
 
+                            if el == "gen":
+                                idx = gen_idx
+                            elif el == "sgen":
+                                idx = sgen_idx
+                            elif el == "ext_grid":
+                                idx = eg_idx
+                            elif el == "load":
+                                idx = load_idx
+                            elif el == "storage":
+                                idx = stor_idx
+                            elif el == "dcline":
+                                idx = dcline_idx
+
                             # cost data to write into gencost
-                            el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(
+                            # TODO - Gitlab Issue #27 - only write cost data of controllable and in service elements
+                            el_is = net[el].loc[net[el].in_service & net[el].index.isin(
                                     costs.loc[costs.element_type == el].element)].index
                             p = costs.loc[(costs.element_type == el) & (
                                     costs.element.isin(el_is))].p.reset_index(drop=True)
                             f = costs.loc[(costs.element_type == el) & (
                                     costs.element.isin(el_is))].f.reset_index(drop=True)
+
                             if len(p) > 0:
                                 p = concatenate(p)
                                 f = concatenate(f)
                                 # gencost indices
-
                                 elements = idx[el_is] + shift_idx
 
                                 ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
@@ -140,8 +142,7 @@ def _make_objective(ppci, net):
         if len(net.polynomial_cost):
             for cost_type in ["p", "q"]:
                 if (net.polynomial_cost.type == cost_type).any():
-                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(
-                        drop=True)
+                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(drop=True)
 
                     if cost_type == "q":
                         shift_idx = ng
@@ -150,7 +151,9 @@ def _make_objective(ppci, net):
                         shift_idx = 0
                         sign_corr = 1
 
-                    for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
+                    # for element types with costs defined
+                    #for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
+                    for el in pd.unique(costs.element_type):
 
                         if not costs.element[costs.element_type == el].empty:
                             if el == "gen":
@@ -166,7 +169,9 @@ def _make_objective(ppci, net):
                             if el == "dcline":
                                 idx = dcline_idx
 
-                            el_is = net[el].loc[(net[el].in_service) & net[el].index.isin(
+                            # cost data to write into gencost
+                            # TODO - Gitlab Issue #27 - only write cost data of controllable and in service elements
+                            el_is = net[el].loc[net[el].in_service & net[el].index.isin(
                                 costs.loc[costs.element_type == el].element)].index
                             c = costs.loc[(costs.element_type == el) &
                                           (costs.element.isin(el_is))].c.reset_index(drop=True)
