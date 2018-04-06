@@ -2412,11 +2412,12 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
      - Static Generator
      - Load
      - Dcline
+     - Storage
 
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] \
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
         **data_points** - (numpy array) Numpy array containing n data points (see example)
@@ -2434,8 +2435,9 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
         create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
 
     NOTE:
-      costs for reactive power can only be quadratic, linear or constant. No higher grades \
+      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
           supported.
+      - costs for storages are positive per definition (similar to sgen costs)
     """
 
     if index is None:
@@ -2518,14 +2520,16 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
      - Static Generator
      - Load
      - Dcline
+     - Storage
 
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] \
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
-        **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
+        **data_points** - (numpy array) Numpy array containing n cost coefficients, starting with highest \
+            order (see example)
 
         **type ** -"p" or "q"
 
@@ -2540,6 +2544,9 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
 
     EXAMPLE:
         create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+
+    NOTE:
+        - costs for storages are positive per definition (similar to sgen costs)
     """
 
     if index is None:
