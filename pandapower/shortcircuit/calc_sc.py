@@ -26,7 +26,6 @@ from pandapower.shortcircuit.results import _extract_results
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False):
-
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -91,7 +90,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         print(net.res_bus_sc)
     """
     if fault not in ["3ph", "2ph", "1ph"]:
-        raise NotImplementedError("Only 3ph, 2ph and 1ph short-circuit currents implemented")
+        raise NotImplementedError(
+            "Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
         logger.warning("aperiodic and thermal short-circuit currents are only implemented for "
@@ -101,7 +101,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
                                 "circuit current')
     if topology not in ["meshed", "radial", "auto"]:
-        raise ValueError('specify network structure as "meshed", "radial" or "auto"')
+        raise ValueError(
+            'specify network structure as "meshed", "radial" or "auto"')
 
     if branch_results:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
@@ -125,7 +126,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
 
 def _calc_sc(net):
-#    t0 = time.perf_counter()
+    #    t0 = time.perf_counter()
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
 #    t1 = time.perf_counter()
@@ -154,7 +155,11 @@ def _calc_sc(net):
 #    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
 #               "currents": t5-t4}
 
+
 def _calc_sc_1ph(net):
+    """
+    calculation method for single phase to ground short-circuit currents
+    """
     _add_auxiliary_elements(net)
 # pos. seq bus impedance
     ppc, ppci = _pd2ppc(net)
