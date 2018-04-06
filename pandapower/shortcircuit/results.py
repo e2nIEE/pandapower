@@ -10,9 +10,9 @@ import pandas as pd
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
 from pandapower.shortcircuit.idx_bus import IKSS1, IP, ITH, IKSS2
 
-def _extract_results(net, ppc):
+def _extract_results(net, ppc, ppc_0):
     _initialize_result_tables(net)
-    _get_bus_results(net, ppc)
+    _get_bus_results(net, ppc, ppc_0)
     if net._options["branch_results"]:
         _get_line_results(net, ppc)
         _get_trafo_results(net, ppc)
@@ -24,10 +24,13 @@ def _initialize_result_tables(net):
     net.res_trafo_sc = pd.DataFrame(index=net.trafo.index)
     net.res_trafo3w_sc = pd.DataFrame(index=net.trafo3w.index)
 
-def _get_bus_results(net, ppc):
+def _get_bus_results(net, ppc, ppc_0):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
-    net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] +  ppc["bus"][ppc_index, IKSS2]
+    if net["_options"]["fault"] == "1ph":
+        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
+    else:
+        net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
     if net._options["ith"]:

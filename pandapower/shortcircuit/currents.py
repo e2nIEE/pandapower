@@ -24,6 +24,18 @@ def _calc_ikss(net, ppc):
         ppc["bus"][:, IKSS1] = c / z_equiv / ppc["bus"][:, BASE_KV] / 2 * ppc["baseMVA"]
     _current_source_current(net, ppc)
 
+def _calc_ikss_1ph(net, ppc, ppc_0):
+    fault = net._options["fault"]
+    case = net._options["case"]
+    c = ppc["bus"][:, C_MIN] if case == "min" else ppc["bus"][:, C_MAX]
+    ppc["internal"]["baseI"] = ppc["bus"][:, BASE_KV] * np.sqrt(3) / ppc["baseMVA"]
+    ppc_0["internal"]["baseI"] = ppc_0["bus"][:, BASE_KV] * np.sqrt(3) / ppc_0["baseMVA"]
+    z_equiv = abs((ppc["bus"][:, R_EQUIV] + ppc["bus"][:, X_EQUIV] *1j)*2 +\
+                 (ppc_0["bus"][:, R_EQUIV] + ppc_0["bus"][:, X_EQUIV]*1j))
+    if fault == "1ph":
+        ppc_0["bus"][:, IKSS1] = c / z_equiv  / ppc_0["bus"][:, BASE_KV] * np.sqrt(3) * ppc_0["baseMVA"]
+        _current_source_current(net, ppc)
+        
 def _current_source_current(net, ppc):
     ppc["bus"][:, IKCV] = 0
     ppc["bus"][:, IKSS2] = 0
