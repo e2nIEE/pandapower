@@ -7,21 +7,113 @@ This is a temporary script file.
 
 import math
 import numpy as np
-from pandapower.auxiliary import _sum_by_group, get_values
+import copy
+import pandapower.auxiliary as aux
+from pandapower.pd2ppc import _init_ppc
+from pandapower.build_bus import _build_bus_ppc
+from pandapower.build_gen import _init_ppc_gen, _build_gen_ppc
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
-from pandapower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS
+from pandapower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.idx_bus import BASE_KV, BS, GS
-from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor
+from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
 from pandapower.shortcircuit.idx_bus import C_MAX
+from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
+#
 
 def _pd2ppc_zero(net):
-    ppc_0, ppci_0 = _pd2ppc(net)
-    _add_ext_grid_sc_impedance_zero(net, ppc_0)
-    _calc_line_sc_impedance_zero(net, ppc_0)
-    _add_trafo_sc_impedance_zero(net,ppc_0, trafo_df=None)
-    ppci_0 = _ppc2ppci(ppc_0, ppci_0, net)
-    return ppc_0, ppci_0
+    """
+    Converter Flow:
+        1. Create an empty pypower datatructure
+        2. Calculate loads and write the bus matrix
+        3. Build the gen (Infeeder)- Matrix
+        4. Calculate the line parameter and the transformer parameter,
+           and fill it in the branch matrix.
+           Order: 1st: Line values, 2nd: Trafo values
+        5. if opf: make opf objective (gencost)
+        6. convert internal ppci format for pypower powerflow / opf without out of service elements and rearanged buses
 
+    INPUT:
+        **net** - The pandapower format network
+
+    OUTPUT:
+        **ppc** - The simple matpower format network. Which consists of:
+                  ppc = {
+                        "baseMVA": 1., *float*
+                        "version": 2,  *int*
+                        "bus": np.array([], dtype=float),
+                        "branch": np.array([], dtype=np.complex128),
+                        "gen": np.array([], dtype=float),
+                        "gencost" =  np.array([], dtype=float), only for OPF
+                        "internal": {
+                              "Ybus": np.array([], dtype=np.complex128)
+                              , "Yf": np.array([], dtype=np.complex128)
+                              , "Yt": np.array([], dtype=np.complex128)
+                              , "branch_is": np.array([], dtype=bool)
+                              , "gen_is": np.array([], dtype=bool)
+                              }
+        **ppci** - The "internal" pypower format network for PF calculations
+    """
+    # select elements in service (time consuming, so we do it once)
+    net["_is_elements"] = aux._select_is_elements_numba(net)
+
+    # get options
+    mode = net["_options"]["mode"]
+
+    ppc = _init_ppc(net)
+    # init empty ppci
+    ppci = copy.deepcopy(ppc)
+    _build_bus_ppc(net, ppc)
+    _build_gen_ppc(net, ppc)
+    if mode == "sc":
+        _add_ext_grid_sc_impedance_zero(net, ppc)
+    _build_branch_ppc_zero(net, ppc)
+
+    # adds auxilary buses for open switches at branches
+    _switch_branches(net, ppc)
+
+    # add auxilary buses for out of service buses at in service lines.
+    # Also sets lines out of service if they are connected to two out of service buses
+    _branches_with_oos_buses(net, ppc)
+
+    # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
+    # Note: Also reorders buses and gens in ppc
+    ppci = _ppc2ppci(ppc, ppci, net)
+    net._ppc0 = ppci
+    return ppc, ppci
+
+def _build_branch_ppc_zero(net, ppc):
+    """
+    Takes the empty ppc network and fills it with the branch values. The branch
+    datatype will be np.complex 128 afterwards.
+
+    .. note:: The order of branches in the ppc is:
+            1. Lines
+            2. Transformers
+            3. 3W Transformers (each 3W Transformer takes up three branches)
+            4. Impedances
+            5. Internal branch for extended ward
+
+    **INPUT**:
+        **net** -The pandapower format network
+
+        **ppc** - The PYPOWER format network to fill in values
+
+    """
+    length = _initialize_branch_lookup(net)
+    lookup = net._pd2ppc_lookups["branch"]
+    mode = net._options["mode"]
+    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+    if mode == "sc":
+        from pandapower.shortcircuit.idx_brch import branch_cols_sc
+        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
+        branch_sc.fill(np.nan)
+        ppc["branch"] = np.hstack((ppc["branch"], branch_sc ))
+    ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    _add_line_sc_impedance_zero(net, ppc)
+    _add_trafo_sc_impedance_zero_new(net, ppc)
+    if "trafo3w" in lookup:
+        raise NotImplemented("Three winding transformers are not implemented for unbalanced calculations")
+    
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -48,7 +140,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["r"] = r_grid
     eg["x"] = x_grid
 
-# ext_grid zero sequence impedance 
+    # ext_grid zero sequence impedance 
     if case == "max":
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
@@ -56,12 +148,12 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid       
     y0_grid = 1 / (r0_grid + x0_grid*1j)
-    buses, gs, bs = _sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
+    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 
 
-def _calc_line_sc_impedance_zero(net, ppc):
+def _add_line_sc_impedance_zero(net, ppc):
     line = net["line"]
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -73,22 +165,30 @@ def _calc_line_sc_impedance_zero(net, ppc):
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
 # line zero sequence impedance
+        ppc["branch"][f:t, F_BUS] = bus_lookup[line["from_bus"].values]
+        ppc["branch"][f:t, T_BUS] = bus_lookup[line["to_bus"].values]
         ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
         ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
         ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
 
-def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
+def _add_trafo_sc_impedance_zero_new(net, ppc, trafo_df=None):
     if trafo_df is None:
         trafo_df = net["trafo"]
-# checkout the collection index of non-ynyn trafos and ynyn-trafo        
-    idx_ynyn, idx_no_ynyn = _get_trafo_index(net, ppc, trafo_df)
-
-# delete the non YNyn type trafo rows in ppc["branch"]
-    ppc["branch"] = np.delete(ppc["branch"], idx_no_ynyn, 0)
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    f, t = branch_lookup["line"]
+    mode = net["_options"]["mode"]
+    f, t = branch_lookup["trafo"]
+    ppc["branch"][f:t, F_BUS] = bus_lookup[trafo_df["hv_bus"].values]
+    ppc["branch"][f:t, T_BUS] = bus_lookup[trafo_df["lv_bus"].values]
+    vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
+    ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
+                                               bus_lookup)
+    ppc["branch"][f:t, TAP] = ratio
+    ppc["branch"][f:t, SHIFT] = shift
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+#    for idx, trafo_idx in trafo_df.iterrows():
     for idx in trafo_df.index:
+        ppc["branch"][f, BR_STATUS] = 0
         trafo_idx = trafo_df[trafo_df.index == idx]
 #        bus_lookup = net["_pd2ppc_lookups"]["bus"]
 #        vn_lv = get_values(ppc["bus"][:, BASE_KV], trafo_idx["lv_bus"].values, bus_lookup)
@@ -98,8 +198,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         trafo_type = trafo_idx.loc[idx, "vector_group"]
         vn_lv = ppc["bus"][trafo_buses_lv, BASE_KV]
 # kt: transformer correction factor 
-        cmax = net._ppc["bus"][bus_lookup[int(trafo_idx["lv_bus"])], C_MAX]
-        kt = _transformer_correction_factor(trafo_idx["vsc_percent"], trafo_idx["vscr_percent"], trafo_idx["sn_kva"], cmax)
+        if mode == "sc":
+            cmax = net._ppc["bus"][bus_lookup[int(trafo_idx["lv_bus"])], C_MAX]
+            kt = _transformer_correction_factor(trafo_idx["vsc_percent"], trafo_idx["vscr_percent"], trafo_idx["sn_kva"], cmax)
+        else:
+            kt = 1.
 # zero seq. transformer impedance without kt
         r0_trafo, x0_trafo = _calc_trafo_sc_impedance_zero(net, trafo_idx, vn_lv, vn_trafo_lv, net.sn_kva)
 # zero sequence transformer magnetising impedance 
@@ -117,7 +220,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             x0_dyn = kt * x0_trafo          
             y0_dyn = 1 / (r0_dyn + x0_dyn*1j)
             trafo_buses_ppc = bus_lookup[trafo_buses_lv]
-            buses, gs, bs = _sum_by_group(trafo_buses_ppc, y0_dyn.real, y0_dyn.imag)
+            buses, gs, bs = aux._sum_by_group(trafo_buses_ppc, y0_dyn.real, y0_dyn.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
              
@@ -127,7 +230,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             x0_ynd = x0_trafo * kt
             y0_ynd = 1/ (r0_ynd + x0_ynd*1j)
             trafo_buses_ppc = bus_lookup[trafo_buses_hv]
-            buses, gs, bs = _sum_by_group(trafo_buses_ppc, y0_ynd.real, y0_ynd.imag)
+            buses, gs, bs = aux._sum_by_group(trafo_buses_ppc, y0_ynd.real, y0_ynd.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
@@ -138,7 +241,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             x0_yyn = x0_trafo*kt + x0_trafo_mag
             y0_yyn = 1 / (r0_yyn + x0_yyn*1j)
             trafo_buses_ppc = bus_lookup[trafo_buses_lv]
-            buses, gs, bs = _sum_by_group(trafo_buses_ppc, y0_yyn.real, y0_yyn.imag)
+            buses, gs, bs = aux._sum_by_group(trafo_buses_ppc, y0_yyn.real, y0_yyn.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
@@ -149,11 +252,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             x0_yny = x0_trafo*kt + x0_trafo_mag
             y0_yny = 1 / (r0_yny + x0_yny*1j)
             trafo_buses_ppc = bus_lookup[trafo_buses_hv]
-            buses, gs, bs = _sum_by_group(trafo_buses_ppc, y0_yny.real, y0_yny.imag)
+            buses, gs, bs = aux._sum_by_group(trafo_buses_ppc, y0_yny.real, y0_yny.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
         elif "YNyn" in trafo_type:
+            ppc["branch"][f, BR_STATUS] = 1
 #            r0_ynyn, x0_ynyn = _calc_trafo_sc_impedance_zero(net, trafo_idx, vn_lv, vn_trafo_lv, net.sn_kva)
             r0_ynyn = kt * r0_trafo
             x0_ynyn = kt * x0_trafo
@@ -174,24 +278,18 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             za = z_temp / z2
             zb = z_temp / z1
             zc = z_temp / z3
-            
-            if trafo_idx.loc[idx, "si0_hv_partial"] == 0.5:
-                ppc["branch"][t:t+1, BR_R] = zc.real
-                ppc["branch"][t:t+1, BR_X] = zc.imag
-                ppc["branch"][t:t+1, BR_B] = (2/za).imag - (2/za).real*1j
-                t += 1
-            else:             
+
+            ppc["branch"][f, BR_R] = zc.real
+            ppc["branch"][f, BR_X] = zc.imag
+            ppc["branch"][f, BR_B] = (2/za).imag - (2/za).real*1j
+            if trafo_idx.loc[idx, "si0_hv_partial"] != 0.5:
 # add a shunt element parallel to zb if the leakage impedance distribution is unequal                
                 zs = (za * zb)/(za - zb)
                 ys = 1 / zs
-
-                ppc["branch"][t:t+1, BR_R] = zc.real
-                ppc["branch"][t:t+1, BR_X] = zc.imag
-                ppc["branch"][t:t+1, BR_B] = (2/za).imag - (2/za).real*1j
                 t += 1
                 
                 trafo_buses_ppc = bus_lookup[trafo_buses_lv]
-                buses, gs, bs = _sum_by_group(trafo_buses_ppc, ys.real, ys.imag)
+                buses, gs, bs = aux._sum_by_group(trafo_buses_ppc, ys.real, ys.imag)
                 ppc["bus"][buses, GS] += gs
                 ppc["bus"][buses, BS] += bs
 
@@ -206,30 +304,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif "Dd" in trafo_type:
             pass
-
-def _get_trafo_index(net, ppc, trafo_df):
-    """
-        idx_no_ynyn:find out the non YNyn type trafo index in ppc["branch"]
-        idx_ynyn: YNyn type trafo index
-    """
-    if trafo_df is None:
-        trafo_df = net["trafo"]
-    branch_lookup = net._pd2ppc_lookups["branch"]
-    f, t = branch_lookup["trafo"]
-    idx_no_ynyn = []
-    idx_ynyn = []
-    for idx in trafo_df.index:
-        trafo_idx = trafo_df[trafo_df.index == idx]
-        if "YNyn" in trafo_idx.loc[idx, "vector_group"]:
-            for i in list(range(f,t)):
-                if trafo_idx["hv_bus"].values == ppc["branch"][i, F_BUS] and trafo_idx["lv_bus"].values == ppc["branch"][i, T_BUS]:
-                    idx_ynyn.append(i)
-        else:
-            for n in list(range(f,t)):
-                if trafo_idx["hv_bus"].values == ppc["branch"][n, F_BUS] and trafo_idx["lv_bus"].values == ppc["branch"][n, T_BUS]:
-                    idx_no_ynyn.append(n)
-    return idx_ynyn, idx_no_ynyn
-
+        f += 1
 
 def _calc_trafo_sc_impedance_zero(net, trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     """
