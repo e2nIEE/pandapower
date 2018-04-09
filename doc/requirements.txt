@@ -1,0 +1,4 @@
+numpydoc
+pypower
+networkx
+sphinx==1.5.6

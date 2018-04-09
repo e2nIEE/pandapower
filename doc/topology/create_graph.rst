@@ -26,7 +26,7 @@ The following attributes get transferred into the MultiGraph:
 |   - length_km            |    - index        |
 |   - index                |    - in_service   |
 |   - in_service           |                   |
-|   - imax_ka              |                   |
+|   - max_i_ka             |                   |
 +--------------------------+-------------------+
 
 Apart from these there are no element attributes contained in the MultiGraph!
@@ -55,7 +55,7 @@ The function create_nxgraph function from the pandapower.topology package allows
 
 .. code:: python
 
-	create_nxgraph(net, include_lines = False)
+	create_nxgraph(net, include_lines = False, include_impedances = False)
 
 .. image:: /pics/multigraph_example_include_lines.png
 	:width: 42em

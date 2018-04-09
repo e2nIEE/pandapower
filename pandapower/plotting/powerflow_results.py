@@ -1,23 +1,27 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import matplotlib.pyplot as plt
 import numpy as np
 from itertools import combinations
 import pandapower.topology as top
+import pandas as pd
+import networkx as nx
 
 
 def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance from Slack [km]",
                          ylabel="Voltage [pu]", x0=0, trafocolor="r", bus_colors=None,
-                         line_loading_weight=False, **kwargs):
+                         line_loading_weight=False, voltage_column=None, bus_size=3, **kwargs):
     if ax is None:
         plt.figure(facecolor="white", dpi=120)
         ax = plt.gca()
     if not net.converged:
         raise ValueError("no results in this pandapower network")
+    if voltage_column is None:
+        voltage_column = net.res_bus.vm_pu
     for eg in net.ext_grid[net.ext_grid.in_service == True].bus:
         d = top.calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service == True].iterrows():
@@ -29,7 +33,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                 to_bus = line.to_bus
                 x = [x0 + d.at[from_bus], x0 + d.at[to_bus]]
                 try:
-                    y = [net.res_bus.vm_pu.at[from_bus], net.res_bus.vm_pu.at[to_bus]]
+                    y = [voltage_column.at[from_bus], voltage_column.at[to_bus]]
                 except:
                     raise UserWarning
                 if "linewidth" in kwargs or not line_loading_weight:
@@ -40,7 +44,7 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
                 if bus_colors is not None:
                     for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
-                            ax.plot(x, y, 'or', color=bus_colors[bus], ms=3)
+                            ax.plot(x, y, 'or', color=bus_colors[bus], ms=bus_size)
                 kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
         # if plot_transformers:
         #     if hasattr(plot_transformers, "__iter__"):  # if is a list for example
@@ -52,8 +56,8 @@ def plot_voltage_profile(net, plot_transformers=True, ax=None, xlabel="Distance 
         #             continue
         #         ax.plot([x0 + d.loc[transformer.hv_bus],
         #                  x0 + d.loc[transformer.lv_bus]],
-        #                 [net.res_bus.vm_pu.loc[transformer.hv_bus],
-        #                  net.res_bus.vm_pu.loc[transformer.lv_bus]], color=trafocolor,
+        #                 [voltage_column.loc[transformer.hv_bus],
+        #                  voltage_column.loc[transformer.lv_bus]], color=trafocolor,
         #                 **{k: v for k, v in kwargs.items() if not k == "color"})
 
         # trafo geodata
@@ -99,12 +103,47 @@ def plot_loading(net, element="line", boxcolor="b", mediancolor="r", whiskercolo
             plt.setp(boxplot[l], color=whiskercolor)
 
 
+def voltage_profile_to_bus_geodata(net, voltages=None):
+    if voltages is None:
+        if not net.converged:
+            raise ValueError("no results in this pandapower network")
+        voltages = net.res_bus.vm_pu
+
+    mg =  top.create_nxgraph(net, respect_switches=True)
+    first_eg = net.ext_grid.bus.values[0]
+    mg.add_edges_from([(first_eg, y, {"weight": 0}) for y in net.ext_grid.bus.values[1:]])
+    dist = pd.Series(nx.single_source_dijkstra_path_length(mg, first_eg))
+
+    bgd = pd.DataFrame({"x": dist.loc[net.bus.index.values].values,
+                        "y": voltages.loc[net.bus.index.values].values},
+                       index=net.bus.index)
+    return bgd
+
+
 if __name__ == "__main__":
     import pandapower as pp
     import pandapower.networks as nw
+    import pandas as pd
+    import networkx as nx
+    import plotting
 
-    net = nw.create_cigre_network_mv()
+    net = nw.mv_oberrhein()
     pp.runpp(net)
-    plot_voltage_profile(net, line_loading_weight=True)
-    plot_loading(net)
-    plt.show()
+    mg =  top.create_nxgraph(net, respect_switches=True)
+    feeders = list(top.connected_components(mg, notravbuses=set(net.trafo.lv_bus.values)))
+    lines_with_open_switches = set(net.switch.query("not closed and et == 'l'").element.values)
+    
+    fig, axs = plt.subplots(2)
+    for bgd, ax in zip([net.bus_geodata, voltage_profile_to_bus_geodata(net)], axs):
+        for color, f in zip(["C0", "C1", "C2", "C3"], feeders):
+            l = set(net.line.index[net.line.from_bus.isin(f)]) - lines_with_open_switches
+            c = plotting.create_line_collection(net, lines=l, use_bus_geodata=True, color=color,
+                                                bus_geodata=bgd)
+            ax.add_collection(c)
+#            ax.scatter(bgd["x"], bgd["y"])
+            ax.autoscale_view(True, True, True)
+
+    h = 0.02
+#    bc = plotting.create_bus_collection(net, buses=net.ext_grid.bus.values, width=h / ax.get_data_ratio(), height=h, bus_geodata=bgd)
+#    ax.add_collection(bc)
+

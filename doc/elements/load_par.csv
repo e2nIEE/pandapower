@@ -1,8 +1,15 @@
 **Parameter**;**Datatype**;**Value Range**;**Explanation**
 name;string;;name of the load
 bus *;integer;;index of connected bus
-p_kw*;float;:math:`\geq` 0;active power of the load [kW]
+p_kw*;float;:math:`\geq 0`;active power of the load [kW]
 q_kvar*;float;;reactive power of the load [kVar]
-sn_kva;float;:math:`>` 0;rated power of the load [kVA]
-scaling *;float;:math:`\geq` 0;scaling factor for active and reactive power
+const_z_percent*;float;:math:`[0,100]`;percentage of p_kw and q_kvar that is associated to constant impedance load at rated voltage [:math:`\%`]
+const_i_percent*;float;:math:`[0,100]`;percentage of p_kw and q_kvar that is associated to constant current load at rated voltage [:math:`\%`]
+sn_kva;float;:math:`>0`;rated power of the load [kVA]
+scaling *;float;:math:`\geq 0`;scaling factor for active and reactive power
 in_service*;boolean;True / False;specifies if the load is in service.
+controllable**;bool;;States if load is controllable or not, load will not be used as a flexibilty if it is not controllable
+max_p_kw**;float;;Maximum active power
+min_p_kw**;float;;Minimum active power
+max_q_kvar**;float;;Maximum reactive power
+min_q_kvar**;float;;Minimum reactive power

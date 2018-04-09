@@ -40,7 +40,8 @@ Since pandapower was developed for distribution systems, all power values are gi
 
 Bus voltages are given in the per unit system. The per unit values are relative to the phase-to-phase voltages defined in net.bus.vn_kv for each bus. 
 
-Internally, pandapower calculates with a nominal apparent power of :math:`S_{N} = 1 MVA` for the per unit system, which however should not be relevant for the user since all power values are given in physical units.
+The rated apparent power for the per unit system can be defined with the net.sn_kva parameter when creating an empty network. The default value is :math:`S_{N} = 1000 kVA`.
+The value should not be relevant in most applications since all power values are given in physical units.
 
 **Signing System**
 
@@ -54,5 +55,6 @@ The power flow values for branch elements (lines & transformer) are always defin
 **Frequency**
 
 The frequency can be defined when creating an empty network. The frequency is only used to calculate the shunt admittance of lines, since the line reactance is given directly in ohm per kilometer.
+The frequency is also relevant when calculating the peak factor :math:`\kappa` in the short circuit calculation.
 
 The standard frequency in pandapower is 50 Hz, and the pandapower standard types are also chosen for 50 Hz systems. If you use a different frequency, please be aware that the line reactance values might not be realistic.

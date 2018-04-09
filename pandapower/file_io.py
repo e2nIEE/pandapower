@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import copy
 import json
@@ -238,10 +238,14 @@ def from_pickle(filename, convert=True):
                 # TODO: is this legacy code?
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
-                    net[key] = net[key].reindex_axis(item["columns"], axis=1)
+                    try:
+                        net[key] = net[key].reindex(item["columns"], axis=1)
+                    except: #legacy for pandas <0.21
+                        net[key] = net[key].reindex_axis(item["columns"], axis=1)
+                      
 
             if "dtypes" in item:
-                if "geometry" in df_dict["columns"]:
+                if "columns" in df_dict and "geometry" in df_dict["columns"]:
                     pass
                 else:
                     try:
@@ -277,7 +281,13 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    xls = pd.ExcelFile(filename).parse(sheetname=None)
+    try:
+        # pandas < 0.21
+        xls = pd.ExcelFile(filename).parse(sheetname=None)
+    except:
+        # pandas 0.21
+        xls = pd.ExcelFile(filename).parse(sheet_name=None)
+
     try:
         net = from_dict_of_dfs(xls)
         restore_all_dtypes(net, xls["dtypes"])

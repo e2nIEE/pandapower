@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import _pd2ppc
@@ -63,10 +63,10 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
             PV buses as initial solution
             - "results" - voltage vector from net.res_bus is used as initial solution.
 
-        **mode** (str, None) - mode of power flow calculation type ("pf" - power flow or "opf" - \
-        optimal power flow). "mode" influences for instance whether opf cost data will be \
-        converted or which slack bus voltage limits are respected. If "mode" is None, cost data \
-        will be respected via mode="opf" if cost data are existing.
+        **mode** (str, None) - mode of power flow calculation type ("pf" - power flow, "opf" - \
+        optimal power flow or "sc" - short circuit). "mode" influences for instance whether opf \
+        cost data will be converted or which slack bus voltage limits are respected. If "mode" \
+        is None, cost data will be respected via mode="opf" if cost data are existing.
 
     OUTPUT:
 

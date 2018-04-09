@@ -1,6 +1,0 @@
-pypower>=5.0.1
-numpy>1.8
-scipy
-pandas
-networkx
-numba>0.2.5.0

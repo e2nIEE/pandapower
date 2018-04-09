@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 import scipy.io
@@ -97,6 +97,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
     ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
+
 
 if "__main__" == __name__:
     pass

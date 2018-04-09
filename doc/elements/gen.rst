@@ -23,7 +23,11 @@ Input Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-\*necessary for executing a power flow calculation.
+.. |br| raw:: html
+
+   <br />
+   
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
 .. note::
     Active power should normally be negative to model a voltage controlled generator, since all power values are given in the load reference system. A generator with positive active power represents a voltage controlled machine.
@@ -68,7 +72,8 @@ The power flow returns reactive generator power and generator voltage angle:
    \begin{align*}
     p\_kw &= P_{gen} \\
     q\_kvar &= Q_{gen} \\
-    va\_degree &= \angle \underline{v}_{bus}
+    va\_degree &= \angle \underline{v}_{bus} \\
+    vm\_degree &= |\underline{v}_{bus}|
    \end{align*}
 
    
@@ -76,15 +81,3 @@ The power flow returns reactive generator power and generator voltage angle:
     If the power flow is run with the enforce_qlims option and the generator reactive power exceeds / underruns the maximum / minimum reactive power limit,
     the generator is converted to a static generator with the maximum / minimum reactive power as constant reactive power generation.
     The voltage at the generator bus is then no longer equal to the voltage set point defined in the parameter table.
-    
-   
-Optimal Power Flow Parameters
-=============================
-
-The cost and constraints of a generator can be definded using the following parameters:
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: gen_opf.csv
-   :delim: ;
-   :widths: 10, 10, 40

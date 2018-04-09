@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 
 try:
@@ -25,6 +25,8 @@ def diagnostic_report(net, diag_results, diag_params, compact_report):
         "disconnected_elements": diag_report.report_disconnected_elements,
         "different_voltage_levels_connected": diag_report.report_different_voltage_levels_connected,
         "lines_with_impedance_close_to_zero": diag_report.report_lines_with_impedance_close_to_zero,
+        "xward_with_impedance_close_to_zero": diag_report.report_xward_with_impedance_close_to_zero,
+        "impedance_with_impedance_close_to_zero": diag_report.report_impedance_with_impedance_close_to_zero,
         "nominal_voltages_dont_match": diag_report.report_nominal_voltages_dont_match,
         "invalid_values": diag_report.report_invalid_values,
         "overload": diag_report.report_overload,
@@ -168,6 +170,79 @@ class DiagnosticReports:
                                % (len(diag_result)))
         else:
             logger.info("PASSED: No lines with impedance close to zero...")
+
+    def report_xward_with_impedance_close_to_zero(self):
+
+        if "xward_with_impedance_close_to_zero" in self.diag_results:
+
+            # message header
+            if self.compact_report:
+                logger.warning("xward_with_impedance_close_to_zero:")
+
+            else:
+                logger.warning("Checking for xwards with impedance close to zero...")
+            logger.warning("")
+
+            # message body
+            diag_result = self.diag_results["xward_with_impedance_close_to_zero"]
+            for xward in diag_result:
+                if self.compact_report:
+                    logger.warning("xward %s: r_ohm: %s; x_ohm: %s"
+                                   % (xward, self.net.xward.r_ohm.at[xward],
+                                      self.net.xward.x_ohm.at[xward]))
+                else:
+                    logger.warning("Xward %s: r_ohm: %s, x_ohm: %s."
+                                   " Impedance is close to zero. If PV node was intended,"
+                                   "please use a gen element instead."
+                                   % (xward, self.net.xward.r_ohm.at[xward],
+                                      self.net.xward.x_ohm.at[xward]))
+
+                    # message summary
+            if not self.compact_report:
+                logger.warning("")
+                logger.warning("SUMMARY: %s xward(s) with impedance close to zero found."
+                               % (len(diag_result)))
+        else:
+            logger.info("PASSED: No xwards with impedance close to zero...")
+
+    def report_impedance_with_impedance_close_to_zero(self):
+
+        if "impedance_with_impedance_close_to_zero" in self.diag_results:
+
+            # message header
+            if self.compact_report:
+                logger.warning("impedance_with_impedance_close_to_zero:")
+
+            else:
+                logger.warning("Checking for impedances with impedance close to zero...")
+            logger.warning("")
+
+            # message body
+            diag_result = self.diag_results["impedance_with_impedance_close_to_zero"]
+            for impedance in diag_result:
+                if self.compact_report:
+                    logger.warning("impedance %s: rft_pu: %s; xft_pu: %s; rtf_pu: %s; xtf_pu: %s"
+                                   % (impedance, self.net.impedance.rft_pu.at[impedance],
+                                      self.net.impedance.xft_pu.at[impedance],
+                                      self.net.impedance.rtf_pu.at[impedance],
+                                      self.net.impedance.xtf_pu.at[impedance]))
+                else:
+                    logger.warning("Impedance %s: rft_pu: %s; xft_pu: %s; rtf_pu: %s; xtf_pu: %s."
+                                   " Impedance is close to zero. If a direct connection between"
+                                   " two buses was intended, please use a"
+                                   " bus-bus-switch instead."
+                                   % (impedance, self.net.impedance.rft_pu.at[impedance],
+                                      self.net.impedance.xft_pu.at[impedance],
+                                      self.net.impedance.rtf_pu.at[impedance],
+                                      self.net.impedance.xtf_pu.at[impedance]))
+
+                    # message summary
+            if not self.compact_report:
+                logger.warning("")
+                logger.warning("SUMMARY: %s impedance(s) with impedance close to zero found."
+                               % (len(diag_result)))
+        else:
+            logger.info("PASSED: No impedances with impedance close to zero...")
 
     def report_nominal_voltages_dont_match(self):
 

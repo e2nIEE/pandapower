@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from pandapower.networks.kerber_networks import _create_empty_network_with_transformer, \
     _add_lines_and_loads, _add_lines_with_branched_loads
@@ -148,7 +148,7 @@ def kb_extrem_dorfnetz_trafo(std_type="NAYY 4x150", trafotype="0.25 MVA 10/0.4 k
 
 # I. Kerber Vorstadtnetz mit extremen Netzstrahlen (Typ 1):
 def kb_extrem_vorstadtnetz_1(std_type="NAYY 4x150", p_load_in_kw=2., q_load_in_kvar=0.,
-                             trafotype="0.63 MVA 10/0.4 kV", v_os=20.):
+                             trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
 
     num_lines = [69, 32, 19, 14, 10, 1]
     len_lines = [0.006, 0.011, 0.017, 0.021, 0.025, 0.068]
@@ -171,7 +171,7 @@ def kb_extrem_vorstadtnetz_1(std_type="NAYY 4x150", p_load_in_kw=2., q_load_in_k
 
 # I. Kerber Vorstadtnetz mit extremen Netzstrahlen (Typ 2):
 def kb_extrem_vorstadtnetz_2(std_type="NAYY 4x185", p_load_in_kw=2., q_load_in_kvar=0.,
-                             trafotype="0.63 MVA 10/0.4 kV", v_os=20.):
+                             trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
     num_lines = [61, 32, 20, 15, 11, 5, 1]
     len_lines = [0.01, 0.014, 0.02, 0.023, 0.026, 0.05, 0.085]
     pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)

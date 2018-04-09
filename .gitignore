@@ -1,10 +1,11 @@
 *.pyc
-.tox/
 *~
 build/
 dist/
 .cache/
 .idea
+.DS_Store
+doc/.DS_Store
 pandapower.egg-info/
 doc/api/
 doc/.build/*
@@ -12,4 +13,11 @@ doc/_build/*
 tutorials/.ipynb_checkpoints
 .cache
 *__pycache__*
-
+.vs
+*.pyproj
+*.user
+*.sln
+*.bak
+*.orig
+pandapower/plotting/plotly/mapbox_token.txt
+pandapower/plotting/plotly/temp-plot.html

@@ -1,0 +1,19 @@
+**Feeders range**;**Line type**;**Customer**;**Case**;**d_DP**;**n_DP**
+short;cable;single;good;60;1
+;;;average;120;1
+;;;bad;80;2
+;;multiple;good;80;3
+;;;average;50;6
+;;;bad;40;10
+middle;cable;multiple;good;40;15
+;;;average;35;20
+;;;bad;30;25
+;C&OHL;multiple;good;50;10
+;;;average;45;13
+;;;bad;40;16
+long;cable;multiple;good;30;30
+;;;average;30;40
+;;;bad;30;50
+;C&OHL;multiple;good;40;20
+;;;average;40;30
+;;;bad;40;40

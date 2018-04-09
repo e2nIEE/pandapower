@@ -1,7 +1,7 @@
-AC Power Flow
+Power Flow
 =====================
 
-pandapower uses PYPOWER to solve the AC power flow problem:
+pandapower uses PYPOWER to solve the power flow problem:
 
 .. image:: /pics/pandapower_power flow.png
 		:width: 40em

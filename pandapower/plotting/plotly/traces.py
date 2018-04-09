@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from itertools import compress
 
@@ -35,9 +35,47 @@ def _in_ipynb():
 
 
 
+
+def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="grey", infofunc=None,
+                             trace_name='edge_center'):
+    """
+    Creates a plotly trace of pandapower buses.
+
+    INPUT:
+        **line traces** (from pandapowerNet) - The already generated line traces with center geodata
+
+    OPTIONAL:
+
+        **size** (int, 5) - patch size
+
+        **patch_type** (str, "circle") - patch type, can be
+
+                - "circle" for a circle
+                - "square" for a rectangle
+                - "diamond" for a diamond
+                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+
+        **infofunc** (list, None) - hoverinfo for each trace element
+
+        **trace_name** (String, "buses") - name of the trace which will appear in the legend
+
+        **color** (String, "blue") - color of buses in the trace
+
+    """
+    color = get_plotly_color(color)
+
+    bus_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
+                     marker=dict(color=color, size=size, symbol=patch_type))
+
+    bus_trace['x'], bus_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
+
+    bus_trace['text'] = infofunc
+
+    return [bus_trace]
+
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
                      trace_name='buses', legendgroup=None, cmap=None, cmap_vals=None,
-                     cbar_title=None, cmin=None, cmax=None):
+                     cbar_title=None, cmin=None, cmax=None, colormap_column="vm_pu"):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -75,6 +113,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
         **cmax** (float, None) - colorbar range maximum
 
+        **colormap_column** (str, "vm_pu") - set color of bus according to this variable
+
     """
     color = get_plotly_color(color)
 
@@ -87,11 +127,12 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
 
     buses_with_geodata = net.bus.index.isin(net.bus_geodata.index)
     buses2plot = buses2plot & buses_with_geodata
+    bus_plot_index = net.bus.index[buses2plot]
 
-    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[buses2plot, 'x'].tolist(),
-                                    net.bus_geodata.loc[buses2plot, 'y'].tolist())
+    bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
+                                    net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
-    bus_trace['text'] = net.bus.loc[buses2plot, 'name'] if infofunc is None else infofunc
+    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
@@ -110,9 +151,9 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 logger.error("There are no power flow results for buses voltage magnitudes which are default for bus "
                              "colormap coloring..."
                              "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_bus.loc[buses2plot, 'vm_pu'].values
+            cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column].values
 
-        cmap_vals = net.res_bus.loc[buses2plot, 'vm_pu'] if cmap_vals is None else cmap_vals
+        cmap_vals = net.res_bus.loc[bus_plot_index, colormap_column] if cmap_vals is None else cmap_vals
 
         cmin = cmin if cmin else cmap_vals.min()
         cmax = cmax if cmax else cmap_vals.max()

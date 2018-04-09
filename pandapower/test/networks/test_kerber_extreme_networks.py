@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pytest
 
+import pandapower as pp
 import pandapower.networks as pn
 
 
@@ -17,6 +18,8 @@ def test_kb_extrem_landnetz_freileitung():
     assert len(pd_net.bus.index) == 28
     assert len(pd_net.line.index) == 26
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_landnetz_kabel():
@@ -27,6 +30,8 @@ def test_kb_extrem_landnetz_kabel():
     assert len(pd_net.bus.index) == 54
     assert len(pd_net.line.index) == 52
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_landnetz_freileitung_trafo():
@@ -37,6 +42,8 @@ def test_kb_extrem_landnetz_freileitung_trafo():
     assert len(pd_net.bus.index) == 29
     assert len(pd_net.line.index) == 27
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_landnetz_kabel_trafo():
@@ -47,6 +54,8 @@ def test_kb_extrem_landnetz_kabel_trafo():
     assert len(pd_net.bus.index) == 56
     assert len(pd_net.line.index) == 54
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_dorfnetz():
@@ -57,6 +66,8 @@ def test_kb_extrem_dorfnetz():
     assert len(pd_net.bus.index) == 118
     assert len(pd_net.line.index) == 116
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_dorfnetz_trafo():
@@ -67,6 +78,8 @@ def test_kb_extrem_dorfnetz_trafo():
     assert len(pd_net.bus.index) == 236
     assert len(pd_net.line.index) == 234
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_vorstadtnetz_1():
@@ -77,6 +90,8 @@ def test_kb_extrem_vorstadtnetz_1():
     assert len(pd_net.bus.index) == 292
     assert len(pd_net.line.index) == 290
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_vorstadtnetz_2():
@@ -87,6 +102,8 @@ def test_kb_extrem_vorstadtnetz_2():
     assert len(pd_net.bus.index) == 292
     assert len(pd_net.line.index) == 290
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_vorstadtnetz_trafo_1():
@@ -97,6 +114,8 @@ def test_kb_extrem_vorstadtnetz_trafo_1():
     assert len(pd_net.bus.index) == 384
     assert len(pd_net.line.index) == 382
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kb_extrem_vorstadtnetz_trafo_2():
@@ -107,6 +126,8 @@ def test_kb_extrem_vorstadtnetz_trafo_2():
     assert len(pd_net.bus.index) == 386
     assert len(pd_net.line.index) == 384
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_kerber_extreme_networks.py"])

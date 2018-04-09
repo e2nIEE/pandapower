@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from collections import defaultdict, Counter
 from itertools import chain
 
 import numpy as np
 import pandas as pd
-from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
-from pandapower.auxiliary import _sum_by_group
 
+from pandapower.auxiliary import _sum_by_group
+from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
 
 try:
     from numba import jit
@@ -20,7 +20,7 @@ except ImportError:
 
 
 @jit(nopython=True, cache=True)
-def ds_find(ar, bus): # pragma: no cover
+def ds_find(ar, bus):  # pragma: no cover
     while True:
         p = ar[bus]
         if p == bus:
@@ -30,7 +30,7 @@ def ds_find(ar, bus): # pragma: no cover
 
 
 @jit(nopython=True, cache=True)
-def ds_union(ar, bus1, bus2, bus_is_pv): # pragma: no cover
+def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
     if root1 == root2:
@@ -44,7 +44,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv): # pragma: no cover
 
 
 @jit(nopython=True, cache=True)
-def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service): # pragma: no cover
+def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
         if not switch_closed[i] or not switch_et_bus[i]:
             continue
@@ -251,122 +251,120 @@ def _build_bus_ppc(net, ppc):
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_loads_and_add_on_ppc(net, ppc):
-    '''
-    wrapper function to call either the PF or the OPF version
-    '''
-    mode = net["_options"]["mode"]
-
-    if mode == "opf":
-        _calc_loads_and_add_on_ppc_opf(net, ppc)
-    else:
-        _calc_loads_and_add_on_ppc_pf(net, ppc)
-
-
-def _calc_loads_and_add_on_ppc_pf(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     # get in service elements
+    # _is_elements = check if element is at a bus & if element is in service
     _is_elements = net["_is_elements"]
+    
+    # distinguish calculation modes
+    mode = net["_options"]["mode"]
+    
+    # if mode == powerflow...
+    if mode == "pf":
+        l = net["load"]
+        if len(l) > 0:
+            voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+            if voltage_depend_loads:
+                cz = l["const_z_percent"].values / 100.
+                ci = l["const_i_percent"].values / 100.
+                if ((cz + ci) > 1).any():
+                    raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
+                                     "100%!")
+    
+                # cumulative sum of constant-current loads
+                b_zip = l["bus"].values
+                load_counter = Counter(b_zip)
+    
+                bus_lookup = net["_pd2ppc_lookups"]["bus"]
+                b_zip = bus_lookup[b_zip]
+                load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
+                b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
+    
+                for bus, no_loads in load_counter.items():
+                    ci_sum[b_zip == bus] /= no_loads
+                    cz_sum[b_zip == bus] /= no_loads
+    
+                ppc["bus"][b_zip, CID] = ci_sum
+                ppc["bus"][b_zip, CZD] = cz_sum
+    
+            vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, l["q_kvar"].values * vl])
+            p = np.hstack([p, l["p_kw"].values * vl])
+            b = np.hstack([b, l["bus"].values])
+    
+        sgen = net["sgen"]
+        if len(sgen) > 0:
+            vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, sgen["q_kvar"].values * vl])
+            p = np.hstack([p, sgen["p_kw"].values * vl])
+            b = np.hstack([b, sgen["bus"].values])
+    
+        stor = net["storage"]
+        if len(stor) > 0:
+            # TODO: Limit p_kw according to SOC and max_e_kwh/min_e_kwh
+            # Note: p_kw depends on the timestep resolution -> implement a resolution factor in options
+            # Note: SOC during power flow not updated, time domain introduction would lead to \
+            #   paradigm shift in pandapower
+            #   --> energy content of storage is currently neglected!
+            vl = _is_elements["storage"] * stor["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, stor["q_kvar"].values * vl])
+            p = np.hstack([p, stor["p_kw"].values * vl])
+            b = np.hstack([b, stor["bus"].values])
+    
+        w = net["ward"]
+        if len(w) > 0:
+            vl = _is_elements["ward"] / np.float64(1000.)
+            q = np.hstack([q, w["qs_kvar"].values * vl])
+            p = np.hstack([p, w["ps_kw"].values * vl])
+            b = np.hstack([b, w["bus"].values])
+    
+        xw = net["xward"]
+        if len(xw) > 0:
+            vl = _is_elements["xward"] / np.float64(1000.)
+            q = np.hstack([q, xw["qs_kvar"].values * vl])
+            p = np.hstack([p, xw["ps_kw"].values * vl])
+            b = np.hstack([b, xw["bus"].values])
+            
+    # if mode == optimal power flow...
+    if mode == "opf":
+        l = net["load"]
+        if not l.empty:
+            l["controllable"] = _controllable_to_bool(l["controllable"])
+            vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, l["q_kvar"].values * vl])
+            p = np.hstack([p, l["p_kw"].values * vl])
+            b = np.hstack([b, l["bus"].values])
+    
+        sgen = net["sgen"]
+        if not sgen.empty:
+            sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
+            vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, sgen["q_kvar"].values * vl])
+            p = np.hstack([p, sgen["p_kw"].values * vl])
+            b = np.hstack([b, sgen["bus"].values])
+        
+        stor = net["storage"]
+        if not stor.empty:
+            stor["controllable"] = _controllable_to_bool(stor["controllable"])
+            vl = (_is_elements["storage"] & ~stor["controllable"]) * stor["scaling"].values.T / \
+                 np.float64(1000.)
+            q = np.hstack([q, stor["q_kvar"].values * vl])
+            p = np.hstack([p, stor["p_kw"].values * vl])
+            b = np.hstack([b, stor["bus"].values])
 
-    l = net["load"]
-
-    # element_is = check if element is at a bus in service & element is in service
-    if len(l) > 0:
-        voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-        if voltage_depend_loads:
-            cz = l["const_z_percent"].values / 100.
-            ci = l["const_i_percent"].values / 100.
-            if ((cz + ci) > 1).any():
-                raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
-                                 "100%!")
-
-            # cumulative sum of constant-current loads
-            b_zip = l["bus"].values
-            load_counter = Counter(b_zip)
-
-            bus_lookup = net["_pd2ppc_lookups"]["bus"]
-            b_zip = bus_lookup[b_zip]
-            load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
-            b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
-
-            for bus, no_loads in load_counter.items():
-                ci_sum[b_zip == bus] /= no_loads
-                cz_sum[b_zip == bus] /= no_loads
-
-            ppc["bus"][b_zip, CID] = ci_sum
-            ppc["bus"][b_zip, CZD] = cz_sum
-
-        vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, l["q_kvar"].values * vl])
-        p = np.hstack([p, l["p_kw"].values * vl])
-        b = np.hstack([b, l["bus"].values])
-
-    s = net["sgen"]
-    if len(s) > 0:
-        vl = _is_elements["sgen"] * s["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, s["q_kvar"].values * vl])
-        p = np.hstack([p, s["p_kw"].values * vl])
-        b = np.hstack([b, s["bus"].values])
-
-    w = net["ward"]
-    if len(w) > 0:
-        vl = _is_elements["ward"] / np.float64(1000.)
-        q = np.hstack([q, w["qs_kvar"].values * vl])
-        p = np.hstack([p, w["ps_kw"].values * vl])
-        b = np.hstack([b, w["bus"].values])
-
-    xw = net["xward"]
-    if len(xw) > 0:
-        vl = _is_elements["xward"] / np.float64(1000.)
-        q = np.hstack([q, xw["qs_kvar"].values * vl])
-        p = np.hstack([p, xw["ps_kw"].values * vl])
-        b = np.hstack([b, xw["bus"].values])
-
+    # sum up p & q of bus elements
     # if array is not empty
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
-
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
-
-
-def _calc_loads_and_add_on_ppc_opf(net, ppc):
-    """ we need to exclude controllable sgens from the bus table
-    """
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # get in service elements
-    _is_elements = net["_is_elements"]
-
-    l = net["load"]
-    if not l.empty:
-        l["controllable"] = _controllable_to_bool(l["controllable"])
-        vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / np.float64(1000.)
-        lp = l["p_kw"].values * vl
-        lq = l["q_kvar"].values * vl
-    else:
-        lp = []
-        lq = []
-
-    sgen = net["sgen"]
-    if not sgen.empty:
-        sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
-        vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
-            np.float64(1000.)
-        sp = sgen["p_kw"].values * vl
-        sq = sgen["q_kvar"].values * vl
-    else:
-        sp = []
-        sq = []
-
-    b = bus_lookup[np.hstack([l["bus"].values, sgen["bus"].values])]
-    b, vp, vq = _sum_by_group(b, np.hstack([lp, sp]), np.hstack([lq, sq]))
-
-    ppc["bus"][b, PD] = vp
-    ppc["bus"][b, QD] = vq
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc):
@@ -379,7 +377,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     s = net["shunt"]
     if len(s) > 0:
         vl = _is_elements["shunt"] / np.float64(1000.)
-        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values)**2
+        v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2
         q = np.hstack([q, s["q_kvar"].values * s["step"] * v_ratio * vl])
         p = np.hstack([p, s["p_kw"].values * s["step"] * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
@@ -431,8 +429,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
     c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " +
-                         "external grid" % case)
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
+                         "external grid" )
     s_sc = eg["s_sc_%s_mva" % case].values
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
@@ -440,12 +438,12 @@ def _add_ext_grid_sc_impedance(net, ppc):
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
-    x_grid = z_grid / np.sqrt(rx**2 + 1)
+    x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
     eg["x"] = x_grid
 
-    y_grid = 1 / (r_grid + x_grid*1j)
+    y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
@@ -467,12 +465,12 @@ def _add_gen_sc_impedance(net, ppc):
     vn_gen = gen.vn_kv.values
     sn_gen = gen.sn_kva.values
 
-    z_r = vn_net**2 / sn_gen * 1e3
+    z_r = vn_net ** 2 / sn_gen * 1e3
     x_gen = gen.xdss.values / 100 * z_r
     r_gen = gen.rdss.values / 100 * z_r
 
     kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
-    y_gen = 1 / ((r_gen + x_gen*1j) * kg)
+    y_gen = 1 / ((r_gen + x_gen * 1j) * kg)
 
     buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen.real, y_gen.imag)
     ppc["bus"][buses, GS] = gs
@@ -491,10 +489,10 @@ def _add_motor_impedances_ppc(net, ppc):
     motor_buses = motor.bus.values
     motor_buses_ppc = bus_lookup[motor_buses]
 
-    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # 1 us reference voltage in pu
-    x_motor = z_motor / np.sqrt(motor.rx**2 + 1)
+    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
+    x_motor = z_motor / np.sqrt(motor.rx ** 2 + 1)
     r_motor = motor.rx * x_motor
-    y_motor = 1 / (r_motor + x_motor*1j)
+    y_motor = 1 / (r_motor + x_motor * 1j)
 
     buses, gs, bs = _sum_by_group(motor_buses_ppc, y_motor.real, y_motor.imag)
     ppc["bus"][buses, GS] = gs

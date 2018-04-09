@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
+
 import os
 import pickle
-from copy import deepcopy
+
+import pytest
 
 import pandapower as pp
 import pandapower.networks as pn
@@ -41,7 +41,7 @@ def test_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
     net_by_code = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
-    pp.set_user_pf_options(net_by_code)     # for assertion of nets_equal
+    pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
 
@@ -91,19 +91,23 @@ def test_pypower_cases():
 
 def test_case9_conversion():
     net = pn.case9()
-    ppc = to_ppc(net)
-    # correction because to_ppc do net export max_loading_percent:
-    ppc["branch"][:, 5] = [250, 250, 150, 300, 150] + [250]*4
+    # set max_loading_percent to enable line limit conversion
+    net.line["max_loading_percent"] = 100
+    ppc = to_ppc(net, mode="opf")
     # correction because voltage limits are set to 1.0 at slack buses
-    ppc["bus"][0, 11] = 0.9
-    ppc["bus"][0, 12] = 1.1
+    ppc["bus"][0, 12] = 0.9
+    ppc["bus"][0, 11] = 1.1
 
-    net2 = from_ppc(ppc)
+    net2 = from_ppc(ppc, f_hz=net.f_hz)
+    # again add max_loading_percent to enable valid comparison
+    net2.line["max_loading_percent"] = 100
 
+    # compare loadflow results
     pp.runpp(net)
     pp.runpp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
+    # compare optimal powerflow results
     pp.runopp(net)
     pp.runopp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)

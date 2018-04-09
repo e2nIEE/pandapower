@@ -33,8 +33,10 @@ Input Parameters
    :file: trafo_par.csv
    :delim: ;
    :widths: 15, 10, 25, 40
+  
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
 
-\*necessary for executing a power flow calculation.
+.. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
    
 Electric Model
@@ -53,7 +55,6 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 .. image:: trafo_pi.png
 	:width: 30em
 	:align: center
-
 
     
 *Transformer Ratio:*
@@ -158,8 +159,11 @@ The values calculated in that way are relative to the rated values of the transf
     \underline{y} &= \underline{y}_m \cdot \frac{Z_{N}}{Z_{ref, trafo}} \\
     \end{align*}
 
-Where :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`) and :math:`V_{N}` is the nominal bus voltage at the low voltage side of the transformer. 
+Where the reference voltage :math:`V_{N}` is the nominal voltage at the low voltage side of the transformer and the rated apparent power :math:`S_{N}` is defined system wide in the net object (see :ref:`Unit Systems and Conventions<conventions>`). 
 
+
+.. note::
+    Tap magnitude and angle shift are considered independently of each other. A specific diagonal transformer shift implemented that shifts the complex voltage angle specifically is not implemented in pandapower.
   
 Result Parameters
 ==========================
@@ -205,16 +209,4 @@ For trafo_loading="power", the loading is defined as:
    
    \begin{align*}  
     loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_kva}, \frac{i_{lv} \cdot v_{lv}}{sn\_kva}) \cdot 100
-    \end{align*}
-    
-Optimal Power Flow Parameters
-=============================
-
-The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current"(see above):
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: trafo_opf.csv
-   :delim: ;
-   :widths: 10, 10, 40
-   
+    \end{align*} 

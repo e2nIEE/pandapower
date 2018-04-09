@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options
@@ -12,6 +12,7 @@ from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
+from pandapower.build_branch import get_is_lines
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
@@ -144,6 +145,8 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     # determine number of lines in ppci["branch"]
     # out of service lines and lines with open switches at both ends are not in the ppci
     _is_elements = net["_is_elements"]
+    if "line" not in _is_elements:
+        get_is_lines(net)
     lines_is = _is_elements['line']
     bus_is_idx = _is_elements['bus_is_idx']
     slidx = (net["switch"]["closed"].values == 0) \

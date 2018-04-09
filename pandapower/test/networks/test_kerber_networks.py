@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import random as rd
 
@@ -74,6 +74,8 @@ def test_kerber_landnetz_freileitung_1():
     assert len(pd_net.bus.index) == 15
     assert len(pd_net.line.index) == 13
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_kerber_landnetz_freileitung_2():
@@ -84,6 +86,8 @@ def test_kerber_landnetz_freileitung_2():
     assert len(pd_net.bus.index) == 10
     assert len(pd_net.line.index) == 8
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_create_kerber_landnetz_kabel_1():
@@ -94,6 +98,8 @@ def test_create_kerber_landnetz_kabel_1():
     assert len(pd_net.bus.index) == 18
     assert len(pd_net.line.index) == 16
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_create_kerber_landnetz_kabel_2():
@@ -104,6 +110,8 @@ def test_create_kerber_landnetz_kabel_2():
     assert len(pd_net.bus.index) == 30
     assert len(pd_net.line.index) == 28
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_create_kerber_dorfnetz():
@@ -114,6 +122,8 @@ def test_create_kerber_dorfnetz():
     assert len(pd_net.bus.index) == 116
     assert len(pd_net.line.index) == 114
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_create_kerber_vorstadtnetz_kabel_1():
@@ -124,6 +134,8 @@ def test_create_kerber_vorstadtnetz_kabel_1():
     assert len(pd_net.bus.index) == 294
     assert len(pd_net.line.index) == 292
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 
 def test_create_kerber_vorstadtnetz_kabel_2():
@@ -134,6 +146,8 @@ def test_create_kerber_vorstadtnetz_kabel_2():
     assert len(pd_net.bus.index) == 290
     assert len(pd_net.line.index) == 288
     assert len(pd_net.trafo.index) == 1
+    pp.runpp(pd_net)
+    assert pd_net.converged
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_kerber_networks.py"])

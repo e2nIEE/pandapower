@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pandapower as pp
 from pandapower.test.toolbox import add_grid_connection, create_test_line
@@ -71,8 +71,10 @@ def result_test_network_generator_dcpp(sn_kva=1e3):
 def add_test_line(net):
     b1, b2, l1 = add_grid_connection(net, zone="test_line")
     net.line.parallel.at[l1] = 2
+    net.line.g_us_per_km.at[l1] = 1
     pp.create_load(net, b2, p_kw=1200, q_kvar=1100)
     l2 = create_test_line(net, b1, b2)
+    net.line.g_us_per_km.at[l2] = 1
     pp.create_switch(net, b2, l2, et="l", closed=False)
     create_test_line(net, b1, b2, in_service=False)
     net.last_added_case = "test_line"

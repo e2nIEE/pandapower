@@ -4,9 +4,9 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from numpy import zeros, array, concatenate, power
 from pandapower.idx_cost import MODEL, NCOST, COST
@@ -50,6 +50,8 @@ def _make_objective(ppci, net):
         net._pd2ppc_lookups else None
     load_idx = net._pd2ppc_lookups["load_controllable"] if "load_controllable" in \
         net._pd2ppc_lookups else None
+    stor_idx = net._pd2ppc_lookups["storage_controllable"] if "storage_controllable" in \
+        net._pd2ppc_lookups else None
     dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
     from_gens = net.gen.loc[dc_gens[1::2]]
     if gen_idx is not None:
@@ -84,7 +86,7 @@ def _make_objective(ppci, net):
                 shift_idx = 0
                 sign_corr = 1
 
-            for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
+            for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
 
                 if el == "gen":
                     idx = gen_idx
@@ -94,6 +96,8 @@ def _make_objective(ppci, net):
                     idx = eg_idx
                 elif el == "load":
                     idx = load_idx
+                elif el == "storage":
+                    idx = stor_idx
                 elif el == "dcline":
                     idx = dcline_idx
 
@@ -121,6 +125,8 @@ def _make_objective(ppci, net):
 
                                 ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
 
+                                # gencost for storages: positive costs in pandapower per definition
+                                # --> storage gencosts are similar to sgen gencosts
                                 if el in ["load", "dcline"]:
                                     ppci["gencost"][elements, COST+1:COST +
                                                     n_piece_lin_coefficients+1:2] = - f * 1e3
@@ -144,7 +150,7 @@ def _make_objective(ppci, net):
                         shift_idx = 0
                         sign_corr = 1
 
-                    for el in ["gen", "sgen", "ext_grid", "load", "dcline"]:
+                    for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
 
                         if not costs.element[costs.element_type == el].empty:
                             if el == "gen":
@@ -155,6 +161,8 @@ def _make_objective(ppci, net):
                                 idx = eg_idx
                             if el == "load":
                                 idx = load_idx
+                            if el == "storage":
+                                idx = stor_idx
                             if el == "dcline":
                                 idx = dcline_idx
 
@@ -171,15 +179,18 @@ def _make_objective(ppci, net):
                                 elements = idx[el_is] + shift_idx
                                 n_gencost = ppci["gencost"].shape[1]
 
-                            elcosts = costs[costs.element_type == el]
-                            elcosts.index = elcosts.element
-                            if el in ["load", "dcline"]:
-                                ppci["gencost"][elements, COST:(COST + n_c):] = - c
-                            else:
-                                ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
+                                elcosts = costs[costs.element_type == el]
+                                elcosts.index = elcosts.element
+                                
+                                # gencost for storages: positive costs in pandapower per definition
+                                # --> storage gencosts are similar to sgen gencosts
+                                if el in ["load", "dcline"]:
+                                    ppci["gencost"][elements, COST:(COST + n_c):] = - c
+                                else:
+                                    ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
 
-                            ppci["gencost"][elements, NCOST] = n_coefficients
-                            ppci["gencost"][elements, MODEL] = 2
+                                ppci["gencost"][elements, NCOST] = n_coefficients
+                                ppci["gencost"][elements, MODEL] = 2
 
     else:
         ppci["gencost"] = zeros((len_gencost, 8), dtype=float)

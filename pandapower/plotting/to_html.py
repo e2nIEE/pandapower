@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 # File created my Massimo Di Pierro
 
 from itertools import combinations
@@ -25,8 +25,7 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         **filename** (string) - The absolute or relative path to the input file.
 
     OPTIONAL:
-        **respect_switches** (boolean, True) - True: open line switches are being considered
-                                                     (no edge between nodes)
+        **respect_switches** (boolean, True) - True: open line switches are being considered (no edge between nodes)
                                                False: open line switches are being ignored
 
         **include_lines** (boolean, True) - determines, whether lines get converted to edges

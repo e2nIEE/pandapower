@@ -1,3 +1,0 @@
-**Parameter**;**Datatype**;**Explanation**
-max_vm_pu;float;Maximum voltage
-min_vm_pu;float;Minimum voltage

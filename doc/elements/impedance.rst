@@ -23,11 +23,12 @@ Input Parameters
 
 \*necessary for executing a power flow calculation.
 
-   
+.. _impedance_model:
+
 Electric Model
 =================
 
-The impedance is modelled as a simple longitudinal per unit impedance:
+The impedance is modelled as a longitudinal per unit impedance with :math:`\underline{z}_{ft} \neq \underline{z}_{tf}` :
 
 .. image:: impedance.png
 	:width: 25em
@@ -41,11 +42,22 @@ The per unit values are therefore transformed into the network per unit system:
    :nowrap:
 
    \begin{align*}
-    \underline{z}_{impedance} &= r\_pu + j \cdot x_{pu} \\
-    \underline{z} &= \underline{z}_{impedance} \frac{S_{N}}{sn\_kva}
+    \underline{z}_{ft} &= (rft\_pu + j \cdot xft\_pu) \cdot \frac{S_{N}}{sn\_kva} \\
+    \underline{z}_{tf} &= (rft\_pu + j \cdot xtf\_pu) \cdot \frac{S_{N}}{sn\_kva} \\
     \end{align*}
 
-with :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`). 
+where :math:`S_{N}` is the reference power of the per unit system (see :ref:`Unit Systems and Conventions<conventions>`). 
+
+The asymetric impedance results in an asymetric nodal point admittance matrix:
+
+.. math::
+   :nowrap:
+   
+    \begin{bmatrix} Y_{00} & \dots & \dots  & Y_{nn} \\
+    \vdots & \ddots & \underline{y}_{ft} & \vdots \\
+    \vdots &  \underline{y}_{tf} & \ddots & \vdots \\
+    \underline{Y}_{n0} & \dots & \dots & \underline{y}_{nn}\\
+    \end{bmatrix}
 
 
 Result Parameters
@@ -71,9 +83,3 @@ Result Parameters
 	pl\_kw &= p\_from\_kw + p\_to\_kw \\
 	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
     \end{align*}
-    
-   
-Optimal Power Flow Parameters
-=============================
-
-Impedances are not yet respected in the optimal power flow. No constraints can be formulated.

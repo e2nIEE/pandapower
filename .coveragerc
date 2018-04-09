@@ -1,0 +1,4 @@
+[run]
+omit = 
+    pandapower/test/*
+    pandapower/plotting/*

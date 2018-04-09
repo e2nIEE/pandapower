@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 # Additional copyright for modified code by Brendan Curran-Johnson (ADict class):
 # Copyright (c) 2013 Brendan Curran-Johnson
@@ -192,11 +192,13 @@ class pandapowerNet(ADict):
                 else:
                     par.append(tb)
         for tb in par:
-            r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+            length = len(self[tb])
+            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         if res:
             r += "\n and the following results tables:"
             for tb in res:
-                r += "\n   - %s (%s elements)" % (tb, len(self[tb]))
+                length = len(self[tb])
+                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
         return r
 
 
@@ -343,7 +345,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
     is_elements = dict()
-    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid"]:
+    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
         if len_ > 0:
@@ -352,13 +354,15 @@ def _select_is_elements_numba(net, isolated_nodes=None):
                              bus_in_service, element_in_service)
         is_elements[element] = element_in_service
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
-    is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+    is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
 
     if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
         if "load_controllable" in net._is_elements:
             is_elements["load_controllable"] = net._is_elements["load_controllable"]
         if "sgen_controllable" in net._is_elements:
             is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
+        if "storage_controllable" in net._is_elements:
+            is_elements["storage_controllable"] = net._is_elements["storage_controllable"]
     return is_elements
 
 
@@ -385,6 +389,15 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "delta": delta
     }
     _add_options(net, options)
+
+
+def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
+    max_bus = max(net.bus.index.values)
+    if max_bus >= n_max and len(net["bus"]) < n_max:
+        logger.warning(
+            "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
+            " Try resetting the bus indices with the toolbox function "
+            "create_continous_bus_index()" % max_bus)
 
 
 def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
@@ -457,10 +470,11 @@ def _clean_up(net, res=True):
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
-    net._is_elements = None
+    # net._is_elements = None
 
     mode = net._options["mode"]
-    res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
+    if res:
+        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
         net["bus"].drop(buses_3w, inplace=True)

@@ -23,7 +23,13 @@ Input Parameters
    :delim: ;
    :widths: 10, 10, 25, 40
 
-\*necessary for executing a power flow calculation.
+.. |br| raw:: html
+
+   <br />
+   
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
+
+.. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
 
 *net.bus_geodata*
 
@@ -66,22 +72,18 @@ The power flow bus results are defined as:
     q\_kvar &= Im(\sum_{n=1}^N  \underline{S}_{bus, n}) 
    \end{align*}
 
+
+*net.res_bus_est*
+
+The state estimation results are put into *net.res_bus_est* with the same definition as in *net.res_bus*.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: bus_res.csv
+   :delim: ;
+   :widths: 10, 10, 40
+    
+
 .. note::
 
    All power values are given in the consumer system. Therefore a bus with positive p_kw value consumes power while a bus with negative active power supplies power.
-   
-   
-Optimal Power Flow Parameters
-=============================
-
-The voltage limits for the optimal power flow can be set bus wise in the bus tables:
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: bus_opf.csv
-   :delim: ;
-   :widths: 10, 10, 40
-   
-.. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
-
-.. note:: :math:`max_{vm,pu}>min_{vm,pu}` is a necessary condition   

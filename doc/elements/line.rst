@@ -33,8 +33,8 @@ Input Parameters
    :file: line_par.csv
    :delim: ;
    :widths: 15, 10, 25, 40
-
-\*necessary for executing a power flow calculation.
+  
+\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
 .. note::
 
@@ -69,7 +69,7 @@ The elements in the equivalent circuit are calculated from the parameters in the
 
    \begin{align*}
     \underline{Z} &= (r\_ohm\_per\_km + j \cdot x\_ohm\_per\_km) \cdot \frac{length\_km}{parallel}  \\
-    \underline{Y}&= j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^9 \cdot length\_km \cdot parallel
+    \underline{Y}&= (g\_us\_per\_km \cdot 1 \cdot 10^-6 + j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^-9) \cdot length\_km \cdot parallel
    \end{align*}
     
 The power system frequency :math:`f` is defined when creating an empty network, the default value is :math:`f = 50 Hz`.
@@ -85,7 +85,7 @@ The parameters are then transformed in the per unit system:
     \underline{y} &= \underline{Y} \cdot Z_{N} \\
     \end{align*}
 
-Where :math:`S_{N} = 1 \ MVA` (see :ref:`Unit Systems and Conventions<conventions>`) and :math:`U_{N}` is the nominal voltage at the from bus.
+Where the reference voltage :math:`V_{N}` is the nominal voltage at the from bus and the rated apparent power :math:`S_{N}` is defined system wide in the net object (see :ref:`Unit Systems and Conventions<conventions>`).
 
 .. note::
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
@@ -120,14 +120,13 @@ The power flow results in the net.res_line table are defined as:
     loading\_percent &= \frac{i\_ka}{imax\_ka \cdot df \cdot parallel} \cdot 100 
     \end{align*}
     
-   
-Optimal Power Flow Parameters
-=============================
 
-The line loading constraint is an upper constraint for loading_percent.
+*net.res_line_est*
 
-.. tabularcolumns:: |l|l|l|
+The state estimation results are put into *net.res_line_est* with the same definition as in *net.res_line*.
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
 .. csv-table:: 
-   :file: line_opf.csv
+   :file: line_res.csv
    :delim: ;
-   :widths: 10, 10, 40
+   :widths: 15, 10, 55

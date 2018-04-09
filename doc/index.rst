@@ -6,35 +6,38 @@ pandapower combines the data analysis library `pandas <http://pandas.pydata.org>
 aimed at automation of analysis and optimization in power systems.
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
-Operation at the Fraunhofer Institute for Wind Energy and Energy System Technology (IWES), Kassel.
+Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: /pics/iwes.png
 		:width: 18em
-		:align: left 
-        
+		:align: left
+
 .. image:: /pics/e2n.png
 		:width: 22em
-		:align: right 
+		:align: right
 
 .. |br| raw:: html
 
     <br />
-    
-|br|    
-|br|    
-|br|    
-|br|    
 
-.. toctree:: 
+|br|
+|br|
+|br|
+|br|
+
+.. toctree::
     :maxdepth: 2
-    
+
     about
     getting_started
     elements
     std_types
     powerflow
+    shortcircuit
+    estimation
     topology
     networks
     plotting
     file_io
+    converter
     toolbox

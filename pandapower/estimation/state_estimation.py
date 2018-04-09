@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 
@@ -335,11 +335,26 @@ class state_estimation(object):
 
         # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
+
+        # alternative calculation
+        # bus_powers_p = np.zeros(len(v_m), dtype=np.float32)
+        # bus_powers_q = np.zeros(len(v_m), dtype=np.float32)
+        # for i in range(len(v_m)):
+        #     for j in range(len(v_m)):
+        #         bus_powers_p[i] += v_m[i] * v_m[j] * (sem.Y_bus[i, j].real * np.cos(delta[i] - delta[j])
+        #                                               + sem.Y_bus[i, j].imag * np.sin(delta[i] - delta[j]))
+        #         bus_powers_q[i] += v_m[i] * v_m[j] * (sem.Y_bus[i, j].real * np.sin(delta[i] - delta[j])
+        #                                               - sem.Y_bus[i, j].imag * np.cos(delta[i] - delta[j]))
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
+
         ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
+
+        # ppci["bus"][:, 2] = bus_powers_p  # saved in per unit
+        # ppci["bus"][:, 3] = bus_powers_q  # saved in per unit
+
 
         # calculate line results (in ppc_i)
         s_ref, bus, gen, branch = _get_pf_variables_from_ppci(ppci)[0:4]
@@ -356,6 +371,7 @@ class state_estimation(object):
         # convert to pandapower indices
         ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
+        # todo -> set sgen_est load_est and so on correctly
         # extract results from ppc
         _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
                         numba=True, ac=True, algorithm='nr', max_iteration="auto")
@@ -379,6 +395,12 @@ class state_estimation(object):
         self.hx = h_x
         self.V = v_m
         self.delta = delta
+
+        # hotfix: delete results which are not correctly calculated
+        for result in ("res_load_est", "res_sgen_est", "res_gen_est"):
+            if result in self.net:
+                del self.net[result]
+
         return successful
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,

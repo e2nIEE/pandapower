@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import copy
 
@@ -639,6 +639,26 @@ def test_pvpq_lookup():
 
     assert nets_equal(net, net_numba)
 
+def test_result_index_unsorted():
+    net = pp.create_empty_network()
+
+    b1 = pp.create_bus(net, vn_kv=0.4, index=4)
+    b2 = pp.create_bus(net, vn_kv=0.4, index=2)
+    b3 = pp.create_bus(net, vn_kv=0.4, index=3)
+
+    pp.create_gen(net, b1, p_kw=-10, vm_pu=0.4)
+    pp.create_load(net, b2, p_kw=10)
+    pp.create_ext_grid(net, b3)
+
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km=0.5, std_type="NAYY 4x120 SE")
+    pp.create_line(net, from_bus=b1, to_bus=b3, length_km=0.5, std_type="NAYY 4x120 SE")
+    net_recycle = copy.deepcopy(net)
+    pp.runpp(net_recycle)
+    pp.runpp(net_recycle, recycle=dict(_is_elements=True, ppc=True, Ybus=True))
+    pp.runpp(net)
+
+    assert nets_equal(net, net_recycle, tol=1e-12)
+
 
 def test_get_internal():
     net = example_simple()
@@ -664,6 +684,52 @@ def test_get_internal():
     assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
     # get J for all other algorithms
 
+def test_storage_pf():
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, vn_kv=0.4)
+    b2 = pp.create_bus(net, vn_kv=0.4)
+    
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE")
+    
+    pp.create_ext_grid(net, b2)
+    pp.create_load(net, b1, p_kw=10)
+    pp.create_sgen(net, b1, p_kw=-10)
+    
+    # test generator behaviour
+    pp.create_storage(net, b1, p_kw=-10, max_e_kwh=10)
+    pp.create_sgen(net, b1, p_kw=-10, in_service=False)
+    
+    res_gen_beh = runpp_with_consistency_checks(net)
+    res_ll_stor = net["res_line"].loading_percent.iloc[0]
+    
+    net["storage"].in_service.iloc[0] = False
+    net["sgen"].in_service.iloc[1] = True
+    
+    runpp_with_consistency_checks(net)
+    res_ll_sgen = net["res_line"].loading_percent.iloc[0]
+
+    assert np.isclose(res_ll_stor, res_ll_sgen)
+    
+    # test load behaviour
+    pp.create_load(net, b1, p_kw=10, in_service=False)
+    net["storage"].in_service.iloc[0] = True
+    net["storage"].p_kw.iloc[0] = 10
+    net["sgen"].in_service.iloc[1] = False
+    
+    res_load_beh = runpp_with_consistency_checks(net)
+    res_ll_stor = net["res_line"].loading_percent.iloc[0]
+    
+    net["storage"].in_service.iloc[0] = False
+    net["load"].in_service.iloc[1] = True
+    
+    runpp_with_consistency_checks(net)
+    res_ll_load = net["res_line"].loading_percent.iloc[0]
+
+    assert np.isclose(res_ll_stor, res_ll_load)
+    
+    assert res_gen_beh and res_load_beh
+    
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])
