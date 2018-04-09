@@ -275,6 +275,20 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     return fitting_types
 
 
+def add_zero_impedance_parameters(net):
+    """
+    adds all parameters required for zero impedance calculations
+    """
+    parameter_from_std_type(net, "vector_group", element="trafo")
+    parameter_from_std_type(net, "vsc0_percent", element="trafo")
+    parameter_from_std_type(net, "vscr0_percent", element="trafo")
+    parameter_from_std_type(net, "mag0_percent", element="trafo")
+    parameter_from_std_type(net, "mag0_rx", element="trafo")
+    parameter_from_std_type(net, "si0_hv_partial", element="trafo")
+    parameter_from_std_type(net, "c0_nf_per_km")
+    parameter_from_std_type(net, "r0_ohm_per_km")
+    parameter_from_std_type(net, "x0_ohm_per_km")
+
 def add_basic_std_types(net):
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
