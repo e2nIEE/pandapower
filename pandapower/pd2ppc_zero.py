@@ -11,47 +11,20 @@ import copy
 import pandapower.auxiliary as aux
 from pandapower.pd2ppc import _init_ppc
 from pandapower.build_bus import _build_bus_ppc
-from pandapower.build_gen import _init_ppc_gen, _build_gen_ppc
-from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
+from pandapower.build_gen import _build_gen_ppc
+from pandapower.pd2ppc import _ppc2ppci
 from pandapower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
 from pandapower.shortcircuit.idx_bus import C_MAX
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
-#
 
 def _pd2ppc_zero(net):
     """
-    Converter Flow:
-        1. Create an empty pypower datatructure
-        2. Calculate loads and write the bus matrix
-        3. Build the gen (Infeeder)- Matrix
-        4. Calculate the line parameter and the transformer parameter,
-           and fill it in the branch matrix.
-           Order: 1st: Line values, 2nd: Trafo values
-        5. if opf: make opf objective (gencost)
-        6. convert internal ppci format for pypower powerflow / opf without out of service elements and rearanged buses
-
-    INPUT:
-        **net** - The pandapower format network
-
-    OUTPUT:
-        **ppc** - The simple matpower format network. Which consists of:
-                  ppc = {
-                        "baseMVA": 1., *float*
-                        "version": 2,  *int*
-                        "bus": np.array([], dtype=float),
-                        "branch": np.array([], dtype=np.complex128),
-                        "gen": np.array([], dtype=float),
-                        "gencost" =  np.array([], dtype=float), only for OPF
-                        "internal": {
-                              "Ybus": np.array([], dtype=np.complex128)
-                              , "Yf": np.array([], dtype=np.complex128)
-                              , "Yt": np.array([], dtype=np.complex128)
-                              , "branch_is": np.array([], dtype=bool)
-                              , "gen_is": np.array([], dtype=bool)
-                              }
-        **ppci** - The "internal" pypower format network for PF calculations
+    Builds the ppc data structure for zero impedance system. Includes the impedance values of
+    lines and transformers, but no load or generation data.
+    
+    For short-circuit calculation, the short-circuit impedance of external grids is also considered.
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net)
@@ -83,15 +56,12 @@ def _pd2ppc_zero(net):
 
 def _build_branch_ppc_zero(net, ppc):
     """
-    Takes the empty ppc network and fills it with the branch values. The branch
+    Takes the empty ppc network and fills it with the zero imepdance branch values. The branch
     datatype will be np.complex 128 afterwards.
 
     .. note:: The order of branches in the ppc is:
             1. Lines
             2. Transformers
-            3. 3W Transformers (each 3W Transformer takes up three branches)
-            4. Impedances
-            5. Internal branch for extended ward
 
     **INPUT**:
         **net** -The pandapower format network
