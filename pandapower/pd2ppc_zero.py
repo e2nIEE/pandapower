@@ -114,6 +114,7 @@ def _build_branch_ppc_zero(net, ppc):
     if "trafo3w" in lookup:
         raise NotImplemented("Three winding transformers are not implemented for unbalanced calculations")
 
+
 def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     if trafo_df is None:
         trafo_df = net["trafo"]
@@ -123,98 +124,83 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     f, t = branch_lookup["trafo"]
     trafo_df["_ppc_idx"] = range(f,t)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    for trafo_type, trafo_idx in trafo_df.groupby("vector_group"):
-        ppc_idx = trafo_idx["_ppc_idx"]
-        vsc_percent = trafo_idx["vsc_percent"].values.astype(float)
-        vscr_percent = trafo_idx["vscr_percent"].values.astype(float)
-        sn_kva = trafo_idx["sn_kva"].values.astype(float)
-        vsc0_percent = trafo_idx["vsc0_percent"].values.astype(float)
-        lv_buses = trafo_idx["lv_bus"].values.astype(int)
-        hv_buses = trafo_idx["hv_bus"].values.astype(int)
+    for vector_group, trafos in trafo_df.groupby("vector_group"):
+        ppc_idx = trafos["_ppc_idx"]
+        vsc_percent = trafos["vsc_percent"].values.astype(float)
+        vscr_percent = trafos["vscr_percent"].values.astype(float)
+        sn_kva = trafos["sn_kva"].values.astype(float)
+        vsc0_percent = trafos["vsc0_percent"].values.astype(float)
+        vscr0_percent = trafos["vscr0_percent"].values.astype(float)
+        lv_buses = trafos["lv_bus"].values.astype(int)
+        hv_buses = trafos["hv_bus"].values.astype(int)
         lv_buses_ppc = bus_lookup[lv_buses]
         hv_buses_ppc = bus_lookup[hv_buses]
-        mag0_percent = trafo_idx.mag0_percent.values.astype(float)
-        mag0_rx = trafo_idx["mag0_rx"].values.astype(float)
-        si0_hv_partial = trafo_idx.si0_hv_partial.values.astype(float)
-        parallel = trafo_idx.parallel.values.astype(float)
-        in_service = trafo_idx["in_service"].astype(int)
+        mag0_percent = trafos.mag0_percent.values.astype(float)
+        mag0_rx = trafos["mag0_rx"].values.astype(float)
+        si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
+        parallel = trafos.parallel.values.astype(float)
+        in_service = trafos["in_service"].astype(int)
 
         ppc["branch"][ppc_idx, BR_STATUS] = 0
         ppc["branch"][ppc_idx, F_BUS] = hv_buses_ppc
         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
 
-        vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_idx)
+        vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
         vn_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
-        ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
+        ratio = _calc_nominal_ratio_from_dataframe(ppc, trafos, vn_trafo_hv, vn_trafo_lv,
                                                    bus_lookup)
-        ppc["branch"][f:t, TAP] = ratio
-        ppc["branch"][f:t, SHIFT] = shift
+        ppc["branch"][ppc_idx, TAP] = ratio
+        ppc["branch"][ppc_idx, SHIFT] = shift
 
-        # kt: transformer correction factor 
+        # zero seq. transformer impedance without kt
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva  # adjust for low voltage side voltage converter
+        z_sc = vsc0_percent / 100. / sn_kva * tap_lv
+        r_sc = vscr0_percent / 100. / sn_kva * tap_lv
+        z_sc = z_sc.astype(float)
+        r_sc = r_sc.astype(float)
+        x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
+        z0_k = (r_sc + x_sc * 1j) / parallel
         if mode == "sc":
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_kva, cmax)
-        else:
-            kt = 1.
-        # zero seq. transformer impedance without kt
-        r0_trafo, x0_trafo = _calc_trafo_sc_impedance_zero(net, trafo_idx, vn_lv, vn_trafo_lv, net.sn_kva)
+            z0_k *= kt
+        y0_k = 1 / z0_k
         # zero sequence transformer magnetising impedance 
-        tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva
         z_m = vsc0_percent * mag0_percent / 100. / sn_kva * tap_lv
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
         r_m = x_m * mag0_rx
         r0_trafo_mag = r_m / parallel
         x0_trafo_mag = x_m / parallel
+        z0_mag = r0_trafo_mag + x0_trafo_mag * 1j
 
-        if "Dyn" in trafo_type:
-            r0_dyn = kt * r0_trafo
-            x0_dyn = kt * x0_trafo          
-            y0_dyn = 1 / (r0_dyn + x0_dyn*1j)
-            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, y0_dyn.real, y0_dyn.imag)
+        if "Dyn" in vector_group:
+            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, y0_k.real, y0_k.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
              
-        elif "YNd" in trafo_type:
-            r0_ynd = r0_trafo * kt
-            x0_ynd = x0_trafo * kt
-            y0_ynd = 1/ (r0_ynd + x0_ynd*1j)
-            buses, gs, bs = aux._sum_by_group(hv_buses_ppc, y0_ynd.real, y0_ynd.imag)
+        elif "YNd" in vector_group:
+            buses, gs, bs = aux._sum_by_group(hv_buses_ppc, y0_k.real, y0_k.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
-        elif "Yyn" in trafo_type:
-            r0_yyn = r0_trafo*kt + r0_trafo_mag
-            x0_yyn = x0_trafo*kt + x0_trafo_mag
-            z0_yyn = r0_yyn + x0_yyn*1j
-            y0_yyn = 1 / z0_yyn.astype(complex)
-            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, y0_yyn.real, y0_yyn.imag)
+        elif "Yyn" in vector_group:
+            y = 1/(z0_mag+z0_k).astype(complex)
+            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, y.real, y.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
-        elif "YNy" in trafo_type and "YNyn" not in trafo_type:
-            r0_yny = r0_trafo*kt + r0_trafo_mag
-            x0_yny = x0_trafo*kt + x0_trafo_mag
-            z0_yny = (r0_yny + x0_yny*1j)
-            y0_yny = 1 / z0_yny.astype(complex)
-            buses, gs, bs = aux._sum_by_group(hv_buses_ppc, y0_yny.real, y0_yny.imag)
+        elif "YNy" in vector_group and "YNyn" not in vector_group:
+            y = 1/(z0_mag+z0_k).astype(complex)
+            buses, gs, bs = aux._sum_by_group(hv_buses_ppc, y.real, y.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
-        elif "YNyn" in trafo_type:
+        elif "YNyn" in vector_group:
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
-            r0_ynyn = kt * r0_trafo
-            x0_ynyn = kt * x0_trafo
-            tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva
-            z_m = vsc0_percent * mag0_percent / 100. / sn_kva * tap_lv
-            x_m = z_m / np.sqrt(mag0_rx**2 + 1)
-            r_m = x_m * mag0_rx
-            r0_trafo_mag = r_m / parallel
-            x0_trafo_mag = x_m / parallel
-# convert the t model to pi model
-
-            z1 = si0_hv_partial * (r0_ynyn + x0_ynyn*1j)
-            z2 = (1 - si0_hv_partial) * (r0_ynyn + x0_ynyn*1j)
-            z3 = r0_trafo_mag + x0_trafo_mag*1j
+            # convert the t model to pi model
+            z1 = si0_hv_partial * z0_k
+            z2 = (1 - si0_hv_partial) * z0_k
+            z3 = z0_mag
 
             z_temp = z1*z2 + z2*z3 + z1*z3
             za = z_temp / z2
@@ -224,41 +210,27 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
             ppc["branch"][ppc_idx, BR_B] = (2/za).imag - (2/za).real*1j
-            # add a shunt element parallel to zb if the leakage impedance distribution is unequal                
+            # add a shunt element parallel to zb if the leakage impedance distribution is unequal
+            #TODO: this only necessary if si0_hv_partial!=0.5 --> test
             zs = (za * zb)/(za - zb)
             ys = 1 / zs.astype(complex)
             buses, gs, bs = aux._sum_by_group(lv_buses_ppc, ys.real, ys.imag)
             ppc["bus"][buses, GS] += gs
             ppc["bus"][buses, BS] += bs
 
-        elif "Yy" in trafo_type and "Yyn" not in trafo_type:
+        elif "Yy" in vector_group and "Yyn" not in vector_group:
             pass
 
-        elif "Dy" in trafo_type and "Dyn" not in trafo_type:
+        elif "Dy" in vector_group and "Dyn" not in vector_group:
             pass          
 
-        elif "Yd" in trafo_type:
+        elif "Yd" in vector_group:
             pass
 
-        elif "Dd" in trafo_type:
+        elif "Dd" in vector_group:
             pass
-        
-def _calc_trafo_sc_impedance_zero(net, trafo_df, vn_lv, vn_trafo_lv, sn_kva):
-    """
-        calculates the zero sequence trafo impedance with correction factor
-    """
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva  # adjust for low voltage side voltage converter
-    sn_trafo_kva = trafo_df.sn_kva.values
-    parallel = trafo_df["parallel"].values
-#    mode = net["_options"]["mode"]
-    z_sc = trafo_df["vsc0_percent"].values / 100. / sn_trafo_kva * tap_lv
-    r_sc = trafo_df["vscr0_percent"].values / 100. / sn_trafo_kva * tap_lv
-    z_sc = z_sc.astype(float)
-    r_sc = r_sc.astype(float)
-#    z_sc = np.float(z_sc)
-#    r_sc = np.float(r_sc)
-    x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
-    return r_sc / parallel, x_sc / parallel
+        else:
+            raise ValueError("Unknown transformer vector group %s"%vector_group)
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
