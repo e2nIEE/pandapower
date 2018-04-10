@@ -28,6 +28,7 @@ def add_network(net, vector_group):
                          "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000}, "unsymmetric_line_type")
     pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type")
     pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
+    pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
     
     
     transformer_type = copy.copy(pp.load_std_type(net, "25 MVA 110/20 kV v1.4.3 and older","trafo"))
@@ -35,17 +36,22 @@ def add_network(net, vector_group):
                              "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
                              "vector_group": vector_group})
     pp.create_std_type(net, transformer_type, vector_group, "trafo")
-    pp.create_transformer(net, b1, b2, std_type=vector_group)
+    pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2)
+    pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
     pp.add_zero_impedance_parameters(net)
 
 def test_1ph_shortcircuit():
     results = {
-            "YNyn": [0.58405824654, 2.4517609153, 1.6614556629, 1.111187189]
-           , "Dyn": [0.52209347316, 2.9376424501, 1.8966571675, 1.2175499508]
-           , "YNd": [0.7326427258, 0.77018941065, 0.7718741164, 0.84675601192]
-           , "Yyn": [0.52209347316, 1.7178242081, 1.2607678015, 0.9082963158]
-           , "YNy": [0.58918837022, 0.77018941065, 0.7718741164, 0.84675601192]
-           }
+                 "Yy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"Yyn": [0.52209347337, 2.5145986133,  1.6737892808,  1.1117955913 ]
+                ,"Yd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"YNy": [0.6291931171,  0.74400073149, 0.74563682772, 0.81607276962]        
+                ,"YNyn":[0.62623661918, 2.9829679356,  1.8895041867,  1.2075537026 ]
+                ,"YNd": [0.75701600162, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"Dy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+                ,"Dyn": [0.52209347337, 3.5054043285,  2.1086590382,  1.2980120038 ]
+                ,"Dd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+               }
     net = pp.create_empty_network()
     for vc in results.keys():
          add_network(net, vc)

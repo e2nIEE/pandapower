@@ -124,8 +124,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     f, t = branch_lookup["trafo"]
     trafo_df["_ppc_idx"] = range(f,t)
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    buses_all, gs_all, bs_all = np.array([], dtype=int), np.array([]), np.array([])
     for vector_group, trafos in trafo_df.groupby("vector_group"):
         ppc_idx = trafos["_ppc_idx"]
+        ppc["branch"][ppc_idx, BR_STATUS] = 0
+
+        if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
+            continue
+
         vsc_percent = trafos["vsc_percent"].values.astype(float)
         vscr_percent = trafos["vscr_percent"].values.astype(float)
         sn_kva = trafos["sn_kva"].values.astype(float)
@@ -141,7 +147,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         parallel = trafos.parallel.values.astype(float)
         in_service = trafos["in_service"].astype(int)
 
-        ppc["branch"][ppc_idx, BR_STATUS] = 0
         ppc["branch"][ppc_idx, F_BUS] = hv_buses_ppc
         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
 
@@ -152,7 +157,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][ppc_idx, TAP] = ratio
         ppc["branch"][ppc_idx, SHIFT] = shift
 
-        # zero seq. transformer impedance without kt
+        # zero seq. transformer impedance
         tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva  # adjust for low voltage side voltage converter
         z_sc = vsc0_percent / 100. / sn_kva * tap_lv
         r_sc = vscr0_percent / 100. / sn_kva * tap_lv
@@ -173,29 +178,23 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         x0_trafo_mag = x_m / parallel
         z0_mag = r0_trafo_mag + x0_trafo_mag * 1j
 
-        if "Dyn" in vector_group:
-            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, y0_k.real, y0_k.imag)
-            ppc["bus"][buses, GS] += gs
-            ppc["bus"][buses, BS] += bs
+        if vector_group == "Dyn":
+            buses_all = np.hstack([buses_all, lv_buses_ppc])
+            gs_all = np.hstack([gs_all, y0_k.real*in_service])
+            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
              
-        elif "YNd" in vector_group:
-            buses, gs, bs = aux._sum_by_group(hv_buses_ppc, y0_k.real, y0_k.imag)
-            ppc["bus"][buses, GS] += gs
-            ppc["bus"][buses, BS] += bs
+        elif vector_group == "YNd":
+            buses_all = np.hstack([buses_all, hv_buses_ppc])
+            gs_all = np.hstack([gs_all, y0_k.real*in_service])
+            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
 
-        elif "Yyn" in vector_group:
+        elif vector_group == "Yyn":
+            buses_all = np.hstack([buses_all, lv_buses_ppc])
             y = 1/(z0_mag+z0_k).astype(complex)
-            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, y.real, y.imag)
-            ppc["bus"][buses, GS] += gs
-            ppc["bus"][buses, BS] += bs
+            gs_all = np.hstack([gs_all, y.real*in_service])
+            bs_all = np.hstack([bs_all, y.imag*in_service])
 
-        elif "YNy" in vector_group and "YNyn" not in vector_group:
-            y = 1/(z0_mag+z0_k).astype(complex)
-            buses, gs, bs = aux._sum_by_group(hv_buses_ppc, y.real, y.imag)
-            ppc["bus"][buses, GS] += gs
-            ppc["bus"][buses, BS] += bs
-
-        elif "YNyn" in vector_group:
+        elif vector_group == "YNyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
             # convert the t model to pi model
             z1 = si0_hv_partial * z0_k
@@ -214,23 +213,22 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             #TODO: this only necessary if si0_hv_partial!=0.5 --> test
             zs = (za * zb)/(za - zb)
             ys = 1 / zs.astype(complex)
-            buses, gs, bs = aux._sum_by_group(lv_buses_ppc, ys.real, ys.imag)
-            ppc["bus"][buses, GS] += gs
-            ppc["bus"][buses, BS] += bs
-
-        elif "Yy" in vector_group and "Yyn" not in vector_group:
-            pass
-
-        elif "Dy" in vector_group and "Dyn" not in vector_group:
-            pass          
-
-        elif "Yd" in vector_group:
-            pass
-
-        elif "Dd" in vector_group:
-            pass
+            buses_all = np.hstack([buses_all, lv_buses_ppc])
+            gs_all = np.hstack([gs_all, ys.real*in_service])
+            bs_all = np.hstack([bs_all, ys.imag*in_service])
+        elif vector_group=="YNy":
+            buses_all = np.hstack([buses_all, hv_buses_ppc])
+            y = 1/(z0_mag+z0_k).astype(complex)
+            gs_all = np.hstack([gs_all, y.real*in_service])
+            bs_all = np.hstack([bs_all, y.imag*in_service])
+        elif vector_group[-1].isdigit():
+            raise ValueError("Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree"%vector_group)
         else:
-            raise ValueError("Unknown transformer vector group %s"%vector_group)
+            raise ValueError("Transformer vector group %s is unknown / not implemented"%vector_group)
+
+    buses, gs, bs = aux._sum_by_group(buses_all, gs_all, bs_all)
+    ppc["bus"][buses, GS] += gs
+    ppc["bus"][buses, BS] += bs
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
@@ -282,37 +280,10 @@ def _add_line_sc_impedance_zero(net, ppc):
 
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
-# line zero sequence impedance
+        # line zero sequence impedance
         ppc["branch"][f:t, F_BUS] = bus_lookup[line["from_bus"].values]
         ppc["branch"][f:t, T_BUS] = bus_lookup[line["to_bus"].values]
         ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
         ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
         ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
-
-    
-
-#    if mode == "sc":
-#        if trafo_df.equals(net.trafo):
-#            from pandapower.shortcircuit.idx_bus import C_MAX
-#            bus_lookup = net._pd2ppc_lookups["bus"]
-#            cmax = net._ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
-#            print("cmax=",cmax)
-#            kt = _transformer_correction_factor(trafo_df["vsc_percent"], trafo_df["vscr_percent"], trafo_df["sn_kva"], cmax)
-#            print("kt=",kt)
-#            r_sc *= kt
-#            x_sc *= kt
-#    return r_sc / parallel, x_sc / parallel
-
-#def _calc_trafo_mag_impedance_zero(net, trafo_df, vn_lv, vn_trafo_lv, sn_kva):
-#    """
-#        calculates the zero sequence trafo magnetising impedance
-#    """
-#    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva  # adjust for low voltage side voltage converter
-#    sn_trafo_kva = trafo_df.sn_kva.values
-#    parallel = trafo_df["parallel"].values
-#    z_m = (trafo_df["vsc0_percent"].values * trafo_df["mag0_percent"].values) / 100. / sn_trafo_kva * tap_lv
-#    z_m = np.float(z_m)
-#    x_m = z_m / np.sqrt(trafo_df["mag0_rx"].astype(float)**2 + 1)
-#    r_m = x_m * trafo_df["mag0_rx"]
-#    
-#    return r_m / parallel, x_m / parallel
+        ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
