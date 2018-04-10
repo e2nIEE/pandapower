@@ -111,9 +111,9 @@ def _get_bus_voltages(net, ppc):
     ac = net["_options"]["ac"]
     bus_idx = _get_bus_idx(net)
     if ac:
-        net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
+        net["res_bus"]["vm_pu"].values[:] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
-    net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
+    net["res_bus"]["va_degree"].values[:] = ppc["bus"][bus_idx][:, VA]
 
 
 def _get_bus_idx(net):
