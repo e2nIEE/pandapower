@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
 
-This is a temporary script file.
-"""
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import math
 import numpy as np
@@ -96,7 +94,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     buses_all, gs_all, bs_all = np.array([], dtype=int), np.array([]), np.array([])
     for vector_group, trafos in trafo_df.groupby("vector_group"):
-        ppc_idx = trafos["_ppc_idx"]
+        ppc_idx = trafos["_ppc_idx"].values.astype(int)
         ppc["branch"][ppc_idx, BR_STATUS] = 0
 
         if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
@@ -178,7 +176,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
-            ppc["branch"][ppc_idx, BR_B] = (2/za).imag - (2/za).real*1j
+            y = 2 / za
+            ppc["branch"][ppc_idx, BR_B] = y.imag - y.real*1j
             # add a shunt element parallel to zb if the leakage impedance distribution is unequal
             #TODO: this only necessary if si0_hv_partial!=0.5 --> test
             zs = (za * zb)/(za - zb)
@@ -186,7 +185,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             gs_all = np.hstack([gs_all, ys.real*in_service])
             bs_all = np.hstack([bs_all, ys.imag*in_service])
-        elif vector_group=="YNy":
+        elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             y = 1/(z0_mag+z0_k).astype(complex)
             gs_all = np.hstack([gs_all, y.real*in_service])
