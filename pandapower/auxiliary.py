@@ -400,6 +400,8 @@ def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
             "create_continous_bus_index()" % max_bus)
 
 def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
+    if net.gen.empty:
+        return
     max_gen = max(net.gen.index.values)
     if max_gen >= n_max and len(net["gen"]) < n_max:
         logger.warning(
