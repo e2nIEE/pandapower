@@ -92,7 +92,6 @@ def _make_objective(ppci, net):
                         sign_corr = 1
 
                     # for element types with costs defined
-                    #for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
                     for el in pd.unique(costs.element_type):
 
                         if not costs.element[costs.element_type == el].empty:
@@ -111,9 +110,14 @@ def _make_objective(ppci, net):
                                 idx = dcline_idx
 
                             # cost data to write into gencost
-                            # TODO - Gitlab Issue #27 - only write cost data of controllable and in service elements
-                            el_is = net[el].loc[net[el].in_service & net[el].index.isin(
+                            # (only write cost data of controllable and in service elements)
+                            if el == "ext_grid" or el == "dcline":
+                                el_is = net[el].loc[net[el].in_service & net[el].index.isin(
                                     costs.loc[costs.element_type == el].element)].index
+                            else:
+                                el_is = net[el].loc[net[el].controllable & net[el].in_service & net[el].index.isin(
+                                    costs.loc[costs.element_type == el].element)].index
+
                             p = costs.loc[(costs.element_type == el) & (
                                     costs.element.isin(el_is))].p.reset_index(drop=True)
                             f = costs.loc[(costs.element_type == el) & (
@@ -152,7 +156,6 @@ def _make_objective(ppci, net):
                         sign_corr = 1
 
                     # for element types with costs defined
-                    #for el in ["gen", "sgen", "ext_grid", "load", "storage", "dcline"]:
                     for el in pd.unique(costs.element_type):
 
                         if not costs.element[costs.element_type == el].empty:
@@ -170,9 +173,14 @@ def _make_objective(ppci, net):
                                 idx = dcline_idx
 
                             # cost data to write into gencost
-                            # TODO - Gitlab Issue #27 - only write cost data of controllable and in service elements
-                            el_is = net[el].loc[net[el].in_service & net[el].index.isin(
-                                costs.loc[costs.element_type == el].element)].index
+                            # (only write cost data of controllable and in service elements)
+                            if el == "ext_grid" or el == "dcline":
+                                el_is = net[el].loc[net[el].in_service & net[el].index.isin(
+                                    costs.loc[costs.element_type == el].element)].index
+                            else:
+                                el_is = net[el].loc[net[el].controllable & net[el].in_service & net[el].index.isin(
+                                    costs.loc[costs.element_type == el].element)].index
+
                             c = costs.loc[(costs.element_type == el) &
                                           (costs.element.isin(el_is))].c.reset_index(drop=True)
 
