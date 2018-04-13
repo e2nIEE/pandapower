@@ -78,6 +78,16 @@ def test_iec60909_example_4():
     assert np.isclose(net.res_bus_sc[net.bus.name=="F3"].ikss_ka.values[0], 5.0321033105)
     assert np.isclose(net.res_bus_sc[net.bus.name=="Cable/Line IC"].ikss_ka.values[0], 16.362586813)
 
-        
+def test_1ph_with_switches():
+    net = pp.create_empty_network()
+    vc = "Yy"
+    add_network(net, vc)
+    sc.calc_sc(net, fault="1ph", case="max")
+    pp.create_line(net, 3, 1, length_km=15, std_type="unsymmetric_line_type", parallel=2.)
+    pp.add_zero_impedance_parameters(net)
+    pp.create_switch(net, bus=3, element=1, et="l", closed=False)   
+    sc.calc_sc(net, fault="1ph", case="max")
+    check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
+          
 if __name__ == "__main__":
     pytest.main(["test_1ph.py"])
