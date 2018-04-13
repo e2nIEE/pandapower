@@ -215,5 +215,42 @@ def test_cost_piecewise_linear_load_uneven_slopes():
         assert net["OPF_converged"]
         assert abs(net.res_cost - net.res_load.p_kw.values / 1.5) < 1e-3
 
+def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
+    """ Testing a very simple network for the resulting cost value
+    constraints with OPF """
+
+    # boundaries:
+    vm_max = 1.5
+    vm_min = 0.5
+
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_sgen(net, 1, p_kw=-1000, controllable=True, max_p_kw=0, min_p_kw=-1500,
+                   max_q_kvar=50,
+                   min_q_kvar=-50)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100 * 690)
+
+    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-1500, 2],[-750,1 ], [0,2]]))
+    # run OPF
+    pp.runopp(net, verbose=False)
+
+    assert net["OPF_converged"]
+    # assert net.res_cost - net.res_sgen.p_kw.values / 1.5 < 1e-3
+    print(net.res_cost)
+    print(net.res_sgen)
+
+
+
+
+
+
+
 if __name__ == "__main__":
-    pytest.main(["test_costs_pwl.py", "-xs"])
+    test_cost_piecewise_linear_sgen_very_unsteady_slopes()
+    # pytest.main(["test_costs_pwl.py", "-xs"])

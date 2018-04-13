@@ -661,9 +661,99 @@ def test_storage_opf():
     assert np.isclose(res_stor_q_kvar, res_load_q_kvar)
     assert np.isclose(res_cost_stor, res_cost_load)
 
+def test_in_service_controllables():
+
+    """ Testing controllable but out of service elements behaviour """
+    # boundaries
+    vm_max = 1.1
+    vm_min = 0.9
+    max_line_loading_percent = 100
+
+    # create network
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
+                   max_loading_percent=max_line_loading_percent)
+
+    # test elements static
+    pp.create_ext_grid(net, b2)
+    pp.create_load(net, b1, p_kw=7.5, controllable=True, max_p_kw=10, min_p_kw=0,
+                   max_q_kvar=2.5, min_q_kvar=-2.5)
+    pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=-10, min_p_kw=-25,
+                   max_q_kvar=25, min_q_kvar=-25)
+
+    # test elements
+    pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=0, min_p_kw=-25,
+                   max_q_kvar=25, min_q_kvar=-25)
+    pp.create_load(net, b1, p_kw=2.5, controllable=True, max_p_kw=2.5, min_p_kw=0,
+                   max_q_kvar=2.5, min_q_kvar=-2.5)
+
+    # costs
+    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
+    pp.create_polynomial_cost(net, 0, "load", np.array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
+    pp.create_polynomial_cost(net, 1, "sgen", np.array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 1, "load", np.array([0, -1, 0]))
+
+    net["sgen"].in_service.iloc[1] = False
+    net["load"].in_service.iloc[1] = False
+
+    pp.runopp(net, verbose=True)
+    assert net["OPF_converged"]
+
+
+def test_no_controllables(simple_opf_test_net):
+    # was ist das problwem an diesem fall und wie fange ich es ab?
+    net = simple_opf_test_net
+    net.gen.controllable = False
+    # pp.runopp(net)
+    # net.gen = net.gen.drop(index=0)
+    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 2, 0]))
+    pp.create_polynomial_cost(net, 0, "load", np.array([0, -1, 0]))
+    pp.runopp(net)
+
+def test_controllables_default():
+    """ Testing sgens/gens/loads with no defined controllable parameter  """
+    # boundaries
+    vm_max = 1.1
+    #todo
+    vm_min = 0.9
+    max_line_loading_percent = 100
+
+    # create network
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
+                   max_loading_percent=max_line_loading_percent)
+
+    # test elements static
+    pp.create_ext_grid(net, b2)
+    pp.create_load(net, b1, p_kw=7.5, max_p_kw=10, min_p_kw=0,
+                   max_q_kvar=2.5, min_q_kvar=-2.5)
+    net.load["controllable"] = False
+    # load should default to controllable =False
+    # pp.create_sgen(net, b1, p_kw=-25, max_p_kw=-10, min_p_kw=-25,
+    #                max_q_kvar=25, min_q_kvar=-25)
+    # # sgen should default to controllable =True
+    # pp.create_gen(net, b1, p_kw=-25, max_p_kw=-10, min_p_kw=-25,
+    #                max_q_kvar=25, min_q_kvar=-25)
+    # # gen should default to controllable =True
+
+    # costs
+    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
+    pp.create_polynomial_cost(net, 0, "load", np.array([0, -1, 0]))
+    # pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
+    # pp.create_polynomial_cost(net, 0, "gen", np.array([0, 2, 0]))
+
+    pp.runopp(net, verbose=True)
+    assert net["OPF_converged"]
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    # pytest.main(['-s', __file__])
     #test_storage_opf()
     #test_opf_varying_max_line_loading()
      # pytest.main(["test_basic.py", "-s"])
@@ -671,3 +761,6 @@ if __name__ == "__main__":
     # test_trafo3w_loading()
     # test_trafo3w_loading()
     # test_dcopf_pwl()
+    net = simple_opf_test_net()
+    test_no_controllables(net)
+    # test_controllables_default()

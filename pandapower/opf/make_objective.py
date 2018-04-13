@@ -62,6 +62,7 @@ def _make_objective(ppci, net):
     # calculate size of gencost array
     if len(net.piecewise_linear_cost):
         n_piece_lin_coefficients = net.piecewise_linear_cost.p.values[0].shape[1] * 2
+        #todo: warning dass alle dieselbe anzahl an punkten haben müssen!
     else:
         n_piece_lin_coefficients = 0
     if len(net.polynomial_cost):
