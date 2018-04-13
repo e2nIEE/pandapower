@@ -198,6 +198,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     buses, gs, bs = aux._sum_by_group(buses_all, gs_all, bs_all)
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
+    del net.trafo["_ppc_idx"]
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
