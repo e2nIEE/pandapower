@@ -393,7 +393,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
 
 def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
     max_bus = max(net.bus.index.values)
-    if max_bus >= n_max and len(net["bus"]) < n_max:
+    if max_bus >= n_max > len(net["bus"]):
         logger.warning(
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
