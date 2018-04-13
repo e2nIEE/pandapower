@@ -1269,7 +1269,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     if "type" in lineparam:
         v["type"] = lineparam["type"]
-        
+
 
     # store dtypes
     dtypes = net.line.dtypes
@@ -1315,7 +1315,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
         **c_nf_per_km** (float) - line capacitance in nano Farad per km
-       
+
         **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
@@ -1332,7 +1332,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             of line (from 0 to 1)
 
         **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
-            
+
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
@@ -2345,8 +2345,9 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
         "transformer".
 
     OPTIONAL:
-        **check_existing** (bool) - Check for and replace existing measurements for this bus and
-        type. Set it to false for performance improvements which can cause unsafe behaviour.
+        **check_existing** (bool) - Check for and replace existing measurements for this bus,
+        type and element_type. Set it to false for performance improvements which can cause unsafe
+        behaviour.
 
         **name** (str, None) - name of measurement.
 
@@ -2387,10 +2388,12 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     if check_existing:
         if element is None:
             existing = net.measurement[(net.measurement.type == type) &
+                                       (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (pd.isnull(net.measurement.element))].index
         else:
             existing = net.measurement[(net.measurement.type == type) &
+                                       (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (net.measurement.element == element)].index
         if len(existing) == 1:
