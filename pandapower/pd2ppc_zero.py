@@ -14,7 +14,6 @@ from pandapower.pd2ppc import _ppc2ppci
 from pandapower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
-from pandapower.shortcircuit.idx_bus import C_MAX
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
 
 def _pd2ppc_zero(net):
@@ -87,6 +86,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     if trafo_df is None:
         trafo_df = net["trafo"]
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    if not "trafo" in branch_lookup:
+        return
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net["_options"]["mode"]
     f, t = branch_lookup["trafo"]
@@ -134,6 +135,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
         z0_k = (r_sc + x_sc * 1j) / parallel
         if mode == "sc":
+            from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_kva, cmax)
             z0_k *= kt
