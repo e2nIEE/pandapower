@@ -79,9 +79,9 @@ There is a project to develop a GUI for pandapower: https://github.com/johaack/p
 Citing pandapower
 ==================
 
-A paper describing pandapower has been accepted for publication in IEEE Transaction on Power Systems. A preprint of this paper is available on `arxiv <https://arxiv.org/abs/1709.06743>`_ Please acknowledge the usage of pandapower by citing the Paper as follows:
+A paper describing pandapower has been accepted for publication in IEEE Transaction on Power Systems, a preprint of this paper is available on `arXiv <https://arxiv.org/abs/1709.06743>`_ Please acknowledge the usage of pandapower by citing the Paper as follows:
 
-**L.** Thurner, A. Scheidler, Schäfer et al., “pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems,” IEEE Transaction on Power Systems (to be published), 2018.
+- **L. Thurner, A. Scheidler, F. Schäfer et al.**, “pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems,” IEEE Transaction on Power Systems (to be published), 2018.
 
 You can use the following BibTex entry: ::
 
