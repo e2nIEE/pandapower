@@ -26,16 +26,12 @@ def _pd2ppc_zero(net):
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net)
 
-    # get options
-    mode = net["_options"]["mode"]
-
     ppc = _init_ppc(net)
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     _build_bus_ppc(net, ppc)
     _build_gen_ppc(net, ppc)
-    if mode == "sc":
-        _add_ext_grid_sc_impedance_zero(net, ppc)
+    _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc)
 
     # adds auxilary buses for open switches at branches
@@ -203,16 +199,24 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     del net.trafo["_ppc_idx"]
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
-    from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
+    mode = net["_options"]["mode"]
+
+    if mode == "sc":
+        from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
+        case = net._options["case"]
+    else:
+        case = "max"
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    case = net._options["case"]
     eg = net["ext_grid"][net._is_elements["ext_grid"]]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
     eg_buses_ppc = bus_lookup[eg_buses]
 
-    c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    if mode == "sc":
+        c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    else:
+        c = 1.
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )
