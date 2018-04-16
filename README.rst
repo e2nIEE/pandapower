@@ -79,16 +79,19 @@ There is a project to develop a GUI for pandapower: https://github.com/johaack/p
 Citing pandapower
 ==================
 
-We are currently working on publishing a paper about pandapower, which is available as a `preprint on arxiv <https://arxiv.org/abs/1709.06743>`_.
-Until the paper has passed peer-review, please acknowledge the usage of pandapower in your paper as follows: ::
+A paper describing pandapower has been accepted for publication in IEEE Transaction on Power Systems. A preprint of this paper is available on `arxiv <https://arxiv.org/abs/1709.06743>`_ Please acknowledge the usage of pandapower by citing the Paper as follows:
 
-    @online{pandapower,
-       author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
-       title = "{pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems}",
-       year = 2017,
-       url = {https://arxiv.org/abs/1709.06743},
-       note = {preprint}
-    }
+**L.** Thurner, A. Scheidler, Schäfer et al., “pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems,” IEEE Transaction on Power Systems (to be published), 2018.
+
+You can use the following BibTex entry: ::
+
+   @article{pandapower,
+	author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
+	title = "{pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems}",
+	year = 2018,
+	journal = {IEEE Transaction on Power Systems (to be published)},
+	url = {https://arxiv.org/abs/1709.06743}
+	}
 
 Minimal Example
 ===============
