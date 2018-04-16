@@ -10,6 +10,7 @@ Change Log
 - [ADDED] pp_elements() toolbox function
 - [ADDED] new parameter g_us_per_km to model dielectric losses in lines
 - [ADDED] single phase short-circuit calculation with negative sequence models
+- [ADDED] generic storage model (sgen/load like element with negative / positive power allowed)
 
 [1.4.3] - 2018-02-06
 ----------------------
