@@ -22,6 +22,7 @@ def add_network(net, vector_group):
     pp.create_bus(net, 20, in_service=False)
     b3 = pp.create_bus(net, 20, zone=vector_group)
     b4 = pp.create_bus(net, 20, zone=vector_group)
+    pp.create_bus(net, 20)
 
     pp.create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=80, rx_min=0.20, rx_max=0.35)
     net.ext_grid["r0x0_max"] = 0.4

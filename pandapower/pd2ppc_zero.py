@@ -40,7 +40,8 @@ def _pd2ppc_zero(net):
     # add auxilary buses for out of service buses at in service lines.
     # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
-
+    if hasattr(net, "_isolated_buses"):
+        ppc["bus"][net._isolated_buses, 1] = 4.
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
@@ -246,20 +247,22 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
 
 
 def _add_line_sc_impedance_zero(net, ppc):
-    line = net["line"]
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    if not "line" in branch_lookup:
+        return
+    line = net["line"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     length = line["length_km"].values
     parallel = line["parallel"].values
-    fb = bus_lookup[line["from_bus"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
 
-    if "line" in branch_lookup:
-        f, t = branch_lookup["line"]
-        # line zero sequence impedance
-        ppc["branch"][f:t, F_BUS] = bus_lookup[line["from_bus"].values]
-        ppc["branch"][f:t, T_BUS] = bus_lookup[line["to_bus"].values]
-        ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
-        ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
-        ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
-        ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
+    fb = bus_lookup[line["from_bus"].values]
+    tb = bus_lookup[line["to_bus"].values]
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    f, t = branch_lookup["line"]
+    # line zero sequence impedance
+    ppc["branch"][f:t, F_BUS] = fb
+    ppc["branch"][f:t, T_BUS] = tb
+    ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
+    ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
+    ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
+    ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
