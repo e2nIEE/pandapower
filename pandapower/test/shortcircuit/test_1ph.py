@@ -17,7 +17,7 @@ def check_results(net, vc, result):
         raise ValueError("Incorrect results for vector group %s"%vc, res_ika, result)
 
 def add_network(net, vector_group):
-    b1 = pp.create_bus(net, 110, zone=vector_group)
+    b1 = pp.create_bus(net, 110, zone=vector_group, index=pp.get_free_id(net.bus))
     b2 = pp.create_bus(net, 20, zone=vector_group)
     b3 = pp.create_bus(net, 20, zone=vector_group)
     b4 = pp.create_bus(net, 20, zone=vector_group)
@@ -29,8 +29,9 @@ def add_network(net, vector_group):
     pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112, "c_nf_per_km": 304,
                          "max_i_ka": 0.421, "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
                          "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000}, "unsymmetric_line_type")
-    pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type")
-    pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
+    l1 = pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type",
+                   index=pp.get_free_id(net.line)+1)
+    l2 = pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
     pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
     
     
@@ -39,9 +40,11 @@ def add_network(net, vector_group):
                              "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
                              "vector_group": vector_group})
     pp.create_std_type(net, transformer_type, vector_group, "trafo")
-    pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2)
+    t1 = pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2,
+                          index=pp.get_free_id(net.trafo)+1)
     pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
     pp.add_zero_impedance_parameters(net)
+    return l1, l2, t1
 
 def test_1ph_shortcircuit():
     results = {
@@ -81,13 +84,17 @@ def test_iec60909_example_4():
 def test_1ph_with_switches():
     net = pp.create_empty_network()
     vc = "Yy"
-    add_network(net, vc)
+    l1, l2, _ = add_network(net, vc)
     sc.calc_sc(net, fault="1ph", case="max")
-    pp.create_line(net, 3, 1, length_km=15, std_type="unsymmetric_line_type", parallel=2.)
+    pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
+                   std_type="unsymmetric_line_type", parallel=2.)
     pp.add_zero_impedance_parameters(net)
-    pp.create_switch(net, bus=3, element=1, et="l", closed=False)   
+    pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)   
     sc.calc_sc(net, fault="1ph", case="max")
     check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
           
 if __name__ == "__main__":
-    pytest.main(["test_1ph.py"])
+    test_1ph_with_switches()
+    test_iec60909_example_4()
+    test_1ph_shortcircuit()
+#    pytest.main(["test_1ph.py"])
