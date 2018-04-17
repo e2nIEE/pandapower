@@ -12,13 +12,14 @@ import os
 import pytest
 
 def check_results(net, vc, result):
-    res_ika = net.res_bus_sc[net.bus.zone==vc].ikss_ka.values
+    res_ika = net.res_bus_sc[(net.bus.zone==vc) & (net.bus.in_service)].ikss_ka.values
     if not np.allclose(result, res_ika):
         raise ValueError("Incorrect results for vector group %s"%vc, res_ika, result)
 
 def add_network(net, vector_group):
     b1 = pp.create_bus(net, 110, zone=vector_group, index=pp.get_free_id(net.bus))
     b2 = pp.create_bus(net, 20, zone=vector_group)
+    pp.create_bus(net, 20, in_service=False)
     b3 = pp.create_bus(net, 20, zone=vector_group)
     b4 = pp.create_bus(net, 20, zone=vector_group)
 
