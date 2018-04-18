@@ -8,7 +8,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from numpy import zeros, array, concatenate, power
+from numpy import zeros, array, concatenate, power, ndarray
 from pandapower.idx_cost import MODEL, NCOST, COST
 
 
@@ -133,7 +133,7 @@ def _make_objective(ppci, net):
                                                     n_piece_lin_coefficients+1:2] = - f * 1e3
                                 else:
                                     ppci["gencost"][elements, COST+1:COST+n_piece_lin_coefficients +
-                                                    1:2] = f * 1e3 * sign_corr
+                                                    1:2] = - f * 1e3 * sign_corr
 
                                 ppci["gencost"][elements, NCOST] = n_coefficients / 2
                                 ppci["gencost"][elements, MODEL] = 1
@@ -172,7 +172,7 @@ def _make_objective(ppci, net):
                             c = costs.loc[(costs.element_type == el) &
                                           (costs.element.isin(el_is))].c.reset_index(drop=True)
 
-                            if len(c) > 0:
+                            if len(c) > 0 and isinstance(idx, ndarray):
                                 c = concatenate(c)
                                 n_c = c.shape[1]
                                 c = c * power(1e3, array(range(n_c))[::-1])
@@ -188,7 +188,7 @@ def _make_objective(ppci, net):
                                 if el in ["load", "dcline"]:
                                     ppci["gencost"][elements, COST:(COST + n_c):] = - c
                                 else:
-                                    ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
+                                    ppci["gencost"][elements, -n_c:n_gencost] = - c * sign_corr
 
                                 ppci["gencost"][elements, NCOST] = n_coefficients
                                 ppci["gencost"][elements, MODEL] = 2

@@ -39,7 +39,7 @@ def test_cost_piecewise_linear_gen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, 100], [-75, 50], [0, 0]]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -100], [-75, -50], [0, 0]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -96,7 +96,7 @@ def test_get_costs():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, 300], [0, 0]]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -300], [0, 0]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -126,7 +126,7 @@ def test_cost_piecewise_linear_sgen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, 100], [-75, 50], [0, 0]]))
+    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, -100], [-75, -50], [0, 0]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -180,7 +180,7 @@ def test_cost_piecewise_linear_sgen_uneven_slopes():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, 200], [-75, 50], [0, 0]]))
+    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, -200], [-75, -50], [0, 0]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -252,5 +252,5 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
 
 
 if __name__ == "__main__":
-    test_cost_piecewise_linear_sgen_very_unsteady_slopes()
-    # pytest.main(["test_costs_pwl.py", "-xs"])
+    # test_cost_piecewise_linear_sgen_very_unsteady_slopes()
+    pytest.main(["test_costs_pwl.py", "-s"])
