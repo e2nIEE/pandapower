@@ -795,8 +795,8 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
 def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan):
-    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
-                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0, \
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan, \
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
     Adds a storage to the network.
 
