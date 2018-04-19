@@ -61,7 +61,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                     ("p_kw", "f8"),
                     ("q_kvar", "f8"),
                     ("sn_kva", "f8"),
-                    ("soc", "f8"),
+                    ("soc_percent", "f8"),
                     ("min_e_kwh", "f8"),
                     ("max_e_kwh", "f8"),
                     ("scaling", "f8"),
@@ -267,7 +267,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                             ("q_kvar", "f8")],
         "_empty_res_storage": [("p_kw", "f8"),
                                ("q_kvar", "f8"),
-                               ("soc", "f8")],
+                               ("soc_percent", "f8")],
         "_empty_res_gen": [("p_kw", "f8"),
                            ("q_kvar", "f8"),
                            ("va_degree", "f8"),
@@ -792,10 +792,10 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
-def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan):
-    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0, \
+    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0, \
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan, \
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
     Adds a storage to the network.
@@ -828,7 +828,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
         **sn_kva** (float, default None) - Nominal power of the storage
 
-        **soc** (float, NaN) - The state of charge of the storage
+        **soc_percent** (float, NaN) - The state of charge of the storage
 
         **min_e_kwh** (float, 0) - The minimum energy content of the storage \
             (minimum charge level)
@@ -863,7 +863,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
         **index** (int) - The unique ID of the created storage
 
     EXAMPLE:
-        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc = 1.0, min_e_kwh = 5)
+        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc_percent = 1.0, min_e_kwh = 5)
 
     """
     if bus not in net["bus"].index.values:
@@ -879,9 +879,9 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
     dtypes = net.storage.dtypes
 
     net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
-                            "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
+                            "soc_percent", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
         [name, bus, p_kw, q_kvar, sn_kva, scaling,
-         soc, min_e_kwh, max_e_kwh, bool(in_service), type]
+         soc_percent, min_e_kwh, max_e_kwh, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.storage, dtypes)
