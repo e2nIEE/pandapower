@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 import pandapower as pp
@@ -107,6 +107,30 @@ def test_nonexistent_bus():
             func()
 
 
+def test_tp_phase_shifter_default():
+    expected_default = False
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
+    if "tp_phase_shifter" in data:
+        del data["tp_phase_shifter"]
+    pp.create_std_type(net, data, "without_tp_shifter_info", "trafo")
+    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
+    pp.create_transformer(net, 0, 1, "without_tp_shifter_info")
+    assert (net.trafo.tp_phase_shifter == expected_default).all()
+
+def test_create_line_conductance():
+    net = pp.create_empty_network()
+    pp.create_bus(net, 20)
+    pp.create_bus(net, 20)
+    pp.create_std_type(net, {'c_nf_per_km': 210, 'max_i_ka': 0.142,  'q_mm2': 50,
+                             'r_ohm_per_km': 0.642, 'type': 'cs', 'x_ohm_per_km': 0.083,
+                             "g_us_per_km": 1}, "test_conductance")
+        
+    l = pp.create_line(net, 0, 1, 1., "test_conductance")
+    assert net.line.g_us_per_km.at[l] == 1
+    
 if __name__ == '__main__':
-#    test_convenience_create_functions()
      pytest.main(["test_create.py"])
+

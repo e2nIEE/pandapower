@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pandas as pd
 try:
@@ -274,6 +274,20 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
             fitting_types.append(name)
     return fitting_types
 
+
+def add_zero_impedance_parameters(net):
+    """
+    adds all parameters required for zero impedance calculations
+    """
+    parameter_from_std_type(net, "vector_group", element="trafo")
+    parameter_from_std_type(net, "vsc0_percent", element="trafo")
+    parameter_from_std_type(net, "vscr0_percent", element="trafo")
+    parameter_from_std_type(net, "mag0_percent", element="trafo")
+    parameter_from_std_type(net, "mag0_rx", element="trafo")
+    parameter_from_std_type(net, "si0_hv_partial", element="trafo")
+    parameter_from_std_type(net, "c0_nf_per_km")
+    parameter_from_std_type(net, "r0_ohm_per_km")
+    parameter_from_std_type(net, "x0_ohm_per_km")
 
 def add_basic_std_types(net):
     if "std_types" not in net:

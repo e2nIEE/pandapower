@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, zeros
@@ -61,7 +61,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                     ("p_kw", "f8"),
                     ("q_kvar", "f8"),
                     ("sn_kva", "f8"),
-                    ("soc", "f8"),
+                    ("soc_percent", "f8"),
                     ("min_e_kwh", "f8"),
                     ("max_e_kwh", "f8"),
                     ("scaling", "f8"),
@@ -104,6 +104,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                  ("r_ohm_per_km", "f8"),
                  ("x_ohm_per_km", "f8"),
                  ("c_nf_per_km", "f8"),
+                 ("g_us_per_km", "f8"),
                  ("max_i_ka", "f8"),
                  ("df", "f8"),
                  ("parallel", "u4"),
@@ -266,7 +267,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                             ("q_kvar", "f8")],
         "_empty_res_storage": [("p_kw", "f8"),
                                ("q_kvar", "f8"),
-                               ("soc", "f8")],
+                               ("soc_percent", "f8")],
         "_empty_res_gen": [("p_kw", "f8"),
                            ("q_kvar", "f8"),
                            ("va_degree", "f8"),
@@ -791,19 +792,19 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
-def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan):
-    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
-                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0, \
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan, \
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
     Adds a storage to the network.
-    
-    In order to simulate a storage system it is possible to use sgens or loads to model the 
+
+    In order to simulate a storage system it is possible to use sgens or loads to model the
     discharging or charging state. The power of a storage can be positive or negative, so the use
     of either a sgen or a load is (per definition of the elements) not correct.
     To overcome this issue, a storage element can be created.
-    
+
     As pandapower is not a time dependend simulation tool and there is no time domain parameter in
     default power flow calculations, the state of charge (SOC) is not updated during any power flow
     calculation.
@@ -818,7 +819,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
         **p_kw** (float) - The momentary real power of the storage \
             (positive for charging, negative for discharging)
-        
+
         **max_e_kwh** (float) - The maximum energy content of the storage \
             (maximum charge level)
 
@@ -826,9 +827,9 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
         **q_kvar** (float, default 0) - The reactive power of the storage
 
         **sn_kva** (float, default None) - Nominal power of the storage
-        
-        **soc** (float, NaN) - The state of charge of the storage
-        
+
+        **soc_percent** (float, NaN) - The state of charge of the storage
+
         **min_e_kwh** (float, 0) - The minimum energy content of the storage \
             (minimum charge level)
 
@@ -854,7 +855,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
         **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for a \
             controllable storage in OPF
-            
+
         **controllable** (bool, NaN) - Whether this storage is controllable by the optimal
         powerflow
 
@@ -862,7 +863,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
         **index** (int) - The unique ID of the created storage
 
     EXAMPLE:
-        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc = 1.0, min_e_kwh = 5)
+        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc_percent = 1.0, min_e_kwh = 5)
 
     """
     if bus not in net["bus"].index.values:
@@ -876,15 +877,15 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
     # store dtypes
     dtypes = net.storage.dtypes
-        
+
     net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
-                            "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
+                            "soc_percent", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
         [name, bus, p_kw, q_kvar, sn_kva, scaling,
-         soc, min_e_kwh, max_e_kwh, bool(in_service), type]
+         soc_percent, min_e_kwh, max_e_kwh, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.storage, dtypes)
-    
+
     # check for OPF parameters and add columns to network table
     if not isnan(min_p_kw):
         if "min_p_kw" not in net.storage.columns:
@@ -1212,7 +1213,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **std_type** (string) - The linetype of a standard line pre-defined in standard_linetypes.
 
     OPTIONAL:
-        **name** (string) - A custom name for this line
+        **name** (string, None) - A custom name for this line
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -1223,12 +1224,12 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **df** (float) - derating factor: maximal current of line in relation to nominal current \
+        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current \
             of line (from 0 to 1)
 
-        **parallel** (integer) - number of parallel line systems
+        **parallel** (integer, 1) - number of parallel line systems
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -1264,8 +1265,11 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         "c_nf_per_km": lineparam["c_nf_per_km"],
         "max_i_ka": lineparam["max_i_ka"]
     })
+    v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+
     if "type" in lineparam:
-        v.update({"type": lineparam["type"]})
+        v["type"] = lineparam["type"]
+
 
     # store dtypes
     dtypes = net.line.dtypes
@@ -1289,11 +1293,11 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
-                                geodata=None, in_service=True, df=1., parallel=1,
+                                geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
                                 max_loading_percent=nan, **kwargs):
     """create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km, \
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None, \
-                                geodata=None, in_service=True, df=1., parallel=1, \
+                                geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,\
                                 max_loading_percent=nan, **kwargs)
     Creates a line element in net["line"] from line parameters.
 
@@ -1310,32 +1314,32 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
-        **c_nf_per_km** (float) - line capacitance in nF per km
+        **c_nf_per_km** (float) - line capacitance in nano Farad per km
 
-        **max_i_ka** (float) - maximum thermal current in kA
+        **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
-        **name** (string) - A custom name for this line
+        **name** (string, None) - A custom name for this line
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **type** (str) - type of line ("ol" for overhead line or "cs" for cable system)
+        **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
 
-        **df** (float) - derating factor: maximal current of line in relation to nominal current \
+        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current \
             of line (from 0 to 1)
 
-        **parallel** (integer) - number of parallel line systems
+        **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
+
+        **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
         (array, default None, shape= (,2L)) -
         The linegeodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
-
-        **kwargs** - nothing to see here, go along
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
@@ -1365,7 +1369,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
         "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type
+        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
+        "g_us_per_km": g_us_per_km
     }
 
     # store dtypes
@@ -1462,13 +1467,13 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
         "df": df,
-        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
+        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0,
+        "tp_phase_shifter": ti["tp_phase_shifter"] if "tp_phase_shifter" in ti
+                            and pd.notnull(ti["tp_phase_shifter"]) else False
     })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree",
-               "tp_phase_shifter"):
+    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
-
     if ("tp_mid" in v) and (tp_pos is nan):
         v["tp_pos"] = v["tp_mid"]
     else:
@@ -1485,6 +1490,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
             net.trafo.loc[:, "max_loading_percent"] = pd.Series()
 
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+    # tp_phase_shifter default False
+    net.trafo.tp_phase_shifter.fillna(False, inplace=True)
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
@@ -1563,8 +1571,6 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
-
-        **kwargs** - nothing to see here, go along
 
         \* only considered in loadflow if calculate_voltage_angles = True
 
@@ -2339,8 +2345,9 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
         "transformer".
 
     OPTIONAL:
-        **check_existing** (bool) - Check for and replace existing measurements for this bus and
-        type. Set it to false for performance improvements which can cause unsafe behaviour.
+        **check_existing** (bool) - Check for and replace existing measurements for this bus,
+        type and element_type. Set it to false for performance improvements which can cause unsafe
+        behaviour.
 
         **name** (str, None) - name of measurement.
 
@@ -2381,10 +2388,12 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     if check_existing:
         if element is None:
             existing = net.measurement[(net.measurement.type == type) &
+                                       (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (pd.isnull(net.measurement.element))].index
         else:
             existing = net.measurement[(net.measurement.type == type) &
+                                       (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (net.measurement.element == element)].index
         if len(existing) == 1:
@@ -2406,11 +2415,12 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
      - Static Generator
      - Load
      - Dcline
+     - Storage
 
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] \
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
         **data_points** - (numpy array) Numpy array containing n data points (see example)
@@ -2428,8 +2438,9 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
         create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
 
     NOTE:
-      costs for reactive power can only be quadratic, linear or constant. No higher grades \
+      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
           supported.
+      - costs for storages are positive per definition (similar to sgen costs)
     """
 
     if index is None:
@@ -2512,14 +2523,16 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
      - Static Generator
      - Load
      - Dcline
+     - Storage
 
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline"] \
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
-        **data_points** - (numpy array) Numpy array containing n cost coefficients (see example)
+        **data_points** - (numpy array) Numpy array containing n cost coefficients, starting with highest \
+            order (see example)
 
         **type ** -"p" or "q"
 
@@ -2534,6 +2547,9 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
 
     EXAMPLE:
         create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+
+    NOTE:
+        - costs for storages are positive per definition (similar to sgen costs)
     """
 
     if index is None:

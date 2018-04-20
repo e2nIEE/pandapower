@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, \
-    _check_if_numba_is_installed, _check_bus_index_and_print_warning_if_high
+    _check_if_numba_is_installed, _check_bus_index_and_print_warning_if_high, \
+    _check_gen_index_and_print_warning_if_high
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow
@@ -244,6 +245,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
 
 
@@ -310,6 +312,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
 
 
@@ -385,6 +388,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
                      voltage_depend_loads=False, delta=delta)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, numba=numba)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
@@ -446,4 +450,5 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
                      voltage_depend_loads=False, delta=delta)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

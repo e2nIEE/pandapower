@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 # Additional copyright for modified code by Brendan Curran-Johnson (ADict class):
 # Copyright (c) 2013 Brendan Curran-Johnson
@@ -393,11 +393,22 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
 
 def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
     max_bus = max(net.bus.index.values)
-    if max_bus >= n_max and len(net["bus"]) < n_max:
+    if max_bus >= n_max > len(net["bus"]):
         logger.warning(
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
             "create_continous_bus_index()" % max_bus)
+
+def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
+    if net.gen.empty:
+        return
+    max_gen = max(net.gen.index.values)
+    if max_gen >= n_max and len(net["gen"]) < n_max:
+        logger.warning(
+            "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
+            #" Try resetting the bus indices with the toolbox function "
+            #"create_continous_bus_index()"
+            % max_gen)
 
 
 def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
@@ -503,8 +514,8 @@ def _set_isolated_buses_out_of_service(net, ppc):
                         ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][disco, 1] = 4.
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
+    ppc["bus"][net._isolated_buses, 1] = 4.
 
 
 def _write_lookup_to_net(net, element, element_lookup):

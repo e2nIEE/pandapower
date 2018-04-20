@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 from collections import defaultdict
 
@@ -499,7 +499,7 @@ def convert_format(net):
     if "_empty_res_storage" not in net:
         net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
                                                                    ("q_kvar", "f8"),
-                                                                   ("soc", "f8")]))
+                                                                   ("soc_percent", "f8")]))
 
     if len(net["_empty_res_line"]) < 10:
         net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
@@ -518,7 +518,7 @@ def convert_format(net):
                                                          ("p_kw", "f8"),
                                                          ("q_kvar", "f8"),
                                                          ("sn_kva", "f8"),
-                                                         ("soc", "f8"),
+                                                         ("soc_percent", "f8"),
                                                          ("min_e_kwh", "f8"),
                                                          ("max_e_kwh", "f8"),
                                                          ("scaling", "f8"),
@@ -672,6 +672,8 @@ def convert_format(net):
                     else:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
                                                              errors="ignore")
+    if not "g_us_per_km" in net.line:
+        net.line["g_us_per_km"] = 0.
     return net
 
 
@@ -1050,9 +1052,9 @@ def element_bus_tuples(bus_elements=True, branch_elements=True):
 def pp_elements(bus=True, bus_elements=True, branch_elements=True):
     """ Returns the list of pandapower elements. """
     if bus:
-        return ["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)]
+        return set(["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
     else:
-        return [el[0] for el in element_bus_tuples(bus_elements, branch_elements)]
+        return set([el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
 
 
 def drop_buses(net, buses, drop_elements=True):

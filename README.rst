@@ -28,14 +28,14 @@ pandapower combines the data analysis library `pandas <http://pandas.pydata.org>
 aimed at automation of analysis and optimization in power systems.
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
-Operation at the Fraunhofer Institute for Wind Energy and Energy System Technology (IWES), Kassel.
+Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
-.. image:: https://www.uni-kassel.de/eecs/typo3temp/pics/f26880008d.png
+.. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/e2n.png
     :target: https://www.uni-kassel.de/eecs/en/fachgebiete/e2n/home.html
     :width: 25em
 
-.. image:: http://www.energiesystemtechnik.iwes.fraunhofer.de/content/dam/iwes-neu/energiesystemtechnik/iwes_190x52.gif
-   :target: http://www.energiesystemtechnik.iwes.fraunhofer.de/en.html
+.. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/iee.png
+    :target: https://www.iee.fraunhofer.de/en.html
     :width: 25em
 
 |
@@ -79,16 +79,19 @@ There is a project to develop a GUI for pandapower: https://github.com/johaack/p
 Citing pandapower
 ==================
 
-We are currently working on publishing a paper about pandapower, which is available as a `preprint on arxiv <https://arxiv.org/abs/1709.06743>`_.
-Until the paper has passed peer-review, please acknowledge the usage of pandapower in your paper as follows: ::
+A paper describing pandapower has been accepted for publication in IEEE Transaction on Power Systems, a preprint of this paper is available on `arXiv <https://arxiv.org/abs/1709.06743>`_ Please acknowledge the usage of pandapower by citing the Paper as follows:
 
-    @online{pandapower,
-       author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
-       title = "{pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems}",
-       year = 2017,
-       url = {https://arxiv.org/abs/1709.06743},
-       note = {preprint}
-    }
+- **L. Thurner, A. Scheidler, F. Schäfer et al.**, “pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems,” IEEE Transaction on Power Systems (to be published), 2018.
+
+You can use the following BibTex entry: ::
+
+   @article{pandapower,
+	author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
+	title = "{pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems}",
+	year = 2018,
+	journal = {IEEE Transaction on Power Systems (to be published)},
+	url = {https://arxiv.org/abs/1709.06743}
+	}
 
 Minimal Example
 ===============

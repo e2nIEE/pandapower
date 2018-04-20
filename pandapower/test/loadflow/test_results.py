@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pytest
 from numpy import in1d
@@ -25,23 +25,24 @@ def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
     # result values from powerfactory
     load1 = 14.578
     load2 = 8.385
-
-    ika1 = 0.0466479
-    ika2 = 0.0134154
-
-    p_from1 = 1202.21
-    p_from2 = 0.132
-
-    q_from1 = 167.390
+    
+    ika1 = 0.0466482
+    ika2 = 0.0134161
+    
+    p_from1 = 1212.158
+    p_from2 = 5.11
+    
+    q_from1 = 167.416
     q_from2 = -469.371
-
-    p_to1 = -1200.000
+    
+    p_to1 = -1200.00
     p_to2 = 0.000
-
+    
     q_to1 = -1100.000
     q_to2 = 0.0000
+    
+    v = 1.007389386
 
-    v = 1.007395422
 
     # line 1
     assert abs(net.res_line.loading_percent.at[l1] - load1) < l_tol

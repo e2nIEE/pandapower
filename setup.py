@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 
 from setuptools import setup, find_packages
@@ -18,7 +18,7 @@ setup(
     name='pandapower',
     version='1.4.3',
     author='Leon Thurner, Alexander Scheidler',
-    author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iwes.fraunhofer.de',
+    author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
     long_description=long_description,
     url='http://www.uni-kassel.de/go/pandapower',

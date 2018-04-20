@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 import pandas as pd
-from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
-from pandapower.idx_bus import BASE_KV
 
 from pandapower.auxiliary import _sum_by_group
+from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
+from pandapower.idx_bus import BASE_KV
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
@@ -71,12 +71,17 @@ def _get_line_results(net, ppc, i_ft):
 
     loading_percent = i_ka / i_max * 100
 
-    # create numpy array which can be directly written to pandas dataframe
-    res_line_vals = np.vstack([p_from_kw, q_from_kvar, p_to_kw, q_to_kvar,
-                               pl_kw, ql_kvar, i_from_ka, i_to_ka, i_ka, loading_percent])
-
     # write to line
-    net["res_line"]._data.blocks[0].values = res_line_vals
+    net["res_line"]["p_from_kw"].values[:] = p_from_kw
+    net["res_line"]["q_from_kvar"].values[:] = q_from_kvar
+    net["res_line"]["p_to_kw"].values[:] = p_to_kw
+    net["res_line"]["q_to_kvar"].values[:] = q_to_kvar
+    net["res_line"]["pl_kw"].values[:] = pl_kw
+    net["res_line"]["ql_kvar"].values[:] = ql_kvar
+    net["res_line"]["i_from_ka"].values[:] = i_from_ka
+    net["res_line"]["i_to_ka"].values[:] = i_to_ka
+    net["res_line"]["i_ka"].values[:] = i_ka
+    net["res_line"]["loading_percent"].values[:] = loading_percent
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):
@@ -117,12 +122,16 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     loading_percent = \
         ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
 
-    # create numpy array which can be directly written to pandas dataframe
-    res_trafo_vals = np.vstack([p_hv_kw, q_hv_kvar, p_lv_kw, q_lv_kvar, pl_kw,
-                                ql_kvar, i_hv_ka, i_lv_ka, loading_percent])
-
-    # write to element
-    net["res_trafo"]._data.blocks[0].values = res_trafo_vals
+    # write results to trafo dataframe
+    net["res_trafo"]["p_hv_kw"].values[:] = p_hv_kw
+    net["res_trafo"]["q_hv_kvar"].values[:] = q_hv_kvar
+    net["res_trafo"]["p_lv_kw"].values[:] = p_lv_kw
+    net["res_trafo"]["q_lv_kvar"].values[:] = q_lv_kvar
+    net["res_trafo"]["pl_kw"].values[:] = pl_kw
+    net["res_trafo"]["ql_kvar"].values[:] = ql_kvar
+    net["res_trafo"]["i_hv_ka"].values[:] = i_hv_ka
+    net["res_trafo"]["i_lv_ka"].values[:] = i_lv_ka
+    net["res_trafo"]["loading_percent"].values[:] = loading_percent
 
 
 def _get_trafo3w_results(net, ppc, s_ft, i_ft):
@@ -181,12 +190,19 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     loading_percent = ld_trafo
 
-    # create numpy array which can be directly written to pandas dataframe
-    res_trafo3w_vals = np.vstack([p_hv_kw, q_hv_kvar, p_mv_kw, q_mv_kvar, p_lv_kw,
-                                  q_lv_kvar, pl_kw, ql_kvar, i_hv_ka, i_mv_ka, i_lv_ka, loading_percent])
-
-    # write to element
-    net["res_trafo3w"]._data.blocks[0].values = res_trafo3w_vals
+    # write results to trafo3w dataframe
+    net["res_trafo3w"]["p_hv_kw"].values[:] = p_hv_kw
+    net["res_trafo3w"]["q_hv_kvar"].values[:] = q_hv_kvar
+    net["res_trafo3w"]["p_mv_kw"].values[:] = p_mv_kw
+    net["res_trafo3w"]["q_mv_kvar"].values[:] = q_mv_kvar
+    net["res_trafo3w"]["p_lv_kw"].values[:] = p_lv_kw
+    net["res_trafo3w"]["q_lv_kvar"].values[:] = q_lv_kvar
+    net["res_trafo3w"]["pl_kw"].values[:] = pl_kw
+    net["res_trafo3w"]["ql_kvar"].values[:] = ql_kvar
+    net["res_trafo3w"]["i_hv_ka"].values[:] = i_hv_ka
+    net["res_trafo3w"]["i_mv_ka"].values[:] = i_mv_ka
+    net["res_trafo3w"]["i_lv_ka"].values[:] = i_lv_ka
+    net["res_trafo3w"]["loading_percent"].values[:] = loading_percent
 
 
 def _get_impedance_results(net, ppc, i_ft):
@@ -217,12 +233,15 @@ def _get_impedance_results(net, ppc, i_ft):
     i_from_ka = i_ft[f:t][:, 0]
     i_to_ka = i_ft[f:t][:, 1]
 
-    # create numpy array which can be directly written to pandas dataframe
-    res_impedance_vals = np.vstack([p_from_kw, q_from_kvar, p_to_kw, q_to_kvar,
-                                    pl_kw, ql_kvar, i_from_ka, i_to_ka])
-
-    # write to element
-    net["res_impedance"]._data.blocks[0].values = res_impedance_vals
+    # write to impedance
+    net["res_impedance"]["p_from_kw"].values[:] = p_from_kw
+    net["res_impedance"]["q_from_kvar"].values[:] = q_from_kvar
+    net["res_impedance"]["p_to_kw"].values[:] = p_to_kw
+    net["res_impedance"]["q_to_kvar"].values[:] = q_to_kvar
+    net["res_impedance"]["pl_kw"].values[:] = pl_kw
+    net["res_impedance"]["ql_kvar"].values[:] = ql_kvar
+    net["res_impedance"]["i_from_ka"].values[:] = i_from_ka
+    net["res_impedance"]["i_to_ka"].values[:] = i_to_ka
 
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
