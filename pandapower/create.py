@@ -1564,6 +1564,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **tp_st_degree** (float) - tap step size for voltage angle in degree*
 
+        **tp_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
@@ -1669,6 +1671,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
             higher than the highest already existing index is selected.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **tap_at_star_point (bool)** - whether tap changer is modelled at star point or at the bus
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
