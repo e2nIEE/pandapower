@@ -1,13 +1,15 @@
 Citing pandapower
 ==================
 
-We are currently working on publishing a paper about pandapower, which is available as a `preprint on arxiv <https://arxiv.org/abs/1709.06743>`_.
-Until the paper has passed peer-review, please acknowledge the usage of pandapower in your paper as follows: ::
+A paper describing pandapower has been accepted for publication in IEEE Transaction on Power Systems, a preprint of this paper is available on arxiv <https://arxiv.org/abs/1709.06743>`_.
+Please acknowledge the usage of pandapower by citing the Paper as follows: ::
 
-    @online{pandapower,
-       author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
+    @ARTICLE{pandapower.2018,
+       author = {L. Thurner and A. Scheidler and F. Schafer and J. H. Menke and J. Dollichon and F. Meier and S. Meinecke and M. Braun},
+       journal={IEEE Transactions on Power Systems},
        title = "{pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems}",
-       year = 2017,
+       year = {2018},
+       doi={10.1109/TPWRS.2018.2829021},
        url = {https://arxiv.org/abs/1709.06743},
-       note = {preprint}
+       ISSN={0885-8950}
     }
