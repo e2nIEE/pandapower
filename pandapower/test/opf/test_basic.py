@@ -578,17 +578,11 @@ def test_storage_opf():
                       min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
     pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=0, min_p_kw=-25,
                    max_q_kvar=25, min_q_kvar=-25)
-    #pp.create_load(net, b1, p_kw=2.5, controllable=True, max_p_kw=2.5, min_p_kw=0,
-    #               max_q_kvar=2.5, min_q_kvar=-2.5)
     pp.create_load(net, b1, p_kw=25, controllable=True, max_p_kw=25, min_p_kw=0,
                    max_q_kvar=25, min_q_kvar=-25)
-    
-    
+
     # costs
     pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
-    #pp.create_polynomial_cost(net, 0, "load", np.array([0, -1, 0]))
-    # TODO - Gitlab Issue #27 - OPF error wenn Kosten für non-controllable PQ-Element zugewiesen
-    #   vgl. make_objective.py, Z.47ff.
     pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
     pp.create_polynomial_cost(net, 0, "storage", np.array([0, 1, 0]))
     pp.create_polynomial_cost(net, 1, "sgen", np.array([0, 1, 0]))
@@ -662,9 +656,57 @@ def test_storage_opf():
     assert np.isclose(res_cost_stor, res_cost_load)
 
 
+def test_opf_no_controllables_vs_pf():
+    """ Comparing the calculation results of PF and OPF in a simple network with non-controllable
+     elements """
+
+    # boundaries
+    vm_max = 1.3
+    vm_min = 0.9
+    max_line_loading_percent = 100
+
+    # create network
+    net = pp.create_empty_network()
+
+    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
+                   max_loading_percent=max_line_loading_percent)
+
+    # test elements static
+    pp.create_ext_grid(net, b2)
+    pp.create_load(net, b1, p_kw=7.5, controllable=False)
+    pp.create_sgen(net, b1, p_kw=-25, controllable=False, max_p_kw=-10, min_p_kw=-25,
+                   max_q_kvar=25, min_q_kvar=-25)
+
+    # testing cost assignment (for non-controllable elements - see Gitlab Issue #27)
+    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
+    pp.create_polynomial_cost(net, 0, "load", np.array([0, -3, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
+
+    # do calculations
+    pp.runopp(net, verbose=False)
+    assert net["OPF_converged"]
+
+    res_opf_line_loading = net.res_line.loading_percent
+    res_opf_bus_voltages = net.res_bus.vm_pu
+
+    pp.runpp(net, verbose=False)
+    assert net["converged"]
+
+    res_pf_line_loading = net.res_line.loading_percent
+    res_pf_bus_voltages = net.res_bus.vm_pu
+
+    # assert calculation behaviour
+    assert np.isclose(res_opf_line_loading, res_pf_line_loading).all()
+    assert np.isclose(res_opf_bus_voltages, res_pf_bus_voltages).all()
+
+
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    #pytest.main(['-s', __file__])
     #test_storage_opf()
+    test_opf_no_controllables_vs_pf()
     #test_opf_varying_max_line_loading()
      # pytest.main(["test_basic.py", "-s"])
     # test_simplest_dispatch()
