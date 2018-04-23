@@ -395,7 +395,11 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         q = np.hstack([q, xw["qz_kvar"].values * vl])
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
-
+        
+    loss_location = net._options["trafo3w_losses"]
+    if loss_location == "star":
+        raise NotImplementedError("Losses at star point not yet implemented")
+        
     # if array is not empty
     if b.size:
         b = bus_lookup[b]

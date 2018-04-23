@@ -428,6 +428,7 @@ def wye_delta(zbr_n, s):
 
 def _trafo_df_from_trafo3w(net):
     mode = net._options["mode"]
+    loss_location = net._options["trafo3w_losses"].lower()
     trafos2w = {}
     nr_trafos = len(net["trafo3w"])
     tap_variables = ("tp_pos", "tp_mid", "tp_max", "tp_min", "tp_st_percent", "tp_st_degree")
@@ -470,8 +471,10 @@ def _trafo_df_from_trafo3w(net):
 
         trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv,
-                       "vscr_percent": vscr_2w[0], "vsc_percent": vsc_2w[0], "pfe_kw": ttab.pfe_kw,
-                       "i0_percent": ttab.i0_percent, "tp_side": taps[0]["tp_side"],
+                       "vscr_percent": vscr_2w[0], "vsc_percent": vsc_2w[0],
+                       "pfe_kw": ttab.pfe_kw  if loss_location == "hv" else 0,
+                       "i0_percent": ttab.i0_percent if loss_location == "hv" else 0,
+                       "tp_side": taps[0]["tp_side"],
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
                        "tp_min": taps[0]["tp_min"], "tp_pos": taps[0]["tp_pos"],
                        "tp_st_percent": taps[0]["tp_st_percent"],
@@ -481,7 +484,9 @@ def _trafo_df_from_trafo3w(net):
         trafos2w[i + nr_trafos] = {"hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus,
                                    "sn_kva": ttab.sn_mv_kva, "vn_hv_kv": ttab.vn_hv_kv,
                                    "vn_lv_kv": ttab.vn_mv_kv, "vscr_percent": vscr_2w[1],
-                                   "vsc_percent": vsc_2w[1], "pfe_kw": 0, "i0_percent": 0,
+                                   "vsc_percent": vsc_2w[1],
+                                   "pfe_kw": ttab.pfe_kw  if loss_location == "mv" else 0,
+                                   "i0_percent": ttab.i0_percent if loss_location == "mv" else 0,
                                    "tp_side": taps[1]["tp_side"],
                                    "tp_mid": taps[1]["tp_mid"], "tp_max": taps[1]["tp_max"],
                                    "tp_min": taps[1]["tp_min"], "tp_pos": taps[1]["tp_pos"],
@@ -495,7 +500,9 @@ def _trafo_df_from_trafo3w(net):
                                        "sn_kva": ttab.sn_lv_kva,
                                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv,
                                        "vscr_percent": vscr_2w[2], "vsc_percent": vsc_2w[2],
-                                       "pfe_kw": 0, "i0_percent": 0, "tp_side": taps[2]["tp_side"],
+                                       "pfe_kw": ttab.pfe_kw  if loss_location == "lv" else 0,
+                                       "i0_percent": ttab.i0_percent if loss_location == "lv" else 0,
+                                       "tp_side": taps[2]["tp_side"],
                                        "tp_mid": taps[2]["tp_mid"], "tp_max": taps[2]["tp_max"],
                                        "tp_min": taps[2]["tp_min"], "tp_pos": taps[2]["tp_pos"],
                                        "tp_st_percent": taps[2]["tp_st_percent"],
