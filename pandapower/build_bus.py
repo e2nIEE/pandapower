@@ -397,8 +397,27 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         b = np.hstack([b, xw["bus"].values])
         
     loss_location = net._options["trafo3w_losses"]
-    if loss_location == "star":
-        raise NotImplementedError("Losses at star point not yet implemented")
+    trafo3w = net["trafo3w"]
+    if loss_location == "star" and len(trafo3w) > 0:
+            
+        pfe_kw = trafo3w["pfe_kw"].values
+        i0 = trafo3w["i0_percent"].values
+        sn_kv = trafo3w["sn_hv_kva"].values
+        
+        q_kvar= (sn_kv * i0 / 100.) ** 2 - pfe_kw **2
+        q_kvar[q_kvar<0] = 0
+        q_kvar= np.sqrt(q_kvar)
+
+        vn_hv_trafo=trafo3w["vn_hv_kv"].values
+        
+        hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
+        vn_hv_bus=hv_buses.vn_kv.values
+
+        v_ratio = ( vn_hv_bus / vn_hv_trafo) ** 2
+        
+        q = np.hstack([q, q_kvar / np.float64(1000.) * v_ratio])
+        p = np.hstack([p, pfe_kw / np.float64(1000.) * v_ratio])
+        b = np.hstack([b, trafo3w["ad_bus"].values])
         
     # if array is not empty
     if b.size:
