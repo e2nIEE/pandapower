@@ -9,6 +9,10 @@ Change Log
 - [CHANGED] update HV/MV transformer standard type data
 - [ADDED] pp_elements() toolbox function
 - [ADDED] new parameter g_us_per_km to model dielectric losses in lines
+- [ADDED] single phase short-circuit calculation with negative sequence models
+- [ADDED] generic storage model (sgen/load like element with negative / positive power allowed)
+- [ADDED] modelling of the complex (voltage magnitude and angle) tap changer for cross control
+- [ADDED] modelling of the tap changer of a 3-winding transformer at star point or terminals
 
 [1.4.3] - 2018-02-06
 ----------------------

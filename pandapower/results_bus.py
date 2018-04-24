@@ -95,25 +95,12 @@ def _set_buses_out_of_service(ppc):
 
 def _get_bus_v_results(net, ppc):
     ac = net["_options"]["ac"]
-
-    ppi = net["bus"].index.values
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    bus_idx = bus_lookup[ppi]
+    bus_idx = _get_bus_idx(net)
     if ac:
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
-    net["res_bus"].index = net["bus"].index
-
-
-def _get_bus_voltages(net, ppc):
-    ac = net["_options"]["ac"]
-    bus_idx = _get_bus_idx(net)
-    if ac:
-        net["res_bus"]["vm_pu"].values[:] = ppc["bus"][bus_idx][:, VM]
-    # voltage angles
-    net["res_bus"]["va_degree"].values[:] = ppc["bus"][bus_idx][:, VA]
 
 
 def _get_bus_idx(net):
@@ -137,9 +124,6 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"]["p_kw"] = bus_pq[:, 0]
     if ac:
         net["res_bus"]["q_kvar"] = bus_pq[:, 1]
-
-    # get bus voltages
-    _get_bus_voltages(net, ppc)
 
     # opf variables
     if mode == "opf":
@@ -192,7 +176,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
         return p, q, b
 
 
-def write_pq_to_element(net, element):
+def write_pq_results_to_element(net, element):
     """
     get p_kw and q_kvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table
@@ -254,7 +238,7 @@ def _get_p_q_results(net, bus_lookup_aranged):
 
     for element in elements:
         if len(net[element]):
-            write_pq_to_element(net, element)
+            write_pq_results_to_element(net, element)
             p_el, q_el, bus_el = get_p_q_b(net, element)
             p = np.hstack([p, p_el])
             q = np.hstack([q, q_el])

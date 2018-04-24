@@ -395,7 +395,11 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         q = np.hstack([q, xw["qz_kvar"].values * vl])
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
-
+        
+    loss_location = net._options["trafo3w_losses"]
+    if loss_location == "star":
+        raise NotImplementedError("Losses at star point not yet implemented")
+        
     # if array is not empty
     if b.size:
         b = bus_lookup[b]
@@ -419,15 +423,22 @@ def _add_gen_impedances_ppc(net, ppc):
 
 def _add_ext_grid_sc_impedance(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
+    mode = net._options["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    case = net._options["case"]
+    if mode == "sc":
+        case = net._options["case"]
+    else:
+        case = "max"
     eg = net["ext_grid"][net._is_elements["ext_grid"]]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
     eg_buses_ppc = bus_lookup[eg_buses]
 
-    c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    if mode == "sc":
+        c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    else:
+        c = 1.
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )

@@ -61,7 +61,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                     ("p_kw", "f8"),
                     ("q_kvar", "f8"),
                     ("sn_kva", "f8"),
-                    ("soc", "f8"),
+                    ("soc_percent", "f8"),
                     ("min_e_kwh", "f8"),
                     ("max_e_kwh", "f8"),
                     ("scaling", "f8"),
@@ -267,7 +267,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                             ("q_kvar", "f8")],
         "_empty_res_storage": [("p_kw", "f8"),
                                ("q_kvar", "f8"),
-                               ("soc", "f8")],
+                               ("soc_percent", "f8")],
         "_empty_res_gen": [("p_kw", "f8"),
                            ("q_kvar", "f8"),
                            ("va_degree", "f8"),
@@ -792,11 +792,11 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
-def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
+def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan):
-    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min_e_kwh=0.0,
-                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan,
+    """create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0, \
+                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_kw=nan, \
                    min_p_kw=nan, max_q_kvar=nan, min_q_kvar=nan, controllable = nan)
     Adds a storage to the network.
 
@@ -828,7 +828,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
 
         **sn_kva** (float, default None) - Nominal power of the storage
 
-        **soc** (float, NaN) - The state of charge of the storage
+        **soc_percent** (float, NaN) - The state of charge of the storage
 
         **min_e_kwh** (float, 0) - The minimum energy content of the storage \
             (minimum charge level)
@@ -863,7 +863,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
         **index** (int) - The unique ID of the created storage
 
     EXAMPLE:
-        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc = 1.0, min_e_kwh = 5)
+        create_storage(net, 1, p_kw = -30, max_e_kwh = 60, soc_percent = 1.0, min_e_kwh = 5)
 
     """
     if bus not in net["bus"].index.values:
@@ -879,9 +879,9 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc=nan, min
     dtypes = net.storage.dtypes
 
     net.storage.loc[index, ["name", "bus", "p_kw", "q_kvar", "sn_kva", "scaling",
-                            "soc", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
+                            "soc_percent", "min_e_kwh", "max_e_kwh", "in_service", "type"]] = \
         [name, bus, p_kw, q_kvar, sn_kva, scaling,
-         soc, min_e_kwh, max_e_kwh, bool(in_service), type]
+         soc_percent, min_e_kwh, max_e_kwh, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.storage, dtypes)
@@ -1269,7 +1269,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     if "type" in lineparam:
         v["type"] = lineparam["type"]
-        
+
 
     # store dtypes
     dtypes = net.line.dtypes
@@ -1315,7 +1315,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **x_ohm_per_km** (float) - line reactance in ohm per km
 
         **c_nf_per_km** (float) - line capacitance in nano Farad per km
-       
+
         **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
@@ -1332,7 +1332,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             of line (from 0 to 1)
 
         **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
-            
+
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
@@ -1564,6 +1564,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **tp_st_degree** (float) - tap step size for voltage angle in degree*
 
+        **tp_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
@@ -1669,6 +1671,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
             higher than the highest already existing index is selected.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **tap_at_star_point (bool)** - whether tap changer is modelled at star point or at the bus
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2320,14 +2324,14 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     return index
 
 
-def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
+def create_measurement(net, meas_type, element_type, value, std_dev, bus, element=None,
                        check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i
 
     INPUT:
-        **type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
+        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
         "transformer" are possible.
@@ -2339,14 +2343,16 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
 
         **bus** (int) - Index of bus. Determines the position of the measurement for
         line/transformer measurements (bus == from_bus: measurement at from_bus;
-        same for to_bus)
+        same for to_bus). The bus can also be "from" or "to" if the element_type is "line"
+        or "hv"/"lv" if "transformer".
 
         **element** (int, None) - Index of measured element, if element_type is "line" or
         "transformer".
 
     OPTIONAL:
-        **check_existing** (bool) - Check for and replace existing measurements for this bus and
-        type. Set it to false for performance improvements which can cause unsafe behaviour.
+        **check_existing** (bool) - Check for and replace existing measurements for this bus,
+        type and element_type. Set it to false for performance improvements which can cause unsafe
+        behaviour.
 
         **name** (str, None) - name of measurement.
 
@@ -2361,8 +2367,23 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     if bus not in net["bus"].index.values:
         raise UserWarning("Bus %s does not exist" % bus)
 
-    if element is None and element_type in ["line", "transformer"]:
+    if element is None and element_type in ("line", "transformer"):
         raise UserWarning("The element type %s requires a value in 'element'" % element_type)
+
+    if meas_type not in ("v", "p", "q", "i"):
+        raise UserWarning("Invalid measurement type (%s)" % meas_type)
+
+    if meas_type == "v":
+        element_type = "bus"
+
+    if element_type not in ("bus", "line", "transformer"):
+        raise UserWarning("Invalid element type (%s)" % element_type)
+
+    if bus in ("from", "to") and element_type == "line":
+        bus = net.line.from_bus.loc[element] if bus == "from" else net.line.to_bus.loc[element]
+
+    if bus in ("hv", "lv") and element_type == "transformer":
+        bus = net.trafo.hv_bus.loc[element] if bus == "hv" else net.trafo.lv_bus.loc[element]
 
     if element is not None and element_type == "line" and element not in net["line"].index.values:
         raise UserWarning("Line %s does not exist" % element)
@@ -2377,20 +2398,22 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     if index in net["measurement"].index:
         raise UserWarning("A measurement with index %s already exists" % index)
 
-    if type == "i" and element_type == "bus":
+    if meas_type == "i" and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if type == "v" and element_type in ["line", "transformer"]:
+    if meas_type == "v" and element_type in ("line", "transformer"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at %s"
                           % element_type)
 
     if check_existing:
         if element is None:
-            existing = net.measurement[(net.measurement.type == type) &
+            existing = net.measurement[(net.measurement.type == meas_type) &
+                                       (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (pd.isnull(net.measurement.element))].index
         else:
-            existing = net.measurement[(net.measurement.type == type) &
+            existing = net.measurement[(net.measurement.type == meas_type) &
+                                       (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (net.measurement.element == element)].index
         if len(existing) == 1:
@@ -2399,7 +2422,7 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[index] = [name, type.lower(), element_type, value, std_dev, bus, element]
+    net.measurement.loc[index] = [name, meas_type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
     return index
 

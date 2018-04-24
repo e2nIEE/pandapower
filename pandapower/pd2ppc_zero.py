@@ -14,7 +14,6 @@ from pandapower.pd2ppc import _ppc2ppci
 from pandapower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP
 from pandapower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
-from pandapower.shortcircuit.idx_bus import C_MAX
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
 
 def _pd2ppc_zero(net):
@@ -27,16 +26,12 @@ def _pd2ppc_zero(net):
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net)
 
-    # get options
-    mode = net["_options"]["mode"]
-
     ppc = _init_ppc(net)
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     _build_bus_ppc(net, ppc)
     _build_gen_ppc(net, ppc)
-    if mode == "sc":
-        _add_ext_grid_sc_impedance_zero(net, ppc)
+    _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc)
 
     # adds auxilary buses for open switches at branches
@@ -45,7 +40,8 @@ def _pd2ppc_zero(net):
     # add auxilary buses for out of service buses at in service lines.
     # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
-
+    if hasattr(net, "_isolated_buses"):
+        ppc["bus"][net._isolated_buses, 1] = 4.
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
@@ -87,6 +83,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     if trafo_df is None:
         trafo_df = net["trafo"]
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    if not "trafo" in branch_lookup:
+        return
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net["_options"]["mode"]
     f, t = branch_lookup["trafo"]
@@ -134,6 +132,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
         z0_k = (r_sc + x_sc * 1j) / parallel
         if mode == "sc":
+            from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_kva, cmax)
             z0_k *= kt
@@ -198,18 +197,27 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     buses, gs, bs = aux._sum_by_group(buses_all, gs_all, bs_all)
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
+    del net.trafo["_ppc_idx"]
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
-    from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
+    mode = net["_options"]["mode"]
+
+    if mode == "sc":
+        from pandapower.shortcircuit.idx_bus import C_MAX, C_MIN
+        case = net._options["case"]
+    else:
+        case = "max"
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    case = net._options["case"]
     eg = net["ext_grid"][net._is_elements["ext_grid"]]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
     eg_buses_ppc = bus_lookup[eg_buses]
 
-    c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    if mode == "sc":
+        c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
+    else:
+        c = 1.
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )
@@ -239,20 +247,22 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
 
 
 def _add_line_sc_impedance_zero(net, ppc):
-    line = net["line"]
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    if not "line" in branch_lookup:
+        return
+    line = net["line"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     length = line["length_km"].values
     parallel = line["parallel"].values
-    fb = bus_lookup[line["from_bus"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
 
-    if "line" in branch_lookup:
-        f, t = branch_lookup["line"]
-        # line zero sequence impedance
-        ppc["branch"][f:t, F_BUS] = bus_lookup[line["from_bus"].values]
-        ppc["branch"][f:t, T_BUS] = bus_lookup[line["to_bus"].values]
-        ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
-        ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
-        ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
-        ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)
+    fb = bus_lookup[line["from_bus"].values]
+    tb = bus_lookup[line["to_bus"].values]
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    f, t = branch_lookup["line"]
+    # line zero sequence impedance
+    ppc["branch"][f:t, F_BUS] = fb
+    ppc["branch"][f:t, T_BUS] = tb
+    ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
+    ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
+    ppc["branch"][f:t, BR_B] = (2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel)
+    ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(int)

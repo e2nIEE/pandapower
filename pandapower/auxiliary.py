@@ -368,7 +368,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
                      copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, delta=1e-10,
-                     voltage_depend_loads=False):
+                     voltage_depend_loads=False, trafo3w_losses="hv"):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -386,18 +386,30 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
-        "delta": delta
+        "delta": delta,
+        "trafo3w_losses": trafo3w_losses
     }
     _add_options(net, options)
 
 
 def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
     max_bus = max(net.bus.index.values)
-    if max_bus >= n_max and len(net["bus"]) < n_max:
+    if max_bus >= n_max > len(net["bus"]):
         logger.warning(
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
             "create_continous_bus_index()" % max_bus)
+
+def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
+    if net.gen.empty:
+        return
+    max_gen = max(net.gen.index.values)
+    if max_gen >= n_max and len(net["gen"]) < n_max:
+        logger.warning(
+            "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
+            #" Try resetting the bus indices with the toolbox function "
+            #"create_continous_bus_index()"
+            % max_gen)
 
 
 def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
@@ -503,8 +515,8 @@ def _set_isolated_buses_out_of_service(net, ppc):
                         ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][disco, 1] = 4.
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
+    ppc["bus"][net._isolated_buses, 1] = 4.
 
 
 def _write_lookup_to_net(net, element, element_lookup):
