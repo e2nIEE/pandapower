@@ -374,6 +374,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     phv = 300.43
     pmv = -200.00
     plv = -100.00
+    
 
     assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
@@ -392,6 +393,46 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
+    
+    runpp_with_consistency_checks(net, trafo_model="pi",trafo3w_losses='star')
+
+    #Test results Integral:
+    uhv = 1.01011711678
+    umv = 0.95550024145
+    ulv = 0.94062989256
+
+    load = 37.209
+    qhv = 1.660
+    qmv = 0
+    qlv = 0
+
+    ihv = 0.00858591110
+    imv = 0.20141290445
+    ilv = 0.15344776975
+
+    phv = 300.43
+    pmv = -200.00
+    plv = -100.00
+    
+    assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
+    assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
+    assert abs((net.res_bus.vm_pu.at[b4] - ulv)) < v_tol
+
+    assert abs((net.res_trafo3w.loading_percent.at[t3] - load)) < l_tol
+
+    assert abs((net.res_trafo3w.p_hv_kw.at[t3] - phv)) < s_tol
+    assert abs((net.res_trafo3w.p_mv_kw.at[t3] - pmv)) < s_tol
+    assert abs((net.res_trafo3w.p_lv_kw.at[t3] - plv)) < s_tol
+
+    assert abs((net.res_trafo3w.q_hv_kvar.at[t3] - qhv)) < s_tol
+    assert abs((net.res_trafo3w.q_mv_kvar.at[t3] - qmv)) < s_tol
+    assert abs((net.res_trafo3w.q_lv_kvar.at[t3] - qlv)) < s_tol
+
+    assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
+    assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
+    assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
+
+
 
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
