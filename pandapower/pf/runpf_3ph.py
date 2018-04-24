@@ -44,8 +44,8 @@ net = pp.create_empty_network(sn_kva = kVA_base )
 # Sequence Network Parameters
 # =============================================================================
 
-bus1 = pp.create_bus(net, vn_kv = V_base/np.sqrt(3), name = "Bus k")
-bus2 = pp.create_bus(net, vn_kv = V_base/np.sqrt(3), name = "Bus m")
+bus1 = pp.create_bus(net, vn_kv = V_base, name = "Bus k")
+bus2 = pp.create_bus(net, vn_kv = V_base, name = "Bus m")
 pp.create_ext_grid(net, bus=bus1, vm_pu= 1.0, name="Grid Connection",
                    s_sc_max_mva=5000, rx_max=0.1)
 net.ext_grid["r0x0_max"] = 0.1
@@ -59,7 +59,7 @@ pp.create_line(net, from_bus=bus1, to_bus=bus2, length_km = 50.0, std_type="exam
 pp.add_zero_impedance_parameters(net)
 
 net._options = {'calculate_voltage_angles': 'auto', 'check_connectivity': True, 'init': 'auto',
-    'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf",'copy_constraints_to_ppc': False,
+    'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf_3ph",'copy_constraints_to_ppc': False,
     'enforce_q_lims': False, 'numba': True, 'recycle': {'Ybus': False, '_is_elements': False, 'bfsw': False, 'ppc': False},
     "tolerance_kva": 1e-5, "max_iteration": 10}
 
@@ -114,7 +114,7 @@ S_mismatch = np.matrix([[True],[True]],dtype =bool)
 # =============================================================================
 #             Iteration using Power mismatch criterion
 # =============================================================================
-while (S_mismatch > 1e-8).all():
+while (S_mismatch > 1e-6).all():
 # =============================================================================
 #     Voltages and Current transformation for PQ and Slack bus
 # =============================================================================

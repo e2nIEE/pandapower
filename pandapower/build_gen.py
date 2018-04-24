@@ -26,7 +26,7 @@ def _build_gen_ppc(net, ppc):
     mode = net["_options"]["mode"]
     
     # if mode == power flow or short circuit...
-    if mode == "pf" or mode == "sc":
+    if mode == "pf" or mode == "sc" or mode == "pf_3ph":
 
         # get in service elements
         _is_elements = net["_is_elements"]
