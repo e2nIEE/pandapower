@@ -443,7 +443,7 @@ def _trafo_df_from_trafo3w(net):
             kt = _transformer_correction_factor(vsc, vscr, sn, 1.1)
             vsc_2w_delta *= kt
             vscr_2w_delta *= kt
-        vsci_2w_delta = np.sqrt( vsc_2w_delta ** 2 -   vscr_2w_delta ** 2)
+        vsci_2w_delta = np.sqrt( vsc_2w_delta ** 2 - vscr_2w_delta ** 2)
         vscr_2w = wye_delta(vscr_2w_delta, sn)
         vsci_2w = wye_delta(vsci_2w_delta, sn)
         vsc_2w = np.sign(vsci_2w) * np.sqrt(vsci_2w ** 2 + vscr_2w ** 2)
