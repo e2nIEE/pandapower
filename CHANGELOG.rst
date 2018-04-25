@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[develop]
+[1.5.0] - 2018-04-25
 ----------------------
 - [FIXED] plotly hover function for edges (only if use_line_geodata == False)
 - [FIXED] from_ppc trafo parameter calculation now also considers baseMVA != 100
