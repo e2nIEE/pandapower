@@ -70,11 +70,11 @@ the pandapower representation now looks like this:
 		:align: center
 
 This is the version where transformer and line have been created through the standard type libraries, which is why the line has a specified type (cs for cable system) and the transformer has a tap changer, both of
-which are defined in the `type data <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types/basic.html>`_.
+which are defined in the `type data <../std_types/basic.html>`_.
 
 **Running a Power Flow**  
 
-A powerflow can be carried out with the `runpp function <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/powerflow/ac.html>`_: ::
+A powerflow can be carried out with the `runpp function <../powerflow/ac.html>`_: ::
      
     pp.runpp(net)
     
@@ -95,5 +95,5 @@ For the 3-bus example network, the result tables look like this:
         
 You can download the python script that creates this 3-bus system :download:`here  <pandapower_3bus_system.py>`.
 
-For a more in depth introduction into pandapower modeling and analysis functionality, see the `pandapower tutorials <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/getting_started/tutorials.html>`_
+For a more in depth introduction into pandapower modeling and analysis functionality, see the `pandapower tutorials <../getting_started/tutorials.html>`_
 about network creation, standard type libraries, power flow, topological searches, plotting and more.
