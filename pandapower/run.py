@@ -253,7 +253,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
-            r_switch=0.0, **kwargs):
+            r_switch=0.0, trafo3w_losses="hv", **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -311,7 +311,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=0)
+                     voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _check_bus_index_and_print_warning_if_high(net)
@@ -320,7 +320,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
-           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True, **kwargs):
+           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True,
+           trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -388,15 +389,15 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta)
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, numba=numba)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0, delta=1e-10,
-             **kwargs):
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
+             delta=1e-10, trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -450,7 +451,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta)
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
