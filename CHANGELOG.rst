@@ -13,6 +13,7 @@ Change Log
 - [ADDED] generic storage model (sgen/load like element with negative / positive power allowed)
 - [ADDED] modelling of the complex (voltage magnitude and angle) tap changer for cross control
 - [ADDED] modelling of the tap changer of a 3-winding transformer at star point or terminals
+- [ADDED] losses of 3W transformers can be modeled at star point, HV, MV or LV side
 
 [1.4.3] - 2018-02-06
 ----------------------
