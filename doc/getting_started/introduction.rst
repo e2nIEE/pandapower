@@ -42,11 +42,11 @@ We now create the branch elements. First, we create the transformer from the typ
                                                 i0_percent=0.3375, pfe_kw=1.35,
                                                 name="Trafo")
 
-Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/elements/trafo.html#electric-model>`_.
-The transformer model and all other pandapower electric elements are `validated against commercial software <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/about/tests.html#model-and-loadflow-validation>`_.
+Note that you do not have to calculate any impedances or tap ratio for the equivalent circuit, this is handled internally by pandapower according to the pandapower `transformer model <../elements/trafo.html#electric-model>`_.
+The transformer model and all other pandapower electric elements are `validated against commercial software <../about/tests.html#model-and-loadflow-validation>`_.
 
-The `standard type library <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types.html>`_ allows even easier creation of the transformer. 
-The parameters given above are the parameters of the transformer "0.4 MVA 20/0.4 kV" from the pandapower `basic standard types <http://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/Software/pandapower-doc/std_types/basic.html>`_. The transformer can be created from the standard type library like this: ::
+The `standard type library <../std_types.html>`_ allows even easier creation of the transformer.
+The parameters given above are the parameters of the transformer "0.4 MVA 20/0.4 kV" from the pandapower `basic standard types <../std_types/basic.html>`_. The transformer can be created from the standard type library like this: ::
 
     tid = pp.create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="0.4 MVA 20/0.4 kV",
                                 name="Trafo")
