@@ -175,8 +175,8 @@ while (S_mismatch > 1e-6).all():
     
     _run_newton_raphson_pf(ppc1, net._options)
 
-    I1_from_V_it = -I1_from_V012(V012_it,Y1_pu)
-    s_from_voltage = S_from_VI(V1_for_S1, I1_from_V_it[pq_bus,:])
+    I1_from_V_it = -np.transpose(I1_from_V012(V012_it,Y1_pu))
+    s_from_voltage = S_from_VI(V1_for_S1, I1_from_V_it[0,pq_bus])
     
     V1_pu_it = V1_from_ppc(ppc1)
     V0_pu_it = V_from_I(Y0_pu,I0_pu_it)
