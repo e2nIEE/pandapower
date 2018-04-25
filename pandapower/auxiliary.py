@@ -594,11 +594,20 @@ def phase_to_sequence(Xabc):
 # =============================================================================
 
 def I0_from_V012(V012,Y):
-    return np.matmul(Y,X012_to_X0(V012))
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(),X012_to_X0(V012))
+    else:
+        return np.matmul(Y,X012_to_X0(V012))
 def I1_from_V012(V012,Y):
-    return np.matmul(Y,X012_to_X1(V012))
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(),X012_to_X1(V012))
+    else:
+        return np.matmul(Y,X012_to_X1(V012))
 def I2_from_V012(V012,Y):
-    return np.matmul(Y,X012_to_X2(V012))
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(),X012_to_X2(V012))
+    else:
+        return np.matmul(Y,X012_to_X2(V012))
            
 def V1_from_ppc(ppc):
     return np.transpose(
@@ -609,9 +618,12 @@ def V1_from_ppc(ppc):
             )
             
 def V_from_I(Y,I):
-    return np.matmul(np.linalg.inv(Y),I)
+    return np.transpose(np.matrix(sp.sparse.linalg.spsolve(Y,I)))
 def I_from_V(Y,V):
-    return np.matmul(Y, V)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(), V)
+    else:
+        return np.matmul(Y, V)
 
 # =============================================================================
 # Calculating Power 

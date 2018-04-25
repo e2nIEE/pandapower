@@ -48,6 +48,20 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
+        "load_3ph": [("name", dtype(object)),
+                 ("bus", "u4"),
+                 ("p_kw_A", "f8"),
+                 ("q_kvar_A", "f8"),
+                 ("p_kw_B", "f8"),
+                 ("q_kvar_B", "f8"),
+                 ("p_kw_C", "f8"),
+                 ("q_kvar_C", "f8"),
+                 ("const_z_percent", "f8"),
+                 ("const_i_percent", "f8"),
+                 ("sn_kva", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("type", dtype(object))],
         "sgen": [("name", dtype(object)),
                  ("bus", "i8"),
                  ("p_kw", "f8"),
@@ -230,6 +244,12 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                            ("q_kvar", "f8")],
         "_empty_res_ext_grid": [("p_kw", "f8"),
                                 ("q_kvar", "f8")],
+        "_empty_res_ext_grid_3ph": [("p_kw_A", "f8"),
+                                ("q_kvar_A", "f8"),
+                                ("p_kw_B", "f8"),
+                                ("q_kvar_B", "f8"),
+                                ("p_kw_C", "f8"),
+                                ("q_kvar_C", "f8")],                                
         "_empty_res_line": [("p_from_kw", "f8"),
                             ("q_from_kvar", "f8"),
                             ("p_to_kw", "f8"),
@@ -263,8 +283,20 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                                ("loading_percent", "f8")],
         "_empty_res_load": [("p_kw", "f8"),
                             ("q_kvar", "f8")],
+        "_empty_res_load_3ph": [("p_kw_A", "f8"),
+                            ("q_kvar_A", "f8"),
+                            ("p_kw_B", "f8"),
+                            ("q_kvar_B", "f8"),
+                            ("p_kw_C", "f8"),
+                            ("q_kvar_C", "f8")],                            
         "_empty_res_sgen": [("p_kw", "f8"),
                             ("q_kvar", "f8")],
+        "_empty_res_sgen_3ph": [("p_kw_A", "f8"),
+                            ("q_kvar_A", "f8"),
+                            ("p_kw_B", "f8"),
+                            ("q_kvar_B", "f8"),
+                            ("p_kw_C", "f8"),
+                            ("q_kvar_C", "f8")],                            
         "_empty_res_storage": [("p_kw", "f8"),
                                ("q_kvar", "f8"),
                                ("soc_percent", "f8")],
@@ -600,6 +632,178 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
+def create_load_3ph(net, bus, p_kw_A , p_kw_B , p_kw_C, q_kvar_A=0, q_kvar_B=0, q_kvar_C=0,
+                    const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1.,
+                    index=None, in_service=True, type=None, 
+                    max_p_kw_A=nan, min_p_kw_A=nan,max_p_kw_B=nan, min_p_kw_B=nan,
+                    max_p_kw_C=nan, min_p_kw_C=nan, max_q_kvar_A=nan, min_q_kvar_A=nan,
+                    max_q_kvar_B=nan, min_q_kvar_B=nan, max_q_kvar_C=nan, min_q_kvar_C=nan,
+                    controllable=nan):
+    """create_load_3ph(net, bus, p_kw_A, q_kvar_A=0 , p_kw_B, q_kvar_B=0 , p_kw_C, q_kvar_C=0,
+    const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1., index=None, \
+    in_service=True, type=None,  max_p_kw_A=nan, min_p_kw_A=nan,max_p_kw_B=nan, min_p_kw_B=nan,
+    max_p_kw_C=nan, min_p_kw_C=nan max_q_kvar_A=nan, min_q_kvar_A=nan,
+    max_q_kvar_B=nan, min_q_kvar_B=nan, max_q_kvar_C=nan, min_q_kvar_C=nan, controllable=nan)
+    
+    Adds one load in table net["load_3ph"].
+
+    All loads are modelled in the consumer system, meaning load is positive and generation is
+    negative active power. Please pay attention to the correct signing of the reactive power as
+    well.
+
+    INPUT:
+        **net** - The net within this load should be created
+
+        **bus** (int) - The bus id to which the load is connected
+
+    OPTIONAL:
+        **p_kw_A, p_kw_B, p_kw_C** (float, default 0) - The real power of the load
+
+        - postive value   -> load
+        - negative value  -> generation
+
+        **q_kvar_A, q_kvar_B, q_kvar_C** (float, default 0) - The reactive power of the load
+
+        **const_z_percent** (float, default 0) - percentage of p_kw and q_kvar that will be \
+            associated to constant impedance load at rated voltage
+
+        **const_i_percent** (float, default 0) - percentage of p_kw and q_kvar that will be \
+            associated to constant current load at rated voltage
+
+        **sn_kva** (float, default None) - Nominal power of the load
+
+        **name** (string, default None) - The name for this load
+
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the load
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **max_p_kw** (float, default NaN) - Maximum active power load - necessary for controllable \
+            loads in for OPF
+
+        **min_p_kw** (float, default NaN) - Minimum active power load - necessary for controllable \
+            loads in for OPF
+
+        **max_q_kvar** (float, default NaN) - Maximum reactive power load - necessary for \
+            controllable loads in for OPF
+
+        **min_q_kvar** (float, default NaN) - Minimum reactive power load - necessary for \
+            controllable loads in OPF
+
+        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
+            Only respected for OPF
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created element
+
+    EXAMPLE:
+        create_load(net, bus=0, p_kw=10., q_kvar=2.)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["load_3ph"])
+    if index in net["load_3ph"].index:
+        raise UserWarning("A 3 phase load_3ph with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.load_3ph.dtypes
+
+    net.load_3ph.loc[index, ["name", "bus", "p_kw_A","p_kw_B","p_kw_C", "const_z_percent", "const_i_percent", "scaling",
+                         "q_kvar_A","q_kvar_B","q_kvar_C", "sn_kva", "in_service", "type"]] = \
+        [name, bus, p_kw_A,p_kw_B,p_kw_C, const_z_percent, const_i_percent, scaling, 
+         q_kvar_A,q_kvar_B,q_kvar_C, sn_kva, bool(in_service), type]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.load_3ph, dtypes)
+
+    if not isnan(min_p_kw_A):
+        if "min_p_kw_A" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "min_p_kw_A"] = pd.Series()
+
+        net.load_3ph.loc[index, "min_p_kw_A"] = float(min_p_kw_A)
+
+    if not isnan(max_p_kw_A):
+        if "max_p_kw_A" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "max_p_kw_A"] = pd.Series()
+
+        net.load_3ph.loc[index, "max_p_kw_A"] = float(max_p_kw_A)
+    if not isnan(min_p_kw_B):
+        if "min_p_kw_B" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "min_p_kw_B"] = pd.Series()
+
+        net.load_3ph.loc[index, "min_p_kw_B"] = float(min_p_kw_B)
+
+    if not isnan(max_p_kw_B):
+        if "max_p_kw_B" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "max_p_kw_B"] = pd.Series()
+
+        net.load_3ph.loc[index, "max_p_kw_B"] = float(max_p_kw_B)
+    if not isnan(min_p_kw_C):
+        if "min_p_kw_C" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "min_p_kw_C"] = pd.Series()
+
+        net.load_3ph.loc[index, "min_p_kw_C"] = float(min_p_kw_C)
+
+    if not isnan(max_p_kw_C):
+        if "max_p_kw_C" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "max_p_kw_C"] = pd.Series()
+
+        net.load_3ph.loc[index, "max_p_kw_C"] = float(max_p_kw_C)
+
+    if not isnan(min_q_kvar_A):
+        if "min_q_kvar_A" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "min_q_kvar_A"] = pd.Series()
+
+        net.load_3ph.loc[index, "min_q_kvar_A"] = float(min_q_kvar_A)
+
+    if not isnan(max_q_kvar_A):
+        if "max_q_kvar_A" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "max_q_kvar_A"] = pd.Series()
+
+        net.load_3ph.loc[index, "max_q_kvar_A"] = float(max_q_kvar_A)
+
+    if not isnan(min_q_kvar_B):
+        if "min_q_kvar_B" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "min_q_kvar_B"] = pd.Series()
+
+        net.load_3ph.loc[index, "min_q_kvar_B"] = float(min_q_kvar_B)
+
+    if not isnan(max_q_kvar_B):
+        if "max_q_kvar_B" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "max_q_kvar_B"] = pd.Series()
+
+        net.load_3ph.loc[index, "max_q_kvar_B"] = float(max_q_kvar_B)
+        
+    if not isnan(min_q_kvar_C):
+        if "min_q_kvar_C" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "min_q_kvar_C"] = pd.Series()
+
+        net.load_3ph.loc[index, "min_q_kvar_C"] = float(min_q_kvar_C)
+
+    if not isnan(max_q_kvar_C):
+        if "max_q_kvar_C" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "max_q_kvar_C"] = pd.Series()
+
+        net.load_3ph.loc[index, "max_q_kvar_C"] = float(max_q_kvar_C)
+
+    if not isnan(controllable):
+        if "controllable" not in net.load_3ph.columns:
+            net.load_3ph.loc[:, "controllable"] = pd.Series()
+
+        net.load_3ph.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.load_3ph.columns:
+            net.load_3ph.loc[index, "controllable"] = False
+
+    return index
 
 def create_load_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     """
