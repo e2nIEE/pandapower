@@ -75,8 +75,10 @@ def load_mapping(net):
 # Sequence Network Parameters
 # =============================================================================
 
-busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn")
-busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk")
+busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn", index=1)
+busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk", index=5)
+pp.create_bus(net, vn_kv=20., in_service=False)
+pp.create_bus(net, vn_kv=20., in_service=True)
 
 
 pp.create_ext_grid(net, bus=busn, vm_pu= 1.0, name="Grid Connection",
@@ -103,12 +105,12 @@ net._options = {'calculate_voltage_angles': 'auto', 'check_connectivity': True, 
 # =============================================================================
 # Y Bus formation for Sequence Networks
 # =============================================================================
-ppc1, ppci1 = _pd2ppc(net)
+_, ppci1 = _pd2ppc(net)
 
-ppc2, ppci2 = _pd2ppc(net)
+_, ppci2 = _pd2ppc(net)
 _add_ext_grid_sc_impedance(net, ppci2)
 
-ppc0, ppci0 = _pd2ppc_zero(net)
+_, ppci0 = _pd2ppc_zero(net)
 
 Y0_pu,_,_ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
 
@@ -117,20 +119,6 @@ Y1_pu,_,_ = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
 Y2_pu,_,_ = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
 
 sl_bus,pv_bus,pq_bus = bustypes(ppci1['bus'],ppci1['gen'])
-
-# =============================================================================
-# 3 Phase Load converted to Sabc matrix
-# =============================================================================
-#l = net["load_3ph"]
-#if len(l) > 0:
-#    Sa,Sb,Sc = np.array([0+0j]), np.array([0+0j]), np.array([0+0j])
-#    
-#    Sa = np.matrix(np.hstack([Sa,l["p_kw_A"].values + l["q_kvar_A"].values*1j]))
-#    Sb = np.matrix(np.hstack([Sb,l["p_kw_B"].values + l["q_kvar_B"].values*1j]))
-#    Sc = np.matrix(np.hstack([Sc,l["p_kw_C"].values + l["q_kvar_C"].values*1j]))
-#    Sabc =  -np.concatenate((Sa,Sb,Sc),axis=0)
-#
-#Sabc_pu = np.divide(Sabc,kVA_base)
 
 # =============================================================================
 # Initial voltage values
@@ -175,15 +163,15 @@ while (S_mismatch > 1e-6).any():
     # =============================================================================
     # Current used to find S1 Positive sequence power    
     # =============================================================================
-    ppc1["bus"][pq_bus, 2] = np.real(S1[:,pq_bus])*kVA_base*1e-3
-    ppc1["bus"][pq_bus, 3] = np.imag(S1[:,pq_bus])*kVA_base*1e-3
+    ppci1["bus"][pq_bus, 2] = np.real(S1[:,pq_bus])*kVA_base*1e-3
+    ppci1["bus"][pq_bus, 3] = np.imag(S1[:,pq_bus])*kVA_base*1e-3
     
-    _run_newton_raphson_pf(ppc1, net._options)
+    _run_newton_raphson_pf(ppci1, net._options)
 
     I1_from_V_it = -np.transpose(I1_from_V012(V012_it,Y1_pu))
     s_from_voltage = S_from_VI(V1_for_S1, I1_from_V_it)
     
-    V1_pu_it = V1_from_ppc(ppc1)
+    V1_pu_it = V1_from_ppc(ppci1)
     V0_pu_it = V_from_I(Y0_pu,I0_pu_it)
     V2_pu_it = V_from_I(Y2_pu,I2_pu_it)
 # =============================================================================
@@ -210,10 +198,10 @@ print ('\n\n Final  Values Pandapower ')
 V_base_res = V_base/np.sqrt(3)
 I_base_res = (kVA_base/V_base_res) * 1e-3 
 
-ppc0["bus"][0, 4] = 0
-ppc0["bus"][0, 5] = 0
+ppci0["bus"][0, 4] = 0
+ppci0["bus"][0, 5] = 0
 
-Y0_pu,_,_ = makeYbus(ppc0["baseMVA"], ppc0["bus"], ppc0["branch"])
+Y0_pu,_,_ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
 #Y0_pu = Y0_pu.todense()
 I012_new = combine_X012(I0_from_V012(V012_new,Y0_pu),
                         I1_from_V012(V012_new,Y1_pu),
