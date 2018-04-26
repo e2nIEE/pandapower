@@ -70,13 +70,14 @@ def load_mapping(net):
         b, PB, QB = _sum_by_group(b, p_b,q_b*1j )
         b, PC, QC = _sum_by_group(b, p_c,q_c*1j )
         b,SA,SB,SC = bus_lookup,PA+QA,PB+QB,PC+QC
-    return b,np.vstack([SA,SB,SC])
+    return np.vstack([SA,SB,SC])
 # =============================================================================
 # Sequence Network Parameters
 # =============================================================================
 
 busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn")
 busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk")
+
 
 pp.create_ext_grid(net, bus=busn, vm_pu= 1.0, name="Grid Connection",
                    s_sc_max_mva=5000, rx_max=0.1)
@@ -115,7 +116,7 @@ Y1_pu,_,_ = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
 
 Y2_pu,_,_ = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
 
-sl_bus,pv_bus,pq_bus = bustypes(ppc1['bus'],ppc1['gen'])
+sl_bus,pv_bus,pq_bus = bustypes(ppci1['bus'],ppci1['gen'])
 
 # =============================================================================
 # 3 Phase Load converted to Sabc matrix
@@ -134,7 +135,7 @@ sl_bus,pv_bus,pq_bus = bustypes(ppc1['bus'],ppc1['gen'])
 # =============================================================================
 # Initial voltage values
 # =============================================================================
-nb = len(net.bus)
+nb = ppci1["bus"].shape[0]
 V012_it = np.concatenate(    
                         (
                          np.matrix(np.zeros((1,nb),dtype=np.complex))
@@ -151,6 +152,7 @@ Vabc_it = sequence_to_phase(V012_it)
 # =============================================================================
 count = 0
 S_mismatch = np.matrix([[True],[True]],dtype =bool)
+Sabc = load_mapping(net)
 
 # =============================================================================
 #             Iteration using Power mismatch criterion
@@ -159,7 +161,6 @@ while (S_mismatch > 1e-6).any():
 # =============================================================================
 #     Voltages and Current transformation for PQ and Slack bus
 # =============================================================================
-    b,Sabc = load_mapping(net)
     Sabc_pu = -np.divide(Sabc,kVA_base)
     Iabc_it = np.divide(Sabc_pu, Vabc_it).conjugate()
     I012_it = phase_to_sequence(Iabc_it)
@@ -174,8 +175,8 @@ while (S_mismatch > 1e-6).any():
     # =============================================================================
     # Current used to find S1 Positive sequence power    
     # =============================================================================
-    ppc1["bus"][b, 2] = np.real(S1[:,b])*kVA_base*1e-3
-    ppc1["bus"][b, 3] = np.imag(S1[:,b])*kVA_base*1e-3
+    ppc1["bus"][pq_bus, 2] = np.real(S1[:,pq_bus])*kVA_base*1e-3
+    ppc1["bus"][pq_bus, 3] = np.imag(S1[:,pq_bus])*kVA_base*1e-3
     
     _run_newton_raphson_pf(ppc1, net._options)
 
