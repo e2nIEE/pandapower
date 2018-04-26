@@ -70,6 +70,18 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
+        "sgen_3ph": [("name", dtype(object)),
+                 ("bus", "i8"),
+                 ("p_kw_A", "f8"),
+                 ("p_kw_B", "f8"),
+                 ("p_kw_C", "f8"),
+                 ("q_kvar_A", "f8"),
+                 ("q_kvar_B", "f8"),
+                 ("q_kvar_C", "f8"),
+                 ("sn_kva", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("type", dtype(object))],
         "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_kw", "f8"),
@@ -968,6 +980,187 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
     return index
 
+# =============================================================================
+# Create 3ph Sgen
+# =============================================================================
+    
+def create_sgen_3ph(net, bus, p_kw_A,p_kw_B,p_kw_C, q_kvar_A=0, q_kvar_B=0, q_kvar_C=0, sn_kva=nan, 
+                    name=None, index=None, scaling=1., type=None, in_service=True, 
+                    max_p_kw_A=nan, max_p_kw_B=nan, max_p_kw_C=nan, 
+                    min_p_kw_A=nan, min_p_kw_B=nan, min_p_kw_C=nan, 
+                    max_q_kvar_A=nan,  max_q_kvar_B=nan,  max_q_kvar_C=nan, 
+                    min_q_kvar_A=nan, min_q_kvar_B=nan, min_q_kvar_C=nan, 
+                    controllable=nan, k=nan, rx=nan):
+    """create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None, \
+                scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan, \
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
+    Adds one static generator in table net["sgen"].
+
+    Static generators are modelled as negative  PQ loads. This element is used to model generators
+    with a constant active and reactive power feed-in. If you want to model a voltage controlled
+    generator, use the generator element instead.
+
+    All elements in the grid are modelled in the consumer system, including generators!
+    If you want to model the generation of power, you have to assign a negative active power
+    to the generator. Please pay attention to the correct signing of the
+    reactive power as well.
+
+    INPUT:
+        **net** - The net within this static generator should be created
+
+        **bus** (int) - The bus id to which the static generator is connected
+
+        **p_kw** (float) - The real power of the static generator  (negative for generation!)
+
+    OPTIONAL:
+
+        **q_kvar** (float, default 0) - The reactive power of the sgen
+
+        **sn_kva** (float, default None) - Nominal power of the sgen
+
+        **name** (string, default None) - The name for this sgen
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the static generator
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **max_p_kw** (float, NaN) - Maximum active power injection - necessary for \
+            controllable sgens in OPF
+
+        **min_p_kw** (float, NaN) - Minimum active power injection - necessary for \
+            controllable sgens in OPF
+
+        **max_q_kvar** (float, NaN) - Maximum reactive power injection - necessary for \
+            controllable sgens in OPF
+
+        **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for \
+            controllable sgens in OPF
+
+        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
+        powerflow
+
+        **k** (float, NaN) - Ratio of nominal current to short circuit current
+
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created sgen
+
+    EXAMPLE:
+        create_sgen(net, 1, p_kw = -120)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["sgen_3ph"])
+
+    if index in net["sgen_3ph"].index:
+        raise UserWarning("A static generator with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.sgen_3ph.dtypes
+
+    net.sgen_3ph.loc[index, ["name", "bus", "p_kw_A","p_kw_B","p_kw_C", "scaling",
+                         "q_kvar_A", "q_kvar_B", "q_kvar_C","sn_kva", "in_service", "type"]] = \
+        [name, bus, p_kw_A, p_kw_B, p_kw_C, scaling, q_kvar_A, q_kvar_B, q_kvar_C, sn_kva, bool(in_service), type]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.sgen_3ph, dtypes)
+
+    if not isnan(min_p_kw_A):
+        if "min_p_kw_A" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "min_p_kw_A"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "min_p_kw_A"] = float(min_p_kw_A)
+        
+        if "min_p_kw_B" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "min_p_kw_B"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "min_p_kw_B"] = float(min_p_kw_B)
+        
+        if "min_p_kw_C" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "min_p_kw_C"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "min_p_kw_C"] = float(min_p_kw_C)
+        
+    if not isnan(max_p_kw_A):
+        if "max_p_kw_A" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "max_p_kw_A"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "max_p_kw_A"] = float(max_p_kw_A)
+    if not isnan(max_p_kw_B):
+        if "max_p_kw_B" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "max_p_kw_B"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "max_p_kw_B"] = float(max_p_kw_B)
+    if not isnan(max_p_kw_C):
+        if "max_p_kw_C" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "max_p_kw_C"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "max_p_kw_C"] = float(max_p_kw_C)
+
+    if not isnan(min_q_kvar_A):
+        if "min_q_kvar_A" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "min_q_kvar_A"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "min_q_kvar_A"] = float(min_q_kvar_A)
+    if not isnan(min_q_kvar_B):
+        if "min_q_kvar_B" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "min_q_kvar_B"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "min_q_kvar_B"] = float(min_q_kvar_B)
+    if not isnan(min_q_kvar_C):
+        if "min_q_kvar_C" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "min_q_kvar_C"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "min_q_kvar_C"] = float(min_q_kvar_C)
+
+    if not isnan(max_q_kvar_A):
+        if "max_q_kvar_A" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "max_q_kvar_A"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "max_q_kvar_A"] = float(max_q_kvar_A)
+    if not isnan(max_q_kvar_B):
+        if "max_q_kvar_B" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "max_q_kvar_B"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "max_q_kvar_B"] = float(max_q_kvar_B)
+    if not isnan(max_q_kvar_C):
+        if "max_q_kvar_C" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "max_q_kvar_C"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "max_q_kvar_C"] = float(max_q_kvar_C)
+        
+    if not isnan(controllable):
+        if "controllable" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "controllable"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "controllable"] = bool(controllable)
+    else:
+        if "controllable" in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[index, "controllable"] = False
+
+    if not isnan(k):
+        if "k" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "k"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "k"] = float(k)
+
+    if not isnan(rx):
+        if "rx" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "rx"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "rx"] = float(rx)
+
+    return index
 
 def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     """

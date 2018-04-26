@@ -345,7 +345,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
     is_elements = dict()
-    for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
+    for element in ["load", "load_3ph","sgen", "sgen_3ph","gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
         if len_ > 0:
