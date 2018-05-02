@@ -860,7 +860,7 @@ def _pre_release_changes(net):
         net.load["type"] = None
     if "zone" not in net.bus:
         net.bus["zone"] = None
-    for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
+    for element in ["line", "trafo", "bus", "load", "sgen", "load_3ph", "sgen_3ph", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     if "in_service" not in net["ward"]:
         net.ward["in_service"] = True
@@ -1039,7 +1039,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True):
     """
     ebt = set()
     if bus_elements:
-        ebt.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+        ebt.update([("sgen", "bus"), ("load", "bus"),("sgen_3ph", "bus"), ("load_3ph", "bus"),("ext_grid", "bus"), ("gen", "bus"),
                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus")])
     if branch_elements:
         ebt.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
@@ -1430,7 +1430,7 @@ def get_connected_elements(net, element, buses, respect_switches=True, respect_i
         element_table = net.impedance
         connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
                                                         (net.impedance.to_bus.isin(buses))])
-    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load", "storage"]:
+    elif element in ["gen", "ext_grid", "xward", "shunt", "ward", "sgen", "load","sgen_3ph","load_3ph", "storage"]:
         element_table = net[element]
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element in ['_equiv_trafo3w']:
