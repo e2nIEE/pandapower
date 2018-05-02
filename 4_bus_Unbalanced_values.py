@@ -295,7 +295,7 @@ busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn")
 busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk")
 busm =  pp.create_bus(net, vn_kv = V_base, name = "busm")
 busp =  pp.create_bus(net, vn_kv = V_base, name = "busp")
-pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000/3, rx_max=0.1)
+pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000, rx_max=0.1)
 net.ext_grid["r0x0_max"] = 0.1
 net.ext_grid["x0x_max"] = 1.0
 
