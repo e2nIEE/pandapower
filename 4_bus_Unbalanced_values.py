@@ -191,102 +191,78 @@ def show_results(V_base,count,ppci0,Y1_pu,V012_new,I012_new):
 def comparison_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
     V_base_res = V_base/np.sqrt(3)
     I_base_res = (kVA_base/V_base_res) * 1e-3 
-    Sabc_sl_sp =  np.matrix(   [	 					
-    	[134.72979875*1000+70.116791813*1000j],		
-        [144.20068114*1000+89.890881393*1000j],		
-        [61.278020633*1000+37.305178872*1000j]	
+    Sabc_sl_sp =  np.matrix(   [						
+    	[150.34732586*1000+89.274183693*1000j ,		149.93885263*1000+94.513653203*1000j,		39.966843513*1000+13.69963814*1000j]					
+    	]					
     						
-    ]						
-        ,dtype = np.complex 						
-        ) #kW and kVAr		
-
-
-    Sabc_pq_sp =  np.matrix(   [						
+    	                    ).T #kW and kVAr					
     						
-    	[49.999999999*1000+20*1000j ,		79.999999998*1000+59.999999999*1000j,		20*1000+5*1000j],	
-    	[49.999999999*1000+49.999999999*1000j ,		9.9999999997*1000+15*1000j,		10*1000+5*1000j],	
-    	[34.518673429*1000+0.97998446796*1000j ,		54.186429087*1000+15.507667957*1000j,		31.294897484*1000+28.512347575*1000j]	
-    		]				
-    		                    ,dtype = np.complex 				
-    		                    ) #kW and kVAr				
+    
+    
+    
+    Sabc_pq_sp =  np.matrix(   [					
+    					
+    	[50*1000+20*1000j ,		79.999999999*1000+60*1000j,		20*1000+5.0000000001*1000j],
+    	[50*1000+50*1000j ,		9.9999999998*1000+15*1000j,		10*1000+5.0000000001*1000j],
+    	[50*1000+20*1000j ,		59.999999999*1000+20*1000j,		10*1000+5.0000000001*1000j]
+    		]			
+    		                    ,dtype = np.complex 			
+    		                    ).T #kW and kVAr			
 
-    Sabc_powerFactory = np.concatenate((Sabc_sl_sp,Sabc_pq_sp.T),axis =1)
+    Sabc_powerFactory = np.concatenate((Sabc_sl_sp,Sabc_pq_sp),axis =1)
 
 	# =============================================================================
 	# Slack Current I012 in kA as per Power Factory 
 	# =============================================================================
-						
-    Ia_pf = np.matrix([		
-    	[0.85361334928*np.exp(1j*np.deg2rad(-22.597021296))],	
-    	[1.1217345202*np.exp(1j*np.deg2rad(-45.833804321))],	
-    	[0.54690896502*np.exp(1j*np.deg2rad(-2.4474461727))]	
-    ])		
-    Ib_pf = np.matrix([
-    [1.609734392*np.exp(1j*np.deg2rad(-158.13889773))],
-    [0.2898457303*np.exp(1j*np.deg2rad(-177.53818591))],
-    [0.90680096195*np.exp(1j*np.deg2rad(-137.21052139))]
-    ])
-    
-    
-    Ic_pf = np.matrix([
-    [0.31635572984*np.exp(1j*np.deg2rad(107.76170403))],
-    [0.17162062815*np.exp(1j*np.deg2rad(95.275718806))],
-    [0.65033987738*np.exp(1j*np.deg2rad(79.45206248))]
-    ])
+    Iabc_pq_pf =  np.matrix(   [					
+    					
+    	[0.86676467552*np.exp(1j*np.deg2rad(-23.16800712)),		1.614392047*np.exp(1j*np.deg2rad(-158.37122826)),		0.31071857716*np.exp(1j*np.deg2rad(108.4669283))],
+    	[1.1387494998*np.exp(1j*np.deg2rad(-46.403411358)),		0.29070024235*np.exp(1j*np.deg2rad(-177.76002958)),		0.16859090052*np.exp(1j*np.deg2rad(95.969503627))],
+    	[0.86693887872*np.exp(1j*np.deg2rad(-23.183031658)),		1.0204854981*np.exp(1j*np.deg2rad(-139.95476824)),		0.16851041836*np.exp(1j*np.deg2rad(95.960819649))]
+    					
+    		]			
+    		                    ,dtype = np.complex 			
+    		                    ).T #kW and kVAr			
 
-    Iabc_pq_pf = combine_X012(Ia_pf,Ib_pf,Ic_pf)
 
 	# =============================================================================
 	#  PQ  Current I012 in kA as per Power Factory 
 	# =============================================================================
 
-    Ia_sl_pf = np.matrix([	
-    	[2.402756264*np.exp(1j*np.deg2rad(-28.263023464))],
-    	])
-    Ib_sl_pf = np.matrix([
-    [2.730048953*np.exp(1j*np.deg2rad(-153.05331253))],
-    ])
-    Ic_sl_pf = np.matrix([
-    [1.101638324*np.exp(1j*np.deg2rad(90.480307239))],
-    ])
+    Iabc_sl_pf =  np.matrix(   [					
+    	[2.806982184*np.exp(1j*np.deg2rad(-32.037382293)),		2.85617664*np.exp(1j*np.deg2rad(-153.546895528)),		0.637503143*np.exp(1j*np.deg2rad(103.573568845))]				
+    	]				
+    	                    ,dtype = np.complex 				
+    	                    ).T #kW and kVAr				
+    	
+					
 
-    Iabc_sl_pf = combine_X012(Ia_sl_pf,Ib_sl_pf,Ic_sl_pf)
     Iabc_powerFactory = np.concatenate((Iabc_sl_pf,Iabc_pq_pf),axis = 1)
 	# =============================================================================
 	# Slack bus Voltages Vabc in kV as per Power Factory 
 	# =============================================================================
-    Va_sl_pf = np.matrix([	
-    	[63.21203928*np.exp(1j*np.deg2rad(-0.769415278))],
-    	])
-    Vb_sl_pf = np.matrix([
-    [62.242151768*np.exp(1j*np.deg2rad(-121.114993036))],
-    ])
-    Vc_sl_pf = np.matrix([
-    [65.121473346*np.exp(1j*np.deg2rad(121.812761909))],
-    ])
+    Vabc_sl_pf =  np.matrix(   [						
+    	[62.292804335*np.exp(1j*np.deg2rad(-1.336121658)),		62.055452267*np.exp(1j*np.deg2rad(-121.321697076)),		66.273554938*np.exp(1j*np.deg2rad(122.494006073))]	
+				
+    	]					
+    	                    ,dtype = np.complex 					
+    	                    ).T #kW and kVAr					
 
-    Vabc_sl_pf = combine_X012(Va_sl_pf,Vb_sl_pf,Vc_sl_pf)
 
 	# =============================================================================
 	# PQ Bus Voltages in kV as per Power Factory 
 	# =============================================================================
-    Va_pf = np.matrix([	
-    	[63.08669858*np.exp(1j*np.deg2rad(-0.795611809))],
-    	[63.036910109*np.exp(1j*np.deg2rad(-0.833804321))],
-    	[63.14137033*np.exp(1j*np.deg2rad(-0.82125691))],
-    ])	
-    Vb_pf = np.matrix([
-    [62.122049759*np.exp(1j*np.deg2rad(-121.269000085))],
-    [62.197764162*np.exp(1j*np.deg2rad(-121.228253434))],
-    [62.154586369*np.exp(1j*np.deg2rad(-121.239876724))],
-    ])
-    Vc_pf = np.matrix([
-    [65.165654304*np.exp(1j*np.deg2rad(121.797947494))],
-    [65.145664643*np.exp(1j*np.deg2rad(121.840769983))],
-    [65.098044778*np.exp(1j*np.deg2rad(121.788280158))],
-    ])
 
-    Vabc_pq_pf = combine_X012(Va_pf,Vb_pf,Vc_pf)
+    Vabc_pq_pf =  np.matrix(   [					
+					
+	[62.129490959*np.exp(1j*np.deg2rad(-1.366597634)),		61.942822493*np.exp(1j*np.deg2rad(-121.501330612)),		66.347909792*np.exp(1j*np.deg2rad(122.503171764))],
+	[62.095024525*np.exp(1j*np.deg2rad(-1.403411358)),		62.014934118*np.exp(1j*np.deg2rad(-121.450097103)),		66.316389871*np.exp(1j*np.deg2rad(122.534554804))],
+	[62.117006623*np.exp(1j*np.deg2rad(-1.381622172)),		61.975945099*np.exp(1j*np.deg2rad(-121.519819412)),		66.3480632*np.exp(1j*np.deg2rad(122.525870826))]
+					
+		]			
+		                    ,dtype = np.complex 			
+		                    ).T #kW and kVAr			
+
 
     Vabc_powerFactory = np.concatenate((Vabc_sl_pf,Vabc_pq_pf),axis =1)
     print ('\n Power factory Values \n ')
