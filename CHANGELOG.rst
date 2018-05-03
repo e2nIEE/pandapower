@@ -1,7 +1,7 @@
 Change Log
 =============
 
-[develop]
+[1.5.0] - 2018-04-25
 ----------------------
 - [FIXED] plotly hover function for edges (only if use_line_geodata == False)
 - [FIXED] from_ppc trafo parameter calculation now also considers baseMVA != 100
@@ -10,6 +10,10 @@ Change Log
 - [ADDED] pp_elements() toolbox function
 - [ADDED] new parameter g_us_per_km to model dielectric losses in lines
 - [ADDED] single phase short-circuit calculation with negative sequence models
+- [ADDED] generic storage model (sgen/load like element with negative / positive power allowed)
+- [ADDED] modelling of the complex (voltage magnitude and angle) tap changer for cross control
+- [ADDED] modelling of the tap changer of a 3-winding transformer at star point or terminals
+- [ADDED] losses of 3W transformers can be modeled at star point, HV, MV or LV side
 
 [1.4.3] - 2018-02-06
 ----------------------

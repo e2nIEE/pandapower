@@ -31,4 +31,5 @@ information about the definition and interpretation of the parameters in the fol
     elements/xward
     elements/dcline
     elements/measurement
+    elements/storage
 

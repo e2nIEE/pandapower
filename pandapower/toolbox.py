@@ -499,7 +499,7 @@ def convert_format(net):
     if "_empty_res_storage" not in net:
         net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
                                                                    ("q_kvar", "f8"),
-                                                                   ("soc", "f8")]))
+                                                                   ("soc_percent", "f8")]))
 
     if len(net["_empty_res_line"]) < 10:
         net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
@@ -518,7 +518,7 @@ def convert_format(net):
                                                          ("p_kw", "f8"),
                                                          ("q_kvar", "f8"),
                                                          ("sn_kva", "f8"),
-                                                         ("soc", "f8"),
+                                                         ("soc_percent", "f8"),
                                                          ("min_e_kwh", "f8"),
                                                          ("max_e_kwh", "f8"),
                                                          ("scaling", "f8"),
