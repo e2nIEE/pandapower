@@ -9,12 +9,15 @@ import os
 import pandapower as pp
 
 
-def _get_networks_path():
+def get_pp_networks_path():
     return os.path.abspath(os.path.dirname(pp.networks.__file__))
 
 
-def _get_cases_path():
-    return os.path.join(_get_networks_path(), "power_system_test_case_pickles")
+def _get_cases_path(filename=None):
+    if filename:
+        return os.path.join(get_pp_networks_path(), "power_system_test_case_pickles", filename)
+    else:
+        return os.path.join(get_pp_networks_path(), "power_system_test_case_pickles")
 
 
 def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
@@ -74,7 +77,7 @@ def case4gs():
 
          net = pn.case4gs()
     """
-    case4gs = pp.from_pickle(os.path.join(_get_cases_path(), "case4gs.p"))
+    case4gs = pp.from_pickle(_get_cases_path("case4gs.p"))
     return case4gs
 
 
@@ -93,7 +96,7 @@ def case6ww():
 
          net = pn.case6ww()
     """
-    case6ww = pp.from_pickle(os.path.join(_get_cases_path(), "case6ww.p"))
+    case6ww = pp.from_pickle(_get_cases_path("case6ww.p"))
     return case6ww
 
 
@@ -112,7 +115,7 @@ def case9():
 
          net = pn.case9()
     """
-    case9 = pp.from_pickle(os.path.join(_get_cases_path(), "case9.p"))
+    case9 = pp.from_pickle(_get_cases_path("case9.p"))
     return case9
 
 
@@ -133,7 +136,7 @@ def case14():
 
          net = pn.case14()
     """
-    case14 = pp.from_pickle(os.path.join(_get_cases_path(), "case14.p"))
+    case14 = pp.from_pickle(_get_cases_path("case14.p"))
     return case14
 
 
@@ -153,8 +156,7 @@ def case24_ieee_rts():
 
          net = pn.case24_ieee_rts()
     """
-    case24 = pp.from_pickle(os.path.join(_get_cases_path(),
-                                         "case24_ieee_rts.p"))
+    case24 = pp.from_pickle(_get_cases_path("case24_ieee_rts.p"))
     return case24
 
 
@@ -173,7 +175,7 @@ def case30():
 
          net = pn.case30()
     """
-    case30 = pp.from_pickle(os.path.join(_get_cases_path(), "case30.p"))
+    case30 = pp.from_pickle(_get_cases_path("case30.p"))
     return case30
 
 
@@ -193,7 +195,7 @@ def case33bw():
 
          net = pn.case33bw()
     """
-    case33bw = pp.from_pickle(os.path.join(_get_cases_path(), "case33bw.p"))
+    case33bw = pp.from_pickle(_get_cases_path("case33bw.p"))
     return case33bw
 
 
@@ -216,7 +218,7 @@ def case39():
 
          net = pn.case39()
     """
-    case39 = pp.from_pickle(os.path.join(_get_cases_path(), "case39.p"))
+    case39 = pp.from_pickle(_get_cases_path("case39.p"))
     return case39
 
 
@@ -245,7 +247,7 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
          net = pn.case57()
     """
-    case57 = pp.from_pickle(os.path.join(_get_cases_path(), "case57.p"))
+    case57 = pp.from_pickle(_get_cases_path("case57.p"))
     Idx_area1 = case57.bus[case57.bus.vn_kv == 110].index
     Idx_area2 = case57.bus[case57.bus.vn_kv == 120].index
     Idx_area3 = case57.bus[case57.bus.vn_kv == 125].index
@@ -280,7 +282,7 @@ def case89pegase():
 
          net = pn.case89pegase()
     """
-    case89pegase = pp.from_pickle(os.path.join(_get_cases_path(), "case89pegase.p"))
+    case89pegase = pp.from_pickle(_get_cases_path("case89pegase.p"))
     return case89pegase
 
 
@@ -300,7 +302,7 @@ def case118():
 
          net = pn.case118()
     """
-    case118 = pp.from_pickle(os.path.join(_get_cases_path(), "case118.p"))
+    case118 = pp.from_pickle(_get_cases_path("case118.p"))
     return case118
 
 
@@ -318,7 +320,7 @@ def case145():
 
          net = pn.case145()
     """
-    case145 = pp.from_pickle(os.path.join(_get_cases_path(), "case145.p"))
+    case145 = pp.from_pickle(_get_cases_path("case145.p"))
     return case145
 
 
@@ -338,7 +340,7 @@ def case300():
 
          net = pn.case300()
     """
-    case300 = pp.from_pickle(os.path.join(_get_cases_path(), "case300.p"))
+    case300 = pp.from_pickle(_get_cases_path("case300.p"))
     return case300
 
 
@@ -361,7 +363,7 @@ def case1354pegase():
 
          net = pn.case1354pegase()
     """
-    case1354pegase = pp.from_pickle(os.path.join(_get_cases_path(), "case1354pegase.p"))
+    case1354pegase = pp.from_pickle(_get_cases_path("case1354pegase.p"))
     return case1354pegase
 
 
@@ -391,7 +393,7 @@ def case1888rte(ref_bus_idx=1246):
 
          net = pn.case1888rte()
     """
-    case1888rte = pp.from_pickle(os.path.join(_get_cases_path(), "case1888rte.p"))
+    case1888rte = pp.from_pickle(_get_cases_path("case1888rte.p"))
     case1888rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']] = 2 * \
         case1888rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']]
 
@@ -426,7 +428,7 @@ def case2848rte(ref_bus_idx=271):
 
          net = pn.case2848rte()
     """
-    case2848rte = pp.from_pickle(os.path.join(_get_cases_path(), "case2848rte.p"))
+    case2848rte = pp.from_pickle(_get_cases_path("case2848rte.p"))
     if ref_bus_idx != 271:  # change reference bus
         _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[-44.01e3])
     return case2848rte
@@ -451,7 +453,7 @@ def case2869pegase():
 
          net = pn.case2869pegase()
     """
-    case2869pegase = pp.from_pickle(os.path.join(_get_cases_path(), "case2869pegase.p"))
+    case2869pegase = pp.from_pickle(_get_cases_path("case2869pegase.p"))
     return case2869pegase
 
 
@@ -469,7 +471,7 @@ def case3120sp():
 
          net = pn.case3120sp()
     """
-    case3120sp = pp.from_pickle(os.path.join(_get_cases_path(), "case3120sp.p"))
+    case3120sp = pp.from_pickle(_get_cases_path("case3120sp.p"))
     return case3120sp
 
 
@@ -499,7 +501,7 @@ def case6470rte(ref_bus_idx=5988):
 
          net = pn.case6470rte()
     """
-    case6470rte = pp.from_pickle(os.path.join(_get_cases_path(), "case6470rte.p"))
+    case6470rte = pp.from_pickle(_get_cases_path("case6470rte.p"))
     case6470rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']] = 2 * \
         case6470rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']]
     if ref_bus_idx != 5988:  # change reference bus
@@ -535,7 +537,7 @@ def case6495rte(ref_bus_idx=None):
          net = pn.case6495rte()
     """
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
-    case6495rte = pp.from_pickle(os.path.join(_get_cases_path(), "case6495rte.p"))
+    case6495rte = pp.from_pickle(_get_cases_path("case6495rte.p"))
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
         _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[-1382.35e3, -2894.13e3, -1498.32e3,
                                                               -1498.32e3, -1493.11e3, -1493.12e3])
@@ -568,7 +570,7 @@ def case6515rte(ref_bus_idx=6171):
 
          net = pn.case6515rte()
     """
-    case6515rte = pp.from_pickle(os.path.join(_get_cases_path(), "case6515rte.p"))
+    case6515rte = pp.from_pickle(_get_cases_path("case6515rte.p"))
     if ref_bus_idx != 6171:  # change reference bus
         _change_ref_bus(case6515rte, ref_bus_idx, ext_grid_p=-2850.78e3)
     return case6515rte
@@ -593,7 +595,7 @@ def case9241pegase():
 
          net = pn.case9241pegase()
     """
-    case9241pegase = pp.from_pickle(os.path.join(_get_cases_path(), "case9241pegase.p"))
+    case9241pegase = pp.from_pickle(_get_cases_path("case9241pegase.p"))
     return case9241pegase
 
 
@@ -613,8 +615,7 @@ def GBreducednetwork():
 
          net = pn.GBreducednetwork()
     """
-    GBreducednetwork = pp.from_pickle(os.path.join(_get_cases_path(),
-                                                   "GBreducednetwork.p"))
+    GBreducednetwork = pp.from_pickle(_get_cases_path("GBreducednetwork.p"))
     return GBreducednetwork
 
 
@@ -636,8 +637,7 @@ def GBnetwork():
 
          net = pn.GBnetwork()
     """
-    GBnetwork = pp.from_pickle(os.path.join(_get_cases_path(),
-                                            "GBnetwork.p"))
+    GBnetwork = pp.from_pickle(_get_cases_path("GBnetwork.p"))
     return GBnetwork
 
 
@@ -658,6 +658,5 @@ def iceland():
 
          net = pn.iceland()
     """
-    iceland = pp.from_pickle(os.path.join(_get_cases_path(),
-                                          "iceland.p"))
+    iceland = pp.from_pickle(_get_cases_path("iceland.p"))
     return iceland
