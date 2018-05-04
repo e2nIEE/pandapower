@@ -56,6 +56,7 @@ def load_mapping(net):
         q_c = np.hstack([q_c, sgen_3ph["q_kvar_C"].values ])
         p_c = np.hstack([p_c, sgen_3ph["p_kw_C"].values ])
         b = np.hstack([b, sgen_3ph["bus"].values])
+    # For Network Symmetric loads with unsymmetric loads
     l = net["load"]
     if len(l) > 0:
         q_a = np.hstack([q_a, l["q_kvar"].values/3])
