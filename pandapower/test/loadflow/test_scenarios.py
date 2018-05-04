@@ -284,7 +284,7 @@ def test_volt_dep_load_at_inactive_bus():
     pp.runpp(net)
     assert not np.isnan(net.res_load.p_kw.at[1])
     assert not np.isnan(net.res_bus.p_kw.at[5])
-    assert np.isnan(net.res_bus.p_kw.at[3])
+    assert net.res_bus.p_kw.at[3] == 0
 
 
 if __name__ == "__main__":
