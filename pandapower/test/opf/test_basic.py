@@ -582,10 +582,10 @@ def test_storage_opf():
                    max_q_kvar=25, min_q_kvar=-25)
 
     # costs
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
-    pp.create_polynomial_cost(net, 0, "storage", np.array([0, 1, 0]))
-    pp.create_polynomial_cost(net, 1, "sgen", np.array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, -3, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, -2, 0]))
+    pp.create_polynomial_cost(net, 0, "storage", np.array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 1, "sgen", np.array([0, -1, 0]))
 
     pp.create_polynomial_cost(net, 1, "load", np.array([0, -3, 0]))
 
