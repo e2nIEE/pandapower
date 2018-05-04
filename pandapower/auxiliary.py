@@ -571,23 +571,30 @@ def combine_X012(X0,X1,X2):
 # T012 : abc >012
 # =============================================================================
 
+def phase_shift_unit_operator(angle_deg):
+    return 1*np.exp(1j*np.deg2rad(angle_deg))
+
 def sequence_to_phase(X012):
+    a = phase_shift_unit_operator(120)
+    asq = phase_shift_unit_operator(-120)
     Tabc = np.matrix(
-    [
-    [1*np.exp(1j*np.deg2rad(0)), 1*np.exp(1j*np.deg2rad(0))   , 1*np.exp(1j*np.deg2rad(0))]
-    ,[1*np.exp(1j*np.deg2rad(0)), 1*np.exp(1j*np.deg2rad(-120)), 1*np.exp(1j*np.deg2rad(120))]
-    ,[1*np.exp(1j*np.deg2rad(0)), 1*np.exp(1j*np.deg2rad(120)) , 1*np.exp(1j*np.deg2rad(-120))]
-    ],dtype = np.complex)
+        [
+        [1, 1, 1],
+        [1, asq, a],
+        [1, a, asq]
+        ], dtype=np.complex)
     return np.matmul(Tabc,X012)
 
 def phase_to_sequence(Xabc):
-    Tabc = np.matrix(
-            [
-            [1*np.exp(1j*np.deg2rad(0)),1*np.exp(1j*np.deg2rad(0))   ,1*np.exp(1j*np.deg2rad(0))]
-            ,[1*np.exp(1j*np.deg2rad(0)),1*np.exp(1j*np.deg2rad(-120)),1*np.exp(1j*np.deg2rad(120))]
-            ,[1*np.exp(1j*np.deg2rad(0)),1*np.exp(1j*np.deg2rad(120)) ,1*np.exp(1j*np.deg2rad(-120))]
-            ],dtype = np.complex)
-    return np.matmul(np.linalg.inv(Tabc),Xabc)
+    a = phase_shift_unit_operator(120)
+    asq = phase_shift_unit_operator(-120)
+    Tabc = np.divide(np.matrix(
+        [
+        [1, 1, 1],
+        [1, a, asq],
+        [1, asq, a]
+        ],dtype = np.complex),3)
+    return np.matmul(Tabc,Xabc)
 
 # =============================================================================
 # Calculating Sequence Current from sequence Voltages 
