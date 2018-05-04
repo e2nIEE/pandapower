@@ -1,6 +1,12 @@
 Change Log
 =============
 
+[1.5.1] - 2018-05-04
+----------------------
+- [FIXED] delta-wye transformation for 3W-transformers #54
+- [ADDED] bus-bus switches collection #76
+- [FIXED] some broken documentation links
+
 [1.5.0] - 2018-04-25
 ----------------------
 - [FIXED] plotly hover function for edges (only if use_line_geodata == False)
