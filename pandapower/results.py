@@ -58,15 +58,19 @@ def reset_results(net):
     net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
     net["res_load"] = copy.copy(net["_empty_res_load"])
     net["res_sgen"] = copy.copy(net["_empty_res_sgen"])
+    net["res_ext_grid_3ph"] = copy.copy(net["_empty_res_ext_grid_3ph"])
+    net["res_load_3ph"] = copy.copy(net["_empty_res_load_3ph"])
+    net["res_sgen_3ph"] = copy.copy(net["_empty_res_sgen_3ph"])
     net["res_storage"] = copy.copy(net["_empty_res_storage"])
     net["res_shunt"] = copy.copy(net["_empty_res_shunt"])
     net["res_gen"] = copy.copy(net["_empty_res_gen"])
     net["res_ward"] = copy.copy(net["_empty_res_ward"])
     net["res_xward"] = copy.copy(net["_empty_res_xward"])
     net["res_dcline"] = copy.copy(net["_empty_res_dcline"])
-
+    net["res_bus_3ph"] = copy.copy(net["_empty_res_bus_3ph"])
     net["res_bus"] = copy.copy(net["_empty_res_bus"])
-
+    net["res_line_3ph"] = copy.copy(net["_empty_res_line_3ph"])
+    
     elements_to_init = ["line", "trafo", "trafo3w", "impedance"]
 
     for element in elements_to_init:
