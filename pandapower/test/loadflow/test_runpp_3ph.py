@@ -9,7 +9,7 @@ import numpy as np
 
 from pandapower.auxiliary import combine_X012
 from pandapower.create import create_load_3ph
-from pandapower.pf.runpf_3ph import runpp_3ph,show_results
+from pandapower.pf.runpp_3ph import runpp_3ph,show_results
 def comparison_2bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
     Sabc_sl_sp =  np.matrix( [
         [55707.684189 + 60797.066456j],
