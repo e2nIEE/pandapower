@@ -329,7 +329,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
     """
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
     mode = net["_options"]["mode"]
-    # Changing Voltage on high-voltage side
     trafo_shift = trafo_df["shift_degree"].values.astype(float) if calculate_voltage_angles else \
         np.zeros(len(trafo_df))
     vnh = copy.copy(trafo_df["vn_hv_kv"].values.astype(float))
@@ -339,43 +338,27 @@ def _calc_tap_from_dataframe(net, trafo_df):
 
     tp_diff = trafo_df["tp_pos"].values - trafo_df["tp_mid"].values
 
-    cos=lambda x: np.cos(np.deg2rad(x))
-    sin=lambda x: np.sin(np.deg2rad(x))
-    arctan=lambda x: np.rad2deg(np.arctan(x))
+    cos = lambda x: np.cos(np.deg2rad(x))
+    sin = lambda x: np.sin(np.deg2rad(x))
+    arctan = lambda x: np.rad2deg(np.arctan(x))
 
-    # not_decalred_phase_shifters = ~trafo_df["tp_phase_shifter"].fillna(False).values & np.isfinite(trafo_df["tp_st_degree"].values) & (trafo_df["tp_st_degree"].values!=0) & (np.isnan(trafo_df["tp_st_percent"].values) | (trafo_df["tp_st_percent"].values==0))
-    # if any(not_decalred_phase_shifters):
-    #     print("trafos %s are not declared as phase shifters" % trafo_df[not_decalred_phase_shifters].index.values)
-    #     raise UserWarning("trafos %s are not declared as phase shifters" % trafo_df[not_decalred_phase_shifters].index.values)
-
-    # Changing voltage on high voltage side
-    phase_shifters_os = trafo_df["tp_phase_shifter"].fillna(False).values & (trafo_df["tp_side"].values == "hv")
-    tap_complex_os = np.isfinite(trafo_df["tp_st_percent"].values) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "hv") & ~phase_shifters_os
-    if any(tap_complex_os):
-        tp_steps = trafo_df["tp_st_percent"].values[tap_complex_os] * tp_diff[tap_complex_os] / 100
-        tp_angles = trafo_df["tp_st_degree"].fillna(0).values[tap_complex_os] if "tp_st_degree" in trafo_df.columns else np.zeros(len(tp_steps))
-        u1 = vnh[tap_complex_os]
-        du = u1 * tp_steps
-        vnh[tap_complex_os] = np.sqrt((u1+du*cos(tp_angles))**2+(du*sin(tp_angles))**2)
-        trafo_shift[tap_complex_os] += arctan(du*sin(tp_angles)/(u1+du*cos(tp_angles)))
-
-    if any(phase_shifters_os):
-        trafo_shift[phase_shifters_os] += tp_diff[phase_shifters_os] * trafo_df["tp_st_degree"].values[phase_shifters_os]
-
-    # Changing Voltage on low-voltage side
-    phase_shifters_us = trafo_df["tp_phase_shifter"].values & (trafo_df["tp_side"].values == "lv")
-    tap_complex_us = np.isfinite(trafo_df["tp_st_percent"].values) & np.isfinite(trafo_df["tp_pos"].values) & (trafo_df["tp_side"].values == "lv") & ~phase_shifters_us
-    if any(tap_complex_us):
-        tp_steps = trafo_df["tp_st_percent"].values[tap_complex_us] * tp_diff[tap_complex_us] / 100
-        tp_angles = trafo_df["tp_st_degree"].fillna(0).values[tap_complex_us] if "tp_st_degree" in trafo_df.columns else np.zeros(len(tp_steps))
-        u1 = vnl[tap_complex_us]
-        du = u1 * tp_steps
-        vnl[tap_complex_us] = np.sqrt((u1 + du * cos(tp_angles)) ** 2 + (du * sin(tp_angles)) ** 2)
-        trafo_shift[tap_complex_us] += arctan(-du * sin(tp_angles) / (u1 + du * cos(tp_angles)))
-
-    if any(phase_shifters_us):
-        trafo_shift[phase_shifters_us] -= tp_diff[phase_shifters_us] * trafo_df["tp_st_degree"].values[phase_shifters_us]
-
+    for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+        phase_shifters = trafo_df["tp_phase_shifter"].values & (trafo_df["tp_side"].values == side)
+        tap_complex = (np.isfinite(trafo_df["tp_st_percent"].values) &
+                       np.isfinite(trafo_df["tp_pos"].values) &
+                       (trafo_df["tp_side"].values == side) &
+                       ~phase_shifters)
+        if np.any(tap_complex):
+            tp_steps = trafo_df["tp_st_percent"].values[tap_complex] * tp_diff[tap_complex] / 100
+            tp_angles = np.nan_to_num(trafo_df["tp_st_degree"].values[tap_complex])
+            u1 = vn[tap_complex]
+            du = u1 * np.nan_to_num(tp_steps)
+            vn[tap_complex] = np.sqrt((u1 + du * cos(tp_angles))**2 + (du * sin(tp_angles))**2)
+            trafo_shift[tap_complex] += (arctan(direction * du * sin(tp_angles) /
+                                         (u1 + du * cos(tp_angles))))
+        if np.any(phase_shifters):
+            trafo_shift[phase_shifters] += (direction * tp_diff[phase_shifters] *
+                                            trafo_df["tp_st_degree"].values[phase_shifters])
     return vnh, vnl, trafo_shift
 
 
