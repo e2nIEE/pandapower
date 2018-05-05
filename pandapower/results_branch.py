@@ -66,22 +66,21 @@ def _get_line_results(net, ppc, i_ft):
     i_ka = np.max(i_ft[f:t], axis=1)
     i_from_ka = i_ft[f:t][:, 0]
     i_to_ka = i_ft[f:t][:, 1]
-    i_max = net["line"]["max_i_ka"].values * net["line"]["df"].values * \
-            net["line"]["parallel"].values
-
-    loading_percent = i_ka / i_max * 100
+    line_df = net["line"]
+    i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
 
     # write to line
-    net["res_line"]["p_from_kw"].values[:] = p_from_kw
-    net["res_line"]["q_from_kvar"].values[:] = q_from_kvar
-    net["res_line"]["p_to_kw"].values[:] = p_to_kw
-    net["res_line"]["q_to_kvar"].values[:] = q_to_kvar
-    net["res_line"]["pl_kw"].values[:] = pl_kw
-    net["res_line"]["ql_kvar"].values[:] = ql_kvar
-    net["res_line"]["i_from_ka"].values[:] = i_from_ka
-    net["res_line"]["i_to_ka"].values[:] = i_to_ka
-    net["res_line"]["i_ka"].values[:] = i_ka
-    net["res_line"]["loading_percent"].values[:] = loading_percent
+    res_line_df = net["res_line"]
+    res_line_df["p_from_kw"].values[:] = p_from_kw
+    res_line_df["q_from_kvar"].values[:] = q_from_kvar
+    res_line_df["p_to_kw"].values[:] = p_to_kw
+    res_line_df["q_to_kvar"].values[:] = q_to_kvar
+    res_line_df["pl_kw"].values[:] = pl_kw
+    res_line_df["ql_kvar"].values[:] = ql_kvar
+    res_line_df["i_from_ka"].values[:] = i_from_ka
+    res_line_df["i_to_ka"].values[:] = i_to_ka
+    res_line_df["i_ka"].values[:] = i_ka
+    res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):
@@ -123,15 +122,16 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
         ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
 
     # write results to trafo dataframe
-    net["res_trafo"]["p_hv_kw"].values[:] = p_hv_kw
-    net["res_trafo"]["q_hv_kvar"].values[:] = q_hv_kvar
-    net["res_trafo"]["p_lv_kw"].values[:] = p_lv_kw
-    net["res_trafo"]["q_lv_kvar"].values[:] = q_lv_kvar
-    net["res_trafo"]["pl_kw"].values[:] = pl_kw
-    net["res_trafo"]["ql_kvar"].values[:] = ql_kvar
-    net["res_trafo"]["i_hv_ka"].values[:] = i_hv_ka
-    net["res_trafo"]["i_lv_ka"].values[:] = i_lv_ka
-    net["res_trafo"]["loading_percent"].values[:] = loading_percent
+    res_trafo_df = net["res_trafo"]
+    res_trafo_df["p_hv_kw"].values[:] = p_hv_kw
+    res_trafo_df["q_hv_kvar"].values[:] = q_hv_kvar
+    res_trafo_df["p_lv_kw"].values[:] = p_lv_kw
+    res_trafo_df["q_lv_kvar"].values[:] = q_lv_kvar
+    res_trafo_df["pl_kw"].values[:] = pl_kw
+    res_trafo_df["ql_kvar"].values[:] = ql_kvar
+    res_trafo_df["i_hv_ka"].values[:] = i_hv_ka
+    res_trafo_df["i_lv_ka"].values[:] = i_lv_ka
+    res_trafo_df["loading_percent"].values[:] = loading_percent
 
 
 def _get_trafo3w_results(net, ppc, s_ft, i_ft):
@@ -191,18 +191,19 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     loading_percent = ld_trafo
 
     # write results to trafo3w dataframe
-    net["res_trafo3w"]["p_hv_kw"].values[:] = p_hv_kw
-    net["res_trafo3w"]["q_hv_kvar"].values[:] = q_hv_kvar
-    net["res_trafo3w"]["p_mv_kw"].values[:] = p_mv_kw
-    net["res_trafo3w"]["q_mv_kvar"].values[:] = q_mv_kvar
-    net["res_trafo3w"]["p_lv_kw"].values[:] = p_lv_kw
-    net["res_trafo3w"]["q_lv_kvar"].values[:] = q_lv_kvar
-    net["res_trafo3w"]["pl_kw"].values[:] = pl_kw
-    net["res_trafo3w"]["ql_kvar"].values[:] = ql_kvar
-    net["res_trafo3w"]["i_hv_ka"].values[:] = i_hv_ka
-    net["res_trafo3w"]["i_mv_ka"].values[:] = i_mv_ka
-    net["res_trafo3w"]["i_lv_ka"].values[:] = i_lv_ka
-    net["res_trafo3w"]["loading_percent"].values[:] = loading_percent
+    res_trafo3w_df = net["res_trafo3w"]
+    res_trafo3w_df["p_hv_kw"].values[:] = p_hv_kw
+    res_trafo3w_df["q_hv_kvar"].values[:] = q_hv_kvar
+    res_trafo3w_df["p_mv_kw"].values[:] = p_mv_kw
+    res_trafo3w_df["q_mv_kvar"].values[:] = q_mv_kvar
+    res_trafo3w_df["p_lv_kw"].values[:] = p_lv_kw
+    res_trafo3w_df["q_lv_kvar"].values[:] = q_lv_kvar
+    res_trafo3w_df["pl_kw"].values[:] = pl_kw
+    res_trafo3w_df["ql_kvar"].values[:] = ql_kvar
+    res_trafo3w_df["i_hv_ka"].values[:] = i_hv_ka
+    res_trafo3w_df["i_mv_ka"].values[:] = i_mv_ka
+    res_trafo3w_df["i_lv_ka"].values[:] = i_lv_ka
+    res_trafo3w_df["loading_percent"].values[:] = loading_percent
 
 
 def _get_impedance_results(net, ppc, i_ft):
@@ -234,14 +235,15 @@ def _get_impedance_results(net, ppc, i_ft):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    net["res_impedance"]["p_from_kw"].values[:] = p_from_kw
-    net["res_impedance"]["q_from_kvar"].values[:] = q_from_kvar
-    net["res_impedance"]["p_to_kw"].values[:] = p_to_kw
-    net["res_impedance"]["q_to_kvar"].values[:] = q_to_kvar
-    net["res_impedance"]["pl_kw"].values[:] = pl_kw
-    net["res_impedance"]["ql_kvar"].values[:] = ql_kvar
-    net["res_impedance"]["i_from_ka"].values[:] = i_from_ka
-    net["res_impedance"]["i_to_ka"].values[:] = i_to_ka
+    res_impediance_df = net["res_impedance"]
+    res_impediance_df["p_from_kw"].values[:] = p_from_kw
+    res_impediance_df["q_from_kvar"].values[:] = q_from_kvar
+    res_impediance_df["p_to_kw"].values[:] = p_to_kw
+    res_impediance_df["q_to_kvar"].values[:] = q_to_kvar
+    res_impediance_df["pl_kw"].values[:] = pl_kw
+    res_impediance_df["ql_kvar"].values[:] = ql_kvar
+    res_impediance_df["i_from_ka"].values[:] = i_from_ka
+    res_impediance_df["i_to_ka"].values[:] = i_to_ka
 
 
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
