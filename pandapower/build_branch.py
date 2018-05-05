@@ -302,7 +302,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     b_img = np.sqrt(b_img) * baseR / vnl_squared
     y = - b_real * 1j - b_img * np.sign(i0)
     if "lv" in trafo_df["tp_side"].values:
-        return y / np.square(vn_trafo_lv * vn_lv / trafo_df["vn_lv_kv"].values / vn_lv)
+        return y / np.square(vn_trafo_lv / trafo_df["vn_lv_kv"].values)
     else:
         return y
 
@@ -495,6 +495,8 @@ def _trafo_df_from_trafo3w(net):
                                       "vn_hv_kv", "vn_lv_kv", "pfe_kw", "max_loading_percent"]:
         trafo_df[var] = pd.to_numeric(trafo_df[var])
     trafo_df['tp_phase_shifter'] = trafo_df.tp_phase_shifter.astype('bool')
+    trafo_df['lv_bus'] = trafo_df["lv_bus"].astype(int)
+    trafo_df['hv_bus'] = trafo_df["hv_bus"].astype(int)
     return trafo_df
 
 
