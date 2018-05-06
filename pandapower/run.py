@@ -222,10 +222,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]
-        if len(hv_buses) > 0:
-            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
-            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
+        is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
+        if any(is_hv_bus) > 0:
+            line_buses = set(net.line[["from_bus", "to_bus"]].values.flatten())
+            hv_buses = net.bus.index[is_hv_bus]
+            if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
