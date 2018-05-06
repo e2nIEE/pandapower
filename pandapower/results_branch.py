@@ -107,8 +107,10 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     i_hv_ka = i_ft[:, 0][f:t]
     i_lv_ka = i_ft[:, 1][f:t]
     if trafo_loading == "current":
-        lds_trafo = i_ft[f:t] * net["trafo"][["vn_hv_kv", "vn_lv_kv"]].values * 1000. * np.sqrt(3) \
-                    / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100.
+        trafo_df = net["trafo"]
+        vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
+        lds_trafo = i_ft[f:t] * vns * 1000. * np.sqrt(3) \
+                    / trafo_df["sn_kva"].values[:, np.newaxis] * 100.
         ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
         ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100., axis=1)
