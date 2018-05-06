@@ -107,20 +107,20 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 - "nr" newton-raphson (pypower implementation with numba accelerations)
                 - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
                 - "gs" gauss-seidel (pypower implementation)
-                - "fdbx" (pypower implementation)
-                - "fdxb"(pypower implementation)
+                - "fdbx" fast-decoupled (pypower implementation)
+                - "fdxb" fast-decoupled (pypower implementation)
 
         **calculate_voltage_angles** (bool, "auto") - consider voltage angles in loadflow calculation
 
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed
-            networks that are usually found in higher networks. Thats why calculate_voltage_angles
+            networks that are usually found in higher voltage levels. calculate_voltage_angles
             in "auto" mode defaults to:
 
                 - True, if the network voltage level is above 70 kV
                 - False otherwise
 
-            The network voltage level is defined as the maximum rated voltage in the network that
+            The network voltage level is defined as the maximum rated voltage of any bus in the network that
             is connected to a line.
 
         **init** (str, "auto") - initialization method of the loadflow
