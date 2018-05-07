@@ -6,8 +6,8 @@ Tests 3 phase power flow algorithm
 """
 import pandapower as pp
 import numpy as np
-
-from pandapower.auxiliary import combine_X012
+import pytest
+from pandapower.pf.runpp_3ph import combine_X012
 from pandapower.create import create_load_3ph
 from pandapower.pf.runpp_3ph import runpp_3ph,show_results
 def comparison_2bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
@@ -71,15 +71,14 @@ def comparison_2bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
     print (abs(Vabc_powerFactory))
     print ('\n Current  ABC 2 bus system\n')
     print (abs(Iabc_powerFactory))
-    
-    print ('\nDifference between Power Factory and pandapower values\n')
-    print ('\n Power difference 2 bus system')
-    print ((abs(Sabc_powerFactory)-abs(Sabc_new))/1000,'MVA\n')
-    print ('\n Current  difference 2 bus system')
-    print (abs(Iabc_powerFactory)-abs(I_abc_new),'kA\n')
-    print ('\n Voltage difference 2 bus system')
-    print (abs(Vabc_powerFactory)- abs(V_abc_new),'kV\n')
 
+    S_diff = (abs(Sabc_powerFactory)-abs(Sabc_new))/1000
+    V_diff = abs(Vabc_powerFactory)- abs(V_abc_new)
+    I_diff = abs(Iabc_powerFactory)-abs(I_abc_new)
+    assert not(S_diff > 1e-4).any()
+    assert not(V_diff > 1e-4).any()
+    assert not(I_diff > 1e-4).any()
+    
 def test_2bus_network():
     # =============================================================================
     # Base Value Assignmeent
@@ -202,13 +201,12 @@ def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
     print ('\n Current  ABC\n')
     print (abs(Iabc_powerFactory))
     
-    print ('\nDifference between Power Factory and pandapower values for 4 bus system\n')
-    print ('\n Power difference 4 bus system')
-    print (abs(abs(Sabc_powerFactory)-abs(Sabc_new))/1000,'MVA\n')
-    print ('\n Current  difference 4 bus system')
-    print (abs(abs(Iabc_powerFactory)-abs(I_abc_new)),'kA\n')
-    print ('\n Voltage difference 4 bus system')
-    print (abs(abs(Vabc_powerFactory)- abs(V_abc_new)),'kV\n')
+    S_diff = (abs(Sabc_powerFactory)-abs(Sabc_new))/1000
+    V_diff = abs(Vabc_powerFactory)- abs(V_abc_new)
+    I_diff = abs(Iabc_powerFactory)-abs(I_abc_new)
+    assert not(S_diff > 1e-4).any()
+    assert not(V_diff > 1e-4).any()
+    assert not(I_diff > 1e-4).any()
 
 def test_4bus_network():
     V_base = 110                     # 110kV Base Voltage
@@ -262,3 +260,6 @@ def test_4bus_network():
     count,V012_new,I012_new,ppci0,Y1_pu = runpp_3ph(net)
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_new,I012_new)
     comparison_4bus_PowerFactory(Sabc_new,I_abc_new*I_base_res,V_abc_new*V_base_res)
+    
+if __name__ == "__main__":
+    pytest.main(["test_runpp_3ph.py"])
