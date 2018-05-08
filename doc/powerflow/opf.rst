@@ -167,8 +167,14 @@ In case that the load should be minimized, the cost function could be defined li
 		:alt: alternate Text
 		:align: center
 
+**DC line behaviour**
+
+Please note, that the costs of the DC line transmission are always related to the power at the from_bus! 
+
 		
-You can check your Optimization result by comparing your result (From res_sgen, res_load etc.) 
+You can always check your Optimization result by comparing your result (From res_sgen, res_load etc.) 
+
+
 		
 
 Parametrisation of the calculation

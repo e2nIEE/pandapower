@@ -51,9 +51,6 @@ def test_contingency_sgen(base_net):
     net.piecewise_linear_cost.f.at[0] *= -1
     pp.runopp(net)
 
-    print(net.res_cost)
-    print(net.res_sgen.p_kw)
-
     assert abs(net.res_cost - net.res_sgen.p_kw.at[0]*-1) < 1e-5
 
     net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
@@ -104,9 +101,6 @@ def test_contingency_load(base_net):
     #                   |  \
     net.piecewise_linear_cost.f.at[0] *= -1
     pp.runopp(net)
-
-    print(net.res_cost)
-    print(net.res_load.p_kw)
 
     assert abs(net.res_cost - net.res_load.p_kw.at[1] * -1) < 1e-5
 

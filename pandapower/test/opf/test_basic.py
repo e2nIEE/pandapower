@@ -777,13 +777,13 @@ def test_opf_no_controllables_vs_pf():
     pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
 
     # do calculations
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, verbose=True)
     assert net["OPF_converged"]
 
     res_opf_line_loading = net.res_line.loading_percent
     res_opf_bus_voltages = net.res_bus.vm_pu
 
-    pp.runpp(net, verbose=False)
+    pp.runpp(net, verbose=True)
     assert net["converged"]
 
     res_pf_line_loading = net.res_line.loading_percent

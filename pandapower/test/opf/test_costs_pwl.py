@@ -242,11 +242,6 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
 
     assert net["OPF_converged"]
     # assert net.res_cost - net.res_sgen.p_kw.values / 1.5 < 1e-3
-    print(net.res_cost)
-    print(net.res_sgen)
-
-
-
 
 
 
