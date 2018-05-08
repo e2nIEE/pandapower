@@ -418,8 +418,10 @@ def nets_equal(x, y, check_only_results=False, **kwargs):
 
 def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
     if ignore_index_order:
-        x_df.sort_index(inplace=True)
-        y_df.sort_index(inplace=True)
+        x_df.sort_index(axis=1, inplace=True)
+        y_df.sort_index(axis=1, inplace=True)
+        x_df.sort_index(axis=0, inplace=True)
+        y_df.sort_index(axis=0, inplace=True)
     # eval if two DataFrames are equal, with regard to a tolerance
     if x_df.shape == y_df.shape:
         # we use numpy.allclose to grant a tolerance on numerical values
