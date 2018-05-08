@@ -66,7 +66,7 @@ def _make_objective(ppci, net):
     else:
         n_piece_lin_coefficients = 0
     if len(net.polynomial_cost):
-        n_coefficients = max(n_piece_lin_coefficients,  net.polynomial_cost.c.values[0].shape[1])
+        n_coefficients = max(n_piece_lin_coefficients,  len(net.polynomial_cost.c.values[0][0]))
         if (n_piece_lin_coefficients > 0) & (n_coefficients % 2):
             # avoid uneven n_coefficient in case of (n_piece_lin_coefficients>0)
             n_coefficients += 1
@@ -194,7 +194,7 @@ def _make_objective(ppci, net):
 
                                 elcosts = costs[costs.element_type == el]
                                 elcosts.index = elcosts.element
-                                
+
                                 # gencost for storages: positive costs in pandapower per definition
                                 # --> storage gencosts are similar to sgen gencosts
                                 if el in ["load", "dcline"]:
