@@ -374,7 +374,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(x, y, check_only_results=False, tol=1.e-14):
+def nets_equal(x, y, check_only_results=False, **kwargs):
     """
     Compares the DataFrames of two networks. The networks are considered equal
     if they share the same keys and values, except of the
@@ -404,7 +404,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
                     continue  # skip anything that is not a result table
 
                 if isinstance(x[df_name], pd.DataFrame) and isinstance(y[df_name], pd.DataFrame):
-                    frames_equal = dataframes_equal(x[df_name], y[df_name], tol)
+                    frames_equal = dataframes_equal(x[df_name], y[df_name], **kwargs)
                     eq &= frames_equal
 
                     if not frames_equal:
@@ -416,7 +416,10 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     return eq
 
 
-def dataframes_equal(x_df, y_df, tol=1.e-14):
+def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
+    if ignore_index_order:
+        x_df.sort_index(inplace=True)
+        y_df.sort_index(inplace=True)
     # eval if two DataFrames are equal, with regard to a tolerance
     if x_df.shape == y_df.shape:
         # we use numpy.allclose to grant a tolerance on numerical values
