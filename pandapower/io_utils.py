@@ -42,7 +42,7 @@ def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
         elif isinstance(table, (int, float, bool, str)):
             dodfs["parameters"].loc[item] = net[item]
         elif item == "std_types":
-            for t in ["line", "trafo", "trafo3w"]:
+            for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
                 dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
         elif type(table) != pd.DataFrame:
             # just skip empty things without warning
@@ -68,7 +68,7 @@ def from_dict_of_dfs(dodfs):
     for p, v in dodfs["parameters"].iterrows():
         net[p] = v.parameter
     for item, table in dodfs.items():
-        if item == "parameters":
+        if item == "parameters" or item == "dtypes":
             continue
         elif item == "line_geodata":
             points = len(table.columns) // 2
