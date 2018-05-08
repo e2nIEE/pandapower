@@ -75,13 +75,13 @@ def case4gs():
 
          net = pn.case4gs()
     """
-    case4gs = pp.from_json(_get_cases_path("case4gs.js"))
+    case4gs = pp.from_json(_get_cases_path("case4gs.json"))
     return case4gs
 
 
 def case6ww():
     """
-    Calls the json file case6ww.js which data origin is \
+    Calls the json file case6ww.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. It represents the 6 bus example from pp. \
     104, 112, 119, 123-124, 549 from A. J. Wood and B. F. Wollenberg, Power generation, operation, \
     and control. John Wiley & Sons, 2012..
@@ -94,13 +94,13 @@ def case6ww():
 
          net = pn.case6ww()
     """
-    case6ww = pp.from_json(_get_cases_path("case6ww.js"))
+    case6ww = pp.from_json(_get_cases_path("case6ww.json"))
     return case6ww
 
 
 def case9():
     """
-    Calls the json file case9.js which data origin is \
+    Calls the json file case9.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was published in Anderson and Fouad's book 'Power System Control and Stability' \
     for the first time in 1980.
@@ -113,13 +113,13 @@ def case9():
 
          net = pn.case9()
     """
-    case9 = pp.from_json(_get_cases_path("case9.js"))
+    case9 = pp.from_json(_get_cases_path("case9.json"))
     return case9
 
 
 def case14():
     """
-    Calls the json file case14.js which data origin is \
+    Calls the json file case14.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was converted from IEEE Common Data Format (ieee14cdf.txt) on 20-Sep-2004 by
     cdf2matp, rev. 1.11, to matpower format and finally converted to pandapower format by
@@ -134,7 +134,7 @@ def case14():
 
          net = pn.case14()
     """
-    case14 = pp.from_json(_get_cases_path("case14.js"))
+    case14 = pp.from_json(_get_cases_path("case14.json"))
     return case14
 
 
@@ -154,13 +154,13 @@ def case24_ieee_rts():
 
          net = pn.case24_ieee_rts()
     """
-    case24 = pp.from_json(_get_cases_path("case24_ieee_rts.js"))
+    case24 = pp.from_json(_get_cases_path("case24_ieee_rts.json"))
     return case24
 
 
 def case30():
     """
-    This function calls the json file case30.js which data origin is \
+    This function calls the json file case30.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by `Washington case 30 \
     <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_ and `Illinois University case 30 <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
@@ -173,13 +173,13 @@ def case30():
 
          net = pn.case30()
     """
-    case30 = pp.from_json(_get_cases_path("case30.js"))
+    case30 = pp.from_json(_get_cases_path("case30.json"))
     return case30
 
 
 def case33bw():
     """
-    Calls the json file case33bw.js which data is provided by \
+    Calls the json file case33bw.json which data is provided by \
     `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
     The data origin is the paper `M. Baran, F. Wu, Network reconfiguration in distribution systems \
     for loss reduction and load balancing \
@@ -193,13 +193,13 @@ def case33bw():
 
          net = pn.case33bw()
     """
-    case33bw = pp.from_json(_get_cases_path("case33bw.js"))
+    case33bw = pp.from_json(_get_cases_path("case33bw.json"))
     return case33bw
 
 
 def case39():
     """
-    Calls the json file case39.js which data origin is \
+    Calls the json file case39.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     This network was published the first time in G. Bills et al., On-line stability analysis \
     study, RP 90-1, E. P. R. I. North American Rockwell Corporation, Edison Electric Institute, \
@@ -216,7 +216,7 @@ def case39():
 
          net = pn.case39()
     """
-    case39 = pp.from_json(_get_cases_path("case39.js"))
+    case39 = pp.from_json(_get_cases_path("case39.json"))
     return case39
 
 
@@ -245,7 +245,7 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
          net = pn.case57()
     """
-    case57 = pp.from_json(_get_cases_path("case57.js"))
+    case57 = pp.from_json(_get_cases_path("case57.json"))
     Idx_area1 = case57.bus[case57.bus.vn_kv == 110].index
     Idx_area2 = case57.bus[case57.bus.vn_kv == 120].index
     Idx_area3 = case57.bus[case57.bus.vn_kv == 125].index
@@ -263,7 +263,7 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
 def case89pegase():
     """
-    Calls the json file case89pegase.js which data is provided by \
+    Calls the json file case89pegase.json which data is provided by \
     `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
     The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
     flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and \
@@ -280,13 +280,13 @@ def case89pegase():
 
          net = pn.case89pegase()
     """
-    case89pegase = pp.from_json(_get_cases_path("case89pegase.js"))
+    case89pegase = pp.from_json(_get_cases_path("case89pegase.json"))
     return case89pegase
 
 
 def case118():
     """
-    Calls the json file case118.js which data origin is \
+    Calls the json file case118.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by `Washington case 118 \
     <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and \
@@ -300,13 +300,13 @@ def case118():
 
          net = pn.case118()
     """
-    case118 = pp.from_json(_get_cases_path("case118.js"))
+    case118 = pp.from_json(_get_cases_path("case118.json"))
     return case118
 
 
 def case145():
     """
-    Calls the json file case145.js which data origin is \
+    Calls the json file case145.json which data origin is \
     `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
     This data is converted by MATPOWER 5.1 using CDF2MPC on 18-May-2016 from 'dd50cdf.txt'.
 
@@ -318,13 +318,13 @@ def case145():
 
          net = pn.case145()
     """
-    case145 = pp.from_json(_get_cases_path("case145.js"))
+    case145 = pp.from_json(_get_cases_path("case145.json"))
     return case145
 
 
 def case300():
     """
-    Calls the json file case300.js which data origin is \
+    Calls the json file case300.json which data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
     Some more information about this network are given by \
     `Washington case 300 <http://www2.ee.washington.edu/research/pstca/pf300/pg_tca300bus.htm>`_ \
@@ -338,7 +338,7 @@ def case300():
 
          net = pn.case300()
     """
-    case300 = pp.from_json(_get_cases_path("case300.js"))
+    case300 = pp.from_json(_get_cases_path("case300.json"))
     return case300
 
 
@@ -361,7 +361,7 @@ def case1354pegase():
 
          net = pn.case1354pegase()
     """
-    case1354pegase = pp.from_json(_get_cases_path("case1354pegase.js"))
+    case1354pegase = pp.from_json(_get_cases_path("case1354pegase.json"))
     return case1354pegase
 
 
@@ -391,7 +391,7 @@ def case1888rte(ref_bus_idx=1246):
 
          net = pn.case1888rte()
     """
-    case1888rte = pp.from_json(_get_cases_path("case1888rte.js"))
+    case1888rte = pp.from_json(_get_cases_path("case1888rte.json"))
     case1888rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']] = 2 * \
         case1888rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']]
 
@@ -426,7 +426,7 @@ def case2848rte(ref_bus_idx=271):
 
          net = pn.case2848rte()
     """
-    case2848rte = pp.from_json(_get_cases_path("case2848rte.js"))
+    case2848rte = pp.from_json(_get_cases_path("case2848rte.json"))
     if ref_bus_idx != 271:  # change reference bus
         _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[-44.01e3])
     return case2848rte
@@ -451,7 +451,7 @@ def case2869pegase():
 
          net = pn.case2869pegase()
     """
-    case2869pegase = pp.from_json(_get_cases_path("case2869pegase.js"))
+    case2869pegase = pp.from_json(_get_cases_path("case2869pegase.json"))
     return case2869pegase
 
 
@@ -469,7 +469,7 @@ def case3120sp():
 
          net = pn.case3120sp()
     """
-    case3120sp = pp.from_json(_get_cases_path("case3120sp.js"))
+    case3120sp = pp.from_json(_get_cases_path("case3120sp.json"))
     return case3120sp
 
 
@@ -499,7 +499,7 @@ def case6470rte(ref_bus_idx=5988):
 
          net = pn.case6470rte()
     """
-    case6470rte = pp.from_json(_get_cases_path("case6470rte.js"))
+    case6470rte = pp.from_json(_get_cases_path("case6470rte.json"))
     case6470rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']] = 2 * \
         case6470rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']]
     if ref_bus_idx != 5988:  # change reference bus
@@ -535,7 +535,7 @@ def case6495rte(ref_bus_idx=None):
          net = pn.case6495rte()
     """
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
-    case6495rte = pp.from_json(_get_cases_path("case6495rte.js"))
+    case6495rte = pp.from_json(_get_cases_path("case6495rte.json"))
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
         _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[-1382.35e3, -2894.13e3, -1498.32e3,
                                                               -1498.32e3, -1493.11e3, -1493.12e3])
@@ -568,7 +568,7 @@ def case6515rte(ref_bus_idx=6171):
 
          net = pn.case6515rte()
     """
-    case6515rte = pp.from_json(_get_cases_path("case6515rte.js"))
+    case6515rte = pp.from_json(_get_cases_path("case6515rte.json"))
     if ref_bus_idx != 6171:  # change reference bus
         _change_ref_bus(case6515rte, ref_bus_idx, ext_grid_p=-2850.78e3)
     return case6515rte
@@ -593,13 +593,13 @@ def case9241pegase():
 
          net = pn.case9241pegase()
     """
-    case9241pegase = pp.from_json(_get_cases_path("case9241pegase.js"))
+    case9241pegase = pp.from_json(_get_cases_path("case9241pegase.json"))
     return case9241pegase
 
 
 def GBreducednetwork():
     """
-    Calls the json file GBreducednetwork.js which data is provided by `W. A. Bukhsh, Ken \
+    Calls the json file GBreducednetwork.json which data is provided by `W. A. Bukhsh, Ken \
     McKinnon, Network data of real transmission networks, April 2013  \
     <http://www.maths.ed.ac.uk/optenergy/NetworkData/reducedGB/>`_.
     This data is a representative model of electricity transmission network in Great Britain (GB). \
@@ -613,13 +613,13 @@ def GBreducednetwork():
 
          net = pn.GBreducednetwork()
     """
-    GBreducednetwork = pp.from_json(_get_cases_path("GBreducednetwork.js"))
+    GBreducednetwork = pp.from_json(_get_cases_path("GBreducednetwork.json"))
     return GBreducednetwork
 
 
 def GBnetwork():
     """
-    Calls the json file GBnetwork.js which data is provided by `W. A. Bukhsh, Ken McKinnon, \
+    Calls the json file GBnetwork.json which data is provided by `W. A. Bukhsh, Ken McKinnon, \
     Network data of real transmission networks, April 2013  \
     <http://www.maths.ed.ac.uk/optenergy/NetworkData/fullGB/>`_.
     This data represents detailed model of electricity transmission network of Great Britian (GB). \
@@ -635,13 +635,13 @@ def GBnetwork():
 
          net = pn.GBnetwork()
     """
-    GBnetwork = pp.from_json(_get_cases_path("GBnetwork.js"))
+    GBnetwork = pp.from_json(_get_cases_path("GBnetwork.json"))
     return GBnetwork
 
 
 def iceland():
     """
-    Calls the json file iceland.js which data is provided by `W. A. Bukhsh, Ken McKinnon, Network \
+    Calls the json file iceland.json which data is provided by `W. A. Bukhsh, Ken McKinnon, Network \
     data of real transmission networks, April 2013  \
     <http://www.maths.ed.ac.uk/optenergy/NetworkData/iceland/>`_.
     This data represents electricity transmission network of Iceland. It consists of 118 nodes, \
@@ -656,5 +656,5 @@ def iceland():
 
          net = pn.iceland()
     """
-    iceland = pp.from_json(_get_cases_path("iceland.js"))
+    iceland = pp.from_json(_get_cases_path("iceland.json"))
     return iceland
