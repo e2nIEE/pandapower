@@ -376,7 +376,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _check_necessary_opf_parameters(net, logger)
     if numba:
         numba = _check_if_numba_is_installed(numba)
-    mode = "opf"3
+    mode = "opf"
     ac = True
     copy_constraints_to_ppc = True
     trafo_model = "t"
