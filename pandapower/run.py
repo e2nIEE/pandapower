@@ -372,11 +372,11 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
     """
-
+    logger.warning("The OPF cost definition has changed! Please check out the tutorial 'opf_changes-may18.ipynb' or the documentation!")
     _check_necessary_opf_parameters(net, logger)
     if numba:
         numba = _check_if_numba_is_installed(numba)
-    mode = "opf"
+    mode = "opf"3
     ac = True
     copy_constraints_to_ppc = True
     trafo_model = "t"
