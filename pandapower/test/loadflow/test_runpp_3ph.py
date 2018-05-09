@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from pandapower.pf.runpp_3ph import combine_X012
 from pandapower.create import create_load_3ph
-from pandapower.pf.runpp_3ph import runpp_3ph,show_results
+from pandapower.pf.runpp_3ph import runpp_3ph,show_results,load_mapping
      
 def results_2bus_PowerFactory():
     Sabc_sl_sp =  np.matrix( [
@@ -291,8 +291,7 @@ def test_in_serv_load():
     count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
     
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
-    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = \
-    results_2bus_PowerFactory()
+    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
     assert np.allclose(abs(Sabc_powerFactory*1e-3),abs(Sabc_new)*1e-3,atol = 1e-4)
     assert np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
     assert np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
@@ -303,21 +302,22 @@ def test_in_serv_load():
     count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
     
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
-    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = \
-    results_2bus_PowerFactory()
+    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
     assert np.allclose(abs(Sabc_powerFactory*1e-3),abs(Sabc_new)*1e-3,atol = 1e-4)
     assert np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
     assert np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
-    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=50000, q_kvar_B=50000,
-           p_kw_C=50000, q_kvar_C=50000, in_service=True)
-    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
-    
-    V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
-    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = \
-    results_2bus_PowerFactory()
-    assert not np.allclose(abs(Sabc_powerFactory*1e-3),abs(Sabc_new)*1e-3,atol = 1e-4)
-    assert not np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
-    assert not np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
-    
+
+# =============================================================================
+# Creating more loads in the same bus is tricky. Even in power factory some scenarios fail depending
+# on the values given
+# =============================================================================
+#    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=10000, p_kw_B=10000, q_kvar_B=5000,
+#           p_kw_C=10000, q_kvar_C=5000, in_service=True)
+#    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+#    
+#    V_abc_new,I_abc_new,Sabc_changed = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
+#    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
+#    load_mapping(net)
+#    
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
