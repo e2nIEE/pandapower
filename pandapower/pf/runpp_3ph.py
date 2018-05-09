@@ -9,27 +9,122 @@
 
 
 import numpy as np
-
+import scipy as sp
 
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pf.makeYbus import makeYbus
-from pandapower.auxiliary import X012_to_X0, X012_to_X2, combine_X012,sequence_to_phase
-from pandapower.auxiliary import phase_to_sequence, I0_from_V012, I1_from_V012, I2_from_V012
-from pandapower.auxiliary import V1_from_ppc, V_from_I,S_from_VI,_sum_by_group
+
+from pandapower.auxiliary import _sum_by_group
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pf.bustypes import bustypes
 
 
+# =============================================================================
+# Functions for 3 Phase Unbalanced Load Flow
+# =============================================================================
+# =============================================================================
+# Convert to three decoupled sequence networks 
+# =============================================================================
 
+def X012_to_X0(X012):
+    return np.transpose(X012[0,:]) 
+def X012_to_X1(X012):
+    return np.transpose(X012[1,:])
+def X012_to_X2(X012):
+    return np.transpose(X012[2,:])
+# =============================================================================
+# Three decoupled sequence network to 012 matrix conversion
+# =============================================================================
+
+def combine_X012(X0,X1,X2):
+    return np.transpose(np.concatenate((X0,X1,X2),axis=1))
+
+# =============================================================================
+# Symmetrical transformation matrix 
+# Tabc : 012 > abc
+# T012 : abc >012
+# =============================================================================
+
+def phase_shift_unit_operator(angle_deg):
+    return 1*np.exp(1j*np.deg2rad(angle_deg))
+
+a = phase_shift_unit_operator(120)
+asq = phase_shift_unit_operator(-120)
+Tabc = np.matrix(
+    [
+    [1, 1, 1],
+    [1, asq, a],
+    [1, a, asq]
+    ], dtype=np.complex)
+    
+T012 = np.divide(np.matrix(
+    [
+    [1, 1, 1],
+    [1, a, asq],
+    [1, asq, a]
+    ],dtype = np.complex),3)
+    
+def sequence_to_phase(X012):
+    return np.matmul(Tabc,X012)
+
+def phase_to_sequence(Xabc):
+
+    return np.matmul(T012,Xabc)
+
+# =============================================================================
+# Calculating Sequence Current from sequence Voltages 
+# =============================================================================
+
+def I0_from_V012(V012,Y):
+    V0 = X012_to_X0(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(),V0)
+    else:
+        return np.matmul(Y,V0)
+def I1_from_V012(V012,Y):
+    V1 = X012_to_X1(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(),V1)
+    else:
+        return np.matmul(Y,V1)
+def I2_from_V012(V012,Y):
+    V2 = X012_to_X2(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(),V2)
+    else:
+        return np.matmul(Y,V2)
+           
+def V1_from_ppc(ppc):
+    return np.transpose(
+            np.matrix(
+            ppc["bus"][:,7] * np.exp(1j*np.deg2rad(ppc["bus"][:,8]))
+                                ,dtype = np.complex
+            )
+            )
+            
+def V_from_I(Y,I):
+    return np.transpose(np.matrix(sp.sparse.linalg.spsolve(Y,I)))
+def I_from_V(Y,V):
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(), V)
+    else:
+        return np.matmul(Y, V)
+
+# =============================================================================
+# Calculating Power 
+# =============================================================================
+def S_from_VI(V,I):
+    return np.multiply(V,I.conjugate())
 # =============================================================================
 # Mapping load for positive sequence loads
 # =============================================================================
 def load_mapping(net):
-    b= np.array([0], dtype=int)
+    _is_elements = net["_is_elements"]
+    b = np.array([0], dtype=int)
     SA,SB,SC = np.array([0]), np.array([]), np.array([])
-    q_a, QA = np.array([0]), np.array([])
+    q_a,QA = np.array([0]), np.array([])
     p_a,PA = np.array([0]), np.array([])
     q_b,QB = np.array([0]), np.array([])
     p_b,PB = np.array([0]), np.array([])
@@ -38,43 +133,47 @@ def load_mapping(net):
     
     l3 = net["load_3ph"]
     if len(l3) > 0:
-        q_a = np.hstack([q_a, l3["q_kvar_A"].values ])
-        p_a = np.hstack([p_a, l3["p_kw_A"].values ])
-        q_b = np.hstack([q_b, l3["q_kvar_B"].values ])
-        p_b = np.hstack([p_b, l3["p_kw_B"].values])
-        q_c = np.hstack([q_c, l3["q_kvar_C"].values ])
-        p_c = np.hstack([p_c, l3["p_kw_C"].values])            
+        vl =_is_elements["load_3ph"] * l3["scaling"].values.T
+        q_a = np.hstack([q_a, l3["q_kvar_A"].values *vl])
+        p_a = np.hstack([p_a, l3["p_kw_A"].values *vl])
+        q_b = np.hstack([q_b, l3["q_kvar_B"].values *vl])
+        p_b = np.hstack([p_b, l3["p_kw_B"].values*vl])
+        q_c = np.hstack([q_c, l3["q_kvar_C"].values *vl])
+        p_c = np.hstack([p_c, l3["p_kw_C"].values*vl])            
         b = np.hstack([b, l3["bus"].values])
 
     sgen_3ph = net["sgen_3ph"]
     if len(sgen_3ph) > 0:
-#        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T /np.float64(1000.)
-        q_a = np.hstack([q_a, sgen_3ph["q_kvar_A"].values ])
-        p_a = np.hstack([p_a, sgen_3ph["p_kw_A"].values ])
-        q_b = np.hstack([q_b, sgen_3ph["q_kvar_B"].values ])
-        p_b = np.hstack([p_b, sgen_3ph["p_kw_B"].values ])
-        q_c = np.hstack([q_c, sgen_3ph["q_kvar_C"].values ])
-        p_c = np.hstack([p_c, sgen_3ph["p_kw_C"].values ])
+        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T
+        q_a = np.hstack([q_a, sgen_3ph["q_kvar_A"].values*vl ])
+        p_a = np.hstack([p_a, sgen_3ph["p_kw_A"].values*vl ])
+        q_b = np.hstack([q_b, sgen_3ph["q_kvar_B"].values *vl])
+        p_b = np.hstack([p_b, sgen_3ph["p_kw_B"].values*vl ])
+        q_c = np.hstack([q_c, sgen_3ph["q_kvar_C"].values*vl ])
+        p_c = np.hstack([p_c, sgen_3ph["p_kw_C"].values *vl])
         b = np.hstack([b, sgen_3ph["bus"].values])
     # For Network Symmetric loads with unsymmetric loads
+#    Since the bus values of ppc values are not known, it is added again, fresh
     l = net["load"]
     if len(l) > 0:
-        q_a = np.hstack([q_a, l["q_kvar"].values/3])
-        p_a = np.hstack([p_a, l["p_kw"].values/3])
-        q_b = np.hstack([q_b, l["q_kvar"].values/3])
-        p_b = np.hstack([p_b, l["p_kw"].values/3])
-        q_c = np.hstack([q_c, l["q_kvar"].values/3])
-        p_c = np.hstack([p_c, l["p_kw"].values/3])       
+        vl = _is_elements["load"] * l["scaling"].values.T
+        q_a = np.hstack([q_a, l["q_kvar"].values/3*vl])
+        p_a = np.hstack([p_a, l["p_kw"].values/3*vl])
+        q_b = np.hstack([q_b, l["q_kvar"].values/3*vl])
+        p_b = np.hstack([p_b, l["p_kw"].values/3*vl])
+        q_c = np.hstack([q_c, l["q_kvar"].values/3*vl])
+        p_c = np.hstack([p_c, l["p_kw"].values/3*vl])       
         b = np.hstack([b, l["bus"].values])
 
     sgen = net["sgen"]
     if len(sgen) > 0:
-        q_a = np.hstack([q_a, sgen["q_kvar"].values/3])
-        p_a = np.hstack([p_a, sgen["p_kw"].values/3])
-        q_b = np.hstack([q_b, sgen["q_kvar"].values/3])
-        p_b = np.hstack([p_b, sgen["p_kw"].values/3])
-        q_c = np.hstack([q_c, sgen["q_kvar"].values/3])
-        p_c = np.hstack([p_c, sgen["p_kw"].values/3])
+        vl = _is_elements["load"] * l["scaling"].values.T
+        q_a = np.hstack([q_a, sgen["q_kvar"].values/3*vl])
+        p_a = np.hstack([p_a, sgen["p_kw"].values/3*vl])
+        q_b = np.hstack([q_b, sgen["q_kvar"].values/3*vl])
+        p_b = np.hstack([p_b, sgen["p_kw"].values/3*vl])
+        q_c = np.hstack([q_c, sgen["q_kvar"].values/3*vl])
+        p_c = np.hstack([p_c, sgen["p_kw"].values/3*vl])
         b = np.hstack([b, sgen["bus"].values/3])
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -133,7 +232,6 @@ def runpp_3ph(net):
     count = 0
     S_mismatch = np.matrix([[True],[True]],dtype =bool)
     Sabc = load_mapping(net)
-
     # =============================================================================
     #             Iteration using Power mismatch criterion
     # =============================================================================
@@ -155,6 +253,7 @@ def runpp_3ph(net):
         # =============================================================================
         # Current used to find S1 Positive sequence power    
         # =============================================================================
+        
         ppci1["bus"][pq_bus, 2] = np.real(S1[:,pq_bus])*net.sn_kva*1e-3
         ppci1["bus"][pq_bus, 3] = np.imag(S1[:,pq_bus])*net.sn_kva*1e-3
         

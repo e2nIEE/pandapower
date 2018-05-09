@@ -699,19 +699,14 @@ def create_load(net, bus, p_kw, q_kvar=0, const_z_percent=0, const_i_percent=0, 
     return index
 
 def create_load_3ph(net, bus, p_kw_A , p_kw_B , p_kw_C, q_kvar_A=0, q_kvar_B=0, q_kvar_C=0,
-                    const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1.,
+                     sn_kva=nan, name=None, scaling=1.,
                     index=None, in_service=True, type=None, 
-                    max_p_kw_A=nan, min_p_kw_A=nan,max_p_kw_B=nan, min_p_kw_B=nan,
-                    max_p_kw_C=nan, min_p_kw_C=nan, max_q_kvar_A=nan, min_q_kvar_A=nan,
-                    max_q_kvar_B=nan, min_q_kvar_B=nan, max_q_kvar_C=nan, min_q_kvar_C=nan,
-                    controllable=nan):
+                    ):
     """create_load_3ph(net, bus, p_kw_A, q_kvar_A=0 , p_kw_B, q_kvar_B=0 , p_kw_C, q_kvar_C=0,
     const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1., index=None, \
-    in_service=True, type=None,  max_p_kw_A=nan, min_p_kw_A=nan,max_p_kw_B=nan, min_p_kw_B=nan,
-    max_p_kw_C=nan, min_p_kw_C=nan max_q_kvar_A=nan, min_q_kvar_A=nan,
-    max_q_kvar_B=nan, min_q_kvar_B=nan, max_q_kvar_C=nan, min_q_kvar_C=nan, controllable=nan)
+    in_service=True, type=None)
     
-    Adds one load in table net["load_3ph"].
+    Adds one 3 phase load in table net["load_3ph"].
 
     All loads are modelled in the consumer system, meaning load is positive and generation is
     negative active power. Please pay attention to the correct signing of the reactive power as
@@ -730,12 +725,6 @@ def create_load_3ph(net, bus, p_kw_A , p_kw_B , p_kw_C, q_kvar_A=0, q_kvar_B=0, 
 
         **q_kvar_A, q_kvar_B, q_kvar_C** (float, default 0) - The reactive power of the load
 
-        **const_z_percent** (float, default 0) - percentage of p_kw and q_kvar that will be \
-            associated to constant impedance load at rated voltage
-
-        **const_i_percent** (float, default 0) - percentage of p_kw and q_kvar that will be \
-            associated to constant current load at rated voltage
-
         **sn_kva** (float, default None) - Nominal power of the load
 
         **name** (string, default None) - The name for this load
@@ -749,26 +738,13 @@ def create_load_3ph(net, bus, p_kw_A , p_kw_B , p_kw_C, q_kvar_A=0, q_kvar_B=0, 
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **max_p_kw** (float, default NaN) - Maximum active power load - necessary for controllable \
-            loads in for OPF
-
-        **min_p_kw** (float, default NaN) - Minimum active power load - necessary for controllable \
-            loads in for OPF
-
-        **max_q_kvar** (float, default NaN) - Maximum reactive power load - necessary for \
-            controllable loads in for OPF
-
-        **min_q_kvar** (float, default NaN) - Minimum reactive power load - necessary for \
-            controllable loads in OPF
-
-        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
-            Only respected for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created element
 
     EXAMPLE:
-        create_load(net, bus=0, p_kw=10., q_kvar=2.)
+        create_load_3ph(net, bus=0, p_kw_a=10., q_kvar_a=2., p_kw_b=10., q_kvar_b=2,
+         p_kw_c=10., q_kvar_c=2)
 
     """
     if bus not in net["bus"].index.values:
@@ -782,92 +758,13 @@ def create_load_3ph(net, bus, p_kw_A , p_kw_B , p_kw_C, q_kvar_A=0, q_kvar_B=0, 
     # store dtypes
     dtypes = net.load_3ph.dtypes
 
-    net.load_3ph.loc[index, ["name", "bus", "p_kw_A","p_kw_B","p_kw_C", "const_z_percent", "const_i_percent", "scaling",
+    net.load_3ph.loc[index, ["name", "bus", "p_kw_A","p_kw_B","p_kw_C", "scaling",
                          "q_kvar_A","q_kvar_B","q_kvar_C", "sn_kva", "in_service", "type"]] = \
-        [name, bus, p_kw_A,p_kw_B,p_kw_C, const_z_percent, const_i_percent, scaling, 
+        [name, bus, p_kw_A,p_kw_B,p_kw_C, scaling, 
          q_kvar_A,q_kvar_B,q_kvar_C, sn_kva, bool(in_service), type]
 
     # and preserve dtypes
     _preserve_dtypes(net.load_3ph, dtypes)
-
-    if not isnan(min_p_kw_A):
-        if "min_p_kw_A" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "min_p_kw_A"] = pd.Series()
-
-        net.load_3ph.loc[index, "min_p_kw_A"] = float(min_p_kw_A)
-
-    if not isnan(max_p_kw_A):
-        if "max_p_kw_A" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "max_p_kw_A"] = pd.Series()
-
-        net.load_3ph.loc[index, "max_p_kw_A"] = float(max_p_kw_A)
-    if not isnan(min_p_kw_B):
-        if "min_p_kw_B" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "min_p_kw_B"] = pd.Series()
-
-        net.load_3ph.loc[index, "min_p_kw_B"] = float(min_p_kw_B)
-
-    if not isnan(max_p_kw_B):
-        if "max_p_kw_B" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "max_p_kw_B"] = pd.Series()
-
-        net.load_3ph.loc[index, "max_p_kw_B"] = float(max_p_kw_B)
-    if not isnan(min_p_kw_C):
-        if "min_p_kw_C" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "min_p_kw_C"] = pd.Series()
-
-        net.load_3ph.loc[index, "min_p_kw_C"] = float(min_p_kw_C)
-
-    if not isnan(max_p_kw_C):
-        if "max_p_kw_C" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "max_p_kw_C"] = pd.Series()
-
-        net.load_3ph.loc[index, "max_p_kw_C"] = float(max_p_kw_C)
-
-    if not isnan(min_q_kvar_A):
-        if "min_q_kvar_A" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "min_q_kvar_A"] = pd.Series()
-
-        net.load_3ph.loc[index, "min_q_kvar_A"] = float(min_q_kvar_A)
-
-    if not isnan(max_q_kvar_A):
-        if "max_q_kvar_A" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "max_q_kvar_A"] = pd.Series()
-
-        net.load_3ph.loc[index, "max_q_kvar_A"] = float(max_q_kvar_A)
-
-    if not isnan(min_q_kvar_B):
-        if "min_q_kvar_B" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "min_q_kvar_B"] = pd.Series()
-
-        net.load_3ph.loc[index, "min_q_kvar_B"] = float(min_q_kvar_B)
-
-    if not isnan(max_q_kvar_B):
-        if "max_q_kvar_B" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "max_q_kvar_B"] = pd.Series()
-
-        net.load_3ph.loc[index, "max_q_kvar_B"] = float(max_q_kvar_B)
-        
-    if not isnan(min_q_kvar_C):
-        if "min_q_kvar_C" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "min_q_kvar_C"] = pd.Series()
-
-        net.load_3ph.loc[index, "min_q_kvar_C"] = float(min_q_kvar_C)
-
-    if not isnan(max_q_kvar_C):
-        if "max_q_kvar_C" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "max_q_kvar_C"] = pd.Series()
-
-        net.load_3ph.loc[index, "max_q_kvar_C"] = float(max_q_kvar_C)
-
-    if not isnan(controllable):
-        if "controllable" not in net.load_3ph.columns:
-            net.load_3ph.loc[:, "controllable"] = pd.Series()
-
-        net.load_3ph.loc[index, "controllable"] = bool(controllable)
-    else:
-        if "controllable" in net.load_3ph.columns:
-            net.load_3ph.loc[index, "controllable"] = False
 
     return index
 
@@ -1040,11 +937,7 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
     
 def create_sgen_3ph(net, bus, p_kw_A,p_kw_B,p_kw_C, q_kvar_A=0, q_kvar_B=0, q_kvar_C=0, sn_kva=nan, 
                     name=None, index=None, scaling=1., type=None, in_service=True, 
-                    max_p_kw_A=nan, max_p_kw_B=nan, max_p_kw_C=nan, 
-                    min_p_kw_A=nan, min_p_kw_B=nan, min_p_kw_C=nan, 
-                    max_q_kvar_A=nan,  max_q_kvar_B=nan,  max_q_kvar_C=nan, 
-                    min_q_kvar_A=nan, min_q_kvar_B=nan, min_q_kvar_C=nan, 
-                    controllable=nan, k=nan, rx=nan):
+                     k=nan, rx=nan):
     """create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None, \
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan, \
                 max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
@@ -1083,21 +976,6 @@ def create_sgen_3ph(net, bus, p_kw_A,p_kw_B,p_kw_C, q_kvar_A=0, q_kvar_B=0, q_kv
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **max_p_kw** (float, NaN) - Maximum active power injection - necessary for \
-            controllable sgens in OPF
-
-        **min_p_kw** (float, NaN) - Minimum active power injection - necessary for \
-            controllable sgens in OPF
-
-        **max_q_kvar** (float, NaN) - Maximum reactive power injection - necessary for \
-            controllable sgens in OPF
-
-        **min_q_kvar** (float, NaN) - Minimum reactive power injection - necessary for \
-            controllable sgens in OPF
-
-        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal
-        powerflow
-
         **k** (float, NaN) - Ratio of nominal current to short circuit current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
@@ -1128,79 +1006,6 @@ def create_sgen_3ph(net, bus, p_kw_A,p_kw_B,p_kw_C, q_kvar_A=0, q_kvar_B=0, q_kv
 
     # and preserve dtypes
     _preserve_dtypes(net.sgen_3ph, dtypes)
-
-    if not isnan(min_p_kw_A):
-        if "min_p_kw_A" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "min_p_kw_A"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "min_p_kw_A"] = float(min_p_kw_A)
-        
-        if "min_p_kw_B" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "min_p_kw_B"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "min_p_kw_B"] = float(min_p_kw_B)
-        
-        if "min_p_kw_C" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "min_p_kw_C"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "min_p_kw_C"] = float(min_p_kw_C)
-        
-    if not isnan(max_p_kw_A):
-        if "max_p_kw_A" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "max_p_kw_A"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "max_p_kw_A"] = float(max_p_kw_A)
-    if not isnan(max_p_kw_B):
-        if "max_p_kw_B" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "max_p_kw_B"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "max_p_kw_B"] = float(max_p_kw_B)
-    if not isnan(max_p_kw_C):
-        if "max_p_kw_C" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "max_p_kw_C"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "max_p_kw_C"] = float(max_p_kw_C)
-
-    if not isnan(min_q_kvar_A):
-        if "min_q_kvar_A" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "min_q_kvar_A"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "min_q_kvar_A"] = float(min_q_kvar_A)
-    if not isnan(min_q_kvar_B):
-        if "min_q_kvar_B" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "min_q_kvar_B"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "min_q_kvar_B"] = float(min_q_kvar_B)
-    if not isnan(min_q_kvar_C):
-        if "min_q_kvar_C" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "min_q_kvar_C"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "min_q_kvar_C"] = float(min_q_kvar_C)
-
-    if not isnan(max_q_kvar_A):
-        if "max_q_kvar_A" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "max_q_kvar_A"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "max_q_kvar_A"] = float(max_q_kvar_A)
-    if not isnan(max_q_kvar_B):
-        if "max_q_kvar_B" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "max_q_kvar_B"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "max_q_kvar_B"] = float(max_q_kvar_B)
-    if not isnan(max_q_kvar_C):
-        if "max_q_kvar_C" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "max_q_kvar_C"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "max_q_kvar_C"] = float(max_q_kvar_C)
-        
-    if not isnan(controllable):
-        if "controllable" not in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[:, "controllable"] = pd.Series()
-
-        net.sgen_3ph.loc[index, "controllable"] = bool(controllable)
-    else:
-        if "controllable" in net.sgen_3ph.columns:
-            net.sgen_3ph.loc[index, "controllable"] = False
 
     if not isnan(k):
         if "k" not in net.sgen_3ph.columns:
