@@ -1306,7 +1306,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             net.switch.loc[switches.index, "element"] = new_index
 
     for element, table in net.items():
-        if element.startswith("_") or element.startswith("res"):
+        if element.startswith("_") or element.startswith("res") or element == "dtypes":
             continue
         if type(table) == pd.DataFrame and (len(table) > 0 or len(net2[element]) > 0):
             if element == "switch":

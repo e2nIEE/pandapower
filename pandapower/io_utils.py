@@ -68,7 +68,7 @@ def from_dict_of_dfs(dodfs):
     for p, v in dodfs["parameters"].iterrows():
         net[p] = v.parameter
     for item, table in dodfs.items():
-        if item == "parameters":
+        if item == "parameters" or item == "dtypes":
             continue
         elif item == "line_geodata":
             points = len(table.columns) // 2
