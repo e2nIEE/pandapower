@@ -140,6 +140,8 @@ def write_voltage_dependend_load_results(net, p, q, b):
     if len(l) > 0:
         load_is = _is_elements["load"]
         scaling = l["scaling"].values
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        lidx = bus_lookup[l["bus"].values]
 
         voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
@@ -160,7 +162,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
         if voltage_depend_loads:
             # constant impedance and constant current
-            vm_l = net.res_bus.vm_pu.loc[l['bus']].values
+            vm_l = net["_ppc"]["bus"][lidx,7]
             volt_depend = ci * vm_l + cz * vm_l ** 2
             pl = l["p_kw"].values * scaling * load_is * volt_depend
             net["res_load"]["p_kw"] += pl

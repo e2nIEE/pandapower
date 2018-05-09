@@ -254,5 +254,39 @@ def test_transformer3w_phase_shift():
         assert np.isclose(net.res_bus.vm_pu.at[b3], test_tap_neg[side][1][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b3], test_tap_neg[side][1][1], rtol=1e-4)
 
-if __name__ == "__main__":   
-    pytest.main(["test_scenarios.py"])
+
+def test_volt_dep_load_at_inactive_bus():
+    # create empty net
+    net = pp.create_empty_network()
+
+    # create buses
+    bus1 = pp.create_bus(net, index=0, vn_kv=20., name="Bus 1")
+    bus2 = pp.create_bus(net, index=1, vn_kv=0.4, name="Bus 2")
+    bus3 = pp.create_bus(net, index=3, in_service=False, vn_kv=0.4, name="Bus 3")
+    bus4 = pp.create_bus(net, index=4, vn_kv=0.4, name="Bus 4")
+    bus4 = pp.create_bus(net, index=5, vn_kv=0.4, name="Bus 4")
+
+    # create bus elements
+    pp.create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
+    pp.create_load(net, bus=4, p_kw=100, q_kvar=50, name="Load3", const_i_percent=100)
+    pp.create_load(net, bus=5, p_kw=100, q_kvar=50, name="Load4")
+
+    # create branch elements
+    trafo = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV",
+                                  name="Trafo")
+    line1 = pp.create_line(net, from_bus=1, to_bus=3, length_km=0.1, std_type="NAYY 4x50 SE",
+                           name="Line")
+    line2 = pp.create_line(net, from_bus=1, to_bus=4, length_km=0.1, std_type="NAYY 4x50 SE",
+                           name="Line")
+    line3 = pp.create_line(net, from_bus=1, to_bus=5, length_km=0.1, std_type="NAYY 4x50 SE",
+                           name="Line")
+
+    pp.runpp(net)
+    assert not np.isnan(net.res_load.p_kw.at[1])
+    assert not np.isnan(net.res_bus.p_kw.at[5])
+    assert net.res_bus.p_kw.at[3] == 0
+
+
+if __name__ == "__main__":
+    test_volt_dep_load_at_inactive_bus()
+    # pytest.main(["test_scenarios.py"])

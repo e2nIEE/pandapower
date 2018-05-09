@@ -6,11 +6,39 @@
 """
 
 from numpy import ones, flatnonzero as find
-from scipy.sparse import csr_matrix as sparse
-
 from pypower.idx_bus import PD, QD
 from pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
+from scipy.sparse import csr_matrix as sparse
+
 from pandapower.idx_bus import CID, CZD
+
+
+def _get_Sbus(baseMVA, bus, gen_on, Cg, vm=None):
+    # power injected by gens plus power injected by loads converted to p.u.
+    S_load = _get_Sload(bus, vm)
+    Sbus = (Cg * (gen_on[:, PG] + 1j * gen_on[:, QG])
+            - S_load) / baseMVA
+    return Sbus
+
+
+def _get_Sload(bus, vm):
+    S_load = bus[:, PD] + 1j * bus[:, QD]
+    if vm is not None:
+        ci = bus[:, CID]
+        cz = bus[:, CZD]
+        cp = (1 - ci - cz)
+        volt_depend = cp + ci * vm + cz * vm ** 2
+        S_load *= volt_depend
+    return S_load
+
+
+def _get_Cg(gen_on, bus):
+    gbus = gen_on[:, GEN_BUS]  ## what buses are they at?
+
+    ## form net complex bus power injection vector
+    nb = bus.shape[0]
+    ngon = gen_on.shape[0]
+    return sparse((ones(ngon), (gbus, range(ngon))), (nb, ngon))
 
 
 def makeSbus(baseMVA, bus, gen, vm=None):
@@ -25,24 +53,13 @@ def makeSbus(baseMVA, bus, gen, vm=None):
     @author: Richard Lincoln
     """
     ## generator info
-    on = find(gen[:, GEN_STATUS] > 0)      ## which generators are on?
-    gbus = gen[on, GEN_BUS]                   ## what buses are they at?
+    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
+    gen_on = gen[on, :]
 
-    ## form net complex bus power injection vector
-    nb = bus.shape[0]
-    ngon = on.shape[0]
     ## connection matrix, element i, j is 1 if gen on(j) at bus i is ON
-    Cg = sparse((ones(ngon), (gbus, range(ngon))), (nb, ngon))
+    Cg = _get_Cg(gen_on, bus)
 
-    S_load = bus[:, PD] + 1j * bus[:, QD]
-    if vm is not None:
-        ci = bus[:, CID]
-        cz = bus[:, CZD]
-        cp = (1 - ci - cz)
-        volt_depend = cp + ci * vm + cz * vm ** 2
-        S_load *= volt_depend
     ## power injected by gens plus power injected by loads converted to p.u.
-    Sbus = (Cg * (gen[on, PG] + 1j * gen[on, QG])
-            - S_load) / baseMVA
+    Sbus = _get_Sbus(baseMVA, bus, gen_on, Cg, vm)
 
     return Sbus

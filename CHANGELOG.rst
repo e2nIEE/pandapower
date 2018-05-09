@@ -1,5 +1,8 @@
 Change Log
 =============
+[develop]
+----------------------
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.5.2/powerflow/opf.html) and opf_changes-may18.ipynb
 
 [1.5.0] - 2018-04-25
 ----------------------

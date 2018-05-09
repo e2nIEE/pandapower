@@ -32,7 +32,7 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
                          idx)
         pp.create_piecewise_linear_cost(net, gen_lookup.element.at[idx],
                                         gen_lookup.element_type.at[idx],
-                                        ppc['gencost'][idx, 4:], type)
+                                        - ppc['gencost'][idx, 4:], type)
     elif ppc['gencost'][idx, 0] == 2:
         if len(ppc['gencost'][idx, 4:]) == ppc['gencost'][idx, 3]:
             n = len(ppc['gencost'][idx, 4:])
@@ -41,7 +41,7 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
             logger.error("In gencost line %s, the number n does not fit to the number of values" %
                          idx)
         pp.create_polynomial_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
-                                  values, type)
+                                  - values, type)
     else:
         logger.info("Cost mode of gencost line %s is unknown." % idx)
 
