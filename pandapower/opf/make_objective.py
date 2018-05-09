@@ -28,7 +28,7 @@ def _make_objective(ppci, net):
     """
     # Determine duplicated cost data
     all_costs = net.polynomial_cost[['type', 'element', 'element_type']].append(
-            net.piecewise_linear_cost[['type', 'element', 'element_type']])
+        net.piecewise_linear_cost[['type', 'element', 'element_type']])
     duplicates = all_costs.loc[all_costs.duplicated()]
     if duplicates.shape[0]:
         raise ValueError("There are elements with multipy costs.\nelement_types: %s\n"
@@ -62,11 +62,11 @@ def _make_objective(ppci, net):
     # calculate size of gencost array
     if len(net.piecewise_linear_cost):
         n_piece_lin_coefficients = net.piecewise_linear_cost.p.values[0].shape[1] * 2
-        #todo: warning dass alle dieselbe anzahl an punkten haben müssen!
     else:
         n_piece_lin_coefficients = 0
     if len(net.polynomial_cost):
-        n_coefficients = max(n_piece_lin_coefficients,  net.polynomial_cost.c.values[0].shape[1])
+        n_coefficients = max(n_piece_lin_coefficients,
+                             net.polynomial_cost.c.values[0].shape[1])
         if (n_piece_lin_coefficients > 0) & (n_coefficients % 2):
             # avoid uneven n_coefficient in case of (n_piece_lin_coefficients>0)
             n_coefficients += 1
@@ -81,8 +81,8 @@ def _make_objective(ppci, net):
         if len(net.piecewise_linear_cost):
             for cost_type in ["p", "q"]:
                 if (net.piecewise_linear_cost.type == cost_type).any():
-                    costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type == cost_type].reset_index(
-                        drop=True)
+                    costs = net.piecewise_linear_cost[net.piecewise_linear_cost.type ==
+                                                      cost_type].reset_index(drop=True)
 
                     if cost_type == "q":
                         shift_idx = ng
@@ -115,22 +115,22 @@ def _make_objective(ppci, net):
                                 el_is = net[el].loc[net[el].in_service & net[el].index.isin(
                                     costs.loc[costs.element_type == el].element)].index
                             else:
-                                el_is = net[el].loc[net[el].controllable & net[el].in_service & net[el].index.isin(
-                                    costs.loc[costs.element_type == el].element)].index
+                                el_is = net[el].loc[net[el].controllable & net[el].in_service &
+                                                    net[el].index.isin(costs.loc[costs.element_type
+                                                                                 == el].element)].index
 
                             p = costs.loc[(costs.element_type == el) & (
-                                    costs.element.isin(el_is))].p.reset_index(drop=True)
+                                costs.element.isin(el_is))].p.reset_index(drop=True)
                             f = costs.loc[(costs.element_type == el) & (
-                                    costs.element.isin(el_is))].f.reset_index(drop=True)
+                                costs.element.isin(el_is))].f.reset_index(drop=True)
 
                             if len(p) > 0:
                                 p = concatenate(p)
                                 f = concatenate(f)
                                 # gencost indices
                                 elements = idx[el_is] + shift_idx
-
-                                ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
-
+                                ppci["gencost"][elements, COST:COST +
+                                                n_piece_lin_coefficients:2] = p
                                 # gencost for storages: positive costs in pandapower per definition
                                 # --> storage gencosts are similar to sgen gencosts
                                 if el in ["load", "dcline"]:
@@ -140,13 +140,15 @@ def _make_objective(ppci, net):
                                     ppci["gencost"][elements, COST+1:COST+n_piece_lin_coefficients +
                                                     1:2] = - f * 1e3 * sign_corr
 
-                                ppci["gencost"][elements, NCOST] = n_coefficients / 2
+                                ppci["gencost"][elements,
+                                                NCOST] = n_coefficients / 2
                                 ppci["gencost"][elements, MODEL] = 1
 
         if len(net.polynomial_cost):
             for cost_type in ["p", "q"]:
                 if (net.polynomial_cost.type == cost_type).any():
-                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(drop=True)
+                    costs = net.polynomial_cost[net.polynomial_cost.type == cost_type].reset_index(
+                        drop=True)
 
                     if cost_type == "q":
                         shift_idx = ng
@@ -194,15 +196,18 @@ def _make_objective(ppci, net):
 
                                 elcosts = costs[costs.element_type == el]
                                 elcosts.index = elcosts.element
-                                
+
                                 # gencost for storages: positive costs in pandapower per definition
                                 # --> storage gencosts are similar to sgen gencosts
                                 if el in ["load", "dcline"]:
-                                    ppci["gencost"][elements, COST:(COST + n_c):] = - c
+                                    ppci["gencost"][elements,
+                                                    COST:(COST + n_c):] = - c
                                 else:
-                                    ppci["gencost"][elements, -n_c:n_gencost] = - c * sign_corr
+                                    ppci["gencost"][elements, -
+                                                    n_c:n_gencost] = - c * sign_corr
 
-                                ppci["gencost"][elements, NCOST] = n_coefficients
+                                ppci["gencost"][elements,
+                                                NCOST] = n_coefficients
                                 ppci["gencost"][elements, MODEL] = 2
 
     else:
