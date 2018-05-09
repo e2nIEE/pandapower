@@ -14,7 +14,7 @@ import scipy as sp
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pf.makeYbus import makeYbus
-from pandapower.idx_bus import PD, QD
+from pandapower.idx_bus import PD,QD
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
@@ -153,6 +153,7 @@ def load_mapping(net):
         p_c = np.hstack([p_c, sgen_3ph["p_kw_C"].values *vl])
         b = np.hstack([b, sgen_3ph["bus"].values])
     # For Network Symmetric loads with unsymmetric loads
+#    Since the bus values of ppc values are not known, it is added again, fresh
     l = net["load"]
     if len(l) > 0:
         vl = _is_elements["load"] * l["scaling"].values.T
@@ -176,11 +177,13 @@ def load_mapping(net):
         b = np.hstack([b, sgen["bus"].values/3])
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
-        b = bus_lookup[b]
-        b, PA, QA = _sum_by_group(b, p_a,q_a*1j )
-        b, PB, QB = _sum_by_group(b, p_b,q_b*1j )
-        b, PC, QC = _sum_by_group(b, p_c,q_c*1j )
-        b,SA,SB,SC = bus_lookup,PA+QA,PB+QB,PC+QC
+        ba = bus_lookup[b]
+        bb = bus_lookup[b]
+        bc = bus_lookup[b]
+        ba, PA, QA = _sum_by_group(ba, p_a,q_a*1j )
+        bb, PB, QB = _sum_by_group(bb, p_b,q_b*1j )
+        bc, PC, QC = _sum_by_group(bc, p_c,q_c*1j )
+        SA,SB,SC = PA+QA,PB+QB,PC+QC
     return np.vstack([SA,SB,SC])
 
 # =============================================================================
@@ -253,8 +256,8 @@ def runpp_3ph(net):
         # Current used to find S1 Positive sequence power    
         # =============================================================================
         
-        ppci1["bus"][pq_bus, 2] = np.real(S1[:,pq_bus])*net.sn_kva*1e-3
-        ppci1["bus"][pq_bus, 3] = np.imag(S1[:,pq_bus])*net.sn_kva*1e-3
+        ppci1["bus"][pq_bus, PD] = np.real(S1[:,pq_bus])*net.sn_kva*1e-3
+        ppci1["bus"][pq_bus, QD] = np.imag(S1[:,pq_bus])*net.sn_kva*1e-3
         
         _run_newton_raphson_pf(ppci1, net._options)
     
@@ -306,44 +309,4 @@ def show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_new,I012_new):
     print ('\n Current  ABC\n')
     print (abs(I_abc_new)*I_base_res)
     return V_abc_new,I_abc_new,Sabc_new
-   
-
-	
-# =============================================================================
-# Main Program
-# =============================================================================
-# =============================================================================
-# Base Value Assignmeent
-# =============================================================================
-#V_base = 110                     # 110kV Base Voltage
-#kVA_base = 100000                      # 100 MVA
-#I_base = (kVA_base/V_base) * 1e-3           # in kA
-#
-#net = pp.create_empty_network(sn_kva = kVA_base )
-#
-#busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn", index=1)
-#busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk", index=5)
-#pp.create_bus(net, vn_kv=20., in_service=False)
-#pp.create_bus(net, vn_kv=20., in_service=True)
-#
-#
-#pp.create_ext_grid(net, bus=busn, vm_pu= 1.0, name="Grid Connection",
-#                   s_sc_max_mva=5000, rx_max=0.1)
-#net.ext_grid["r0x0_max"] = 0.1
-#net.ext_grid["x0x_max"] = 1.0
-#
-#pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":  230.6,
-#             "max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
-#             "c_nf_per_km":  230}, "example_type")
-#
-#create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
-#                   p_kw_C=10000, q_kvar_C=5000)
-#
-#pp.create_line(net, from_bus = busn, to_bus = busk, length_km = 50.0, std_type="example_type")
-#
-#pp.add_zero_impedance_parameters(net)
-#
-#count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
-#show_results(V_base,count,ppci0,Y1_pu,V012_it,I012_it)
-
 

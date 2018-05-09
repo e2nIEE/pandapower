@@ -9,8 +9,9 @@ import numpy as np
 import pytest
 from pandapower.pf.runpp_3ph import combine_X012
 from pandapower.create import create_load_3ph
-from pandapower.pf.runpp_3ph import runpp_3ph,show_results
-def comparison_2bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
+from pandapower.pf.runpp_3ph import runpp_3ph,show_results,load_mapping
+     
+def results_2bus_PowerFactory():
     Sabc_sl_sp =  np.matrix( [
         [55707.684189 + 60797.066456j],
         [8779.9399188 - 880.93186592j],
@@ -64,20 +65,8 @@ def comparison_2bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
     Vabc_pq_pf = combine_X012(Va_pf,Vb_pf,Vc_pf)
 
     Vabc_powerFactory = np.concatenate((Vabc_sl_pf,Vabc_pq_pf),axis =1)
-    print ('\n Power factory Values 2 bus system\n ')
-    print ('\n SABC \n')
-    print (Sabc_powerFactory)
-    print (' \n Voltage  ABC 2 bus system\n')
-    print (abs(Vabc_powerFactory))
-    print ('\n Current  ABC 2 bus system\n')
-    print (abs(Iabc_powerFactory))
 
-    S_diff = (abs(Sabc_powerFactory)-abs(Sabc_new))/1000
-    V_diff = abs(Vabc_powerFactory)- abs(V_abc_new)
-    I_diff = abs(Iabc_powerFactory)-abs(I_abc_new)
-    assert not(S_diff > 1e-4).any()
-    assert not(V_diff > 1e-4).any()
-    assert not(I_diff > 1e-4).any()
+    return Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory
     
 def test_2bus_network():
     # =============================================================================
@@ -101,8 +90,8 @@ def test_2bus_network():
     net.ext_grid["r0x0_max"] = 0.1
     net.ext_grid["x0x_max"] = 1.0
     
-    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":  230.6,
-                 "max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":\
+        230.6,"max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
                  "c_nf_per_km":  230}, "example_type")
     
     create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
@@ -115,24 +104,24 @@ def test_2bus_network():
     count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
     
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
-    comparison_2bus_PowerFactory(Sabc_new,I_abc_new*I_base_res,V_abc_new*V_base_res)
+    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
+    assert np.allclose(abs(Sabc_powerFactory*1e-3),abs(Sabc_new)*1e-3,atol = 1e-4)
+    assert np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
+    assert np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
 
-
-def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
+def results_4bus_PowerFactory():
     Sabc_sl_sp =  np.matrix(   [						
-    	[150.34732586*1000+89.274183693*1000j ,		149.93885263*1000+94.513653203*1000j,		39.966843513*1000+13.69963814*1000j]					
+    	[150.34732586*1000+89.274183693*1000j ,		149.93885263*1000+94.513653203*1000j,	\
+      39.966843513*1000+13.69963814*1000j]					
     	]					
     						
     	                    ).T #kW and kVAr					
     						
-    
-    
-    
     Sabc_pq_sp =  np.matrix(   [					
-    					
-    	[50*1000+20*1000j ,		79.999999999*1000+60*1000j,		20*1000+5.0000000001*1000j],
-    	[50*1000+50*1000j ,		9.9999999998*1000+15*1000j,		10*1000+5.0000000001*1000j],
-    	[50*1000+20*1000j ,		59.999999999*1000+20*1000j,		10*1000+5.0000000001*1000j]
+					
+    	[50000+20000j ,		79999.999999+60000j,		20000+5000j],
+    	[50000+50000j ,		9999.9999998+15000j,		10000+5000j],
+    	[50000+20000j ,		59999.999999+20000j,		10000+5000j]
     		]			
     		                    ,dtype = np.complex 			
     		                    ).T #kW and kVAr			
@@ -142,11 +131,18 @@ def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
 	# =============================================================================
 	# Slack Current I012 in kA as per Power Factory 
 	# =============================================================================
-    Iabc_pq_pf =  np.matrix(   [					
-    					
-    	[0.86676467552*np.exp(1j*np.deg2rad(-23.16800712)),		1.614392047*np.exp(1j*np.deg2rad(-158.37122826)),		0.31071857716*np.exp(1j*np.deg2rad(108.4669283))],
-    	[1.1387494998*np.exp(1j*np.deg2rad(-46.403411358)),		0.29070024235*np.exp(1j*np.deg2rad(-177.76002958)),		0.16859090052*np.exp(1j*np.deg2rad(95.969503627))],
-    	[0.86693887872*np.exp(1j*np.deg2rad(-23.183031658)),		1.0204854981*np.exp(1j*np.deg2rad(-139.95476824)),		0.16851041836*np.exp(1j*np.deg2rad(95.960819649))]
+    Iabc_pq_pf =  np.matrix(   [					\
+    	[0.86676467552*np.exp(1j*np.deg2rad(-23.16800712)),	\
+      1.614392047*np.exp(1j*np.deg2rad(-158.37122826)),	\
+      0.31071857716*np.exp(1j*np.deg2rad(108.4669283))],
+    	
+      [1.1387494998*np.exp(1j*np.deg2rad(-46.403411358)),	\
+      0.29070024235*np.exp(1j*np.deg2rad(-177.76002958)),	\
+      0.16859090052*np.exp(1j*np.deg2rad(95.969503627))],
+    	
+      [0.86693887872*np.exp(1j*np.deg2rad(-23.183031658)),		\
+      1.0204854981*np.exp(1j*np.deg2rad(-139.95476824)),		\
+      0.16851041836*np.exp(1j*np.deg2rad(95.960819649))]
     					
     		]			
     		                    ,dtype = np.complex 			
@@ -158,7 +154,9 @@ def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
 	# =============================================================================
 
     Iabc_sl_pf =  np.matrix(   [					
-    	[2.806982184*np.exp(1j*np.deg2rad(-32.037382293)),		2.85617664*np.exp(1j*np.deg2rad(-153.546895528)),		0.637503143*np.exp(1j*np.deg2rad(103.573568845))]				
+    	[2.806982184*np.exp(1j*np.deg2rad(-32.037382293)),		\
+      2.85617664*np.exp(1j*np.deg2rad(-153.546895528)),		\
+      0.637503143*np.exp(1j*np.deg2rad(103.573568845))]				
     	]				
     	                    ,dtype = np.complex 				
     	                    ).T #kW and kVAr				
@@ -170,7 +168,9 @@ def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
 	# Slack bus Voltages Vabc in kV as per Power Factory 
 	# =============================================================================
     Vabc_sl_pf =  np.matrix(   [						
-    	[62.292804335*np.exp(1j*np.deg2rad(-1.336121658)),		62.055452267*np.exp(1j*np.deg2rad(-121.321697076)),		66.273554938*np.exp(1j*np.deg2rad(122.494006073))]	
+    	[62.292804335*np.exp(1j*np.deg2rad(-1.336121658)),		\
+      62.055452267*np.exp(1j*np.deg2rad(-121.321697076)),		\
+      66.273554938*np.exp(1j*np.deg2rad(122.494006073))]	
 				
     	]					
     	                    ,dtype = np.complex 					
@@ -183,9 +183,15 @@ def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
 
     Vabc_pq_pf =  np.matrix(   [					
 					
-	[62.129490959*np.exp(1j*np.deg2rad(-1.366597634)),		61.942822493*np.exp(1j*np.deg2rad(-121.501330612)),		66.347909792*np.exp(1j*np.deg2rad(122.503171764))],
-	[62.095024525*np.exp(1j*np.deg2rad(-1.403411358)),		62.014934118*np.exp(1j*np.deg2rad(-121.450097103)),		66.316389871*np.exp(1j*np.deg2rad(122.534554804))],
-	[62.117006623*np.exp(1j*np.deg2rad(-1.381622172)),		61.975945099*np.exp(1j*np.deg2rad(-121.519819412)),		66.3480632*np.exp(1j*np.deg2rad(122.525870826))]
+	[62.129490959*np.exp(1j*np.deg2rad(-1.366597634)),		\
+  61.942822493*np.exp(1j*np.deg2rad(-121.501330612)),		\
+  66.347909792*np.exp(1j*np.deg2rad(122.503171764))],
+	[62.095024525*np.exp(1j*np.deg2rad(-1.403411358)),		\
+  62.014934118*np.exp(1j*np.deg2rad(-121.450097103)),		\
+  66.316389871*np.exp(1j*np.deg2rad(122.534554804))],
+	[62.117006623*np.exp(1j*np.deg2rad(-1.381622172)),		\
+  61.975945099*np.exp(1j*np.deg2rad(-121.519819412)),		\
+  66.3480632*np.exp(1j*np.deg2rad(122.525870826))]
 					
 		]			
 		                    ,dtype = np.complex 			
@@ -193,20 +199,7 @@ def comparison_4bus_PowerFactory(Sabc_new,I_abc_new,V_abc_new):
 
 
     Vabc_powerFactory = np.concatenate((Vabc_sl_pf,Vabc_pq_pf),axis =1)
-    print ('\n Power factory Values for 4 bus system \n ')
-    print ('\n SABC \n')
-    print (Sabc_powerFactory)
-    print (' \n Voltage  ABC\n')
-    print (abs(Vabc_powerFactory))
-    print ('\n Current  ABC\n')
-    print (abs(Iabc_powerFactory))
-    
-    S_diff = (abs(Sabc_powerFactory)-abs(Sabc_new))/1000
-    V_diff = abs(Vabc_powerFactory)- abs(V_abc_new)
-    I_diff = abs(Iabc_powerFactory)-abs(I_abc_new)
-    assert not(S_diff > 1e-4).any()
-    assert not(V_diff > 1e-4).any()
-    assert not(I_diff > 1e-4).any()
+    return Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory 
 
 def test_4bus_network():
     V_base = 110                     # 110kV Base Voltage
@@ -222,12 +215,13 @@ def test_4bus_network():
     busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk")
     busm =  pp.create_bus(net, vn_kv = V_base, name = "busm")
     busp =  pp.create_bus(net, vn_kv = V_base, name = "busp")
-    pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000, rx_max=0.1)
+    pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000, 
+                       rx_max=0.1)
     net.ext_grid["r0x0_max"] = 0.1
     net.ext_grid["x0x_max"] = 1.0
     
-    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":  230.6,
-                 "max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":\
+        230.6,   "max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
                  "c_nf_per_km":  230}, "example_type1")
     
     pp.create_std_type(net, {"r0_ohm_per_km" : .3048, "x0_ohm_per_km" : 0.6031856, 
@@ -259,7 +253,71 @@ def test_4bus_network():
                        p_kw_C=10000, q_kvar_C=5000)
     count,V012_new,I012_new,ppci0,Y1_pu = runpp_3ph(net)
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_new,I012_new)
-    comparison_4bus_PowerFactory(Sabc_new,I_abc_new*I_base_res,V_abc_new*V_base_res)
+    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_4bus_PowerFactory()
+
+    assert np.allclose(abs(Sabc_powerFactory*1.e-3),abs(Sabc_new)*1.e-3,atol = 1.e-4)
+    assert np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
+    assert np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
+def test_in_serv_load():
+    V_base = 110                     # 110kV Base Voltage
+    kVA_base = 100000                      # 100 MVA
+#    I_base = (kVA_base/V_base) * 1e-3           # in kA
+    V_base_res = V_base/np.sqrt(3)
+    I_base_res = kVA_base/V_base_res*1e-3
+    net = pp.create_empty_network(sn_kva = kVA_base )
     
+    busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn", index=1)
+    busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk", index=5)
+    pp.create_bus(net, vn_kv=20., in_service=False)
+    pp.create_bus(net, vn_kv=20., in_service=True)
+    
+    
+    pp.create_ext_grid(net, bus=busn, vm_pu= 1.0, name="Grid Connection",
+                       s_sc_max_mva=5000, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
+    net.ext_grid["x0x_max"] = 1.0
+    
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":\
+        230.6,"max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
+                 "c_nf_per_km":  230}, "example_type")
+    
+    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
+                       p_kw_C=10000, q_kvar_C=5000)
+    
+    pp.create_line(net, from_bus = busn, to_bus = busk, length_km = 50.0, std_type="example_type")
+    
+    pp.add_zero_impedance_parameters(net)
+    
+    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    
+    V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
+    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
+    assert np.allclose(abs(Sabc_powerFactory*1e-3),abs(Sabc_new)*1e-3,atol = 1e-4)
+    assert np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
+    assert np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
+    
+    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=100000, p_kw_B=29000, q_kvar_B=38000,
+                   p_kw_C=10000, q_kvar_C=5000, in_service=False)
+
+    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    
+    V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
+    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
+    assert np.allclose(abs(Sabc_powerFactory*1e-3),abs(Sabc_new)*1e-3,atol = 1e-4)
+    assert np.allclose(Vabc_powerFactory,(V_abc_new*V_base_res),atol=1.e-4)
+    assert np.allclose(abs(Iabc_powerFactory),abs(I_abc_new*I_base_res),atol=1.e-4)
+
+# =============================================================================
+# Creating more loads in the same bus is tricky. Even in power factory some scenarios fail depending
+# on the values given
+# =============================================================================
+#    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=10000, p_kw_B=10000, q_kvar_B=5000,
+#           p_kw_C=10000, q_kvar_C=5000, in_service=True)
+#    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+#    
+#    V_abc_new,I_abc_new,Sabc_changed = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
+#    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
+#    load_mapping(net)
+#    
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
