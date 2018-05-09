@@ -23,16 +23,20 @@ def _check_necessary_opf_parameters(net, logger):
                 if 'controllable' not in net[element_type].columns:
                     if element_type == 'gen':
                         net[element_type]['controllable'] = True
-                        logger.info("'controllable' has been added to gen as True.")
+                        logger.info(
+                            "'controllable' has been added to gen as True.")
                     else:
                         net[element_type]['controllable'] = False
-                        logger.info("'controllable' has been added to %s as False." % element_type)
+                        logger.info(
+                            "'controllable' has been added to %s as False." % element_type)
                         controllable = False
                 else:
                     if element_type == 'gen':
-                        net[element_type].controllable.fillna(True, inplace=True)
+                        net[element_type].controllable.fillna(
+                            True, inplace=True)
                     else:  # 'sgen', 'load'
-                        net[element_type].controllable.fillna(False, inplace=True)
+                        net[element_type].controllable.fillna(
+                            False, inplace=True)
                         if not net[element_type].controllable.any():
                             controllable = False
             # --- logging for missing data in element tables with controllables

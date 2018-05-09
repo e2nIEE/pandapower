@@ -149,7 +149,6 @@ def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
     net.bus.in_service.at[5] = False
     pp.create_gen(net, 6, 10)
     pp.create_gen(net, 4, 10)
-    pp.runpp(net)
     net.bus.in_service.at[5] = True
     with pytest.raises(UserWarning):
         pp.runpp(net)
@@ -319,6 +318,15 @@ def test_isolated_in_service_bus_at_oos_line():
     b = pp.create_bus(net, vn_kv=135)
     l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l, "in_service"] = False
+    assert runpp_with_consistency_checks(net, init="flat")
+
+
+def test_isolated_in_service_line():
+    net = pp.create_empty_network()
+    _, b2, l1 = add_grid_connection(net)
+    b = pp.create_bus(net, vn_kv=135)
+    pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[l1, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
 
 

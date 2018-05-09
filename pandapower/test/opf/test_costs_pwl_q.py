@@ -39,16 +39,16 @@ def test_cost_piecewise_linear_gen_q():
 
     with pytest.raises(ValueError):
         pp.create_piecewise_linear_cost(net, 0, "gen", np.array(
-            [[0, 0], [1, 50], [2, 100]]), type="q")
+            [[0, 0], [1, -50], [2, -100]]), type="q")
     with pytest.raises(ValueError):
         pp.create_piecewise_linear_cost(net, 0, "gen", np.array(
-            [[0, 0], [-1, 50], [-2, 100]]), type="q")
+            [[0, 0], [-1, -50], [-2, -100]]), type="q")
     with pytest.raises(ValueError):
         pp.create_piecewise_linear_cost(net, 0, "gen", np.array(
-            [[-10, 0], [-200, 50], [-50, 100]]), type="q")
+            [[-10, 0], [-200, -50], [-50, -100]]), type="q")
 
     pp.create_piecewise_linear_cost(net, 0, "gen", np.array(
-        [[-50, 50], [0, 0], [50, -50]]), type="q")
+        [[-50, -50], [0, 0], [50, 50]]), type="q")
     # run OPF
     pp.runopp(net, verbose=False)
 
