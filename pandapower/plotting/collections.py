@@ -186,17 +186,31 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     if len(lines) == 0:
         return None
 
+    lines_with_geo = []
     if use_bus_geodata:
-        data = [([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
-                  (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
-                 infofunc(line) if infofunc else [])
-                for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
-                if a in bus_geodata.index.values
-                and b in bus_geodata.index.values]
+        data = []
+        for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows():
+            if a in bus_geodata.index.values and b in bus_geodata.index.values:
+                lines_with_geo.append(line)
+                data.append(([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
+                              (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
+                             infofunc(line) if infofunc else[]))
+
+        lines_without_geo = set(lines)-set(lines_with_geo)
+        if lines_without_geo:
+            logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
+                           % lines_without_geo)
     else:
-        data = [(line_geodata.loc[line, "coords"],
-                 infofunc(line) if infofunc else [])
-                for line in lines if line in line_geodata.index.values]
+        data = []
+        for line in lines:
+            if line in line_geodata.index.values:
+                lines_with_geo.append(line)
+                data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
+
+        lines_without_geo = set(lines)-set(lines_with_geo)
+        if lines_without_geo:
+            logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
+                           % lines_without_geo)
 
     if len(data) == 0:
         return None
@@ -209,7 +223,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     lc.line_indices = np.array(lines)
     if cmap:
         if z is None:
-            z = net.res_line.loading_percent.loc[lines]
+            z = net.res_line.loading_percent.loc[lines_with_geo]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
         if clim is not None:
