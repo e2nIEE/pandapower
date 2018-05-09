@@ -97,7 +97,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             angle = kwargs['angle'] if 'angle' in kwargs else 0
             fig = Ellipse((x, y), angle=angle, **kwargs)
         elif patch_type == "rect":
-            fig = Rectangle([x - kwargs['width'] // 2, y - kwargs['height'] // 2], **kwargs)
+            fig = Rectangle([x - kwargs['width'] / 2, y - kwargs['height'] / 2], **kwargs)
         elif patch_type.startswith("poly"):
             edges = int(patch_type[4:])
             fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
