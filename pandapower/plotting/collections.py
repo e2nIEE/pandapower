@@ -220,7 +220,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(data, picker=picker, **kwargs)
-    lc.line_indices = np.array(lines)
+    lc.line_indices = np.array(lines_with_geo)
     if cmap:
         if z is None:
             z = net.res_line.loading_percent.loc[lines_with_geo]
