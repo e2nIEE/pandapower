@@ -2334,7 +2334,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
         **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
-        "transformer" are possible.
+        "trafo" are possible.
 
         **value** (float) - Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
         "A" for I. Generation is a positive bus power injection, consumption negative.
@@ -2342,12 +2342,12 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
         **std_dev** (float) - Standard deviation in the same unit as the measurement.
 
         **bus** (int) - Index of bus. Determines the position of the measurement for
-        line/transformer measurements (bus == from_bus: measurement at from_bus;
+        line/trafo measurements (bus == from_bus: measurement at from_bus;
         same for to_bus). The bus can also be "from" or "to" if the element_type is "line"
-        or "hv"/"lv" if "transformer".
+        or "hv"/"lv" if "trafo".
 
         **element** (int, None) - Index of measured element, if element_type is "line" or
-        "transformer".
+        "trafo".
 
     OPTIONAL:
         **check_existing** (bool) - Check for and replace existing measurements for this bus,
@@ -2367,7 +2367,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
     if bus not in net["bus"].index.values:
         raise UserWarning("Bus %s does not exist" % bus)
 
-    if element is None and element_type in ("line", "transformer"):
+    if element is None and element_type in ("line", "trafo"):
         raise UserWarning("The element type %s requires a value in 'element'" % element_type)
 
     if meas_type not in ("v", "p", "q", "i"):
@@ -2376,21 +2376,21 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
     if meas_type == "v":
         element_type = "bus"
 
-    if element_type not in ("bus", "line", "transformer"):
+    if element_type not in ("bus", "line", "trafo"):
         raise UserWarning("Invalid element type (%s)" % element_type)
 
     if bus in ("from", "to") and element_type == "line":
         bus = net.line.from_bus.loc[element] if bus == "from" else net.line.to_bus.loc[element]
 
-    if bus in ("hv", "lv") and element_type == "transformer":
+    if bus in ("hv", "lv") and element_type == "trafo":
         bus = net.trafo.hv_bus.loc[element] if bus == "hv" else net.trafo.lv_bus.loc[element]
 
     if element is not None and element_type == "line" and element not in net["line"].index.values:
         raise UserWarning("Line %s does not exist" % element)
 
-    if element is not None and element_type == "transformer" and element not in \
+    if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
-        raise UserWarning("Transformer %s does not exist" % element)
+        raise UserWarning("Trafo %s does not exist" % element)
 
     if index is None:
         index = get_free_id(net.measurement)
@@ -2401,7 +2401,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
     if meas_type == "i" and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type == "v" and element_type in ("line", "transformer"):
+    if meas_type == "v" and element_type in ("line", "trafo"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at %s"
                           % element_type)
 

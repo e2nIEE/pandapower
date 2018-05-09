@@ -222,9 +222,9 @@ def test_3bus_with_transformer():
     pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_kw.iloc[0], 8), 8, 0, 0)
     pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_kw.iloc[1], 8), 8, 0, 1)
 
-    pp.create_measurement(net, "p", "transformer", r2(net.res_trafo.p_hv_kw.iloc[0], 10), 10,
+    pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_kw.iloc[0], 10), 10,
                           bus=3, element=0)  # transformer meas.
-    pp.create_measurement(net, "q", "transformer", r2(net.res_trafo.q_hv_kvar.iloc[0], 10), 10,
+    pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_kvar.iloc[0], 10), 10,
                           bus=3, element=0)  # at hv side
 
 
