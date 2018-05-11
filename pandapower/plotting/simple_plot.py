@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import matplotlib.pyplot as plt
 
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
     create_trafo_collection, create_trafo3w_collection, \
-    create_line_switch_collection, draw_collections
+    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                switch_size=1.0, switch_distance=1.0, plot_line_switches=False,
+                switch_size=2.0, switch_distance=1.0, plot_line_switches=False,
                 scale_size=True, bus_color="b", line_color='grey', trafo_color='k',
                 ext_grid_color='y', switch_color='k', library="igraph", show_plot=True):
     """
@@ -146,6 +146,11 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             net, size=switch_size, distance_to_bus=switch_distance,
             use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
         collections.append(sc)
+
+    if len(net.switch):
+        bsc1, bsc2 = create_bus_bus_switch_collection(net, size=switch_size)
+        collections.append(bsc2)
+        collections.append(bsc1)
 
     ax = draw_collections(collections)
     if show_plot:

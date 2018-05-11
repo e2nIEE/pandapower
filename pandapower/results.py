@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import copy
 
@@ -31,6 +31,7 @@ def _extract_results_opf(net, ppc):
     # get options
     bus_lookup_aranged = _get_aranged_lookup(net)
 
+    _get_bus_v_results(net, ppc)
     _set_buses_out_of_service(ppc)
     bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)

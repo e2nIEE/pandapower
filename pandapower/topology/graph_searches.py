@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import networkx as nx
 import pandas as pd
@@ -138,7 +138,8 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
         **in_service_only** (boolean, False) - Defines whether only in service buses should be
             included in unsupplied_buses.
 
-        **slacks** (set, None) - buses which are considered as root / slack buses
+        **slacks** (set, None) - buses which are considered as root / slack buses. If None, all
+            existing slack buses are considered.
 
         **respect_switches** (boolean, True) - Fixes how to consider switches - only in case of no
             given mg.

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pytest
 from numpy import array, allclose
@@ -45,8 +45,8 @@ def dcline_net():
 
 def test_dispatch1(dcline_net):
     net = dcline_net
-    pp.create_piecewise_linear_cost(net, 0, "ext_grid", array([[-1e12, -0.1*1e12], [1e12, .1*1e12]]))
-    pp.create_piecewise_linear_cost(net, 1, "ext_grid", array([[-1e12, -0.08*1e12], [1e12, .08*1e12]]))
+    pp.create_piecewise_linear_cost(net, 0, "ext_grid", array([[-1e12, 0.1*1e12], [1e12, -.1*1e12]]))
+    pp.create_piecewise_linear_cost(net, 1, "ext_grid", array([[-1e12, 0.08*1e12], [1e12, -.08*1e12]]))
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
@@ -77,8 +77,8 @@ def test_dispatch1(dcline_net):
 
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
-    pp.create_polynomial_cost(net, 0, "ext_grid", array([.08, 0]))
-    pp.create_polynomial_cost(net, 1, "ext_grid", array([.1, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", array([-.08, 0]))
+    pp.create_polynomial_cost(net, 1, "ext_grid", array([-.1, 0]))
 
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0# needs to be constrained more than default
@@ -110,7 +110,7 @@ def test_dcline_dispatch2(dcline_net):
 
 def test_dcline_dispatch3(dcline_net):
     net = dcline_net
-    pp.create_polynomial_cost(net, 0, "dcline", array([1, 0]))
+    pp.create_polynomial_cost(net, 0, "dcline", array([-1, 0]))
     net.bus["max_vm_pu"] = 2  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     pp.runopp(net)
@@ -120,7 +120,7 @@ def test_dcline_dispatch3(dcline_net):
                       (net.res_dcline.p_from_kw - net.res_dcline.pl_kw) * 100
     assert allclose(rel_loss_expect.values, net.dcline.loss_percent.values)
 
-    assert abs(net.res_dcline.p_from_kw.values - net.res_cost) < 1e-3
+    assert abs(net.res_dcline.p_from_kw.values + net.res_cost) < 1e-3
 
 if __name__ == "__main__":
     pytest.main(["test_dcline.py", "-xs"])

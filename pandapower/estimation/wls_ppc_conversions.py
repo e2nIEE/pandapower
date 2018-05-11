@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options
@@ -44,7 +44,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     Add pandapower measurements to the ppci structure by adding new columns
     :param net: pandapower net
     :param mapping_table: mapping table pd->ppc
-    :param ppci: generated ppci 
+    :param ppci: generated ppci
     :param s_ref: reference power in W
     :return: ppc with added columns
     """
@@ -156,7 +156,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     ppci_lines = len(lines_is) - np.count_nonzero(slidx)
 
     i_tr_measurements = net.measurement[(net.measurement.type == "i")
-                                        & (net.measurement.element_type == "transformer")]
+                                        & (net.measurement.element_type == "trafo")]
     if len(i_tr_measurements):
         meas_from = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
                                        net.trafo.hv_bus[i_tr_measurements.element]).values]
@@ -174,7 +174,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[meas_to.element.values.astype(int), IM_TO_IDX] = meas_to.index.values
 
     p_tr_measurements = net.measurement[(net.measurement.type == "p") &
-                                        (net.measurement.element_type == "transformer")]
+                                        (net.measurement.element_type == "trafo")]
 
     if len(p_tr_measurements):
         meas_from = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
@@ -191,7 +191,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
         branch_append[meas_to.element.values.astype(int), P_TO_IDX] = meas_to.index.values
 
     q_tr_measurements = net.measurement[(net.measurement.type == "q") &
-                                        (net.measurement.element_type == "transformer")]
+                                        (net.measurement.element_type == "trafo")]
     if len(q_tr_measurements):
         meas_from = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
                                        net.trafo.hv_bus[q_tr_measurements.element]).values]

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 try:
     import pplog as logging
@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, _calc_ip, _calc_ith, _calc_branch_currents
+from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.results import _extract_results
@@ -25,7 +26,6 @@ from pandapower.shortcircuit.results import _extract_results
 def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False):
-
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -46,6 +46,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
             - "3ph" for three-phase
 
             - "2ph" for two-phase short-circuits
+
+            - "1ph" for single-phase ground faults
 
         **case** (str, "max")
 
@@ -87,8 +89,9 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         print(net.res_bus_sc)
     """
-    if fault not in ["3ph", "2ph"]:
-        raise NotImplementedError("Only 3ph and 2ph short-circuit currents implemented")
+    if fault not in ["3ph", "2ph", "1ph"]:
+        raise NotImplementedError(
+            "Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
         logger.warning("aperiodic and thermal short-circuit currents are only implemented for "
@@ -98,7 +101,8 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
         raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
                                 "circuit current')
     if topology not in ["meshed", "radial", "auto"]:
-        raise ValueError('specify network structure as "meshed", "radial" or "auto"')
+        raise ValueError(
+            'specify network structure as "meshed", "radial" or "auto"')
 
     if branch_results:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
@@ -113,11 +117,18 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
                     consider_sgens=False, branch_results=branch_results)
-    _calc_sc(net)
+    if fault == "3ph":
+        _calc_sc(net)
+    if fault == "2ph":
+        _calc_sc(net)
+    if fault == "1ph":
+        if case == "min":
+            raise NotImplementedError("Minimum 1ph short-circuits are not yet implemented")
+        _calc_sc_1ph(net)
 
 
 def _calc_sc(net):
-#    t0 = time.perf_counter()
+    #    t0 = time.perf_counter()
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
 #    t1 = time.perf_counter()
@@ -140,8 +151,39 @@ def _calc_sc(net):
     if net._options["branch_results"]:
         _calc_branch_currents(net, ppci)
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc)
+    _extract_results(net, ppc, ppc_0=None)
     _clean_up(net)
 #    t5 = time.perf_counter()
 #    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
 #               "currents": t5-t4}
+
+
+def _calc_sc_1ph(net):
+    """
+    calculation method for single phase to ground short-circuit currents
+    """
+    _add_auxiliary_elements(net)
+# pos. seq bus impedance
+    ppc, ppci = _pd2ppc(net)
+    _calc_ybus(ppci)
+    try:
+        _calc_zbus(ppci)
+    except Exception as e:
+        _clean_up(net, res=False)
+        raise(e)
+    _calc_rx(net, ppci)
+    _add_kappa_to_ppc(net, ppci)
+# zero seq bus impedance
+    ppc_0, ppci_0 = _pd2ppc_zero(net)
+    _calc_ybus(ppci_0)
+    try:
+        _calc_zbus(ppci_0)
+    except Exception as e:
+        _clean_up(net, res=False)
+        raise(e)
+    _calc_rx(net, ppci_0)
+    _calc_ikss_1ph(net, ppci, ppci_0)
+    ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
+    ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
+    _extract_results(net, ppc, ppc_0)
+    _clean_up(net)

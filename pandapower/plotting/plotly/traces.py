@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from itertools import compress
 
@@ -34,6 +34,44 @@ def _in_ipynb():
     return not hasattr(main, '__file__')
 
 
+
+
+def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="grey", infofunc=None,
+                             trace_name='edge_center'):
+    """
+    Creates a plotly trace of pandapower buses.
+
+    INPUT:
+        **line traces** (from pandapowerNet) - The already generated line traces with center geodata
+
+    OPTIONAL:
+
+        **size** (int, 5) - patch size
+
+        **patch_type** (str, "circle") - patch type, can be
+
+                - "circle" for a circle
+                - "square" for a rectangle
+                - "diamond" for a diamond
+                - much more pathc types at https://plot.ly/python/reference/#scatter-marker
+
+        **infofunc** (list, None) - hoverinfo for each trace element
+
+        **trace_name** (String, "buses") - name of the trace which will appear in the legend
+
+        **color** (String, "blue") - color of buses in the trace
+
+    """
+    color = get_plotly_color(color)
+
+    bus_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
+                     marker=dict(color=color, size=size, symbol=patch_type))
+
+    bus_trace['x'], bus_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
+
+    bus_trace['text'] = infofunc
+
+    return [bus_trace]
 
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
                      trace_name='buses', legendgroup=None, cmap=None, cmap_vals=None,

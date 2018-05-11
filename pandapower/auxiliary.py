@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 # Additional copyright for modified code by Brendan Curran-Johnson (ADict class):
 # Copyright (c) 2013 Brendan Curran-Johnson
@@ -259,7 +259,7 @@ def get_indices(selection, lookup, fused_indices=True):
         return np.array([lookup["before_fuse"][k] for k in selection], dtype="int")
 
 
-def get_values(source, selection, lookup):
+def _get_values(source, selection, lookup):
     """
     Returns values for a selection of values after a lookup.
 
@@ -269,7 +269,10 @@ def get_values(source, selection, lookup):
     value array from the selection.
     :return:
     """
-    return np.array([source[lookup[np.int(k)]] for k in selection])
+    v = np.zeros(len(selection))
+    for i, k in enumerate(selection):
+        v[i] = source[lookup[np.int(k)]]
+    return v
 
 
 def _check_connectivity(ppc):
@@ -327,9 +330,11 @@ def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup)
 
 
 try:
+    get_values = jit(nopython=True, cache=True)(_get_values)
     set_elements_oos = jit(nopython=True, cache=True)(_python_set_elements_oos)
     set_isolated_buses_oos = jit(nopython=True, cache=True)(_python_set_isolated_buses_oos)
 except RuntimeError:
+    get_values = jit(nopython=True, cache=False)(_get_values)
     set_elements_oos = jit(nopython=True, cache=False)(_python_set_elements_oos)
     set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
@@ -368,7 +373,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
                      copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, delta=1e-10,
-                     voltage_depend_loads=False):
+                     voltage_depend_loads=False, trafo3w_losses="hv"):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -386,18 +391,30 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
-        "delta": delta
+        "delta": delta,
+        "trafo3w_losses": trafo3w_losses
     }
     _add_options(net, options)
 
 
 def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
     max_bus = max(net.bus.index.values)
-    if max_bus >= n_max and len(net["bus"]) < n_max:
+    if max_bus >= n_max > len(net["bus"]):
         logger.warning(
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
             "create_continous_bus_index()" % max_bus)
+
+def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
+    if net.gen.empty:
+        return
+    max_gen = max(net.gen.index.values)
+    if max_gen >= n_max and len(net["gen"]) < n_max:
+        logger.warning(
+            "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
+            #" Try resetting the bus indices with the toolbox function "
+            #"create_continous_bus_index()"
+            % max_gen)
 
 
 def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
@@ -470,7 +487,7 @@ def _clean_up(net, res=True):
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
-    net._is_elements = None
+    # net._is_elements = None
 
     mode = net._options["mode"]
     if res:
@@ -503,8 +520,8 @@ def _set_isolated_buses_out_of_service(net, ppc):
                         ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    disco = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][disco, 1] = 4.
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
+    ppc["bus"][net._isolated_buses, 1] = 4.
 
 
 def _write_lookup_to_net(net, element, element_lookup):

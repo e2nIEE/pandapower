@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import os
 
 import numpy as np
 
 import pandapower as pp
-import pandapower.networks
+from pandapower.networks.power_system_test_cases import get_pp_networks_path
 
-
-def _get_networks_path():
-    return os.path.abspath(os.path.dirname(pandapower.networks.__file__))
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False):
     """
@@ -52,9 +49,9 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     net = pandapower.networks.mv_oberrhein("generation")
     """
     if include_substations:
-        net = pp.from_pickle(os.path.join(_get_networks_path(), "mv_oberrhein_substations.p"))
+        net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein_substations.json"))
     else:
-        net = pp.from_pickle(os.path.join(_get_networks_path(), "mv_oberrhein.p"))
+        net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein.json"))
     net.load.q_kvar = np.tan(np.arccos(cosphi_load)) * net.load.p_kw
     net.sgen.q_kvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_kw
 
@@ -68,7 +65,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         net.sgen.scaling = 0.8
         net.trafo.tp_pos.loc[hv_trafos] = [0, 0]
     else:
-        raise ValueError("Unknown scenario %s - chose 'load' or 'generation'"%scenario)
+        raise ValueError("Unknown scenario %s - chose 'load' or 'generation'" % scenario)
 
     pp.runpp(net)
     return net

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pandas as pd
 import pytest
@@ -74,7 +74,8 @@ def test_cigre_mv():
     assert len(net.bus) == 15
     assert len(net.line) == 15
     assert len(net.gen) == 0
-    assert len(net.sgen) == 15
+    assert len(net.sgen) == 13
+    assert len(net.storage) == 2
     assert len(net.shunt) == 0
     assert len(net.trafo) == 2
     assert len(net.load) == 18

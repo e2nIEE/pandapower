@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 import numpy.core.numeric as ncn
@@ -72,7 +72,7 @@ def _build_gen_ppc(net, ppc):
             if "controllable" in net.load.columns else DataFrame()
         stor_is = net.storage[(net.storage.in_service & net.storage.controllable) == True] \
             if "controllable" in net.storage.columns else DataFrame()
-    
+
         _is_elements["sgen_controllable"] = sg_is
         _is_elements["load_controllable"] = l_is
         _is_elements["storage_controllable"] = stor_is
@@ -87,7 +87,7 @@ def _build_gen_ppc(net, ppc):
         delta = net["_options"]["delta"]
     
         # initialize generator matrix
-        ppc["gen"] = zeros(shape=(l_end, 21), dtype=float)
+        ppc["gen"] = zeros(shape=(stor_end, 21), dtype=float)
         ppc["gen"][:] = array([0, 0, 0, q_lim_default, -q_lim_default, 1., 1., 1, p_lim_default,
                                   -p_lim_default, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     

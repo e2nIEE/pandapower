@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 
@@ -381,9 +381,9 @@ class state_estimation(object):
         _rename_results(self.net)
 
         # additionally, write bus results (these are not written in _extract_results)
-        self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index,
+        self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
                                                  mapping_table) * self.s_ref / 1e3
-        self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index,
+        self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table) * self.s_ref / 1e3
 
         # store variables required for chi^2 and r_N_max test:

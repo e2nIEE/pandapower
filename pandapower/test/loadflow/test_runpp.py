@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import copy
 
@@ -149,7 +149,6 @@ def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
     net.bus.in_service.at[5] = False
     pp.create_gen(net, 6, 10)
     pp.create_gen(net, 4, 10)
-    pp.runpp(net)
     net.bus.in_service.at[5] = True
     with pytest.raises(UserWarning):
         pp.runpp(net)
@@ -319,6 +318,15 @@ def test_isolated_in_service_bus_at_oos_line():
     b = pp.create_bus(net, vn_kv=135)
     l = pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l, "in_service"] = False
+    assert runpp_with_consistency_checks(net, init="flat")
+
+
+def test_isolated_in_service_line():
+    net = pp.create_empty_network()
+    _, b2, l1 = add_grid_connection(net)
+    b = pp.create_bus(net, vn_kv=135)
+    pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[l1, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
 
 
@@ -698,13 +706,35 @@ def test_storage_pf():
     
     # test generator behaviour
     pp.create_storage(net, b1, p_kw=-10, max_e_kwh=10)
+    pp.create_sgen(net, b1, p_kw=-10, in_service=False)
     
     res_gen_beh = runpp_with_consistency_checks(net)
+    res_ll_stor = net["res_line"].loading_percent.iloc[0]
+    
+    net["storage"].in_service.iloc[0] = False
+    net["sgen"].in_service.iloc[1] = True
+    
+    runpp_with_consistency_checks(net)
+    res_ll_sgen = net["res_line"].loading_percent.iloc[0]
+
+    assert np.isclose(res_ll_stor, res_ll_sgen)
     
     # test load behaviour
+    pp.create_load(net, b1, p_kw=10, in_service=False)
+    net["storage"].in_service.iloc[0] = True
     net["storage"].p_kw.iloc[0] = 10
+    net["sgen"].in_service.iloc[1] = False
     
     res_load_beh = runpp_with_consistency_checks(net)
+    res_ll_stor = net["res_line"].loading_percent.iloc[0]
+    
+    net["storage"].in_service.iloc[0] = False
+    net["load"].in_service.iloc[1] = True
+    
+    runpp_with_consistency_checks(net)
+    res_ll_load = net["res_line"].loading_percent.iloc[0]
+
+    assert np.isclose(res_ll_stor, res_ll_load)
     
     assert res_gen_beh and res_load_beh
     

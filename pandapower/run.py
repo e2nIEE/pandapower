@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import numpy as np
 
 from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, \
-    _check_if_numba_is_installed, _check_bus_index_and_print_warning_if_high
+    _check_if_numba_is_installed, _check_bus_index_and_print_warning_if_high, \
+    _check_gen_index_and_print_warning_if_high
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow
@@ -77,7 +78,8 @@ def _passed_runpp_parameters(local_parameters):
         'tolerance_kva': 1e-05,
         'trafo_loading': 'current',
         'trafo_model': 't',
-        'voltage_depend_loads': True
+        'voltage_depend_loads': True,
+        "trafo3w_losses": "hv"
     }
 
     passed_parameters = {
@@ -90,7 +92,7 @@ def _passed_runpp_parameters(local_parameters):
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, **kwargs):
+          delta_q=0, trafo3w_losses="hv", **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -105,20 +107,20 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                 - "nr" newton-raphson (pypower implementation with numba accelerations)
                 - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
                 - "gs" gauss-seidel (pypower implementation)
-                - "fdbx" (pypower implementation)
-                - "fdxb"(pypower implementation)
+                - "fdbx" fast-decoupled (pypower implementation)
+                - "fdxb" fast-decoupled (pypower implementation)
 
         **calculate_voltage_angles** (bool, "auto") - consider voltage angles in loadflow calculation
 
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed
-            networks that are usually found in higher networks. Thats why calculate_voltage_angles
+            networks that are usually found in higher voltage levels. calculate_voltage_angles
             in "auto" mode defaults to:
 
                 - True, if the network voltage level is above 70 kV
                 - False otherwise
 
-            The network voltage level is defined as the maximum rated voltage in the network that
+            The network voltage level is defined as the maximum rated voltage of any bus in the network that
             is connected to a line.
 
         **init** (str, "auto") - initialization method of the loadflow
@@ -188,6 +190,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
+        
+        **trafo3w_losses** - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
@@ -218,10 +222,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]
-        if len(hv_buses) > 0:
-            line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
-            if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
+        is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
+        if any(is_hv_bus) > 0:
+            line_buses = set(net.line[["from_bus", "to_bus"]].values.flatten())
+            hv_buses = net.bus.index[is_hv_bus]
+            if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
@@ -232,23 +237,24 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         max_iteration = default_max_iteration[algorithm]
 
     # init options
-    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
-                     recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
+                     recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q,
+                     trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
-            r_switch=0.0, **kwargs):
+            r_switch=0.0, trafo3w_losses="hv", **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -306,15 +312,17 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=0)
+                     voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
-           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True, **kwargs):
+           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True,
+           trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -365,7 +373,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
     """
-
+    logger.warning("The OPF cost definition has changed! Please check out the tutorial 'opf_changes-may18.ipynb' or the documentation!")
     _check_necessary_opf_parameters(net, logger)
     if numba:
         numba = _check_if_numba_is_installed(numba)
@@ -382,14 +390,15 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta)
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, numba=numba)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0, delta=1e-10,
-             **kwargs):
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
+             delta=1e-10, trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -443,7 +452,8 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta)
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
     _check_bus_index_and_print_warning_if_high(net)
+    _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

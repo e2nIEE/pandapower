@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pandas as pd
 from pandapower import create_empty_network
@@ -42,7 +42,7 @@ def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
         elif isinstance(table, (int, float, bool, str, dict)) and item != 'std_types':
             dodfs["parameters"].loc[item] = net[item]
         elif item == "std_types":
-            for t in ["line", "trafo", "trafo3w"]:
+            for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
                 dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
         elif type(table) != pd.DataFrame:
             # just skip empty things without warning
@@ -68,7 +68,7 @@ def from_dict_of_dfs(dodfs):
     for p, v in dodfs["parameters"].iterrows():
         net[p] = v.parameter
     for item, table in dodfs.items():
-        if item == "parameters":
+        if item == "parameters" or item == "dtypes":
             continue
         elif item == "line_geodata":
             points = len(table.columns) // 2
@@ -95,4 +95,7 @@ def collect_all_dtypes_df(net):
 
 def restore_all_dtypes(net, dtdf):
     for _, v in dtdf.iterrows():
-        net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
+        try:
+            net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
+        except KeyError:
+            logger.error('Error while setting dtype of %s[%s]' % (v.element, v.column))

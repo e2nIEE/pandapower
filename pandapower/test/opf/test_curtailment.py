@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import pytest
 from numpy import array, allclose
@@ -52,8 +52,8 @@ def test_minimize_active_power_curtailment():
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    pp.create_polynomial_cost(net, 0, "gen", array([-1e-5, 0]))
-    pp.create_polynomial_cost(net, 1, "gen", array([-1e-5, 0]))
+    pp.create_polynomial_cost(net, 0, "gen", array([1e-5, 0]))
+    pp.create_polynomial_cost(net, 1, "gen", array([1e-5, 0]))
     pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
 
 

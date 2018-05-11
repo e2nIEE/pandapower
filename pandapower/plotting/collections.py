@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2017 by University of Kassel and Fraunhofer Institute for Wind Energy and
-# Energy System Technology (IWES), Kassel. All rights reserved. Use of this source code is governed
-# by a BSD-style license that can be found in the LICENSE file.
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,14 +28,65 @@ def _rotate_dim2(arr, ang):
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
 
-def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_type="circle",
-                                 colors=None, z=None, cmap=None, norm=None, infofunc=None,
-                                 picker=False, net=None, cbar_title="Bus Voltage [pu]", **kwargs):
+def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
+                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
+                          bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower buses.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **buses** (list, None) - The buses for which the collections are created.
+            If None, all buses in the network are considered.
+
+        **size** (int, 5) - patch size
+
+        **marker** (str, "o") - patch marker
+
+        **patch_type** (str, "circle") - patch type, can be
+
+                - "circle" for a circle
+                - "rect" for a rectangle
+                - "poly<n>" for a polygon with n edges
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **colors** (list, None) - list of colors for every element
+
+        **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
+            cmap. If None net.res_bus.vm_pu is used.
+
+        **cmap** (ListedColormap, None) - colormap for the patch colors
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+        **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **pc** - patch collection
+    """
+    buses = net.bus.index.tolist() if buses is None else list(buses)
+    if len(buses) == 0:
+        return None
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
+
     infos = []
 
-    if not 'height' in kwargs and not 'width' in kwargs:
+    if 'height' not in kwargs and 'width' not in kwargs:
         kwargs['height'] = kwargs['width'] = 2 * size
-    if patch_type == "rectangle":
+    if patch_type == "rect":
         kwargs['height'] *= 2
         kwargs['width'] *= 2
 
@@ -46,7 +97,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
             angle = kwargs['angle'] if 'angle' in kwargs else 0
             fig = Ellipse((x, y), angle=angle, **kwargs)
         elif patch_type == "rect":
-            fig = Rectangle([x - kwargs['width'] // 2, y - kwargs['height'] // 2], **kwargs)
+            fig = Rectangle([x - kwargs['width'] / 2, y - kwargs['height'] / 2], **kwargs)
         elif patch_type.startswith("poly"):
             edges = int(patch_type[4:])
             fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
@@ -79,60 +130,7 @@ def create_bus_symbol_collection(coords, buses=None, size=5, marker="o", patch_t
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     pc.info = infos
-    return pc
 
-
-def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
-                          z=None, cmap=None, norm=None, infofunc=None, picker=False,
-                          bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
-    """
-    Creates a matplotlib patch collection of pandapower buses.
-
-    Input:
-        **net** (pandapowerNet) - The pandapower network
-
-    OPTIONAL:
-        **buses** (list, None) - The buses for which the collections are created.
-        If None, all buses in the network are considered.
-
-        **size** (int, 5) - patch size
-
-        **marker** (str, "o") - patch marker
-
-        **patch_type** (str, "circle") - patch type, can be
-
-                - "circle" for a circle
-                - "rect" for a rectangle
-                - "poly<n>" for a polygon with n edges
-
-        **infofunc** (function, None) - infofunction for the patch element
-
-        **colors** (list, None) - list of colors for every element
-
-        **cmap** - colormap for the patch colors
-
-        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
-        If None, net["bus_geodata"] is used
-
-        **picker** - picker argument passed to the patch collection
-
-        **kwargs - key word arguments are passed to the patch function
-
-    OUTPUT:
-        **pc** - patch collection
-    """
-    buses = net.bus.index.tolist() if buses is None else list(buses)
-    if len(buses) == 0:
-        return None
-    if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
-
-    coords = zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values)
-
-    pc = create_bus_symbol_collection(coords=coords, buses=buses, size=size, marker=marker,
-                                      patch_type=patch_type, colors=colors, z=z, cmap=cmap,
-                                      norm=norm, infofunc=infofunc, picker=picker, net=net,
-                                      cbar_title=cbar_title, **kwargs)
     return pc
 
 
@@ -150,10 +148,28 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         **lines** (list, None) - The lines for which the collections are created. If None, all lines
             in the network are considered.
 
-        **line_geodata** (DataFrame, None) - coordinates to use for plotting If None,
+        **line_geodata** (DataFrame, None) - coordinates to use for plotting. If None,
             net["line_geodata"] is used
 
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+        **use_bus_geodata** (bool, False) - Defines whether bus or line geodata are used.
+
          **infofunc** (function, None) - infofunction for the patch element
+
+        **cmap** - colormap for the patch colors
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
+            cmap. If None net.res_bus.vm_pu is used.
+
+        **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -170,17 +186,31 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     if len(lines) == 0:
         return None
 
+    lines_with_geo = []
     if use_bus_geodata:
-        data = [([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
-                  (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
-                 infofunc(line) if infofunc else [])
-                for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
-                if a in bus_geodata.index.values
-                and b in bus_geodata.index.values]
+        data = []
+        for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows():
+            if a in bus_geodata.index.values and b in bus_geodata.index.values:
+                lines_with_geo.append(line)
+                data.append(([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
+                              (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
+                             infofunc(line) if infofunc else[]))
+
+        lines_without_geo = set(lines)-set(lines_with_geo)
+        if lines_without_geo:
+            logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
+                           % lines_without_geo)
     else:
-        data = [(line_geodata.loc[line, "coords"],
-                 infofunc(line) if infofunc else [])
-                for line in lines if line in line_geodata.index.values]
+        data = []
+        for line in lines:
+            if line in line_geodata.index.values:
+                lines_with_geo.append(line)
+                data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
+
+        lines_without_geo = set(lines)-set(lines_with_geo)
+        if lines_without_geo:
+            logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
+                           % lines_without_geo)
 
     if len(data) == 0:
         return None
@@ -190,10 +220,10 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(data, picker=picker, **kwargs)
-    lc.line_indices = np.array(lines)
+    lc.line_indices = np.array(lines_with_geo)
     if cmap:
         if z is None:
-            z = net.res_line.loading_percent.loc[lines]
+            z = net.res_line.loading_percent.loc[lines_with_geo]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
         if clim is not None:
@@ -202,6 +232,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         lc.has_colormap = True
         lc.cbar_title = cbar_title
     lc.info = info
+
     return lc
 
 
@@ -215,6 +246,11 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     OPTIONAL:
         **trafos** (list, None) - The transformers for which the collections are created.
             If None, all transformers in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+         **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -253,6 +289,11 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     OPTIONAL:
         **trafos** (list, None) - The 3W-transformers for which the collections are created.
             If None, all 3W-transformers in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates to use for plotting
+            If None, net["bus_geodata"] is used
+
+         **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -301,6 +342,13 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
         **trafos** (list, None) - The transformers for which the collections are created.
             If None, all transformers in the network are considered.
 
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **size** (int, None) - size of transformer symbol circles. Should be >0 and
+            < 0.35*bus_distance
+
+         **infofunc** (function, None) - infofunction for the patch element
+
         **kwargs - key word arguments are passed to the patch function
 
     OUTPUT:
@@ -341,13 +389,13 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
         return None, None
     lc = LineCollection((lines), color=color, picker=picker, linewidths=linewidths, **kwargs)
     lc.info = infos
-    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
+    pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidths,
+                         **kwargs)
     pc.info = infos
     return lc, pc
 
 
-def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
-                              infofunc=None, **kwargs):
+def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -357,6 +405,10 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
     OPTIONAL:
         **trafo3ws** (list, None) - The three winding transformers for which the collections are
             created. If None, all three winding transformers in the network are considered.
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+         **infofunc** (function, None) - infofunction for the patch element
 
         **kwargs - key word arguments are passed to the patch function
 
@@ -415,13 +467,36 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, size=None,
     return lc, pc
 
 
-def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    load_table = net.load if loads is None else net.load.loc[loads]
+    """
+    Creates a matplotlib patch collection of pandapower loads.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
+            increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **load1** - patch collection
+
+        **load2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
     off = 2.
     ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
-    for i, load in net.load.iterrows():
+    color = kwargs.pop("color", "k")
+    for i, load in load_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size * off]), ang[i])
         p3 = p1 + _rotate_dim2(np.array([0, size * (off - 0.5)]), ang[i])
@@ -429,14 +504,32 @@ def create_load_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
         lines.append((p1, p3))
         if infofunc is not None:
             infos.append(infofunc(i))
-    load1 = PatchCollection(polys, facecolor="w", edgecolor="k", **kwargs)
-    load2 = LineCollection(lines, color="k", **kwargs)
+    load1 = PatchCollection(polys, facecolor="w", edgecolor=color, **kwargs)
+    load2 = LineCollection(lines, color=color, **kwargs)
     load1.info = infos
     load2.info = infos
     return load1, load2
 
 
 def create_gen_collection(net, size=1., infofunc=None, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower gens.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **gen1** - patch collection
+
+        **gen2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
@@ -459,14 +552,37 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
     return gen1, gen2
 
 
-def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwargs):
+def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
+    sgen_table = net.sgen if sgens is None else net.sgen.loc[sgens]
+    """
+    Creates a matplotlib patch collection of pandapower sgen.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **orientation** (float, np.pi) - orientation of load collection. pi is directed downwards,
+            increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **sgen1** - patch collection
+
+        **sgen2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
     off = 1.7
     r_triangle = size*0.4
     ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.sgen.shape[0]
-    for i, sgen in net.sgen.iterrows():
+    color = kwargs.pop("color", "k")
+    for i, sgen in sgen_table.iterrows():
         bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
         mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
         circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
@@ -492,10 +608,34 @@ def create_sgen_collection(net, size=1., infofunc=None, orientation=np.pi, **kwa
     return sgen1, sgen2
 
 
-def create_ext_grid_collection(net, size=1., orientation=0, infofunc=None, picker=False, **kwargs):
+def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower ext_grid.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **orientation** (float, 0) - orientation of load collection. 0 is directed upwards,
+            increasing values lead to clockwise direction changes.
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **ext_grid1** - patch collection
+
+        **ext_grid2** - patch collection
+    """
     lines = []
     polys = []
     infos = []
+    color = kwargs.pop("color", "k")
     for i, ext_grid in net.ext_grid.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
         p2 = p1 + _rotate_dim2(np.array([0, size]), orientation)
@@ -504,8 +644,8 @@ def create_ext_grid_collection(net, size=1., orientation=0, infofunc=None, picke
         if infofunc is not None:
             infos.append(infofunc(i))
     ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
-                                hatch="XXX", picker=picker, **kwargs)
-    ext_grid2 = LineCollection(lines, color="k", picker=picker, **kwargs)
+                                hatch="XXX", picker=picker, color=color, **kwargs)
+    ext_grid2 = LineCollection(lines, color=color, picker=picker, **kwargs)
     ext_grid1.info = infos
     ext_grid2.info = infos
     return ext_grid1, ext_grid2
@@ -513,7 +653,7 @@ def create_ext_grid_collection(net, size=1., orientation=0, infofunc=None, picke
 
 def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
-    Creates a matplotlib patch collection of pandapower switches.
+    Creates a matplotlib patch collection of pandapower line-bus switches.
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network
@@ -529,6 +669,8 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
         **kwargs - Key word arguments are passed to the patch function
 
+    OUTPUT:
+        **switches** - patch collection
     """
     lbs_switches = net.switch.index[net.switch.et == "l"]
 
@@ -550,7 +692,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
         # switch bus and target coordinates
         pos_sb = net.bus_geodata.loc[sb, ["x", "y"]].values
-        pos_ta = np.zeros(2)
+        pos_tb = np.zeros(2)
 
         use_bus_geodata = False
 
@@ -561,19 +703,19 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
                 if len(line_coords) > 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
                                     abs(line_coords[0][1] - pos_sb[1]) < 0.01:
-                        pos_ta = np.array([line_coords[1][0], line_coords[1][1]])
+                        pos_tb = np.array([line_coords[1][0], line_coords[1][1]])
                     else:
-                        pos_ta = np.array([line_coords[-2][0], line_coords[-2][1]])
+                        pos_tb = np.array([line_coords[-2][0], line_coords[-2][1]])
                 else:
                     use_bus_geodata = True
             else:
                 use_bus_geodata = True
 
         if not use_line_geodata or use_bus_geodata:
-            pos_ta = net.bus_geodata.loc[target_bus, ["x", "y"]]
+            pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]]
 
         # position of switch symbol
-        vec = pos_ta - pos_sb
+        vec = pos_tb - pos_sb
         mag = np.linalg.norm(vec)
         pos_sw = pos_sb + vec / mag * distance_to_bus
 
@@ -585,8 +727,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         col = color if net.switch.closed.loc[switch] else "white"
 
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col,
-                          edgecolor=color)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
 
@@ -594,6 +735,64 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
     switches = PatchCollection(switch_patches, match_original=True, **kwargs)
     return switches
+
+
+def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1., helper_line_color="gray", **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower bus-bus switches. Switches are plotted in the center between two buses with a "helper"
+    line (dashed and thin) being drawn between the buses as well.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+
+        **size** (float, 1.0) - Size of the switch patches
+
+        **helper_line_style** (string, ':') - Line style of the "helper" line being plotted between two buses connected by a bus-bus switch
+
+        **helper_line_size** (float, 1.0) - Line width of the "helper" line being plotted between two buses connected by a bus-bus switch
+
+        **helper_line_color** (string, "gray") - Line color of the "helper" line being plotted between two buses connected by a bus-bus switch
+
+        **kwargs - Key word arguments are passed to the patch function
+
+    OUTPUT:
+        **switches**, **helper_lines** - tuple of patch collections
+    """
+    lbs_switches = net.switch.index[net.switch.et == "b"]
+    color = kwargs.pop("color", "k")
+    switch_patches = []
+    line_patches = []
+    for switch in lbs_switches:
+        switch_bus = net.switch.bus.loc[switch]
+        target_bus = net.switch.element.loc[switch]
+        if switch_bus not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
+            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+            continue
+        # switch bus and target coordinates
+        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values
+        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values
+        # position of switch symbol
+        vec = pos_tb - pos_sb
+        mag = np.linalg.norm(vec)
+        pos_sw = pos_sb + vec / mag * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
+        # rotation of switch symbol
+        angle = np.arctan2(vec[1], vec[0])
+        rotation = Affine2D().rotate_around(pos_sw[0], pos_sw[1], angle)
+        # color switch by state
+        col = color if net.switch.closed.loc[switch] else "white"
+        # create switch patch (switch size is respected to center the switch on the line)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
+        # apply rotation
+        patch.set_transform(rotation)
+        # add to collection lists
+        switch_patches.append(patch)
+        line_patches.append([pos_sb.tolist(), pos_tb.tolist()])
+    # create collections and return
+    switches = PatchCollection(switch_patches, match_original=True, **kwargs)
+    helper_lines = LineCollection(line_patches, linestyles=helper_line_style, linewidths=helper_line_size, colors=helper_line_color)
+    return switches, helper_lines
 
 
 def add_collections_to_axes(ax, collections, plot_colorbars=True):
@@ -620,6 +819,16 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         **figsize** (tuple, (10,8)) - figsize of the matplotlib figure
 
         **ax** (axis, None) - matplotlib axis object to plot into, new axis is created if None
+
+        **plot_colorbars** (bool, True) - defines whether colorbars should be plotted
+
+        **set_aspect** (bool, True) - defines whether 'equal' and 'datalim' aspects of axis scaling
+            should be set.
+
+        **axes_visible** (tuple, (False, False)) - defines visibility of (xaxis, yaxis)
+
+    OUTPUT:
+        **ax** - matplotlib axes
     """
 
     if not ax:
