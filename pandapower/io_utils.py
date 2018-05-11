@@ -39,11 +39,16 @@ def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
         if item.startswith("_") or (item.startswith("res") and not include_results):
             continue
         # attributes of "primitive" types are just stored in a DataFrame "parameters"
-        elif isinstance(table, (int, float, bool, str, dict)) and item != 'std_types':
+        elif isinstance(table, (int, float, bool, str)):
             dodfs["parameters"].loc[item] = net[item]
         elif item == "std_types":
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
                 dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+        elif item == "user_pf_options":
+            if len(table) > 0:
+                dodfs["user_pf_options"] = pd.DataFrame(table, index=[0])
+            else:
+                continue
         elif type(table) != pd.DataFrame:
             # just skip empty things without warning
             if table:
@@ -68,7 +73,7 @@ def from_dict_of_dfs(dodfs):
     for p, v in dodfs["parameters"].iterrows():
         net[p] = v.parameter
     for item, table in dodfs.items():
-        if item == "parameters" or item == "dtypes":
+        if item in ("parameters", "dtypes"):
             continue
         elif item == "line_geodata":
             points = len(table.columns) // 2
@@ -78,6 +83,8 @@ def from_dict_of_dfs(dodfs):
                 net.line_geodata.loc[i, "coords"] = coord
         elif item.endswith("_std_types"):
             net["std_types"][item[:-10]] = table.T.to_dict()
+        elif item == "user_pf_options":
+            net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
         else:
             net[item] = table
     return net
