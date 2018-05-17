@@ -4,6 +4,12 @@ Change Log
 ----------------------
 - [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.5.2/powerflow/opf.html) and opf_changes-may18.ipynb
 
+[1.5.1] - 2018-05-04
+----------------------
+- [FIXED] delta-wye transformation for 3W-transformers #54
+- [ADDED] bus-bus switches collection #76
+- [FIXED] some broken documentation links
+
 [1.5.0] - 2018-04-25
 ----------------------
 - [FIXED] plotly hover function for edges (only if use_line_geodata == False)
