@@ -579,8 +579,10 @@ def _switch_branches(net, ppc):
         if 'line' not in _is_elements:
             get_is_lines(net)
         lines_is = _is_elements['line']
-        from_bus = lines_is.ix[sw_elem[~m]].from_bus.values
-        to_bus = lines_is.ix[sw_elem[~m]].to_bus.values
+        lines_to_delete = [idx for idx in sw_elem[~m] if idx in lines_is.index]
+
+        from_bus = lines_is.loc[lines_to_delete].from_bus.values
+        to_bus = lines_is.loc[lines_to_delete].to_bus.values
         # check if branch is already out of service -> ignore switch
         from_bus = from_bus[~np.isnan(from_bus)].astype(int)
         to_bus = to_bus[~np.isnan(to_bus)].astype(int)
@@ -595,7 +597,7 @@ def _switch_branches(net, ppc):
             ppc["branch"][ppc_idx, BR_STATUS] = 0
 
             # drop from in service lines as well
-            lines_is = lines_is.drop(sw_elem[~m])
+            lines_is = lines_is.drop(lines_to_delete)
             _is_elements["line_is_idx"] = lines_is.index
 
     # opened switches at in service lines

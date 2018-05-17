@@ -1325,7 +1325,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
             dtypes = net1[element].dtypes
-            net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
+            net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index, sort=True)
             _preserve_dtypes(net[element], dtypes)
     if validate:
         runpp(net, **kwargs)
