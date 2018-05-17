@@ -54,6 +54,16 @@ def _get_aranged_lookup(net):
     return bus_lookup_aranged
 
 
+def verify_results(net):
+    elements = ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus", "line",
+                "trafo", "trafo3w", "impedance"]
+
+    for element in elements:
+        res_ = "res_" + element
+        if len(net[element]) != len(net[res_]):
+            net[res_] = copy.copy(net["_empty_" + res_])
+
+
 def reset_results(net):
     net["res_ext_grid"] = copy.copy(net["_empty_res_ext_grid"])
     net["res_load"] = copy.copy(net["_empty_res_load"])
@@ -79,7 +89,6 @@ def reset_results(net):
             net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
         else:
             net[res_element] = copy.copy(net[res_empty_element])
-
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):

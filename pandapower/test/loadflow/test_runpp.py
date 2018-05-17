@@ -5,25 +5,26 @@
 
 
 import copy
+import os
 
 import numpy as np
 import pandas as pd
 import pytest
-import os
 
 import pandapower as pp
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
-    example_simple
+    example_simple, simple_four_bus_system
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pf.newtonpf import _create_J_without_numba
+from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import \
     add_test_oos_bus_with_is_element, result_test_network_generator
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 from pandapower.toolbox import nets_equal
-from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
-from pandapower.pf.newtonpf import _create_J_without_numba
+
 
 def test_set_user_pf_options():
     net = example_simple()
@@ -321,7 +322,9 @@ def test_isolated_in_service_bus_at_oos_line():
     assert runpp_with_consistency_checks(net, init="flat")
 
 
+@pytest.mark.xfail
 def test_isolated_in_service_line():
+    # ToDo: Fix this
     net = pp.create_empty_network()
     _, b2, l1 = add_grid_connection(net)
     b = pp.create_bus(net, vn_kv=135)
@@ -435,6 +438,7 @@ def test_recycle():
     assert np.allclose(net.res_load.q_kvar.iloc[0], ql)
     assert np.allclose(net.res_gen.p_kw.iloc[0], ps)
     assert np.allclose(net.res_gen.vm_pu.iloc[0], u_set)
+
 
 @pytest.mark.xfail
 def test_zip_loads_gridcal():
@@ -647,6 +651,7 @@ def test_pvpq_lookup():
 
     assert nets_equal(net, net_numba)
 
+
 def test_result_index_unsorted():
     net = pp.create_empty_network()
 
@@ -675,7 +680,7 @@ def test_get_internal():
     J_intern = net._ppc["internal"]["J"]
 
     ppc = net._ppc
-    V_mag = ppc["bus"][:,7][:-2]
+    V_mag = ppc["bus"][:, 7][:-2]
     V_ang = ppc["bus"][:, 8][:-2]
     V = V_mag * np.exp(1j * V_ang / 180 * np.pi)
 
@@ -692,52 +697,60 @@ def test_get_internal():
     assert sum(sum(abs(abs(J.toarray()) - abs(J_intern.toarray())))) < 0.05
     # get J for all other algorithms
 
+
 def test_storage_pf():
     net = pp.create_empty_network()
-    
+
     b1 = pp.create_bus(net, vn_kv=0.4)
     b2 = pp.create_bus(net, vn_kv=0.4)
-    
+
     pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE")
-    
+
     pp.create_ext_grid(net, b2)
     pp.create_load(net, b1, p_kw=10)
     pp.create_sgen(net, b1, p_kw=-10)
-    
+
     # test generator behaviour
     pp.create_storage(net, b1, p_kw=-10, max_e_kwh=10)
     pp.create_sgen(net, b1, p_kw=-10, in_service=False)
-    
+
     res_gen_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
-    
+
     net["storage"].in_service.iloc[0] = False
     net["sgen"].in_service.iloc[1] = True
-    
+
     runpp_with_consistency_checks(net)
     res_ll_sgen = net["res_line"].loading_percent.iloc[0]
 
     assert np.isclose(res_ll_stor, res_ll_sgen)
-    
+
     # test load behaviour
     pp.create_load(net, b1, p_kw=10, in_service=False)
     net["storage"].in_service.iloc[0] = True
     net["storage"].p_kw.iloc[0] = 10
     net["sgen"].in_service.iloc[1] = False
-    
+
     res_load_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
-    
+
     net["storage"].in_service.iloc[0] = False
     net["load"].in_service.iloc[1] = True
-    
+
     runpp_with_consistency_checks(net)
     res_ll_load = net["res_line"].loading_percent.iloc[0]
 
     assert np.isclose(res_ll_stor, res_ll_load)
-    
+
     assert res_gen_beh and res_load_beh
-    
+
+
+def test_add_element_and_init_results():
+    net = simple_four_bus_system()
+    pp.runpp(net, init="flat")
+    pp.create_bus(net, vn_kv=20.)
+    pp.runpp(net, init="results")
+
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])

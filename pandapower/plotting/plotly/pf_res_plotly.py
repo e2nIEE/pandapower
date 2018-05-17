@@ -20,8 +20,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projection=None,
-                  map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10):
+def pf_res_plotly(net, cmap='Jet', use_line_geodata=None, on_map=False, projection=None,
+                  map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
+                  filename="temp-plot.html"):
     """
     Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.
@@ -62,8 +63,9 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
 
         **bus_size** (float, 10.0) -  size of buses to plot.
 
-    """
+        **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
 
+    """
 
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')
@@ -84,7 +86,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-            geo_data_to_latlong(net, projection=projection)
+        geo_data_to_latlong(net, projection=projection)
 
     # ----- Buses ------
     # initializating bus trace
@@ -131,7 +133,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
     # hoverinfo which contains name and pf results
     hoverinfo = (net.trafo['name'] + '<br>' +
                  'I = ' + net.res_trafo.loc[idx, 'loading_percent'].astype(str) + ' %' + '<br>' +
-                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].astype(str) + ' kA' + '<br>'  +
+                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].astype(str) + ' kA' + '<br>' +
                  'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].astype(str) + ' kA' + '<br>'
                  ).tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
@@ -147,7 +149,6 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                                       color='grey', size=bus_size * 2, trace_name='external_grid',
                                       patch_type=marker_type)
 
-    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace + line_center_trace+ trafo_center_trace,
-                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
-
-
+    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace + line_center_trace + trafo_center_trace,
+                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
+                filename=filename)

@@ -18,12 +18,10 @@ except ImportError:
     import logging
 logger = logging.getLogger(__name__)
 
-
 try:
     from plotly.graph_objs import Figure, Data, Layout, Marker, XAxis, YAxis, Line, ColorBar
 except ImportError:
     logger.debug("Failed to import plotly - interactive plotting will not be available")
-
 
 
 def _in_ipynb():
@@ -32,8 +30,6 @@ def _in_ipynb():
     """
     import __main__ as main
     return not hasattr(main, '__file__')
-
-
 
 
 def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="grey", infofunc=None,
@@ -72,6 +68,7 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="gre
     bus_trace['text'] = infofunc
 
     return [bus_trace]
+
 
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
                      trace_name='buses', legendgroup=None, cmap=None, cmap_vals=None,
@@ -130,7 +127,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     bus_plot_index = net.bus.index[buses2plot]
 
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
-                                    net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
+                                      net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
     bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc
 
@@ -206,7 +203,7 @@ def _get_line_geodata_plotly(net, lines, use_line_geodata):
 
 def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup=None,
-                      cmap=None, cbar_title=None, show_colorbar = True, cmap_vals=None, cmin=None,
+                      cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
                       cmax=None):
     """
     Creates a plotly trace of pandapower lines.
@@ -273,7 +270,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                              lines2plot.to_bus.isin(net.bus_geodata.index)
         lines2plot = lines2plot[lines_with_geodata]
 
-
     if cmap is not None:
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
@@ -290,7 +286,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             cmap_vals = net.res_line.loc[lines2plot.index, 'loading_percent'].values
 
         cmap_lines = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
-        cmap_lines = list(compress(cmap_lines, lines2plot_mask)) # select with mask from cmap_lines
+        cmap_lines = list(compress(cmap_lines, lines2plot_mask))  # select with mask from cmap_lines
         if infofunc is not None:
             infofunc = list(compress(infofunc, lines2plot_mask))
 
@@ -317,7 +313,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                 # TODO for custom colormaps
                 cbar_cmap_name = 'Jet' if cmap is 'jet' else cmap
                 # workaround to get colorbar for lines (an unvisible node is added)
-                lines_cbar = dict(type='scatter',x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
+                lines_cbar = dict(type='scatter', x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
                                   marker=Marker(size=0, cmin=cmin, cmax=cmax,
                                                 color='rgb(255,255,255)',
                                                 colorscale=cbar_cmap_name,
@@ -336,7 +332,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         line_trace = dict(type='scatter',
                           text=[], hoverinfo='text', mode='lines', name=trace_name,
                           line=Line(width=width, color=color))
-
 
         line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot, use_line_geodata)
 
@@ -363,7 +358,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
         line_traces.append(line_trace)
     return line_traces
-
 
 
 def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, cmap=None,
@@ -401,18 +395,16 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     """
     color = get_plotly_color(color)
 
-
     # defining lines to be plot
     trafos = net.trafo.index.tolist() if trafos is None else list(trafos)
     if len(trafos) == 0:
         return []
 
-    trafo_buses_with_geodata = net.trafo.hv_bus.isin(net.bus_geodata.index) &\
+    trafo_buses_with_geodata = net.trafo.hv_bus.isin(net.bus_geodata.index) & \
                                net.trafo.lv_bus.isin(net.bus_geodata.index)
 
     trafos_mask = net.trafo.index.isin(trafos)
     tarfo2plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
-
 
     if cmap is not None:
         cmap = 'jet' if cmap is None else cmap
@@ -426,24 +418,24 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
             if net.res_trafo.shape[0] == 0:
                 logger.error("There are no power flow results for lines which are default for line colormap coloring..."
                              "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_trafo.loc[tarfo2plot.index,'loading_percent'].values
+            cmap_vals = net.res_trafo.loc[tarfo2plot.index, 'loading_percent'].values
 
         cmap_colors = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
         trafo_traces = []
         col_i = 0
         for _, trafo in tarfo2plot.iterrows():
             trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=cmap_colors[col_i]),
-                                  hoverinfo='text', mode='lines', name=trace_name)
+                               hoverinfo='text', mode='lines', name=trace_name)
 
             trafo_trace['text'] = trafo['name'].tolist() if infofunc is None else infofunc[col_i]
 
             from_bus = net.bus_geodata.loc[trafo.hv_bus, 'x']
             to_bus = net.bus_geodata.loc[trafo.lv_bus, 'x']
-            trafo_trace['x'] = [from_bus, (from_bus + to_bus)/2, to_bus]
+            trafo_trace['x'] = [from_bus, (from_bus + to_bus) / 2, to_bus]
 
             from_bus = net.bus_geodata.loc[trafo.hv_bus, 'y']
             to_bus = net.bus_geodata.loc[trafo.lv_bus, 'y']
-            trafo_trace['y'] = [from_bus, (from_bus + to_bus)/2, to_bus]
+            trafo_trace['y'] = [from_bus, (from_bus + to_bus) / 2, to_bus]
 
             trafo_traces.append(trafo_trace)
             col_i += 1
@@ -476,9 +468,8 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     return trafo_traces
 
 
-
 def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsize=1,
-                aspectratio='auto'):
+                aspectratio='auto', filename="temp-plot.html"):
     """
     plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
     :func:`create_trafo_trace`)
@@ -506,6 +497,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
         any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
+        **filename** (str, "temp-plot.html") - plots to a html file called filename
+
     """
 
     if on_map:
@@ -529,7 +522,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             trace['type'] = 'scattermapbox'
 
     # setting Figure object
-    fig = Figure(data=Data(traces),   # edge_trace
+    fig = Figure(data=Data(traces),  # edge_trace
                  layout=Layout(
                      titlefont=dict(size=16),
                      showlegend=showlegend,
@@ -544,7 +537,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
                      # legend=dict(x=0, y=1.0)
-                 ),)
+                 ), )
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
 
@@ -553,20 +546,18 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             mapbox_access_token = _get_mapbox_token()
         except Exception:
             logger.exception('mapbox token required for map plots. '
-                         'Get Mapbox token by signing in to https://www.mapbox.com/.\n'
-                         'After getting a token, set it to pandapower using:\n'
-                         'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
+                             'Get Mapbox token by signing in to https://www.mapbox.com/.\n'
+                             'After getting a token, set it to pandapower using:\n'
+                             'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
             raise MapboxTokenMissing
-
 
         fig['layout']['mapbox'] = dict(accesstoken=mapbox_access_token,
                                        bearing=0,
-                                       center=dict(lat= pd.Series(traces[0]['lat']).dropna().mean(),
-                                                   lon= pd.Series(traces[0]['lon']).dropna().mean()),
+                                       center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
+                                                   lon=pd.Series(traces[0]['lon']).dropna().mean()),
                                        style=map_style,
                                        pitch=0,
                                        zoom=11)
-
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio is 'auto' else aspectratio
@@ -587,7 +578,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             if ratio < 1:
                 aspectratio = (ratio, 1.)
             else:
-                aspectratio = (1., 1/ratio)
+                aspectratio = (1., 1 / ratio)
 
         aspectratio = np.array(aspectratio) / max(aspectratio)
         fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700 for ar in aspectratio])
@@ -599,9 +590,4 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
     else:
         from plotly.offline import plot as plot
 
-
-    plot(fig)
-
-
-
-
+    plot(fig, filename=filename)
