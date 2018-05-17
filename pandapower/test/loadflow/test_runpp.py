@@ -749,6 +749,7 @@ def test_add_element_and_init_results():
     net = simple_four_bus_system()
     pp.runpp(net, init="flat")
     pp.create_bus(net, vn_kv=20.)
+    pp.create_line(net, from_bus=2, to_bus=3, length_km=1, name="new line" + str(1), std_type="NAYY 4x150 SE")
     pp.runpp(net, init="results")
 
 
