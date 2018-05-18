@@ -385,13 +385,13 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     pp_res_branch = zeros([1, 4])
     # consideration of parallel branches via storing how much branches have been considered
     # each node-to-node-connection
-    init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1).drop_duplicates()
-    init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1).drop_duplicates()
+    init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1, sort=True).drop_duplicates()
+    init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1, sort=True).drop_duplicates()
     init1['hv_bus'] = nan
     init1['lv_bus'] = nan
     init2['from_bus'] = nan
     init2['to_bus'] = nan
-    already_used_branches = concat([init1, init2], axis=0)
+    already_used_branches = concat([init1, init2], axis=0, sort=True)
     already_used_branches['number'] = zeros([already_used_branches.shape[0], 1]).astype(int)
     BRANCHES = DataFrame(ppc_net['branch'][:, [0, 1, 8, 9]])
     for i in BRANCHES.index:
