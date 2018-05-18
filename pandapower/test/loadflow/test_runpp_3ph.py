@@ -7,10 +7,13 @@ Tests 3 phase power flow algorithm
 import pandapower as pp
 import numpy as np
 import pytest
-from pandapower.pf.runpp_3ph import combine_X012
+from pandapower.pf.runpp_3ph import combine_X012,sequence_to_phase,S_from_VI
 from pandapower.create import create_load_3ph
-from pandapower.pf.runpp_3ph import runpp_3ph,show_results,load_mapping
-     
+from pandapower.pf.runpp_3ph import runpp_3ph,show_results
+import copy
+from pandapower.pf.makeYbus import makeYbus 
+from pandapower.pf.runpp_3ph import I0_from_V012,I1_from_V012,I2_from_V012
+
 def results_2bus_PowerFactory():
     Sabc_sl_sp =  np.matrix( [
         [55707.684189 + 60797.066456j],
@@ -319,5 +322,65 @@ def test_in_serv_load():
 #    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
 #    load_mapping(net)
 #    
+def test_transformer_3ph():
+    hv_base = 20                     # 110kV Base Voltage
+    lv_base = 0.4
+    kVA_base = 100000                      # 100 MVA
+#    I_base = (kVA_base/V_base) * 1e-3           # in kA
+    vector_group = "Dyn"
+    hv_base_res = hv_base/np.sqrt(3)
+    lv_base_res = lv_base/np.sqrt(3)
+    I_hv_res = kVA_base/hv_base_res*1e-3
+    I_lv_res = kVA_base/lv_base_res*1e-3
+    "0.63 MVA 20/0.4 kV"
+    net = pp.create_empty_network(sn_kva = kVA_base )
+    
+    bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vector_group, name = "bushv", index=1)
+    buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vector_group, name = "buslv", index=5)
+    pp.create_bus(net, vn_kv=20., in_service=False)
+    pp.create_bus(net, vn_kv=20., in_service=True)
+    
+    pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
+    net.ext_grid["x0x_max"] = 1.0
+    
+    transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
+    transformer_type.update({"vsc0_percent": 5, "vscr0_percent": 0.4, "mag0_percent": 10,
+                             "mag0_rx": 0.4, "si0_hv_partial": 0.9,
+                            "vector_group": vector_group})
+    pp.create_std_type(net, transformer_type, vector_group, "trafo")
+    pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
+                          index=pp.get_free_id(net.trafo)+1)
+#    pp.create_transformer(net, bushv, buslv, std_type=vector_group, in_service=False)
+    
+    create_load_3ph(net, buslv, p_kw_A=300, q_kvar_A=20, p_kw_B=100, q_kvar_B=50,
+                       p_kw_C=100, q_kvar_C=30)
+    pp.add_zero_impedance_parameters(net)
+    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    
+    print("\n No of Iterations: %u"%count)
+    print ('\n\n Final  Values Pandapower ')
+    ppci0["bus"][0, 4] = 0
+    ppci0["bus"][0, 5] = 0
+    Y0_pu,_,_ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+#Y0_pu = Y0_pu.todense()
+    I012_new = combine_X012(I0_from_V012(V012_it,Y0_pu),
+                        I1_from_V012(V012_it,Y1_pu),
+                        I2_from_V012(V012_it,Y1_pu))
+    I_abc_new = sequence_to_phase(I012_new)
+    V_abc_new = sequence_to_phase(V012_it)
+    Sabc_new = S_from_VI(V_abc_new,I_abc_new)*kVA_base
+    print ('\n SABC New using I=YV\n')
+    print (Sabc_new)
+    print (' \n Voltage  ABC HV \n')
+    print (abs(V_abc_new)*hv_base_res)
+    print (' \n Voltage  ABC LV \n')
+    print (abs(V_abc_new)*lv_base_res)
+    
+    print ('\n Current  ABC HV \n')
+    print (abs(I_abc_new)*I_hv_res)
+    print ('\n Current  ABC LV \n')
+    print (abs(I_abc_new)*I_lv_res)  
+    
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])

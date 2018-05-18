@@ -197,7 +197,7 @@ def load_mapping(net):
 # 3 phase algorithm function
 # =============================================================================
 def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
-          tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
+          tolerance_kva=1e-6, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=False,
           delta_q=0, **kwargs):
     overrule_options = {}
@@ -295,7 +295,7 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     # =============================================================================
     #             Iteration using Power mismatch criterion
     # =============================================================================
-    while (S_mismatch > 1e-6).any():
+    while (S_mismatch > tolerance_kva).any() and count <3*max_iteration:
     # =============================================================================
     #     Voltages and Current transformation for PQ and Slack bus
     # =============================================================================
