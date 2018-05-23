@@ -163,9 +163,9 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    dict_net = to_dict_of_dfs(net, include_results=True, create_dtype_df=True)
-    dict_net["dtypes"] = collect_all_dtypes_df(net)
-    json_string = to_json_string(dict_net)
+    # dict_net = to_dict_of_dfs(net, include_results=True, create_dtype_df=True)
+    # dict_net["dtypes"] = collect_all_dtypes_df(net)
+    json_string = to_json_string(net)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
@@ -427,7 +427,7 @@ def from_json_dict(json_dict, convert=True):
         if k == 'dtypes':
             continue
         if not check_equal_type(k):
-            raise UserWarning("Different data type for existing pandapower field")
+            raise UserWarning("Different data type for existing pandapower field %s" % k)
         if isinstance(json_dict[k], dict):
             if isinstance(net[k], pd.DataFrame):
                 # columns = net[k].columns -> We want to load everything!

@@ -25,10 +25,11 @@ def dicts_to_pandas(json_dict):
     for k in sorted(json_dict.keys()):
         if isinstance(json_dict[k], dict):
             pd_dict[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
-            if pd_dict[k].shape[0] == 0:  # skip empty dataframes
-                continue
-            if pd_dict[k].index[0].isdigit():
+            try:
                 pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
+            except ValueError:
+                logger.debug('failed setting int64 index for %s' % k)
+                pass
         else:
             raise UserWarning("The json network is an old version or corrupt. "
                               "Trying to use the old load function")
@@ -140,7 +141,13 @@ def pp_hook(d):
                 d[key] = pp_hook(d[key])
 
         if class_name in ('DataFrame', 'Series'):
-            return pd.read_json(obj, **d)
+            df = pd.read_json(obj, **d)
+            try:
+                df.set_index(df.index.astype(numpy.int64), inplace=True)
+            except ValueError:
+                logger.debug("failed setting int64 index")
+                pass
+            return df
         else:
             module = __import__(module_name)
             class_ = getattr(module, class_name)
@@ -224,3 +231,10 @@ def json_pdindex(obj):
 def json_bool(obj):
     logger.debug("bool")
     return "true" if obj else "false"
+
+
+@to_serializable.register(tuple)
+def json_tuple(obj):
+    logger.debug("tuple")
+    d = with_signature(obj, obj, obj_module='builtins', obj_class='tuple')
+    return d
