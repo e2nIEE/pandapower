@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import math
 from itertools import compress
 
 import numpy as np
@@ -32,8 +33,32 @@ def _in_ipynb():
     return not hasattr(main, '__file__')
 
 
-def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="grey", infofunc=None,
-                             trace_name='edge_center'):
+def sum_line_length(pts):
+    ptdiff = lambda p: (p[0][0] - p[1][0], p[0][1] - p[1][1])
+    diffs = map(ptdiff, zip(pts[:-1], pts[1:]))
+    line_length = sum(math.hypot(d1, d2) for d1, d2 in diffs)
+    return line_length
+
+
+def get_line_mid(coord):
+    if len(coord) == 1:
+        return coord[0]
+    half_length = sum_line_length(coord) / 2.0
+    length = 0.0
+    ind = 0
+    while length < half_length:
+        ind += 1
+        length = sum_line_length(coord[:ind])
+
+    start_coord = coord[ind - 2]
+    end_coord = coord[ind - 1]
+    mid = [(a1 + a2) / 2.0 for a1, a2 in zip(start_coord, end_coord)]
+
+    return mid
+
+
+def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="white", infofunc=None,
+                             trace_name='edge_center', use_line_geodata=False):
     """
     Creates a plotly trace of pandapower buses.
 
@@ -63,7 +88,17 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="gre
     bus_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
 
-    bus_trace['x'], bus_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
+    if not use_line_geodata:
+        bus_trace['x'], bus_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
+    else:
+        x, y = [], []
+        for trace in line_trace:
+            coord = list(zip(trace["x"], trace["y"]))
+            mid_coord = get_line_mid(coord)
+            x.append(mid_coord[0])
+            y.append(mid_coord[1])
+
+        bus_trace['x'], bus_trace['y'] = (x, y)
 
     bus_trace['text'] = infofunc
 

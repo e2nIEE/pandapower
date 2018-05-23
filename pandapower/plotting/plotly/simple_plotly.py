@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element):
     idx = net[element].index
     if element == "bus":
-        hoverinfo = ("index = " + net.bus.index.astype(str)  + '<br>' +
+        hoverinfo = ("index = " + net.bus.index.astype(str) + '<br>' +
                      "name = " + net.bus['name'].astype(str) + '<br>' +
                      'Vn = ' + net.bus.loc[idx, 'vn_kv'].astype(str) + ' kV' + '<br>'
                      ).tolist()
     elif element == "line":
-        hoverinfo = ("index = " + net.line.index.astype(str)  + '<br>'
+        hoverinfo = ("index = " + net.line.index.astype(str) + '<br>'
                      +
                      "name = " + net.line['name'].astype(str) + '<br>'
                      +
@@ -39,7 +39,7 @@ def get_hoverinfo(net, element):
                     str) + ' Ohm' + '<br>'
                      ).tolist()
     elif element == "trafo":
-        hoverinfo = ("index = " + net.trafo.index.astype(str)  + '<br>'
+        hoverinfo = ("index = " + net.trafo.index.astype(str) + '<br>'
                      +
                      "name = " + net.trafo['name'].astype(str) + '<br>'
                      +
@@ -50,7 +50,7 @@ def get_hoverinfo(net, element):
                      'Tap = ' + net.trafo.loc[idx, 'tp_pos'].astype(str) + '<br>'
                      ).tolist()
     elif element == "ext_grid":
-        hoverinfo = ("index = " + net.ext_grid.index.astype(str)  + '<br>'
+        hoverinfo = ("index = " + net.ext_grid.index.astype(str) + '<br>'
                      +
                      "name = " + net.ext_grid['name'] + '<br>'
                      +
@@ -122,7 +122,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])
     if 'bus_geodata' not in net:
-        net.bus_geodata = pd.DataFrame(columns=["x","y"])
+        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
     if len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
@@ -151,17 +151,16 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     line_trace = create_line_trace(net, net.line.index, respect_switches=respect_switches,
                                    color=line_color, width=line_width,
                                    use_line_geodata=use_line_geodata)
-    line_center_trace = []
-    if use_line_geodata == False:
-        hoverinfo = get_hoverinfo(net, element="line")
-        line_center_trace = create_edge_center_trace(line_trace, color=line_color, infofunc=hoverinfo)
+
+    hoverinfo = get_hoverinfo(net, element="line")
+    line_center_trace = create_edge_center_trace(line_trace, color=line_color, infofunc=hoverinfo,
+                                                 use_line_geodata=use_line_geodata)
 
     # ----- Trafos ------
     trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5)
-    trafo_center_trace = []
-    if use_line_geodata == False:
-        hoverinfo = get_hoverinfo(net, element="trafo")
-        trafo_center_trace = create_edge_center_trace(trafo_trace, color=trafo_color, infofunc=hoverinfo)
+    hoverinfo = get_hoverinfo(net, element="trafo")
+    trafo_center_trace = create_edge_center_trace(trafo_trace, color=trafo_color, infofunc=hoverinfo,
+                                                  use_line_geodata=use_line_geodata)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
@@ -173,5 +172,3 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
 
     draw_traces(line_trace + trafo_trace + ext_grid_trace + bus_trace + line_center_trace + trafo_center_trace,
                 aspectratio=aspectratio, figsize=figsize, on_map=on_map, map_style=map_style)
-
-

@@ -124,9 +124,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata=None, on_map=False, projecti
                                     cmin=0,
                                     cmax=100,
                                     cbar_title='Line Loading [%]')
-    line_center_trace = []
-    if use_line_geodata == False:
-        line_center_trace = create_edge_center_trace(line_traces, infofunc=hoverinfo)
+    line_center_trace = create_edge_center_trace(line_traces, infofunc=hoverinfo, use_line_geodata=use_line_geodata)
 
     # ----- Trafos ------
     idx = net.trafo.index
@@ -138,9 +136,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata=None, on_map=False, projecti
                  ).tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)
-    trafo_center_trace = []
-    if use_line_geodata == False:
-        trafo_center_trace = create_edge_center_trace(trafo_traces, infofunc=hoverinfo)
+    trafo_center_trace = create_edge_center_trace(trafo_traces, infofunc=hoverinfo, use_line_geodata=use_line_geodata)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
