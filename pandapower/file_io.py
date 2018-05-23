@@ -28,7 +28,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
 from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
-    from_dict_of_dfs, restore_all_dtypes
+    from_dict_of_dfs, restore_all_dtypes, PPJSONEncoder
 
 
 def to_pickle(net, filename):
@@ -62,7 +62,8 @@ def to_pickle(net, filename):
                 item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
 
         save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
-                                                                 for col, dt in zip(item.columns, item.dtypes)}} \
+                                                                 for col, dt in
+                                                                 zip(item.columns, item.dtypes)}} \
             if isinstance(item, pd.DataFrame) else item
 
     with open(filename, "wb") as f:
@@ -97,7 +98,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json_string(net, default_handler=None):
+def to_json_string(net):
     """
         Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -117,27 +118,36 @@ def to_json_string(net, default_handler=None):
     for k in sorted(net.keys()):
         if k[0] == "_":
             continue
-        if isinstance(net[k], pd.DataFrame):
-            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns", default_handler=default_handler))
-        elif isinstance(net[k], numpy.ndarray):
-            json_string += k + ":" + json.dumps(net[k].tolist()) + ","
-        elif isinstance(net[k], dict):
-            json_string += '"%s":%s,' % (k, json.dumps(net[k]))
-        elif isinstance(net[k], bool):
-            json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
-        elif isinstance(net[k], str):
-            json_string += '"%s":"%s",' % (k, net[k])
-        elif isinstance(net[k], numbers.Number):
-            json_string += '"%s":%s,' % (k, net[k])
-        elif net[k] is None:
-            json_string += '"%s":null,' % k
-        else:
-            raise UserWarning("could not detect type of %s" % k)
+        # old:
+        # json_string += make_string(net, k, default_handler)
+        # new: let singledispatch take care of it
+        json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder))
     json_string = json_string[:-1] + "}\n"
     return json_string
 
 
-def to_json(net, filename=None, default_handler=None):
+# todo: remove this
+def make_string(net, k, default_handler=None):
+    if isinstance(net[k], pd.DataFrame):
+        return '"%s":%s,' % (
+            k, net[k].to_json(orient="columns", default_handler=default_handler))
+    elif isinstance(net[k], numpy.ndarray):
+        return k + ":" + json.dumps(net[k].tolist()) + ","
+    elif isinstance(net[k], dict):
+        return '"%s":%s,' % (k, json.dumps(net[k]))
+    elif isinstance(net[k], bool):
+        return '"%s":%s,' % (k, "true" if net[k] else "false")
+    elif isinstance(net[k], str):
+        return '"%s":"%s",' % (k, net[k])
+    elif isinstance(net[k], numbers.Number):
+        return '"%s":%s,' % (k, net[k])
+    elif net[k] is None:
+        return '"%s":null,' % k
+    else:
+        raise UserWarning("could not detect type of %s" % k)
+
+
+def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -155,7 +165,7 @@ def to_json(net, filename=None, default_handler=None):
     """
     dict_net = to_dict_of_dfs(net, include_results=True, create_dtype_df=True)
     dict_net["dtypes"] = collect_all_dtypes_df(net)
-    json_string = to_json_string(dict_net, default_handler=default_handler)
+    json_string = to_json_string(dict_net)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
@@ -240,9 +250,8 @@ def from_pickle(filename, convert=True):
                 if "columns" in item:
                     try:
                         net[key] = net[key].reindex(item["columns"], axis=1)
-                    except: #legacy for pandas <0.21
+                    except:  # legacy for pandas <0.21
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
-                      
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -415,14 +424,16 @@ def from_json_dict(json_dict, convert=True):
         return True
 
     for k in sorted(json_dict.keys()):
+        if k == 'dtypes':
+            continue
         if not check_equal_type(k):
             raise UserWarning("Different data type for existing pandapower field")
         if isinstance(json_dict[k], dict):
             if isinstance(net[k], pd.DataFrame):
-                columns = net[k].columns
+                # columns = net[k].columns -> We want to load everything!
                 net[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
                 net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
-                net[k] = net[k][columns]
+                # net[k] = net[k][columns]
             else:
                 net[k] = json_dict[k]
         else:

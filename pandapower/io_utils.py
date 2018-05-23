@@ -6,7 +6,11 @@
 
 import pandas as pd
 from pandapower import create_empty_network
-from numpy import int64
+import numpy
+import numbers
+from functools import singledispatch
+import json
+import copy
 
 try:
     import pplog as logging
@@ -24,7 +28,7 @@ def dicts_to_pandas(json_dict):
             if pd_dict[k].shape[0] == 0:  # skip empty dataframes
                 continue
             if pd_dict[k].index[0].isdigit():
-                pd_dict[k].set_index(pd_dict[k].index.astype(int64), inplace=True)
+                pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
         else:
             raise UserWarning("The json network is an old version or corrupt. "
                               "Trying to use the old load function")
@@ -106,3 +110,117 @@ def restore_all_dtypes(net, dtdf):
             net[v.element][v.column] = net[v.element][v.column].astype(v["dtype"])
         except KeyError:
             logger.warning('Error while setting dtype of %s[%s]' % (v.element, v.column))
+
+
+class PPJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        try:
+            s = to_serializable(o)
+        except TypeError:
+            # Let the base class default method raise the TypeError
+            return json.JSONEncoder.default(self, o)
+        else:
+            return s
+
+
+class PPJSONDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(object_hook=pp_hook, *args, **kwargs)
+
+
+def pp_hook(d):
+    if '_module' in d.keys() and '_class' in d.keys():
+        class_name = d.pop('_class')
+        module_name = d.pop('_module')
+        obj = d.pop('_object')
+
+        keys = copy.deepcopy(list(d.keys()))
+        for key in keys:
+            if type(d[key]) == dict:
+                d[key] = pp_hook(d[key])
+
+        if class_name in ('DataFrame', 'Series'):
+            return pd.read_json(obj, **d)
+        else:
+            module = __import__(module_name)
+            class_ = getattr(module, class_name)
+            return class_(obj, **d)
+    else:
+        return d
+
+
+def with_signature(obj, val, obj_module=None, obj_class=None):
+    if obj_module is None:
+        obj_module = obj.__module__.__str__()
+    if obj_class is None:
+        obj_class = obj.__class__.__name__
+    d = {'_module': obj_module, '_class': obj_class, '_object': val}
+    if hasattr(obj, 'dtype'):
+        d.update({'dtype': str(obj.dtype)})
+    return d
+
+
+@singledispatch
+def to_serializable(obj):
+    logger.debug('standard case')
+    return str(obj)
+
+
+"""
+@to_serializable.register()
+def json_array(obj):
+    return 
+"""
+
+
+@to_serializable.register(pd.DataFrame)
+def json_dataframe(obj):
+    logger.debug('DataFrame')
+    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable))
+    d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
+    return d
+
+
+@to_serializable.register(pd.Series)
+def json_series(obj):
+    logger.debug('DataFrame')
+    d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable))
+    d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
+    return d
+
+
+@to_serializable.register(numpy.ndarray)
+def json_array(obj):
+    logger.debug("ndarray")
+    d = with_signature(obj, list(obj), obj_module='numpy', obj_class='array')
+    return d
+
+
+@to_serializable.register(numpy.integer)
+def json_npint(obj):
+    logger.debug("integer")
+    return int(obj)
+
+
+@to_serializable.register(numpy.floating)
+def json_npfloat(obj):
+    logger.debug("floating")
+    return float(obj)
+
+
+@to_serializable.register(numbers.Number)
+def json_num(obj):
+    logger.debug("numbers.Number")
+    return str(obj)
+
+
+@to_serializable.register(pd.Index)
+def json_pdindex(obj):
+    logger.debug("pd.Index")
+    return with_signature(obj, list(obj))
+
+
+@to_serializable.register(bool)
+def json_bool(obj):
+    logger.debug("bool")
+    return "true" if obj else "false"
