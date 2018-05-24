@@ -228,6 +228,11 @@ def from_pickle(filename, convert=True):
         if isinstance(item, dict) and "DF" in item:
             df_dict = item["DF"]
             if "columns" in df_dict:
+                # make sure the index is Int64Index
+                try:
+                    df_index = pd.Int64Index(df_dict['index'])
+                except TypeError:
+                    df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
                         and epsg is not None:
                     # convert primitive data-types to shapely-objects
@@ -240,9 +245,9 @@ def from_pickle(filename, convert=True):
                         geo = [LineString(row[1]) for row in df_dict["data"]]
 
                     net[key] = GeoDataFrame(data, crs=from_epsg(epsg), geometry=geo,
-                                            index=df_dict["index"])
+                                            index=df_index)
                 else:
-                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_dict["index"],
+                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
                                             data=df_dict["data"])
             else:
                 # TODO: is this legacy code?
@@ -418,6 +423,8 @@ def from_json_dict(json_dict, convert=True):
             if isinstance(net[name], type(json_dict[name])):
                 return True
             elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], dict):
+                return True
+            elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], GeoDataFrame):
                 return True
             else:
                 return False

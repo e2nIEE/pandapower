@@ -463,7 +463,7 @@ def convert_format(net):
         if net.measurement.empty:
             del net["measurement"]
         else:
-            logger.warn("The measurement structure seems outdated. Please adjust it "
+            logger.warning("The measurement structure seems outdated. Please adjust it "
                         "according to the documentation.")
     if "measurement" in net and "name" not in net.measurement:
         net.measurement.insert(0, "name", None)

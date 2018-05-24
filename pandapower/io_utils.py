@@ -5,6 +5,8 @@
 
 
 import pandas as pd
+import geopandas as gpd
+import fiona
 from pandapower import create_empty_network
 import numpy
 import numbers
@@ -54,9 +56,9 @@ def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
                 dodfs["user_pf_options"] = pd.DataFrame(table, index=[0])
             else:
                 continue
-        elif type(table) != pd.DataFrame:
+        elif type(table) != pd.DataFrame and type(table) != gpd.GeoDataFrame:
             # just skip empty things without warning
-            if table:
+            if table is not None:
                 logger.warning("Attribute net.%s could not be saved !" % item)
             continue
         elif item == "bus_geodata":
@@ -88,10 +90,18 @@ def from_dict_of_dfs(dodfs):
                 net.line_geodata.loc[i, "coords"] = coord
         elif item.endswith("_std_types"):
             net["std_types"][item[:-10]] = table.T.to_dict()
+            continue  # don't go into try..except
         elif item == "user_pf_options":
             net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
+            continue  # don't go into try..except
         else:
             net[item] = table
+        # set the index to be Int64Index
+        try:
+            net[item].set_index(net[item].index.astype('int64'), inplace=True)
+        except TypeError:
+            # TypeError: if not int64 index (e.g. str)
+            pass
     return net
 
 
@@ -148,6 +158,14 @@ def pp_hook(d):
                 logger.debug("failed setting int64 index")
                 pass
             return df
+        elif class_name == 'GeoDataFrame':
+            df = gpd.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
+            df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+            # coords column is not handled properly when using from_features
+            if 'coords' in df:
+                df['coords'] = df.coords.apply(json.loads)
+            df = df.reindex(columns=d['columns'])
+            return df
         else:
             module = __import__(module_name)
             class_ = getattr(module, class_name)
@@ -185,6 +203,14 @@ def json_dataframe(obj):
     logger.debug('DataFrame')
     d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable))
     d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
+    return d
+
+
+@to_serializable.register(gpd.GeoDataFrame)
+def json_geodataframe(obj):
+    logger.debug('GeoDataFrame')
+    d = with_signature(obj, obj.to_json())
+    d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'crs': obj.crs, 'columns': obj.columns})
     return d
 
 

@@ -313,7 +313,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     add_basic_std_types(net)
     reset_results(net)
     net['user_pf_options'] = dict()
