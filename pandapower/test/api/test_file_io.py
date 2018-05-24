@@ -35,20 +35,30 @@ def test_excel(net_in, tempdir):
 
 
 def test_json(net_in, tempdir):
-    net_geo = copy.deepcopy(net_in)
-    # make GeodataFrame
-    from shapely.geometry import Point, LineString
-    from fiona.crs import from_epsg
-    import geopandas as gpd
-    for tab in ('bus_geodata', 'line_geodata'):
-        net_geo[tab]['geometry'] = None
-        net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry='geometry', crs=from_epsg(4326))
-    for idx, row in net_geo.bus_geodata.iterrows():
-        net_geo.bus_geodata.at[idx, 'geometry'] = Point(row.x, row.y)
-    for idx, row in net_geo.line_geodata.iterrows():
-        net_geo.line_geodata.at[idx, 'geometry'] = LineString(row.coords)
-
     filename = os.path.join(tempdir, "testfile.json")
+    try:
+        net_geo = copy.deepcopy(net_in)
+        # make GeodataFrame
+        from shapely.geometry import Point, LineString
+        from fiona.crs import from_epsg
+        import geopandas as gpd
+
+        for tab in ('bus_geodata', 'line_geodata'):
+            net_geo[tab]['geometry'] = None
+            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry='geometry', crs=from_epsg(4326))
+
+        for idx, row in net_geo.bus_geodata.iterrows():
+            net_geo.bus_geodata.at[idx, 'geometry'] = Point(row.x, row.y)
+
+        for idx, row in net_geo.line_geodata.iterrows():
+            net_geo.line_geodata.at[idx, 'geometry'] = LineString(row.coords)
+
+        pp.to_json(net_geo, filename)
+        net_out = pp.from_json(filename)
+        assert_net_equal(net_geo, net_out)
+    except NameError:
+        pass
+
     # check if restore_all_dtypes works properly:
     net_in.line['test'] = 123
     # this will not work:
@@ -56,10 +66,6 @@ def test_json(net_in, tempdir):
     pp.to_json(net_in, filename)
     net_out = pp.from_json(filename)
     assert_net_equal(net_in, net_out)
-
-    pp.to_json(net_geo, filename)
-    net_out = pp.from_json(filename)
-    assert_net_equal(net_geo, net_out)
 
 
 def test_sqlite(net_in, tempdir):

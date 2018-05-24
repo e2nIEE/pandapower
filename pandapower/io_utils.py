@@ -5,14 +5,20 @@
 
 
 import pandas as pd
-import geopandas as gpd
-import fiona
 from pandapower import create_empty_network
 import numpy
 import numbers
 from functools import singledispatch
 import json
 import copy
+
+try:
+    import fiona
+    import geopandas as gpd
+
+    GEOPANDAS_INSTALLED = True
+except:
+    GEOPANDAS_INSTALLED = False
 
 try:
     import pplog as logging
@@ -56,7 +62,8 @@ def to_dict_of_dfs(net, include_results=False, create_dtype_df=True):
                 dodfs["user_pf_options"] = pd.DataFrame(table, index=[0])
             else:
                 continue
-        elif type(table) != pd.DataFrame and type(table) != gpd.GeoDataFrame:
+        elif type(table) != pd.DataFrame and \
+                (GEOPANDAS_INSTALLED and type(table) != gpd.GeoDataFrame):
             # just skip empty things without warning
             if table is not None:
                 logger.warning("Attribute net.%s could not be saved !" % item)
@@ -158,7 +165,7 @@ def pp_hook(d):
                 logger.debug("failed setting int64 index")
                 pass
             return df
-        elif class_name == 'GeoDataFrame':
+        elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
             df = gpd.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
             df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
@@ -206,12 +213,16 @@ def json_dataframe(obj):
     return d
 
 
-@to_serializable.register(gpd.GeoDataFrame)
-def json_geodataframe(obj):
-    logger.debug('GeoDataFrame')
-    d = with_signature(obj, obj.to_json())
-    d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'crs': obj.crs, 'columns': obj.columns})
-    return d
+try:
+    @to_serializable.register(gpd.GeoDataFrame)
+    def json_geodataframe(obj):
+        logger.debug('GeoDataFrame')
+        d = with_signature(obj, obj.to_json())
+        d.update({'dtype': obj.dtypes.astype('str').to_dict(),
+                  'crs': obj.crs, 'columns': obj.columns})
+        return d
+except NameError:
+    pass
 
 
 @to_serializable.register(pd.Series)

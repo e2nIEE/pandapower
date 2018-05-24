@@ -424,7 +424,9 @@ def from_json_dict(json_dict, convert=True):
                 return True
             elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], dict):
                 return True
-            elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], GeoDataFrame):
+            elif GEOPANDAS_INSTALLED and \
+                    isinstance(net[name], pd.DataFrame) and \
+                    isinstance(json_dict[name], GeoDataFrame):
                 return True
             else:
                 return False
