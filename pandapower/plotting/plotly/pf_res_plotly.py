@@ -90,7 +90,7 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata=None, on_map=False, projecti
 
     # ----- Buses ------
     # initializating bus trace
-    idx = net.line.index
+    idx = net.bus.index
     # hoverinfo which contains name and pf results
     precision = 3
     hoverinfo = (net.bus.loc[idx, 'name'].astype(str) + '<br>' +
