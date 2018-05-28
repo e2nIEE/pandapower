@@ -121,7 +121,7 @@ def to_json_string(net):
         # old:
         # json_string += make_string(net, k, default_handler)
         # new: let singledispatch take care of it
-        json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder))
+        json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder, indent=4))
     json_string = json_string[:-1] + "}\n"
     return json_string
 
