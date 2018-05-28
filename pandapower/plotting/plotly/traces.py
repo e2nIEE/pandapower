@@ -83,13 +83,13 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
         **color** (String, "blue") - color of buses in the trace
 
     """
-    color = get_plotly_color(color)
+    # color = get_plotly_color(color)
 
-    bus_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
+    center_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
                      marker=dict(color=color, size=size, symbol=patch_type))
 
     if not use_line_geodata:
-        bus_trace['x'], bus_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
+        center_trace['x'], center_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
     else:
         x, y = [], []
         for trace in line_trace:
@@ -98,11 +98,11 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
             x.append(mid_coord[0])
             y.append(mid_coord[1])
 
-        bus_trace['x'], bus_trace['y'] = (x, y)
+        center_trace['x'], center_trace['y'] = (x, y)
 
-    bus_trace['text'] = infofunc
+    center_trace['text'] = infofunc
 
-    return [bus_trace]
+    return center_trace
 
 
 def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue", infofunc=None,
@@ -305,6 +305,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                              lines2plot.to_bus.isin(net.bus_geodata.index)
         lines2plot = lines2plot[lines_with_geodata]
 
+    cmap_lines = None
     if cmap is not None:
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
@@ -325,78 +326,92 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         if infofunc is not None:
             infofunc = list(compress(infofunc, lines2plot_mask))
 
-        line_traces = []
-        col_i = 0
-        for idx, line in lines2plot.iterrows():
-            line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
-                              line=Line(width=width, color=color))
+    line_traces = []
+    for col_i, (idx, line) in enumerate(lines2plot.iterrows()):
+        if cmap is not None:
+            line_color = cmap_lines[col_i]
+        else:
+            line_color = color
+        line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
+                          line=Line(width=width, color=color))
 
-            line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
+        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
 
-            line_trace['line']['color'] = cmap_lines[col_i]
+        line_trace['line']['color'] = line_color
 
-            line_trace['text'] = line['name'] if infofunc is None else infofunc[col_i]
+        line_trace['text'] = line['name'] if infofunc is None else infofunc[col_i]
 
-            line_traces.append(line_trace)
-            col_i += 1
+        line_traces.append(line_trace)
+
+
+    if show_colorbar and cmap is not None:
 
         cmin = cmin if cmin else cmap_vals.min()
         cmax = cmax if cmax else cmap_vals.max()
+        try:
+            # TODO for custom colormaps
+            cbar_cmap_name = 'Jet' if cmap is 'jet' else cmap
+            # workaround to get colorbar for lines (an unvisible node is added)
+            lines_cbar = dict(type='scatter', x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
+                              marker=Marker(size=0, cmin=cmin, cmax=cmax,
+                                            color='rgb(255,255,255)',
+                                            colorscale=cbar_cmap_name,
+                                            colorbar=ColorBar(thickness=10,
+                                                              x=1.1,
+                                                              titleside='right'),
+                                            ))
+            if cbar_title:
+                lines_cbar['marker']['colorbar']['title'] = cbar_title
 
-        if show_colorbar:
-            try:
-                # TODO for custom colormaps
-                cbar_cmap_name = 'Jet' if cmap is 'jet' else cmap
-                # workaround to get colorbar for lines (an unvisible node is added)
-                lines_cbar = dict(type='scatter', x=[net.bus_geodata.x[0]], y=[net.bus_geodata.y[0]], mode='markers',
-                                  marker=Marker(size=0, cmin=cmin, cmax=cmax,
-                                                color='rgb(255,255,255)',
-                                                colorscale=cbar_cmap_name,
-                                                colorbar=ColorBar(thickness=10,
-                                                                  x=1.1,
-                                                                  titleside='right'),
-                                                ))
-                if cbar_title:
-                    lines_cbar['marker']['colorbar']['title'] = cbar_title
+            line_traces.append(lines_cbar)
+        except:
+            pass
 
-                line_traces.append(lines_cbar)
-            except:
-                pass
-
-    else:
-        line_trace = dict(type='scatter',
-                          text=[], hoverinfo='text', mode='lines', name=trace_name,
-                          line=Line(width=width, color=color))
-
-        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot, use_line_geodata)
-
-        line_trace['text'] = lines2plot['name'].tolist() if infofunc is None else infofunc
-
-        if legendgroup:
-            line_trace['legendgroup'] = legendgroup
-
-        line_traces = [line_trace]
+    # else:
+    #     line_traces = []
+    #     for col_i, (idx, line) in enumerate(lines2plot.iterrows()):
+    #         line_trace = dict(type='scatter',
+    #                           text=[], hoverinfo='text', mode='lines', name=trace_name,
+    #                           line=Line(width=width, color=color))
+    #
+    #         line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
+    #
+    #         line_trace['text'] = lines2plot['name'].tolist() if infofunc is None else infofunc
+    #
+    #         if legendgroup:
+    #             line_trace['legendgroup'] = legendgroup
+    #
+    #         line_traces.append(line_trace)
 
     if len(nogolines) > 0:
-        line_trace = dict(type='scatter',
-                          text=[], hoverinfo='text', mode='lines', name='disconnected lines',
-                          line=Line(width=width / 2, color='grey', dash='dot'))
-
         lines2plot = net.line.loc[nogolines]
+        for idx, line in lines2plot.iterrows():
+            line_color = color
+            line_trace = dict(type='scatter',
+                              text=[], hoverinfo='text', mode='lines', name='disconnected lines',
+                              line=Line(width=width / 2, color='grey', dash='dot'))
 
-        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot, use_line_geodata)
+            line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
 
-        line_trace['text'] = lines2plot['name'].tolist()
+            line_trace['line']['color'] = line_color
+            try:
+                line_trace['text'] = infofunc[idx]
+            except:
+                line_trace["text"] = line['name']
 
-        if legendgroup:
-            line_trace['legendgroup'] = legendgroup
+            line_traces.append(line_trace)
 
-        line_traces.append(line_trace)
+            if legendgroup:
+                line_trace['legendgroup'] = legendgroup
+
+    center_trace = create_edge_center_trace(line_traces, color=color, infofunc=infofunc,
+                             use_line_geodata=use_line_geodata)
+    line_traces.append(center_trace)
     return line_traces
 
 
 def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, cmap=None,
-                       trace_name='trafos', cmin=None, cmax=None, cmap_vals=None):
+                       trace_name='trafos', cmin=None, cmax=None, cmap_vals=None, use_line_geodata=None):
     """
     Creates a plotly trace of pandapower trafos.
 
@@ -441,6 +456,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     trafos_mask = net.trafo.index.isin(trafos)
     tarfo2plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
+    cmap_colors = []
     if cmap is not None:
         cmap = 'jet' if cmap is None else cmap
 
@@ -456,50 +472,31 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
             cmap_vals = net.res_trafo.loc[tarfo2plot.index, 'loading_percent'].values
 
         cmap_colors = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
-        trafo_traces = []
-        col_i = 0
-        for _, trafo in tarfo2plot.iterrows():
-            trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=cmap_colors[col_i]),
-                               hoverinfo='text', mode='lines', name=trace_name)
 
-            trafo_trace['text'] = trafo['name'].tolist() if infofunc is None else infofunc[col_i]
 
-            from_bus = net.bus_geodata.loc[trafo.hv_bus, 'x']
-            to_bus = net.bus_geodata.loc[trafo.lv_bus, 'x']
-            trafo_trace['x'] = [from_bus, (from_bus + to_bus) / 2, to_bus]
+    trafo_traces = []
+    for col_i, (_, trafo) in enumerate(tarfo2plot.iterrows()):
+        if cmap is not None:
+            color = cmap_colors[col_i]
 
-            from_bus = net.bus_geodata.loc[trafo.hv_bus, 'y']
-            to_bus = net.bus_geodata.loc[trafo.lv_bus, 'y']
-            trafo_trace['y'] = [from_bus, (from_bus + to_bus) / 2, to_bus]
-
-            trafo_traces.append(trafo_trace)
-            col_i += 1
-
-    else:
-        trafo_trace = dict(type='scatter',
-                           text=[], line=dict(width=width, color=color),
+        trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
                            hoverinfo='text', mode='lines', name=trace_name)
 
-        trafo_trace['text'] = tarfo2plot['name'].tolist() if infofunc is None else infofunc
+        trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc[col_i]
 
-        from_bus = net.bus_geodata.loc[tarfo2plot.hv_bus, 'x'].tolist()
-        to_bus = net.bus_geodata.loc[tarfo2plot.lv_bus, 'x'].tolist()
-        # center point added because of the hovertool
-        center = (np.array(from_bus) + np.array(to_bus)) / 2
-        None_list = [None] * len(from_bus)
-        trafo_trace['x'] = np.array([from_bus, center, to_bus, None_list]).T.flatten().tolist()
-        trafo_trace['x'] = trafo_trace['x'][:-1]
+        from_bus = net.bus_geodata.loc[trafo.hv_bus, 'x']
+        to_bus = net.bus_geodata.loc[trafo.lv_bus, 'x']
+        trafo_trace['x'] = [from_bus, (from_bus + to_bus) / 2, to_bus]
 
-        from_bus = net.bus_geodata.loc[tarfo2plot.hv_bus, 'y'].tolist()
-        to_bus = net.bus_geodata.loc[tarfo2plot.lv_bus, 'y'].tolist()
-        # center point added because of the hovertool
-        center = (np.array(from_bus) + np.array(to_bus)) / 2
-        None_list = [None] * len(from_bus)
-        trafo_trace['y'] = np.array([from_bus, center, to_bus, None_list]).T.flatten().tolist()
-        trafo_trace['y'] = trafo_trace['y'][:-1]
+        from_bus = net.bus_geodata.loc[trafo.hv_bus, 'y']
+        to_bus = net.bus_geodata.loc[trafo.lv_bus, 'y']
+        trafo_trace['y'] = [from_bus, (from_bus + to_bus) / 2, to_bus]
 
-        trafo_traces = [trafo_trace]
+        trafo_traces.append(trafo_trace)
 
+    center_trace = create_edge_center_trace(trafo_traces, color=color, infofunc=infofunc,
+                             use_line_geodata=use_line_geodata)
+    trafo_traces.append(center_trace)
     return trafo_traces
 
 
