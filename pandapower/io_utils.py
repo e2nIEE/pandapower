@@ -11,6 +11,7 @@ import numbers
 from functools import singledispatch
 import json
 import copy
+import importlib
 
 try:
     import fiona
@@ -174,7 +175,7 @@ def pp_hook(d):
             df = df.reindex(columns=d['columns'])
             return df
         else:
-            module = __import__(module_name)
+            module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
             return class_(obj, **d)
     else:
