@@ -262,7 +262,7 @@ def json_num(obj):
 @to_serializable.register(pd.Index)
 def json_pdindex(obj):
     logger.debug("pd.Index")
-    return with_signature(obj, list(obj))
+    return with_signature(obj, list(obj), obj_module='pandas')
 
 
 @to_serializable.register(bool)
