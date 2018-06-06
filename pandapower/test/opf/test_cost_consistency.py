@@ -53,7 +53,10 @@ def test_contingency_sgen(base_net):
 
     assert abs(net.res_cost - net.res_sgen.p_kw.at[0]*-1) < 1e-5
 
-    net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
+    try:
+        net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
+    except:
+        net.piecewise_linear_cost = net.piecewise_linear_cost.drop(0)
 
     # first using a positive slope as in the case above
     pp.create_polynomial_cost(net, 0, "sgen", array([1, 0]))
@@ -105,8 +108,12 @@ def test_contingency_load(base_net):
     assert abs(net.res_cost - net.res_load.p_kw.at[1] * -1) < 1e-5
 
     # poly costs
+    try:
+        net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
+    except:
+        # legacy fix
+        net.piecewise_linear_cost = net.piecewise_linear_cost.drop(0)
 
-    net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
 
     # first using a positive slope as in the case above
     pp.create_polynomial_cost(net, 1, "load", array([1, 0]))
@@ -157,7 +164,11 @@ def test_contingency_gen(base_net):
 
     assert abs(net.res_cost - net.res_gen.p_kw.at[0]*-1) < 1e-5
 
-    net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
+    try:
+        net.piecewise_linear_cost = net.piecewise_linear_cost.drop(index=0)
+    except:
+        # legacy fix
+        net.piecewise_linear_cost = net.piecewise_linear_cost.drop(0)
 
     # first using a positive slope as in the case above
     pp.create_polynomial_cost(net, 0, "gen", array([1, 0]))

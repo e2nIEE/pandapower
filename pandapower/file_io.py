@@ -153,7 +153,7 @@ def to_json(net, filename=None, default_handler=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
+    dict_net = to_dict_of_dfs(net, include_results=True, create_dtype_df=True)
     dict_net["dtypes"] = collect_all_dtypes_df(net)
     json_string = to_json_string(dict_net, default_handler=default_handler)
     if hasattr(filename, 'write'):

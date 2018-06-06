@@ -38,14 +38,14 @@ def test_determine_stubs(feeder_network):
 def test_distance(feeder_network):
     net = feeder_network
     dist = top.calc_distance_to_bus(net, 0)
-    assert np.allclose(dist.values, [0, 12, 13, 5])
+    assert np.allclose(dist.sort_index().values, [0, 12, 13, 5])
 
     dist = top.calc_distance_to_bus(net, 0, notravbuses={3})
-    assert np.allclose(dist.values, [0, 12, 18, 5])
+    assert np.allclose(dist.sort_index().values, [0, 12, 18, 5])
 
     pp.create_switch(net, bus=3, element=2, et="l", closed=False)
     dist = top.calc_distance_to_bus(net, 0)
-    assert np.allclose(dist.values, [0, 12, 18, 5])
+    assert np.allclose(dist.sort_index().values, [0, 12, 18, 5])
 
 
 def test_unsupplied_buses_with_in_service():

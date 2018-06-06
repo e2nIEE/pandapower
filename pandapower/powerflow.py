@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.create import create_gen
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
@@ -12,7 +11,7 @@ from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results
 
 
 class AlgorithmUnknown(ppException):
@@ -48,6 +47,8 @@ def _powerflow(net, **kwargs):
 
     if (ac and not init == "results") or not ac:
         reset_results(net)
+    else:
+        verify_results(net)
 
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
