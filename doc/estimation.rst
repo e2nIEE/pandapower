@@ -37,7 +37,7 @@ For a more in-depth explanation of the internals of the state estimation method,
 Defining Measurements
 ===========================
 
-Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative. Measurements for three winding transformers (trafo3w) can not yet be added. Please use a workaround of a artificial lines or the like.  
+Measurements are defined via the pandapower *"create_measurement"* function. There are different physical properties, which can be measured at different elements. The following lists and table clarify the possible combinations. Bus power injection measurements are given in the producer system. Generated power is positive, consumed power is negative. Measurements for three winding transformers (trafo3w) can not yet be added. Please use a workaround of an artificial line or the like.  
 
 **Types of Measurements**
 
