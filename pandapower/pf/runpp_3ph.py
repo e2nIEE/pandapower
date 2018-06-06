@@ -341,12 +341,12 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         count+= 1
 #    Iabc = sequence_to_phase(I012_it)
 #    Vabc = Vabc_it
-#    Sabc = S_from_VI(Vabc,Iabc)    
+#    Sabc = Sabc/np.sqrt(3)  
     return count,V012_it,I012_it,ppci0,Y1_pu
 
 def show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_new,I012_new):
     V_base_res = V_base/np.sqrt(3)
-    I_base_res = kVA_base/V_base_res * 1e-3 
+    I_base_res = kVA_base/V_base_res * 1e-3
     print("\n No of Iterations: %u"%count)
     print ('\n\n Final  Values Pandapower ')
     ppci0["bus"][0, 4] = 0

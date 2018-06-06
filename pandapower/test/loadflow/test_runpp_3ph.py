@@ -327,7 +327,7 @@ def test_transformer_3ph():
     lv_base = 0.4
     kVA_base = 100000                      # 100 MVA
 #    I_base = (kVA_base/V_base) * 1e-3           # in kA
-    vector_group = "Dyn"
+    vector_group = "Yyn"
     hv_base_res = hv_base/np.sqrt(3)
     lv_base_res = lv_base/np.sqrt(3)
     I_hv_res = kVA_base/hv_base_res*1e-3
@@ -345,9 +345,9 @@ def test_transformer_3ph():
     net.ext_grid["x0x_max"] = 1.0
     
     transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
-    transformer_type.update({"vsc0_percent": 5, "vscr0_percent": 0.4, "mag0_percent": 10,
-                             "mag0_rx": 0.4, "si0_hv_partial": 0.9,
-                            "vector_group": vector_group})
+    transformer_type.update({"vsc0_percent": 6, "vscr0_percent": 1.095238, "mag0_percent": 100,
+                     "mag0_rx": 0., "vector_group": vector_group,"vscr_percent": 1.095238,
+                     "shift_degree": 0 })
     pp.create_std_type(net, transformer_type, vector_group, "trafo")
     pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
                           index=pp.get_free_id(net.trafo)+1)

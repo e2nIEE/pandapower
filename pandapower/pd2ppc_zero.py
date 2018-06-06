@@ -117,6 +117,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
 
         vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
+#        if mode == 'pf3ph':
+#            vn_trafo_hv = vn_trafo_hv/np.sqrt(3)
+#            vn_trafo_lv = vn_trafo_lv/np.sqrt(3)
         vn_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
         ratio = _calc_nominal_ratio_from_dataframe(ppc, trafos, vn_trafo_hv, vn_trafo_lv,
                                                    bus_lookup)
@@ -216,8 +219,9 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
 
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
-    else:
+    elif mode == 'pf_3ph':
         c = 3.3
+#        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )
@@ -248,6 +252,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
 
 def _add_line_sc_impedance_zero(net, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
+    mode = net["_options"]["mode"]
     if not "line" in branch_lookup:
         return
     line = net["line"]
@@ -258,6 +263,8 @@ def _add_line_sc_impedance_zero(net, ppc):
     fb = bus_lookup[line["from_bus"].values]
     tb = bus_lookup[line["to_bus"].values]
     baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    if mode == 'pf_3ph':
+        baseR = np.square(ppc["bus"][fb, BASE_KV]/np.sqrt(3)) / net.sn_kva * 1e3
     f, t = branch_lookup["line"]
     # line zero sequence impedance
     ppc["branch"][f:t, F_BUS] = fb

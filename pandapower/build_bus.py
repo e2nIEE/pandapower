@@ -227,8 +227,8 @@ def _build_bus_ppc(net, ppc):
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    if mode == 'pf_3ph':
-        ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values/np.sqrt(3)
+#    if mode == 'pf_3ph':
+#        ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values/np.sqrt(3)
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
                BUS_TYPE] = NONE
 
@@ -437,6 +437,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 3.3
+#        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )
