@@ -9,6 +9,7 @@ from pandapower.std_types import *
 from pandapower.toolbox import *
 from pandapower.powerflow import *
 from pandapower.opf import *
+from pandapower.optimal_powerflow import OPFNotConverged
 
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'

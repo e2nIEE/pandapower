@@ -18,7 +18,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from pypower import ppoption, runpf
+    from pypower import ppoption, runpf, runopf, rundcpf, rundcopf
     ppopt = ppoption.ppoption(VERBOSE=0, OUT_ALL=0)
     pypower_import = True
 except ImportError:
@@ -46,7 +46,7 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
         logger.info("Cost mode of gencost line %s is unknown." % idx)
 
 
-def from_ppc(ppc, f_hz=50, validate_conversion=False):
+def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     """
     This function converts pypower case files to pandapower net structure.
 
@@ -61,6 +61,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
         **validate_conversion** (bool, False) - If True, validate_from_ppc is run after conversion.
             For running the validation, the ppc must already contain the pypower
             powerflow results or pypower must be importable.
+
+        ****kwargs** keyword arguments for validate_from_ppc if validate_conversion is True
 
     OUTPUT:
 
@@ -257,15 +259,15 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False):
 
     if validate_conversion:
         logger.setLevel(logging.DEBUG)
-        if not validate_from_ppc(ppc, net):
+        if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
 
     return net
 
 
-def validate_from_ppc(ppc_net, pp_net, max_diff_values={
+def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
     "vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3, "p_gen_kw": 1e-3,
-        "q_gen_kvar": 1e-3}):
+        "q_gen_kvar": 1e-3}, run=True):
     """
     This function validates the pypower case files to pandapower net structure conversion via a \
     comparison of loadflow calculation results. (Hence the opf cost conversion is not validated.)
@@ -279,9 +281,16 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
 
     OPTIONAL:
 
+        **pf_type** ("runpp", string) - Type of validated power flow. Possible are ("runpp",
+            "rundcpp", "runopp", "rundcopp")
+
         **max_diff_values** - Dict of maximal allowed difference values. The keys must be
         'vm_pu', 'va_degree', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw' and 'q_gen_kvar' and
         the values floats.
+
+        **run** (True, bool or list of two bools) - changing the value to False avoids trying to run
+            (optimal) loadflows. Giving a list of two bools addresses first pypower and second
+            pandapower.
 
     OUTPUT:
 
@@ -302,12 +311,38 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         The user has to take care that the loadflow results already are included in the provided \
         ppc_net.
     """
+    # check in case of optimal powerflow comparison whether cost information exist
+    if "opp" in pf_type:
+        if not (len(pp_net.polynomial_cost) | len(pp_net.piecewise_linear_cost)):
+            if "gencost" in ppc_net:
+                if not len(ppc_net["gencost"]):
+                    logger.debug('ppc and pandapower net do not include cost information.')
+                    return True
+                else:
+                    logger.error('The pandapower net does not include cost information.')
+                    return False
+            else:
+                logger.debug('ppc and pandapower net do not include cost information.')
+                return True
+
+    # guarantee run parameter as list, for pypower and pandapower (optimal) powerflow run
+    run = [run, run] if isinstance(run, bool) else run
+
     # --- check pypower powerflow success, if possible
-    if pypower_import:
+    if pypower_import and run[0]:
         try:
-            ppc_net = runpf.runpf(ppc_net, ppopt)[0]
+            if pf_type == "runpp":
+                ppc_net = runpf.runpf(ppc_net, ppopt)[0]
+            elif pf_type == "rundcpp":
+                ppc_net = rundcpf.rundcpf(ppc_net, ppopt)[0]
+            elif pf_type == "runopp":
+                ppc_net = runopf.runopf(ppc_net, ppopt)
+            elif pf_type == "rundcopp":
+                ppc_net = rundcopf.rundcopf(ppc_net, ppopt)
+            else:
+                raise ValueError("The pf_type %s is unknown" % pf_type)
         except:
-            logger.debug("The pypower runpf did not work.")
+            logger.debug("The pypower run did not work.")
     ppc_success = True
     if 'success' in ppc_net.keys():
         if ppc_net['success'] != 1:
@@ -319,16 +354,44 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
         logger.error("The shape of given ppc data indicates missing pypower powerflow results.")
 
     # --- try to run a pandapower powerflow
-    try:
-        pp.runpp(pp_net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
-    except pp.LoadflowNotConverged:
-        try:
-            pp.runpp(pp_net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
-        except pp.LoadflowNotConverged:
+    if run[1]:
+        if pf_type == "runpp":
             try:
-                pp.runpp(pp_net, trafo_model="pi")
+                pp.runpp(pp_net, init="dc", calculate_voltage_angles=True, trafo_model="pi")
             except pp.LoadflowNotConverged:
-                logger.error('The pandapower powerflow does not converge.')
+                try:
+                    pp.runpp(pp_net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
+                except pp.LoadflowNotConverged:
+                    try:
+                        pp.runpp(pp_net, trafo_model="pi")
+                    except pp.LoadflowNotConverged:
+                        logger.error('The pandapower powerflow does not converge.')
+        elif pf_type == "rundcpp":
+            try:
+                pp.rundcpp(pp_net, trafo_model="pi")
+            except pp.LoadflowNotConverged:
+                logger.error('The pandapower dc powerflow does not converge.')
+        elif pf_type == "runopp":
+                try:
+                    pp.runopp(pp_net, init="flat", calculate_voltage_angles=True)
+                except pp.OPFNotConverged:
+                    try:
+                        pp.runopp(pp_net, init="pf", calculate_voltage_angles=True)
+                    except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
+                        try:
+                            pp.runopp(pp_net, init="flat", calculate_voltage_angles=False)
+                        except pp.OPFNotConverged:
+                            try:
+                                pp.runopp(pp_net, init="pf", calculate_voltage_angles=False)
+                            except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
+                                logger.error('The pandapower optimal powerflow does not converge.')
+        elif pf_type == "rundcopp":
+            try:
+                pp.rundcopp(pp_net)
+            except pp.LoadflowNotConverged:
+                logger.error('The pandapower dc optimal powerflow does not converge.')
+        else:
+            raise ValueError("The pf_type %s is unknown" % pf_type)
 
     # --- prepare powerflow result comparison by reordering pp results as they are in ppc results
     if not ((ppc_success) & (pp_net.converged)):
@@ -386,8 +449,10 @@ def validate_from_ppc(ppc_net, pp_net, max_diff_values={
     # consideration of parallel branches via storing how much branches have been considered
     # each node-to-node-connection
     try:
-        init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1, sort=True).drop_duplicates()
-        init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1, sort=True).drop_duplicates()
+        init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1,
+                       sort=True).drop_duplicates()
+        init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1,
+                       sort=True).drop_duplicates()
     except:
         # legacy pandas < 0.21
         init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1).drop_duplicates()
