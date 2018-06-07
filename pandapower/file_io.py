@@ -118,7 +118,8 @@ def to_json_string(net, default_handler=None):
         if k[0] == "_":
             continue
         if isinstance(net[k], pd.DataFrame):
-            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns", default_handler=default_handler))
+            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns",
+                                         default_handler=default_handler, double_precision=14))
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","
         elif isinstance(net[k], dict):
@@ -242,7 +243,7 @@ def from_pickle(filename, convert=True):
                         net[key] = net[key].reindex(item["columns"], axis=1)
                     except: #legacy for pandas <0.21
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
-                      
+
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
