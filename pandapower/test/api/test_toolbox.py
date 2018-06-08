@@ -548,23 +548,22 @@ def test_drop_elements_at_buses():
     switch3 = pp.create_switch(net, bus=bus3, element=line1, et='l')
     # bus id needs to be entered as iterable, not done in the function
     tb.drop_elements_at_buses(net, [bus5])
-    assert len(
-        net.switch) == 2  # it should be 2 since switch is connected to bus5 but if we add "element" column for switch it would delete this
+    assert len(net.switch) == 3  # we keep bus-bus switches
     assert len(net.trafo) == 1
     assert len(net.trafo3w) == 1
     assert len(net.line) == 1
     tb.drop_elements_at_buses(net, [bus4])
-    assert len(net.switch) == 1
+    assert len(net.switch) == 2
     assert len(net.line) == 0
     assert len(net.trafo) == 1
     assert len(net.trafo3w) == 1
     tb.drop_elements_at_buses(net, [bus3])
-    assert len(net.switch) == 0
+    assert len(net.switch) == 1
     assert len(net.line) == 0
     assert len(net.trafo) == 0
     assert len(net.trafo3w) == 1
     tb.drop_elements_at_buses(net, [bus2])
-    assert len(net.switch) == 0
+    assert len(net.switch) == 1
     assert len(net.line) == 0
     assert len(net.trafo) == 0
     assert len(net.trafo3w) == 0
