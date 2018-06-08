@@ -12,6 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
+from pandapower.idx_bus_3ph import VM_A, VA_A, VM_B, VA_B, VM_C, VA_C, bus_cols_3ph
 
 try:
     from numba import jit
@@ -220,6 +221,11 @@ def _build_bus_ppc(net, ppc):
         bus_sc = np.empty(shape=(n_bus, bus_cols_sc), dtype=float)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
+    elif mode == "pf_3ph":
+        from pandapower.idx_bus_3ph import bus_cols_3ph
+        bus_3ph = np.empty(shape=(n_bus, bus_cols_3ph), dtype=float)
+        bus_3ph.fill(np.nan)
+        ppc["bus"] = np.hstack((ppc["bus"], bus_3ph))
 
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = np.arange(n_bus)
@@ -228,17 +234,25 @@ def _build_bus_ppc(net, ppc):
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
     if mode == 'pf_3ph':
-        ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values/np.sqrt(3)
+        ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values / np.sqrt(3)
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
                BUS_TYPE] = NONE
 
     if init == "results" and len(net["res_bus"]) > 0:
         # init results (= voltages) from previous power flow
         ppc["bus"][:n_bus, VM] = net["res_bus"]["vm_pu"].values
-        ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
+        ppc["bus"][:n_bus, VA] = net["res_bus"]["va_degree"].values
 
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
+    elif mode == "pf_3ph" and init == "results" and len(net["res_bus"]) > 0:
+        # init results (= voltages) from previous power flow
+        ppc["bus"][:n_bus, VM_A] = net["res_bus_3ph"]["vmA_pu"].values
+        ppc["bus"][:n_bus, VA_A] = net["res_bus_3ph"]["vaA_degree"].values
+        ppc["bus"][:n_bus, VM_B] = net["res_bus_3ph"]["vmB_pu"].values
+        ppc["bus"][:n_bus, VA_B] = net["res_bus_3ph"]["vaB_degree"].values
+        ppc["bus"][:n_bus, VM_C] = net["res_bus_3ph"]["vmC_pu"].values
+        ppc["bus"][:n_bus, VA_C] = net["res_bus_3ph"]["vaC_degree"].values
 
     if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
@@ -260,10 +274,10 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # get in service elements
     # _is_elements = check if element is at a bus & if element is in service
     _is_elements = net["_is_elements"]
-    
+
     # distinguish calculation modes
     mode = net["_options"]["mode"]
-    
+
     # if mode == powerflow...
     if mode == "pf":
         l = net["load"]
@@ -275,35 +289,35 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
                 if ((cz + ci) > 1).any():
                     raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
                                      "100%!")
-    
+
                 # cumulative sum of constant-current loads
                 b_zip = l["bus"].values
                 load_counter = Counter(b_zip)
-    
+
                 bus_lookup = net["_pd2ppc_lookups"]["bus"]
                 b_zip = bus_lookup[b_zip]
                 load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
                 b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
-    
+
                 for bus, no_loads in load_counter.items():
                     ci_sum[b_zip == bus] /= no_loads
                     cz_sum[b_zip == bus] /= no_loads
-    
+
                 ppc["bus"][b_zip, CID] = ci_sum
                 ppc["bus"][b_zip, CZD] = cz_sum
-    
+
             vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
             q = np.hstack([q, l["q_kvar"].values * vl])
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
-    
+
         sgen = net["sgen"]
         if len(sgen) > 0:
             vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
-    
+
         stor = net["storage"]
         if len(stor) > 0:
             # TODO: Limit p_kw according to SOC and max_e_kwh/min_e_kwh
@@ -315,21 +329,21 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, stor["q_kvar"].values * vl])
             p = np.hstack([p, stor["p_kw"].values * vl])
             b = np.hstack([b, stor["bus"].values])
-    
+
         w = net["ward"]
         if len(w) > 0:
             vl = _is_elements["ward"] / np.float64(1000.)
             q = np.hstack([q, w["qs_kvar"].values * vl])
             p = np.hstack([p, w["ps_kw"].values * vl])
             b = np.hstack([b, w["bus"].values])
-    
+
         xw = net["xward"]
         if len(xw) > 0:
             vl = _is_elements["xward"] / np.float64(1000.)
             q = np.hstack([q, xw["qs_kvar"].values * vl])
             p = np.hstack([p, xw["ps_kw"].values * vl])
             b = np.hstack([b, xw["bus"].values])
-            
+
     # if mode == optimal power flow...
     if mode == "opf":
         l = net["load"]
@@ -340,7 +354,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, l["q_kvar"].values * vl])
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
-    
+
         sgen = net["sgen"]
         if not sgen.empty:
             sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
@@ -349,7 +363,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
-        
+
         stor = net["storage"]
         if not stor.empty:
             stor["controllable"] = _controllable_to_bool(stor["controllable"])
@@ -438,8 +452,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     else:
         c = 3.3
     if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
-                         "external grid" )
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case +
+                         "external grid")
     s_sc = eg["s_sc_%s_mva" % case].values
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %

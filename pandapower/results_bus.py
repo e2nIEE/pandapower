@@ -9,6 +9,7 @@ from numpy import zeros, array, float, hstack, invert
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
+from pandapower.idx_bus_3ph import VM_A, VM_C, VM_B, VA_A, VA_B, VA_C
 from pandapower.idx_gen import PG, QG
 
 
@@ -100,7 +101,13 @@ def _get_bus_v_results(net, ppc):
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
-
+    if ppc["mode"] == "pf_3ph":
+        net["res_bus_3ph"]["vmA_pu"] = ppc["bus"][bus_idx][:, VM_A]
+        net["res_bus_3ph"]["vmB_pu"] = ppc["bus"][bus_idx][:, VM_B]
+        net["res_bus_3ph"]["vmC_pu"] = ppc["bus"][bus_idx][:, VM_C]
+        net["res_bus_3ph"]["vaA_degree"] = ppc["bus"][bus_idx][:, VA_A]
+        net["res_bus_3ph"]["vaB_degree"] = ppc["bus"][bus_idx][:, VA_B]
+        net["res_bus_3ph"]["vaC_degree"] = ppc["bus"][bus_idx][:, VA_C]
 
 
 def _get_bus_idx(net):
