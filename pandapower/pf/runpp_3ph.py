@@ -383,6 +383,7 @@ def show_results(V_base, kVA_base, count, ppci0, Y1_pu, V012_new, I012_new):
     I_base_res = kVA_base / V_base_res * 1e-3
     print("\n No of Iterations: %u" % count)
     print('\n\n Final  Values Pandapower ')
+
     ppci0["bus"][0, 4] = 0
     ppci0["bus"][0, 5] = 0
     Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
