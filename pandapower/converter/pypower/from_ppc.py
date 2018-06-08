@@ -24,6 +24,8 @@ try:
 except ImportError:
     pypower_import = False
 
+ppc_elms = ["bus", "branch", "gen"]
+
 
 def _create_costs(net, ppc, gen_lookup, type, idx):
     if ppc['gencost'][idx, 0] == 1:
@@ -265,9 +267,24 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     return net
 
 
+def _validate_diff_res(diff_res, max_diff_values):
+    to_iterate = set(max_diff_values.keys()) & {'gen_q_kvar', 'branch_p_kw', 'branch_q_kvar',
+                                                'gen_p_kw', 'bus_va_degree', 'bus_vm_pu'}
+    if not len(to_iterate):
+        logger.warning("There are no keys to validate.")
+    val = True
+    for i in to_iterate:
+        elm = i.split("_")[0]
+        sought = ["p", "q"] if elm != "bus" else ["vm", "va"]
+        col = int(array([0, 1])[[j in i for j in sought]][0]) if elm != "branch" else \
+            list(array([[0, 2], [1, 3]])[[j in i for j in sought]][0])
+        val &= bool(max_(abs(diff_res[elm][:, col])) < max_diff_values[i])
+    return val
+
+
 def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
-    "vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3, "p_gen_kw": 1e-3,
-        "q_gen_kvar": 1e-3}, run=True):
+    "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_kw": 1e-3, "branch_q_kvar": 1e-3,
+        "gen_p_kw": 1e-3, "gen_q_kvar": 1e-3}, run=True):
     """
     This function validates the pypower case files to pandapower net structure conversion via a \
     comparison of loadflow calculation results. (Hence the opf cost conversion is not validated.)
@@ -363,7 +380,9 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                     pp.runpp(pp_net, calculate_voltage_angles=True, init="flat", trafo_model="pi")
                 except pp.LoadflowNotConverged:
                     try:
-                        pp.runpp(pp_net, trafo_model="pi")
+                        pp.runpp(pp_net, trafo_model="pi", calculate_voltage_angles=False)
+                        max_diff_values["bus_va_degree"] = 1e2
+                        logger.info("voltage_angles could be calculated.")
                     except pp.LoadflowNotConverged:
                         logger.error('The pandapower powerflow does not converge.')
         elif pf_type == "rundcpp":
@@ -380,9 +399,13 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                     except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
                         try:
                             pp.runopp(pp_net, init="flat", calculate_voltage_angles=False)
+                            logger.info("voltage_angles could be calculated.")
+                            max_diff_values["bus_va_degree"] = 1e2
                         except pp.OPFNotConverged:
                             try:
                                 pp.runopp(pp_net, init="pf", calculate_voltage_angles=False)
+                                max_diff_values["bus_va_degree"] = 1e2
+                                logger.info("voltage_angles could be calculated.")
                             except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
                                 logger.error('The pandapower optimal powerflow does not converge.')
         elif pf_type == "rundcopp":
@@ -394,19 +417,22 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
             raise ValueError("The pf_type %s is unknown" % pf_type)
 
     # --- prepare powerflow result comparison by reordering pp results as they are in ppc results
-    if not ((ppc_success) & (pp_net.converged)):
+    if not (ppc_success & ((("opp" not in pf_type) & pp_net.converged) |
+            (("opp" in pf_type) & pp_net.OPF_converged))):
         return False
 
     # --- store pypower powerflow results
-    ppc_res_branch = ppc_net['branch'][:, 13:17]
-    ppc_res_bus = ppc_net['bus'][:, 7:9]
-    ppc_res_gen = ppc_net['gen'][:, 1:3]
+    ppc_res = dict.fromkeys(ppc_elms)
+    ppc_res["branch"] = ppc_net['branch'][:, 13:17]
+    ppc_res["bus"] = ppc_net['bus'][:, 7:9]
+    ppc_res["gen"] = ppc_net['gen'][:, 1:3]
 
     # --- pandapower bus result table
-    pp_res_bus = array(pp_net.res_bus[['vm_pu', 'va_degree']])
+    pp_res = dict.fromkeys(ppc_elms)
+    pp_res["bus"] = array(pp_net.res_bus.sort_index()[['vm_pu', 'va_degree']])
 
     # --- pandapower gen result table
-    pp_res_gen = zeros([1, 2])
+    pp_res["gen"] = zeros([1, 2])
     # consideration of parallel generators via storing how much generators have been considered
     # each node
     already_used_gen = Series(zeros([pp_net.bus.shape[0]]), index=pp_net.bus.index).astype(int)
@@ -418,19 +444,19 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
         # ext_grid
         if current_bus_type == 3:
             if already_used_gen.at[current_bus_idx] == 0:
-                pp_res_gen = append(pp_res_gen, array(pp_net.res_ext_grid[
+                pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_ext_grid[
                     pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']])[
                     already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
                 already_used_gen.at[current_bus_idx] += 1
             else:
-                pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
+                pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_sgen[
                     pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
                     already_used_gen.at[current_bus_idx]-1].reshape((1, 2)), 0)
                 already_used_gen.at[current_bus_idx] += 1
                 change_q_compare += [j[0]]
         # gen
         elif current_bus_type == 2:
-            pp_res_gen = append(pp_res_gen, array(pp_net.res_gen[
+            pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_gen[
                 pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
                 already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
             if already_used_gen.at[current_bus_idx] > 0:
@@ -438,15 +464,16 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
             already_used_gen.at[current_bus_idx] += 1
         # sgen
         elif current_bus_type == 1:
-            pp_res_gen = append(pp_res_gen, array(pp_net.res_sgen[
+#            print(i, already_used_gen.at[current_bus_idx])
+            pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_sgen[
                 pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
                 already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
             already_used_gen.at[current_bus_idx] += 1
-    pp_res_gen = pp_res_gen[1:, :]  # delete initial zero row
+    pp_res["gen"] = pp_res["gen"][1:, :]  # delete initial zero row
 
     # --- pandapower branch result table
-    pp_res_branch = zeros([1, 4])
-    # consideration of parallel branches via storing how much branches have been considered
+    pp_res["branch"] = zeros([1, 4])
+    # consideration of parallel branches via storing how often branches were considered
     # each node-to-node-connection
     try:
         init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1,
@@ -477,7 +504,7 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
         angle = BRANCHES[3].at[i]
         # from line results
         if (from_vn_kv == to_vn_kv) & ((ratio == 0) | (ratio == 1)) & (angle == 0):
-            pp_res_branch = append(pp_res_branch, array(pp_net.res_line[
+            pp_res["branch"] = append(pp_res["branch"], array(pp_net.res_line[
                 (pp_net.line.from_bus == from_bus) &
                 (pp_net.line.to_bus == to_bus)]
                 [['p_from_kw', 'q_from_kvar', 'p_to_kw', 'q_to_kvar']])[
@@ -489,7 +516,7 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
         # from trafo results
         else:
             if from_vn_kv >= to_vn_kv:
-                pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
+                pp_res["branch"] = append(pp_res["branch"], array(pp_net.res_trafo[
                     (pp_net.trafo.hv_bus == from_bus) &
                     (pp_net.trafo.lv_bus == to_bus)]
                     [['p_hv_kw', 'q_hv_kvar', 'p_lv_kw', 'q_lv_kvar']])[
@@ -499,7 +526,7 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                 already_used_branches.number.loc[(already_used_branches.hv_bus == from_bus) &
                                                  (already_used_branches.lv_bus == to_bus)] += 1
             else:  # switch hv-lv-connection of pypower connection buses
-                pp_res_branch = append(pp_res_branch, array(pp_net.res_trafo[
+                pp_res["branch"] = append(pp_res["branch"], array(pp_net.res_trafo[
                     (pp_net.trafo.hv_bus == to_bus) &
                     (pp_net.trafo.lv_bus == from_bus)]
                     [['p_lv_kw', 'q_lv_kvar', 'p_hv_kw', 'q_hv_kvar']])[
@@ -509,12 +536,14 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                 already_used_branches.number.loc[
                     (already_used_branches.hv_bus == to_bus) &
                     (already_used_branches.lv_bus == from_bus)] += 1
-    pp_res_branch = pp_res_branch[1:, :]  # delete initial zero row
+    pp_res["branch"] = pp_res["branch"][1:, :]  # delete initial zero row
 
     # --- do the powerflow result comparison
-    diff_res_bus = ppc_res_bus - pp_res_bus
-    diff_res_branch = ppc_res_branch - pp_res_branch * 1e-3
-    diff_res_gen = ppc_res_gen + pp_res_gen * 1e-3
+    diff_res = dict.fromkeys(ppc_elms)
+    diff_res["bus"] = ppc_res["bus"] - pp_res["bus"]
+    diff_res["bus"][:, 1] -= diff_res["bus"][0, 1]  # remove va_degree offset
+    diff_res["branch"] = ppc_res["branch"] - pp_res["branch"] * 1e-3
+    diff_res["gen"] = ppc_res["gen"] + pp_res["gen"] * 1e-3
     # comparison of buses with several generator units only as q sum
     GEN_uniq = GENS.drop_duplicates()
     for i in GEN_uniq.loc[GEN_uniq[0].isin(change_q_compare)].index:
@@ -524,40 +553,29 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
         else:
             next_i = GENS.index[-1] + 1
         if (next_i - i) > 1:
-            diff_res_gen[i:next_i, 1] = sum(diff_res_gen[i:next_i, 1])
+            diff_res["gen"][i:next_i, 1] = sum(diff_res["gen"][i:next_i, 1])
     # logger info
     logger.debug("Maximum voltage magnitude difference between pypower and pandapower: "
-                 "%.2e pu" % max_(abs(diff_res_bus[:, 0])))
+                 "%.2e pu" % max_(abs(diff_res["bus"][:, 0])))
     logger.debug("Maximum voltage angle difference between pypower and pandapower: "
-                 "%.2e degree" % max_(abs(diff_res_bus[:, 1])))
+                 "%.2e degree" % max_(abs(diff_res["bus"][:, 1])))
     logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
-                 "%.2e kW" % max_(abs(diff_res_branch[:, [0, 2]] * 1e3)))
+                 "%.2e kW" % max_(abs(diff_res["branch"][:, [0, 2]] * 1e3)))
     logger.debug("Maximum branch flow reactive power difference between pypower and "
-                 "pandapower: %.2e kVAr" % max_(abs(diff_res_branch[:, [1, 3]] * 1e3)))
+                 "pandapower: %.2e kVAr" % max_(abs(diff_res["branch"][:, [1, 3]] * 1e3)))
     logger.debug("Maximum active power generation difference between pypower and pandapower: "
-                 "%.2e kW" % max_(abs(diff_res_gen[:, 0] * 1e3)))
+                 "%.2e kW" % max_(abs(diff_res["gen"][:, 0] * 1e3)))
     logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
-                 "%.2e kVAr" % max_(abs(diff_res_gen[:, 1] * 1e3)))
-    if (max_(abs(diff_res_bus[:, 0])) < 1e-3) & (max_(abs(diff_res_bus[:, 1])) < 1e-3) & \
-            (max_(abs(diff_res_branch[:, [0, 2]])) < 1e-3) & \
-            (max_(abs(diff_res_branch[:, [1, 3]])) < 1e-3) & \
-            (max_(abs(diff_res_gen)) > 1e-1).any():
+                 "%.2e kVAr" % max_(abs(diff_res["gen"][:, 1] * 1e3)))
+    if _validate_diff_res(diff_res, {"bus_vm_pu": 1e-3, "bus_va_degree": 1e-3, "branch_p_kw": 1e-3,
+                                     "branch_q_kvar": 1e-3}) and \
+            (max_(abs(diff_res["gen"])) > 1e-1).any():
         logger.debug("The active/reactive power generation difference possibly results "
                      "because of a pypower error. Please validate "
                      "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
+        return "unclear"
     # give a return
     if isinstance(max_diff_values, dict):
-        if Series(['q_gen_kvar', 'p_branch_kw', 'q_branch_kvar', 'p_gen_kw', 'va_degree',
-                   'vm_pu']).isin(Series(list(max_diff_values.keys()))).all():
-            return (max_(abs(diff_res_bus[:, 0])) < max_diff_values['vm_pu']) & \
-                    (max_(abs(diff_res_bus[:, 1])) < max_diff_values['va_degree']) & \
-                    (max_(abs(diff_res_branch[:, [0, 2]])) < max_diff_values['p_branch_kw'] /
-                        1e3) & \
-                    (max_(abs(diff_res_branch[:, [1, 3]])) < max_diff_values['q_branch_kvar'] /
-                        1e3) & \
-                    (max_(abs(diff_res_gen[:, 0])) < max_diff_values['p_gen_kw'] / 1e3) & \
-                    (max_(abs(diff_res_gen[:, 1])) < max_diff_values['q_gen_kvar'] / 1e3)
-        else:
-            logger.debug('Not all requried dict keys are provided.')
+        return _validate_diff_res(diff_res, max_diff_values)
     else:
         logger.debug("'max_diff_values' must be a dict.")
