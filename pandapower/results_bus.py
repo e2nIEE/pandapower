@@ -101,7 +101,7 @@ def _get_bus_v_results(net, ppc):
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
-    if ppc["mode"] == "pf_3ph":
+    if net["_options"]["mode"] == "pf_3ph":
         net["res_bus_3ph"]["vmA_pu"] = ppc["bus"][bus_idx][:, VM_A]
         net["res_bus_3ph"]["vmB_pu"] = ppc["bus"][bus_idx][:, VM_B]
         net["res_bus_3ph"]["vmC_pu"] = ppc["bus"][bus_idx][:, VM_C]

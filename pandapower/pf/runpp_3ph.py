@@ -486,8 +486,7 @@ def _copy_bus_results_to_results_table(net, ppci0, V012_it, I012_it, Y0_pu, Y1_p
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch  # ppci=result
 
     ppc = net["_ppc"]
-    ppc["mode"] = "pf_3ph"
-    result = _copy_results_ppci_to_ppc(ppci, ppc, mode=ppc["mode"])
+    result = _copy_results_ppci_to_ppc(ppci, ppc, mode=net["_options"]["mode"])
     net["_ppc"] = result
     _extract_results(net, ppc)
 
