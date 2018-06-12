@@ -326,7 +326,7 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
     NOTE:
 
         The user has to take care that the loadflow results already are included in the provided \
-        ppc_net.
+        ppc_net or pypower is importable.
     """
     # check in case of optimal powerflow comparison whether cost information exist
     if "opp" in pf_type:
@@ -381,7 +381,9 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                 except pp.LoadflowNotConverged:
                     try:
                         pp.runpp(pp_net, trafo_model="pi", calculate_voltage_angles=False)
-                        max_diff_values["bus_va_degree"] = 1e2
+                        if "bus_va_degree" in max_diff_values.keys():
+                            max_diff_values["bus_va_degree"] = 1e2 if max_diff_values[
+                                "bus_va_degree"] < 1e2 else max_diff_values["bus_va_degree"]
                         logger.info("voltage_angles could be calculated.")
                     except pp.LoadflowNotConverged:
                         logger.error('The pandapower powerflow does not converge.')
@@ -400,11 +402,15 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                         try:
                             pp.runopp(pp_net, init="flat", calculate_voltage_angles=False)
                             logger.info("voltage_angles could be calculated.")
-                            max_diff_values["bus_va_degree"] = 1e2
+                            if "bus_va_degree" in max_diff_values.keys():
+                                max_diff_values["bus_va_degree"] = 1e2 if max_diff_values[
+                                    "bus_va_degree"] < 1e2 else max_diff_values["bus_va_degree"]
                         except pp.OPFNotConverged:
                             try:
                                 pp.runopp(pp_net, init="pf", calculate_voltage_angles=False)
-                                max_diff_values["bus_va_degree"] = 1e2
+                                if "bus_va_degree" in max_diff_values.keys():
+                                    max_diff_values["bus_va_degree"] = 1e2 if max_diff_values[
+                                        "bus_va_degree"] < 1e2 else max_diff_values["bus_va_degree"]
                                 logger.info("voltage_angles could be calculated.")
                             except (pp.OPFNotConverged, pp.LoadflowNotConverged, KeyError):
                                 logger.error('The pandapower optimal powerflow does not converge.')
@@ -464,7 +470,6 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
             already_used_gen.at[current_bus_idx] += 1
         # sgen
         elif current_bus_type == 1:
-#            print(i, already_used_gen.at[current_bus_idx])
             pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_sgen[
                 pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
                 already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
@@ -573,7 +578,6 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
         logger.debug("The active/reactive power generation difference possibly results "
                      "because of a pypower error. Please validate "
                      "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
-        return "unclear"
     # give a return
     if isinstance(max_diff_values, dict):
         return _validate_diff_res(diff_res, max_diff_values)
