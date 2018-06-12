@@ -291,6 +291,7 @@ def case118():
     Some more information about this network are given by `Washington case 118 \
     <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and \
     `Illinois University case 118 <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
+    The PYPOWER case data are corrected at Vm of buses 68 and 116.
 
     OUTPUT:
          **net** - Returns the required ieee network case118
