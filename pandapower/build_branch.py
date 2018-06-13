@@ -124,6 +124,8 @@ def _calc_line_parameter(net, ppc):
     length = line["length_km"].values
     parallel = line["parallel"].values
     baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    if mode == 'pf_3ph':
+        baseR = np.square(ppc["bus"][fb, BASE_KV]) / (3*net.sn_kva) * 1e3
     t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
     t[:, 0] = fb
@@ -212,6 +214,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
                         0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
 
     """
+#    mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]
@@ -235,7 +238,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+    r, x = _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva)
     if mode == "sc":
         y = 0
         if trafo_df.equals(net.trafo):
@@ -247,7 +250,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
             r *= kt
             x *= kt
     else:
-        y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+        y = _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
@@ -275,7 +278,7 @@ def _wye_delta(r, x, y):
     return r, x, y
 
 
-def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
+def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     """
     Calculate the subsceptance y from the transformer dataframe.
 
@@ -289,6 +292,9 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
         the form (-b_img, -b_real)
     """
     baseR = np.square(vn_lv) / sn_kva * 1e3
+    if mode == 'pf_3ph':
+        baseR = np.square(vn_lv) / (3*sn_kva) * 1e3
+    
 
     ### Calculate subsceptance ###
     vnl_squared = trafo_df["vn_lv_kv"].values ** 2
@@ -379,16 +385,18 @@ def _calc_tap_from_dataframe(net, trafo_df):
     return vnh, vnl, trafo_shift
 
 
-def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
+def _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
 
     """
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva  # adjust for low voltage side voltage converter
+    tap_lv = np.square(vn_trafo_lv / vn_lv)
+    if mode == 'pf_3ph':    
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * 3  # adjust for low voltage side voltage converter
     sn_trafo_kva = trafo_df.sn_kva.values
-    z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_kva * tap_lv
-    r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_kva * tap_lv
+    z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_kva * tap_lv  * sn_kva
+    r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_kva * tap_lv * sn_kva
     x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
     return r_sc, x_sc
 
