@@ -207,7 +207,7 @@ def load_mapping(net):
         p_b = np.hstack([p_b, sgen["p_kw"].values / 3 * vl])
         q_c = np.hstack([q_c, sgen["q_kvar"].values / 3 * vl])
         p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
-        b = np.hstack([b, sgen["bus"].values / 3])
+        b = np.hstack([b, sgen["bus"].values])
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ba = bus_lookup[b]
