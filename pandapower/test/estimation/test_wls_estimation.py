@@ -394,6 +394,7 @@ def test_cigre_network_with_slack_init():
     test_cigre_network(init='slack')
 
 
+@pytest.mark.xfail
 def test_IEEE_case_9_with_bad_data():
     # 1. Create network
     # test grid: IEEE case 9 (HV)
