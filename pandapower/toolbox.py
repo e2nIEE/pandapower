@@ -1737,6 +1737,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         raise TypeError(
             'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
 
+    replaced = dict()
     for elm in elements:
         branch_zero = set()
         if elm == 'line' and zero_length:
@@ -1762,8 +1763,12 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
             net[elm].loc[b, 'in_service'] = False
             affected_elements.add(b)
 
+        replaced[elm] = net[elm].loc[affected_elements]
+
         if drop_affected:
             net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
-            logger.info('replaced %d elements in %ss' % (len(affected_elements), elm))
+            logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
+
+        return replaced
