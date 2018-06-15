@@ -1704,13 +1704,14 @@ def create_replacement_switch_for_branch(net, element, idx):
                         type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element, idx))
+    return sid
 
 
 def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                         zero_length=True, zero_impedance=True, in_service_only=True,
                                         min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
                                         min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0):
+                                        min_xtf_pu=0, drop_affected=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
@@ -1720,6 +1721,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
     :param zero_length: whether zero length lines will be affected
     :param zero_impedance: whether zero impedance branches will be affected
     :param in_service_only: whether the branches that are not in service will be affected
+    :param drop_affected: wheter the affected branch elements are dropped
     :param min_length_km: threshhold for line length for a line to be considered zero line
     :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
     :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
@@ -1735,6 +1737,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         raise TypeError(
             'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
 
+    replaced = dict()
     for elm in elements:
         branch_zero = set()
         if elm == 'line' and zero_length:
@@ -1752,12 +1755,20 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                             (net[elm].rtf_pu <= min_rtf_pu) &
                                             (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
 
-        k = 0
+        affected_elements = set()
         for b in branch_zero:
             if in_service_only and ~net[elm].in_service.at[b]:
                 continue
             create_replacement_switch_for_branch(net, element=elm, idx=b)
             net[elm].loc[b, 'in_service'] = False
-            k += 1
+            affected_elements.add(b)
 
-        logger.info('set %d %ss out of service' % (k, elm))
+        replaced[elm] = net[elm].loc[affected_elements]
+
+        if drop_affected:
+            net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
+            logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+        else:
+            logger.info('set %d %ss out of service' % (len(affected_elements), elm))
+
+        return replaced
