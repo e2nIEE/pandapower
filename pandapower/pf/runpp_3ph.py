@@ -212,7 +212,7 @@ def load_mapping(net):
         p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
         b = np.hstack([b, sgen["bus"].values])
     
-    if len([bus for bus in net.bus.index.values if bus not in b]) != 0  :
+    if len([bus for bus in _is_elements['bus_is_idx'] if bus not in b]) != 0  :
         q_a = np.hstack([q_a, 0])
         p_a = np.hstack([p_a, 0])
         q_b = np.hstack([q_b, 0])
