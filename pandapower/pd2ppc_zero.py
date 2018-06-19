@@ -16,7 +16,7 @@ from pandapower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
 
-def _pd2ppc_zero(net):
+def _pd2ppc_zero(net, sequence=None):
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
     lines and transformers, but no load or generation data.
@@ -24,9 +24,9 @@ def _pd2ppc_zero(net):
     For short-circuit calculation, the short-circuit impedance of external grids is also considered.
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = aux._select_is_elements_numba(net)
+    net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
 
-    ppc = _init_ppc(net)
+    ppc = _init_ppc(net, sequence)
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     _build_bus_ppc(net, ppc)
@@ -45,7 +45,7 @@ def _pd2ppc_zero(net):
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
-    net._ppc0 = ppc
+    # net._ppc0 = ppc # Obsolete, now covered in _init_ppc
     return ppc, ppci
 
 def _build_branch_ppc_zero(net, ppc):

@@ -4,12 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import pandas as pd
 import numpy as np
-from numpy import zeros, array, float, hstack, invert
+from numpy import zeros, array, float, hstack, invert, angle, complex128
 
-from pandapower.auxiliary import _sum_by_group
+from pandapower.auxiliary import _sum_by_group, sequence_to_phase
 from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
-from pandapower.idx_bus_3ph import VM_A, VM_C, VM_B, VA_A, VA_B, VA_C
 from pandapower.idx_gen import PG, QG
 
 
@@ -97,17 +97,36 @@ def _set_buses_out_of_service(ppc):
 def _get_bus_v_results(net, ppc):
     ac = net["_options"]["ac"]
     bus_idx = _get_bus_idx(net)
+    mode = net["_options"]["mode"]
     if ac:
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
-    if net["_options"]["mode"] == "pf_3ph":
-        net["res_bus_3ph"]["vmA_pu"] = ppc["bus"][bus_idx][:, VM_A]
-        net["res_bus_3ph"]["vmB_pu"] = ppc["bus"][bus_idx][:, VM_B]
-        net["res_bus_3ph"]["vmC_pu"] = ppc["bus"][bus_idx][:, VM_C]
-        net["res_bus_3ph"]["vaA_degree"] = ppc["bus"][bus_idx][:, VA_A]
-        net["res_bus_3ph"]["vaB_degree"] = ppc["bus"][bus_idx][:, VA_B]
-        net["res_bus_3ph"]["vaC_degree"] = ppc["bus"][bus_idx][:, VA_C]
+
+
+def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
+    ac = net["_options"]["ac"]
+    bus_idx = _get_bus_idx(net)
+
+    V012_pu = np.zeros((3,len(bus_idx)), dtype=complex128)
+    V012_pu[0,:] = ppc0["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc0["bus"][bus_idx][:, VA]))
+    V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
+    V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
+
+    # Uncomment for results in kV instead of pu
+    # bus_base_kv = ppc0["bus"][:,BASE_KV]/np.sqrt(3)
+    # V012_pu = V012_pu*bus_base_kv
+
+    Vabc_pu = sequence_to_phase(V012_pu)
+
+    if ac:
+        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0,bus_idx].getA1())
+        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1,bus_idx].getA1())
+        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2,bus_idx].getA1())
+    # voltage angles
+    net["res_bus_3ph"]["vaA_degree"] = angle(Vabc_pu[0, bus_idx].getA1())*180/np.pi
+    net["res_bus_3ph"]["vaB_degree"] = angle(Vabc_pu[1, bus_idx].getA1())*180/np.pi
+    net["res_bus_3ph"]["vaC_degree"] = angle(Vabc_pu[2, bus_idx].getA1())*180/np.pi
 
 
 def _get_bus_idx(net):
