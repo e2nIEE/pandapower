@@ -70,22 +70,19 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 # =============================================================================
 # Mapping load for positive sequence loads
 # =============================================================================
+# Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
 def load_mapping(net):
     _is_elements = net["_is_elements"]
-    b = np.array([], dtype=int)
-    SA, SB, SC = np.array([]), np.array([]), np.array([])
-    q_a, QA = np.array([]), np.array([])
-    p_a, PA = np.array([]), np.array([])
-    q_b, QB = np.array([]), np.array([])
-    p_b, PB = np.array([]), np.array([])
-    q_c, QC = np.array([]), np.array([])
-    p_c, PC = np.array([]), np.array([])
+    b = np.array([0], dtype=int)
+    SA, SB, SC = np.array([0]), np.array([]), np.array([])
+    q_a, QA = np.array([0]), np.array([])
+    p_a, PA = np.array([0]), np.array([])
+    q_b, QB = np.array([0]), np.array([])
+    p_b, PB = np.array([0]), np.array([])
+    q_c, QC = np.array([0]), np.array([])
+    p_c, PC = np.array([0]), np.array([])
 
     l3 = net["load_3ph"]
-    sgen_3ph = net["sgen_3ph"]
-    l = net["load"]
-    sgen = net["sgen"]
-    
     if len(l3) > 0:
         vl = _is_elements["load_3ph"] * l3["scaling"].values.T
         q_a = np.hstack([q_a, l3["q_kvar_A"].values * vl])
@@ -96,7 +93,7 @@ def load_mapping(net):
         p_c = np.hstack([p_c, l3["p_kw_C"].values * vl])
         b = np.hstack([b, l3["bus"].values])
 
-    
+    sgen_3ph = net["sgen_3ph"]
     if len(sgen_3ph) > 0:
         vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T
         q_a = np.hstack([q_a, sgen_3ph["q_kvar_A"].values * vl])
@@ -108,7 +105,7 @@ def load_mapping(net):
         b = np.hstack([b, sgen_3ph["bus"].values])
     # For Network Symmetric loads with unsymmetric loads
     #    Since the bus values of ppc values are not known, it is added again, fresh
- 
+    l = net["load"]
     if len(l) > 0:
         vl = _is_elements["load"] * l["scaling"].values.T
         q_a = np.hstack([q_a, l["q_kvar"].values / 3 * vl])
@@ -119,6 +116,7 @@ def load_mapping(net):
         p_c = np.hstack([p_c, l["p_kw"].values / 3 * vl])
         b = np.hstack([b, l["bus"].values])
 
+    sgen = net["sgen"]
     if len(sgen) > 0:
         vl = _is_elements["load"] * l["scaling"].values.T
         q_a = np.hstack([q_a, sgen["q_kvar"].values / 3 * vl])
@@ -127,18 +125,7 @@ def load_mapping(net):
         p_b = np.hstack([p_b, sgen["p_kw"].values / 3 * vl])
         q_c = np.hstack([q_c, sgen["q_kvar"].values / 3 * vl])
         p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
-        b = np.hstack([b, sgen["bus"].values])
-    
-    if len([bus for bus in _is_elements['bus_is_idx'] if bus not in b]) != 0  :
-        q_a = np.hstack([q_a, 0])
-        p_a = np.hstack([p_a, 0])
-        q_b = np.hstack([q_b, 0])
-        p_b = np.hstack([p_b, 0])
-        q_c = np.hstack([q_c, 0])
-        p_c = np.hstack([p_c, 0])
-        b = np.hstack([b, [bus for bus in net.bus.index.values if bus not in b]])
-    
-#    b = b.sort()
+        b = np.hstack([b, sgen["bus"].values / 3])
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ba = bus_lookup[b]
