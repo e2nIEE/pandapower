@@ -73,14 +73,14 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 # Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
 def load_mapping(net):
     _is_elements = net["_is_elements"]
-    b = np.array([0], dtype=int)
-    SA, SB, SC = np.array([0]), np.array([]), np.array([])
-    q_a, QA = np.array([0]), np.array([])
-    p_a, PA = np.array([0]), np.array([])
-    q_b, QB = np.array([0]), np.array([])
-    p_b, PB = np.array([0]), np.array([])
-    q_c, QC = np.array([0]), np.array([])
-    p_c, PC = np.array([0]), np.array([])
+    b = np.array([], dtype=int)
+    SA, SB, SC = np.array([]), np.array([]), np.array([])
+    q_a, QA = np.array([]), np.array([])
+    p_a, PA = np.array([]), np.array([])
+    q_b, QB = np.array([]), np.array([])
+    p_b, PB = np.array([]), np.array([])
+    q_c, QC = np.array([]), np.array([])
+    p_c, PC = np.array([]), np.array([])
 
     l3 = net["load_3ph"]
     if len(l3) > 0:
@@ -125,7 +125,18 @@ def load_mapping(net):
         p_b = np.hstack([p_b, sgen["p_kw"].values / 3 * vl])
         q_c = np.hstack([q_c, sgen["q_kvar"].values / 3 * vl])
         p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
-        b = np.hstack([b, sgen["bus"].values / 3])
+        b = np.hstack([b, sgen["bus"].values ])
+
+    ext_grid = net["ext_grid"]
+    if len(ext_grid) > 0  :
+        q_a = np.hstack([q_a, 0])
+        p_a = np.hstack([p_a, 0])
+        q_b = np.hstack([q_b, 0])
+        p_b = np.hstack([p_b, 0])
+        q_c = np.hstack([q_c, 0])
+        p_c = np.hstack([p_c, 0])
+        b = np.hstack([b, net.ext_grid.bus.values])
+    
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ba = bus_lookup[b]
