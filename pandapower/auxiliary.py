@@ -34,7 +34,7 @@ import scipy as sp
 import six
 
 from pandapower.idx_brch import F_BUS, T_BUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA
 
 try:
     from numba import jit
@@ -334,13 +334,17 @@ except RuntimeError:
     set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
-def _select_is_elements_numba(net, isolated_nodes=None):
+def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     # is missing sgen_controllable and load_controllable
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    mode = net["_options"]["mode"]
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
+        if mode == "pf_3ph":
+            ppc_bus_isolated = np.zeros(net["_ppc"+str(sequence)]["bus"].shape[0], dtype=bool)
+        else:
+            ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
@@ -547,3 +551,121 @@ def _check_if_numba_is_installed(numba):
         numba = False
 
     return numba
+
+
+# =============================================================================
+# Functions for 3 Phase Unbalanced Load Flow
+# =============================================================================
+
+# =============================================================================
+# Convert to three decoupled sequence networks
+# =============================================================================
+
+def X012_to_X0(X012):
+    return np.transpose(X012[0, :])
+
+
+def X012_to_X1(X012):
+    return np.transpose(X012[1, :])
+
+
+def X012_to_X2(X012):
+    return np.transpose(X012[2, :])
+
+
+# =============================================================================
+# Three decoupled sequence network to 012 matrix conversion
+# =============================================================================
+
+def combine_X012(X0, X1, X2):
+    return np.transpose(np.concatenate((X0, X1, X2), axis=1))
+
+
+# =============================================================================
+# Symmetrical transformation matrix
+# Tabc : 012 > abc
+# T012 : abc >012
+# =============================================================================
+
+def phase_shift_unit_operator(angle_deg):
+    return 1 * np.exp(1j * np.deg2rad(angle_deg))
+
+
+a = phase_shift_unit_operator(120)
+asq = phase_shift_unit_operator(-120)
+Tabc = np.matrix(
+    [
+        [1, 1, 1],
+        [1, asq, a],
+        [1, a, asq]
+    ], dtype=np.complex)
+
+T012 = np.divide(np.matrix(
+    [
+        [1, 1, 1],
+        [1, a, asq],
+        [1, asq, a]
+    ], dtype=np.complex), 3)
+
+
+def sequence_to_phase(X012):
+    return np.matmul(Tabc, X012)
+
+
+def phase_to_sequence(Xabc):
+    return np.matmul(T012, Xabc)
+
+
+# =============================================================================
+# Calculating Sequence Current from sequence Voltages
+# =============================================================================
+
+def I0_from_V012(V012, Y):
+    V0 = X012_to_X0(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(), V0)
+    else:
+        return np.matmul(Y, V0)
+
+
+def I1_from_V012(V012, Y):
+    V1 = X012_to_X1(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(), V1)
+    else:
+        return np.matmul(Y, V1)
+
+
+def I2_from_V012(V012, Y):
+    V2 = X012_to_X2(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(), V2)
+    else:
+        return np.matmul(Y, V2)
+
+
+def V1_from_ppc(ppc):
+    return np.transpose(
+        np.matrix(
+            ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))
+            , dtype=np.complex
+        )
+    )
+
+
+def V_from_I(Y, I):
+    return np.transpose(np.matrix(sp.sparse.linalg.spsolve(Y, I)))
+
+
+def I_from_V(Y, V):
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.matmul(Y.todense(), V)
+    else:
+        return np.matmul(Y, V)
+
+
+# =============================================================================
+# Calculating Power
+# =============================================================================
+def S_from_VI(V, I):
+    return np.multiply(V, I.conjugate())

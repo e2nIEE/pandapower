@@ -16,7 +16,7 @@ from pandapower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
 
-def _pd2ppc_zero(net):
+def _pd2ppc_zero(net, sequence=None):
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
     lines and transformers, but no load or generation data.
@@ -24,9 +24,9 @@ def _pd2ppc_zero(net):
     For short-circuit calculation, the short-circuit impedance of external grids is also considered.
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = aux._select_is_elements_numba(net)
+    net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
 
-    ppc = _init_ppc(net)
+    ppc = _init_ppc(net, sequence)
     # init empty ppci
     ppci = copy.deepcopy(ppc)
     _build_bus_ppc(net, ppc)
@@ -45,7 +45,7 @@ def _pd2ppc_zero(net):
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
-    net._ppc0 = ppc
+    # net._ppc0 = ppc # Obsolete, now covered in _init_ppc
     return ppc, ppci
 
 def _build_branch_ppc_zero(net, ppc):
@@ -128,8 +128,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         # zero seq. transformer impedance
         tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva  # adjust for low voltage side voltage converter
-        z_sc = vsc0_percent / 100. / sn_kva * tap_lv
-        r_sc = vscr0_percent / 100. / sn_kva * tap_lv
+        z_sc = (vsc0_percent / 100. / sn_kva * tap_lv)
+        r_sc = (vscr0_percent / 100. / sn_kva * tap_lv)
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
@@ -150,17 +150,17 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, y0_k.real*in_service])
-            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
+            gs_all = np.hstack([gs_all, y0_k.real*in_service* ppc["baseMVA"]])
+            bs_all = np.hstack([bs_all, y0_k.imag*in_service* ppc["baseMVA"]])
              
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, y0_k.real*in_service])
-            bs_all = np.hstack([bs_all, y0_k.imag*in_service])
+            gs_all = np.hstack([gs_all, y0_k.real*in_service]* ppc["baseMVA"])
+            bs_all = np.hstack([bs_all, y0_k.imag*in_service]* ppc["baseMVA"])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            y = 1/(z0_mag+z0_k).astype(complex)
+            y = 1/(z0_mag+z0_k).astype(complex)* ppc["baseMVA"]
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
 
@@ -189,7 +189,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             bs_all = np.hstack([bs_all, ys.imag*in_service])
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            y = 1/(z0_mag+z0_k).astype(complex)
+            y = 1/(z0_mag+z0_k).astype(complex)* ppc["baseMVA"]
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
         elif vector_group[-1].isdigit():

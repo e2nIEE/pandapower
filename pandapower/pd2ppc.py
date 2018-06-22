@@ -29,7 +29,7 @@ from pandapower.opf.make_objective import _make_objective
 
 
 
-def _pd2ppc(net):
+def _pd2ppc(net, sequence=None):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -69,7 +69,7 @@ def _pd2ppc(net):
     mode = net["_options"]["mode"]
     check_connectivity = net["_options"]["check_connectivity"]
 
-    ppc = _init_ppc(net)
+    ppc = _init_ppc(net, sequence)
 
     if mode == "opf":
         # additional fields in ppc
@@ -102,7 +102,7 @@ def _pd2ppc(net):
     if check_connectivity:
         # sets islands (multiple isolated nodes) out of service
         isolated_nodes, _, _ = aux._check_connectivity(ppc)
-        net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
+        net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes, sequence)
 
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
@@ -118,7 +118,7 @@ def _pd2ppc(net):
     return ppc, ppci
 
 
-def _init_ppc(net):
+def _init_ppc(net, sequence=None):
     # init empty ppc
     ppc = {"baseMVA": net.sn_kva * 1e-3
         , "version": 2
@@ -136,7 +136,11 @@ def _init_ppc(net):
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }
            }
-    net["_ppc"] = ppc
+    if net["_options"]["mode"] == "pf_3ph":
+        ppc["sequence"] = int(sequence) if sequence is not None else None
+        net["_ppc" + ("" if sequence is None else str(sequence))] = ppc
+    else:
+        net["_ppc"] = ppc
     return ppc
 
 
@@ -269,7 +273,7 @@ def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, sort_gens):
     aux._write_lookup_to_net(net, element, lookup)
 
 
-def _update_ppc(net):
+def _update_ppc(net, sequence=None):
     """
     Updates P, Q values of the ppc with changed values from net
 
@@ -278,10 +282,14 @@ def _update_ppc(net):
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net)
+    mode = net["_options"]["mode"]
 
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
-    ppc = net["_ppc"]
+    if mode == "pf_3ph":
+        ppc = net["_ppc" + str(sequence)]
+    else:
+        ppc = net["_ppc"]
     ppci = copy.deepcopy(ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_pq_elements_and_add_on_ppc(net, ppc)

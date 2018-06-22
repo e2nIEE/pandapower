@@ -9,7 +9,9 @@
 from time import time
 
 import numpy as np
-import scipy as sp
+from numpy import flatnonzero as find, pi, exp
+
+from pandapower.pf.pfsoln import pfsoln
 
 try:
     import pplog as logging
@@ -20,139 +22,55 @@ logger = logging.getLogger(__name__)
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pf.makeYbus import makeYbus
-from pandapower.idx_bus import PD, QD, VM, VA
+from pandapower.idx_bus import GS, BS
 from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed, \
     _check_bus_index_and_print_warning_if_high, _check_gen_index_and_print_warning_if_high, \
-    _add_pf_options, _add_ppc_options
+    _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, phase_to_sequence, X012_to_X0, X012_to_X2, \
+    I1_from_V012, S_from_VI, V1_from_ppc, V_from_I, combine_X012, I0_from_V012, I2_from_V012
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pf.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
-from pandapower.idx_bus_3ph import VM_A, VA_A, VM_B, VA_B, VM_C, VA_C
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
+from pandapower.idx_bus import PD, QD, VM, VA
+from pandapower.idx_gen import GEN_BUS, GEN_STATUS, VG
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, _extract_results_3ph
 from pandapower.results_bus import _get_bus_idx
 
 
-# =============================================================================
-# Functions for 3 Phase Unbalanced Load Flow
-# =============================================================================
-# =============================================================================
-# Convert to three decoupled sequence networks
-# =============================================================================
+def _get_pf_variables_from_ppci(ppci):
+    ## default arguments
+    if ppci is None:
+        ValueError('ppci is empty')
+    # ppopt = ppoption(ppopt)
 
-def X012_to_X0(X012):
-    return np.transpose(X012[0, :])
+    # get data for calc
+    baseMVA, bus, gen, branch = \
+        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
 
+    ## get bus index lists of each type of bus
+    ref, pv, pq = bustypes(bus, gen)
 
-def X012_to_X1(X012):
-    return np.transpose(X012[1, :])
+    ## generator info
+    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
+    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
 
+    ## initial state
+    # V0    = ones(bus.shape[0])            ## flat start
+    V0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
+    V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
-def X012_to_X2(X012):
-    return np.transpose(X012[2, :])
-
-
-# =============================================================================
-# Three decoupled sequence network to 012 matrix conversion
-# =============================================================================
-
-def combine_X012(X0, X1, X2):
-    return np.transpose(np.concatenate((X0, X1, X2), axis=1))
+    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
 
 
-# =============================================================================
-# Symmetrical transformation matrix
-# Tabc : 012 > abc
-# T012 : abc >012
-# =============================================================================
-
-def phase_shift_unit_operator(angle_deg):
-    return 1 * np.exp(1j * np.deg2rad(angle_deg))
-
-
-a = phase_shift_unit_operator(120)
-asq = phase_shift_unit_operator(-120)
-Tabc = np.matrix(
-    [
-        [1, 1, 1],
-        [1, asq, a],
-        [1, a, asq]
-    ], dtype=np.complex)
-
-T012 = np.divide(np.matrix(
-    [
-        [1, 1, 1],
-        [1, a, asq],
-        [1, asq, a]
-    ], dtype=np.complex), 3)
-
-
-def sequence_to_phase(X012):
-    return np.matmul(Tabc, X012)
-
-
-def phase_to_sequence(Xabc):
-    return np.matmul(T012, Xabc)
-
-
-# =============================================================================
-# Calculating Sequence Current from sequence Voltages
-# =============================================================================
-
-def I0_from_V012(V012, Y):
-    V0 = X012_to_X0(V012)
-    if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V0)
-    else:
-        return np.matmul(Y, V0)
-
-
-def I1_from_V012(V012, Y):
-    V1 = X012_to_X1(V012)
-    if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V1)
-    else:
-        return np.matmul(Y, V1)
-
-
-def I2_from_V012(V012, Y):
-    V2 = X012_to_X2(V012)
-    if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V2)
-    else:
-        return np.matmul(Y, V2)
-
-
-def V1_from_ppc(ppc):
-    return np.transpose(
-        np.matrix(
-            ppc["bus"][:, 7] * np.exp(1j * np.deg2rad(ppc["bus"][:, 8]))
-            , dtype=np.complex
-        )
-    )
-
-
-def V_from_I(Y, I):
-    return np.transpose(np.matrix(sp.sparse.linalg.spsolve(Y, I)))
-
-
-def I_from_V(Y, V):
-    if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V)
-    else:
-        return np.matmul(Y, V)
-
-
-# =============================================================================
-# Calculating Power
-# =============================================================================
-def S_from_VI(V, I):
-    return np.multiply(V, I.conjugate())
+def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
+    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    return ppci
 
 
 # =============================================================================
 # Mapping load for positive sequence loads
 # =============================================================================
+# Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
 def load_mapping(net):
     _is_elements = net["_is_elements"]
     b = np.array([], dtype=int)
@@ -165,10 +83,6 @@ def load_mapping(net):
     p_c, PC = np.array([]), np.array([])
 
     l3 = net["load_3ph"]
-    sgen_3ph = net["sgen_3ph"]
-    l = net["load"]
-    sgen = net["sgen"]
-    
     if len(l3) > 0:
         vl = _is_elements["load_3ph"] * l3["scaling"].values.T
         q_a = np.hstack([q_a, l3["q_kvar_A"].values * vl])
@@ -179,7 +93,7 @@ def load_mapping(net):
         p_c = np.hstack([p_c, l3["p_kw_C"].values * vl])
         b = np.hstack([b, l3["bus"].values])
 
-    
+    sgen_3ph = net["sgen_3ph"]
     if len(sgen_3ph) > 0:
         vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T
         q_a = np.hstack([q_a, sgen_3ph["q_kvar_A"].values * vl])
@@ -191,7 +105,7 @@ def load_mapping(net):
         b = np.hstack([b, sgen_3ph["bus"].values])
     # For Network Symmetric loads with unsymmetric loads
     #    Since the bus values of ppc values are not known, it is added again, fresh
- 
+    l = net["load"]
     if len(l) > 0:
         vl = _is_elements["load"] * l["scaling"].values.T
         q_a = np.hstack([q_a, l["q_kvar"].values / 3 * vl])
@@ -202,6 +116,7 @@ def load_mapping(net):
         p_c = np.hstack([p_c, l["p_kw"].values / 3 * vl])
         b = np.hstack([b, l["bus"].values])
 
+    sgen = net["sgen"]
     if len(sgen) > 0:
         vl = _is_elements["load"] * l["scaling"].values.T
         q_a = np.hstack([q_a, sgen["q_kvar"].values / 3 * vl])
@@ -210,18 +125,18 @@ def load_mapping(net):
         p_b = np.hstack([p_b, sgen["p_kw"].values / 3 * vl])
         q_c = np.hstack([q_c, sgen["q_kvar"].values / 3 * vl])
         p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
-        b = np.hstack([b, sgen["bus"].values])
-    
-    if len([bus for bus in _is_elements['bus_is_idx'] if bus not in b]) != 0  :
+        b = np.hstack([b, sgen["bus"].values ])
+
+    ext_grid = net["ext_grid"]
+    if len(ext_grid) > 0  :
         q_a = np.hstack([q_a, 0])
         p_a = np.hstack([p_a, 0])
         q_b = np.hstack([q_b, 0])
         p_b = np.hstack([p_b, 0])
         q_c = np.hstack([q_c, 0])
         p_c = np.hstack([p_c, 0])
-        b = np.hstack([b, [bus for bus in net.bus.index.values if bus not in b]])
+        b = np.hstack([b, net.ext_grid.bus.values])
     
-#    b = b.sort()
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ba = bus_lookup[b]
@@ -260,10 +175,11 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
+
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]
+        hv_buses = np.where(net.bus.vn_kv.values > 70)[0] # Todo: Where does that number come from?
         if len(hv_buses) > 0:
             line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
             if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
@@ -297,22 +213,18 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     #        'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf_3ph",'copy_constraints_to_ppc': False,
     #        'enforce_q_lims': False, 'numba': True, 'recycle': {'Ybus': False, '_is_elements': False, 'bfsw': False, 'ppc': False},
     #        "tolerance_kva": 1e-5, "max_iteration": 10}
-    _, ppci1 = _pd2ppc(net)
+    _, ppci1 = _pd2ppc(net,1)
 
-    _, ppci2 = _pd2ppc(net)
+    _, ppci2 = _pd2ppc(net,2)
     _add_ext_grid_sc_impedance(net, ppci2)
 
-    _, ppci0 = _pd2ppc_zero(net)
+    _, ppci0 = _pd2ppc_zero(net,0)
 
-    # Y0_pu,_,_ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
-    #
-    # Y1_pu,_,_ = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
-    #
-    # Y2_pu,_,_ = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
+    _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00 = _get_pf_variables_from_ppci(ppci0)
+    baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01 = _get_pf_variables_from_ppci(ppci1)
+    _,       bus2, gen2, branch2,      _,      _,      _, _, _, V02 = _get_pf_variables_from_ppci(ppci2)
 
-    ppci0, ppci1, ppci2, Y0_pu, Y1_pu, Y2_pu, _, _, _, _, _, _ = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
-
-    sl_bus, pv_bus, pq_bus = bustypes(ppci1['bus'], ppci1['gen'])
+    ppci0, ppci1, ppci2, Y0_pu, Y1_pu, Y2_pu, Y0_f, Y1_f, Y2_f, Y0_t, Y1_t, Y2_t = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
 
     # =============================================================================
     # Initial voltage values
@@ -385,9 +297,42 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         count += 1
 
     ppci0["et"] = time() - t0
+    ppci1["et"] = ppci0["et"]
+    ppci2["et"] = ppci0["et"]
     ppci0["success"] = (count < 3 * max_iteration)
+    ppci1["success"] = ppci0["success"]
+    ppci2["success"] = ppci0["success"]
 
-    _copy_bus_results_to_results_table(net, ppci0, V012_it, I012_it, Y0_pu, Y1_pu)
+    ## update data matrices with solution
+    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].getA1(), sl_bus)
+    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].getA1(), sl_bus)
+    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y2_pu, Y2_f, Y2_t, V012_it[2, :].getA1(), sl_bus)
+
+    ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
+    ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
+    ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
+
+    ppc0 = net["_ppc0"]
+    ppc1 = net["_ppc1"]
+    ppc2 = net["_ppc2"]
+
+    # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
+    ppc0 = _copy_results_ppci_to_ppc(ppci0, ppc0, mode=mode)
+    ppc1 = _copy_results_ppci_to_ppc(ppci1, ppc1, mode=mode)
+    ppc2 = _copy_results_ppci_to_ppc(ppci2, ppc2, mode=mode)
+
+    # # raise if PF was not successful. If DC -> success is always 1
+    # # Todo: These lines cause the test_runpp_3ph to fail in one instance!
+    # if ppci0["success"] != True:
+    #     net["converged"] = False
+    #     _clean_up(net, res=False)
+    #     raise LoadflowNotConverged("Power Flow {0} did not converge after "
+    #                                "{1} iterations!".format(algorithm, 3*max_iteration))
+    # else:
+    #     net["converged"] = True
+
+    _extract_results_3ph(net, ppc0, ppc1, ppc2)
+    _clean_up(net)
 
     return count, V012_it, I012_it, ppci0, Y1_pu
 
@@ -398,36 +343,31 @@ def show_results(V_base, kVA_base, count, ppci0, Y1_pu, V012_new, I012_new):
     print("\n No of Iterations: %u" % count)
     print('\n\n Final  Values Pandapower ')
 
-    ppci0["bus"][0, 4] = 0
-    ppci0["bus"][0, 5] = 0
-    Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+    V_abc_new, I_abc_new, Sabc_new = _phase_from_sequence_results(ppci0, Y1_pu, V012_new)
+    Sabc_new = Sabc_new * kVA_base
 
-    # Y0_pu = Y0_pu.todense()
-    I012_new = combine_X012(I0_from_V012(V012_new, Y0_pu),
-                            I1_from_V012(V012_new, Y1_pu),
-                            I2_from_V012(V012_new, Y1_pu))
-    I_abc_new = sequence_to_phase(I012_new)
-    V_abc_new = sequence_to_phase(V012_new)
-    Sabc_new = S_from_VI(V_abc_new, I_abc_new) * kVA_base
     print('\n SABC New using I=YV\n')
     print(Sabc_new)
     print(' \n Voltage  ABC\n')
     print(abs(V_abc_new) * V_base_res)
-
     print('\n Current  ABC\n')
     print(abs(I_abc_new) * I_base_res)
 
-    # update data matrices with solution
-    # baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci0)
-    # V_abc_res = abs(V_abc_new)*V_base_res
-    # bus[:,VM_A] = np.abs(V_abc_res[:,1])
-    # bus[:,VM_B] = np.abs(V_abc_res[:,2])
-    # bus[:,VM_C] = np.abs(V_abc_res[:,3])
-    # bus[:,(VA_A,VA_B,VA_C)] = np.angle(V_abc_res)
-
-    # bus, gen, branch = pfsoln_3ph(kVA_base*1e-3, bus, gen, branch, Ybus, Yf, Yt, V, ref)
-
     return V_abc_new, I_abc_new, Sabc_new
+
+
+def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu):
+    ppci0["bus"][0, GS] = 0
+    ppci0["bus"][0, BS] = 0
+    # Y0_pu = Y0_pu.todense()
+    Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+    I012_pu = combine_X012(I0_from_V012(V012_pu, Y0_pu),
+                            I1_from_V012(V012_pu, Y1_pu),
+                            I2_from_V012(V012_pu, Y1_pu))
+    I_abc_pu = sequence_to_phase(I012_pu)
+    V_abc_pu = sequence_to_phase(V012_pu)
+    Sabc_pu = S_from_VI(V_abc_pu, I_abc_pu)
+    return V_abc_pu, I_abc_pu, Sabc_pu
 
 
 def _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus):
@@ -450,12 +390,12 @@ def _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus):
 
 
 # =============================================================================
+# DEPRECATED! This function will be deleted once all its functionality is covered in the main programme
 # First draft for copying three-phase pf results obtained via runpp_3ph() into results tables.
 # Three-phase bus results are taken directly from runpp_3ph() and written to res_bus_3ph.
 # res_bus is filled with positive sequence voltages and the sum of three-phase powers.
 #
-# Todo: Consider V_base for each bus
-# Todo: Extend _store_results_from_pf_in_ppci / _copy_results_ppci_to_ppc / _get_bus_v_results / _get_p_q_results / get_bus_results / _clean_up()
+# Todo: Extend _get_bus_v_results / _get_p_q_results / get_bus_results / _clean_up()
 # Todo: Include branch and generation results
 # Open questions: Is ppci0 the right structure to extract results? Is ppci1 needed somewhere?
 #                 Does it make sense to write positive sequence results into res_bus?
@@ -488,12 +428,12 @@ def _copy_bus_results_to_results_table(net, ppci0, V012_it, I012_it, Y0_pu, Y1_p
 
     bus[:, VM] = np.abs(V012_it[1, :]) * V_base_res
     bus[:, VA] = np.angle(V012_it[1, :]) * 180 / np.pi
-    bus[:, VM_A] = np.abs(V_abc_new[0, :]) * V_base_res
-    bus[:, VM_B] = np.abs(V_abc_new[1, :]) * V_base_res
-    bus[:, VM_C] = np.abs(V_abc_new[2, :]) * V_base_res
-    bus[:, VA_A] = np.angle(V_abc_new[0, :]) * 180 / np.pi
-    bus[:, VA_B] = np.angle(V_abc_new[1, :]) * 180 / np.pi
-    bus[:, VA_C] = np.angle(V_abc_new[2, :]) * 180 / np.pi
+    # bus[:, VM_A] = np.abs(V_abc_new[0, :]) * V_base_res
+    # bus[:, VM_B] = np.abs(V_abc_new[1, :]) * V_base_res
+    # bus[:, VM_C] = np.abs(V_abc_new[2, :]) * V_base_res
+    # bus[:, VA_A] = np.angle(V_abc_new[0, :]) * 180 / np.pi
+    # bus[:, VA_B] = np.angle(V_abc_new[1, :]) * 180 / np.pi
+    # bus[:, VA_C] = np.angle(V_abc_new[2, :]) * 180 / np.pi
 
     # Results related to _store_results_from_pf_in_ppci
     ppci = ppci0

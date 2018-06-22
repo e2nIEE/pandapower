@@ -399,6 +399,9 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
 
         # internal
         "_ppc": None,
+        "_ppc0": None,
+        "_ppc1": None,
+        "_ppc2": None,
         "_is_elements": None,
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,

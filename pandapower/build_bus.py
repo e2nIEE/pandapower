@@ -12,7 +12,6 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
-from pandapower.idx_bus_3ph import VM_A, VA_A, VM_B, VA_B, VM_C, VA_C, bus_cols_3ph
 
 try:
     from numba import jit
@@ -221,11 +220,6 @@ def _build_bus_ppc(net, ppc):
         bus_sc = np.empty(shape=(n_bus, bus_cols_sc), dtype=float)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
-    elif mode == "pf_3ph":
-        from pandapower.idx_bus_3ph import bus_cols_3ph
-        bus_3ph = np.empty(shape=(n_bus, bus_cols_3ph), dtype=float)
-        bus_3ph.fill(np.nan)
-        ppc["bus"] = np.hstack((ppc["bus"], bus_3ph))
 
     # apply consecutive bus numbers
     ppc["bus"][:, BUS_I] = np.arange(n_bus)
@@ -247,14 +241,6 @@ def _build_bus_ppc(net, ppc):
 
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
-    elif mode == "pf_3ph" and init == "results" and len(net["res_bus"]) > 0:
-        # init results (= voltages) from previous power flow
-        ppc["bus"][:n_bus, VM_A] = net["res_bus_3ph"]["vmA_pu"].values
-        ppc["bus"][:n_bus, VA_A] = net["res_bus_3ph"]["vaA_degree"].values
-        ppc["bus"][:n_bus, VM_B] = net["res_bus_3ph"]["vmB_pu"].values
-        ppc["bus"][:n_bus, VA_B] = net["res_bus_3ph"]["vaB_degree"].values
-        ppc["bus"][:n_bus, VM_C] = net["res_bus_3ph"]["vmC_pu"].values
-        ppc["bus"][:n_bus, VA_C] = net["res_bus_3ph"]["vaC_degree"].values
 
     if copy_constraints_to_ppc:
         if "max_vm_pu" in net.bus:
