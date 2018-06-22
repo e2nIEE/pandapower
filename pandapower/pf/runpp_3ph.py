@@ -291,7 +291,7 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================
-        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])
+        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])*net.sn_kva
         V012_it = V012_new
         Vabc_it = sequence_to_phase(V012_it)
         count += 1
