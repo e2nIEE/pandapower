@@ -100,7 +100,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         vsc_percent = trafos["vsc_percent"].values.astype(float)
         vscr_percent = trafos["vscr_percent"].values.astype(float)
-        sn_kva = trafos["sn_kva"].values.astype(float)
+        trafo_kva = trafos["sn_kva"].values.astype(float)
         vsc0_percent = trafos["vsc0_percent"].values.astype(float)
         vscr0_percent = trafos["vscr0_percent"].values.astype(float)
         lv_buses = trafos["lv_bus"].values.astype(int)
@@ -128,8 +128,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         # zero seq. transformer impedance
         tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva  # adjust for low voltage side voltage converter
-        z_sc = (vsc0_percent / 100. / sn_kva * tap_lv)
-        r_sc = (vscr0_percent / 100. / sn_kva * tap_lv)
+        z_sc = (vsc0_percent / 100. / trafo_kva * tap_lv)
+        r_sc = (vscr0_percent / 100. / trafo_kva * tap_lv)
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
@@ -137,11 +137,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         if mode == "sc":
             from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
-            kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_kva, cmax)
+            kt = _transformer_correction_factor(vsc_percent, vscr_percent, trafo_kva, cmax)
             z0_k *= kt
         y0_k = 1 / z0_k
         # zero sequence transformer magnetising impedance 
-        z_m = vsc0_percent * mag0_percent / 100. / sn_kva * tap_lv
+        z_m = vsc0_percent * mag0_percent / 100. / trafo_kva * tap_lv
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
         r_m = x_m * mag0_rx
         r0_trafo_mag = r_m / parallel
@@ -185,8 +185,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             zs = (za * zb)/(za - zb)
             ys = 1 / zs.astype(complex)
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, ys.real*in_service])
-            bs_all = np.hstack([bs_all, ys.imag*in_service])
+            gs_all = np.hstack([gs_all, ys.real*in_service]* ppc["baseMVA"])
+            bs_all = np.hstack([bs_all, ys.imag*in_service]* ppc["baseMVA"])
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             y = 1/(z0_mag+z0_k).astype(complex)* ppc["baseMVA"]
