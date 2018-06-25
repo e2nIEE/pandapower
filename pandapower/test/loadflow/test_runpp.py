@@ -327,7 +327,7 @@ def test_isolated_in_service_line():
     # ToDo: Fix this
     net = pp.create_empty_network()
     _, b2, l1 = add_grid_connection(net)
-    b = pp.create_bus(net, vn_kv=135)
+    b = pp.create_bus(net, vn_kv=20.)
     pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l1, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
