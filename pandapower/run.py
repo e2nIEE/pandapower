@@ -104,7 +104,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
             The following algorithms are available:
 
-                - "nr" newton-raphson (pypower implementation with numba accelerations)
+                - "nr" Newton-Raphson (pypower implementation with numba accelerations)
+                - "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
                 - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
                 - "gs" gauss-seidel (pypower implementation)
                 - "fdbx" fast-decoupled (pypower implementation)
