@@ -150,13 +150,13 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         if vector_group == "Dyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, y0_k.real*in_service* ppc["baseMVA"]])
-            bs_all = np.hstack([bs_all, y0_k.imag*in_service* ppc["baseMVA"]])
+            gs_all = np.hstack([gs_all, y0_k.real*in_service* int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, y0_k.imag*in_service* int(ppc["baseMVA"])])
              
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, y0_k.real*in_service]* ppc["baseMVA"])
-            bs_all = np.hstack([bs_all, y0_k.imag*in_service]* ppc["baseMVA"])
+            gs_all = np.hstack([gs_all, y0_k.real*in_service* int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, y0_k.imag*in_service* int(ppc["baseMVA"])])
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
@@ -185,8 +185,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             zs = (za * zb)/(za - zb)
             ys = 1 / zs.astype(complex)
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, ys.real*in_service]* ppc["baseMVA"])
-            bs_all = np.hstack([bs_all, ys.imag*in_service]* ppc["baseMVA"])
+            gs_all = np.hstack([gs_all, ys.real*in_service* int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, ys.imag*in_service* int(ppc["baseMVA"])])
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             y = 1/(z0_mag+z0_k).astype(complex)* ppc["baseMVA"]

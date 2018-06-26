@@ -104,7 +104,7 @@ def test_2bus_network():
     
     pp.add_zero_impedance_parameters(net)
     
-    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    count,V012_it,I012_it,ppci0, Y0_pu,Y1_pu,Y2_pu = runpp_3ph(net)
     
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
     Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
@@ -254,7 +254,7 @@ def test_4bus_network():
                        p_kw_C=10000, q_kvar_C=5000)
     create_load_3ph(net, busp, p_kw_A=50000, q_kvar_A=20000, p_kw_B=60000, q_kvar_B=20000,
                        p_kw_C=10000, q_kvar_C=5000)
-    count,V012_new,I012_new,ppci0,Y1_pu = runpp_3ph(net)
+    count,V012_new,I012_new,ppci0,Y0_pu,Y1_pu,Y2_pu = runpp_3ph(net)
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_new,I012_new)
     Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_4bus_PowerFactory()
 
@@ -291,7 +291,7 @@ def test_in_serv_load():
     
     pp.add_zero_impedance_parameters(net)
     
-    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    count,V012_it,I012_it,ppci0,Y0_pu,Y1_pu,Y2_pu = runpp_3ph(net)
     
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
     Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
@@ -302,7 +302,7 @@ def test_in_serv_load():
     create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=100000, p_kw_B=29000, q_kvar_B=38000,
                    p_kw_C=10000, q_kvar_C=5000, in_service=False)
 
-    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    count,V012_it,I012_it,ppci0, Y0_pu,Y1_pu,Y2_pu = runpp_3ph(net)
     
     V_abc_new,I_abc_new,Sabc_new = show_results(V_base,kVA_base,count,ppci0,Y1_pu,V012_it,I012_it)
     Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
@@ -322,23 +322,21 @@ def test_in_serv_load():
 #    Sabc_powerFactory, Vabc_powerFactory, Iabc_powerFactory = results_2bus_PowerFactory()
 #    load_mapping(net)
 #    
-def test_transformer_3ph():
+def test_transformer_3ph_diff_kvabase():
     hv_base = 20                     # 110kV Base Voltage
     lv_base = 0.4
-    kVA_base = 100000                      # 100 MVA
+    kVA_base = 1000                     # 100 MVA
 #    I_base = (kVA_base/V_base) * 1e-3           # in kA
     vector_group = "Yyn"
-    hv_base_res = hv_base/np.sqrt(3)
-    lv_base_res = lv_base/np.sqrt(3)
-    I_hv_res = kVA_base/hv_base_res*1e-3
-    I_lv_res = kVA_base/lv_base_res*1e-3
-    "0.63 MVA 20/0.4 kV"
+#    hv_base_res = hv_base/np.sqrt(3)
+#    lv_base_res = lv_base/np.sqrt(3)
+
     net = pp.create_empty_network(sn_kva = kVA_base )
     
     bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vector_group, name = "bushv", index=1)
     buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vector_group, name = "buslv", index=5)
-    pp.create_bus(net, vn_kv=20., in_service=False)
-    pp.create_bus(net, vn_kv=20., in_service=True)
+#    pp.create_bus(net, vn_kv=20., in_service=False)
+#    pp.create_bus(net, vn_kv=20., in_service=True)
     
     pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
     net.ext_grid["r0x0_max"] = 0.1
@@ -356,31 +354,49 @@ def test_transformer_3ph():
     create_load_3ph(net, buslv, p_kw_A=300, q_kvar_A=20, p_kw_B=100, q_kvar_B=50,
                        p_kw_C=100, q_kvar_C=30)
     pp.add_zero_impedance_parameters(net)
-    count,V012_it,I012_it,ppci0,Y1_pu = runpp_3ph(net)
+    count,V012_it_1k,I012_it_1k,ppci0, Y0_pu_1k,Y1_pu_1k,Y2_pu_1k = runpp_3ph(net)
     
-    print("\n No of Iterations: %u"%count)
-    print ('\n\n Final  Values Pandapower ')
-    ppci0["bus"][0, 4] = 0
-    ppci0["bus"][0, 5] = 0
-    Y0_pu,_,_ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
-#Y0_pu = Y0_pu.todense()
-    I012_new = combine_X012(I0_from_V012(V012_it,Y0_pu),
-                        I1_from_V012(V012_it,Y1_pu),
-                        I2_from_V012(V012_it,Y1_pu))
-    I_abc_new = sequence_to_phase(I012_new)
-    V_abc_new = sequence_to_phase(V012_it)
-    Sabc_new = S_from_VI(V_abc_new,I_abc_new)*kVA_base
-    print ('\n SABC New using I=YV\n')
-    print (Sabc_new)
-    print (' \n Voltage  ABC HV \n')
-    print (abs(V_abc_new)*hv_base_res)
-    print (' \n Voltage  ABC LV \n')
-    print (abs(V_abc_new)*lv_base_res)
+    net.sn_kva = 100000
     
-    print ('\n Current  ABC HV \n')
-    print (abs(I_abc_new)*I_hv_res)
-    print ('\n Current  ABC LV \n')
-    print (abs(I_abc_new)*I_lv_res)  
+    count,V012_it_100k,I012_it_100k,ppci0, Y0_pu_100k,Y1_pu_100k,Y2_pu_100k = runpp_3ph(net)
+    
+    print ('\n\n\nV',V012_it_1k/V012_it_100k,'\n\n\n I ',I012_it_1k/I012_it_100k,\
+           '\n\n\nY0',Y0_pu_1k/Y0_pu_100k,'\n\n\nY1',Y1_pu_1k/Y1_pu_100k,'\n\n\nY2',\
+           Y2_pu_1k/Y2_pu_100k)
+    
+    net.sn_kva = 1000
+    vector_group = "YNyn"
+    net = pp.create_empty_network(sn_kva = kVA_base )
+    
+    bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vector_group, name = "bushv", index=1)
+    buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vector_group, name = "buslv", index=5)
+#    pp.create_bus(net, vn_kv=20., in_service=False)
+#    pp.create_bus(net, vn_kv=20., in_service=True)
+    
+    pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
+    net.ext_grid["x0x_max"] = 1.0
+    
+    transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
+    transformer_type.update({"vsc0_percent": 6, "vscr0_percent": 1.095238, "mag0_percent": 100,
+                     "mag0_rx": 0., "vector_group": vector_group,"vscr_percent": 1.095238,
+                     "shift_degree": 0, "si0_hv_partial": 0.9 })
+    pp.create_std_type(net, transformer_type, vector_group, "trafo")
+    pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
+                          index=pp.get_free_id(net.trafo)+1)
+#    pp.create_transformer(net, bushv, buslv, std_type=vector_group, in_service=False)
+    
+    create_load_3ph(net, buslv, p_kw_A=300, q_kvar_A=20, p_kw_B=100, q_kvar_B=50,
+                       p_kw_C=100, q_kvar_C=30)
+    pp.add_zero_impedance_parameters(net)
+    count,V012_it_1k,I012_it_1k,ppci0, Y0_pu_1k,Y1_pu_1k,Y2_pu_1k = runpp_3ph(net)
+    
+    net.sn_kva = 100000
+    vector_group = "YNyn"
+    count,V012_it_100k,I012_it_100k,ppci0, Y0_pu_100k,Y1_pu_100k,Y2_pu_100k = runpp_3ph(net)
+    print ('\n\n\n YNyn \n\n\nV',V012_it_1k/V012_it_100k,'\n\n\n I ',I012_it_1k/I012_it_100k,\
+       '\n\n\nY0',Y0_pu_1k/Y0_pu_100k,'\n\n\nY1',Y1_pu_1k/Y1_pu_100k,'\n\n\nY2',\
+       Y2_pu_1k/Y2_pu_100k)
     
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
