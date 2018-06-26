@@ -5,7 +5,7 @@
 
 
 from math import pi
-from numpy import sign, nan, append, zeros, array, power, sqrt
+from numpy import sign, nan, append, zeros, array, power, sqrt, where
 from numpy import max as max_
 from pandas import Series, DataFrame, concat
 
@@ -46,6 +46,23 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
                                   - values, type)
     else:
         logger.info("Cost mode of gencost line %s is unknown." % idx)
+
+
+def _gen_bus_info(ppc, idx_gen):
+    bus_name = int(ppc["gen"][idx_gen, 0])
+    # assumption: there is only one bus with this bus_name:
+    idx_bus = int(where(ppc["bus"][:, 0] == bus_name)[0][0])
+    current_bus_type = int(ppc["bus"][idx_bus, 1])
+
+    same_bus_gen_idx = where(ppc["gen"][:, 0] == ppc["gen"][idx_gen, 0])[0].astype(int)
+    same_bus_in_service_gen_idx = same_bus_gen_idx[where(ppc["gen"][same_bus_gen_idx, 7] > 0)]
+    first_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[0] if len(
+        same_bus_in_service_gen_idx) else None
+    last_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[-1] if len(
+        same_bus_in_service_gen_idx) else None
+
+    return current_bus_type, idx_bus, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
+        last_same_bus_in_service_gen_idx
 
 
 def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
@@ -117,22 +134,17 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     # --- gen data -> create ext_grid, gen, sgen
     gen_lookup = DataFrame(nan, columns=['element', 'element_type'],
                            index=range(len(ppc['gen'][:, 0])))
-    for i in range(len(ppc['gen'])):
-        # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
-        if len(ppc["gen"].shape) == 1:
-            ppc["gen"] = array(ppc["gen"], ndmin=2)
-        current_bus_idx = pp.get_element_index(net, 'bus', name=int(ppc['gen'][i, 0]))
-        current_bus_type = int(ppc['bus'][current_bus_idx, 1])
+    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+    if len(ppc["gen"].shape) == 1:
+        ppc["gen"] = array(ppc["gen"], ndmin=2)
+    for i in range(len(ppc['gen'][:, 0])):
+        current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
+            last_same_bus_in_service_gen_idx = _gen_bus_info(ppc, i)
         # create ext_grid
         if current_bus_type == 3:
-            if len(pp.get_connected_elements(net, 'ext_grid', current_bus_idx)) > 0:
-                logger.info('At bus %d an ext_grid already exists. ' % current_bus_idx +
-                            'Because of that generator %d ' % i +
-                            'is converted not as an ext_grid but as a sgen')
-                current_bus_type = 1
-            else:
+            if i == first_same_bus_in_service_gen_idx:
                 gen_lookup.element.loc[i] = pp.create_ext_grid(
-                    net, bus=current_bus_idx, vm_pu=ppc['gen'][i, 5],
+                    net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
                     va_degree=ppc['bus'][current_bus_idx, 8], in_service=bool(ppc['gen'][i, 7] > 0),
                     max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
                     max_q_kvar=ppc['gen'][i, 3] * 1e3, min_q_kvar=ppc['gen'][i, 4] * 1e3)
@@ -141,20 +153,26 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                     logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
                 if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
                     logger.info('max_p_kw of gen %d must be less than min_p_kw but is not.' % i)
+            else:
+                current_bus_type = 1
         # create gen
         elif current_bus_type == 2:
-            gen_lookup.element.loc[i] = pp.create_gen(
-                net, bus=current_bus_idx, vm_pu=ppc['gen'][i, 5], p_kw=-ppc['gen'][i, 1] * 1e3,
-                in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
-                max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
-                max_q_kvar=ppc['gen'][i, 3] * 1e3, min_q_kvar=ppc['gen'][i, 4] * 1e3)
-            gen_lookup.element_type.loc[i] = 'gen'
-            if ppc['gen'][i, 1] < 0:
-                logger.info('p_kw of gen %d must be less than zero but is not.' % i)
-            if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
-                logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
-            if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
-                logger.info('max_p_kw of gen %d must be less than min_p_kw but is not.' % i)
+            if i == first_same_bus_in_service_gen_idx:
+                gen_lookup.element.loc[i] = pp.create_gen(
+                    net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
+                    p_kw=-ppc['gen'][i, 1] * 1e3,
+                    in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
+                    max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
+                    max_q_kvar=ppc['gen'][i, 3] * 1e3, min_q_kvar=ppc['gen'][i, 4] * 1e3)
+                gen_lookup.element_type.loc[i] = 'gen'
+                if ppc['gen'][i, 1] < 0:
+                    logger.info('p_kw of gen %d must be less than zero but is not.' % i)
+                if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
+                    logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
+                if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
+                    logger.info('max_p_kw of gen %d must be less than min_p_kw but is not.' % i)
+            else:
+                current_bus_type = 1
         # create sgen
         if current_bus_type == 1:
             gen_lookup.element.loc[i] = pp.create_sgen(
@@ -242,7 +260,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     if 'gencost' in ppc:
         if len(ppc['gencost'].shape) == 1:
             # reshape gencost if only one gencost is given -> no indexError
-            ppc['gencost'] = ppc['gencost'].reshape((1, ppc['gencost'].shape[0]))
+            ppc['gencost'] = ppc['gencost'].reshape((1, -1))
         if ppc['gencost'].shape[0] <= gen_lookup.shape[0]:
             idx_p = range(ppc['gencost'].shape[0])
             idx_q = []
@@ -441,39 +459,29 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
     pp_res["gen"] = zeros([1, 2])
     # consideration of parallel generators via storing how much generators have been considered
     # each node
-    already_used_gen = Series(zeros([pp_net.bus.shape[0]]), index=pp_net.bus.index).astype(int)
+    # if in ppc is only one gen -> numpy initially uses one dim array -> change to two dim array
+    if len(ppc_net["gen"].shape) == 1:
+        ppc_net["gen"] = array(ppc_net["gen"], ndmin=2)
     GENS = DataFrame(ppc_net['gen'][:, [0]].astype(int))
+    GEN_uniq = GENS.drop_duplicates()
+    already_used_gen = Series(zeros(GEN_uniq.shape[0]).astype(int),
+                              index=[int(v) for v in GEN_uniq.values])
     change_q_compare = []
     for i, j in GENS.iterrows():
-        current_bus_idx = pp.get_element_index(pp_net, 'bus', name=j[0])
-        current_bus_type = int(ppc_net['bus'][current_bus_idx, 1])
-        # ext_grid
-        if current_bus_type == 3:
-            if already_used_gen.at[current_bus_idx] == 0:
-                pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_ext_grid[
-                    pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                    already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
-                already_used_gen.at[current_bus_idx] += 1
-            else:
-                pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_sgen[
-                    pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                    already_used_gen.at[current_bus_idx]-1].reshape((1, 2)), 0)
-                already_used_gen.at[current_bus_idx] += 1
-                change_q_compare += [j[0]]
-        # gen
-        elif current_bus_type == 2:
+        current_bus_type, current_bus_idx, same_bus_gen_idx, first_same_bus_in_service_gen_idx, \
+            last_same_bus_in_service_gen_idx = _gen_bus_info(ppc_net, i)
+        if current_bus_type == 3 and i == first_same_bus_in_service_gen_idx:
+            pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_ext_grid[
+                    pp_net.ext_grid.bus == current_bus_idx][['p_kw', 'q_kvar']]).reshape((1, 2)), 0)
+        elif current_bus_type == 2 and i == first_same_bus_in_service_gen_idx:
             pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_gen[
-                pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
-            if already_used_gen.at[current_bus_idx] > 0:
-                change_q_compare += [j[0]]
-            already_used_gen.at[current_bus_idx] += 1
-        # sgen
-        elif current_bus_type == 1:
+                    pp_net.gen.bus == current_bus_idx][['p_kw', 'q_kvar']]).reshape((1, 2)), 0)
+        else:
             pp_res["gen"] = append(pp_res["gen"], array(pp_net.res_sgen[
                 pp_net.sgen.bus == current_bus_idx][['p_kw', 'q_kvar']])[
-                already_used_gen.at[current_bus_idx]].reshape((1, 2)), 0)
-            already_used_gen.at[current_bus_idx] += 1
+                already_used_gen.at[int(j)]].reshape((1, 2)), 0)
+            already_used_gen.at[int(j)] += 1
+            change_q_compare += [int(j)]
     pp_res["gen"] = pp_res["gen"][1:, :]  # delete initial zero row
 
     # --- pandapower branch result table
@@ -550,7 +558,6 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
     diff_res["branch"] = ppc_res["branch"] - pp_res["branch"] * 1e-3
     diff_res["gen"] = ppc_res["gen"] + pp_res["gen"] * 1e-3
     # comparison of buses with several generator units only as q sum
-    GEN_uniq = GENS.drop_duplicates()
     for i in GEN_uniq.loc[GEN_uniq[0].isin(change_q_compare)].index:
         next_is = GEN_uniq.index[GEN_uniq.index > i]
         if len(next_is) > 0:

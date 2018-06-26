@@ -32,6 +32,12 @@ def test_case4gs():
     _ppc_element_test(net, 4, 4, 2, False)
 
 
+def test_case5():
+    net = pn.case5()
+    assert net.converged
+    _ppc_element_test(net, 5, 6, 5, False)
+
+
 def test_case6ww():
     net = pn.case6ww()
     assert net.converged
@@ -60,6 +66,12 @@ def test_case30():
     net = pn.case30()
     assert net.converged
     _ppc_element_test(net, 30, 41, 6, True)
+
+
+def test_case_ieee30():
+    net = pn.case_ieee30()
+    assert net.converged
+    _ppc_element_test(net, 30, 41, 6, False)
 
 
 def test_case33bw():
@@ -99,6 +111,12 @@ def test_case145():
     _ppc_element_test(net, 145, 453, 50+9, 50)
 
 
+def test_case_illinois200():
+    net = pn.case_illinois200()
+    assert net.converged
+    _ppc_element_test(net, 200, 245, 49, False)
+
+
 def test_case300():
     net = pn.case300()
     assert net.converged
@@ -127,7 +145,7 @@ def test_case1888rte_changed_slack():
     ref_bus_idx = [1233, 1854]
     net = pn.case1888rte(ref_bus_idx=ref_bus_idx)
     pp.runpp(net, trafo_model='pi')
-    assert list(net.ext_grid.bus) == ref_bus_idx
+    assert list(net.ext_grid.bus.sort_values()) == ref_bus_idx
     assert net.converged
 
 
