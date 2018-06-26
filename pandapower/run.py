@@ -190,7 +190,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
-        
+
         **trafo3w_losses** - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
 
         ****kwargs** - options to use for PYPOWER.runpf
@@ -213,7 +213,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                     np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
-    if algorithm not in ['nr', 'bfsw'] and voltage_depend_loads == True:
+    if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
         logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
                        "loads will be considered as constant power".format(algorithm))
 
@@ -232,7 +232,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         init = "dc" if calculate_voltage_angles else "flat"
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
-    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+    default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
 

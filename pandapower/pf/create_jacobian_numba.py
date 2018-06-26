@@ -8,13 +8,14 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 from numba import jit
 
 
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
+
+
 @jit(nopython=True, cache=True)
-def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma: no cover
+def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):  # pragma: no cover
     """Calculates Jacobian faster with numba and sparse matrices.
 
         Input: dS_dVa and dS_dVm in CSR sparse form (Yx = data, Yp = indptr, Yj = indices), pvpq, pq from pypower
@@ -56,14 +57,14 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma:
     # nonzeros in J
     nnz = 0
 
-    #iterate rows of J
-    #first iterate pvpq (J11 and J12)
+    # iterate rows of J
+    # first iterate pvpq (J11 and J12)
     for r in range(lpvpq):
         # nnzStar is necessary to calculate nonzeros per row
         nnzStart = nnz
         # iterate columns of J11 = dS_dVa.real at positions in pvpq
         # check entries in row pvpq[r] of dS_dV
-        for c in range(Yp[pvpq[r]], Yp[pvpq[r]+1]):
+        for c in range(Yp[pvpq[r]], Yp[pvpq[r] + 1]):
             # check if column Yj is in pvpq
             cc = pvpq_lookup[Yj[c]]
             # entries for J11 and J12
@@ -79,21 +80,21 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma:
                     Jj[nnz] = cc + lpq
                     nnz += 1
         # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
-        Jp[r+1] = nnz - nnzStart + Jp[r]
+        Jp[r + 1] = nnz - nnzStart + Jp[r]
     # second: iterate pq (J21 and J22)
     for r in range(lpq):
         nnzStart = nnz
         # iterate columns of J21 = dS_dVa.imag at positions in pvpq
-        for c in range(Yp[pq[r]], Yp[pq[r]+1]):
+        for c in range(Yp[pq[r]], Yp[pq[r] + 1]):
             cc = pvpq_lookup[Yj[c]]
             if pvpq[cc] == Yj[c]:
-                #entry found
+                # entry found
                 # equals entry of J21: J[r + lpvpq, cc] = dVa_x[c].imag
                 Jx[nnz] = dVa_x[c].imag
                 Jj[nnz] = cc
                 nnz += 1
                 if cc >= lpv:
-                    #if entry is found in the "pq part" of pvpq = Add entry of J22
+                    # if entry is found in the "pq part" of pvpq = Add entry of J22
                     Jx[nnz] = dVm_x[c].imag
                     Jj[nnz] = cc + lpq
                     nnz += 1
@@ -104,7 +105,7 @@ def create_J(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma:
 # @jit(i8(c16[:], c16[:], i4[:], i4[:], i8[:], i8[:], f8[:], i8[:], i8[:]), nopython=True, cache=True)
 @jit(nopython=True, cache=True)
 # @profile
-def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma: no cover
+def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp):  # pragma: no cover
     """Calculates Jacobian faster with numba and sparse matrices. This version is similar to create_J except that
         if pvpq = pq (when no pv bus is available) some if statements are obsolete and J11 = J12 and J21 = J22
 
@@ -127,14 +128,14 @@ def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma
     # nonzeros in J
     nnz = 0
 
-    #iterate rows of J
-    #first iterate pvpq (J11 and J12)
+    # iterate rows of J
+    # first iterate pvpq (J11 and J12)
     for r in range(lpvpq):
         # nnzStart is necessary to calculate nonzeros per row
         nnzStart = nnz
         # iterate columns of J11 = dS_dVa.real at positions in pvpq
         # iterate columns of J12 = dS_dVm.real at positions in pq (=pvpq)
-        for c in range(Yp[pvpq[r]], Yp[pvpq[r]+1]):
+        for c in range(Yp[pvpq[r]], Yp[pvpq[r] + 1]):
             cc = pvpq_lookup[Yj[c]]
             if pvpq[cc] == Yj[c]:
                 # entry found J11
@@ -147,16 +148,16 @@ def create_J2(dVm_x, dVa_x, Yp, Yj, pvpq_lookup, pvpq, pq, Jx, Jj, Jp): # pragma
                 Jj[nnz] = cc + lpvpq
                 nnz += 1
         # Jp: number of nonzeros per row = nnz - nnzStart (nnz at begging of loop - nnz at end of loop)
-        Jp[r+1] = nnz - nnzStart + Jp[r]
+        Jp[r + 1] = nnz - nnzStart + Jp[r]
     # second: iterate pq (J21 and J22)
     for r in range(lpvpq):
         nnzStart = nnz
         # iterate columns of J21 = dS_dVa.imag at positions in pvpq
         # iterate columns of J22 = dS_dVm.imag at positions in pq (=pvpq)
-        for c in range(Yp[pvpq[r]], Yp[pvpq[r]+1]):
+        for c in range(Yp[pvpq[r]], Yp[pvpq[r] + 1]):
             cc = pvpq_lookup[Yj[c]]
             if pvpq[cc] == Yj[c]:
-                #entry found J21
+                # entry found J21
                 # J[r + lpvpq, cc] = dVa_x[c].imag
                 Jx[nnz] = dVa_x[c].imag
                 Jj[nnz] = cc
