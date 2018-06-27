@@ -251,7 +251,7 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     #             Iteration using Power mismatch criterion
     # =============================================================================
     t0 = time()
-    while (S_mismatch > tolerance_kva).any() and count < 3 * max_iteration:
+    while (S_mismatch > tolerance_kva).any() and count < 3*max_iteration :
         # =============================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =============================================================================
@@ -291,7 +291,7 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================
-        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])
+        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])*net.sn_kva
         V012_it = V012_new
         Vabc_it = sequence_to_phase(V012_it)
         count += 1
@@ -334,7 +334,7 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     _extract_results_3ph(net, ppc0, ppc1, ppc2)
     _clean_up(net)
 
-    return count, V012_it, I012_it, ppci0, Y1_pu
+    return count, V012_it, I012_it, ppci0, Y0_pu,Y1_pu,Y2_pu
 
 
 def show_results(V_base, kVA_base, count, ppci0, Y1_pu, V012_new, I012_new):
