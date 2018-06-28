@@ -328,10 +328,15 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     line_traces = []
     for col_i, (idx, line) in enumerate(lines2plot.iterrows()):
+        line_color = color
+        line_info = line['name']
         if cmap is not None:
-            line_color = cmap_lines[col_i]
-        else:
-            line_color = color
+            try:
+                line_color = cmap_lines[col_i]
+                line_info = line['name'] if infofunc is None else infofunc[col_i]
+            except IndexError:
+                logger.warning("No color and info for line %i available" % col_i)
+
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
                           line=Line(width=width, color=color))
 
@@ -339,7 +344,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
         line_trace['line']['color'] = line_color
 
-        line_trace['text'] = line['name'] if infofunc is None else infofunc[col_i]
+        line_trace['text'] = line_info
 
         line_traces.append(line_trace)
 
