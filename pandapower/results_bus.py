@@ -97,7 +97,6 @@ def _set_buses_out_of_service(ppc):
 def _get_bus_v_results(net, ppc):
     ac = net["_options"]["ac"]
     bus_idx = _get_bus_idx(net)
-    mode = net["_options"]["mode"]
     if ac:
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
@@ -109,7 +108,7 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     bus_idx = _get_bus_idx(net)
 
     V012_pu = np.zeros((3,len(bus_idx)), dtype=complex128)
-    V012_pu[0,:] = ppc0["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc0["bus"][bus_idx][:, VA]))
+    V012_pu[0, :] = ppc0["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc0["bus"][bus_idx][:, VA]))
     V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
     V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j*np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
 
@@ -120,13 +119,14 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc_pu = sequence_to_phase(V012_pu)
 
     if ac:
-        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0,bus_idx].getA1())
-        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1,bus_idx].getA1())
-        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2,bus_idx].getA1())
+        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0, :].getA1())
+        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1, :].getA1())
+        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2, :].getA1())
     # voltage angles
-    net["res_bus_3ph"]["vaA_degree"] = angle(Vabc_pu[0, bus_idx].getA1())*180/np.pi
-    net["res_bus_3ph"]["vaB_degree"] = angle(Vabc_pu[1, bus_idx].getA1())*180/np.pi
-    net["res_bus_3ph"]["vaC_degree"] = angle(Vabc_pu[2, bus_idx].getA1())*180/np.pi
+    net["res_bus_3ph"]["vaA_degree"] = angle(Vabc_pu[0, :].getA1())*180/np.pi
+    net["res_bus_3ph"]["vaB_degree"] = angle(Vabc_pu[1, :].getA1())*180/np.pi
+    net["res_bus_3ph"]["vaC_degree"] = angle(Vabc_pu[2, :].getA1())*180/np.pi
+    net["res_bus_3ph"].index = net["bus"].index
 
 
 def _get_bus_idx(net):

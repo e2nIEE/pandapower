@@ -152,9 +152,9 @@ def load_mapping(net):
 # =============================================================================
 # 3 phase algorithm function
 # =============================================================================
-def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
+def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="auto",
               tolerance_kva=1e-6, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
-              numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=False,
+              numba=True, recycle=None, check_connectivity=True, r_switch=0.0,
               delta_q=0, **kwargs):
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
@@ -163,15 +163,6 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                             if key not in passed_parameters.keys()}
     if numba:
         numba = _check_if_numba_is_installed(numba)
-
-    if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values) or
-                np.any(net["load"]["const_i_percent"].values)):
-            voltage_depend_loads = False
-
-    if algorithm not in ['nr', 'bfsw'] and voltage_depend_loads == True:
-        logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
-                       "loads will be considered as constant power".format(algorithm))
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
@@ -190,7 +181,7 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         init = "auto"
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
-        max_iteration = default_max_iteration[algorithm]
+        max_iteration = default_max_iteration["nr"]
 
     # init options
     # net.__internal_options = {}
@@ -199,9 +190,9 @@ def runpp_3ph(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
-                     recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q)
+                     recycle=recycle, voltage_depend_loads=False, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration)
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)

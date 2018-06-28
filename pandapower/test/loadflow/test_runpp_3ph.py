@@ -397,6 +397,33 @@ def test_transformer_3ph_diff_kvabase():
     print ('\n\n\n YNyn \n\n\nV',V012_it_1k/V012_it_100k,'\n\n\n I ',I012_it_1k/I012_it_100k,\
        '\n\n\nY0',Y0_pu_1k/Y0_pu_100k,'\n\n\nY1',Y1_pu_1k/Y1_pu_100k,'\n\n\nY2',\
        Y2_pu_1k/Y2_pu_100k)
+
+
+def test_3ph_bus_mapping_order():
+    net = pp.create_empty_network()
+    
+    b2 = pp.create_bus(net, vn_kv=0.4, index=4)
+    pp.create_bus(net, vn_kv=0.4, in_service=False, index=3)
+    b1 = pp.create_bus(net, vn_kv=0.4, index=7)
+    
+    pp.create_ext_grid(net, b1, vm_pu=1.0, s_sc_max_mva=10, rx_max=0.1)
+    net.ext_grid["x0x_max"] = 1.
+    net.ext_grid["r0x0_max"] = 0.1
+    pp.create_std_type(net, {"r_ohm_per_km":0.1013, "x_ohm_per_km": 0.06911504,
+                             "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
+                             "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
+                             "x0_ohm_per_km": 0.2764602},
+                        
+                             "N2XRY 3x185sm 0.6/1kV")
+    
+    pp.create_line(net, b1, b2, 1.0, std_type="N2XRY 3x185sm 0.6/1kV")
+    pp.add_zero_impedance_parameters(net)
+    pp.create_load(net, b2, p_kw=30, q_kvar=30)
+    pp.runpp(net)
+    runpp_3ph(net)
+    
+    assert np.allclose(net.res_bus_3ph.vmA_pu.values, net.res_bus.vm_pu.values, equal_nan=True)
+    assert net.res_bus_3ph.index.tolist() == net.res_bus.vm_pu.index.tolist()
     
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
