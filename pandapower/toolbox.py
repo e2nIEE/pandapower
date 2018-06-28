@@ -374,7 +374,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(x, y, check_only_results=False, tol=1.e-14):
+def nets_equal(x, y, check_only_results=False, **kwargs):
     """
     Compares the DataFrames of two networks. The networks are considered equal
     if they share the same keys and values, except of the
@@ -404,7 +404,7 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
                     continue  # skip anything that is not a result table
 
                 if isinstance(x[df_name], pd.DataFrame) and isinstance(y[df_name], pd.DataFrame):
-                    frames_equal = dataframes_equal(x[df_name], y[df_name], tol)
+                    frames_equal = dataframes_equal(x[df_name], y[df_name], **kwargs)
                     eq &= frames_equal
 
                     if not frames_equal:
@@ -416,7 +416,12 @@ def nets_equal(x, y, check_only_results=False, tol=1.e-14):
     return eq
 
 
-def dataframes_equal(x_df, y_df, tol=1.e-14):
+def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
+    if ignore_index_order:
+        x_df.sort_index(axis=1, inplace=True)
+        y_df.sort_index(axis=1, inplace=True)
+        x_df.sort_index(axis=0, inplace=True)
+        y_df.sort_index(axis=0, inplace=True)
     # eval if two DataFrames are equal, with regard to a tolerance
     if x_df.shape == y_df.shape:
         # we use numpy.allclose to grant a tolerance on numerical values
@@ -1059,42 +1064,26 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True):
 
 def drop_buses(net, buses, drop_elements=True):
     """
-    Drops specified buses, their bus_geodata and by default safely drops all elements connected to
+    Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
-    # drop busbus switches
-    i = net["switch"][((net["switch"]["element"].isin(buses)) |
-                       (net["switch"]["bus"].isin(buses))) & (net["switch"]["et"] == "b")].index
-    net["switch"].drop(i, inplace=True)
-
-    # drop buses and their geodata
+    drop_switches_at_buses(net, buses)
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-#    logger.info('dropped %d buses: %s' % (len(buses), buses))
-
     if drop_elements:
-        for element, column in element_bus_tuples():
-            if any(net[element][column].isin(buses)):
-                eid = net[element][net[element][column].isin(buses)].index
-                if element == 'line':
-                    drop_lines(net, eid)
-                elif element == 'trafo' or element == 'trafo3w':
-                    drop_trafos(net, eid, table=element)
-                else:
-                    net[element].drop(eid, inplace=True)
-#                    logger.info("dropped %s elements: %d" % (element, len(eid)))
+        drop_elements_at_buses(net, buses)
+
+
+def drop_switches_at_buses(net, buses):
+    s = net["switch"]
+    mask = (s["bus"].isin(buses)) | ((s["element"].isin(buses)) & (s["et"] == "b"))
+    net["switch"] = net["switch"].loc[~mask]
 
 
 def drop_elements_at_buses(net, buses):
     """
-    drop elements connected to certain buses
+    drop elements connected to given buses
     """
-    # If there is a bus1 -bus2 switch, this will delete the switch when we select bus 2.
-    if any(net['switch']['element'].isin(buses)):
-        eid = net['switch'][net['switch']['element'].isin(buses)].index
-        net['switch'].drop(eid, inplace=True)
-
-    # drop elements connected to buses
     for element, column in element_bus_tuples():
         if any(net[element][column].isin(buses)):
             eid = net[element][net[element][column].isin(buses)].index
@@ -1104,7 +1093,7 @@ def drop_elements_at_buses(net, buses):
                 drop_trafos(net, eid, table=element)
             else:
                 net[element].drop(eid, inplace=True)
-                logger.info("dropped %s elements: %d" % (element, len(eid)))
+            logger.info("dropped %s elements: %d" % (element, len(eid)))
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -1130,11 +1119,11 @@ def drop_lines(net, lines):
     Deletes all lines and their geodata in the given list of indices and removes
     any switches connected to it.
     """
-    # drop any switches
+    # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
     net["switch"].drop(i, inplace=True)
 
-    # drop the lines+geodata
+    # drop lines and geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     logger.info("dropped %d lines" % len(lines))
@@ -1175,8 +1164,11 @@ def set_element_status(net, buses, in_service):
     for element in net.keys():
         if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
-            idx = get_connected_elements(net, element, buses)
-            net[element].loc[idx, 'in_service'] = in_service
+            try:
+                idx = get_connected_elements(net, element, buses)
+                net[element].loc[idx, 'in_service'] = in_service
+            except:
+                pass
 
 
 def set_isolated_areas_out_of_service(net):
@@ -1301,7 +1293,7 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
             net.switch.loc[switches.index, "element"] = new_index
 
     for element, table in net.items():
-        if element.startswith("_") or element.startswith("res"):
+        if element.startswith("_") or element.startswith("res") or element == "dtypes":
             continue
         if type(table) == pd.DataFrame and (len(table) > 0 or len(net2[element]) > 0):
             if element == "switch":
@@ -1317,7 +1309,11 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 net2.line_geodata.set_index(np.array(ni), inplace=True)
             ignore_index = element not in ("bus", "bus_geodata", "line_geodata")
             dtypes = net1[element].dtypes
-            net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
+            try:
+                net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index, sort=True)
+            except:
+                # pandas legacy < 0.21
+                net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
     if validate:
         runpp(net, **kwargs)
@@ -1708,13 +1704,14 @@ def create_replacement_switch_for_branch(net, element, idx):
                         type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element, idx))
+    return sid
 
 
 def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                         zero_length=True, zero_impedance=True, in_service_only=True,
                                         min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
                                         min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0):
+                                        min_xtf_pu=0, drop_affected=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
@@ -1724,6 +1721,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
     :param zero_length: whether zero length lines will be affected
     :param zero_impedance: whether zero impedance branches will be affected
     :param in_service_only: whether the branches that are not in service will be affected
+    :param drop_affected: wheter the affected branch elements are dropped
     :param min_length_km: threshhold for line length for a line to be considered zero line
     :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
     :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
@@ -1739,6 +1737,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         raise TypeError(
             'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
 
+    replaced = dict()
     for elm in elements:
         branch_zero = set()
         if elm == 'line' and zero_length:
@@ -1756,12 +1755,20 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                             (net[elm].rtf_pu <= min_rtf_pu) &
                                             (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
 
-        k = 0
+        affected_elements = set()
         for b in branch_zero:
             if in_service_only and ~net[elm].in_service.at[b]:
                 continue
             create_replacement_switch_for_branch(net, element=elm, idx=b)
             net[elm].loc[b, 'in_service'] = False
-            k += 1
+            affected_elements.add(b)
 
-        logger.info('set %d %ss out of service' % (k, elm))
+        replaced[elm] = net[elm].loc[affected_elements]
+
+        if drop_affected:
+            net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
+            logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+        else:
+            logger.info('set %d %ss out of service' % (len(affected_elements), elm))
+
+        return replaced

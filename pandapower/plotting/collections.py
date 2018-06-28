@@ -86,7 +86,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     if 'height' not in kwargs and 'width' not in kwargs:
         kwargs['height'] = kwargs['width'] = 2 * size
-    if patch_type == "rectangle":
+    if patch_type == "rect":
         kwargs['height'] *= 2
         kwargs['width'] *= 2
 
@@ -97,7 +97,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             angle = kwargs['angle'] if 'angle' in kwargs else 0
             fig = Ellipse((x, y), angle=angle, **kwargs)
         elif patch_type == "rect":
-            fig = Rectangle([x - kwargs['width'] // 2, y - kwargs['height'] // 2], **kwargs)
+            fig = Rectangle([x - kwargs['width'] / 2, y - kwargs['height'] / 2], **kwargs)
         elif patch_type.startswith("poly"):
             edges = int(patch_type[4:])
             fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
@@ -186,17 +186,31 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     if len(lines) == 0:
         return None
 
+    lines_with_geo = []
     if use_bus_geodata:
-        data = [([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
-                  (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
-                 infofunc(line) if infofunc else [])
-                for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows()
-                if a in bus_geodata.index.values
-                and b in bus_geodata.index.values]
+        data = []
+        for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows():
+            if a in bus_geodata.index.values and b in bus_geodata.index.values:
+                lines_with_geo.append(line)
+                data.append(([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
+                              (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
+                             infofunc(line) if infofunc else[]))
+
+        lines_without_geo = set(lines)-set(lines_with_geo)
+        if lines_without_geo:
+            logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
+                           % lines_without_geo)
     else:
-        data = [(line_geodata.loc[line, "coords"],
-                 infofunc(line) if infofunc else [])
-                for line in lines if line in line_geodata.index.values]
+        data = []
+        for line in lines:
+            if line in line_geodata.index.values:
+                lines_with_geo.append(line)
+                data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
+
+        lines_without_geo = set(lines)-set(lines_with_geo)
+        if lines_without_geo:
+            logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
+                           % lines_without_geo)
 
     if len(data) == 0:
         return None
@@ -206,10 +220,10 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(data, picker=picker, **kwargs)
-    lc.line_indices = np.array(lines)
+    lc.line_indices = np.array(lines_with_geo)
     if cmap:
         if z is None:
-            z = net.res_line.loading_percent.loc[lines]
+            z = net.res_line.loading_percent.loc[lines_with_geo]
         lc.set_cmap(cmap)
         lc.set_norm(norm)
         if clim is not None:
@@ -639,7 +653,7 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
 
 def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
     """
-    Creates a matplotlib patch collection of pandapower switches.
+    Creates a matplotlib patch collection of pandapower line-bus switches.
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network
@@ -678,7 +692,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
         # switch bus and target coordinates
         pos_sb = net.bus_geodata.loc[sb, ["x", "y"]].values
-        pos_ta = np.zeros(2)
+        pos_tb = np.zeros(2)
 
         use_bus_geodata = False
 
@@ -689,19 +703,19 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
                 if len(line_coords) > 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
                                     abs(line_coords[0][1] - pos_sb[1]) < 0.01:
-                        pos_ta = np.array([line_coords[1][0], line_coords[1][1]])
+                        pos_tb = np.array([line_coords[1][0], line_coords[1][1]])
                     else:
-                        pos_ta = np.array([line_coords[-2][0], line_coords[-2][1]])
+                        pos_tb = np.array([line_coords[-2][0], line_coords[-2][1]])
                 else:
                     use_bus_geodata = True
             else:
                 use_bus_geodata = True
 
         if not use_line_geodata or use_bus_geodata:
-            pos_ta = net.bus_geodata.loc[target_bus, ["x", "y"]]
+            pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]]
 
         # position of switch symbol
-        vec = pos_ta - pos_sb
+        vec = pos_tb - pos_sb
         mag = np.linalg.norm(vec)
         pos_sw = pos_sb + vec / mag * distance_to_bus
 
@@ -713,8 +727,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
         col = color if net.switch.closed.loc[switch] else "white"
 
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col,
-                          edgecolor=color)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
 
@@ -722,6 +735,64 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
 
     switches = PatchCollection(switch_patches, match_original=True, **kwargs)
     return switches
+
+
+def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1., helper_line_color="gray", **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower bus-bus switches. Switches are plotted in the center between two buses with a "helper"
+    line (dashed and thin) being drawn between the buses as well.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+
+        **size** (float, 1.0) - Size of the switch patches
+
+        **helper_line_style** (string, ':') - Line style of the "helper" line being plotted between two buses connected by a bus-bus switch
+
+        **helper_line_size** (float, 1.0) - Line width of the "helper" line being plotted between two buses connected by a bus-bus switch
+
+        **helper_line_color** (string, "gray") - Line color of the "helper" line being plotted between two buses connected by a bus-bus switch
+
+        **kwargs - Key word arguments are passed to the patch function
+
+    OUTPUT:
+        **switches**, **helper_lines** - tuple of patch collections
+    """
+    lbs_switches = net.switch.index[net.switch.et == "b"]
+    color = kwargs.pop("color", "k")
+    switch_patches = []
+    line_patches = []
+    for switch in lbs_switches:
+        switch_bus = net.switch.bus.loc[switch]
+        target_bus = net.switch.element.loc[switch]
+        if switch_bus not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
+            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+            continue
+        # switch bus and target coordinates
+        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values
+        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values
+        # position of switch symbol
+        vec = pos_tb - pos_sb
+        mag = np.linalg.norm(vec)
+        pos_sw = pos_sb + vec / mag * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
+        # rotation of switch symbol
+        angle = np.arctan2(vec[1], vec[0])
+        rotation = Affine2D().rotate_around(pos_sw[0], pos_sw[1], angle)
+        # color switch by state
+        col = color if net.switch.closed.loc[switch] else "white"
+        # create switch patch (switch size is respected to center the switch on the line)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
+        # apply rotation
+        patch.set_transform(rotation)
+        # add to collection lists
+        switch_patches.append(patch)
+        line_patches.append([pos_sb.tolist(), pos_tb.tolist()])
+    # create collections and return
+    switches = PatchCollection(switch_patches, match_original=True, **kwargs)
+    helper_lines = LineCollection(line_patches, linestyles=helper_line_style, linewidths=helper_line_size, colors=helper_line_color)
+    return switches, helper_lines
 
 
 def add_collections_to_axes(ax, collections, plot_colorbars=True):

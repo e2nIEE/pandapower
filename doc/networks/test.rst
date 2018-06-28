@@ -1,4 +1,4 @@
-Simple pandapower test networks
+Simple pandapower Test Networks
 ===============================
 
 Four load branch
@@ -23,7 +23,7 @@ Four loads with branches out
 	:width: 20em
 	:alt: alternate Text
 	:align: center
-	
+
 ---------------------------------------
 
 
@@ -36,7 +36,7 @@ Four bus system
 	:width: 15em
 	:alt: alternate Text
 	:align: center
-	
+
 ---------------------------------------
 
 
@@ -49,6 +49,6 @@ Medium voltage open ring
 	:width: 25em
 	:alt: alternate Text
 	:align: center
-	
+
 ---------------------------------------
 
