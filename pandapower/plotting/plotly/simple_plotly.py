@@ -18,45 +18,45 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def get_hoverinfo(net, element):
+def get_hoverinfo(net, element, precision=3):
     idx = net[element].index
     if element == "bus":
-        hoverinfo = ("index = " + net.bus.index.astype(str)  + '<br>' +
+        hoverinfo = ("index = " + net.bus.index.astype(str) + '<br>' +
                      "name = " + net.bus['name'].astype(str) + '<br>' +
-                     'Vn = ' + net.bus.loc[idx, 'vn_kv'].astype(str) + ' kV' + '<br>'
+                     'Vn = ' + net.bus.loc[idx, 'vn_kv'].round(precision).astype(str) + ' kV' + '<br>'
                      ).tolist()
     elif element == "line":
-        hoverinfo = ("index = " + net.line.index.astype(str)  + '<br>'
+        hoverinfo = ("index = " + net.line.index.astype(str) + '<br>'
                      +
                      "name = " + net.line['name'].astype(str) + '<br>'
                      +
-                     'length = ' + net.line.loc[idx, 'length_km'].astype(str) + ' km' + '<br>'
+                     'length = ' + net.line.loc[idx, 'length_km'].round(precision).astype(str) + ' km' + '<br>'
                      +
-                     'R = ' + (net.line.loc[idx, 'length_km'] * net.line.loc[idx, 'r_ohm_per_km']).astype(
-                    str) + ' Ohm' + '<br>'
+                     'R = ' + (net.line.loc[idx, 'length_km']
+                               * net.line.loc[idx, 'r_ohm_per_km']).round(precision).astype(str) + ' Ohm' + '<br>'
                      +
-                     'X = ' + (net.line.loc[idx, 'length_km'] * net.line.loc[idx, 'x_ohm_per_km']).astype(
-                    str) + ' Ohm' + '<br>'
+                     'X = ' + (net.line.loc[idx, 'length_km']
+                               * net.line.loc[idx, 'x_ohm_per_km']).round(precision).astype(str) + ' Ohm' + '<br>'
                      ).tolist()
     elif element == "trafo":
-        hoverinfo = ("index = " + net.trafo.index.astype(str)  + '<br>'
+        hoverinfo = ("index = " + net.trafo.index.astype(str) + '<br>'
                      +
                      "name = " + net.trafo['name'].astype(str) + '<br>'
                      +
-                     'Vn hv = ' + net.trafo.loc[idx, 'vn_hv_kv'].astype(str) + ' kV' + '<br>'
+                     'Vn hv = ' + net.trafo.loc[idx, 'vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br>'
                      +
-                     'Vn lv = ' + net.trafo.loc[idx, 'vn_lv_kv'].astype(str) + ' kV' + '<br>'
+                     'Vn lv = ' + net.trafo.loc[idx, 'vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br>'
                      +
                      'Tap = ' + net.trafo.loc[idx, 'tp_pos'].astype(str) + '<br>'
                      ).tolist()
     elif element == "ext_grid":
-        hoverinfo = ("index = " + net.ext_grid.index.astype(str)  + '<br>'
+        hoverinfo = ("index = " + net.ext_grid.index.astype(str) + '<br>'
                      +
-                     "name = " + net.ext_grid['name'] + '<br>'
+                     "name = " + net.ext_grid['name'].astype(str) + '<br>'
                      +
-                     'Vm = ' + net.ext_grid.loc[idx, 'vm_pu'].astype(str) + ' p.u.' + '<br>'
+                     'Vm = ' + net.ext_grid.loc[idx, 'vm_pu'].round(precision).astype(str) + ' p.u.' + '<br>'
                      +
-                     'Va = ' + net.ext_grid.loc[idx, 'va_degree'].astype(str) + ' °' + '<br>'
+                     'Va = ' + net.ext_grid.loc[idx, 'va_degree'].round(precision).astype(str) + ' °' + '<br>'
                      ).tolist()
     else:
         hoverinfo = None
@@ -122,7 +122,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])
     if 'bus_geodata' not in net:
-        net.bus_geodata = pd.DataFrame(columns=["x","y"])
+        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
     if len(net.bus_geodata) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
@@ -148,30 +148,24 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geodata = False
 
-    line_trace = create_line_trace(net, net.line.index, respect_switches=respect_switches,
+    hoverinfo = get_hoverinfo(net, element="line")
+    line_traces = create_line_trace(net, net.line.index, respect_switches=respect_switches,
                                    color=line_color, width=line_width,
-                                   use_line_geodata=use_line_geodata)
-    line_center_trace = []
-    if use_line_geodata == False:
-        hoverinfo = get_hoverinfo(net, element="line")
-        line_center_trace = create_edge_center_trace(line_trace, color=line_color, infofunc=hoverinfo)
+                                   use_line_geodata=use_line_geodata, infofunc=hoverinfo)
+
 
     # ----- Trafos ------
-    trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5)
-    trafo_center_trace = []
-    if use_line_geodata == False:
-        hoverinfo = get_hoverinfo(net, element="trafo")
-        trafo_center_trace = create_edge_center_trace(trafo_trace, color=trafo_color, infofunc=hoverinfo)
+    hoverinfo = get_hoverinfo(net, element="trafo")
+    trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5, infofunc=hoverinfo,
+                                                  use_line_geodata=use_line_geodata)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
     marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
-    # hoverinfo = get_hoverinfo(net, element="ext_grid")
+    hoverinfo = get_hoverinfo(net, element="ext_grid")
     ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
                                       color=ext_grid_color, size=ext_grid_size,
                                       patch_type=marker_type, trace_name='external_grid', infofunc=hoverinfo)
 
-    draw_traces(line_trace + trafo_trace + ext_grid_trace + bus_trace + line_center_trace + trafo_center_trace,
+    draw_traces(line_traces + trafo_trace + ext_grid_trace + bus_trace,
                 aspectratio=aspectratio, figsize=figsize, on_map=on_map, map_style=map_style)
-
-

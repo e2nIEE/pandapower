@@ -554,7 +554,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["in_service"] = in_service
     dd["name"] = name
     try:
-        net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex(net["bus"].columns, axis=1)
+        net["bus"] = pd.concat([net["bus"], dd], axis=0, sort=True).reindex(net["bus"].columns, axis=1)
     except:  # legacy for pandas <0.21
         net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex_axis(net["bus"].columns, axis=1)
     # and preserve dtypes
@@ -1823,6 +1823,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
 
         **tp_st_degree** (float) - tap step size for voltage angle in degree*
 
+        **tp_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
@@ -1928,6 +1930,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
             higher than the highest already existing index is selected.
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **tap_at_star_point (bool)** - whether tap changer is modelled at star point or at the bus
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -2579,17 +2583,17 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     return index
 
 
-def create_measurement(net, type, element_type, value, std_dev, bus, element=None,
+def create_measurement(net, meas_type, element_type, value, std_dev, bus, element=None,
                        check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i
 
     INPUT:
-        **type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
+        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
-        "transformer" are possible.
+        "trafo" are possible.
 
         **value** (float) - Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
         "A" for I. Generation is a positive bus power injection, consumption negative.
@@ -2597,11 +2601,12 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
         **std_dev** (float) - Standard deviation in the same unit as the measurement.
 
         **bus** (int) - Index of bus. Determines the position of the measurement for
-        line/transformer measurements (bus == from_bus: measurement at from_bus;
-        same for to_bus)
+        line/trafo measurements (bus == from_bus: measurement at from_bus;
+        same for to_bus). The bus can also be "from" or "to" if the element_type is "line"
+        or "hv"/"lv" if "trafo".
 
         **element** (int, None) - Index of measured element, if element_type is "line" or
-        "transformer".
+        "trafo".
 
     OPTIONAL:
         **check_existing** (bool) - Check for and replace existing measurements for this bus,
@@ -2621,15 +2626,30 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     if bus not in net["bus"].index.values:
         raise UserWarning("Bus %s does not exist" % bus)
 
-    if element is None and element_type in ["line", "transformer"]:
+    if element is None and element_type in ("line", "trafo"):
         raise UserWarning("The element type %s requires a value in 'element'" % element_type)
+
+    if meas_type not in ("v", "p", "q", "i"):
+        raise UserWarning("Invalid measurement type (%s)" % meas_type)
+
+    if meas_type == "v":
+        element_type = "bus"
+
+    if element_type not in ("bus", "line", "trafo"):
+        raise UserWarning("Invalid element type (%s)" % element_type)
+
+    if bus in ("from", "to") and element_type == "line":
+        bus = net.line.from_bus.loc[element] if bus == "from" else net.line.to_bus.loc[element]
+
+    if bus in ("hv", "lv") and element_type == "trafo":
+        bus = net.trafo.hv_bus.loc[element] if bus == "hv" else net.trafo.lv_bus.loc[element]
 
     if element is not None and element_type == "line" and element not in net["line"].index.values:
         raise UserWarning("Line %s does not exist" % element)
 
-    if element is not None and element_type == "transformer" and element not in \
+    if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
-        raise UserWarning("Transformer %s does not exist" % element)
+        raise UserWarning("Trafo %s does not exist" % element)
 
     if index is None:
         index = get_free_id(net.measurement)
@@ -2637,21 +2657,21 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
     if index in net["measurement"].index:
         raise UserWarning("A measurement with index %s already exists" % index)
 
-    if type == "i" and element_type == "bus":
+    if meas_type == "i" and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if type == "v" and element_type in ["line", "transformer"]:
+    if meas_type == "v" and element_type in ("line", "trafo"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at %s"
                           % element_type)
 
     if check_existing:
         if element is None:
-            existing = net.measurement[(net.measurement.type == type) &
+            existing = net.measurement[(net.measurement.type == meas_type) &
                                        (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (pd.isnull(net.measurement.element))].index
         else:
-            existing = net.measurement[(net.measurement.type == type) &
+            existing = net.measurement[(net.measurement.type == meas_type) &
                                        (net.measurement.element_type == element_type) &
                                        (net.measurement.bus == bus) &
                                        (net.measurement.element == element)].index
@@ -2661,7 +2681,7 @@ def create_measurement(net, type, element_type, value, std_dev, bus, element=Non
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[index] = [name, type.lower(), element_type, value, std_dev, bus, element]
+    net.measurement.loc[index] = [name, meas_type.lower(), element_type, value, std_dev, bus, element]
     _preserve_dtypes(net.measurement, dtypes)
     return index
 

@@ -28,7 +28,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
 from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
-    from_dict_of_dfs, restore_all_dtypes
+    from_dict_of_dfs
 
 
 def to_pickle(net, filename):
@@ -90,14 +90,13 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 
     """
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    dict_net = to_dict_of_dfs(net, include_results=include_results, create_dtype_df=True)
-    dict_net["dtypes"] = collect_all_dtypes_df(net)
+    dict_net = to_dict_of_dfs(net, include_results=include_results)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
     writer.save()
 
 
-def to_json_string(net):
+def to_json_string(net, default_handler=None):
     """
         Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -118,7 +117,8 @@ def to_json_string(net):
         if k[0] == "_":
             continue
         if isinstance(net[k], pd.DataFrame):
-            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns"))
+            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns",
+                                         default_handler=default_handler, double_precision=14))
         elif isinstance(net[k], numpy.ndarray):
             json_string += k + ":" + json.dumps(net[k].tolist()) + ","
         elif isinstance(net[k], dict):
@@ -137,7 +137,7 @@ def to_json_string(net):
     return json_string
 
 
-def to_json(net, filename=None):
+def to_json(net, filename=None, include_results=True, default_handler=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -153,9 +153,8 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    dict_net = to_dict_of_dfs(net, include_results=False, create_dtype_df=True)
-    dict_net["dtypes"] = collect_all_dtypes_df(net)
-    json_string = to_json_string(dict_net)
+    dict_net = to_dict_of_dfs(net, include_results)
+    json_string = to_json_string(dict_net, default_handler=default_handler)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
@@ -163,17 +162,16 @@ def to_json(net, filename=None):
         text_file.write(json_string)
 
 
-def to_sql(net, con, include_empty_tables=False, include_results=True):
+def to_sql(net, con, include_results=True):
     dodfs = to_dict_of_dfs(net, include_results=include_results)
-    dodfs["dtypes"] = collect_all_dtypes_df(net)
     for name, data in dodfs.items():
         data.to_sql(name, con, if_exists="replace")
 
 
-def to_sqlite(net, filename):
+def to_sqlite(net, filename, include_results=True):
     import sqlite3
     conn = sqlite3.connect(filename)
-    to_sql(net, conn)
+    to_sql(net, conn, include_results)
     conn.close()
 
 
@@ -242,7 +240,7 @@ def from_pickle(filename, convert=True):
                         net[key] = net[key].reindex(item["columns"], axis=1)
                     except: #legacy for pandas <0.21
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
-                      
+
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -290,7 +288,6 @@ def from_excel(filename, convert=True):
 
     try:
         net = from_dict_of_dfs(xls)
-        restore_all_dtypes(net, xls["dtypes"])
     except:
         net = _from_excel_old(xls)
     if convert:
@@ -350,7 +347,6 @@ def from_json(filename, convert=True):
     try:
         pd_dicts = dicts_to_pandas(data)
         net = from_dict_of_dfs(pd_dicts)
-        restore_all_dtypes(net, pd_dicts["dtypes"])
         if convert:
             convert_format(net)
         return net
@@ -441,7 +437,6 @@ def from_sql(con):
         table.index.name = None
         dodfs[t] = table
     net = from_dict_of_dfs(dodfs)
-    restore_all_dtypes(net, dodfs["dtypes"])
     return net
 
 

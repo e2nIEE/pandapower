@@ -7,10 +7,9 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, create_edge_center_trace
 from pandapower.plotting.plotly.mapbox_plot import *
-
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
+    create_trafo_trace, draw_traces
 from pandapower.run import runpp
 
 try:
@@ -20,8 +19,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projection=None,
-                  map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10):
+def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projection=None,
+                  map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
+                  filename="temp-plot.html"):
     """
     Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.
@@ -62,9 +62,9 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
 
         **bus_size** (float, 10.0) -  size of buses to plot.
 
+        **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
+
     """
-
-
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')
         runpp(net)
@@ -84,16 +84,18 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-            geo_data_to_latlong(net, projection=projection)
+        geo_data_to_latlong(net, projection=projection)
 
     # ----- Buses ------
     # initializating bus trace
-    idx = net.line.index
+    idx = net.bus.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.bus['name'] + '<br>' +
-                 'U = ' + net.res_bus.loc[idx, 'vm_pu'].astype(str) + ' pu' + '<br>' +
-                 'U = ' + (net.res_bus.loc[idx, 'vm_pu'] * net.bus.vn_kv).astype(str) + ' kV' + '<br>' +
-                 'ang = ' + net.res_bus.loc[idx, 'va_degree'].astype(str) + ' deg'
+    precision = 3
+    hoverinfo = (net.bus.loc[idx, 'name'].astype(str) + '<br>' +
+                 'U = ' + net.res_bus.loc[idx, 'vm_pu'].round(precision).astype(str) + ' pu' + '<br>' +
+                 'U = ' + (net.res_bus.loc[idx, 'vm_pu'].round(precision) * net.bus.loc[idx, 'vn_kv'].round(2)).astype(
+                str) + ' kV' + '<br>' +
+                 'ang = ' + net.res_bus.loc[idx, 'va_degree'].round(precision).astype(str) + ' deg'
                  ).tolist()
     bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
                                  cbar_title='Bus Voltage [pu]', cmin=0.9, cmax=1.1)
@@ -109,10 +111,10 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
         use_line_geodata = False
     idx = net.line.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.line['name'] + '<br>' +
-                 'I = ' + net.res_line.loc[idx, 'loading_percent'].astype(str) + ' %' + '<br>' +
-                 'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].astype(str) + ' kA' + '<br>' +
-                 'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].astype(str) + ' kA' + '<br>'
+    hoverinfo = (net.line.loc[idx, 'name'].astype(str) + '<br>' +
+                 'I = ' + net.res_line.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br>' +
+                 'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].round(precision).astype(str) + ' kA' + '<br>' +
+                 'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].round(precision).astype(str) + ' kA' + '<br>'
                  ).tolist()
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
@@ -122,23 +124,17 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                                     cmin=0,
                                     cmax=100,
                                     cbar_title='Line Loading [%]')
-    line_center_trace = []
-    if use_line_geodata == False:
-        line_center_trace = create_edge_center_trace(line_traces, infofunc=hoverinfo)
 
     # ----- Trafos ------
     idx = net.trafo.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.trafo['name'] + '<br>' +
-                 'I = ' + net.res_trafo.loc[idx, 'loading_percent'].astype(str) + ' %' + '<br>' +
-                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].astype(str) + ' kA' + '<br>'  +
-                 'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].astype(str) + ' kA' + '<br>'
+    hoverinfo = (net.trafo.loc[idx, 'name'].astype(str) + '<br>' +
+                 'I = ' + net.res_trafo.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br>' +
+                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].round(precision).astype(str) + ' kA' + '<br>' +
+                 'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].round(precision).astype(str) + ' kA' + '<br>'
                  ).tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)
-    trafo_center_trace = []
-    if use_line_geodata == False:
-        trafo_center_trace = create_edge_center_trace(trafo_traces, infofunc=hoverinfo)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
@@ -147,7 +143,6 @@ def pf_res_plotly(net, cmap='Jet', use_line_geodata = None, on_map=False, projec
                                       color='grey', size=bus_size * 2, trace_name='external_grid',
                                       patch_type=marker_type)
 
-    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace + line_center_trace+ trafo_center_trace,
-                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
-
-
+    draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
+                showlegend=False, aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
+                filename=filename)

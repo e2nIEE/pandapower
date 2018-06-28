@@ -6,8 +6,8 @@
 
 import os
 import pytest
-import pandas as pd
 
+import pandas as pd
 import pandapower as pp
 from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
 from pandapower.io_utils import collect_all_dtypes_df, restore_all_dtypes
@@ -26,9 +26,19 @@ def test_excel(net_in, tempdir):
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
 
+    pp.set_user_pf_options(net_in, tolerance_kva=1e3)
+    pp.to_excel(net_in, filename)
+    net_out = pp.from_excel(filename)
+    assert_net_equal(net_in, net_out)
+    assert net_out.user_pf_options == net_in.user_pf_options
+
 
 def test_json(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.json")
+    # check if restore_all_dtypes works properly:
+    net_in.line['test'] = 123
+    # this will not work:
+    # net_in.res_line['test'] = 123
     pp.to_json(net_in, filename)
     net_out = pp.from_json(filename)
     assert_net_equal(net_in, net_out)
@@ -78,4 +88,4 @@ def test_to_json_dtypes(tempdir):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_file_io.py"])
+    pytest.main(["test_file_io.py", "-x"])

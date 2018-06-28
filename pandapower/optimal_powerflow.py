@@ -95,4 +95,5 @@ def _run_pf_before_opf(net, ppci):
 #    net._options["numba"] = True
     net._options["tolerance_kva"] = 1e-5
     net._options["max_iteration"] = 10
+    net._options["algorithm"] = "nr"
     return _run_newton_raphson_pf(ppci, net["_options"])
