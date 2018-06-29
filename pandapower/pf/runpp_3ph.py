@@ -71,7 +71,7 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 # Mapping load for positive sequence loads
 # =============================================================================
 # Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
-def load_mapping(net,ppci0,ppci1,ppci2):
+def load_mapping(net,ppci1,):
     _is_elements = net["_is_elements"]
     b = np.array([], dtype=int)
     SA = ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j
@@ -231,7 +231,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     # =============================================================================
     count = 0
     S_mismatch = np.matrix([[True], [True]], dtype=bool)
-    Sabc = load_mapping(net,ppci0,ppci1,ppci2)
+    Sabc = load_mapping(net,ppci1)
     # =============================================================================
     #             Iteration using Power mismatch criterion
     # =============================================================================
