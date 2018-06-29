@@ -77,12 +77,12 @@ def load_mapping(net,ppci1,):
     SA = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
     SB = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
     SC = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
-    q_a, QA = np.array([]), np.array([])
-    p_a, PA = np.array([]), np.array([])
-    q_b, QB = np.array([]), np.array([])
-    p_b, PB = np.array([]), np.array([])
-    q_c, QC = np.array([]), np.array([])
-    p_c, PC = np.array([]), np.array([])
+    q_a, QA = np.array([]),(ppci1["bus"][:, QD])/3 
+    p_a, PA = np.array([]),(ppci1["bus"][:, PD])/3
+    q_b, QB = np.array([]),(ppci1["bus"][:, QD])/3
+    p_b, PB = np.array([]),(ppci1["bus"][:, PD])/3
+    q_c, QC = np.array([]),(ppci1["bus"][:, QD])/3
+    p_c, PC = np.array([]),(ppci1["bus"][:, PD])/3
 
     l3 = net["load_3ph"]
     if len(l3) > 0:
