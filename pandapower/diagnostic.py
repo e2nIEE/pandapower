@@ -9,6 +9,7 @@
 import copy
 import pandas as pd
 import numpy as np
+import pandapower as pp
 
 try:
     import pplog as logging
@@ -28,8 +29,8 @@ log_message_sep = ("\n --------\n")
 
 
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
-               overload_scaling_factor=0.001, lines_min_length_km=0, lines_min_z_ohm=0,
-               impedance_min_z_pu=0, nom_voltage_tolerance=0.3, numba_tolerance=1e-5):
+               overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, min_r_pu=1e-05,
+               min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -82,9 +83,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     diag_functions = ["missing_bus_indeces(net)",
                       "disconnected_elements(net)",
                       "different_voltage_levels_connected(net)",
-                      "lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm)",
-                      "xward_with_impedance_close_to_zero(net, lines_min_z_ohm)",
-                      "impedance_with_impedance_close_to_zero(net, impedance_min_z_pu)",
+                      "impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu)",
                       "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
                       "invalid_values(net)",
                       "overload(net, overload_scaling_factor)",
@@ -95,36 +94,24 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
                       "deviation_from_std_type(net)",
                       "numba_comparison(net, numba_tolerance)",
                       "parallel_switches(net)"]
-    bus_index_dependent_checks = ["disconnected_elements(net)",
-                                  "different_voltage_levels_connected(net)",
-                                  "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
-                                  "multiple_voltage_controlling_elements_per_bus(net)"]
-    invalid_value_dependent_checks = ["wrong_reference_system(net)"]
 
     diag_results = {}
+    diag_errors = {}
     for diag_function in diag_functions:
-        if (diag_function in bus_index_dependent_checks) and (
-                    "missing_bus_indeces" in diag_results.keys()):
-            diag_result = "check skipped"
-        elif 'invalid_values' in diag_results.keys():
-            if (diag_function in invalid_value_dependent_checks) and (set(['gen', 'load', 'sgen'])
-                                                                          & set(
-                    diag_results['invalid_values'].keys())):
-                diag_result = "check skipped"
-            else:
-                diag_result = eval(diag_function)
-                if diag_result:
-                    diag_results[diag_function.split("(")[0]] = diag_result
-        else:
+        try:
             diag_result = eval(diag_function)
-            if diag_result:
+            if not diag_result == None:
                 diag_results[diag_function.split("(")[0]] = diag_result
+        except Exception as e:
+            diag_errors[diag_function.split("(")[0]] = e
+
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
-        "lines_min_length_km": lines_min_length_km,
-        "lines_min_z_ohm": lines_min_z_ohm,
-        "impedance_min_z_pu": impedance_min_z_pu,
+        "min_r_ohm": min_r_ohm,
+        "min_x_ohm": min_x_ohm,
+        "min_r_pu": min_r_pu,
+        "min_x_pu": min_x_pu,
         "nom_voltage_tolerance": nom_voltage_tolerance,
         "numba_tolerance": numba_tolerance
     }
@@ -135,9 +122,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     logger.propagate = False
 
     if report_style == 'detailed':
-        diagnostic_report(net, diag_results, diag_params, compact_report=False)
+        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=False)
     elif report_style == 'compact':
-        diagnostic_report(net, diag_results, diag_params, compact_report=True)
+        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=True)
     if return_result_dict:
         return diag_results
 
@@ -327,7 +314,8 @@ def invalid_values(net):
                         else:
                             check_results[key].append((i, value[0],
                                                        net[key][value[0]].at[i], value[1]))
-    return check_results
+    if check_results:
+        return check_results
 
 
 def no_ext_grid(net):
@@ -383,40 +371,46 @@ def overload(net, overload_scaling_factor):
 
      OUTPUT:
         **check_results** (dict)        - dict with the results of the overload check
-                                          Format: {'load_overload': True/uncertain
-                                                   'generation_overload', True/uncertain}
+                                          Format: {'load_overload': True/False
+                                                   'generation_overload', True/False}
 
     """
     check_result = {}
     load_scaling = copy.deepcopy(net.load.scaling)
     gen_scaling = copy.deepcopy(net.gen.scaling)
     sgen_scaling = copy.deepcopy(net.sgen.scaling)
+
     try:
         runpp(net)
-
     except LoadflowNotConverged:
+        check_result['load'] = False
+        check_result['generation'] = False
         try:
             net.load.scaling = overload_scaling_factor
             runpp(net)
-            net.load.scaling = load_scaling
             check_result['load'] = True
-
-        except LoadflowNotConverged:
+        except:
             net.load.scaling = load_scaling
-            check_result['load'] = 'uncertain'
-
-        try:
-            net.gen.scaling = overload_scaling_factor
-            net.sgen.scaling = overload_scaling_factor
-            runpp(net)
-            net.gen.scaling = gen_scaling
-            net.gen.scaling = sgen_scaling
-            check_result['generation'] = True
-
-        except LoadflowNotConverged:
-            net.gen.scaling = gen_scaling
-            check_result['generation'] = 'uncertain'
-
+            try:
+                net.gen.scaling = overload_scaling_factor
+                net.sgen.scaling = overload_scaling_factor
+                runpp(net)
+                check_result['generation'] = True
+            except:
+                net.sgen.scaling = sgen_scaling
+                net.gen.scaling = gen_scaling
+                try:
+                    net.load.scaling = overload_scaling_factor
+                    net.gen.scaling = overload_scaling_factor
+                    net.sgen.scaling = overload_scaling_factor
+                    runpp(net)
+                    check_result['generation'] = True
+                    check_result['load'] = True
+                except:
+                    pass
+        net.sgen.scaling = sgen_scaling
+        net.gen.scaling = gen_scaling
+        net.load.scaling = load_scaling
     if check_result:
         return check_result
 
@@ -436,16 +430,15 @@ def wrong_switch_configuration(net):
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
         runpp(net)
-
-    except (ValueError, LoadflowNotConverged):
+    except:
         try:
             net.switch.closed = 1
             runpp(net)
             net.switch.closed = switch_configuration
             return True
-        except LoadflowNotConverged:
+        except:
             net.switch.closed = switch_configuration
-            return 'uncertain'
+            return False
 
 
 def missing_bus_indeces(net):
@@ -516,9 +509,9 @@ def different_voltage_levels_connected(net):
         return check_results
 
 
-def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm):
+def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu):
     """
-    Checks, if there are lines with an impedance value of zero
+    Checks, if there are lines, xwards or impedances with an impedance value close to zero.
 
      INPUT:
         **net** (pandapowerNet)         - pandapower network
@@ -530,56 +523,52 @@ def lines_with_impedance_close_to_zero(net, lines_min_length_km, lines_min_z_ohm
 
 
     """
-    implausible_lines = net.line[(net.line.length_km <= lines_min_length_km)
-                                 | ((net.line.r_ohm_per_km + net.line.x_ohm_per_km)
-                                    <= lines_min_z_ohm)]
+    check_results = []
+    implausible_elements = {}
 
-    if len(implausible_lines) > 0:
-        return list(implausible_lines.index)
+    line = net.line[((net.line.r_ohm_per_km * net.line.length_km) <= min_r_ohm)
+                    | ((net.line.x_ohm_per_km * net.line.length_km) <= min_x_ohm)].index
 
+    xward = net.xward[(net.xward.r_ohm <= min_r_ohm)
+                      | (net.xward.x_ohm <= min_x_ohm)].index
 
-def xward_with_impedance_close_to_zero(net, impedance_min_z_ohm):
-    """
-    Checks, if there are lines with an impedance value of zero
-
-     INPUT:
-        **net** (pandapowerNet)         - pandapower network
-
-
-     OUTPUT:
-        **implausible_lines** (list)    - list that contains the indeces of all lines with an
-                                          impedance value of zero.
-
-
-    """
-    implausible_xwards = net.xward[(net.xward.x_ohm <= impedance_min_z_ohm)
-                                   | ((net.xward.r_ohm + net.xward.x_ohm) <= impedance_min_z_ohm)]
-
-    if len(implausible_xwards) > 0:
-        return list(implausible_xwards.index)
-
-
-def impedance_with_impedance_close_to_zero(net, impedance_min_z_pu):
-    """
-    Checks, if there are lines with an impedance value of zero
-
-     INPUT:
-        **net** (pandapowerNet)         - pandapower network
-
-
-     OUTPUT:
-        **implausible_lines** (list)    - list that contains the indeces of all lines with an
-                                          impedance value of zero.
-
-
-    """
-    implausible_impedance = net.impedance[
-        ((net.impedance.xft_pu + net.impedance.xtf_pu) <= impedance_min_z_pu)
-        | ((net.impedance.xft_pu + net.impedance.xtf_pu +
-            net.impedance.rft_pu + net.impedance.rtf_pu) <= impedance_min_z_pu)]
-
-    if len(implausible_impedance) > 0:
-        return list(implausible_impedance.index)
+    impedance = net.impedance[(net.impedance.rft_pu <= min_r_pu)
+                              | (net.impedance.xft_pu <= min_x_pu)
+                              | (net.impedance.rtf_pu <= min_r_pu)
+                              | (net.impedance.xtf_pu <= min_x_pu)].index
+    if len(line) > 0:
+        implausible_elements['line'] = list(line)
+    if len(xward) > 0:
+        implausible_elements['xward'] = list(xward)
+    if len(impedance) > 0:
+        implausible_elements['impedance'] = list(impedance)
+    check_results.append(implausible_elements)
+    # checks if loadflow converges when implausible lines or impedances are replaced by switches
+    if ("line" in implausible_elements) or ("impedance" in implausible_elements):
+        switch_copy = copy.deepcopy(net.switch)
+        line_copy = copy.deepcopy(net.line)
+        impedance_copy = copy.deepcopy(net.impedance)
+        try:
+            runpp(net)
+        except:
+            try:
+                for key in implausible_elements:
+                    if key == 'xward':
+                        continue
+                    implausible_idx = implausible_elements[key]
+                    net[key].in_service.loc[implausible_idx] = False
+                    for idx in implausible_idx:
+                        pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
+                runpp(net)
+                switch_replacement = True
+            except:
+                switch_replacement = False
+            check_results.append({"loadflow_converges_with_switch_replacement": switch_replacement})
+        net.switch = switch_copy
+        net.line = line_copy
+        net.impedance = impedance_copy
+    if implausible_elements:
+        return check_results
 
 
 def nominal_voltages_dont_match(net, nom_voltage_tolerance):
@@ -841,35 +830,28 @@ def numba_comparison(net, numba_tolerance):
             **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
     check_results = {}
-    try:
-        runpp(net, numba=True)
-    except LoadflowNotConverged:
-        pass
-    if net.converged:
-        try:
-            result_numba_true = copy.deepcopy(net)
-            runpp(net, numba=False)
-            result_numba_false = copy.deepcopy(net)
-            res_keys = [key for key in result_numba_true.keys() if
-                        (key in ['res_bus', 'res_ext_grid',
-                                 'res_gen', 'res_impedance',
-                                 'res_line', 'res_load',
-                                 'res_sgen', 'res_shunt',
-                                 'res_trafo', 'res_trafo3w',
-                                 'res_ward', 'res_xward'])]
-            for key in res_keys:
-                diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
-                if any(diffs.any()):
-                    if (key not in check_results.keys()):
-                        check_results[key] = {}
-                    for col in diffs.columns:
-                        if (col not in check_results[key].keys()) and (diffs.any()[col]):
-                            check_results[key][col] = {}
-                            numba_true = result_numba_true[key][col][diffs[col]]
-                            numba_false = result_numba_false[key][col][diffs[col]]
-                            check_results[key][col] = abs(numba_true - numba_false)
-        except LoadflowNotConverged:
-            pass
+    runpp(net, numba=True)
+    result_numba_true = copy.deepcopy(net)
+    runpp(net, numba=False)
+    result_numba_false = copy.deepcopy(net)
+    res_keys = [key for key in result_numba_true.keys() if
+                (key in ['res_bus', 'res_ext_grid',
+                         'res_gen', 'res_impedance',
+                         'res_line', 'res_load',
+                         'res_sgen', 'res_shunt',
+                         'res_trafo', 'res_trafo3w',
+                         'res_ward', 'res_xward'])]
+    for key in res_keys:
+        diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
+        if any(diffs.any()):
+            if (key not in check_results.keys()):
+                check_results[key] = {}
+            for col in diffs.columns:
+                if (col not in check_results[key].keys()) and (diffs.any()[col]):
+                    check_results[key][col] = {}
+                    numba_true = result_numba_true[key][col][diffs[col]]
+                    numba_false = result_numba_false[key][col][diffs[col]]
+                    check_results[key][col] = abs(numba_true - numba_false)
 
     if check_results:
         return check_results
@@ -893,24 +875,25 @@ def deviation_from_std_type(net):
     """
     check_results = {}
     for key in net.std_types.keys():
-        for i, element in net[key].iterrows():
-            std_type = element.std_type
-            if std_type in net.std_types[key].keys():
-                std_type_values = net.std_types[key][std_type]
-                for param in std_type_values.keys():
-                    if param == "tp_pos":
-                        continue
-                    if param in net[key].columns:
-                        if not element[param] == std_type_values[param]:
-                            if key not in check_results.keys():
-                                check_results[key] = {}
-                            check_results[key][i] = {'param': param, 'e_value': element[param],
-                                                     'std_type_value': std_type_values[param],
-                                                     'std_type_in_lib': True}
-            elif std_type is not None:
-                if key not in check_results.keys():
-                    check_results[key] = {}
-                check_results[key][i] = {'std_type_in_lib': False}
+        if key in net:
+            for i, element in net[key].iterrows():
+                std_type = element.std_type
+                if std_type in net.std_types[key].keys():
+                    std_type_values = net.std_types[key][std_type]
+                    for param in std_type_values.keys():
+                        if param == "tp_pos":
+                            continue
+                        if param in net[key].columns:
+                            if not element[param] == std_type_values[param]:
+                                if key not in check_results.keys():
+                                    check_results[key] = {}
+                                check_results[key][i] = {'param': param, 'e_value': element[param],
+                                                         'std_type_value': std_type_values[param],
+                                                         'std_type_in_lib': True}
+                elif std_type is not None:
+                    if key not in check_results.keys():
+                        check_results[key] = {}
+                    check_results[key][i] = {'std_type_in_lib': False}
 
     if check_results:
         return check_results

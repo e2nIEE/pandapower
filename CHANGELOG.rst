@@ -1,7 +1,19 @@
 Change Log
 =============
-
 [develop]
+----------------------
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.5.2/powerflow/opf.html) and opf_changes-may18.ipynb
+- [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
+- [ADDED] case_ieee30, case5, case_illinois200
+- [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte
+
+[1.5.1] - 2018-05-04
+----------------------
+- [FIXED] delta-wye transformation for 3W-transformers #54
+- [ADDED] bus-bus switches collection #76
+- [FIXED] some broken documentation links
+
+[1.5.0] - 2018-04-25
 ----------------------
 - [FIXED] plotly hover function for edges (only if use_line_geodata == False)
 - [FIXED] from_ppc trafo parameter calculation now also considers baseMVA != 100
@@ -11,6 +23,9 @@ Change Log
 - [ADDED] new parameter g_us_per_km to model dielectric losses in lines
 - [ADDED] single phase short-circuit calculation with negative sequence models
 - [ADDED] generic storage model (sgen/load like element with negative / positive power allowed)
+- [ADDED] modelling of the complex (voltage magnitude and angle) tap changer for cross control
+- [ADDED] modelling of the tap changer of a 3-winding transformer at star point or terminals
+- [ADDED] losses of 3W transformers can be modeled at star point, HV, MV or LV side
 
 [1.4.3] - 2018-02-06
 ----------------------

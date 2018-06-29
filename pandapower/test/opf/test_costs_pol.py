@@ -37,14 +37,14 @@ def test_cost_pol_gen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 0, "gen", np.array([0, -1, 0]))
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
     assert net.res_cost == - net.res_gen.p_kw.values
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
+    net.polynomial_cost.c.at[0] = np.array([[-1, 0, 0]])
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -73,15 +73,15 @@ def test_cost_pol_all_elements():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 0, "gen", np.array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, -1, 0]))
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
     assert abs(net.res_cost + (net.res_gen.p_kw.values + net.res_sgen.p_kw.values)) < 1e-2
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
+    net.polynomial_cost.c.at[0] = np.array([[-1, 0, 0]])
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -107,14 +107,14 @@ def test_cost_pol_q():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, -1, 0]), type="q")
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 1, 0]), type="q")
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
     assert abs(net.res_cost + (net.res_sgen.q_kvar.values)) < 1e-2
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
+    net.polynomial_cost.c.at[0] = np.array([[-1, 0, 0]])
     # run OPF
     pp.runopp(net, verbose=False)
 

@@ -33,7 +33,7 @@ from pandapower.pf.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
 from pandapower.idx_bus import PD, QD, VM, VA
 from pandapower.idx_gen import GEN_BUS, GEN_STATUS, VG
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, _extract_results_3ph
+from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, _extract_results_3ph, reset_results
 from pandapower.results_bus import _get_bus_idx
 
 
@@ -190,6 +190,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
+    reset_results(net, balanced=False)
     # =============================================================================
     # Y Bus formation for Sequence Networks
     # =============================================================================
