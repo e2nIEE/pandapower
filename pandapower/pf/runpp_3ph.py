@@ -74,9 +74,9 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 def load_mapping(net,ppci1,):
     _is_elements = net["_is_elements"]
     b = np.array([], dtype=int)
-    SA = ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j
-    SB = ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j
-    SC = ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j
+    SA = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    SB = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    SC = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
     q_a, QA = np.array([]), np.array([])
     p_a, PA = np.array([]), np.array([])
     q_b, QB = np.array([]), np.array([])
@@ -107,27 +107,6 @@ def load_mapping(net,ppci1,):
         b = np.hstack([b, sgen_3ph["bus"].values])
     # For Network Symmetric loads with unsymmetric loads
     #    Since the bus values of ppc values are not known, it is added again, fresh
-    l = net["load"]
-    if len(l) > 0:
-        vl = _is_elements["load"] * l["scaling"].values.T
-        q_a = np.hstack([q_a, l["q_kvar"].values / 3 * vl])
-        p_a = np.hstack([p_a, l["p_kw"].values / 3 * vl])
-        q_b = np.hstack([q_b, l["q_kvar"].values / 3 * vl])
-        p_b = np.hstack([p_b, l["p_kw"].values / 3 * vl])
-        q_c = np.hstack([q_c, l["q_kvar"].values / 3 * vl])
-        p_c = np.hstack([p_c, l["p_kw"].values / 3 * vl])
-        b = np.hstack([b, l["bus"].values])
-
-    sgen = net["sgen"]
-    if len(sgen) > 0:
-        vl = _is_elements["load"] * l["scaling"].values.T
-        q_a = np.hstack([q_a, sgen["q_kvar"].values / 3 * vl])
-        p_a = np.hstack([p_a, sgen["p_kw"].values / 3 * vl])
-        q_b = np.hstack([q_b, sgen["q_kvar"].values / 3 * vl])
-        p_b = np.hstack([p_b, sgen["p_kw"].values / 3 * vl])
-        q_c = np.hstack([q_c, sgen["q_kvar"].values / 3 * vl])
-        p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
-        b = np.hstack([b, sgen["bus"].values ])
 
     
     if b.size:
