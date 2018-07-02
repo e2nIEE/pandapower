@@ -88,7 +88,7 @@ def load_mapping(net,ppci1,):
     q_c, QC = np.array([]), np.array([])
     p_c, PC = np.array([]), np.array([])
     
-    if (ppci1["bus"][:, PD] > 0).any() :
+    if (ppci1["bus"][:, PD] != 0).any() :
         b_ppc = np.where( ppci1["bus"][:, PD] > 0)[0]
         q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
         p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
@@ -97,7 +97,7 @@ def load_mapping(net,ppci1,):
         q_c, QC = (ppci1["bus"][b_ppc, QD])/3, np.array([])
         p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         b = np.where(bus_lookup == b_ppc)[0]
-    elif (ppci1["bus"][:, QD] > 0).any() :
+    elif (ppci1["bus"][:, QD] != 0).any() :
         b_ppc = np.where( ppci1["bus"][:, QD] > 0)[0]
         q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
         p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
