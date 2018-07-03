@@ -762,10 +762,8 @@ def _branches_with_oos_buses(net, ppc):
 
         mask_and = mask_to & mask_from
         if np.any(mask_and):
-            f_bus = f_bus[~mask_and]
-            t_bus = t_bus[~mask_and]
-            mask_from = mask_from[~mask_and]
-            mask_to = mask_to[~mask_and]
+            mask_from[mask_and] = False
+            mask_to[mask_and] = False
 
         # get lines that are connected to oos bus at exactly one side
         # buses that are connected to two oos buses will be removed by ext2int
