@@ -2364,20 +2364,20 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
         create_measurement(net, "p", "bus", -500., 10., 0)
     """
 
-    if bus not in net["bus"].index.values:
-        raise UserWarning("Bus %s does not exist" % bus)
+    if meas_type not in ("v", "p", "q", "i"):
+        raise UserWarning("Invalid measurement type (%s)" % meas_type)
 
     if element is None and element_type in ("line", "trafo"):
         raise UserWarning("The element type %s requires a value in 'element'" % element_type)
-
-    if meas_type not in ("v", "p", "q", "i"):
-        raise UserWarning("Invalid measurement type (%s)" % meas_type)
 
     if meas_type == "v":
         element_type = "bus"
 
     if element_type not in ("bus", "line", "trafo"):
         raise UserWarning("Invalid element type (%s)" % element_type)
+
+    if element_type == "bus" and bus not in net["bus"].index.values:
+        raise UserWarning("Bus %s does not exist" % bus)
 
     if bus in ("from", "to") and element_type == "line":
         bus = net.line.from_bus.loc[element] if bus == "from" else net.line.to_bus.loc[element]
