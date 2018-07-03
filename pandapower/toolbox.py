@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
-from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch
+from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch, \
+    create_line_from_parameters, create_impedance
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
 from pandapower import __version__
@@ -374,22 +375,24 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(x, y, check_only_results=False, **kwargs):
+def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs):
     """
     Compares the DataFrames of two networks. The networks are considered equal
     if they share the same keys and values, except of the
     'et' (elapsed time) entry which differs depending on
     runtime conditions and entries stating with '_'.
     """
-    eq = True
+    eq = isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)
+    exclude_elms = [] if exclude_elms is None else list(exclude_elms)
+    exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
+    if eq:
         # for two networks make sure both have the same keys that do not start with "_"...
-        x_keys = [key for key in x.keys() if not key.startswith("_")]
-        y_keys = [key for key in y.keys() if not key.startswith("_")]
-        key_union = set(x_keys) | set(y_keys)
-        key_difference = set(x_keys) ^ set(y_keys)
+        net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
+        net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
+        keys_to_check = set(net1_keys) & set(net2_keys)
+        key_difference = set(net1_keys) ^ set(net2_keys)
 
         if len(key_difference) > 0:
             logger.info("Networks entries mismatch at: %s" % key_difference)
@@ -397,14 +400,15 @@ def nets_equal(x, y, check_only_results=False, **kwargs):
                 return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in list(key_union):
+        for df_name in list(keys_to_check):
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
                     continue  # skip anything that is not a result table
 
-                if isinstance(x[df_name], pd.DataFrame) and isinstance(y[df_name], pd.DataFrame):
-                    frames_equal = dataframes_equal(x[df_name], y[df_name], **kwargs)
+                if isinstance(net1[df_name], pd.DataFrame) and isinstance(net2[df_name],
+                                                                          pd.DataFrame):
+                    frames_equal = dataframes_equal(net1[df_name], net2[df_name], **kwargs)
                     eq &= frames_equal
 
                     if not frames_equal:
@@ -1772,3 +1776,76 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 
     return replaced
+
+
+def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_max=False):
+    """
+    Creates lines by given impedances data, while the impedances are dropped.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **index** (index, None) - Index of all impedances to be replaced. If None, all impedances
+            will be replaced.
+
+        **only_valid_replace** (bool, True) - If True, impedances will only replaced, if a
+            replacement leads to equal power flow results. If False, unsymmetric impedances will
+            be replaced by symmetric lines.
+
+        **sn_as_max** (bool, False) - Flag to set whether sn_kva of impedances should be assumed
+            for max_i_ka of lines.
+    """
+    index = index or net.impedance.index
+    for _, imp in net.impedance.loc[index].iterrows():
+        if imp.rft_pu != imp.rtf_pu or imp.xft_pu != imp.xtf_pu:
+            if only_valid_replace:
+                continue
+            logger.error("impedance differs in from or to bus direction. lines always " +
+                         "parameters always pertain in both direction. only from_bus to " +
+                         "to_bus parameters are considered.")
+        vn = net.bus.vn_kv.at[imp.from_bus]
+        Zni = vn**2/imp.sn_kva*1e3
+        max_i_ka = imp.sn_kva/vn/np.sqrt(3)*1e-3 if sn_as_max else np.nan
+        create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu*Zni,
+                                    imp.xft_pu*Zni, 0, max_i_ka, name=imp.name,
+                                    in_service=imp.in_service)
+    net.impedance.drop(index, inplace=True)
+
+
+def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=True):
+    """
+    Creates impedances by given lines data, while the lines are dropped.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **index** (index, None) - Index of all lines to be replaced. If None, all lines
+            will be replaced.
+
+        **sn_kva** (list or array, None) - Values of sn_kva for creating the impedances. If None,
+            the net.sn_kva is assumed
+
+        **only_valid_replace** (bool, True) - If True, lines will only replaced, if a replacement
+            leads to equal power flow results. If False, capacitance and dielectric conductance will
+            be neglected.
+    """
+    index = index or net.line.index
+    sn_kva = sn_kva or net.sn_kva
+    sn_kva = sn_kva if sn_kva != "max_i_ka" else net.line.max_i_ka.loc[index]
+    sn_kva = sn_kva if hasattr(sn_kva, "__iter__") else [sn_kva]*len(index)
+    if len(sn_kva) != len(index):
+        raise ValueError("index and sn_kva must have the same length.")
+    i = 0
+    for idx, line_ in net.line.loc[index].iterrows():
+        if line_.c_nf_per_km or line_.g_us_per_km:
+            if only_valid_replace:
+                continue
+            logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
+                         "converted to impedances, which do not model such parameters.")
+        vn = net.bus.vn_kv.at[line_.from_bus]
+        Zni = vn**2/sn_kva[i]*1e3
+        create_impedance(net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km*line_.length_km/Zni,
+                         line_.x_ohm_per_km*line_.length_km/Zni, sn_kva[i], name=line_.name,
+                         in_service=line_.in_service)
+        i += 1
+    net.line.drop(index, inplace=True)
