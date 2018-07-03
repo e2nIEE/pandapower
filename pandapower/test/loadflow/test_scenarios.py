@@ -294,7 +294,7 @@ def test_two_oos_buses():
     b3 = pp.create_bus(net, vn_kv=0.4, in_service=False)
     b4 = pp.create_bus(net, vn_kv=0.4, in_service=False)
     
-    pp.create_ext_grid(net, b1, vm_pu=1.0, s_sc_max_mva=10, rx_max=0.1)
+    pp.create_ext_grid(net, b1)
     l1 = pp.create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", index=4)
     l2 = pp.create_line(net, b2, b3, 0.5, std_type="NAYY 4x50 SE", index=2)
     l3 = pp.create_line(net, b3, b4, 0.5, std_type="NAYY 4x50 SE", index=7)
@@ -302,6 +302,11 @@ def test_two_oos_buses():
     pp.runpp(net)
     assert net.res_line.loading_percent.at[l1] > 0
     assert net.res_line.loading_percent.at[l2] > 0
+    assert np.isnan(net.res_line.loading_percent.at[l3])
+
+    net.line.drop(l2, inplace=True)
+    pp.runpp(net)
+    assert net.res_line.loading_percent.at[l1] > 0
     assert np.isnan(net.res_line.loading_percent.at[l3])
     
 if __name__ == "__main__":
