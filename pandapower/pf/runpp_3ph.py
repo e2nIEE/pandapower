@@ -342,8 +342,9 @@ def show_results(V_base, kVA_base, count, ppci0, Y1_pu, V012_new, I012_new):
 
 
 def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu):
-    ppci0["bus"][0, GS] = 0
-    ppci0["bus"][0, BS] = 0
+    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+    ppci0["bus"][ref, GS] = 0
+    ppci0["bus"][ref, BS] = 0
     # Y0_pu = Y0_pu.todense()
     Y0_pu, _, _ = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
     I012_pu = combine_X012(I0_from_V012(V012_pu, Y0_pu),
