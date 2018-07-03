@@ -234,6 +234,12 @@ def _build_bus_ppc(net, ppc):
         # init results (= voltages) from previous power flow
         ppc["bus"][:n_bus, VM] = net["res_bus"]["vm_pu"].values
         ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
+    elif "vm_start_pu" in net["_options"]:
+        try:
+            ppc["bus"][:n_bus, VM] = net["_options"]["vm_start_pu"]
+        except:
+            raise ValueError("starting voltage vector is invalid. Set vm_start_pu either to 'auto', a float or an iterable with the length of the bus table.")
+
 
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
