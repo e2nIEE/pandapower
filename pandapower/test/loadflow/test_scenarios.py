@@ -303,6 +303,11 @@ def test_two_oos_buses():
     assert net.res_line.loading_percent.at[l1] > 0
     assert net.res_line.loading_percent.at[l2] > 0
     assert np.isnan(net.res_line.loading_percent.at[l3])
+
+    net.line.drop(l2, inplace=True)
+    pp.runpp(net)
+    assert net.res_line.loading_percent.at[l1] > 0
+    assert np.isnan(net.res_line.loading_percent.at[l3])
     
 if __name__ == "__main__":
 #    test_volt_dep_load_at_inactive_bus()
