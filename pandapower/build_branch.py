@@ -760,19 +760,9 @@ def _branches_with_oos_buses(net, ppc):
         mask_from = np.in1d(f_bus, bus_oos)
         mask_to = np.in1d(t_bus, bus_oos)
 
-        # determine if line is only connected to out of service buses -> set
-        # branch in ppc out of service
-        mask_and = mask_to & mask_from
-
-        if np.any(mask_and):
-            ppc["branch"][line_is_idx[mask_and], BR_STATUS] = 0
-            line_is_idx = line_is_idx[~mask_and]
-            f_bus = f_bus[~mask_and]
-            t_bus = t_bus[~mask_and]
-            mask_from = mask_from[~mask_and]
-            mask_to = mask_to[~mask_and]
-
-        mask_or = mask_to | mask_from
+        # get lines that are connected to oos bus at exactly one side
+        # buses that are connected to two oos buses will be removed by ext2int
+        mask_or = np.logical_xor(mask_from, mask_to)
         # check whether buses are connected to line
         oos_buses_at_lines = np.r_[f_bus[mask_from], t_bus[mask_to]]
         n_oos_buses_at_lines = len(oos_buses_at_lines)
