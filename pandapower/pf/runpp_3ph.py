@@ -71,20 +71,45 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 # Mapping load for positive sequence loads
 # =============================================================================
 # Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
-def load_mapping(net):
+def load_mapping(net,ppci1,):
     _is_elements = net["_is_elements"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     b = np.array([], dtype=int)
-    SA, SB, SC = np.array([]), np.array([]), np.array([])
+    b_ppc = np.array([], dtype=int)
+    
+    SA = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    SB = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    SC = (ppci1["bus"][:, PD]+ppci1["bus"][:, QD]*1j)/3
+    
     q_a, QA = np.array([]), np.array([])
     p_a, PA = np.array([]), np.array([])
     q_b, QB = np.array([]), np.array([])
     p_b, PB = np.array([]), np.array([])
     q_c, QC = np.array([]), np.array([])
     p_c, PC = np.array([]), np.array([])
+    
+    if (ppci1["bus"][:, PD] > 0).any() :
+        b_ppc = np.where( ppci1["bus"][:, PD] > 0)[0]
+        q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
+        p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
+        q_b, QB = (ppci1["bus"][b_ppc, QD])/3, np.array([])
+        p_b, PB = (ppci1["bus"][b_ppc, PD])/3, np.array([])
+        q_c, QC = (ppci1["bus"][b_ppc, QD])/3, np.array([])
+        p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
+        b = np.where(bus_lookup == b_ppc)[0]
+    elif (ppci1["bus"][:, QD] > 0).any() :
+        b_ppc = np.where( ppci1["bus"][:, QD] > 0)[0]
+        q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
+        p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
+        q_b, QB = (ppci1["bus"][b_ppc, QD])/3, np.array([])
+        p_b, PB = (ppci1["bus"][b_ppc, PD])/3, np.array([])
+        q_c, QC = (ppci1["bus"][b_ppc, QD])/3, np.array([])
+        p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
+        b = np.where(bus_lookup == b_ppc)[0]
 
     l3 = net["load_3ph"]
     if len(l3) > 0:
-        vl = _is_elements["load_3ph"] * l3["scaling"].values.T
+        vl = _is_elements["load_3ph"] * l3["scaling"].values.T*1e-3
         q_a = np.hstack([q_a, l3["q_kvar_A"].values * vl])
         p_a = np.hstack([p_a, l3["p_kw_A"].values * vl])
         q_b = np.hstack([q_b, l3["q_kvar_B"].values * vl])
@@ -95,7 +120,7 @@ def load_mapping(net):
 
     sgen_3ph = net["sgen_3ph"]
     if len(sgen_3ph) > 0:
-        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T
+        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T*1e-3
         q_a = np.hstack([q_a, sgen_3ph["q_kvar_A"].values * vl])
         p_a = np.hstack([p_a, sgen_3ph["p_kw_A"].values * vl])
         q_b = np.hstack([q_b, sgen_3ph["q_kvar_B"].values * vl])
@@ -105,47 +130,15 @@ def load_mapping(net):
         b = np.hstack([b, sgen_3ph["bus"].values])
     # For Network Symmetric loads with unsymmetric loads
     #    Since the bus values of ppc values are not known, it is added again, fresh
-    l = net["load"]
-    if len(l) > 0:
-        vl = _is_elements["load"] * l["scaling"].values.T
-        q_a = np.hstack([q_a, l["q_kvar"].values / 3 * vl])
-        p_a = np.hstack([p_a, l["p_kw"].values / 3 * vl])
-        q_b = np.hstack([q_b, l["q_kvar"].values / 3 * vl])
-        p_b = np.hstack([p_b, l["p_kw"].values / 3 * vl])
-        q_c = np.hstack([q_c, l["q_kvar"].values / 3 * vl])
-        p_c = np.hstack([p_c, l["p_kw"].values / 3 * vl])
-        b = np.hstack([b, l["bus"].values])
-
-    sgen = net["sgen"]
-    if len(sgen) > 0:
-        vl = _is_elements["load"] * l["scaling"].values.T
-        q_a = np.hstack([q_a, sgen["q_kvar"].values / 3 * vl])
-        p_a = np.hstack([p_a, sgen["p_kw"].values / 3 * vl])
-        q_b = np.hstack([q_b, sgen["q_kvar"].values / 3 * vl])
-        p_b = np.hstack([p_b, sgen["p_kw"].values / 3 * vl])
-        q_c = np.hstack([q_c, sgen["q_kvar"].values / 3 * vl])
-        p_c = np.hstack([p_c, sgen["p_kw"].values / 3 * vl])
-        b = np.hstack([b, sgen["bus"].values ])
-
-    ext_grid = net["ext_grid"]
-    if len(ext_grid) > 0  :
-        q_a = np.hstack([q_a, 0])
-        p_a = np.hstack([p_a, 0])
-        q_b = np.hstack([q_b, 0])
-        p_b = np.hstack([p_b, 0])
-        q_c = np.hstack([q_c, 0])
-        p_c = np.hstack([p_c, 0])
-        b = np.hstack([b, net.ext_grid.bus.values])
-    
     if b.size:
-        bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ba = bus_lookup[b]
         bb = bus_lookup[b]
         bc = bus_lookup[b]
         ba, PA, QA = _sum_by_group(ba, p_a, q_a * 1j)
         bb, PB, QB = _sum_by_group(bb, p_b, q_b * 1j)
         bc, PC, QC = _sum_by_group(bc, p_c, q_c * 1j)
-        SA, SB, SC = PA + QA, PB + QB, PC + QC
+        
+        SA[ba], SB[bb], SC[bc] = (PA + QA), (PB + QB), (PC + QC)
     return np.vstack([SA, SB, SC])
 
 
@@ -238,7 +231,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     # =============================================================================
     count = 0
     S_mismatch = np.matrix([[True], [True]], dtype=bool)
-    Sabc = load_mapping(net)
+    Sabc = load_mapping(net,ppci1)
     # =============================================================================
     #             Iteration using Power mismatch criterion
     # =============================================================================
@@ -247,7 +240,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # =============================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =============================================================================
-        Sabc_pu = -np.divide(Sabc, net.sn_kva)
+        Sabc_pu = -np.divide(Sabc, ppci1["baseMVA"])
         Iabc_it = np.divide(Sabc_pu, Vabc_it).conjugate()
         I012_it = phase_to_sequence(Iabc_it)
 
@@ -262,8 +255,8 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # Current used to find S1 Positive sequence power
         # =============================================================================
 
-        ppci1["bus"][pq_bus, PD] = np.real(S1[:, pq_bus]) * net.sn_kva * 1e-3
-        ppci1["bus"][pq_bus, QD] = np.imag(S1[:, pq_bus]) * net.sn_kva * 1e-3
+        ppci1["bus"][pq_bus, PD] = np.real(S1[:, pq_bus]) * ppci1["baseMVA"]
+        ppci1["bus"][pq_bus, QD] = np.imag(S1[:, pq_bus]) * ppci1["baseMVA"]
 
         _run_newton_raphson_pf(ppci1, net._options)
 
