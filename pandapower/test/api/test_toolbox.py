@@ -458,6 +458,17 @@ def test_all(net):
     assert net.impedance.in_service.at[2]
 
 
+def test_get_element_indices():
+    net = nw.example_multivoltage()
+    idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+    idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+    idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+    assert [32, 33, 34] == idx1
+    assert ([32, 33, 34, 35] == idx2[0]).all()
+    assert ([0, 1, 2, 3, 4, 5] == idx2[1]).all()
+    assert [34, 11] == idx3
+
+
 def test_next_bus():
     net = pp.create_empty_network()
 

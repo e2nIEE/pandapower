@@ -1361,6 +1361,49 @@ def get_element_index(net, element, name, exact_match=True):
         return net[element][net[element]["name"].str.contains(name)].index
 
 
+def get_element_indices(net, element, name, exact_match=True):
+    """
+    Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper
+    function of get_element_index()
+
+    INPUT:
+      **net** - pandapower network
+
+      **element** (str or iterable of strings) - Element table to get indices from ("line", "bus",
+            "trafo" etc.)
+
+      **name** (str or iterable of strings) - Name of the element to match.
+
+    OPTIONAL:
+      **exact_match** (boolean, True) - True: Expects exactly one match, raises
+                                                UserWarning otherwise.
+                                        False: returns all indices containing the name
+
+    OUTPUT:
+      **index** (list) - List of the indices of matching element(s).
+
+    EXAMPLE:
+        import pandapower.networks as pn
+        import pandapower as pp
+        net = pn.example_multivoltage()
+        idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+        idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+    """
+    if isinstance(element, str) and isinstance(name, str):
+        element = [element]
+        name = [name]
+    else:
+        element = element if not isinstance(element, str) else [element]*len(name)
+        name = name if not isinstance(name, str) else [name]*len(element)
+    if len(element) != len(name):
+        raise ValueError("'element' and 'name' must have the same length.")
+    idx = []
+    for i, elm in enumerate(element):
+        idx += [get_element_index(net, elm, name[i], exact_match=exact_match)]
+    return idx
+
+
 def next_bus(net, bus, element_id, et='line', **kwargs):
     """
     Returns the index of the second bus an element is connected to, given a
