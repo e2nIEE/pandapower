@@ -1771,4 +1771,4 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 
-        return replaced
+    return replaced

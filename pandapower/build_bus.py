@@ -267,7 +267,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     mode = net["_options"]["mode"]
 
     # if mode == powerflow...
-    if mode == "pf":
+    if mode == "pf" or mode == "pf_3ph":
         l = net["load"]
         if len(l) > 0:
             voltage_depend_loads = net["_options"]["voltage_depend_loads"]
