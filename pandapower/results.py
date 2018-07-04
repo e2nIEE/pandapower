@@ -36,7 +36,7 @@ def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     bus_lookup_aranged = _get_aranged_lookup(net)
 
     _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2)
-    bus_pq = _get_p_q_results_3ph(net, bus_lookup_aranged) # Todo: Fails at one test!
+    bus_pq = _get_p_q_results_3ph(net, bus_lookup_aranged)
     # _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
     # _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
     # _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
