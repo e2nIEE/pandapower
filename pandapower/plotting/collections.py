@@ -775,8 +775,7 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values
         # position of switch symbol
         vec = pos_tb - pos_sb
-        mag = np.linalg.norm(vec)
-        pos_sw = pos_sb + vec / mag * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
+        pos_sw = pos_sb + vec * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
         # rotation of switch symbol
         angle = np.arctan2(vec[1], vec[0])
         rotation = Affine2D().rotate_around(pos_sw[0], pos_sw[1], angle)
