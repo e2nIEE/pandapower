@@ -941,6 +941,10 @@ def create_continuous_bus_index(net, start=0):
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
+    try:
+        net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+    except:
+        pass
 
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
@@ -1038,7 +1042,7 @@ def drop_out_of_service_elements(net):
                 logger.info("dropped %d %s elements!" % (len(drop_idx), element))
 
 
-def element_bus_tuples(bus_elements=True, branch_elements=True):
+def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
     """
     Utility function
     Provides the tuples of elements and corresponding columns for buses they are connected to
@@ -1046,24 +1050,27 @@ def element_bus_tuples(bus_elements=True, branch_elements=True):
     :param branch_elements: whether branch elements e.g. line, trafo, ... are included
     :return: set of tuples with element names and column names
     """
-    ebt = set()
+    ebts = set()
     if bus_elements:
-        ebt.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+        ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus")])
     if branch_elements:
-        ebt.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+        ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                     ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
                     ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
                     ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")])
-    return ebt
+    if res_elements:
+        elements_without_res = ["switch", "measurement"]
+        ebts.update([("res_"+ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res])
+    return ebts
 
 
-def pp_elements(bus=True, bus_elements=True, branch_elements=True):
+def pp_elements(bus=True, bus_elements=True, branch_elements=True, res_elements=False):
     """ Returns the list of pandapower elements. """
-    if bus:
-        return set(["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
-    else:
-        return set([el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
+    pp_elms = set(["bus"]) if bus else set()
+    pp_elms |= set([el[0] for el in element_bus_tuples(
+        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
+    return pp_elms
 
 
 def drop_buses(net, buses, drop_elements=True):
