@@ -456,7 +456,7 @@ def _trafo_df_from_trafo3w(net):
                 taps[tp_trafo]["tp_side"] = "lv" if tp_trafo == 0 else "hv"
                 taps[tp_trafo]["tp_st_degree"] += 180
 
-        max_load = ttab.max_loading_percent if "max_loading_percent" in ttab else 0
+        max_load = ttab.max_loading_percent if "max_loading_percent" in ttab._fields else 0
 
         trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv,
