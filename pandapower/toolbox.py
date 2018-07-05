@@ -1399,8 +1399,8 @@ def get_element_indices(net, element, name, exact_match=True):
     if len(element) != len(name):
         raise ValueError("'element' and 'name' must have the same length.")
     idx = []
-    for i, elm in enumerate(element):
-        idx += [get_element_index(net, elm, name[i], exact_match=exact_match)]
+    for elm, nam in zip(element, name):
+        idx += [get_element_index(net, elm, nam, exact_match=exact_match)]
     return idx
 
 
