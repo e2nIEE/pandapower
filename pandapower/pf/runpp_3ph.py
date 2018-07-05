@@ -198,12 +198,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     #        'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf_3ph",'copy_constraints_to_ppc': False,
     #        'enforce_q_lims': False, 'numba': True, 'recycle': {'Ybus': False, '_is_elements': False, 'bfsw': False, 'ppc': False},
     #        "tolerance_kva": 1e-5, "max_iteration": 10}
-    _, ppci1 = _pd2ppc(net,1)
+    _, ppci1 = _pd2ppc(net, 1)
 
-    _, ppci2 = _pd2ppc(net,2)
+    _, ppci2 = _pd2ppc(net, 2)
     _add_ext_grid_sc_impedance(net, ppci2)
 
-    _, ppci0 = _pd2ppc_zero(net,0)
+    _, ppci0 = _pd2ppc_zero(net, 0)
 
     _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00 = _get_pf_variables_from_ppci(ppci0)
     baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01 = _get_pf_variables_from_ppci(ppci1)
@@ -319,7 +319,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     _extract_results_3ph(net, ppc0, ppc1, ppc2)
     _clean_up(net)
 
-    return count, V012_it, I012_it, ppci0, Y0_pu,Y1_pu,Y2_pu
+    return count, V012_it, I012_it, ppci0, Y0_pu, Y1_pu, Y2_pu
 
 
 def show_results(V_base, kVA_base, count, ppci0, Y1_pu, V012_new, I012_new):

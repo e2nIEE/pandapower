@@ -423,7 +423,7 @@ def test_in_service_only(net):
     assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 1
     tb.replace_zero_branches_with_switches(net, elements=('line',), in_service_only=False)
     assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 2
-    assert ~net.switch.closed.at[1]
+    assert ~net.switch.closed.at[2]
 
 
 def test_line_with_zero_impediance(net):

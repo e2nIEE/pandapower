@@ -34,7 +34,7 @@ import scipy as sp
 import six
 
 from pandapower.idx_brch import F_BUS, T_BUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF
 
 try:
     from numba import jit
@@ -240,6 +240,25 @@ def _sum_by_group(bus, first_val, second_val):
     second_val = second_val[index]
     second_val[1:] = second_val[1:] - second_val[:-1]
     return bus, first_val, second_val
+
+
+def _sum_by_group_nvals(bus, *vals):
+    order = np.argsort(bus)
+    bus = bus[order]
+    index = np.ones(len(bus), 'bool')
+    index[:-1] = bus[1:] != bus[:-1]
+    bus = bus[index]
+    newvals = tuple(np.zeros((len(vals),len(bus))))
+    for val, newval in zip(vals, newvals):
+        val = val[order]
+        val.cumsum(out=val)
+        val = val[index]
+        val[1:] = val[1:] - val[:-1]
+        newval[:] = val
+        # Returning vals keeps the original array dimensions, which causes an error if more than one element is
+        # connected to the same bus. Instead, we create a second tuple of arrays on which we map the results.
+        # Todo: Check if this workaround causes no problems
+    return (bus,) + newvals
 
 
 def get_indices(selection, lookup, fused_indices=True):
@@ -526,8 +545,8 @@ def _set_isolated_buses_out_of_service(net, ppc):
                         ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][net._isolated_buses, 1] = 4.
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF, :1].real.astype(int))
+    ppc["bus"][net._isolated_buses, 1] = NONE
 
 
 def _write_lookup_to_net(net, element, element_lookup):
