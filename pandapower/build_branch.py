@@ -420,7 +420,7 @@ def _trafo_df_from_trafo3w(net):
     nr_trafos = len(net["trafo3w"])
     tap_variables = ("tp_pos", "tp_mid", "tp_max", "tp_min", "tp_st_percent", "tp_st_degree")
     i = 0
-    for _, ttab in net["trafo3w"].iterrows():
+    for ttab in net["trafo3w"].itertuples():
         vsc = np.array([ttab.vsc_hv_percent, ttab.vsc_mv_percent, ttab.vsc_lv_percent], dtype=float)
         vscr = np.array([ttab.vscr_hv_percent, ttab.vscr_mv_percent, ttab.vscr_lv_percent], dtype=float)
         sn = np.array([ttab.sn_hv_kva, ttab.sn_mv_kva, ttab.sn_lv_kva])
@@ -448,7 +448,7 @@ def _trafo_df_from_trafo3w(net):
             elif ttab.tp_side == "lv":
                 tp_trafo = 2
             for tv in tap_variables:
-                taps[tp_trafo][tv] = ttab[tv]
+                taps[tp_trafo][tv] = getattr(ttab,tv)
             # consider where the tap is located - at the bus or at star point of the 3W-transformer
             if not trafo3w_tap_at_star_point:
                 taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
