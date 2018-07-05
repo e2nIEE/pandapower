@@ -139,9 +139,12 @@ def _create_trafo3w_buses(net):
 
     init_results = init == "results"
     hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
+    mv_buses = net.bus.loc[net.trafo3w.mv_bus.values]
+    lv_buses = net.bus.loc[net.trafo3w.lv_bus.values]
     bid = create_buses(net, nr_buses=len(net["trafo3w"]),
                        vn_kv=hv_buses.vn_kv.values,
-                       in_service=net.trafo3w.in_service.values)
+                       in_service=net.trafo3w.in_service.values &
+                       (hv_buses.in_service.values | mv_buses.in_service.values | lv_buses.in_service.values))
     net.trafo3w["ad_bus"] = bid
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
