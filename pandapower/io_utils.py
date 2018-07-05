@@ -36,7 +36,7 @@ def dicts_to_pandas(json_dict):
             pd_dict[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
             try:
                 pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
-            except ValueError:
+            except (ValueError, TypeError):
                 logger.debug('failed setting int64 index for %s' % k)
                 pass
         else:
@@ -162,7 +162,7 @@ def pp_hook(d):
             df = pd.read_json(obj, **d)
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
-            except ValueError:
+            except (ValueError, TypeError):
                 logger.debug("failed setting int64 index")
                 pass
             return df
