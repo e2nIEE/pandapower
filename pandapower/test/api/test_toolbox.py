@@ -345,7 +345,7 @@ def test_create_replacement_switch_for_branch():
     bus2 = pp.create_bus(net, vn_kv=0.4)
     bus3 = pp.create_bus(net, vn_kv=0.4)
 
-    ext_grid0 = pp.create_ext_grid(net, bus0, vm_pu=0.4)
+    pp.create_ext_grid(net, bus0, vm_pu=0.4)
 
     line0 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
     line1 = pp.create_line(net, bus2, bus3, length_km=1, std_type="NAYY 4x50 SE")
@@ -379,8 +379,8 @@ def test_create_replacement_switch_for_branch():
     assert ~net.switch.closed.at[2]
     assert ~net.switch.closed.at[3]
 
-
-def test_replace_zero_branches_with_switches():
+@pytest.fixture
+def net():
     net = pp.create_empty_network()
 
     bus0 = pp.create_bus(net, vn_kv=0.4)
@@ -402,64 +402,71 @@ def test_replace_zero_branches_with_switches():
     impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
     impedance1 = pp.create_impedance(net, bus4, bus5, 0, 0, sn_kva=1e5)
     impedance2 = pp.create_impedance(net, bus5, bus6, 0, 0, rtf_pu=0.1, sn_kva=1e5)
+    return net
 
-    # test for line with zero length
-    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=True,
-                                           zero_impedance=False, in_service_only=True)
 
+def test_for_line_with_zero_length(net):
+    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_impedance=False)
     assert 'REPLACEMENT_line_0' in net.switch.name.values
     assert ~net.line.in_service.at[0]
+    assert 'REPLACEMENT_line_2' not in net.switch.name.values
 
-    # test for in_service_only
-    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=True,
-                                           zero_impedance=False, in_service_only=True)
 
+def test_drop(net):
+    tb.replace_zero_branches_with_switches(net, elements=('line', 'impedance'), drop_affected=True)
+    assert len(net.line) == 1
+    assert len(net.impedance) == 2
+
+
+def test_in_service_only(net):
+    tb.replace_zero_branches_with_switches(net, elements=('line',))
     assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 1
-
-    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=True,
-                                           zero_impedance=False, in_service_only=False)
-
+    tb.replace_zero_branches_with_switches(net, elements=('line',), in_service_only=False)
     assert len(net.switch.loc[net.switch.name == 'REPLACEMENT_line_0']) == 2
-    assert ~net.switch.closed.at[1]
+    assert ~net.switch.closed.at[2]
 
+
+def test_line_with_zero_impediance(net):
     # test for line with zero impedance
-    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=False,
-                                           zero_impedance=True, in_service_only=True)
-
+    tb.replace_zero_branches_with_switches(net, elements=('line',), zero_length=False)
     assert 'REPLACEMENT_line_1' not in net.switch.name.values
     assert 'REPLACEMENT_line_2' in net.switch.name.values
 
-    # test for impedance
+
+def test_impediance(net):
     tb.replace_zero_branches_with_switches(net, elements=('impedance',), zero_length=False,
                                            zero_impedance=True, in_service_only=True)
-
     assert 'REPLACEMENT_impedance_0' not in net.switch.name.values
     assert 'REPLACEMENT_impedance_1' in net.switch.name.values
     assert 'REPLACEMENT_impedance_2' not in net.switch.name.values
 
-    # now run everything altogether
-    net.switch.drop(net.switch.index, inplace=True)
-    net.line.loc[:, 'in_service'] = True
-    net.impedance.loc[:, 'in_service'] = True
 
+def test_all(net):
     tb.replace_zero_branches_with_switches(net, elements=('impedance', 'line'), zero_length=True,
                                            zero_impedance=True, in_service_only=True)
-
     assert 'REPLACEMENT_impedance_1' in net.switch.name.values
     assert 'REPLACEMENT_line_0' in net.switch.name.values
     assert 'REPLACEMENT_line_2' in net.switch.name.values
-
     assert ~net.line.in_service.at[0]
     assert net.line.in_service.at[1]
     assert ~net.line.in_service.at[2]
-
     assert 'REPLACEMENT_impedance_0' not in net.switch.name.values
     assert 'REPLACEMENT_impedance_2' not in net.switch.name.values
     assert 'REPLACEMENT_line_1' not in net.switch.name.values
-
     assert net.impedance.in_service.at[0]
     assert ~net.impedance.in_service.at[1]
     assert net.impedance.in_service.at[2]
+
+
+def test_get_element_indices():
+    net = nw.example_multivoltage()
+    idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+    idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+    idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+    assert [32, 33, 34] == idx1
+    assert ([32, 33, 34, 35] == idx2[0]).all()
+    assert ([0, 1, 2, 3, 4, 5] == idx2[1]).all()
+    assert [34, 11] == idx3
 
 
 def test_next_bus():
@@ -572,6 +579,36 @@ def test_drop_elements_at_buses():
     assert len(net.line) == 0
     assert len(net.trafo) == 0
     assert len(net.trafo3w) == 0
+
+
+def test_impedance_line_replacement():
+    # create test net
+    net1 = pp.create_empty_network(sn_kva=1.1e3)
+    pp.create_buses(net1, 2, 10)
+    pp.create_ext_grid(net1, 0)
+    pp.create_impedance(net1, 0, 1, 0.1, 0.1, 8.7)
+    pp.create_load(net1, 1, 7, 2)
+
+    # validate loadflow results
+    pp.runpp(net1)
+
+    net2 = copy.deepcopy(net1)
+    pp.replace_impedance_by_line(net2)
+
+    pp.runpp(net2)
+
+    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})  # Todo: exclude_elms
+    cols = ["p_from_kw", "q_from_kvar", "p_to_kw", "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
+            "i_to_ka"]
+    assert np.allclose(net1.res_impedance[cols].values, net2.res_line[cols].values)
+
+    net3 = copy.deepcopy(net2)
+    pp.replace_line_by_impedance(net3)
+
+    pp.runpp(net3)
+
+    assert pp.nets_equal(net2, net3, exclude_elms={"line", "impedance"})
+    assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
 if __name__ == "__main__":

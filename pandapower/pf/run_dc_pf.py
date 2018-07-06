@@ -22,7 +22,6 @@ def _run_dc_pf(ppci):
     t0 = time()
     baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _ = _get_pf_variables_from_ppci(ppci)
 
-    ppci["bus"][:, VM] = 1.0
     ## initial state
     Va0 = bus[:, VA] * (pi / 180.)
 
@@ -40,7 +39,6 @@ def _run_dc_pf(ppci):
     branch[:, [QF, QT]] = zeros((branch.shape[0], 2))
     branch[:, PF] = (Bf * Va + Pfinj) * baseMVA
     branch[:, PT] = -branch[:, PF]
-    bus[:, VM] = ones(bus.shape[0])
     bus[:, VA] = Va * (180. / pi)
     ## update Pg for slack generator (1st gen at ref bus)
     ## (note: other gens at ref bus are accounted for in Pbus)

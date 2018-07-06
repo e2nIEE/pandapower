@@ -14,6 +14,13 @@ Case 4gs
 
 ---------------------------
 
+Case 5
+--------------
+
+.. autofunction:: pandapower.networks.case5
+
+---------------------------
+
 Case 6ww
 --------------
 
@@ -47,6 +54,13 @@ Case 30
 --------
 
 .. autofunction:: pandapower.networks.case30
+
+---------------------------
+
+Case case_ieee30
+--------
+
+.. autofunction:: pandapower.networks.case_ieee30
 
 ---------------------------
 
@@ -87,6 +101,13 @@ Case 145
 ------------------------------------
 
 .. autofunction:: pandapower.networks.case145
+
+---------------------------
+
+Case case_illinois200
+------------------------------------
+
+.. autofunction:: pandapower.networks.case_illinois200
 
 ---------------------------
 

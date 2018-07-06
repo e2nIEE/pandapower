@@ -161,5 +161,9 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
         ppc['obj'] = result['f']
         ppc['internal_gencost'] = result['gencost']
 
+    if "iterations" in result:
+        ppc["iterations"] = result["iterations"]
+        
+
     result = ppc
     return result
