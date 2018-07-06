@@ -125,9 +125,9 @@ def _calc_line_parameter(net, ppc):
     tb = bus_lookup[line["to_bus"].values]
     length = line["length_km"].values
     parallel = line["parallel"].values
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / ppc["baseMVA"]
     if mode == 'pf_3ph':
-        baseR = np.square(ppc["bus"][fb, BASE_KV]) / (3*net.sn_kva) * 1e3
+        baseR = np.square(ppc["bus"][fb, BASE_KV]/np.sqrt(3)) /ppc["baseMVA"]
     t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
     t[:, 0] = fb
@@ -228,7 +228,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_kva)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
@@ -237,11 +237,11 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+    r, x = _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_kva)
     if mode == "sc":
         y = 0
         if trafo_df.equals(net.trafo):
@@ -253,7 +253,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
             r *= kt
             x *= kt
     else:
-        y = _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+        y = _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, net.sn_kva)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":

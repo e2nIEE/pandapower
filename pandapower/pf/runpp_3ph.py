@@ -276,7 +276,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================
-        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])*net.sn_kva
+        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])*ppci0["baseMVA"]
         V012_it = V012_new
         Vabc_it = sequence_to_phase(V012_it)
         count += 1
@@ -388,25 +388,26 @@ def _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus):
 #
 # @author: alepros
 # =============================================================================
-def _copy_bus_results_to_results_table(net, ppci0, V012_it, I012_it, Y0_pu, Y1_pu):
+def _copy_bus_results_to_results_table(net, ppci0, V012_it, Y0_pu, Y1_pu):
     kVA_base = net.sn_kva
     V_base = net["bus"].get("vn_kv").get(net["bus"].get("vn_kv").first_valid_index())
 
     # Results related to pfsoln
     V_base_res = V_base / np.sqrt(3)
-    I_base_res = kVA_base / V_base_res
-    ppci0["bus"][0, 4] = 0
-    ppci0["bus"][0, 5] = 0
+#    I_base_res = kVA_base / V_base_res
+    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+    ppci0["bus"][ref, GS] = 0
+    ppci0["bus"][ref, BS] = 0
     Y0_pu, Y0_f, Y0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
 
     # Y0_pu = Y0_pu.todense()
     I012_new = combine_X012(I0_from_V012(V012_it, Y0_pu),
                             I1_from_V012(V012_it, Y1_pu),
                             I2_from_V012(V012_it, Y1_pu))
-    I_abc_new = sequence_to_phase(I012_it)
+    I_abc_new = sequence_to_phase(I012_new)
     V_abc_new = sequence_to_phase(V012_it)
     Sabc_new = S_from_VI(V_abc_new, I_abc_new) * kVA_base
-    S012_it = phase_to_sequence(Sabc_new)
+#    S012_it = phase_to_sequence(Sabc_new)
 
     bus = ppci0["bus"]
     gen = ppci0["gen"]

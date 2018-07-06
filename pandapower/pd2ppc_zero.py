@@ -262,9 +262,9 @@ def _add_line_sc_impedance_zero(net, ppc):
 
     fb = bus_lookup[line["from_bus"].values]
     tb = bus_lookup[line["to_bus"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / ppc["baseMVA"]
     if mode == 'pf_3ph':
-        baseR = np.square(ppc["bus"][fb, BASE_KV]/np.sqrt(3)) / net.sn_kva * 1e3
+        baseR = np.square(ppc["bus"][fb, BASE_KV]/np.sqrt(3)) / ppc["baseMVA"] 
     f, t = branch_lookup["line"]
     # line zero sequence impedance
     ppc["branch"][f:t, F_BUS] = fb
