@@ -33,7 +33,7 @@ import pandas as pd
 import scipy as sp
 import six
 
-from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
 
 try:
@@ -281,10 +281,11 @@ def _check_connectivity(ppc):
     :param ppc: pypower case file
     :return:
     """
-    nobranch = ppc['branch'].shape[0]
+    br_status=ppc['branch'][:, BR_STATUS]==True
+    nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
 
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
