@@ -58,7 +58,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         **calc_z_ohm** (boolean, False) - True: The function calculates magnitude of the impedance in Ohm
             and adds it as a weight to the graph
             False: All impedance weights are set to zero
-            
+
      OUTPUT:
         **mg** - Returns the required NetworkX graph
 
