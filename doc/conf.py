@@ -83,7 +83,7 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
                   'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
                   'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
-                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm', 'matplotlib.backend_bases']
+                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm', 'matplotlib.backend_bases', 'numpy.core.umath']
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 
