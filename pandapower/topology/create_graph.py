@@ -50,11 +50,11 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         **multi** (boolean, True) - True: The function generates a NetworkX MultiGraph, which allows
             multiple parallel edges between nodes
             False: NetworkX Graph (no multiple parallel edges)
-            
+
         **calc_r_ohm** (boolean, False) - True: The function calculates absolute resistance in Ohm
             and adds it as a weight to the graph
             False: All resistance weights are set to zero
-            
+
         **calc_z_ohm** (boolean, False) - True: The function calculates magnitude of the impedance in Ohm
             and adds it as a weight to the graph
             False: All impedance weights are set to zero
