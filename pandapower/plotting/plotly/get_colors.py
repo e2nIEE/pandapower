@@ -71,6 +71,6 @@ def get_plotly_cmap(values, cmap_name='jet', cmin=None, cmax=None):
         cmin = values.min()
     if cmax is None:
         cmax = values.max()
-    norm = colors.Normalize(vmin=cmin, vmax=cmax)
+    norm = mplc.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.
     return ['rgb({0},{1},{2})'.format(r, g, b) for r, g, b in bus_fill_colors_rgba]

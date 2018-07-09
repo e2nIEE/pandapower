@@ -159,8 +159,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
-    infofunc_subset = [infofunc[idx] for idx in range(len(net.bus)) if net.bus.index[idx] in bus_plot_index]
-    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc_subset
+    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
@@ -624,3 +623,10 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         from plotly.offline import plot as plot
 
     plot(fig, filename=filename)
+
+if __name__ == "__main__":
+    from pandapower.plotting.plotly import simple_plotly
+    from pandapower.networks import mv_oberrhein
+
+    net = mv_oberrhein()
+    simple_plotly(net)
