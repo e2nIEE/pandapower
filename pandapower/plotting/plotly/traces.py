@@ -154,17 +154,13 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                      marker=dict(color=color, size=size, symbol=patch_type))
 
     buses = net.bus.index.tolist() if buses is None else list(buses)
-
-    buses2plot = net.bus.index.isin(buses)
-
-    buses_with_geodata = net.bus.index.isin(net.bus_geodata.index)
-    buses2plot = buses2plot & buses_with_geodata
-    bus_plot_index = net.bus.index[buses2plot]
+    bus_plot_index = sorted(list(set(buses) & set(net.bus_geodata.index)))
 
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
 
-    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc
+    infofunc_subset = [infofunc[idx] for idx in range(len(net.bus)) if net.bus.index[idx] in bus_plot_index]
+    bus_trace['text'] = net.bus.loc[bus_plot_index, 'name'] if infofunc is None else infofunc_subset
 
     if legendgroup:
         bus_trace['legendgroup'] = legendgroup
@@ -394,7 +390,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             line_color = color
             line_trace = dict(type='scatter',
                               text=[], hoverinfo='text', mode='lines', name='disconnected lines',
-                              line=Line(width=width / 2, color='grey', dash='dot'))
+                              line=Line(width=width / 2, color='grey'))
 
             line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
 

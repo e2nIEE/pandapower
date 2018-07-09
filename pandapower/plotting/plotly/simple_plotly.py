@@ -147,7 +147,6 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                    color=line_color, width=line_width,
                                    use_line_geodata=use_line_geodata, infofunc=hoverinfo)
 
-
     # ----- Trafos ------
     hoverinfo = get_hoverinfo(net, element="trafo")
     trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5, infofunc=hoverinfo,
