@@ -57,7 +57,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     if sub_index is not None:
         sub_index = list(sub_index)
         # pick out sub_index from 0-based hoverinfo
-        hoverinfo = [hoverinfo[idx] for idx in range(len(net.bus)) if net.bus.index[idx] in sub_index]
+        hoverinfo = [hoverinfo[idx] for idx in range(len(net[element])) if net[element].index[idx] in sub_index]
     return hoverinfo
 
 
