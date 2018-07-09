@@ -433,7 +433,7 @@ def test_line_with_zero_impediance(net):
     assert 'REPLACEMENT_line_2' in net.switch.name.values
 
 
-def test_impediance(net):
+def test_impedance(net):
     tb.replace_zero_branches_with_switches(net, elements=('impedance',), zero_length=False,
                                            zero_impedance=True, in_service_only=True)
     assert 'REPLACEMENT_impedance_0' not in net.switch.name.values
@@ -555,22 +555,22 @@ def test_drop_elements_at_buses():
     switch3 = pp.create_switch(net, bus=bus3, element=line1, et='l')
     # bus id needs to be entered as iterable, not done in the function
     tb.drop_elements_at_buses(net, [bus5])
-    assert len(net.switch) == 3  # we keep bus-bus switches
+    assert len(net.switch) == 2
     assert len(net.trafo) == 1
     assert len(net.trafo3w) == 1
     assert len(net.line) == 1
     tb.drop_elements_at_buses(net, [bus4])
-    assert len(net.switch) == 2
+    assert len(net.switch) == 1
     assert len(net.line) == 0
     assert len(net.trafo) == 1
     assert len(net.trafo3w) == 1
     tb.drop_elements_at_buses(net, [bus3])
-    assert len(net.switch) == 1
+    assert len(net.switch) == 0
     assert len(net.line) == 0
     assert len(net.trafo) == 0
     assert len(net.trafo3w) == 1
     tb.drop_elements_at_buses(net, [bus2])
-    assert len(net.switch) == 1
+    assert len(net.switch) == 0
     assert len(net.line) == 0
     assert len(net.trafo) == 0
     assert len(net.trafo3w) == 0

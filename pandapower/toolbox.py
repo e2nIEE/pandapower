@@ -1053,7 +1053,8 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     ebts = set()
     if bus_elements:
         ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
-                    ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus")])
+                    ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus"),
+                    ("storage", "bus")])
     if branch_elements:
         ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                     ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
@@ -1078,10 +1079,10 @@ def drop_buses(net, buses, drop_elements=True):
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
-    drop_switches_at_buses(net, buses)
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     if drop_elements:
+        drop_switches_at_buses(net, buses)
         drop_elements_at_buses(net, buses)
 
 
@@ -1096,7 +1097,11 @@ def drop_elements_at_buses(net, buses):
     drop elements connected to given buses
     """
     for element, column in element_bus_tuples():
-        if any(net[element][column].isin(buses)):
+        if element == "switch":
+            n_switch = net.switch.shape[0]
+            drop_switches_at_buses(net, buses)
+            logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
+        elif any(net[element][column].isin(buses)):
             eid = net[element][net[element][column].isin(buses)].index
             if element == 'line':
                 drop_lines(net, eid)
