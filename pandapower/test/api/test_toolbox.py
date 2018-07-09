@@ -458,6 +458,17 @@ def test_all(net):
     assert net.impedance.in_service.at[2]
 
 
+def test_get_element_indices():
+    net = nw.example_multivoltage()
+    idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+    idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+    idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+    assert [32, 33, 34] == idx1
+    assert ([32, 33, 34, 35] == idx2[0]).all()
+    assert ([0, 1, 2, 3, 4, 5] == idx2[1]).all()
+    assert [34, 11] == idx3
+
+
 def test_next_bus():
     net = pp.create_empty_network()
 
@@ -568,6 +579,36 @@ def test_drop_elements_at_buses():
     assert len(net.line) == 0
     assert len(net.trafo) == 0
     assert len(net.trafo3w) == 0
+
+
+def test_impedance_line_replacement():
+    # create test net
+    net1 = pp.create_empty_network(sn_kva=1.1e3)
+    pp.create_buses(net1, 2, 10)
+    pp.create_ext_grid(net1, 0)
+    pp.create_impedance(net1, 0, 1, 0.1, 0.1, 8.7)
+    pp.create_load(net1, 1, 7, 2)
+
+    # validate loadflow results
+    pp.runpp(net1)
+
+    net2 = copy.deepcopy(net1)
+    pp.replace_impedance_by_line(net2)
+
+    pp.runpp(net2)
+
+    assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})  # Todo: exclude_elms
+    cols = ["p_from_kw", "q_from_kvar", "p_to_kw", "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
+            "i_to_ka"]
+    assert np.allclose(net1.res_impedance[cols].values, net2.res_line[cols].values)
+
+    net3 = copy.deepcopy(net2)
+    pp.replace_line_by_impedance(net3)
+
+    pp.runpp(net3)
+
+    assert pp.nets_equal(net2, net3, exclude_elms={"line", "impedance"})
+    assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
 if __name__ == "__main__":
