@@ -13,22 +13,18 @@ import matplotlib.colors as mplc
 
 import numpy as np
 
-color_names = ['blue', 'green', 'red', 'purple', 'yellow', 'cyan']
-
 try:
     import seaborn
-    colors_dict = None
 except ImportError:
-    colors_dict = dict(zip(color_names, color_names))
+    pass
 
 
 def get_plotly_color(color_string):
-    global colors_dict
-    if colors_dict is None:
-        # initialize only once
-        colors_dict = dict(zip(color_names, [_to_plotly_color(mplc.to_rgba(c)) for c
-                                             in mpl.rcParams['axes.prop_cycle'].by_key()['color']]))
-    return color_string if colors_dict.get(color_string) is None else colors_dict.get(color_string)
+    try:
+        converted = _to_plotly_color(mplc.to_rgba(color_string))
+        return converted
+    except ValueError:
+        return None
 
 
 def get_plotly_color_palette(n):
@@ -78,3 +74,9 @@ def get_plotly_cmap(values, cmap_name='jet', cmin=None, cmax=None):
     norm = colors.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.
     return ['rgb({0},{1},{2})'.format(r, g, b) for r, g, b in bus_fill_colors_rgba]
+
+
+if __name__ == "__main__":
+    print(get_plotly_color("green"))
+    print(get_plotly_color("#FF0000"))
+    print(get_plotly_color("hallo!"))
