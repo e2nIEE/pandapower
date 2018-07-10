@@ -85,7 +85,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
             line_edge_data['Z_ohm']=np.sqrt((net.line.r_ohm_per_km * net.line.length_km) ** 2 + (net.line.x_ohm_per_km * net.line.length_km) ** 2)
 
         for line in line_edge_data.itertuples():
-            weights={'weight': line.length_km, 'key': line.Index, 'type': 'l', 'path': 1}
+            weights={'weight': line.length_km, 'key_tmp': line.Index, 'type': 'l', 'path': 1}
             if calc_r_ohm:
                 weights['R_ohm']=line.R_ohm
             if calc_z_ohm:
@@ -109,7 +109,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
             imp_edge_data['Z_ohm']=np.sqrt(imp_edge_data.rft_pu ** 2 + imp_edge_data.xft_pu ** 2) / base_Z
 
         for imp in imp_edge_data.itertuples():
-            weights={'weight': 0, 'key': imp.Index, 'type': 'i', 'path': 1}
+            weights={'weight': 0, 'key_tmp': imp.Index, 'type': 'i', 'path': 1}
             if calc_r_ohm:
                 weights['R_ohm']=imp.R_ohm
             if calc_z_ohm:
@@ -130,7 +130,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
             trafo_edge_data['Z_ohm']=(trafo_edge_data.vsc_percent/100)  / base_Z
 
         for trafo in trafo_edge_data.itertuples():
-            weights={'weight': 0, 'key': trafo.Index, 'type': 't'}
+            weights={'weight': 0, 'key_tmp': trafo.Index, 'type': 't'}
             if calc_r_ohm:
                 weights['R_ohm']=trafo.R_ohm
             if calc_z_ohm:
@@ -154,9 +154,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
             trafo3w_edge_data['Z_lv_ohm']= (trafo3w_edge_data.vsc_lv_percent/100) / base_Z_lv
 
         for trafo3w in trafo3w_edge_data.itertuples():
-            weights_hv={'weight': 0, 'key': trafo3w.Index, 'type': 't3'}
-            weights_mv={'weight': 0, 'key': trafo3w.Index, 'type': 't3'}
-            weights_lv={'weight': 0, 'key': trafo3w.Index, 'type': 't3'}
+            weights_hv={'weight': 0, 'key_tmp': trafo3w.Index, 'type': 't3'}
+            weights_mv={'weight': 0, 'key_tmp': trafo3w.Index, 'type': 't3'}
+            weights_lv={'weight': 0, 'key_tmp': trafo3w.Index, 'type': 't3'}
             if calc_r_ohm:
                 weights_hv['R_ohm']=trafo3w.R_hv_ohm
                 weights_mv['R_ohm']=trafo3w.R_mv_ohm
@@ -178,7 +178,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         bs = net.switch[net.switch.et == "b"]
 
     for switch in bs.itertuples():
-        weights={"weight": 0, "key": switch.Index, "type": "s"}
+        weights={"weight": 0, "key_tmp": switch.Index, "type": "s"}
         if calc_r_ohm:
             weights['R_ohm']=0
         if calc_z_ohm:
