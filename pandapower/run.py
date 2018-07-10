@@ -92,7 +92,7 @@ def _passed_runpp_parameters(local_parameters):
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, trafo3w_losses="hv", vm_start_pu=1.0, **kwargs):
+          delta_q=0, trafo3w_losses="hv", vm_start_pu=1.0, V_debug=False, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -257,7 +257,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    vm_start_pu=vm_start_pu)
+                    vm_start_pu=vm_start_pu, V_debug=V_debug)
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
