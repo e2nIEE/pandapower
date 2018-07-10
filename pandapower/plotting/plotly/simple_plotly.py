@@ -18,7 +18,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def get_hoverinfo(net, element, precision=3):
+def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
         load_str, sgen_str = [], []
         for l in [net.load.loc[net.load.bus == b, "p_kw"].sum() for b in net.bus.index]:
@@ -53,8 +53,11 @@ def get_hoverinfo(net, element, precision=3):
                 'v_m = ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
                 'v_a = ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
     else:
-        hoverinfo = None
-
+        return None
+    if sub_index is not None:
+        sub_index = list(sub_index)
+        # pick out sub_index from 0-based hoverinfo
+        hoverinfo = [hoverinfo[idx] for idx in range(len(net[element])) if net[element].index[idx] in sub_index]
     return hoverinfo
 
 
@@ -146,7 +149,6 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     line_traces = create_line_trace(net, net.line.index, respect_switches=respect_switches,
                                    color=line_color, width=line_width,
                                    use_line_geodata=use_line_geodata, infofunc=hoverinfo)
-
 
     # ----- Trafos ------
     hoverinfo = get_hoverinfo(net, element="trafo")
