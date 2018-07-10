@@ -360,10 +360,15 @@ def _calc_tap_from_dataframe(net, trafo_df):
             trafo_shift[tap_complex] += (arctan(direction * du * sin(tp_angles) /
                                                 (u1 + du * cos(tp_angles))))
         if np.any(phase_shifters):
-            #trafo_shift[phase_shifters] += (direction * tp_diff[phase_shifters] *
-            #                                trafo_df["tp_st_degree"].values[phase_shifters])
-            trafo_shift[phase_shifters] += (direction * 2* np.rad2deg(np.arcsin(tp_diff[phase_shifters] *
-                                            trafo_df["tp_st_percent"].values[phase_shifters]/100/2)))
+            degree_is_set = np.nan_to_num(trafo_df["tp_st_degree"].values[phase_shifters])!= 0
+            percent_is_set = np.nan_to_num(trafo_df["tp_st_percent"].values[phase_shifters]) !=0
+            if any( degree_is_set & percent_is_set):
+                raise UserWarning("Both tp_st_degree and tp_st_percent set for ideal phase shifter")
+            trafo_shift[phase_shifters] += np.where(
+                (degree_is_set),
+                (direction * tp_diff[phase_shifters] * trafo_df["tp_st_degree"].values[phase_shifters]),
+                (direction * 2 * np.rad2deg(np.arcsin(tp_diff[phase_shifters] * trafo_df["tp_st_percent"].values[phase_shifters]/100/2)))
+                )
 
     return vnh, vnl, trafo_shift
 
