@@ -154,12 +154,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                      marker=dict(color=color, size=size, symbol=patch_type))
 
     buses = net.bus.index.tolist() if buses is None else list(buses)
-
-    buses2plot = net.bus.index.isin(buses)
-
-    buses_with_geodata = net.bus.index.isin(net.bus_geodata.index)
-    buses2plot = buses2plot & buses_with_geodata
-    bus_plot_index = net.bus.index[buses2plot]
+    bus_plot_index = sorted(list(set(buses) & set(net.bus_geodata.index)))
 
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
@@ -328,10 +323,15 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     line_traces = []
     for col_i, (idx, line) in enumerate(lines2plot.iterrows()):
+        line_color = color
+        line_info = line['name']
         if cmap is not None:
-            line_color = cmap_lines[col_i]
-        else:
-            line_color = color
+            try:
+                line_color = cmap_lines[col_i]
+                line_info = line['name'] if infofunc is None else infofunc[col_i]
+            except IndexError:
+                logger.warning("No color and info for line %i available" % col_i)
+
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
                           line=Line(width=width, color=color))
 
@@ -339,7 +339,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
         line_trace['line']['color'] = line_color
 
-        line_trace['text'] = line['name'] if infofunc is None else infofunc[col_i]
+        line_trace['text'] = line_info
 
         line_traces.append(line_trace)
 
@@ -389,7 +389,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             line_color = color
             line_trace = dict(type='scatter',
                               text=[], hoverinfo='text', mode='lines', name='disconnected lines',
-                              line=Line(width=width / 2, color='grey', dash='dot'))
+                              line=Line(width=width / 2, color='grey'))
 
             line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
 
@@ -623,3 +623,10 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         from plotly.offline import plot as plot
 
     plot(fig, filename=filename)
+
+if __name__ == "__main__":
+    from pandapower.plotting.plotly import simple_plotly
+    from pandapower.networks import mv_oberrhein
+
+    net = mv_oberrhein()
+    simple_plotly(net)

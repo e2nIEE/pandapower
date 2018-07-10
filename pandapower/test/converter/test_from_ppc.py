@@ -19,8 +19,8 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
-max_diff_values1 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3, "q_branch_kvar": 1e-3,
-                    "p_gen_kw": 1e-3, "q_gen_kvar": 1e-3}
+max_diff_values1 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_kw": 1e-3,
+                    "branch_q_kvar": 1e-3, "gen_p_kw": 1e-3, "gen_q_kvar": 1e-3}
 
 
 def get_testgrids(name, filename):
@@ -28,19 +28,16 @@ def get_testgrids(name, filename):
     This function return the ppc (or pp net) which is saved in ppc_testgrids.p to validate the
     from_ppc function via validate_from_ppc.
     """
-    pp_path = pp_path = os.path.split(pp.__file__)[0]
+    pp_path = os.path.split(pp.__file__)[0]
     folder = os.path.join(pp_path, 'test', 'converter')
-    if name == "case2_2_by_code":
-        return pp.from_pickle(os.path.join(folder, name + ".p"))
-    else:
-        ppcs = pickle.load(open(os.path.join(folder, filename), "rb"))
-        return ppcs[name]
+    ppcs = pickle.load(open(os.path.join(folder, filename), "rb"))
+    return ppcs[name]
 
 
 def test_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
-    net_by_code = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
+    net_by_code = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
     pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
@@ -55,7 +52,7 @@ def test_from_ppc():
 
 def test_validate_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
-    net = get_testgrids('case2_2_by_code', 'ppc_testgrids.p')
+    net = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 

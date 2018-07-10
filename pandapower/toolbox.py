@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
-from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch
+from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch, \
+    create_line_from_parameters, create_impedance
 from pandapower.topology import unsupplied_buses
 from pandapower.run import runpp
 from pandapower import __version__
@@ -374,22 +375,24 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def nets_equal(x, y, check_only_results=False, **kwargs):
+def nets_equal(net1, net2, check_only_results=False, exclude_elms=None, **kwargs):
     """
     Compares the DataFrames of two networks. The networks are considered equal
     if they share the same keys and values, except of the
     'et' (elapsed time) entry which differs depending on
     runtime conditions and entries stating with '_'.
     """
-    eq = True
+    eq = isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)
+    exclude_elms = [] if exclude_elms is None else list(exclude_elms)
+    exclude_elms += ["res_" + ex for ex in exclude_elms]
     not_equal = []
 
-    if isinstance(x, pandapowerNet) and isinstance(y, pandapowerNet):
+    if eq:
         # for two networks make sure both have the same keys that do not start with "_"...
-        x_keys = [key for key in x.keys() if not key.startswith("_")]
-        y_keys = [key for key in y.keys() if not key.startswith("_")]
-        key_union = set(x_keys) | set(y_keys)
-        key_difference = set(x_keys) ^ set(y_keys)
+        net1_keys = [key for key in net1.keys() if not (key.startswith("_") or key in exclude_elms)]
+        net2_keys = [key for key in net2.keys() if not (key.startswith("_") or key in exclude_elms)]
+        keys_to_check = set(net1_keys) & set(net2_keys)
+        key_difference = set(net1_keys) ^ set(net2_keys)
 
         if len(key_difference) > 0:
             logger.info("Networks entries mismatch at: %s" % key_difference)
@@ -397,14 +400,15 @@ def nets_equal(x, y, check_only_results=False, **kwargs):
                 return False
 
         # ... and then iter through the keys, checking for equality for each table
-        for df_name in list(key_union):
+        for df_name in list(keys_to_check):
             # skip 'et' (elapsed time) and entries starting with '_' (internal vars)
             if (df_name != 'et' and not df_name.startswith("_")):
                 if check_only_results and not df_name.startswith("res_"):
                     continue  # skip anything that is not a result table
 
-                if isinstance(x[df_name], pd.DataFrame) and isinstance(y[df_name], pd.DataFrame):
-                    frames_equal = dataframes_equal(x[df_name], y[df_name], **kwargs)
+                if isinstance(net1[df_name], pd.DataFrame) and isinstance(net2[df_name],
+                                                                          pd.DataFrame):
+                    frames_equal = dataframes_equal(net1[df_name], net2[df_name], **kwargs)
                     eq &= frames_equal
 
                     if not frames_equal:
@@ -937,6 +941,10 @@ def create_continuous_bus_index(net, start=0):
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
+    try:
+        net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+    except:
+        pass
 
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
@@ -1034,7 +1042,7 @@ def drop_out_of_service_elements(net):
                 logger.info("dropped %d %s elements!" % (len(drop_idx), element))
 
 
-def element_bus_tuples(bus_elements=True, branch_elements=True):
+def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
     """
     Utility function
     Provides the tuples of elements and corresponding columns for buses they are connected to
@@ -1042,66 +1050,58 @@ def element_bus_tuples(bus_elements=True, branch_elements=True):
     :param branch_elements: whether branch elements e.g. line, trafo, ... are included
     :return: set of tuples with element names and column names
     """
-    ebt = set()
+    ebts = set()
     if bus_elements:
-        ebt.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
-                    ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus")])
+        ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
+                    ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus"),
+                    ("storage", "bus")])
     if branch_elements:
-        ebt.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
+        ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                     ("switch", "bus"), ("impedance", "to_bus"), ("trafo", "hv_bus"),
                     ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
                     ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")])
-    return ebt
+    if res_elements:
+        elements_without_res = ["switch", "measurement"]
+        ebts.update([("res_"+ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res])
+    return ebts
 
 
-def pp_elements(bus=True, bus_elements=True, branch_elements=True):
+def pp_elements(bus=True, bus_elements=True, branch_elements=True, res_elements=False):
     """ Returns the list of pandapower elements. """
-    if bus:
-        return set(["bus"] + [el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
-    else:
-        return set([el[0] for el in element_bus_tuples(bus_elements, branch_elements)])
+    pp_elms = set(["bus"]) if bus else set()
+    pp_elms |= set([el[0] for el in element_bus_tuples(
+        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
+    return pp_elms
 
 
 def drop_buses(net, buses, drop_elements=True):
     """
-    Drops specified buses, their bus_geodata and by default safely drops all elements connected to
+    Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
-    # drop busbus switches
-    i = net["switch"][((net["switch"]["element"].isin(buses)) |
-                       (net["switch"]["bus"].isin(buses))) & (net["switch"]["et"] == "b")].index
-    net["switch"].drop(i, inplace=True)
-
-    # drop buses and their geodata
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
-#    logger.info('dropped %d buses: %s' % (len(buses), buses))
-
     if drop_elements:
-        for element, column in element_bus_tuples():
-            if any(net[element][column].isin(buses)):
-                eid = net[element][net[element][column].isin(buses)].index
-                if element == 'line':
-                    drop_lines(net, eid)
-                elif element == 'trafo' or element == 'trafo3w':
-                    drop_trafos(net, eid, table=element)
-                else:
-                    net[element].drop(eid, inplace=True)
-#                    logger.info("dropped %s elements: %d" % (element, len(eid)))
+        drop_switches_at_buses(net, buses)
+        drop_elements_at_buses(net, buses)
+
+
+def drop_switches_at_buses(net, buses):
+    s = net["switch"]
+    mask = (s["bus"].isin(buses)) | ((s["element"].isin(buses)) & (s["et"] == "b"))
+    net["switch"] = net["switch"].loc[~mask]
 
 
 def drop_elements_at_buses(net, buses):
     """
-    drop elements connected to certain buses
+    drop elements connected to given buses
     """
-    # If there is a bus1 -bus2 switch, this will delete the switch when we select bus 2.
-    if any(net['switch']['element'].isin(buses)):
-        eid = net['switch'][net['switch']['element'].isin(buses)].index
-        net['switch'].drop(eid, inplace=True)
-
-    # drop elements connected to buses
     for element, column in element_bus_tuples():
-        if any(net[element][column].isin(buses)):
+        if element == "switch":
+            n_switch = net.switch.shape[0]
+            drop_switches_at_buses(net, buses)
+            logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
+        elif any(net[element][column].isin(buses)):
             eid = net[element][net[element][column].isin(buses)].index
             if element == 'line':
                 drop_lines(net, eid)
@@ -1109,7 +1109,7 @@ def drop_elements_at_buses(net, buses):
                 drop_trafos(net, eid, table=element)
             else:
                 net[element].drop(eid, inplace=True)
-                logger.info("dropped %s elements: %d" % (element, len(eid)))
+            logger.info("dropped %s elements: %d" % (element, len(eid)))
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -1135,11 +1135,11 @@ def drop_lines(net, lines):
     Deletes all lines and their geodata in the given list of indices and removes
     any switches connected to it.
     """
-    # drop any switches
+    # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
     net["switch"].drop(i, inplace=True)
 
-    # drop the lines+geodata
+    # drop lines and geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     logger.info("dropped %d lines" % len(lines))
@@ -1371,6 +1371,49 @@ def get_element_index(net, element, name, exact_match=True):
         return idx[0]
     else:
         return net[element][net[element]["name"].str.contains(name)].index
+
+
+def get_element_indices(net, element, name, exact_match=True):
+    """
+    Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper
+    function of get_element_index()
+
+    INPUT:
+      **net** - pandapower network
+
+      **element** (str or iterable of strings) - Element table to get indices from ("line", "bus",
+            "trafo" etc.)
+
+      **name** (str or iterable of strings) - Name of the element to match.
+
+    OPTIONAL:
+      **exact_match** (boolean, True) - True: Expects exactly one match, raises
+                                                UserWarning otherwise.
+                                        False: returns all indices containing the name
+
+    OUTPUT:
+      **index** (list) - List of the indices of matching element(s).
+
+    EXAMPLE:
+        import pandapower.networks as pn
+        import pandapower as pp
+        net = pn.example_multivoltage()
+        idx1 = pp.get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        idx2 = pp.get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
+        idx3 = pp.get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
+    """
+    if isinstance(element, str) and isinstance(name, str):
+        element = [element]
+        name = [name]
+    else:
+        element = element if not isinstance(element, str) else [element]*len(name)
+        name = name if not isinstance(name, str) else [name]*len(element)
+    if len(element) != len(name):
+        raise ValueError("'element' and 'name' must have the same length.")
+    idx = []
+    for elm, nam in zip(element, name):
+        idx += [get_element_index(net, elm, nam, exact_match=exact_match)]
+    return idx
 
 
 def next_bus(net, bus, element_id, et='line', **kwargs):
@@ -1720,13 +1763,14 @@ def create_replacement_switch_for_branch(net, element, idx):
                         type='CB')
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element, idx))
+    return sid
 
 
 def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                         zero_length=True, zero_impedance=True, in_service_only=True,
                                         min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
                                         min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0):
+                                        min_xtf_pu=0, drop_affected=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
@@ -1736,6 +1780,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
     :param zero_length: whether zero length lines will be affected
     :param zero_impedance: whether zero impedance branches will be affected
     :param in_service_only: whether the branches that are not in service will be affected
+    :param drop_affected: wheter the affected branch elements are dropped
     :param min_length_km: threshhold for line length for a line to be considered zero line
     :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
     :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
@@ -1751,6 +1796,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         raise TypeError(
             'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
 
+    replaced = dict()
     for elm in elements:
         branch_zero = set()
         if elm == 'line' and zero_length:
@@ -1768,12 +1814,93 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                             (net[elm].rtf_pu <= min_rtf_pu) &
                                             (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
 
-        k = 0
+        affected_elements = set()
         for b in branch_zero:
             if in_service_only and ~net[elm].in_service.at[b]:
                 continue
             create_replacement_switch_for_branch(net, element=elm, idx=b)
             net[elm].loc[b, 'in_service'] = False
-            k += 1
+            affected_elements.add(b)
 
-        logger.info('set %d %ss out of service' % (k, elm))
+        replaced[elm] = net[elm].loc[affected_elements]
+
+        if drop_affected:
+            net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
+            logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+        else:
+            logger.info('set %d %ss out of service' % (len(affected_elements), elm))
+
+    return replaced
+
+
+def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_max=False):
+    """
+    Creates lines by given impedances data, while the impedances are dropped.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **index** (index, None) - Index of all impedances to be replaced. If None, all impedances
+            will be replaced.
+
+        **only_valid_replace** (bool, True) - If True, impedances will only replaced, if a
+            replacement leads to equal power flow results. If False, unsymmetric impedances will
+            be replaced by symmetric lines.
+
+        **sn_as_max** (bool, False) - Flag to set whether sn_kva of impedances should be assumed
+            for max_i_ka of lines.
+    """
+    index = index or net.impedance.index
+    for _, imp in net.impedance.loc[index].iterrows():
+        if imp.rft_pu != imp.rtf_pu or imp.xft_pu != imp.xtf_pu:
+            if only_valid_replace:
+                continue
+            logger.error("impedance differs in from or to bus direction. lines always " +
+                         "parameters always pertain in both direction. only from_bus to " +
+                         "to_bus parameters are considered.")
+        vn = net.bus.vn_kv.at[imp.from_bus]
+        Zni = vn**2/imp.sn_kva*1e3
+        max_i_ka = imp.sn_kva/vn/np.sqrt(3)*1e-3 if sn_as_max else np.nan
+        create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu*Zni,
+                                    imp.xft_pu*Zni, 0, max_i_ka, name=imp.name,
+                                    in_service=imp.in_service)
+    net.impedance.drop(index, inplace=True)
+
+
+def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=True):
+    """
+    Creates impedances by given lines data, while the lines are dropped.
+    INPUT:
+        **net** - pandapower net
+
+    OPTIONAL:
+        **index** (index, None) - Index of all lines to be replaced. If None, all lines
+            will be replaced.
+
+        **sn_kva** (list or array, None) - Values of sn_kva for creating the impedances. If None,
+            the net.sn_kva is assumed
+
+        **only_valid_replace** (bool, True) - If True, lines will only replaced, if a replacement
+            leads to equal power flow results. If False, capacitance and dielectric conductance will
+            be neglected.
+    """
+    index = index or net.line.index
+    sn_kva = sn_kva or net.sn_kva
+    sn_kva = sn_kva if sn_kva != "max_i_ka" else net.line.max_i_ka.loc[index]
+    sn_kva = sn_kva if hasattr(sn_kva, "__iter__") else [sn_kva]*len(index)
+    if len(sn_kva) != len(index):
+        raise ValueError("index and sn_kva must have the same length.")
+    i = 0
+    for idx, line_ in net.line.loc[index].iterrows():
+        if line_.c_nf_per_km or line_.g_us_per_km:
+            if only_valid_replace:
+                continue
+            logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
+                         "converted to impedances, which do not model such parameters.")
+        vn = net.bus.vn_kv.at[line_.from_bus]
+        Zni = vn**2/sn_kva[i]*1e3
+        create_impedance(net, line_.from_bus, line_.to_bus, line_.r_ohm_per_km*line_.length_km/Zni,
+                         line_.x_ohm_per_km*line_.length_km/Zni, sn_kva[i], name=line_.name,
+                         in_service=line_.in_service)
+        i += 1
+    net.line.drop(index, inplace=True)

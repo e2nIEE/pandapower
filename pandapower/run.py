@@ -92,7 +92,7 @@ def _passed_runpp_parameters(local_parameters):
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
           tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, trafo3w_losses="hv", **kwargs):
+          delta_q=0, trafo3w_losses="hv", vm_start_pu=1.0, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -104,7 +104,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
 
             The following algorithms are available:
 
-                - "nr" newton-raphson (pypower implementation with numba accelerations)
+                - "nr" Newton-Raphson (pypower implementation with numba accelerations)
+                - "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
                 - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
                 - "gs" gauss-seidel (pypower implementation)
                 - "fdbx" fast-decoupled (pypower implementation)
@@ -190,8 +191,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
-        
+
         **trafo3w_losses** - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+        
+        **vm_start_pu** (float, 1.0) starting voltage magnitude for "flat" and "dc" initialization modes. Can either be a float or "auto", in which case the voltage is initialized as the mean of all voltage controlled elements.
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
@@ -213,7 +216,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                     np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
-    if algorithm not in ['nr', 'bfsw'] and voltage_depend_loads == True:
+    if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
         logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
                        "loads will be considered as constant power".format(algorithm))
 
@@ -232,7 +235,15 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         init = "dc" if calculate_voltage_angles else "flat"
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
-    default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+        
+    if isinstance(vm_start_pu, str):
+        if vm_start_pu == "auto":
+            vm_start_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
+                          (len(net.ext_grid.vm_pu) + len(net.gen.vm_pu))
+        else:
+            raise ValueError("starting voltage vector is invalid. Set vm_start_pu either to 'auto', a float or an iterable with the length of the bus table.")
+
+    default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
 
@@ -245,7 +256,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
                      recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    vm_start_pu=vm_start_pu)
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)

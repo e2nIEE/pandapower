@@ -16,7 +16,7 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
     example_simple, simple_four_bus_system
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pf.newtonpf import _create_J_without_numba
+from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -327,7 +327,7 @@ def test_isolated_in_service_line():
     # ToDo: Fix this
     net = pp.create_empty_network()
     _, b2, l1 = add_grid_connection(net)
-    b = pp.create_bus(net, vn_kv=135)
+    b = pp.create_bus(net, vn_kv=20.)
     pp.create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l1, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
@@ -752,6 +752,34 @@ def test_add_element_and_init_results():
     pp.create_line(net, from_bus=2, to_bus=3, length_km=1, name="new line" + str(1), std_type="NAYY 4x150 SE")
     pp.runpp(net, init="results")
 
+
+def test_vm_start_pu():
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, vn_kv=0.4)
+    b2 = pp.create_bus(net, vn_kv=0.4)
+    
+    pp.create_ext_grid(net, b1, vm_pu=0.7)
+    pp.create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", index=4)
+    pp.create_load(net, b2, p_kw=10)
+    
+    pp.runpp(net, init="flat", vm_start_pu=1.02)
+    assert net._ppc["iterations"] == 5
+    
+    pp.runpp(net, init="dc", vm_start_pu=0.8)
+    assert net._ppc["iterations"] == 4
+    
+    pp.runpp(net, init="flat", vm_start_pu=[0.75,  0.7])
+    assert net._ppc["iterations"] == 3
+    
+    pp.runpp(net, init="dc", vm_start_pu=[0.75,  0.7])
+    assert net._ppc["iterations"] == 3
+    
+    pp.runpp(net, init="flat", vm_start_pu="auto")
+    assert net._ppc["iterations"] == 3
+    
+    pp.runpp(net, init="dc", vm_start_pu="auto")
+    assert net._ppc["iterations"] == 3
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])

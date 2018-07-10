@@ -44,24 +44,25 @@ def _run_newton_raphson_pf(ppci, options):
     if init == "dc":
         ppci = _run_dc_pf(ppci)
 
-    ppci, success = _nr_ac_pf(ppci, options)
+    ppci, success, iterations = _nr_ac_pf(ppci, options)
 
     ppci["et"] = time() - t0
     ppci["success"] = success
+    ppci["iterations"] = iterations
 
     return ppci
 
 
 def _nr_ac_pf(ppci, options):
     if options["enforce_q_lims"]:
-        ppci, success, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
+        ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
 
     else:
-        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
+        ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
 
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
 
-    return ppci, success
+    return ppci, success, iterations
 
 
 def _get_pf_variables_from_ppci(ppci):
@@ -132,12 +133,12 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
     ## run the newton power  flow
 
-    V, success, _, ppci["internal"]["J"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+    V, success, iterations, ppci["internal"]["J"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
 
     ## update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
 
-    return ppci, success, bus, gen, branch
+    return ppci, success, iterations, bus, gen, branch
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
@@ -148,7 +149,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
     fixedQg = zeros(gen.shape[0])  ## Qg of gens at Q limits
 
     while True:
-        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
+        ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
 
         ## find gens with violated Q constraints
         gen_status = gen[:, GEN_STATUS] > 0
@@ -209,4 +210,4 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[limited[i], [PG, QG]]
             gen[limited[i], GEN_STATUS] = 1  ## and turn gen back on
 
-    return ppci, success, bus, gen, branch
+    return ppci, success, iterations, bus, gen, branch

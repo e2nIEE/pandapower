@@ -18,49 +18,46 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def get_hoverinfo(net, element, precision=3):
-    idx = net[element].index
+def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
-        hoverinfo = ("index = " + net.bus.index.astype(str) + '<br>' +
-                     "name = " + net.bus['name'].astype(str) + '<br>' +
-                     'Vn = ' + net.bus.loc[idx, 'vn_kv'].round(precision).astype(str) + ' kV' + '<br>'
-                     ).tolist()
+        load_str, sgen_str = [], []
+        for l in [net.load.loc[net.load.bus == b, "p_kw"].sum() for b in net.bus.index]:
+            load_str.append("load: {:.0f} kW<br />".format(l) if l != 0. else "")
+        for s in [net.sgen.loc[net.sgen.bus == b, "p_kw"].sum() for b in net.bus.index]:
+            sgen_str.append("static generation: {:.0f} kW<br />".format(s) if s != 0. else "")
+        hoverinfo = (
+                "index = " + net.bus.index.astype(str) + '<br />' +
+                "name = " + net.bus['name'].astype(str) + '<br />' +
+                'v_n = ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' +
+                load_str + sgen_str).tolist()
     elif element == "line":
-        hoverinfo = ("index = " + net.line.index.astype(str) + '<br>'
-                     +
-                     "name = " + net.line['name'].astype(str) + '<br>'
-                     +
-                     'length = ' + net.line.loc[idx, 'length_km'].round(precision).astype(str) + ' km' + '<br>'
-                     +
-                     'R = ' + (net.line.loc[idx, 'length_km']
-                               * net.line.loc[idx, 'r_ohm_per_km']).round(precision).astype(str) + ' Ohm' + '<br>'
-                     +
-                     'X = ' + (net.line.loc[idx, 'length_km']
-                               * net.line.loc[idx, 'x_ohm_per_km']).round(precision).astype(str) + ' Ohm' + '<br>'
-                     ).tolist()
+        hoverinfo = (
+                "index = " + net.line.index.astype(str) + '<br />' +
+                "name = " + net.line['name'].astype(str) + '<br />' +
+                'length = ' + net.line['length_km'].round(precision).astype(str) + ' km' + '<br />' +
+                'R = ' + (net.line['length_km'] * net.line['r_ohm_per_km']).round(precision).astype(str)
+                + ' Ohm' + '<br />'
+                + 'X = ' + (net.line['length_km'] * net.line['x_ohm_per_km']).round(precision).astype(str)
+                + ' Ohm' + '<br />').tolist()
     elif element == "trafo":
-        hoverinfo = ("index = " + net.trafo.index.astype(str) + '<br>'
-                     +
-                     "name = " + net.trafo['name'].astype(str) + '<br>'
-                     +
-                     'Vn hv = ' + net.trafo.loc[idx, 'vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br>'
-                     +
-                     'Vn lv = ' + net.trafo.loc[idx, 'vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br>'
-                     +
-                     'Tap = ' + net.trafo.loc[idx, 'tp_pos'].astype(str) + '<br>'
-                     ).tolist()
+        hoverinfo = (
+                "index = " + net.trafo.index.astype(str) + '<br />' +
+                "name = " + net.trafo['name'].astype(str) + '<br />' +
+                'v_n hv = ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
+                'v_n lv = ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
+                'tap = ' + net.trafo['tp_pos'].astype(str) + '<br />').tolist()
     elif element == "ext_grid":
-        hoverinfo = ("index = " + net.ext_grid.index.astype(str) + '<br>'
-                     +
-                     "name = " + net.ext_grid['name'].astype(str) + '<br>'
-                     +
-                     'Vm = ' + net.ext_grid.loc[idx, 'vm_pu'].round(precision).astype(str) + ' p.u.' + '<br>'
-                     +
-                     'Va = ' + net.ext_grid.loc[idx, 'va_degree'].round(precision).astype(str) + ' °' + '<br>'
-                     ).tolist()
+        hoverinfo = (
+                "index = " + net.ext_grid.index.astype(str) + '<br />' +
+                "name = " + net.ext_grid['name'].astype(str) + '<br />' +
+                'v_m = ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
+                'v_a = ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
     else:
-        hoverinfo = None
-
+        return None
+    if sub_index is not None:
+        sub_index = list(sub_index)
+        # pick out sub_index from 0-based hoverinfo
+        hoverinfo = [hoverinfo[idx] for idx in range(len(net[element])) if net[element].index[idx] in sub_index]
     return hoverinfo
 
 
@@ -152,7 +149,6 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     line_traces = create_line_trace(net, net.line.index, respect_switches=respect_switches,
                                    color=line_color, width=line_width,
                                    use_line_geodata=use_line_geodata, infofunc=hoverinfo)
-
 
     # ----- Trafos ------
     hoverinfo = get_hoverinfo(net, element="trafo")
