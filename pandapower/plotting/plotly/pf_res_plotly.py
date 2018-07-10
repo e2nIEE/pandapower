@@ -91,10 +91,10 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     idx = net.bus.index
     # hoverinfo which contains name and pf results
     precision = 3
-    hoverinfo = (net.bus.loc[idx, 'name'].astype(str) + '<br>' +
-                 'U = ' + net.res_bus.loc[idx, 'vm_pu'].round(precision).astype(str) + ' pu' + '<br>' +
+    hoverinfo = (net.bus.loc[idx, 'name'].astype(str) + '<br />' +
+                 'U = ' + net.res_bus.loc[idx, 'vm_pu'].round(precision).astype(str) + ' pu' + '<br />' +
                  'U = ' + (net.res_bus.loc[idx, 'vm_pu'].round(precision) * net.bus.loc[idx, 'vn_kv'].round(2)).astype(
-                str) + ' kV' + '<br>' +
+                str) + ' kV' + '<br />' +
                  'ang = ' + net.res_bus.loc[idx, 'va_degree'].round(precision).astype(str) + ' deg'
                  ).tolist()
     bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
@@ -111,10 +111,10 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         use_line_geodata = False
     idx = net.line.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.line.loc[idx, 'name'].astype(str) + '<br>' +
-                 'I = ' + net.res_line.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br>' +
-                 'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].round(precision).astype(str) + ' kA' + '<br>' +
-                 'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].round(precision).astype(str) + ' kA' + '<br>'
+    hoverinfo = (net.line.loc[idx, 'name'].astype(str) + '<br />' +
+                 'I = ' + net.res_line.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br />' +
+                 'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].round(precision).astype(str) + ' kA' + '<br />' +
+                 'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].round(precision).astype(str) + ' kA' + '<br />'
                  ).tolist()
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
@@ -128,10 +128,10 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     # ----- Trafos ------
     idx = net.trafo.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.trafo.loc[idx, 'name'].astype(str) + '<br>' +
-                 'I = ' + net.res_trafo.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br>' +
-                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].round(precision).astype(str) + ' kA' + '<br>' +
-                 'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].round(precision).astype(str) + ' kA' + '<br>'
+    hoverinfo = (net.trafo.loc[idx, 'name'].astype(str) + '<br />' +
+                 'I = ' + net.res_trafo.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br />' +
+                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].round(precision).astype(str) + ' kA' + '<br />' +
+                 'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].round(precision).astype(str) + ' kA' + '<br />'
                  ).tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)

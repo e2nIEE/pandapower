@@ -276,29 +276,31 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     color = get_plotly_color(color)
 
+    line_idx_map = dict(zip(net.line.index.tolist(), range(len(net.line))))
+
     # defining lines to be plot
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return []
 
-    nogolines = set()
+    no_go_lines = set()
     if respect_switches:
-        nogolines = set(net.switch.element[(net.switch.et == "l") &
+        no_go_lines = set(net.switch.element[(net.switch.et == "l") &
                                            (net.switch.closed == 0)])
-    nogolines_mask = net.line.index.isin(nogolines)
 
-    lines_mask = net.line.index.isin(lines)
-    lines2plot_mask = ~nogolines_mask & lines_mask
-    lines2plot = net.line[lines2plot_mask]
-
+    lines_to_plot = net.line.loc[set(net.line.index) & (set(lines) - no_go_lines)]
     use_line_geodata = use_line_geodata if net.line_geodata.shape[0] > 0 else False
+
     if use_line_geodata:
-        lines_with_geodata = lines2plot.index.isin(net.line_geodata.index)
-        lines2plot = lines2plot[lines_with_geodata]
+        lines_to_plot = lines_to_plot.loc[set(lines_to_plot.index) & set(net.line_geodata.index)]
     else:
-        lines_with_geodata = lines2plot.from_bus.isin(net.bus_geodata.index) & \
-                             lines2plot.to_bus.isin(net.bus_geodata.index)
-        lines2plot = lines2plot[lines_with_geodata]
+        lines_with_geodata = lines_to_plot.from_bus.isin(net.bus_geodata.index) & \
+                             lines_to_plot.to_bus.isin(net.bus_geodata.index)
+        lines_to_plot = lines_to_plot.loc[lines_with_geodata]
+
+    if infofunc is not None:
+        # reduce infofunc to the lines that are being plotted and also map from infofunc 0-based index to pp index
+        infofunc = [infofunc[line_idx_map[idx]] for idx in lines_to_plot.index]
 
     cmap_lines = None
     if cmap is not None:
@@ -314,35 +316,37 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             if net.res_line.shape[0] == 0:
                 logger.error("There are no power flow results for lines which are default for line colormap coloring..."
                              "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net.res_line.loc[lines2plot.index, 'loading_percent'].values
+            cmap_vals = net.res_line.loc[lines_to_plot.index, 'loading_percent'].values
 
         cmap_lines = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
-        cmap_lines = list(compress(cmap_lines, lines2plot_mask))  # select with mask from cmap_lines
-        if infofunc is not None:
-            infofunc = list(compress(infofunc, lines2plot_mask))
+        if len(cmap_lines) == len(net.line):
+            # some lines are not plotted although cmap_value were provided for all lines
+            cmap_lines = [cmap_lines[line_idx_map[idx]] for idx in lines_to_plot.index]
+        else:
+            assert len(cmap_lines) == len(lines_to_plot), \
+                "Different amounts of cmap values and lines to plot were supplied"
 
     line_traces = []
-    for col_i, (idx, line) in enumerate(lines2plot.iterrows()):
+    for col_i, (idx, line) in enumerate(lines_to_plot.iterrows()):
         line_color = color
         line_info = line['name']
         if cmap is not None:
             try:
                 line_color = cmap_lines[col_i]
-                line_info = line['name'] if infofunc is None else infofunc[col_i]
+                line_info = line['name'] if infofunc is None else infofunc[line_idx_map[idx]]
             except IndexError:
-                logger.warning("No color and info for line %i available" % col_i)
+                logger.warning("No color and info for line {:d} (name: {}) available".format(idx, line['name']))
 
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
                           line=Line(width=width, color=color))
 
-        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
+        line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines_to_plot.loc[idx:idx], use_line_geodata)
 
         line_trace['line']['color'] = line_color
 
         line_trace['text'] = line_info
 
         line_traces.append(line_trace)
-
 
     if show_colorbar and cmap is not None:
 
@@ -367,35 +371,19 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         except:
             pass
 
-    # else:
-    #     line_traces = []
-    #     for col_i, (idx, line) in enumerate(lines2plot.iterrows()):
-    #         line_trace = dict(type='scatter',
-    #                           text=[], hoverinfo='text', mode='lines', name=trace_name,
-    #                           line=Line(width=width, color=color))
-    #
-    #         line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
-    #
-    #         line_trace['text'] = lines2plot['name'].tolist() if infofunc is None else infofunc
-    #
-    #         if legendgroup:
-    #             line_trace['legendgroup'] = legendgroup
-    #
-    #         line_traces.append(line_trace)
-
-    if len(nogolines) > 0:
-        lines2plot = net.line.loc[nogolines]
-        for idx, line in lines2plot.iterrows():
+    if len(no_go_lines) > 0:
+        no_go_lines_to_plot = net.line.loc[no_go_lines]
+        for idx, line in no_go_lines_to_plot.iterrows():
             line_color = color
             line_trace = dict(type='scatter',
                               text=[], hoverinfo='text', mode='lines', name='disconnected lines',
                               line=Line(width=width / 2, color='grey'))
 
-            line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, lines2plot.loc[idx:idx], use_line_geodata)
+            line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, no_go_lines_to_plot.loc[idx:idx], use_line_geodata)
 
             line_trace['line']['color'] = line_color
             try:
-                line_trace['text'] = infofunc[idx]
+                line_trace['text'] = infofunc[line_idx_map[idx]]
             except:
                 line_trace["text"] = line['name']
 
@@ -405,7 +393,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                 line_trace['legendgroup'] = legendgroup
 
     center_trace = create_edge_center_trace(line_traces, color=color, infofunc=infofunc,
-                             use_line_geodata=use_line_geodata)
+                                            use_line_geodata=use_line_geodata)
     line_traces.append(center_trace)
     return line_traces
 
@@ -472,7 +460,6 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
             cmap_vals = net.res_trafo.loc[tarfo2plot.index, 'loading_percent'].values
 
         cmap_colors = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
-
 
     trafo_traces = []
     for col_i, (_, trafo) in enumerate(tarfo2plot.iterrows()):
