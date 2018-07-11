@@ -276,18 +276,22 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     color = get_plotly_color(color)
 
-    line_idx_map = dict(zip(net.line.index.tolist(), range(len(net.line))))
-
     # defining lines to be plot
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return []
 
+    if infofunc is not None:
+        assert len(infofunc) == len(lines), "Different amount of hover info than lines to plot"
+
+    line_idx_map = dict(zip(net.line.loc[lines].index.tolist(), range(len(lines))))
+
     no_go_lines = set()
     if respect_switches:
-        no_go_lines = set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)])
+        no_go_lines = set(lines) & set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)])
 
     lines_to_plot = net.line.loc[set(net.line.index) & (set(lines) - no_go_lines)]
+    no_go_lines_to_plot = None
     use_line_geodata = use_line_geodata if net.line_geodata.shape[0] > 0 else False
 
     if use_line_geodata:
@@ -300,8 +304,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
     if infofunc is not None:
         if not isinstance(infofunc, list):
             infofunc = list(infofunc)
-        # reduce infofunc to the lines that are being plotted and also map from infofunc 0-based index to pp index
-        infofunc = [infofunc[line_idx_map[idx]] for idx in lines_to_plot.index]
 
     cmap_lines = None
     if cmap is not None:
@@ -394,6 +396,13 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
             if legendgroup:
                 line_trace['legendgroup'] = legendgroup
+
+    # sort infofunc so that it is the correct order lines_to_plot + no_go_lines_to_plot
+    if infofunc is not None:
+        sorted_idx = lines_to_plot.index.tolist()
+        if no_go_lines_to_plot is not None:
+            sorted_idx += no_go_lines_to_plot.index.tolist()
+        infofunc = [infofunc[line_idx_map[idx]] for idx in sorted_idx]
 
     center_trace = create_edge_center_trace(line_traces, color=color, infofunc=infofunc,
                                             use_line_geodata=use_line_geodata)
@@ -626,7 +635,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 #     from pandapower.networks import mv_oberrhein
 #
 #     grid = mv_oberrhein()
-#     simple_plotly
+#     simple_plotly(grid)
 #
 #     # test 2
 #     import pandapower as pp
