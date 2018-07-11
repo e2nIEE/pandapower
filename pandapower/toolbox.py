@@ -1331,6 +1331,10 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 # pandas legacy < 0.21
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
+    # update standard types of net by data of net2
+    for type_ in net.std_types.keys():
+        # net2.std_types[type_].update(net1.std_types[type_])  # if net1.std_types have priority
+        net.std_types[type_].update(net2.std_types[type_])
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
