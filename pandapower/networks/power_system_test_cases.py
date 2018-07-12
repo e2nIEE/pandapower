@@ -34,7 +34,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     for i in ref_bus_idx:
         if i not in net.gen.bus.values and i not in net.ext_grid.bus.values:
             raise ValueError("Index %i is not in net.gen.bus or net.ext_grid.bus." % i)
-    # determine indeces of ext_grid and gen connected to ref_bus_idx
+    # determine indices of ext_grid and gen connected to ref_bus_idx
     gen_idx = net.gen.index[net.gen.bus.isin(ref_bus_idx)]
     ext_grid_idx = net.ext_grid.index[~net.ext_grid.bus.isin(ref_bus_idx)]
     # old ext_grid -> gen
