@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
         load_str, sgen_str = [], []
-        for l in [net.load.loc[net.load.bus == b, "p_kw"].sum() for b in net.bus.index]:
-            load_str.append("load: {:.0f} kW<br />".format(l) if l != 0. else "")
+        for ln in [net.load.loc[net.load.bus == b, "p_kw"].sum() for b in net.bus.index]:
+            load_str.append("load: {:.0f} kW<br />".format(ln) if ln != 0. else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_kw"].sum() for b in net.bus.index]:
             sgen_str.append("static generation: {:.0f} kW<br />".format(s) if s != 0. else "")
         hoverinfo = (
@@ -124,7 +124,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
         create_generic_coordinates(net, respect_switches=respect_switches)
-        if on_map == True:
+        if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
@@ -147,13 +147,13 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
 
     hoverinfo = get_hoverinfo(net, element="line")
     line_traces = create_line_trace(net, net.line.index, respect_switches=respect_switches,
-                                   color=line_color, width=line_width,
-                                   use_line_geodata=use_line_geodata, infofunc=hoverinfo)
+                                    color=line_color, width=line_width,
+                                    use_line_geodata=use_line_geodata, infofunc=hoverinfo)
 
     # ----- Trafos ------
     hoverinfo = get_hoverinfo(net, element="trafo")
     trafo_trace = create_trafo_trace(net, color=trafo_color, width=line_width * 5, infofunc=hoverinfo,
-                                                  use_line_geodata=use_line_geodata)
+                                     use_line_geodata=use_line_geodata)
 
     # ----- Ext grid ------
     # get external grid from create_bus_trace
