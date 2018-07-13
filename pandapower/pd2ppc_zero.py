@@ -16,7 +16,7 @@ from pandapower.idx_bus import BASE_KV, BS, GS
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, _calc_nominal_ratio_from_dataframe
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup
 
-def _pd2ppc_zero(net, sequence=None):
+def _pd2ppc_zero(net, sequence=0):
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
     lines and transformers, but no load or generation data.

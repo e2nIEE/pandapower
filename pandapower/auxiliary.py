@@ -694,3 +694,6 @@ def I_from_V(Y, V):
 # =============================================================================
 def S_from_VI(V, I):
     return np.multiply(V, I.conjugate())
+
+def I_from_SV(S, V):
+    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V!=0)) # Return zero if div by zero

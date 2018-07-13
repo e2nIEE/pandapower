@@ -33,8 +33,7 @@ from pandapower.pf.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
 from pandapower.idx_bus import PD, QD, VM, VA
 from pandapower.idx_gen import GEN_BUS, GEN_STATUS, VG
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, _extract_results_3ph, reset_results
-from pandapower.results_bus import _get_bus_idx
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph, reset_results
 
 
 def _get_pf_variables_from_ppci(ppci):
@@ -203,7 +202,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     _, ppci2 = _pd2ppc(net, 2)
     _add_ext_grid_sc_impedance(net, ppci2)
 
-    _, ppci0 = _pd2ppc_zero(net, 0)
+    _, ppci0 = _pd2ppc_zero(net)
 
     _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00 = _get_pf_variables_from_ppci(ppci0)
     baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01 = _get_pf_variables_from_ppci(ppci1)
@@ -288,10 +287,18 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     ppci1["success"] = ppci0["success"]
     ppci2["success"] = ppci0["success"]
 
+    # Todo: Add reference to paper to explain the following steps
+    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
+    ppci0["bus"][ref, GS] = 0
+    ppci0["bus"][ref, BS] = 0
+    # Y0_pu = Y0_pu.todense()
+    Y0_pu, Y0_f, Y0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+
     ## update data matrices with solution
-    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].getA1(), sl_bus)
-    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].getA1(), sl_bus)
-    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y2_pu, Y2_f, Y2_t, V012_it[2, :].getA1(), sl_bus)
+    # Todo: Add reference to paper to explain the choice of Y1 over Y2 in the negative sequence
+    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].A1, sl_bus)
+    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].A1, sl_bus)
+    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y1_pu, Y1_f, Y1_t, V012_it[2, :].A1, sl_bus)
 
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
@@ -312,7 +319,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     #     net["converged"] = False
     #     _clean_up(net, res=False)
     #     raise LoadflowNotConverged("Power Flow {0} did not converge after "
-    #                                "{1} iterations!".format(algorithm, 3*max_iteration))
+    #                                "{1} iterations!".format("nr", 3*max_iteration))
     # else:
     #     net["converged"] = True
 
@@ -334,7 +341,8 @@ def show_results(V_base, kVA_base, count, ppci0, Y1_pu, V012_new, I012_new):
     print('\n SABC New using I=YV\n')
     print(Sabc_new)
     print(' \n Voltage  ABC\n')
-    print(abs(V_abc_new) * V_base_res)
+    # print(abs(V_abc_new) * V_base_res)
+    print(abs(V_abc_new))
     print('\n Current  ABC\n')
     print(abs(I_abc_new) * I_base_res)
 
@@ -373,81 +381,3 @@ def _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus):
             ppci2["internal"]['Ybus'], ppci2["internal"]['Yf'], ppci2["internal"]['Yt'] = Y2_bus, Y2_f, Y2_t
 
     return ppci0, ppci1, ppci2, Y0_bus, Y1_bus, Y2_bus, Y0_f, Y1_f, Y2_f, Y0_t, Y1_t, Y2_t
-
-
-# =============================================================================
-# DEPRECATED! This function will be deleted once all its functionality is covered in the main programme
-# First draft for copying three-phase pf results obtained via runpp_3ph() into results tables.
-# Three-phase bus results are taken directly from runpp_3ph() and written to res_bus_3ph.
-# res_bus is filled with positive sequence voltages and the sum of three-phase powers.
-#
-# Todo: Extend _get_bus_v_results / _get_p_q_results / get_bus_results / _clean_up()
-# Todo: Include branch and generation results
-# Open questions: Is ppci0 the right structure to extract results? Is ppci1 needed somewhere?
-#                 Does it make sense to write positive sequence results into res_bus?
-#
-# @author: alepros
-# =============================================================================
-def _copy_bus_results_to_results_table(net, ppci0, V012_it, Y0_pu, Y1_pu):
-    kVA_base = net.sn_kva
-    V_base = net["bus"].get("vn_kv").get(net["bus"].get("vn_kv").first_valid_index())
-
-    # Results related to pfsoln
-    V_base_res = V_base / np.sqrt(3)
-#    I_base_res = kVA_base / V_base_res
-    ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
-    ppci0["bus"][ref, GS] = 0
-    ppci0["bus"][ref, BS] = 0
-    Y0_pu, Y0_f, Y0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
-
-    # Y0_pu = Y0_pu.todense()
-    I012_new = combine_X012(I0_from_V012(V012_it, Y0_pu),
-                            I1_from_V012(V012_it, Y1_pu),
-                            I2_from_V012(V012_it, Y1_pu))
-    I_abc_new = sequence_to_phase(I012_new)
-    V_abc_new = sequence_to_phase(V012_it)
-    Sabc_new = S_from_VI(V_abc_new, I_abc_new) * kVA_base
-#    S012_it = phase_to_sequence(Sabc_new)
-
-    bus = ppci0["bus"]
-    gen = ppci0["gen"]
-    branch = ppci0["branch"]
-
-    bus[:, VM] = np.abs(V012_it[1, :]) * V_base_res
-    bus[:, VA] = np.angle(V012_it[1, :]) * 180 / np.pi
-    # bus[:, VM_A] = np.abs(V_abc_new[0, :]) * V_base_res
-    # bus[:, VM_B] = np.abs(V_abc_new[1, :]) * V_base_res
-    # bus[:, VM_C] = np.abs(V_abc_new[2, :]) * V_base_res
-    # bus[:, VA_A] = np.angle(V_abc_new[0, :]) * 180 / np.pi
-    # bus[:, VA_B] = np.angle(V_abc_new[1, :]) * 180 / np.pi
-    # bus[:, VA_C] = np.angle(V_abc_new[2, :]) * 180 / np.pi
-
-    # Results related to _store_results_from_pf_in_ppci
-    ppci = ppci0
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch  # ppci=result
-
-    ppc = net["_ppc"]
-    result = _copy_results_ppci_to_ppc(ppci, ppc, mode=net["_options"]["mode"])
-    net["_ppc"] = result
-    _extract_results(net, ppc)
-
-    pA_kw = np.transpose(np.real(Sabc_new[0, :]))
-    qA_kvar = np.transpose(np.imag(Sabc_new[0, :]))
-    pB_kw = np.transpose(np.real(Sabc_new[1, :]))
-    qB_kvar = np.transpose(np.imag(Sabc_new[1, :]))
-    pC_kw = np.transpose(np.real(Sabc_new[2, :]))
-    qC_kvar = np.transpose(np.imag(Sabc_new[2, :]))
-
-    net["res_bus_3ph"]["pA_kw"] = pA_kw
-    net["res_bus_3ph"]["qA_kvar"] = qA_kvar
-    net["res_bus_3ph"]["pB_kw"] = pB_kw
-    net["res_bus_3ph"]["qB_kvar"] = qB_kvar
-    net["res_bus_3ph"]["pC_kw"] = pC_kw
-    net["res_bus_3ph"]["qC_kvar"] = qC_kvar
-    net["res_bus"]["p_kw"] = pA_kw + pB_kw + pC_kw
-    net["res_bus"]["q_kvar"] = qA_kvar + qB_kvar + qC_kvar
-
-    # bus_idx = _get_bus_idx(net)
-    print(_get_bus_idx(net))
-
-    return net, ppci

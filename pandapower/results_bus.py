@@ -172,7 +172,6 @@ def _get_bus_results_3ph(net, bus_pq):
     net["res_bus_3ph"]["pA_kw"] = bus_pq[:, 0]
     net["res_bus_3ph"]["pB_kw"] = bus_pq[:, 2]
     net["res_bus_3ph"]["pC_kw"] = bus_pq[:, 4]
-    # net["res_bus"]["p_kw"] = np.sum(bus_pq[:,0])
     if ac:
         net["res_bus_3ph"]["qA_kvar"] = bus_pq[:, 1]
         net["res_bus_3ph"]["qB_kvar"] = bus_pq[:, 3]
@@ -326,7 +325,7 @@ def get_p_q_b_3ph(net, element):
     qA = net[res_]["q_kvar_A"] if ac else np.zeros_like(pA)
     qB = net[res_]["q_kvar_B"] if ac else np.zeros_like(pB)
     qC = net[res_]["q_kvar_C"] if ac else np.zeros_like(pC)
-    return pA, pB, pC, qA, qB, qC, b
+    return pA, qA, pB, qB, pC, qC, b
 
 
 def _get_p_q_results(net, bus_lookup_aranged):
@@ -386,12 +385,12 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
     for element in elements_3ph:
         if len(net[element]):
             write_pq_results_to_element_3ph(net, element)
-            p_el_A, p_el_B, p_el_C, q_el_A, q_el_B, q_el_C, bus_el = get_p_q_b_3ph(net, element)
+            p_el_A, q_el_A, p_el_B, q_el_B, p_el_C, q_el_C, bus_el = get_p_q_b_3ph(net, element)
             pA = np.hstack([pA, p_el_A])
-            qA = np.hstack([qA, q_el_A if ac else np.zeros(len(p_el_A))])
             pB = np.hstack([pB, p_el_B])
-            qB = np.hstack([qB, q_el_B if ac else np.zeros(len(p_el_B))])
             pC = np.hstack([pC, p_el_C])
+            qA = np.hstack([qA, q_el_A if ac else np.zeros(len(p_el_A))])
+            qB = np.hstack([qB, q_el_B if ac else np.zeros(len(p_el_B))])
             qC = np.hstack([qC, q_el_C if ac else np.zeros(len(p_el_C))])
             b = np.hstack([b, bus_el])
 
