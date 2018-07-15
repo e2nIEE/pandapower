@@ -7,9 +7,9 @@
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _sum_by_group
+from pandapower.auxiliary import _sum_by_group, I_from_SV, sequence_to_phase, S_from_VI
 from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
-from pandapower.idx_bus import BASE_KV
+from pandapower.idx_bus import BASE_KV, VM, VA
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
@@ -32,6 +32,26 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     _get_switch_results(net, i_ft)
 
 
+def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses):
+    """
+    Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
+
+    INPUT:
+
+        **results** - the result of runpf loadflow calculation
+
+        **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
+
+    """
+    I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
+    _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
+    # _get_trafo_results(net, ppc, s_ft, i_ft)
+    # _get_trafo3w_results(net, ppc, s_ft, i_ft)
+    # _get_impedance_results(net, ppc, i_ft)
+    # _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
+    # _get_switch_results(net, i_ft)
+
+
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
     u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
@@ -39,6 +59,25 @@ def _get_branch_flows(ppc):
                     ppc["branch"][:, (QF, QT)].real ** 2) * 1e3)
     i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
     return i_ft, s_ft
+
+
+def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
+    br_from_idx = ppc1["branch"][:, F_BUS].real.astype(int)
+    br_to_idx = ppc1["branch"][:, T_BUS].real.astype(int)
+    V012_f = np.matrix([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
+                         np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
+    V012_t = np.matrix([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
+                         np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
+    S012_f = np.matrix([((ppc["branch"][:, PF].real +
+                    1j * ppc["branch"][:, QF].real) * 1e3)
+                    for ppc in [ppc0, ppc1, ppc2]])
+    S012_t = np.matrix([((ppc["branch"][:, PT].real +
+                    1j * ppc["branch"][:, QT].real) * 1e3)
+                    for ppc in [ppc0, ppc1, ppc2]])
+    I012_f = I_from_SV(S012_f * 1e-3, V012_f / np.sqrt(3))
+    I012_t = I_from_SV(S012_t * 1e-3, V012_t / np.sqrt(3))
+
+    return I012_f, S012_f, V012_f, I012_t, S012_t, V012_t
 
 
 def _get_line_results(net, ppc, i_ft):
@@ -81,6 +120,70 @@ def _get_line_results(net, ppc, i_ft):
     res_line_df["i_to_ka"].values[:] = i_to_ka
     res_line_df["i_ka"].values[:] = i_ka
     res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
+
+
+def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+    # create res_line_vals which are written to the pandas dataframe
+    ac = net["_options"]["ac"]
+
+    if not "line" in net._pd2ppc_lookups["branch"]:
+        return
+
+    f, t = net._pd2ppc_lookups["branch"]["line"]
+    I012_ka = np.matrix([np.max(np.abs(np.array([I012_f[i, f:t].A1, I012_t[i, f:t].A1])), axis=0) for i in [0, 1, 2]])
+    I012_from_ka = I012_f[:, f:t]
+    I012_to_ka = I012_t[:, f:t]
+    line_df = net["line"]
+    i_max_phase = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+
+    Vabc_f, Vabc_t, Iabc_f, Iabc_t = [sequence_to_phase(X012) for X012 in [V012_f, V012_t, I012_f, I012_t]]
+    Sabc_f, Sabc_t = [S_from_VI(*Xabc_tup) * 1e3 / np.sqrt(3) for Xabc_tup in [(Vabc_f, Iabc_f), (Vabc_t, Iabc_t)]]
+    # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
+    Pabcf_kw = Sabc_f.real
+    Qabcf_kvar = Sabc_f.imag
+    Pabct_kw = Sabc_t.real
+    Qabct_kvar = Sabc_t.imag
+    if ac:
+        Pabcl_kw = Pabcf_kw + Pabct_kw
+        Qabcl_kvar = Qabcf_kvar + Qabct_kvar
+    else:
+        Pabcl_kw = np.zeros_like(Pabcf_kw)
+        Qabcl_kvar = np.zeros_like(Qabct_kvar)
+    Iabc_ka = np.abs(sequence_to_phase(I012_ka))
+    Iabc_f_ka = np.abs(sequence_to_phase(I012_from_ka))
+    Iabc_t_ka = np.abs(sequence_to_phase(I012_to_ka))
+
+    # write to line
+    net["res_line_3ph"]["pA_from_kw"] = Pabcf_kw[0, :].A1
+    net["res_line_3ph"]["pB_from_kw"] = Pabcf_kw[1, :].A1
+    net["res_line_3ph"]["pC_from_kw"] = Pabcf_kw[2, :].A1
+    net["res_line_3ph"]["qA_from_kvar"] = Qabcf_kvar[0, :].A1
+    net["res_line_3ph"]["qB_from_kvar"] = Qabcf_kvar[1, :].A1
+    net["res_line_3ph"]["qC_from_kvar"] = Qabcf_kvar[2, :].A1
+    net["res_line_3ph"]["pA_to_kw"] = Pabct_kw[0, :].A1
+    net["res_line_3ph"]["pB_to_kw"] = Pabct_kw[1, :].A1
+    net["res_line_3ph"]["pC_to_kw"] = Pabct_kw[2, :].A1
+    net["res_line_3ph"]["qA_to_kvar"] = Qabct_kvar[0, :].A1
+    net["res_line_3ph"]["qB_to_kvar"] = Qabct_kvar[1, :].A1
+    net["res_line_3ph"]["qC_to_kvar"] = Qabct_kvar[2, :].A1
+    net["res_line_3ph"]["pAl_kw"] = Pabcl_kw[0, :].A1
+    net["res_line_3ph"]["pBl_kw"] = Pabcl_kw[1, :].A1
+    net["res_line_3ph"]["pCl_kw"] = Pabcl_kw[2, :].A1
+    net["res_line_3ph"]["qAl_kvar"] = Qabcl_kvar[0, :].A1
+    net["res_line_3ph"]["qBl_kvar"] = Qabcl_kvar[1, :].A1
+    net["res_line_3ph"]["qCl_kvar"] = Qabcl_kvar[2, :].A1
+    net["res_line_3ph"]["iA_from_ka"] = Iabc_f_ka[0, :].A1
+    net["res_line_3ph"]["iB_from_ka"] = Iabc_f_ka[1, :].A1
+    net["res_line_3ph"]["iC_from_ka"] = Iabc_f_ka[2, :].A1
+    net["res_line_3ph"]["iA_to_ka"] = Iabc_t_ka[0, :].A1
+    net["res_line_3ph"]["iB_to_ka"] = Iabc_t_ka[1, :].A1
+    net["res_line_3ph"]["iC_to_ka"] = Iabc_t_ka[2, :].A1
+    net["res_line_3ph"]["iA_ka"] = Iabc_ka[0, :].A1
+    net["res_line_3ph"]["iB_ka"] = Iabc_ka[1, :].A1
+    net["res_line_3ph"]["iC_ka"] = Iabc_ka[2, :].A1
+    net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :].A1 / i_max_phase * 100
+    net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :].A1 / i_max_phase * 100
+    net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :].A1 / i_max_phase * 100
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):

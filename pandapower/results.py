@@ -9,7 +9,7 @@ import copy
 import numpy as np
 import pandas as pd
 
-from pandapower.results_branch import _get_branch_results
+from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results_opf, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
     _get_bus_results_3ph
@@ -38,7 +38,7 @@ def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2)
     bus_pq = _get_p_q_results_3ph(net, bus_lookup_aranged)
     # _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
-    # _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
     _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
     _get_bus_results_3ph(net, bus_pq)
 
@@ -110,7 +110,7 @@ def get_elements_to_empty(balanced=True):
     if balanced:
         return ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
     else:
-        return ["ext_grid_3ph", "load_3ph", "sgen_3ph", "gen_3ph", "bus_3ph"]
+        return ["ext_grid_3ph", "load_3ph", "sgen_3ph", "gen_3ph", "bus_3ph", "line_3ph"]
         
         
 

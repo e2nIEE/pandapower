@@ -125,11 +125,12 @@ def _calc_line_parameter(net, ppc):
     tb = bus_lookup[line["to_bus"].values]
     length = line["length_km"].values
     parallel = line["parallel"].values
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / ppc["baseMVA"]
     if mode == 'pf_3ph':
         baseR = np.square(ppc["bus"][fb, BASE_KV]/np.sqrt(3)) /ppc["baseMVA"]
-    t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
+    else:
+        baseR = np.square(ppc["bus"][fb, BASE_KV]) / ppc["baseMVA"]
 
+    t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
     t[:, 0] = fb
     t[:, 1] = tb
 
