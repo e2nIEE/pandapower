@@ -1100,7 +1100,8 @@ def drop_elements_at_buses(net, buses):
         if element == "switch":
             n_switch = net.switch.shape[0]
             drop_switches_at_buses(net, buses)
-            logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
+            if net.switch.shape[0] < n_switch:
+                logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
         elif any(net[element][column].isin(buses)):
             eid = net[element][net[element][column].isin(buses)].index
             if element == 'line':
@@ -1109,7 +1110,6 @@ def drop_elements_at_buses(net, buses):
                 drop_trafos(net, eid, table=element)
             else:
                 net[element].drop(eid, inplace=True)
-            logger.info("dropped %s elements: %d" % (element, len(eid)))
 
 
 def drop_trafos(net, trafos, table="trafo"):
