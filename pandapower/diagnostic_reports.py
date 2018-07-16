@@ -21,7 +21,7 @@ def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_repor
     diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report)
 
     report_methods = {
-        "missing_bus_indeces": diag_report.report_missing_bus_indeces,
+        "missing_bus_indices": diag_report.report_missing_bus_indices,
         "disconnected_elements": diag_report.report_disconnected_elements,
         "different_voltage_levels_connected": diag_report.report_different_voltage_levels_connected,
         "impedance_values_close_to_zero": diag_report.report_impedance_values_close_to_zero,
@@ -689,16 +689,16 @@ class DiagnosticReports:
             logger.info("PASSED: No parallel switches found.")
 
 
-    def report_missing_bus_indeces(self):
+    def report_missing_bus_indices(self):
         # message header
         if self.compact_report:
-            logger.info("missing_bus_indeces:")
+            logger.info("missing_bus_indices:")
         else:
-            logger.info("Checking for missing bus indeces...")
+            logger.info("Checking for missing bus indices...")
         logger.info("")
-        if "missing_bus_indeces" in self.diag_results:
+        if "missing_bus_indices" in self.diag_results:
             # message body
-            diag_result = self.diag_results["missing_bus_indeces"]
+            diag_result = self.diag_results["missing_bus_indices"]
             element_counter = 0
             for element_type in diag_result:
                 for element in diag_result[element_type]:
@@ -709,10 +709,10 @@ class DiagnosticReports:
                     # message summary
             if not self.compact_report:
                 logger.warning("")
-                logger.warning("SUMMARY: %s missing bus indeces found." % element_counter)
+                logger.warning("SUMMARY: %s missing bus indices found." % element_counter)
 
-        elif "missing_bus_indeces" in self.diag_errors:
-            logger.warning("Check for missing bus indeces failed due to the following error:")
-            logger.warning(self.diag_errors["missing_bus_indeces"])
+        elif "missing_bus_indices" in self.diag_errors:
+            logger.warning("Check for missing bus indices failed due to the following error:")
+            logger.warning(self.diag_errors["missing_bus_indices"])
         else:
-            logger.info("PASSED: No missing bus indeces found.")
+            logger.info("PASSED: No missing bus indices found.")

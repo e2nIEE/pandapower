@@ -409,7 +409,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
-        **index** (int, default None) - Force specified IDs if available. If None, the indeces \
+        **index** (int, default None) - Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
 
         **vn_kv** (float) - The grid voltage level.

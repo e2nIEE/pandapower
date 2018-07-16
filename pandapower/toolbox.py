@@ -507,8 +507,7 @@ def convert_format(net):
                                                                    ("va_to_degree", "f8")]))
     if "_empty_res_storage" not in net:
         net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
-                                                                   ("q_kvar", "f8"),
-                                                                   ("soc_percent", "f8")]))
+                                                                    ("q_kvar", "f8")]))
 
     if len(net["_empty_res_line"]) < 10:
         net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
@@ -1331,6 +1330,10 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 # pandas legacy < 0.21
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
+    # update standard types of net by data of net2
+    for type_ in net.std_types.keys():
+        # net2.std_types[type_].update(net1.std_types[type_])  # if net1.std_types have priority
+        net.std_types[type_].update(net2.std_types[type_])
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))
