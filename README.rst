@@ -12,17 +12,17 @@ pandapower
    :target: http://pandapower.readthedocs.io/
    :alt: Documentation Status
     
-.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
-    :target: https://travis-ci.org/lthurner/pandapower
+.. image:: https://travis-ci.org/e2nIEE/pandapower.svg?branch=master
+    :target: https://travis-ci.org/e2nIEE/pandapower
 
-.. image:: https://codecov.io/github/lthurner/pandapower/coverage.svg?branch=master
-   :target: https://codecov.io/github/lthurner/pandapower?branch=master
+.. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=master
+   :target: https://codecov.io/github/e2nIEE/pandapower?branch=master
     
 .. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
-    :target: https://www.codacy.com/app/lthurner/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lthurner/pandapower&amp;utm_campaign=Badge_Grade
+    :target: https://www.codacy.com/app/e2nIEE/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=e2nIEE/pandapower&amp;utm_campaign=Badge_Grade
 
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE
+    :target: https://github.com/e2nIEE/pandapower/blob/master/LICENSE
 
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
@@ -159,4 +159,4 @@ For the 3-bus example network, the result tables look like this:
 		
 All other pandapower elements and network analysis functionality (e.g. optimal power flow, state estimation or short-circuit calculation) is also fully integrated into the tabular pandapower datastructure.
 
-This minimal example is also available as a `jupyter notebook <https://github.com/lthurner/pandapower/blob/develop/tutorials/minimal_example.ipynb>`_.
+This minimal example is also available as a `jupyter notebook <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/minimal_example.ipynb>`_.
