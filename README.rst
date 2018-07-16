@@ -92,13 +92,11 @@ A paper describing pandapower has been accepted for publication in IEEE Transact
 You can use the following BibTex entry: ::
 
 	@ARTICLE{pandapower.2018,
-	author={L. Thurner and A. Scheidler and F. Schafer and J. H. Menke and J. Dollichon and F. Meier and S. Meinecke and M. Braun},
+	author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
 	journal={IEEE Transactions on Power Systems},
 	title={pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems},
 	year={2018},
-	doi={10.1109/TPWRS.2018.2829021},
-	url={https://arxiv.org/abs/1709.06743},
-	ISSN={0885-8950}
+	doi={10.1109/TPWRS.2018.2829021}
 	}
 
 Minimal Example
