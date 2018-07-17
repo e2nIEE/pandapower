@@ -127,9 +127,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][ppc_idx, SHIFT] = shift
 
         # zero seq. transformer impedance
-        tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva  # adjust for low voltage side voltage converter
-        z_sc = (vsc0_percent / 100. / trafo_kva * tap_lv)
-        r_sc = (vscr0_percent / 100. / trafo_kva * tap_lv)
+        tap_lv = np.square(vn_trafo_lv / vn_lv)  # adjust for low voltage side voltage converter
+        if mode == 'pf_3ph':
+            tap_lv = np.square(vn_trafo_lv / (vn_lv/np.sqrt(3)))   
+        z_sc = vsc0_percent / 100. / trafo_kva * tap_lv * net.sn_kva
+        r_sc = vscr0_percent / 100. / trafo_kva * tap_lv * net.sn_kva
+
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
@@ -141,7 +144,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             z0_k *= kt
         y0_k = 1 / z0_k
         # zero sequence transformer magnetising impedance 
-        z_m = vsc0_percent * mag0_percent / 100. / trafo_kva * tap_lv
+        z_m = ( (vsc0_percent * mag0_percent) / 100.) *(net.sn_kva/ trafo_kva) * tap_lv
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
         r_m = x_m * mag0_rx
         r0_trafo_mag = r_m / parallel
@@ -160,7 +163,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "Yyn":
             buses_all = np.hstack([buses_all, lv_buses_ppc])
-            y = 1/(z0_mag+z0_k).astype(complex)* ppc["baseMVA"]
+            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
 
@@ -189,7 +192,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             bs_all = np.hstack([bs_all, ys.imag*in_service* int(ppc["baseMVA"])])
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
-            y = 1/(z0_mag+z0_k).astype(complex)* ppc["baseMVA"]
+            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
         elif vector_group[-1].isdigit():
@@ -220,8 +223,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     elif mode == 'pf_3ph':
-        c = 3.3 # Todo: Where does that value come from?
-#        c = 1.1
+        c = 1.1 # Todo: Where does that value come from?
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )
@@ -230,8 +232,9 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
                          case)
     rx = eg["rx_%s" % case].values
-
     z_grid = c / s_sc
+    if mode == 'pf_3ph':
+        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
