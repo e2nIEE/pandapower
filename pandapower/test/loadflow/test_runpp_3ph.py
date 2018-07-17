@@ -488,6 +488,4 @@ def test_3ph_two_bus_line_powerfactory():
     assert abs(net.res_line_3ph.loading_percent.values[0]  - 31.98878) < 1e-2
                
 if __name__ == "__main__":
-
-               
-    #    pytest.main(["test_runpp_3ph.py"])
+    pytest.main(["test_runpp_3ph.py"])
