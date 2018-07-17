@@ -458,8 +458,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
-        c = 3.3
-#        c = 1.1
+#        c = 3.3
+        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case +
                          "external grid")
@@ -470,6 +470,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
+    if mode == 'pf_3ph':
+        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid

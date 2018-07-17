@@ -302,6 +302,8 @@ def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva):
 
     ### Calculate subsceptance ###
     vnl_squared = trafo_df["vn_lv_kv"].values ** 2
+    if mode == 'pf_3ph':
+        vnl_squared = (trafo_df["vn_lv_kv"].values ** 2)/3
     b_real = trafo_df["pfe_kw"].values / (1000. * vnl_squared) * baseR
     i0 = trafo_df["i0_percent"].values
     pfe = trafo_df["pfe_kw"].values
