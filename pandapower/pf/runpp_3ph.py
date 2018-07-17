@@ -88,7 +88,7 @@ def load_mapping(net,ppci1,):
     p_c, PC = np.array([]), np.array([])
     
     if (ppci1["bus"][:, PD] != 0).any() :
-        b_ppc = np.where( ppci1["bus"][:, PD] > 0)[0]
+        b_ppc = np.where( ppci1["bus"][:, PD] != 0)[0]
         q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
         p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         q_b, QB = (ppci1["bus"][b_ppc, QD])/3, np.array([])
@@ -97,7 +97,7 @@ def load_mapping(net,ppci1,):
         p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         b = np.where(bus_lookup == b_ppc)[0]
     elif (ppci1["bus"][:, QD] != 0).any() :
-        b_ppc = np.where( ppci1["bus"][:, QD] > 0)[0]
+        b_ppc = np.where( ppci1["bus"][:, QD] != 0)[0]
         q_a, QA = (ppci1["bus"][b_ppc, QD])/3, np.array([])
         p_a, PA = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         q_b, QB = (ppci1["bus"][b_ppc, QD])/3, np.array([])
@@ -127,6 +127,17 @@ def load_mapping(net,ppci1,):
         q_c = np.hstack([q_c, sgen_3ph["q_kvar_C"].values * vl])
         p_c = np.hstack([p_c, sgen_3ph["p_kw_C"].values * vl])
         b = np.hstack([b, sgen_3ph["bus"].values])
+
+    # Todo: Introduced in commit 1dd8a04 but caused problems
+    # if len([bus for bus in _is_elements['bus_is_idx'] if bus not in b]) != 0:
+    #     q_a = np.hstack([q_a, 0])
+    #     p_a = np.hstack([p_a, 0])
+    #     q_b = np.hstack([q_b, 0])
+    #     p_b = np.hstack([p_b, 0])
+    #     q_c = np.hstack([q_c, 0])
+    #     p_c = np.hstack([p_c, 0])
+    #     b = np.hstack([b, [bus for bus in net.bus.index.values if bus not in b]])
+
     # For Network Symmetric loads with unsymmetric loads
     #    Since the bus values of ppc values are not known, it is added again, fresh
     if b.size:

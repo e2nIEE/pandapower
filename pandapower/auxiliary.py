@@ -365,10 +365,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
     mode = net["_options"]["mode"]
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        if mode == "pf_3ph":
-            ppc_bus_isolated = np.zeros(net["_ppc"+str(sequence)]["bus"].shape[0], dtype=bool)
-        else:
-            ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
+        ppc_bus_isolated = np.zeros(net["_ppc"+str(sequence) if sequence!=None else ""]["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 

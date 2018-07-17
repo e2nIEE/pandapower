@@ -299,12 +299,28 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
 
+        l_3ph = net["load_3ph"]
+        if len(l_3ph) > 0:
+            # Todo: Voltage dependency
+            vl = _is_elements["load_3ph"] * l_3ph["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, (l_3ph["q_kvar_A"].values + l_3ph["q_kvar_B"].values + l_3ph["q_kvar_C"].values) * vl])
+            p = np.hstack([p, (l_3ph["p_kw_A"].values + l_3ph["p_kw_B"].values + l_3ph["p_kw_C"].values) * vl])
+            b = np.hstack([b, l_3ph["bus"].values])
+
         sgen = net["sgen"]
         if len(sgen) > 0:
             vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
+
+        sg_3ph = net["sgen_3ph"]
+        if len(sg_3ph) > 0:
+            # Todo: Voltage dependency
+            vl = _is_elements["sgen_3ph"] * sg_3ph["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, (sg_3ph["q_kvar_A"].values + sg_3ph["q_kvar_B"].values + sg_3ph["q_kvar_C"].values) * vl])
+            p = np.hstack([p, (sg_3ph["p_kw_A"].values + sg_3ph["p_kw_B"].values + sg_3ph["p_kw_C"].values) * vl])
+            b = np.hstack([b, sg_3ph["bus"].values])
 
         stor = net["storage"]
         if len(stor) > 0:

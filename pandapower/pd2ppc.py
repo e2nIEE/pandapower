@@ -136,11 +136,8 @@ def _init_ppc(net, sequence=None):
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }
            }
-    if net["_options"]["mode"] == "pf_3ph":
-        ppc["sequence"] = int(sequence) if sequence is not None else None
-        net["_ppc" + ("" if sequence is None else str(sequence))] = ppc
-    else:
-        net["_ppc"] = ppc
+    ppc["sequence"] = int(sequence) if sequence!=None else None
+    net["_ppc" + str(sequence) if sequence!=None else ""] = ppc
     return ppc
 
 
@@ -286,10 +283,7 @@ def _update_ppc(net, sequence=None):
 
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
-    if mode == "pf_3ph":
-        ppc = net["_ppc" + str(sequence)]
-    else:
-        ppc = net["_ppc"]
+    ppc = net["_ppc" + str(sequence) if sequence!=None else ""]
     ppci = copy.deepcopy(ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_pq_elements_and_add_on_ppc(net, ppc)

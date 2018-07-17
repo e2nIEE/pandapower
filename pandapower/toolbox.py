@@ -865,7 +865,7 @@ def _pre_release_changes(net):
         net.load["type"] = None
     if "zone" not in net.bus:
         net.bus["zone"] = None
-    for element in ["line", "trafo", "bus", "load", "sgen", "load_3ph", "sgen_3ph", "ext_grid"]:
+    for element in ["line", "trafo", "bus", "load", "load_3ph", "sgen", "sgen_3ph", "load_3ph", "sgen_3ph", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     if "in_service" not in net["ward"]:
         net.ward["in_service"] = True
@@ -970,8 +970,10 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
     scale = defaultdict(lambda: None, scalings)
     if scale_load:
         scaleit("load")
+        scaleit("load_3ph")
     if scale_sgen:
         scaleit("sgen")
+        scaleit("sgen_3ph")
 
 
 # --- Modify topology

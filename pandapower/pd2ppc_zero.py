@@ -220,7 +220,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     elif mode == 'pf_3ph':
-        c = 3.3
+        c = 3.3 # Todo: Where does that value come from?
 #        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
