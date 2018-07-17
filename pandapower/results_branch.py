@@ -130,7 +130,6 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
         return
 
     f, t = net._pd2ppc_lookups["branch"]["line"]
-    I012_ka = np.matrix([np.max(np.abs(np.array([I012_f[i, f:t].A1, I012_t[i, f:t].A1])), axis=0) for i in [0, 1, 2]])
     I012_from_ka = I012_f[:, f:t]
     I012_to_ka = I012_t[:, f:t]
     line_df = net["line"]
@@ -149,9 +148,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     else:
         Pabcl_kw = np.zeros_like(Pabcf_kw)
         Qabcl_kvar = np.zeros_like(Qabct_kvar)
-    Iabc_ka = np.abs(sequence_to_phase(I012_ka))
     Iabc_f_ka = np.abs(sequence_to_phase(I012_from_ka))
     Iabc_t_ka = np.abs(sequence_to_phase(I012_to_ka))
+    Iabc_ka = np.maximum.reduce([Iabc_t_ka, Iabc_f_ka])
 
     # write to line
     net["res_line_3ph"]["pA_from_kw"] = Pabcf_kw[0, :].A1
@@ -178,12 +177,14 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     net["res_line_3ph"]["iA_to_ka"] = Iabc_t_ka[0, :].A1
     net["res_line_3ph"]["iB_to_ka"] = Iabc_t_ka[1, :].A1
     net["res_line_3ph"]["iC_to_ka"] = Iabc_t_ka[2, :].A1
-    net["res_line_3ph"]["iA_ka"] = Iabc_ka[0, :].A1
-    net["res_line_3ph"]["iB_ka"] = Iabc_ka[1, :].A1
-    net["res_line_3ph"]["iC_ka"] = Iabc_ka[2, :].A1
-    net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :].A1 / i_max_phase * 100
-    net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :].A1 / i_max_phase * 100
-    net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :].A1 / i_max_phase * 100
+    net["res_line_3ph"]["iA_ka"] = Iabc_ka[0, :]
+    net["res_line_3ph"]["iB_ka"] = Iabc_ka[1, :]
+    net["res_line_3ph"]["iC_ka"] = Iabc_ka[2, :]
+    net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_percent"] = Iabc_ka.max(axis=0) / i_max_phase * 100
+    net["res_line_3ph"].index = net["line"].index
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):

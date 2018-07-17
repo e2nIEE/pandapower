@@ -412,18 +412,80 @@ def test_3ph_bus_mapping_order():
     pp.create_std_type(net, {"r_ohm_per_km":0.1013, "x_ohm_per_km": 0.06911504,
                              "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
                              "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
-                             "x0_ohm_per_km": 0.2764602},
-                        
-                             "N2XRY 3x185sm 0.6/1kV")
+                             "x0_ohm_per_km": 0.2764602},"N2XRY 3x185sm 0.6/1kV")
     
-    pp.create_line(net, b1, b2, 1.0, std_type="N2XRY 3x185sm 0.6/1kV")
+    pp.create_line(net, b1, b2, 1.0, std_type="N2XRY 3x185sm 0.6/1kV", index=4)
+    pp.create_line(net, b1, b2, 1.0, std_type="N2XRY 3x185sm 0.6/1kV", index=3, in_service=False)
+    pp.create_line(net, b1, b2, 1.0, std_type="N2XRY 3x185sm 0.6/1kV", index=7)
     pp.add_zero_impedance_parameters(net)
     pp.create_load(net, b2, p_kw=30, q_kvar=30)
     pp.runpp(net)
     runpp_3ph(net)
     
     assert np.allclose(net.res_bus_3ph.vmA_pu.values, net.res_bus.vm_pu.values, equal_nan=True)
-    assert net.res_bus_3ph.index.tolist() == net.res_bus.vm_pu.index.tolist()
+    assert net.res_bus_3ph.index.tolist() == net.res_bus.index.tolist()
     
+    assert net.res_line_3ph.index.tolist() == net.res_line.index.tolist()
+    assert np.allclose(net.res_line.p_from_kw, net.res_line_3ph.pA_from_kw +
+                                               net.res_line_3ph.pB_from_kw +
+                                               net.res_line_3ph.pC_from_kw )
+    assert np.allclose(net.res_line.loading_percent, net.res_line_3ph.loading_percentA)  
+    
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, vn_kv=0.4)
+    b2 = pp.create_bus(net, vn_kv=0.4)
+    
+    pp.create_ext_grid(net, b1, vm_pu=1.0, s_sc_max_mva=10, rx_max=0.1)
+    net.ext_grid["x0x_max"] = 1.
+    net.ext_grid["r0x0_max"] = 0.1
+    pp.create_std_type(net, {"r_ohm_per_km":0.1013, "x_ohm_per_km": 0.06911504,
+                             "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
+                             "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
+                             "x0_ohm_per_km": 0.2764602}, "N2XRY 3x185sm 0.6/1kV")
+    
+    pp.create_line(net, b1, b2, 0.4, std_type="N2XRY 3x185sm 0.6/1kV")
+    pp.add_zero_impedance_parameters(net)
+    pp.create_load(net, b2, p_kw=10, q_kvar=10)
+    pp.create_load_3ph(net, b2, p_kw_A=20, q_kvar_A=10, p_kw_B=15, q_kvar_B=5, p_kw_C=25,
+                       q_kvar_C=10)
+    
+    runpp_3ph(net)
+    
+    assert np.allclose(net.res_bus_3ph.vmA_pu, np.array([0.99939853552, 0.97401782343]))
+    assert np.allclose(net.res_bus_3ph.vmB_pu, np.array([1.0013885141, 0.98945593737]))
+    assert np.allclose(net.res_bus_3ph.vmC_pu, np.array([0.99921580141, 0.96329605983]))
+
+    assert abs(net.res_line_3ph.iA_from_ka.values[0] - 0.11946088987) < 1e-5
+    assert abs(net.res_line_3ph.iA_to_ka.values[0]   - 0.1194708224) < 1e-5
+    
+    assert abs(net.res_line_3ph.iB_from_ka.values[0] - 0.08812337783) < 1e-5
+    assert abs(net.res_line_3ph.iB_to_ka.values[0]   - 0.088131567331) < 1e-5
+               
+    assert abs(net.res_line_3ph.iC_from_ka.values[0] - 0.14074226065) < 1e-5
+    assert abs(net.res_line_3ph.iC_to_ka.values[0]   - 0.14075063601) < 1e-5
+        
+    assert abs(net.res_line_3ph.pA_from_kw.values[0]   - 23.810539354) < 1e-2
+    assert abs(net.res_line_3ph.pA_to_kw.values[0]     + 23.333142958) < 1e-2
+    assert abs(net.res_line_3ph.qA_from_kvar.values[0] - 13.901720672) < 1e-2
+    assert abs(net.res_line_3ph.qA_to_kvar.values[0]   + 13.332756527) < 1e-2
+               
+    assert abs(net.res_line_3ph.pB_from_kw.values[0]   - 18.55791658) < 1e-2
+    assert abs(net.res_line_3ph.pB_to_kw.values[0]     + 18.333405987) < 1e-2           
+    assert abs(net.res_line_3ph.qB_from_kvar.values[0] - 8.421814704) < 1e-2
+    assert abs(net.res_line_3ph.qB_to_kvar.values[0]   + 8.333413919) < 1e-2
+               
+    assert abs(net.res_line_3ph.pC_from_kw.values[0]   - 29.375192747) < 1e-2
+    assert abs(net.res_line_3ph.pC_to_kw.values[0]     + 28.331643666) < 1e-2
+    assert abs(net.res_line_3ph.qC_from_kvar.values[0] - 13.852398586) < 1e-2
+    assert abs(net.res_line_3ph.qC_to_kvar.values[0]   + 13.332422725) < 1e-2
+               
+    assert abs(net.res_line_3ph.loading_percentA.values[0] - 27.1525) < 1e-2
+    assert abs(net.res_line_3ph.loading_percentB.values[0] - 20.0299) < 1e-2
+    assert abs(net.res_line_3ph.loading_percentC.values[0] - 31.98878) < 1e-2
+    assert abs(net.res_line_3ph.loading_percent.values[0]  - 31.98878) < 1e-2
+               
 if __name__ == "__main__":
-    pytest.main(["test_runpp_3ph.py"])
+
+               
+    #    pytest.main(["test_runpp_3ph.py"])
