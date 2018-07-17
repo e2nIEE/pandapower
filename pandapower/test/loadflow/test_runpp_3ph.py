@@ -430,7 +430,9 @@ def test_3ph_bus_mapping_order():
                                                net.res_line_3ph.pB_from_kw +
                                                net.res_line_3ph.pC_from_kw )
     assert np.allclose(net.res_line.loading_percent, net.res_line_3ph.loading_percentA)  
+
     
+def test_3ph_two_bus_line_powerfactory():
     net = pp.create_empty_network()
     
     b1 = pp.create_bus(net, vn_kv=0.4)
