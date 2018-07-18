@@ -431,7 +431,7 @@ def _trafo_df_from_trafo3w(net):
     nr_trafos = len(net["trafo3w"])
     tap_variables = ("tp_pos", "tp_mid", "tp_max", "tp_min", "tp_st_percent", "tp_st_degree")
     i = 0
-    for _, ttab in net["trafo3w"].iterrows():
+    for ttab in net["trafo3w"].itertuples():
         vsc = np.array([ttab.vsc_hv_percent, ttab.vsc_mv_percent, ttab.vsc_lv_percent], dtype=float)
         vscr = np.array([ttab.vscr_hv_percent, ttab.vscr_mv_percent, ttab.vscr_lv_percent], dtype=float)
         sn = np.array([ttab.sn_hv_kva, ttab.sn_mv_kva, ttab.sn_lv_kva])
@@ -459,7 +459,7 @@ def _trafo_df_from_trafo3w(net):
             elif ttab.tp_side == "lv":
                 tp_trafo = 2
             for tv in tap_variables:
-                taps[tp_trafo][tv] = ttab[tv]
+                taps[tp_trafo][tv] = getattr(ttab,tv)
             # consider where the tap is located - at the bus or at star point of the 3W-transformer
             if not trafo3w_tap_at_star_point:
                 taps[tp_trafo]["tp_side"] = "hv" if tp_trafo == 0 else "lv"
@@ -467,7 +467,7 @@ def _trafo_df_from_trafo3w(net):
                 taps[tp_trafo]["tp_side"] = "lv" if tp_trafo == 0 else "hv"
                 taps[tp_trafo]["tp_st_degree"] += 180
 
-        max_load = ttab.max_loading_percent if "max_loading_percent" in ttab else 0
+        max_load = ttab.max_loading_percent if "max_loading_percent" in ttab._fields else 0
 
         trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv,
@@ -771,9 +771,14 @@ def _branches_with_oos_buses(net, ppc):
         mask_from = np.in1d(f_bus, bus_oos)
         mask_to = np.in1d(t_bus, bus_oos)
 
+        mask_and = mask_to & mask_from
+        if np.any(mask_and):
+            mask_from[mask_and] = False
+            mask_to[mask_and] = False
+
         # get lines that are connected to oos bus at exactly one side
         # buses that are connected to two oos buses will be removed by ext2int
-        mask_or = np.logical_xor(mask_from, mask_to)
+        mask_or = mask_to | mask_from
         # check whether buses are connected to line
         oos_buses_at_lines = np.r_[f_bus[mask_from], t_bus[mask_to]]
         n_oos_buses_at_lines = len(oos_buses_at_lines)

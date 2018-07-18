@@ -4,25 +4,31 @@ pandapower
 
 .. image:: https://badge.fury.io/py/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
+   :alt: PyPI
    
 .. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
-    :target: https://pypi.python.org/pypi/pandapower
+   :target: https://pypi.python.org/pypi/pandapower
+   :alt: PyPI
 
 .. image:: https://readthedocs.org/projects/pandapower/badge/
    :target: http://pandapower.readthedocs.io/
-   :alt: Documentation Status
+   :alt: docs
     
-.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=master
-    :target: https://travis-ci.org/lthurner/pandapower
+.. image:: https://travis-ci.org/e2nIEE/pandapower.svg?branch=master
+   :target: https://travis-ci.org/e2nIEE/pandapower
+   :alt: travis
 
-.. image:: https://codecov.io/github/lthurner/pandapower/coverage.svg?branch=master
-   :target: https://codecov.io/github/lthurner/pandapower?branch=master
+.. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=master
+   :target: https://codecov.io/github/e2nIEE/pandapower?branch=master
+   :alt: codecov
     
 .. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
-    :target: https://www.codacy.com/app/lthurner/pandapower?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=lthurner/pandapower&amp;utm_campaign=Badge_Grade
-
+   :target: https://app.codacy.com/project/lthurner/pandapower/dashboard
+   :alt: codacy
+    
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-    :target: https://github.com/lthurner/pandapower/blob/master/LICENSE
+   :target: https://github.com/e2nIEE/pandapower/blob/master/LICENSE
+   :alt: BSD
 
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
@@ -86,13 +92,11 @@ A paper describing pandapower has been accepted for publication in IEEE Transact
 You can use the following BibTex entry: ::
 
 	@ARTICLE{pandapower.2018,
-	author={L. Thurner and A. Scheidler and F. Schafer and J. H. Menke and J. Dollichon and F. Meier and S. Meinecke and M. Braun},
+	author = {{Thurner}, L. and {Scheidler}, A. and {Sch{\"a}fer}, F. and {Menke}, J.-H. and {Dollichon}, J. and {Meier}, F. and {Meinecke}, S. and {Braun}, M.},
 	journal={IEEE Transactions on Power Systems},
 	title={pandapower - an Open Source Python Tool for Convenient Modeling, Analysis and Optimization of Electric Power Systems},
 	year={2018},
-	doi={10.1109/TPWRS.2018.2829021},
-	url={https://arxiv.org/abs/1709.06743},
-	ISSN={0885-8950}
+	doi={10.1109/TPWRS.2018.2829021}
 	}
 
 Minimal Example
@@ -159,4 +163,4 @@ For the 3-bus example network, the result tables look like this:
 		
 All other pandapower elements and network analysis functionality (e.g. optimal power flow, state estimation or short-circuit calculation) is also fully integrated into the tabular pandapower datastructure.
 
-This minimal example is also available as a `jupyter notebook <https://github.com/lthurner/pandapower/blob/develop/tutorials/minimal_example.ipynb>`_.
+This minimal example is also available as a `jupyter notebook <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/minimal_example.ipynb>`_.

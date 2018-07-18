@@ -178,10 +178,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
             line_buses = net.line[["from_bus", "to_bus"]].values.flatten()
             if len(set(net.bus.index[hv_buses]) & set(line_buses)) > 0:
                 calculate_voltage_angles = True
-    if init == "auto":
-        init = "dc" if calculate_voltage_angles else "flat"
     if init == "results" and len(net.res_bus) == 0:
         init = "auto"
+    if init == "auto":
+        init = "dc" if calculate_voltage_angles else "flat"
+
+    
     default_max_iteration = {"nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
@@ -192,7 +194,8 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
+                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims,
                      recycle=recycle, voltage_depend_loads=False, delta=delta_q)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration)

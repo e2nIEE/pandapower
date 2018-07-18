@@ -243,10 +243,9 @@ class state_estimation(object):
 
         # initialize ppc
         ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
-        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
 
         # add measurements to ppci structure
-        ppci = _add_measurements_to_ppc(self.net, mapping_table, ppci, self.s_ref)
+        ppci = _add_measurements_to_ppc(self.net, ppci, self.s_ref)
 
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
@@ -363,6 +362,7 @@ class state_estimation(object):
         _rename_results(self.net)
 
         # additionally, write bus power injection results (these are not written in _extract_results)
+        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
                                                  mapping_table) * self.s_ref / 1e3
         self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,

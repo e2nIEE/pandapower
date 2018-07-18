@@ -12,6 +12,7 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results
+import pandas as pd
 
 
 class AlgorithmUnknown(ppException):
@@ -34,7 +35,7 @@ def _powerflow(net, **kwargs):
     """
 
     # get infos from options
-    init = net["_options"]["init"]
+    init_results = net["_options"]["init_results"]
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
     mode = net["_options"]["mode"]
@@ -44,12 +45,12 @@ def _powerflow(net, **kwargs):
     net["converged"] = False
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)
-
-    if (ac and not init == "results") or not ac:
-        reset_results(net)
-    else:
+       
+    if not ac or init_results:
         verify_results(net)
-
+    else:
+        reset_results(net)
+        
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
         net["_options"]["voltage_depend_loads"] = False
@@ -118,9 +119,8 @@ def _add_auxiliary_elements(net):
 
 def _create_xward_buses(net):
     from pandapower.create import create_buses
-    init = net["_options"]["init"]
+    init_results = net["_options"]["init_results"]
 
-    init_results = init == "results"
     main_buses = net.bus.loc[net.xward.bus.values]
     bid = create_buses(net, nr_buses=len(main_buses),
                        vn_kv=main_buses.vn_kv.values,
@@ -129,15 +129,13 @@ def _create_xward_buses(net):
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(main_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+        net.res_bus=net.res_bus.append(pd.DataFrame(index=bid,data=net.res_bus.loc[main_buses.index].values,columns=net.res_bus.columns))
 
 
 def _create_trafo3w_buses(net):
     from pandapower.create import create_buses
-    init = net["_options"]["init"]
+    init_results = net["_options"]["init_results"]
 
-    init_results = init == "results"
     hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
     bid = create_buses(net, nr_buses=len(net["trafo3w"]),
                        vn_kv=hv_buses.vn_kv.values,
@@ -146,8 +144,7 @@ def _create_trafo3w_buses(net):
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(hv_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+        net.res_bus=net.res_bus.append(pd.DataFrame(index=bid,data=net.res_bus.loc[hv_buses.index].values,columns=net.res_bus.columns))
 
 
 def _add_dcline_gens(net):

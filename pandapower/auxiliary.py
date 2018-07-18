@@ -33,7 +33,7 @@ import pandas as pd
 import scipy as sp
 import six
 
-from pandapower.idx_brch import F_BUS, T_BUS
+from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF
 
 try:
@@ -300,10 +300,11 @@ def _check_connectivity(ppc):
     :param ppc: pypower case file
     :return:
     """
-    nobranch = ppc['branch'].shape[0]
+    br_status=ppc['branch'][:, BR_STATUS]==True
+    nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][:, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][:, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
 
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
@@ -392,14 +393,18 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, delta=1e-10,
-                     voltage_depend_loads=False, trafo3w_losses="hv"):
+                     copy_constraints_to_ppc, r_switch, enforce_q_lims, recycle, delta=1e-10,
+                     voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
+                     init_va_degree=0):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
-
+    
+    init_results = (isinstance(init_vm_pu, str)     and (init_vm_pu == "results")) or \
+                   (isinstance(init_va_degree, str) and (init_va_degree == "results"))
+                            
     options = {
         "calculate_voltage_angles": calculate_voltage_angles,
         "trafo_model": trafo_model,
@@ -407,12 +412,14 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "mode": mode,
         "copy_constraints_to_ppc": copy_constraints_to_ppc,
         "r_switch": r_switch,
-        "init": init,
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
         "delta": delta,
-        "trafo3w_losses": trafo3w_losses
+        "trafo3w_losses": trafo3w_losses,
+        "init_vm_pu": init_vm_pu,
+        "init_va_degree": init_va_degree,
+        "init_results": init_results
     }
     _add_options(net, options)
 

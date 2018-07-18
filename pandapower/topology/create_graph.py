@@ -7,6 +7,7 @@
 from itertools import combinations
 
 import networkx as nx
+import numpy as np
 
 try:
     import pplog as logging
@@ -17,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                   include_impedances=True, nogobuses=None, notravbuses=None, multi=True):
+                   include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+                   calc_r_ohm=False, calc_z_ohm=False):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
@@ -49,6 +51,14 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
             multiple parallel edges between nodes
             False: NetworkX Graph (no multiple parallel edges)
 
+        **calc_r_ohm** (boolean, False) - True: The function calculates absolute resistance in Ohm
+            and adds it as a weight to the graph
+            False: All resistance weights are set to zero
+
+        **calc_z_ohm** (boolean, False) - True: The function calculates magnitude of the impedance in Ohm
+            and adds it as a weight to the graph
+            False: All impedance weights are set to zero
+
      OUTPUT:
         **mg** - Returns the required NetworkX graph
 
@@ -70,10 +80,14 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         nogolines = set(net.switch.element[
             (net.switch.et == "l") & (net.switch.closed == 0)]) if respect_switches else set()
         mg.add_edges_from((int(fb), int(tb), {"weight": float(l), "key": int(idx), "type": "l",
-                                              "capacity": float(imax), "path": 1})
-                          for fb, tb, l, idx, inservice, imax in
+                                              "capacity": float(imax), "path": 1, 'R_ohm': float(r_ohm), 'Z_ohm': float(z_ohm)})
+                          for fb, tb, l, idx, inservice, imax, r_ohm, z_ohm in
                           list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
-                                   net.line.index, net.line.in_service, net.line.max_i_ka))
+                                   net.line.index, net.line.in_service, net.line.max_i_ka,
+                                   (net.line.r_ohm_per_km * net.line.length_km)
+                                   if calc_r_ohm else np.zeros(len(net.line.index)),
+                                   np.sqrt((net.line.r_ohm_per_km * net.line.length_km) ** 2 + (net.line.x_ohm_per_km * net.line.length_km) ** 2)
+                                   if calc_z_ohm else np.zeros(len(net.line.index))))
                           if inservice == 1 and idx not in nogolines)
 
     if include_impedances:
@@ -83,32 +97,67 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                            'even though lines are not. If this behaviour is undesired, set the '
                            'parameter "include_impedances" to False')
 
-        mg.add_edges_from((int(fb), int(tb), {"weight": 0, "key": int(idx), "type": "i", "path": 1})
-                          for fb, tb, idx, inservice in
+        mg.add_edges_from((int(fb), int(tb), {"weight": 0, "key": int(idx), "type": "i", "path": 1, 'R_ohm': float(r_ohm), 'Z_ohm': float(z_ohm)})
+                          for fb, tb, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.impedance.from_bus, net.impedance.to_bus,
-                                   net.impedance.index, net.impedance.in_service))
+                                   net.impedance.index, net.impedance.in_service,
+                                   (net.impedance.rft_pu.abs() * net.bus.loc[net.impedance.from_bus].vn_kv.values ** 2 / (net.sn_kva/1000))
+                                   if calc_r_ohm else np.zeros(len(net.impedance.index)),
+                                   np.sqrt(net.impedance.rft_pu **2 + net.impedance.xft_pu ** 2) * (net.bus.loc[net.impedance.from_bus].vn_kv.values ** 2) / (net.sn_kva/1000)
+                                   if calc_z_ohm else np.zeros(len(net.impedance.index))))
                           if inservice == 1)
 
     if include_trafos:
         nogotrafos = set(net.switch.element[
             (net.switch.et == "t") & (net.switch.closed == 0)]) if respect_switches else set()
-        mg.add_edges_from((int(hvb), int(lvb), {"weight": 0, "key": int(idx), "type": "t"})
-                          for hvb, lvb, idx, inservice in
+        mg.add_edges_from((int(hvb), int(lvb), {"weight": 0, "key": int(idx), "type": "t", 'R_ohm': float(r_ohm), 'Z_ohm': float(z_ohm)})
+                          for hvb, lvb, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.trafo.hv_bus, net.trafo.lv_bus,
-                                   net.trafo.index, net.trafo.in_service))
+                                   net.trafo.index, net.trafo.in_service,
+                                   ((net.trafo.vscr_percent/100) * (net.trafo.vn_hv_kv ** 2) / (net.trafo.sn_kva/1000))
+                                   if calc_r_ohm else np.zeros(len(net.trafo.index)),
+                                   ((net.trafo.vsc_percent/100)  * (net.trafo.vn_hv_kv ** 2) / (net.trafo.sn_kva/1000))
+                                   if calc_z_ohm else np.zeros(len(net.trafo.index))))
                           if inservice == 1 and idx not in nogotrafos)
-        for trafo3, t3tab in net.trafo3w.iterrows():
-            mg.add_edges_from((int(bus1), int(bus2), {"weight": 0, "key": int(trafo3),
-                                                      "type": "t3"}) for bus1, bus2 in
-                              combinations([t3tab.hv_bus,
-                                            t3tab.mv_bus, t3tab.lv_bus], 2) if t3tab.in_service)
+        #Three-winding transformers:
+        #hv-mv
+        mg.add_edges_from((int(bus1), int(bus2), {"weight": 0, "key": int(idx),"type": "t3", 'R_ohm': float(r_ohm), 'Z_ohm': float(z_ohm)})
+                          for bus1, bus2, idx, inservice, r_ohm, z_ohm in
+                          list(zip(net.trafo3w.hv_bus, net.trafo3w.mv_bus,
+                                   net.trafo3w.index, net.trafo3w.in_service,
+                                   ((net.trafo3w.vscr_hv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_mv_kva']].min(axis=1)/1000))
+                                   if calc_r_ohm else np.zeros(len(net.trafo3w.index)),
+                                   ((net.trafo3w.vsc_hv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_mv_kva']].min(axis=1)/1000))
+                                   if calc_z_ohm else np.zeros(len(net.trafo3w.index))))
+                          if inservice==1)
+        #mv-lv
+        mg.add_edges_from((int(bus1), int(bus2), {"weight": 0, "key": int(idx),"type": "t3", 'R_ohm': float(r_ohm), 'Z_ohm': float(z_ohm)})
+                          for bus1, bus2, idx, inservice, r_ohm, z_ohm in
+                          list(zip(net.trafo3w.mv_bus, net.trafo3w.lv_bus,
+                                   net.trafo3w.index, net.trafo3w.in_service,
+                                   ((net.trafo3w.vscr_mv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_mv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   if calc_r_ohm else np.zeros(len(net.trafo3w.index)),
+                                   ((net.trafo3w.vsc_mv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_mv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   if calc_z_ohm else np.zeros(len(net.trafo3w.index))))
+                          if inservice==1)
+        #hv-lv
+        mg.add_edges_from((int(bus1), int(bus2), {"weight": 0, "key": int(idx),"type": "t3", 'R_ohm': float(r_ohm), 'Z_ohm': float(z_ohm)})
+                          for bus1, bus2, idx, inservice, r_ohm, z_ohm in
+                          list(zip(net.trafo3w.hv_bus, net.trafo3w.lv_bus,
+                                   net.trafo3w.index, net.trafo3w.in_service,
+                                   ((net.trafo3w.vscr_lv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   if calc_r_ohm else np.zeros(len(net.trafo3w.index)),
+                                   ((net.trafo3w.vsc_lv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   if calc_z_ohm else np.zeros(len(net.trafo3w.index))))
+                          if inservice==1)
+
     if respect_switches:
         # add edges for closed bus-bus switches
         bs = net.switch[(net.switch.et == "b") & (net.switch.closed == 1)]
     else:
         # add edges for any bus-bus switches
         bs = net.switch[net.switch.et == "b"]
-    mg.add_edges_from((int(b), int(e), {"weight": 0, "key": int(i), "type": "s"})
+    mg.add_edges_from((int(b), int(e), {"weight": 0, "key": int(i), "type": "s", 'R_ohm': 0, 'Z_ohm': 0})
                       for b, e, i in list(zip(bs.bus, bs.element, bs.index)))
 
     # nogobuses are a nogo

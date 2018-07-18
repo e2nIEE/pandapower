@@ -15,7 +15,7 @@ Optimisation problem
 The equation describes the basic formulation of the optimal power flow problem. The pandapower optimal power flow can be constrained by either, AC and DC loadflow equations. The branch constraints represent the maximum apparent power loading of transformers and the maximum line current loadings. The bus constraints can contain maximum and minimum voltage magnitude and angle. For the external grid, generators, loads, DC lines and static generators, the maximum and minimum active resp. reactive power can be considered as operational constraints for the optimal power flow. The constraints are defined element wise in the respective element tables.
 
 .. math::
-		& min & \sum_{i  \ \epsilon \ gen, sgen, load, extgrid }{P_{i} * f_{i}(P_i)} \\
+		& min & \sum_{i  \ \epsilon \ gen, sgen, load, extgrid }{f_{i}(P_i)} \\
         & subject \ to \\
         & & Loadflow \ equations \\
         & & branch \ constraints  \\
