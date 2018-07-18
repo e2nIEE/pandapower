@@ -486,6 +486,72 @@ def test_3ph_two_bus_line_powerfactory():
     assert abs(net.res_line_3ph.loading_percentB.values[0] - 20.0299) < 1e-2
     assert abs(net.res_line_3ph.loading_percentC.values[0] - 31.98878) < 1e-2
     assert abs(net.res_line_3ph.loading_percent.values[0]  - 31.98878) < 1e-2
-               
+    
+def check_results(net, vc, result):
+    res_vm_kv = np.concatenate(
+            (net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmA_pu,
+                             net.res_bus_3ph[(net.bus.in_service)].vmB_pu,
+                             net.res_bus_3ph[(net.bus.in_service)].vmC_pu)
+            ,axis =0)
+    if not np.allclose(result, res_vm_kv,rtol=1e-4):
+        raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
+        
+def make_nw(net,vectorgroup):
+        hv_base = 20                     # 110kV Base Voltage
+        lv_base = 0.4
+        bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vectorgroup, name = "bushv")
+        buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vectorgroup, name = "buslv")
+    #    pp.create_bus(net, vn_kv=20., in_service=False)
+    #    pp.create_bus(net, vn_kv=20., in_service=True)
+        
+        pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
+        net.ext_grid["r0x0_max"] = 0.1
+        net.ext_grid["x0x_max"] = 1.0
+        
+        transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
+        transformer_type.update({"vsc0_percent": 6, "vscr0_percent": 1.095238, "mag0_percent": 100,
+                         "mag0_rx": 0., "vector_group": vectorgroup,"vscr_percent": 1.095238,
+                         "shift_degree": 0, "si0_hv_partial": 0.9 })
+        pp.create_std_type(net, transformer_type, vectorgroup, "trafo")
+        t1= pp.create_transformer(net, bushv, buslv, std_type=vectorgroup, parallel=1,
+                              index=pp.get_free_id(net.trafo)+1)
+    #    pp.create_transformer(net, bushv, buslv, std_type=vector_group, in_service=False)
+        
+        create_load_3ph(net, buslv, p_kw_A=300, q_kvar_A=20, p_kw_B=100, q_kvar_B=50,
+                           p_kw_C=100, q_kvar_C=30)
+        pp.add_zero_impedance_parameters(net)
+        return t1
+        
+def test_trafo_vg_loadflow():
+    
+# =============================================================================
+# TODO: Check why there is formation of 2x1 Y0 bus matrix for other vector groups
+# It has something to do with Y sh for these groups    
+# =============================================================================
+    results = {
+#                "Yy": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
+#                "Yyn":  [	0.999945441976376,1.22794573109855,1.00002125565888,1.4416173022977,1.00003330458372,0.464803132596897	]
+#                ,"Yd":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
+#                ,"YNy": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
+                "YNyn":[	0.999989798411917,0.974535554759052,0.999998062978948,0.979767191100436,1.00001214446541,0.98580613030435	]
+#                ,"YNd": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
+#                ,"Dy":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
+#                ,"Dyn": [	0.999994464210383,0.974485419076184,0.999960730788854,0.979873700533758,1.00004480678672,0.985749706670833	]
+#                ,"Dd":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
+
+               }
+    for vc in results.keys():
+        net = pp.create_empty_network() 
+        make_nw(net, vc)
+        runpp_3ph(net)
+        print(net.res_bus_3ph)
+#        try:
+#             runpp_3ph(net)
+#        except:
+#             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
+    
+    for vc, result in results.items():
+        check_results(net, vc, result)    
+    
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
