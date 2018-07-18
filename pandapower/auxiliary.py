@@ -363,14 +363,14 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
-    mode = net["_options"]["mode"]
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        ppc_bus_isolated = np.zeros(net["_ppc"+str(sequence) if sequence!=None else ""]["bus"].shape[0], dtype=bool)
+        ppc = net["_ppc"] if sequence is None else net["_ppc%s"%sequence]
+        ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
     is_elements = dict()
-    for element in ["load", "load_3ph","sgen", "sgen_3ph","gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
+    for element in ["load", "load_3ph", "sgen", "sgen_3ph","gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
         if len_ > 0:

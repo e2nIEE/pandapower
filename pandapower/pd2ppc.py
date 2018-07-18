@@ -136,8 +136,11 @@ def _init_ppc(net, sequence=None):
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }
            }
-    ppc["sequence"] = int(sequence) if sequence!=None else None
-    net["_ppc" + str(sequence) if sequence!=None else ""] = ppc
+    if sequence is None:
+        net["_ppc"] = ppc
+    else:
+        ppc["sequence"] = int(sequence)
+        net["_ppc%s"%sequence] = ppc
     return ppc
 
 
@@ -279,11 +282,10 @@ def _update_ppc(net, sequence=None):
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = aux._select_is_elements_numba(net)
-    mode = net["_options"]["mode"]
 
     recycle = net["_options"]["recycle"]
     # get the old ppc and lookup
-    ppc = net["_ppc" + str(sequence) if sequence!=None else ""]
+    ppc = net["_ppc"] if sequence is None else net["_ppc%s"% sequence]
     ppci = copy.deepcopy(ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     _calc_pq_elements_and_add_on_ppc(net, ppc)

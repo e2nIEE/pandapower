@@ -529,6 +529,34 @@ def convert_format(net):
                                                          ("scaling", "f8"),
                                                          ("in_service", 'bool'),
                                                          ("type", np.dtype(object))]))
+    if "load_3ph" not in net:
+        net["load_3ph"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                         ("bus", "u4"),
+                                                         ("p_kw_A", "f8"),
+                                                         ("q_kvar_A", "f8"),
+                                                         ("p_kw_B", "f8"),
+                                                         ("q_kvar_B", "f8"),
+                                                         ("p_kw_C", "f8"),
+                                                         ("q_kvar_C", "f8"),
+                                                         ("const_z_percent", "f8"),
+                                                         ("const_i_percent", "f8"),
+                                                         ("sn_kva", "f8"),
+                                                         ("scaling", "f8"),
+                                                         ("in_service", 'bool'),
+                                                         ("type", np.dtype(object))]))
+    if "sgen_3ph" not in net:
+        net["sgen_3ph"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                         ("bus", "i8"),
+                                                         ("p_kw_A", "f8"),
+                                                         ("p_kw_B", "f8"),
+                                                         ("p_kw_C", "f8"),
+                                                         ("q_kvar_A", "f8"),
+                                                         ("q_kvar_B", "f8"),
+                                                         ("q_kvar_C", "f8"),
+                                                         ("sn_kva", "f8"),
+                                                         ("scaling", "f8"),
+                                                         ("in_service", 'bool'),
+                                                         ("type", np.dtype(object))]))      
     if "version" not in net or net.version < 1.1:
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
@@ -865,7 +893,7 @@ def _pre_release_changes(net):
         net.load["type"] = None
     if "zone" not in net.bus:
         net.bus["zone"] = None
-    for element in ["line", "trafo", "bus", "load", "load_3ph", "sgen", "sgen_3ph", "load_3ph", "sgen_3ph", "ext_grid"]:
+    for element in ["line", "trafo", "bus", "load", "sgen", "ext_grid"]:
         net[element].in_service = net[element].in_service.astype(bool)
     if "in_service" not in net["ward"]:
         net.ward["in_service"] = True

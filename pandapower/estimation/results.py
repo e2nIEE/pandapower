@@ -31,7 +31,7 @@ def _rename_results(net):
     :param net: pandapower grid
     :return:
     """
-    elements_to_init = ["bus", "ext_grid", "line", "load", "load_3ph", "sgen", "sgen_3ph", "trafo", "trafo3w",
+    elements_to_init = ["bus", "ext_grid", "line", "load", "sgen", "trafo", "trafo3w",
                         "shunt", "impedance", "gen", "ward", "xward", "dcline"]
     # rename res_* tables to res_*_est and then res_*_power_flow to res_*
     for element in elements_to_init:

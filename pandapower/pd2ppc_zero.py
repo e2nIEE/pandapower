@@ -139,7 +139,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         z0_k = (r_sc + x_sc * 1j) / parallel
         if mode == "sc":
             from pandapower.shortcircuit.idx_bus import C_MAX
-            cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
+            cmax = ppc["bus"][lv_buses_ppc, C_MAX]
             kt = _transformer_correction_factor(vsc_percent, vscr_percent, trafo_kva, cmax)
             z0_k *= kt
         y0_k = 1 / z0_k

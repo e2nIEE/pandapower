@@ -795,19 +795,4 @@ def test_opf_no_controllables_vs_pf():
 
 
 if __name__ == "__main__":
-
     pytest.main(['-s', __file__])
-    # test_storage_opf()
-    # test_opf_varying_max_line_loading()
-    #pytest.main(['-s', __file__])
-    #test_storage_opf()
-    # test_opf_no_controllables_vs_pf()
-    #test_opf_varying_max_line_loading()
-     # pytest.main(["test_basic.py", "-s"])
-    # test_simplest_dispatch()
-    # test_trafo3w_loading()
-    # test_trafo3w_loading()
-    # test_dcopf_pwl()
-    # net = simple_opf_test_net()
-    # test_no_controllables(net)
-    # test_controllables_default()

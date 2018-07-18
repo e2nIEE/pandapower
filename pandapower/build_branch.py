@@ -229,7 +229,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
@@ -238,7 +238,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
@@ -248,7 +248,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv):
         if trafo_df.equals(net.trafo):
             from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
-            cmax = net._ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
+            cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
                                                 trafo_df.sn_kva, cmax)
             r *= kt
