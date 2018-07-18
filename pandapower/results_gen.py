@@ -5,15 +5,12 @@
 
 
 import numpy as np
-from pandapower.pf.bustypes import bustypes
 
-from pandapower.idx_bus import VM, VA, GS, BS
+from pandapower.idx_bus import VM, VA
 from pandapower.idx_gen import PG, QG
 
-from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, combine_X012, \
-    I_from_SV, S_from_VI, I0_from_V012, I1_from_V012, I2_from_V012
-from pandapower.pf.makeYbus import makeYbus
-
+from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
+                                 I_from_SV, S_from_VI
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
