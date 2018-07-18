@@ -106,27 +106,32 @@ def load_mapping(net,ppci1,):
         p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         b = np.where(bus_lookup == b_ppc)[0]
 
+    isolated_buses = net["bus"].index.values[net["_isolated_buses"]]
     l3 = net["load_3ph"]
-    if len(l3) > 0:
-        vl = _is_elements["load_3ph"] * l3["scaling"].values.T*1e-3
-        q_a = np.hstack([q_a, l3["q_kvar_A"].values * vl])
-        p_a = np.hstack([p_a, l3["p_kw_A"].values * vl])
-        q_b = np.hstack([q_b, l3["q_kvar_B"].values * vl])
-        p_b = np.hstack([p_b, l3["p_kw_B"].values * vl])
-        q_c = np.hstack([q_c, l3["q_kvar_C"].values * vl])
-        p_c = np.hstack([p_c, l3["p_kw_C"].values * vl])
-        b = np.hstack([b, l3["bus"].values])
+    l3_bus_idx = np.array(l3["bus"])
+    l3_is = np.invert(np.in1d(l3_bus_idx, isolated_buses))
+    if len(l3) > 0 and l3_is.any():
+        vl = (_is_elements["load_3ph"] * l3["scaling"].values.T*1e-3)[l3_is]
+        q_a = np.hstack([q_a, l3["q_kvar_A"].values[l3_is] * vl])
+        p_a = np.hstack([p_a, l3["p_kw_A"].values[l3_is] * vl])
+        q_b = np.hstack([q_b, l3["q_kvar_B"].values[l3_is] * vl])
+        p_b = np.hstack([p_b, l3["p_kw_B"].values[l3_is] * vl])
+        q_c = np.hstack([q_c, l3["q_kvar_C"].values[l3_is] * vl])
+        p_c = np.hstack([p_c, l3["p_kw_C"].values[l3_is] * vl])
+        b = np.hstack([b, l3["bus"].values[l3_is]])
 
-    sgen_3ph = net["sgen_3ph"]
-    if len(sgen_3ph) > 0:
-        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T*1e-3
-        q_a = np.hstack([q_a, sgen_3ph["q_kvar_A"].values * vl])
-        p_a = np.hstack([p_a, sgen_3ph["p_kw_A"].values * vl])
-        q_b = np.hstack([q_b, sgen_3ph["q_kvar_B"].values * vl])
-        p_b = np.hstack([p_b, sgen_3ph["p_kw_B"].values * vl])
-        q_c = np.hstack([q_c, sgen_3ph["q_kvar_C"].values * vl])
-        p_c = np.hstack([p_c, sgen_3ph["p_kw_C"].values * vl])
-        b = np.hstack([b, sgen_3ph["bus"].values])
+    sgen3 = net["sgen_3ph"]
+    sgen3_bus_idx = np.array(sgen3["bus"])
+    sgen3_is = np.invert(np.in1d(sgen3_bus_idx, isolated_buses))
+    if len(sgen3) > 0 and sgen3_is.any():
+        vl = (_is_elements["sgen_3ph"] * sgen3["scaling"].values.T*1e-3)[sgen3_is]
+        q_a = np.hstack([q_a, sgen3["q_kvar_A"].values[sgen3_is] * vl])
+        p_a = np.hstack([p_a, sgen3["p_kw_A"].values[sgen3_is] * vl])
+        q_b = np.hstack([q_b, sgen3["q_kvar_B"].values[sgen3_is] * vl])
+        p_b = np.hstack([p_b, sgen3["p_kw_B"].values[sgen3_is] * vl])
+        q_c = np.hstack([q_c, sgen3["q_kvar_C"].values[sgen3_is] * vl])
+        p_c = np.hstack([p_c, sgen3["p_kw_C"].values[sgen3_is] * vl])
+        b = np.hstack([b, sgen3["bus"].values[sgen3_is]])
 
     # Todo: Introduced in commit 1dd8a04 but caused problems
     # if len([bus for bus in _is_elements['bus_is_idx'] if bus not in b]) != 0:
