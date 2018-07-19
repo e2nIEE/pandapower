@@ -26,6 +26,22 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 from pandapower.toolbox import nets_equal
 
 
+@pytest.mark.xfail
+def test_minimal_net():
+    # tests corner-case when the grid only has 1 bus and an ext-grid
+    net = pp.create_empty_network()
+    b = pp.create_bus(net, 110)
+    pp.create_ext_grid(net, b)
+    pp.runpp(net)
+
+    pp.create_load(net, b, 100)
+    pp.runpp(net)
+
+    b2 = pp.create_bus(net, 110)
+    pp.create_switch(net, b, b2, 'b')
+    pp.runpp(net)
+
+
 def test_set_user_pf_options():
     net = example_simple()
     pp.runpp(net)
@@ -749,37 +765,39 @@ def test_add_element_and_init_results():
     net = simple_four_bus_system()
     pp.runpp(net, init="flat")
     pp.create_bus(net, vn_kv=20.)
-    pp.create_line(net, from_bus=2, to_bus=3, length_km=1, name="new line" + str(1), std_type="NAYY 4x150 SE")
+    pp.create_line(net, from_bus=2, to_bus=3, length_km=1, name="new line" + str(1),
+                   std_type="NAYY 4x150 SE")
     pp.runpp(net, init="results")
 
 
 def test_vm_start_pu():
     net = pp.create_empty_network()
-    
+
     b1 = pp.create_bus(net, vn_kv=0.4)
     b2 = pp.create_bus(net, vn_kv=0.4)
-    
+
     pp.create_ext_grid(net, b1, vm_pu=0.7)
     pp.create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", index=4)
     pp.create_load(net, b2, p_kw=10)
-    
+
     pp.runpp(net, init="flat", vm_start_pu=1.02)
     assert net._ppc["iterations"] == 5
-    
+
     pp.runpp(net, init="dc", vm_start_pu=0.8)
     assert net._ppc["iterations"] == 4
-    
-    pp.runpp(net, init="flat", vm_start_pu=[0.75,  0.7])
+
+    pp.runpp(net, init="flat", vm_start_pu=[0.75, 0.7])
     assert net._ppc["iterations"] == 3
-    
-    pp.runpp(net, init="dc", vm_start_pu=[0.75,  0.7])
+
+    pp.runpp(net, init="dc", vm_start_pu=[0.75, 0.7])
     assert net._ppc["iterations"] == 3
-    
+
     pp.runpp(net, init="flat", vm_start_pu="auto")
     assert net._ppc["iterations"] == 3
-    
+
     pp.runpp(net, init="dc", vm_start_pu="auto")
     assert net._ppc["iterations"] == 3
+
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])
