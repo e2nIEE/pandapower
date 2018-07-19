@@ -141,6 +141,13 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         trafo3w_edge_data=net.trafo3w[net.trafo3w.in_service]
 
         if calc_r_ohm or calc_z_ohm:
+            if (any(trafo3w_edge_data.hv_bus == trafo3w_edge_data.mv_bus) |
+                any(trafo3w_edge_data.mv_bus == trafo3w_edge_data.lv_bus) |
+                any(trafo3w_edge_data.hv_bus == trafo3w_edge_data.lv_bus)):
+                raise UserWarning("A three-winding transformer has two sides connected "
+                                  "to the same bus. Resistanc/impedance calculation as "
+                                  "edge weight is not implemented for this case!")
+
             base_Z_hv = (trafo3w_edge_data[['sn_hv_kva', 'sn_mv_kva']].min(axis=1)/1000) / (trafo3w_edge_data.vn_hv_kv ** 2)
             base_Z_mv = (trafo3w_edge_data[['sn_mv_kva', 'sn_lv_kva']].min(axis=1)/1000) / (trafo3w_edge_data.vn_hv_kv ** 2)
             base_Z_lv = (trafo3w_edge_data[['sn_hv_kva', 'sn_lv_kva']].min(axis=1)/1000) / (trafo3w_edge_data.vn_hv_kv ** 2)
