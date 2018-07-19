@@ -133,8 +133,12 @@ def test_graph_characteristics(feeder_network):
     bus4 = pp.create_bus(net, vn_kv=20.0)
     bus5 = pp.create_bus(net, vn_kv=20.0)
     bus6 = pp.create_bus(net, vn_kv=20.0)
+    bus7 = pp.create_bus(net, vn_kv=20.0)
+    bus8 = pp.create_bus(net, vn_kv=20.0)
+    bus9 = pp.create_bus(net, vn_kv=20.0)
     new_connections = [(3, bus0), (bus0, bus1), (bus0, bus2), (1, bus3), (2, bus4), (bus3, bus4),
-                       (bus4, bus5), (bus4, bus6), (bus5, bus6)]
+                       (bus4, bus5), (bus4, bus6), (bus5, bus6), (2, bus7), (bus7, bus8),
+                       (bus8, bus9), (bus9, bus7)]
     for fb, tb in new_connections:
         pp.create_line(net, fb, tb, length_km=1.0, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
 
@@ -149,12 +153,13 @@ def test_graph_characteristics(feeder_network):
     stub_buses = char_dict["stub_buses"]
     required_bridges = char_dict["required_bridges"]
     notn1_areas = char_dict["notn1_areas"]
-    assert bridges == {(3, 4), (4, 5), (4, 6)}
-    assert articulation_points == {8, 3, 4}
-    assert connected == {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-    assert stub_buses == {4, 5, 6}
-    assert required_bridges == {4: [(3, 4)], 5: [(3, 4), (4, 5)], 6: [(3, 4), (4, 6)]}
-    assert notn1_areas == {8: {9, 10}, 3: {4, 5, 6}}
+    assert bridges == {(3, 4), (4, 5), (4, 6), (2, 11)}
+    assert articulation_points == {8, 3, 4, 2, 11}
+    assert connected == {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
+    assert stub_buses == {4, 5, 6, 11, 12, 13}
+    assert required_bridges == {4: [(3, 4)], 5: [(3, 4), (4, 5)], 6: [(3, 4), (4, 6)], 11: [(2, 11)],
+                                12: [(2, 11)], 13: [(2, 11)]}
+    assert notn1_areas == {8: {9, 10}, 3: {4, 5, 6}, 2: {11, 12, 13}}
 
 
 if __name__ == '__main__':

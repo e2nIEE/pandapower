@@ -24,19 +24,19 @@ Continous Integration Testing
 --------------------------------------
 The tests are continously carried out with Travis CI in Python 2.7, 3.4, 3.5 and 3.6:
 
-.. image:: https://travis-ci.org/lthurner/pandapower.svg?branch=develop
-    :target: https://travis-ci.org/lthurner/pandapower
+.. image:: https://travis-ci.org/e2nIEE/pandapower.svg?branch=develop
+    :target: https://travis-ci.org/e2nIEE/pandapower
 
 .. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
     :target: https://pypi.python.org/pypi/pandapower
 
 The test coverage rate is checked with codecov, code quality with codacy:
 
-.. image:: https://codecov.io/github/lthurner/pandapower/coverage.svg?branch=develop
-   :target: https://codecov.io/github/lthurner/pandapower?branch=master
+.. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=develop
+   :target: https://codecov.io/github/e2nIEE/pandapower?branch=master
 
 .. image:: https://api.codacy.com/project/badge/Grade/5d749ed6772e47f6b84fb9afb83903d3
-    :target: https://www.codacy.com/app/lthurner/pandapower/dashboard
+    :target: https://www.codacy.com/app/e2nIEE/pandapower/dashboard
 
 .. _validate:
 

@@ -2,7 +2,7 @@
 Built-in plot functions
 #############################
 
-In order to get idea about interactive plot features and possibilities see the `tutorial <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_.
+In order to get idea about interactive plot features and possibilities see the `tutorial <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_.
 
 =============================
 Simple Plotting

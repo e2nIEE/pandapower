@@ -78,7 +78,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
-        if on_map == True:
+        if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
@@ -111,16 +111,16 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         use_line_geodata = False
     idx = net.line.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.line.loc[idx, 'name'].astype(str) + '<br />' +
-                 'I = ' + net.res_line.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br />' +
-                 'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].round(precision).astype(str) + ' kA' + '<br />' +
-                 'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].round(precision).astype(str) + ' kA' + '<br />'
-                 ).tolist()
+    hoverinfo = (
+            net.line['name'].astype(str) + '<br />' +
+            'I = ' + net.res_line['loading_percent'].round(precision).astype(str) + ' %' + '<br />' +
+            'I_from = ' + net.res_line['i_from_ka'].round(precision).astype(str) + ' kA' + '<br />' +
+            'I_to = ' + net.res_line['i_to_ka'].round(precision).astype(str) + ' kA' + '<br />').tolist()
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
                                     infofunc=hoverinfo,
                                     cmap=cmap_lines,
-                                    cmap_vals=net.res_line.loc[:, 'loading_percent'].values,
+                                    cmap_vals=net.res_line['loading_percent'].values,
                                     cmin=0,
                                     cmax=100,
                                     cbar_title='Line Loading [%]')

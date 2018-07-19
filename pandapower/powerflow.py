@@ -35,7 +35,7 @@ def _powerflow(net, **kwargs):
     """
 
     # get infos from options
-    init = net["_options"]["init"]
+    init_results = net["_options"]["init_results"]
     ac = net["_options"]["ac"]
     recycle = net["_options"]["recycle"]
     mode = net["_options"]["mode"]
@@ -45,12 +45,12 @@ def _powerflow(net, **kwargs):
     net["converged"] = False
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)
-
-    if (ac and not init == "results") or not ac:
-        reset_results(net)
-    else:
+       
+    if not ac or init_results:
         verify_results(net)
-
+    else:
+        reset_results(net)
+        
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
         net["_options"]["voltage_depend_loads"] = False
@@ -119,9 +119,8 @@ def _add_auxiliary_elements(net):
 
 def _create_xward_buses(net):
     from pandapower.create import create_buses
-    init = net["_options"]["init"]
+    init_results = net["_options"]["init_results"]
 
-    init_results = init == "results"
     main_buses = net.bus.loc[net.xward.bus.values]
     bid = create_buses(net, nr_buses=len(main_buses),
                        vn_kv=main_buses.vn_kv.values,
@@ -135,9 +134,8 @@ def _create_xward_buses(net):
 
 def _create_trafo3w_buses(net):
     from pandapower.create import create_buses
-    init = net["_options"]["init"]
+    init_results = net["_options"]["init_results"]
 
-    init_results = init == "results"
     hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
     bid = create_buses(net, nr_buses=len(net["trafo3w"]),
                        vn_kv=hv_buses.vn_kv.values,

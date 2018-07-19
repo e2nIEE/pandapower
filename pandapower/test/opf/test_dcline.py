@@ -123,4 +123,4 @@ def test_dcline_dispatch3(dcline_net):
     assert abs(net.res_dcline.p_from_kw.values + net.res_cost) < 1e-3
 
 if __name__ == "__main__":
-    pytest.main(["test_dcline.py", "-xs"])
+    pytest.main([])
