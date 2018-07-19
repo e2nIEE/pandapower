@@ -1100,7 +1100,8 @@ def drop_elements_at_buses(net, buses):
         if element == "switch":
             n_switch = net.switch.shape[0]
             drop_switches_at_buses(net, buses)
-            logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
+            if net.switch.shape[0] < n_switch:
+                logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
         elif any(net[element][column].isin(buses)):
             eid = net[element][net[element][column].isin(buses)].index
             if element == 'line':
@@ -1109,7 +1110,6 @@ def drop_elements_at_buses(net, buses):
                 drop_trafos(net, eid, table=element)
             else:
                 net[element].drop(eid, inplace=True)
-            logger.info("dropped %s elements: %d" % (element, len(eid)))
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -1331,6 +1331,10 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
                 # pandas legacy < 0.21
                 net[element] = pd.concat([net1[element], net2[element]], ignore_index=ignore_index)
             _preserve_dtypes(net[element], dtypes)
+    # update standard types of net by data of net2
+    for type_ in net.std_types.keys():
+        # net2.std_types[type_].update(net1.std_types[type_])  # if net1.std_types have priority
+        net.std_types[type_].update(net2.std_types[type_])
     if validate:
         runpp(net, **kwargs)
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1.res_bus.vm_pu.values))

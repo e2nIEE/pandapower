@@ -27,8 +27,8 @@ Configure and run a state estimation:
     - `state estimation <https://github.com/panda-power/pandapower/blob/master/tutorials/state_estimation.ipynb>`_
 
 Run a short-circuit calculation according to IEC 60909:
-    - `short-circuit calculation <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit.ipynb>`_
-    - `considering renewable energy (2016 revision) <https://github.com/lthurner/pandapower/blob/develop/tutorials/shortcircuit_renewables.ipynb>`_
+    - `short-circuit calculation <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/shortcircuit.ipynb>`_
+    - `considering renewable energy (2016 revision) <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/shortcircuit_renewables.ipynb>`_
 
 Working with the pandapower standard type library:
     - `standard types <https://github.com/panda-power/pandapower/blob/master/tutorials/std_types.ipynb>`_ 
@@ -42,9 +42,9 @@ Plotting pandapower networks:
         - `plotting with colormaps <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_colormaps.ipynb>`_
         - `plotting without geographical data <https://github.com/panda-power/pandapower/blob/master/tutorials/plotting_structural.ipynb>`_
     * interactive plots using plotly
-        - `built-in plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_
-        - `custom plots <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_traces.ipynb>`_
-        - `interactive plots on maps <http://nbviewer.jupyter.org/github/lthurner/pandapower/blob/develop/tutorials/plotly_maps.ipynb>`_
+        - `built-in plots <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_
+        - `custom plots <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_traces.ipynb>`_
+        - `interactive plots on maps <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_maps.ipynb>`_
     
 Hosting Capacity:
     - `hosting capacity <https://github.com/panda-power/pandapower/blob/master/tutorials/hosting_capacity.ipynb>`_

@@ -237,24 +237,25 @@ def test_overloaded_lines():
     bus0 = pp.create_bus(net, vn_kv=.4)
     bus1 = pp.create_bus(net, vn_kv=.4)
 
-    ext_grid0 = pp.create_ext_grid(net, bus0, vm_pu=4)
+    pp.create_ext_grid(net, bus0)
 
     line0 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
     line1 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
     line2 = pp.create_line(net, bus0, bus1, length_km=1, std_type="15-AL1/3-ST1A 0.4")
     line3 = pp.create_line(net, bus0, bus1, length_km=10, std_type="149-AL1/24-ST1A 10.0")
 
+    pp.create_load(net, bus1, p_kw=200, q_kvar=50)
+    
     pp.runpp(net)
-
     # test the overloaded lines by default value of max_load=100
     overloaded_lines = tb.overloaded_lines(net, max_load=100)
 
-    assert set(overloaded_lines) == set([line0, line1, line2])
+    assert set(overloaded_lines) == set([line0, line1])
 
     # test the overloaded lines by a self defined value of max_load=50
     overloaded_lines = tb.overloaded_lines(net, max_load=50)
 
-    assert set(overloaded_lines) == set([line0, line1, line2, line3])
+    assert set(overloaded_lines) == set([line0, line1, line2])
 
 
 def test_violated_buses():

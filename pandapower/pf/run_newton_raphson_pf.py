@@ -39,9 +39,7 @@ def _run_newton_raphson_pf(ppci, options):
     ##-----  run the power flow  -----
     t0 = time()
 
-    init = options["init"]
-
-    if init == "dc":
+    if options["init_va_degree"] == "dc":
         ppci = _run_dc_pf(ppci)
 
     ppci, success, iterations = _nr_ac_pf(ppci, options)

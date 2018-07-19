@@ -95,8 +95,8 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=True,
-                     r_switch=r_switch, init=init, enforce_q_lims=True, recycle=None,
-                     voltage_depend_loads=voltage_depend_loads)
+                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init, enforce_q_lims=True,
+                     recycle=None, voltage_depend_loads=voltage_depend_loads)
     #  do the conversion
     _, ppci = _pd2ppc(net)
     ppci['branch'] = ppci['branch'].real

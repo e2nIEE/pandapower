@@ -324,10 +324,11 @@ def find_graph_characteristics(g, roots, characteristics):
 
         except StopIteration:
             stack.pop()
-            if required_bridges and ((parent, grandparent) in char_dict['bridges'] or
-                                     (grandparent, parent) in char_dict['bridges']):
+            if required_bridges:
                 if len(visited_bridges) > 0:
                     char_dict['required_bridges'][parent] = visited_bridges[:]
+                if ((parent, grandparent) in char_dict['bridges'] or
+                    (grandparent, parent) in char_dict['bridges']):
                     visited_bridges.pop()
 
             if notn1_areas and grandparent == notn1_area_start:
