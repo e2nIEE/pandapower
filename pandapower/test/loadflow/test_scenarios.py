@@ -286,7 +286,50 @@ def test_volt_dep_load_at_inactive_bus():
     assert not np.isnan(net.res_bus.p_kw.at[5])
     assert net.res_bus.p_kw.at[3] == 0
 
+def test_two_oos_buses():
+    net = pp.create_empty_network()
+    
+    b1 = pp.create_bus(net, vn_kv=0.4)
+    b2 = pp.create_bus(net, vn_kv=0.4)
+    b3 = pp.create_bus(net, vn_kv=0.4, in_service=False)
+    b4 = pp.create_bus(net, vn_kv=0.4, in_service=False)
+    
+    pp.create_ext_grid(net, b1)
+    l1 = pp.create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", index=4)
+    l2 = pp.create_line(net, b2, b3, 0.5, std_type="NAYY 4x50 SE", index=2)
+    l3 = pp.create_line(net, b3, b4, 0.5, std_type="NAYY 4x50 SE", index=7)
+    
+    pp.runpp(net)
+    assert net.res_line.loading_percent.at[l1] > 0
+    assert net.res_line.loading_percent.at[l2] > 0
+    assert np.isnan(net.res_line.loading_percent.at[l3])
 
+    net.line.drop(l2, inplace=True)
+    pp.runpp(net)
+    assert net.res_line.loading_percent.at[l1] > 0
+    assert np.isnan(net.res_line.loading_percent.at[l3])
+
+def test_oos_buses_at_trafo3w():
+    net = pp.create_empty_network()
+
+    b1 = pp.create_bus(net, vn_kv=110.)
+    b2 = pp.create_bus(net, vn_kv=110.)
+    b3 = pp.create_bus(net, vn_kv=110., in_service=False)
+    b4 = pp.create_bus(net, vn_kv=20., in_service=False)
+    b5 = pp.create_bus(net, vn_kv=10., in_service=False)
+
+    pp.create_ext_grid(net, b1)
+    l1 = pp.create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", in_service=True)
+    l2 = pp.create_line(net, b2, b3, 0.5, std_type="NAYY 4x50 SE", in_service=False)
+
+    tidx = pp.create_transformer3w(net, b3, b4, b5, std_type='63/25/38 MVA 110/20/10 kV', in_service=True)
+
+    pp.runpp(net, trafo3w_losses = 'star', trafo_model= 'pi', init='flat')
+
+    assert net.res_line.loading_percent.at[l1] > 0
+    assert np.isnan(net.res_trafo3w.i_hv_ka.at[tidx])
+
+    
 if __name__ == "__main__":
-    test_volt_dep_load_at_inactive_bus()
-    # pytest.main(["test_scenarios.py"])
+#    test_volt_dep_load_at_inactive_bus()
+     pytest.main(["test_scenarios.py"])

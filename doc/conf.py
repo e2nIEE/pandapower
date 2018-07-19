@@ -15,13 +15,6 @@ import os
 import sys
 import mock
 
-#MOCK_MODULES = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
-#                  'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
-#                  'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
-#                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm', 'matplotlib.backend_bases']
-#for mod_name in MOCK_MODULES:
-#  sys.modules[mod_name] = mock.Mock()
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -55,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pandapower'
-copyright = u'2016 by Fraunhofer IEE and University of Kassel'
+copyright = u'2016-2018 by Fraunhofer IEE and University of Kassel'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -83,7 +76,8 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib', 'scipy.sparse', 'scipy.sparse.linalg', 'numpy.core',
                   'numpy.core.numeric', 'scipy.io', 'numpy.linalg', 'matplotlib.collections', 'matplotlib.patches',
                   'matplotlib.pyplot', 'matplotlib.colors', 'scipy.stats', 'scipy.linalg', 'seaborn', 'plotly',
-                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm', 'matplotlib.backend_bases']
+                  'plotly.graph_objs', 'plotly.offline', 'matplotlib.cm', 'matplotlib.backend_bases', 'numpy.core.umath',
+                  'numpy.core.multiarray', 'matplotlib.transforms']
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 

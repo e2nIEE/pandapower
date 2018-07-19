@@ -20,5 +20,6 @@ tutorials/.ipynb_checkpoints
 *.sln
 *.bak
 *.orig
+*.ini
 pandapower/plotting/plotly/mapbox_token.txt
 pandapower/plotting/plotly/temp-plot.html

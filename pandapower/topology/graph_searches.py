@@ -21,7 +21,7 @@ def connected_component(mg, bus, notravbuses=[]):
 
 
     OPTIONAL:
-     **notravbuses** (list/set) - Indeces of notravbuses: lines connected to these buses are
+     **notravbuses** (list/set) - indices of notravbuses: lines connected to these buses are
                                      not being considered in the graph
 
     OUTPUT:
@@ -324,10 +324,11 @@ def find_graph_characteristics(g, roots, characteristics):
 
         except StopIteration:
             stack.pop()
-            if required_bridges and ((parent, grandparent) in char_dict['bridges'] or
-                                     (grandparent, parent) in char_dict['bridges']):
+            if required_bridges:
                 if len(visited_bridges) > 0:
                     char_dict['required_bridges'][parent] = visited_bridges[:]
+                if ((parent, grandparent) in char_dict['bridges'] or
+                    (grandparent, parent) in char_dict['bridges']):
                     visited_bridges.pop()
 
             if notn1_areas and grandparent == notn1_area_start:
@@ -366,7 +367,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
         **net** (pandapowerNet) - Variable that contains a pandapower network.
 
      OPTIONAL:
-        **roots** (integer/list, None) - Indeces of buses that should be excluded (by default, the
+        **roots** (integer/list, None) - indices of buses that should be excluded (by default, the
                                          ext_grid buses will be set as roots)
 
      EXAMPLE:

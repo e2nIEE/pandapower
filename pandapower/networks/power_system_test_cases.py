@@ -34,7 +34,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     for i in ref_bus_idx:
         if i not in net.gen.bus.values and i not in net.ext_grid.bus.values:
             raise ValueError("Index %i is not in net.gen.bus or net.ext_grid.bus." % i)
-    # determine indeces of ext_grid and gen connected to ref_bus_idx
+    # determine indices of ext_grid and gen connected to ref_bus_idx
     gen_idx = net.gen.index[net.gen.bus.isin(ref_bus_idx)]
     ext_grid_idx = net.ext_grid.index[~net.ext_grid.bus.isin(ref_bus_idx)]
     # old ext_grid -> gen
@@ -77,6 +77,23 @@ def case4gs():
     """
     case4gs = pp.from_json(_get_cases_path("case4gs.json"))
     return case4gs
+
+
+def case5():
+    """
+    This is the 5 bus example from F.Li and R.Bo, "Small Test Systems for Power System Economic \
+    Studies" Its data origin is `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+
+    OUTPUT:
+         **net** - Returns the required ieee network case4gs
+
+    EXAMPLE:
+         import pandapower.networks as pn
+
+         net = pn.case5()
+    """
+    case5 = pp.from_json(_get_cases_path("case5.json"))
+    return case5
 
 
 def case6ww():
@@ -161,9 +178,8 @@ def case24_ieee_rts():
 def case30():
     """
     This function calls the json file case30.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Washington case 30 \
-    <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_ and `Illinois University case 30 <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. The PYPOWER data are derived from
+    `Washington 30 Bus Dynamic Test Case <https://www2.ee.washington.edu/research/pstca/dyn30/pg_tcadyn30.htm>`_.
 
     OUTPUT:
          **net** - Returns the required ieee network case30
@@ -175,6 +191,25 @@ def case30():
     """
     case30 = pp.from_json(_get_cases_path("case30.json"))
     return case30
+
+
+def case_ieee30():
+    """
+    This function calls the json file case_ieee30.json which data origin is \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_. The MATPOWER data are derived from
+    `Washington IEEE 30 bus Case <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_.
+    Additional information about this network are available at `Illinois University case 30 <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
+
+    OUTPUT:
+         **net** - Returns the required ieee network case30
+
+    EXAMPLE:
+         import pandapower.networks as pn
+
+         net = pn.case_ieee30()
+    """
+    case_ieee30 = pp.from_json(_get_cases_path("case_ieee30.json"))
+    return case_ieee30
 
 
 def case33bw():
@@ -291,6 +326,7 @@ def case118():
     Some more information about this network are given by `Washington case 118 \
     <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and \
     `Illinois University case 118 <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
+    The PYPOWER case data are corrected at Vm of buses 68 and 116.
 
     OUTPUT:
          **net** - Returns the required ieee network case118
@@ -320,6 +356,25 @@ def case145():
     """
     case145 = pp.from_json(_get_cases_path("case145.json"))
     return case145
+
+
+def case_illinois200():
+    """
+    This function calls the json file case_illinois200.json which data origin is \
+    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_. This network was published in \
+    A.B. Birchfield, T. Xu, K.M. Gegner, K.S. Shetye, T.J. Overbye, "Grid Structural Characteristics as Validation Criteria for Synthetic Networks," IEEE Transactions on Power Systems, 2017.
+    Some additional information about this network are available at `Illinois University Illinois 200 <http://icseg.iti.illinois.edu/illinois200/>`_.
+
+    OUTPUT:
+         **net** - Returns the required ieee network case30
+
+    EXAMPLE:
+         import pandapower.networks as pn
+
+         net = pn.case_illinois200()
+    """
+    case_illinois200 = pp.from_json(_get_cases_path("case_illinois200.json"))
+    return case_illinois200
 
 
 def case300():

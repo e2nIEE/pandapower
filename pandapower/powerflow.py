@@ -12,6 +12,7 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results
+import pandas as pd
 
 
 class AlgorithmUnknown(ppException):
@@ -94,7 +95,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         # ----- run the powerflow -----
         if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)[0]
-        elif algorithm == 'nr':
+        elif algorithm in ['nr', 'iwamoto_nr']:
             result = _run_newton_raphson_pf(ppci, options)
         elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
             result = _runpf_pypower(ppci, options, **kwargs)[0]
@@ -129,8 +130,7 @@ def _create_xward_buses(net):
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(main_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+        net.res_bus=net.res_bus.append(pd.DataFrame(index=bid,data=net.res_bus.loc[main_buses.index].values,columns=net.res_bus.columns))
 
 
 def _create_trafo3w_buses(net):
@@ -146,8 +146,7 @@ def _create_trafo3w_buses(net):
     if init_results:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2ppc anyways. LT
-        for hv_bus, aux_bus in zip(hv_buses.index, bid):
-            net.res_bus.loc[aux_bus] = net.res_bus.loc[hv_bus].values
+        net.res_bus=net.res_bus.append(pd.DataFrame(index=bid,data=net.res_bus.loc[hv_buses.index].values,columns=net.res_bus.columns))
 
 
 def _add_dcline_gens(net):

@@ -2,10 +2,7 @@
 
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 import numpy as np
-
 
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
@@ -19,7 +16,7 @@ from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pf.runpf_pypower import _get_pf_variables_from_ppci, \
     _store_results_from_pf_in_ppci
-from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
 from pandapower.topology import estimate_voltage_vector
 
 try:
@@ -246,10 +243,9 @@ class state_estimation(object):
 
         # initialize ppc
         ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
-        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
 
         # add measurements to ppci structure
-        ppci = _add_measurements_to_ppc(self.net, mapping_table, ppci, self.s_ref)
+        ppci = _add_measurements_to_ppc(self.net, ppci, self.s_ref)
 
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
@@ -283,6 +279,7 @@ class state_estimation(object):
 
         current_error = 100.
         cur_it = 0
+        G_m, r, H, h_x = None, None, None, None
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug(" Starting iteration %d" % (1 + cur_it))
@@ -329,32 +326,16 @@ class state_estimation(object):
                               (cur_it, self.max_iterations))
 
         # store results for all elements
-        # write voltage into ppc
-        ppci["bus"][:, 7] = v_m
-        ppci["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
-
         # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
-
-        # alternative calculation
-        # bus_powers_p = np.zeros(len(v_m), dtype=np.float32)
-        # bus_powers_q = np.zeros(len(v_m), dtype=np.float32)
-        # for i in range(len(v_m)):
-        #     for j in range(len(v_m)):
-        #         bus_powers_p[i] += v_m[i] * v_m[j] * (sem.Y_bus[i, j].real * np.cos(delta[i] - delta[j])
-        #                                               + sem.Y_bus[i, j].imag * np.sin(delta[i] - delta[j]))
-        #         bus_powers_q[i] += v_m[i] * v_m[j] * (sem.Y_bus[i, j].real * np.sin(delta[i] - delta[j])
-        #                                               - sem.Y_bus[i, j].imag * np.cos(delta[i] - delta[j]))
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
             bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
 
         ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
-
-        # ppci["bus"][:, 2] = bus_powers_p  # saved in per unit
-        # ppci["bus"][:, 3] = bus_powers_q  # saved in per unit
-
+        ppci["bus"][:, 7] = v_m
+        ppci["bus"][:, 8] = delta * 180 / np.pi  # convert to degree
 
         # calculate line results (in ppc_i)
         s_ref, bus, gen, branch = _get_pf_variables_from_ppci(ppci)[0:4]
@@ -371,16 +352,17 @@ class state_estimation(object):
         # convert to pandapower indices
         ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
-        # todo -> set sgen_est load_est and so on correctly
         # extract results from ppc
         _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
                         numba=True, ac=True, algorithm='nr', max_iteration="auto")
-        _extract_results(self.net, ppc)
+        # writes res_bus.vm_pu / va_degree and res_line
+        _extract_results_se(self.net, ppc)
 
         # restore backup of previous results
         _rename_results(self.net)
 
-        # additionally, write bus results (these are not written in _extract_results)
+        # additionally, write bus power injection results (these are not written in _extract_results)
+        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
                                                  mapping_table) * self.s_ref / 1e3
         self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
@@ -396,10 +378,11 @@ class state_estimation(object):
         self.V = v_m
         self.delta = delta
 
-        # hotfix: delete results which are not correctly calculated
-        for result in ("res_load_est", "res_sgen_est", "res_gen_est"):
-            if result in self.net:
-                del self.net[result]
+        # delete results which are not correctly calculated
+        for k in list(self.net.keys()):
+            if k.startswith("res_") and k.endswith("_est") and \
+                    k not in ("res_bus_est", "res_line_est", "res_trafo_est", "res_trafo3w_est"):
+                del self.net[k]
 
         return successful
 
@@ -534,7 +517,7 @@ class state_estimation(object):
                 # Error covariance matrix:
                 R = np.linalg.inv(self.R_inv)
 
-                # todo for future debugging: this line's results have changed with the ppc
+                # for future debugging: this line's results have changed with the ppc
                 # overhaul in April 2017 after commit 9ae5b8f42f69ae39f8c8cf (which still works)
                 # there are differences of < 1e-10 for the Omega entries which cause
                 # the function to work far worse. As of now it is unclear if it's just numerical
