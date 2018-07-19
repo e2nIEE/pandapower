@@ -45,7 +45,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     numba = options["numba"]
     iwamoto = options["algorithm"] == "iwamoto_nr"
     voltage_depend_loads = options["voltage_depend_loads"]
-    V_debug = options["V_debug"]
+    v_debug = options["v_debug"]
 
     baseMVA = ppci['baseMVA']
     bus = ppci['bus']
@@ -60,7 +60,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     if iwamoto:
         dVm, dVa = zeros_like(Vm), zeros_like(Va)
 
-    if V_debug:
+    if v_debug:
         Vm_it=Vm.copy()
         Va_it=Va.copy()
     else:
@@ -116,7 +116,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         Vm = abs(V)  ## update Vm and Va again in case
         Va = angle(V)  ## we wrapped around with a negative Vm
 
-        if V_debug:
+        if v_debug:
             Vm_it=column_stack((Vm_it,Vm))
             Va_it=column_stack((Va_it,Va))
 
