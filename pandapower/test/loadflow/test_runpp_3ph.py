@@ -11,6 +11,8 @@ from pandapower.pf.runpp_3ph import combine_X012
 from pandapower.create import create_load_3ph
 from pandapower.pf.runpp_3ph import runpp_3ph,show_results
 import copy
+from pandapower.pf.makeYbus import makeYbus 
+from pandapower.pf.runpp_3ph import I0_from_V012,I1_from_V012,I2_from_V012
 
 def results_2bus_PowerFactory():
     Sabc_sl_sp =  np.matrix( [
@@ -330,7 +332,6 @@ def test_transformer_3ph_diff_kvabase():
 #    lv_base_res = lv_base/np.sqrt(3)
 
     net = pp.create_empty_network(sn_kva = kVA_base )
-    net["name"] = "test_transformer_3ph_diff_kvabase"
     
     bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vector_group, name = "bushv", index=1)
     buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vector_group, name = "buslv", index=5)
@@ -488,11 +489,19 @@ def test_3ph_two_bus_line_powerfactory():
     
 def check_results(net, vc, result):
     res_vm_kv = np.concatenate(
-            (net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmA_pu,
-                             net.res_bus_3ph[(net.bus.in_service)].vmB_pu,
-                             net.res_bus_3ph[(net.bus.in_service)].vmC_pu)
+            (
+            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmA_pu,
+            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmB_pu,
+            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmC_pu,
+#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].pA_kw*1e-3,
+#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].qA_kvar*1e-3,
+#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].pB_kw*1e-3,
+#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].qB_kvar*1e-3,
+#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].pC_kw*1e-3,
+#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].qC_kvar*1e-3
+            )
             ,axis =0)
-    if not np.allclose(result, res_vm_kv,rtol=1e-4):
+    if not np.allclose(result, res_vm_kv,atol=1e-4):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
         
 def make_nw(net,vectorgroup):
@@ -532,7 +541,10 @@ def test_trafo_vg_loadflow():
 #                "Yyn":  [	0.999945441976376,1.22794573109855,1.00002125565888,1.4416173022977,1.00003330458372,0.464803132596897	]
 #                ,"Yd":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
 #                ,"YNy": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
-                "YNyn":[	0.999989798411917,0.974535554759052,0.999998062978948,0.979767191100436,1.00001214446541,0.98580613030435	]
+                "YNyn":[	0.999989798411917,0.974535554759052,0.999998062978948,0.979767191100436,1.00001214446541,0.98580613030435\
+#                        ,0.29998199048,0.30491398063,0.019995651922,0.046418929571,0.099999883488,0.10140597436,0.04999993784,0.054212417817,0.099999915123,0.10148829148,0.029999966177,0.032762701427	
+                        ]
+
 #                ,"YNd": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
 #                ,"Dy":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
 #                ,"Dyn": [	0.999994464210383,0.974485419076184,0.999960730788854,0.979873700533758,1.00004480678672,0.985749706670833	]
