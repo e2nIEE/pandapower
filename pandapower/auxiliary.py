@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import six
+from numpy import complex128
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF
@@ -696,8 +697,20 @@ def I_from_V(Y, V):
 # =============================================================================
 # Calculating Power
 # =============================================================================
-def S_from_VI(V, I):
+def S_from_VI_elementwise(V, I):
     return np.multiply(V, I.conjugate())
 
-def I_from_SV(S, V):
+def I_from_SV_elementwise(S, V):
     return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V!=0)) # Return zero if div by zero
+
+def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
+    if n_res==None:
+        n_res = S012.shape[1]
+    if idx==None:
+        idx = np.ones(n_res, dtype="bool")
+    I012 = np.matrix(np.zeros((3, n_res), dtype=complex))
+    I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
+    Vabc = sequence_to_phase(V012[:, idx])
+    Iabc = sequence_to_phase(I012[:, idx])
+    Sabc = S_from_VI_elementwise(Vabc, Iabc)
+    return Sabc, Vabc

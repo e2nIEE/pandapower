@@ -5,12 +5,14 @@
 
 
 import numpy as np
+from numpy import complex128
 
 from pandapower.idx_bus import VM, VA
 from pandapower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
-                                 I_from_SV, S_from_VI
+    I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012
+
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
@@ -120,19 +122,17 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     gen_idx_ppc = ext_grid_lookup[eg_is_idx]
 
     # read results from ppc for these buses
-    V012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex))
+    V012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex128))
     V012[:, gen_idx_ppc] = np.matrix([ppc["bus"][gen_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
     S012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex))
     S012[:, gen_idx_ppc] = np.matrix([-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
-    I012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex))
-    I012[:, gen_idx_ppc] = I_from_SV(S012[:, gen_idx_ppc], V012[:, gen_idx_ppc])
 
-    Vabc = sequence_to_phase(V012[:, gen_idx_ppc])
-    Iabc = sequence_to_phase(I012[:, gen_idx_ppc])
-    Sabc = S_from_VI(Vabc, Iabc) * 1e3
+    Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=gen_idx_ppc)
+    Sabc = Sabc * 1e3
+
     pA, pB, pC = map(lambda x: x.A1, np.real(Sabc))
     qA, qB, qC = map(lambda x: x.A1, np.imag(Sabc))
 
@@ -150,7 +150,6 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     net["res_ext_grid_3ph"].index = net['ext_grid'].index
 
     return b, pA, qA, pB, qB, pC, qC
-
 
 def _get_p_q_gen_resuts(net, ppc):
     _is_elements = net["_is_elements"]
@@ -201,11 +200,11 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     S012[:, gen_idx_ppc] = np.matrix(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
     I012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex))
-    I012[:, gen_idx_ppc] = I_from_SV(S012[:, gen_idx_ppc], V012[:, gen_idx_ppc])
+    I012[:, gen_idx_ppc] = I_from_SV_elementwise(S012[:, gen_idx_ppc], V012[:, gen_idx_ppc])
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
-    Sabc = S_from_VI(Vabc, Iabc) * 1e3
+    Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e3
     pA, pB, pC = map(lambda x: x.A1, np.real(Sabc))
     qA, qB, qC = map(lambda x: x.A1, np.imag(Sabc))
 

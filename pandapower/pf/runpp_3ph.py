@@ -6,6 +6,7 @@
 @author: sghosh (Intern : Feb 2018-July 2018)
 @author: Alexander Prostejovsky (alepros), Technical University of Denmark
 """
+import copy
 from time import time
 
 import numpy as np
@@ -26,7 +27,7 @@ from pandapower.idx_bus import GS, BS, PD , QD
 from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed, \
     _check_bus_index_and_print_warning_if_high, _check_gen_index_and_print_warning_if_high, \
     _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, phase_to_sequence, X012_to_X0, X012_to_X2, \
-    I1_from_V012, S_from_VI, V1_from_ppc, V_from_I, combine_X012, I0_from_V012, I2_from_V012
+    I1_from_V012, S_from_VI_elementwise, V1_from_ppc, V_from_I, combine_X012, I0_from_V012, I2_from_V012
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pf.bustypes import bustypes
@@ -106,10 +107,8 @@ def load_mapping(net,ppci1,):
         p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         b = np.where(bus_lookup == b_ppc)[0]
 
-    isolated_buses = net["bus"].index.values[net["_isolated_buses"]]
     l3 = net["load_3ph"]
-    l3_bus_idx = np.array(l3["bus"])
-    l3_is = np.invert(np.in1d(l3_bus_idx, isolated_buses))
+    l3_is = net["_is_elements"]["load_3ph"]
     if len(l3) > 0 and l3_is.any():
         vl = (_is_elements["load_3ph"] * l3["scaling"].values.T*1e-3)[l3_is]
         q_a = np.hstack([q_a, l3["q_kvar_A"].values[l3_is] * vl])
@@ -121,8 +120,7 @@ def load_mapping(net,ppci1,):
         b = np.hstack([b, l3["bus"].values[l3_is]])
 
     sgen3 = net["sgen_3ph"]
-    sgen3_bus_idx = np.array(sgen3["bus"])
-    sgen3_is = np.invert(np.in1d(sgen3_bus_idx, isolated_buses))
+    sgen3_is = net["_is_elements"]["sgen_3ph"]
     if len(sgen3) > 0 and sgen3_is.any():
         vl = (_is_elements["sgen_3ph"] * sgen3["scaling"].values.T*1e-3)[sgen3_is]
         q_a = np.hstack([q_a, sgen3["q_kvar_A"].values[sgen3_is] * vl])
@@ -221,7 +219,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     _, ppci2 = _pd2ppc(net, 2)
     _add_ext_grid_sc_impedance(net, ppci2)
 
-    _, ppci0 = _pd2ppc_zero(net)
+    _, ppci0 = _pd2ppc(net, 0)
 
     _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00 = _get_pf_variables_from_ppci(ppci0)
     baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01 = _get_pf_variables_from_ppci(ppci1)
@@ -279,7 +277,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         _run_newton_raphson_pf(ppci1, net._options)
 
         I1_from_V_it = -np.transpose(I1_from_V012(V012_it, Y1_pu))
-        s_from_voltage = S_from_VI(V1_for_S1, I1_from_V_it)
+        s_from_voltage = S_from_VI_elementwise(V1_for_S1, I1_from_V_it)
 
         V1_pu_it = V1_from_ppc(ppci1)
         V0_pu_it = V_from_I(Y0_pu, I0_pu_it)
@@ -379,7 +377,7 @@ def _phase_from_sequence_results(ppci0, Y1_pu, V012_pu):
                             I2_from_V012(V012_pu, Y1_pu))
     I_abc_pu = sequence_to_phase(I012_pu)
     V_abc_pu = sequence_to_phase(V012_pu)
-    Sabc_pu = S_from_VI(V_abc_pu, I_abc_pu)
+    Sabc_pu = S_from_VI_elementwise(V_abc_pu, I_abc_pu)
     return V_abc_pu, I_abc_pu, Sabc_pu
 
 

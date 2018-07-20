@@ -9,6 +9,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+from numpy import complex128
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
@@ -276,7 +277,7 @@ def _build_bus_ppc(net, ppc):
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
-def _calc_pq_elements_and_add_on_ppc(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
@@ -287,8 +288,11 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # distinguish calculation modes
     mode = net["_options"]["mode"]
 
+    # Determine sequence
+    pos_sequence = sequence==None or sequence==1
+
     # if mode == powerflow...
-    if mode == "pf" or mode == "pf_3ph":
+    if (mode == "pf" or mode == "pf_3ph") and pos_sequence:
         l = net["load"]
         if len(l) > 0:
             voltage_depend_loads = net["_options"]["voltage_depend_loads"]
@@ -390,6 +394,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
+        # Todo: Actually, P and Q have to be divided by 3 because Sabc=3*S012 (we are writing pos. seq. values here!)
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc):
