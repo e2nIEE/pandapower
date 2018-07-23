@@ -8,7 +8,7 @@ import pandapower as pp
 import numpy as np
 import pytest
 from pandapower.pf.runpp_3ph import combine_X012
-from pandapower.create import create_load_3ph
+from pandapower.create import create_load_3ph, create_load
 from pandapower.pf.runpp_3ph import runpp_3ph,show_results
 import copy
 from pandapower.pf.makeYbus import makeYbus 
@@ -562,7 +562,54 @@ def test_trafo_vg_loadflow():
 #             raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
     
     for vc, result in results.items():
-        check_results(net, vc, result)    
-    
+        check_results(net, vc, result)
+
+
+def test_3ph_isolated_nodes():
+    V_base = 110  # 110kV Base Voltage
+    kVA_base = 100000  # 100 MVA
+    net = pp.create_empty_network(sn_kva=kVA_base)
+
+    busn = pp.create_bus(net, vn_kv=V_base, name="busn", index=1)
+    busx = pp.create_bus(net, vn_kv=20., in_service=True, index=2, name="busx")
+    busk = pp.create_bus(net, vn_kv=V_base, name="busk", index=5)
+    busl = pp.create_bus(net, vn_kv=V_base, name="busl", index=6)
+    pp.create_bus(net, vn_kv=20., in_service=False, index=3)
+    busy = pp.create_bus(net, vn_kv=20., in_service=True, index=0, name="busy")
+
+    pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection",
+                       s_sc_max_mva=5000, rx_max=0.1)
+    net.ext_grid["r0x0_max"] = 0.1
+    net.ext_grid["x0x_max"] = 1.0
+
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km": \
+        230.6, "max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
+                             "c_nf_per_km": 230}, "example_type")
+
+    # Loads on supplied buses
+    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
+                    p_kw_C=10000, q_kvar_C=5000)
+    create_load(net, bus=busl, p_kw=70000, q_kvar=70000, name="Load 1")
+
+    # Loads on unsupplied buses
+    # create_load(net, bus=busy, p_kw=0, q_kvar=0, name="Load Y")
+    create_load(net, bus=busy, p_kw=70000, q_kvar=70000, name="Load Y")
+    # create_load_3ph(net, busx, p_kw_A=5000, q_kvar_A=5000, p_kw_B=1000, q_kvar_B=1500,
+    #                 p_kw_C=1000, q_kvar_C=500, name="Load X")
+
+    pp.create_line(net, from_bus=busn, to_bus=busk, length_km=50.0, std_type="example_type")
+    pp.create_line(net, from_bus=busl, to_bus=busk, length_km=50.0, std_type="example_type")
+
+    pp.add_zero_impedance_parameters(net)
+
+    runpp_3ph(net)
+
+    print(net["res_bus"])
+    print(net["res_bus_3ph"])
+
+    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vmA_pu", "vaA_degree", "vmB_pu", "vaB_degree", "vmC_pu", "vaC_degree"]], np.nan, equal_nan=True)
+    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["pA_kw", "qA_kvar", "pB_kw", "qB_kvar", "pC_kw", "qC_kvar"]], 0.0)
+
+
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])
