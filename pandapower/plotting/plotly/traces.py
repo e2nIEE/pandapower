@@ -282,7 +282,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         return []
 
     if infofunc is not None:
-        assert len(infofunc) == len(lines), "Different amount of hover info than lines to plot"
+        if len(infofunc) != len(lines) and len(infofunc) != len(net.line):
+            raise UserWarning("Different amount of hover info than lines to plot")
 
     line_idx_map = dict(zip(net.line.loc[lines].index.tolist(), range(len(lines))))
 
@@ -382,7 +383,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             line_color = color
             line_trace = dict(type='scatter',
                               text=[], hoverinfo='text', mode='lines', name='disconnected lines',
-                              line=Line(width=width / 2, color='grey'))  # todo dash is not working here
+                              line=Line(width=width / 2, color='grey', dash='dot'))
 
             line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, no_go_lines_to_plot.loc[idx:idx], use_line_geodata)
 

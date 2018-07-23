@@ -131,7 +131,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
     ## run the newton power  flow
 
-    V, success, iterations, ppci["internal"]["J"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
+    V, success, iterations, ppci["internal"]["J"], ppci["internal"]["Vm_it"], ppci["internal"]["Va_it"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
 
     ## update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
