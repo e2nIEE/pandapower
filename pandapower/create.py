@@ -409,7 +409,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
-        **index** (int, default None) - Force specified IDs if available. If None, the indeces \
+        **index** (int, default None) - Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
 
         **vn_kv** (float) - The grid voltage level.
@@ -986,12 +986,12 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if bus in net.ext_grid.bus.values:
+    if bus in net.ext_grid.query("in_service").bus.values:
         raise UserWarning(
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
 
-    #    if bus in net.gen.bus.values:
+    #    if bus in net.gen.query("in_service").bus.values:
     #        raise UserWarning(
     #            "There is already a generator at bus %u, only one voltage controlling " % bus +
     #            "element (ext_grid, gen) is allowed per bus.")
@@ -1123,15 +1123,14 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     if index is None:
         index = get_free_id(net["ext_grid"])
 
-    if bus in net.ext_grid.bus.values:
+    if bus in net.ext_grid.query("in_service").bus.values:
         raise UserWarning(
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
 
-    if bus in net.gen.bus.values:
-        raise UserWarning(
-            "There is already a generator at bus %u, thus no ext_grid is allowed at this bus." %
-            bus)
+    if bus in net.gen.query("in_service").bus.values:
+        raise UserWarning("There is already a generator (PV-node) at bus %u, "
+                          "thus no ext_grid is allowed at this bus." % bus)
 
         # store dtypes
     dtypes = net.ext_grid.dtypes

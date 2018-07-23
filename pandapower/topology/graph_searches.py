@@ -21,7 +21,7 @@ def connected_component(mg, bus, notravbuses=[]):
 
 
     OPTIONAL:
-     **notravbuses** (list/set) - Indeces of notravbuses: lines connected to these buses are
+     **notravbuses** (list/set) - indices of notravbuses: lines connected to these buses are
                                      not being considered in the graph
 
     OUTPUT:
@@ -367,7 +367,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
         **net** (pandapowerNet) - Variable that contains a pandapower network.
 
      OPTIONAL:
-        **roots** (integer/list, None) - Indeces of buses that should be excluded (by default, the
+        **roots** (integer/list, None) - indices of buses that should be excluded (by default, the
                                          ext_grid buses will be set as roots)
 
      EXAMPLE:

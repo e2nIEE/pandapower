@@ -73,6 +73,7 @@ def _build_branch_ppc(net, ppc):
 def _initialize_branch_lookup(net):
     r_switch = net["_options"]["r_switch"]
     start = 0
+    end = 0
     net._pd2ppc_lookups["branch"] = {}
     for element in ["line", "trafo", "trafo3w", "impedance", "xward"]:
         if len(net[element]) > 0:

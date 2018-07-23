@@ -507,8 +507,7 @@ def convert_format(net):
                                                                    ("va_to_degree", "f8")]))
     if "_empty_res_storage" not in net:
         net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
-                                                                   ("q_kvar", "f8"),
-                                                                   ("soc_percent", "f8")]))
+                                                                    ("q_kvar", "f8")]))
 
     if len(net["_empty_res_line"]) < 10:
         net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
