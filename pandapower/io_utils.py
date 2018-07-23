@@ -97,7 +97,7 @@ def dicts_to_pandas(json_dict):
             if pd_dict[k].shape[0] == 0:  # skip empty dataframes
                 continue
             if pd_dict[k].index[0].isdigit():
-                pd_dict[k].set_index(pd_dict[k].index.astype(int64), inplace=True)
+                pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
         else:
             raise UserWarning("The network is an old version or corrupt. "
                               "Try to use the old load function")
@@ -127,7 +127,7 @@ def from_dict_of_dfs(dodfs):
             net[item] = table
         # set the index to be Int64Index
         try:
-            net[item].set_index(net[item].index.astype('int64'), inplace=True)
+            net[item].set_index(net[item].index.astype(numpy.int64), inplace=True)
         except TypeError:
             # TypeError: if not int64 index (e.g. str)
             pass
