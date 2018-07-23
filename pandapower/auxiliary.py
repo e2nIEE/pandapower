@@ -443,13 +443,14 @@ def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
     _add_options(net, options)
 
 
-def _add_opf_options(net, trafo_loading, ac, **kwargs):
+def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     options = {
         "trafo_loading": trafo_loading,
-        "ac": ac
+        "ac": ac,
+        "v_debug": v_debug
     }
 
     options.update(kwargs)  # update options with some algorithm-specific parameters
