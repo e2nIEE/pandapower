@@ -991,11 +991,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
 
-    #    if bus in net.gen.query("in_service").bus.values:
-    #        raise UserWarning(
-    #            "There is already a generator at bus %u, only one voltage controlling " % bus +
-    #            "element (ext_grid, gen) is allowed per bus.")
-
     if index is None:
         index = get_free_id(net["gen"])
 
