@@ -283,7 +283,6 @@ def _build_pp_ext_grid(net, ppc, eg_is_mask, eg_end):
 def _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_default):
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    enforce_q_lims = net["_options"]["enforce_q_lims"]
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
 
     gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is_mask]]
@@ -298,9 +297,8 @@ def _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_d
     ppc["bus"][gen_buses, BUS_TYPE] = PV
     ppc["bus"][gen_buses, VM] = gen_is_vm
 
-    if enforce_q_lims or copy_constraints_to_ppc:
-        _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask)
-        _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
+    _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask)
+    _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
 
     if copy_constraints_to_ppc:
         _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask)
@@ -339,7 +337,6 @@ def _update_gen_ppc(net, ppc):
     '''
     # get options from net
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
-    enforce_q_lims = net["_options"]["enforce_q_lims"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     _is_elements = net["_is_elements"]
@@ -375,9 +372,8 @@ def _update_gen_ppc(net, ppc):
         gen_buses = bus_lookup[gen_is["bus"].values]
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
-        if enforce_q_lims:
-            _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
-            _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
+        _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+        _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
 
     # add extended ward pv node data
     if xw_end > gen_end:
