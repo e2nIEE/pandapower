@@ -497,6 +497,8 @@ def _trafo_df_from_trafo3w(net):
         i += 1
 
     trafo_df = pd.DataFrame.from_dict(trafos2w, orient="index")
+    if any(trafo_df.vsc_percent==0):
+        raise UserWarning("Equivalent transformer with zero impedance!")
     return trafo_df
 
 
