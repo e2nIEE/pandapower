@@ -138,10 +138,10 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     Vabc_f, Vabc_t, Iabc_f, Iabc_t = [sequence_to_phase(X012) for X012 in [V012_f, V012_t, I012_f, I012_t]]
     Sabc_f, Sabc_t = [S_from_VI_elementwise(*Xabc_tup) * 1e3 / np.sqrt(3) for Xabc_tup in [(Vabc_f, Iabc_f), (Vabc_t, Iabc_t)]]
     # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
-    Pabcf_kw = Sabc_f.real
-    Qabcf_kvar = Sabc_f.imag
-    Pabct_kw = Sabc_t.real
-    Qabct_kvar = Sabc_t.imag
+    Pabcf_kw = Sabc_f.real[:, f:t]
+    Qabcf_kvar = Sabc_f.imag[:, f:t]
+    Pabct_kw = Sabc_t.real[:, f:t]
+    Qabct_kvar = Sabc_t.imag[:, f:t]
     if ac:
         Pabcl_kw = Pabcf_kw + Pabct_kw
         Qabcl_kvar = Qabcf_kvar + Qabct_kvar
