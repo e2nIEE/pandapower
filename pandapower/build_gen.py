@@ -340,6 +340,7 @@ def _update_gen_ppc(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     _is_elements = net["_is_elements"]
+    gen_is_mask = _is_elements['gen']
     # TODO maybe speed up things here, too
     eg_is = net["ext_grid"][_is_elements['ext_grid']]
     gen_is = net["gen"][_is_elements['gen']]
@@ -372,7 +373,7 @@ def _update_gen_ppc(net, ppc):
         gen_buses = bus_lookup[gen_is["bus"].values]
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
-        _copy_q_limits_to_ppc(ppc, eg_end, gen_end, gen_is)
+        _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask)
         _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default)
 
     # add extended ward pv node data
