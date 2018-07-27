@@ -140,9 +140,9 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     net["res_ext_grid_3ph"]["p_kw_A"] = pA
     net["res_ext_grid_3ph"]["p_kw_B"] = pB
     net["res_ext_grid_3ph"]["p_kw_C"] = pC
-    net["res_ext_grid"]["q_kvar_A"] = qA
-    net["res_ext_grid"]["q_kvar_B"] = qB
-    net["res_ext_grid"]["q_kvar_C"] = qC
+    net["res_ext_grid_3ph"]["q_kvar_A"] = qA
+    net["res_ext_grid_3ph"]["q_kvar_B"] = qB
+    net["res_ext_grid_3ph"]["q_kvar_C"] = qC
 
     # get bus values for pq_bus
     b = net['ext_grid'].bus.values
