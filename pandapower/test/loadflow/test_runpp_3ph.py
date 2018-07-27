@@ -611,5 +611,42 @@ def test_3ph_isolated_nodes():
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["pA_kw", "qA_kvar", "pB_kw", "qB_kvar", "pC_kw", "qC_kvar"]], 0.0)
 
 
+# def test_3bus_trafo_network():
+#     vector_groups = ["YNyn"]
+#     # Todo: Extend with other vector groups
+#
+#     for vector_group in vector_groups:
+#         net = pp.create_empty_network()
+#         hv_base = 20  # 110kV Base Voltage
+#         lv_base = 0.4
+#         bushv = pp.create_bus(net, vn_kv=hv_base, zone=vector_group, name="bushv")
+#         buslv = pp.create_bus(net, vn_kv=lv_base, zone=vector_group, name="buslv")
+#         busn = pp.create_bus(net, vn_kv=lv_base, zone=vector_group, name="busn")
+#
+#         pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
+#         net.ext_grid["r0x0_max"] = 0.1
+#         net.ext_grid["x0x_max"] = 1.0
+#
+#         transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV", "trafo"))
+#         transformer_type.update({"vsc0_percent": 6, "vscr0_percent": 1.095238, "mag0_percent": 100,
+#                                  "mag0_rx": 0., "vector_group": vector_group, "vscr_percent": 1.095238,
+#                                  "shift_degree": 0, "si0_hv_partial": 0.9})
+#         pp.create_std_type(net, {"r_ohm_per_km": 0.1013, "x_ohm_per_km": 0.06911504,
+#                                  "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
+#                                  "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
+#                                  "x0_ohm_per_km": 0.2764602}, "N2XRY 3x185sm 0.6/1kV")
+#
+#         pp.create_std_type(net, transformer_type, vector_group, "trafo")
+#         pp.create_transformer(net, bushv, buslv, std_type=vector_group, parallel=1,
+#                                    index=pp.get_free_id(net.trafo) + 1)
+#         pp.create_line(net, from_bus=buslv, to_bus=busn, length_km=1, std_type="N2XRY 3x185sm 0.6/1kV")
+#
+#         create_load_3ph(net, busn, p_kw_A=-20, q_kvar_A=10, p_kw_B=20, q_kvar_B=-10, p_kw_C=15, q_kvar_C=5)
+#         pp.add_zero_impedance_parameters(net)
+#         runpp_3ph(net, trafo_loading="current")
+#
+#         if not np.allclose(net["res_trafo_3ph"][["iA_lv_ka", "iB_lv_ka", "iC_lv_ka"]], net["res_line_3ph"][["iA_from_ka", "iB_from_ka", "iC_from_ka"]], atol=1e-4):
+#             raise ValueError("Incorrect phase currents for vector group %s" % vector_group)
+
 if __name__ == "__main__":
     pytest.main(["test_runpp_3ph.py"])

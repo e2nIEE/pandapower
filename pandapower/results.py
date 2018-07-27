@@ -110,7 +110,7 @@ def get_elements_to_empty(balanced=True):
     if balanced:
         return ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
     else:
-        return ["ext_grid_3ph", "load_3ph", "sgen_3ph", "gen_3ph", "bus_3ph", "line_3ph"]
+        return ["ext_grid_3ph", "load_3ph", "sgen_3ph", "gen_3ph", "bus_3ph", "line_3ph", "trafo_3ph"]
         
         
 

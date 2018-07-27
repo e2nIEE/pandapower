@@ -295,15 +295,16 @@ def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_kva):
         **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
         the form (-b_img, -b_real)
     """
-    baseR = np.square(vn_lv) / sn_kva * 1e3
     if mode == 'pf_3ph':
         baseR = np.square(vn_lv) / (3*sn_kva) * 1e3
-    
+    else:
+        baseR = np.square(vn_lv) / sn_kva * 1e3
 
     ### Calculate subsceptance ###
-    vnl_squared = trafo_df["vn_lv_kv"].values ** 2
     if mode == 'pf_3ph':
         vnl_squared = (trafo_df["vn_lv_kv"].values ** 2)/3
+    else:
+        vnl_squared = trafo_df["vn_lv_kv"].values ** 2
     b_real = trafo_df["pfe_kw"].values / (1000. * vnl_squared) * baseR
     i0 = trafo_df["i0_percent"].values
     pfe = trafo_df["pfe_kw"].values

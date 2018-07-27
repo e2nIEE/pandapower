@@ -708,7 +708,7 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         n_res = S012.shape[1]
     if idx==None:
         idx = np.ones(n_res, dtype="bool")
-    I012 = np.matrix(np.zeros((3, n_res), dtype=complex))
+    I012 = np.matrix(np.zeros((3, n_res), dtype=complex128))
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
     Vabc = sequence_to_phase(V012[:, idx])
     Iabc = sequence_to_phase(I012[:, idx])

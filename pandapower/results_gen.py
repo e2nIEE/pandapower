@@ -127,7 +127,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
-    S012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex))
+    S012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex128))
     S012[:, gen_idx_ppc] = np.matrix([-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
 
     Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=gen_idx_ppc)
@@ -191,15 +191,15 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
 
-    V012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex))
+    V012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
     V012[:, gen_idx_ppc] = np.matrix([ppc["bus"][gen_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
-    S012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex))
+    S012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
     S012[:, gen_idx_ppc] = np.matrix(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
-    I012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex))
+    I012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
     I012[:, gen_idx_ppc] = I_from_SV_elementwise(S012[:, gen_idx_ppc], V012[:, gen_idx_ppc])
 
     Vabc = sequence_to_phase(V012)
@@ -251,7 +251,7 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
 
     n_res_gen = len(net['gen'])
 
-    V012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex))
+    V012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
     V012[:, gen_is_mask] = np.matrix([ppc["bus"][gen_is_mask, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_is_mask, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])

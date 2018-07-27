@@ -131,15 +131,7 @@ def load_mapping(net,ppci1,):
         p_c = np.hstack([p_c, sgen3["p_kw_C"].values[sgen3_is] * vl])
         b = np.hstack([b, sgen3["bus"].values[sgen3_is]])
 
-    # Todo: Introduced in commit 1dd8a04 but caused problems
-    # if len([bus for bus in _is_elements['bus_is_idx'] if bus not in b]) != 0:
-    #     q_a = np.hstack([q_a, 0])
-    #     p_a = np.hstack([p_a, 0])
-    #     q_b = np.hstack([q_b, 0])
-    #     p_b = np.hstack([p_b, 0])
-    #     q_c = np.hstack([q_c, 0])
-    #     p_c = np.hstack([p_c, 0])
-    #     b = np.hstack([b, [bus for bus in net.bus.index.values if bus not in b]])
+    # Todo: Unserved powers on isolated nodes don't include 3ph elements yet
 
     # For Network Symmetric loads with unsymmetric loads
     #    Since the bus values of ppc values are not known, it is added again, fresh
@@ -233,9 +225,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     nb = ppci1["bus"].shape[0]
     V012_it = np.concatenate(
         (
-            np.matrix(np.zeros((1, nb), dtype=np.complex))
-            , np.matrix(np.ones((1, nb), dtype=np.complex))
-            , np.matrix(np.zeros((1, nb), dtype=np.complex))
+            np.matrix(np.zeros((1, nb), dtype=np.complex128))
+            , np.matrix(np.ones((1, nb), dtype=np.complex128))
+            , np.matrix(np.zeros((1, nb), dtype=np.complex128))
         )
         , axis=0
     )
