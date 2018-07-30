@@ -7,7 +7,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
+from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch, \
+    FancyArrowPatch
+from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from itertools import combinations
 import copy
@@ -27,6 +29,26 @@ def _rotate_dim2(arr, ang):
     """
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
+
+def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
+    """
+    Creates PatchCollection of Texts shown at the given coordinates
+
+    Input:
+        **texts** (iterable of strings) - The texts to be
+        **coords** (iterable of tuples) - The pandapower network
+        **size** (int) - The pandapower network
+
+    OPTIONAL:
+        **prop** - FontProperties being passed to the TextPatches
+        **kwargs** - Any other keyword-arguments will be passed to the PatchCollection.
+    """
+    tp = []
+    # we convert TextPaths to PathPatches to create a PatchCollection
+    for t, c in zip(texts, coords):
+        tp.append(PathPatch(TextPath(c, t, size=size, prop=prop)))
+
+    return PatchCollection(tp, **kwargs)
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
@@ -84,11 +106,14 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     infos = []
 
-    if 'height' not in kwargs and 'width' not in kwargs:
-        kwargs['height'] = kwargs['width'] = 2 * size
-    if patch_type == "rect":
-        kwargs['height'] *= 2
-        kwargs['width'] *= 2
+    # RegularPolygon has no param width/height, everything else might use defaults
+    if not patch_type.startswith("poly"):
+        if 'height' not in kwargs and 'width' not in kwargs:
+            kwargs['height'] = kwargs['width'] = 2 * size
+
+        if patch_type == "rect":
+            kwargs['height'] *= 2
+            kwargs['width'] *= 2
 
     def figmaker(x, y, i):
         if colors:
@@ -362,6 +387,8 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
     infos = []
     color = kwargs.pop("color", "k")
     linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
     for i, trafo in trafo_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
@@ -794,20 +821,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     return switches, helper_lines
 
 
-def add_collections_to_axes(ax, collections, plot_colorbars=True):
-    for c in collections:
-        if c:
-            c = copy.copy(c)
-            ax.add_collection(c)
-            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
-
-
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
-                     axes_visible=(False, False)):
+                     axes_visible=(False, False), copy_collections=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -836,7 +851,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
                             wspace=0.02, hspace=0.04)
     ax = ax or plt.gca()
 
-    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars)
+    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars,
+                            copy_collections=copy_collections)
 
     try:
         ax.set_facecolor("white")
@@ -852,6 +868,17 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     return ax
 
 
+def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
+    for c in collections:
+        if c:
+            if copy_collections:
+                c = copy.copy(c)
+            ax.add_collection(c)
+            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
 if __name__ == "__main__":
     if 0:
         import pandapower as pp
