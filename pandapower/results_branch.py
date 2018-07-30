@@ -63,7 +63,8 @@ def _get_line_results(net, ppc, i_ft):
         pl_kw = np.zeros_like(pf_kw)
         ql_kvar = np.zeros_like(q_from_kvar)
 
-    i_ka = np.max(i_ft[f:t], axis=1)
+    with np.errstate(invalid='ignore'):
+        i_ka = np.max(i_ft[f:t], axis=1)
     i_from_ka = i_ft[f:t][:, 0]
     i_to_ka = i_ft[f:t][:, 1]
     line_df = net["line"]
