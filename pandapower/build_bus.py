@@ -185,6 +185,23 @@ def create_bus_lookup(net, n_bus, bus_index, bus_is_idx, gen_is_mask, eg_is_mask
                     bus_lookup[bus] = map_to
     return bus_lookup
 
+def get_voltage_init_vector(net, init_v, mode):
+    if isinstance(init_v, str):
+        if init_v == "results":
+            if len(net.res_bus) > 0:
+                return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
+            else:
+                return None
+        if init_v == "flat":
+            return None
+    elif isinstance(init_v, (float, np.ndarray, list)):
+        return init_v
+    elif isinstance(init_v, pd.Series):
+        if init_v.index.equals(net.bus.index):
+            return init_v.loc[net.bus.index]
+        else:
+            raise UserWarning("Voltage starting vector indices do not match bus indices")
+    
 
 def _build_bus_ppc(net, ppc):
     """
@@ -192,7 +209,8 @@ def _build_bus_ppc(net, ppc):
     """
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     r_switch = net["_options"]["r_switch"]
-    init = net["_options"]["init"]
+    init_vm_pu = net["_options"]["init_vm_pu"]
+    init_va_degree = net["_options"]["init_va_degree"]
     mode = net["_options"]["mode"]
     numba = net["_options"]["numba"] if "numba" in net["_options"] else False
 
@@ -230,16 +248,13 @@ def _build_bus_ppc(net, ppc):
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
                BUS_TYPE] = NONE
 
-    if init == "results" and len(net["res_bus"]) > 0:
-        # init results (= voltages) from previous power flow
-        ppc["bus"][:n_bus, VM] = net["res_bus"]["vm_pu"].values
-        ppc["bus"][:n_bus, VA] = net["res_bus"].va_degree.values
-    elif "vm_start_pu" in net["_options"]:
-        try:
-            ppc["bus"][:n_bus, VM] = net["_options"]["vm_start_pu"]
-        except:
-            raise ValueError("starting voltage vector is invalid. Set vm_start_pu either to 'auto', a float or an iterable with the length of the bus table.")
+    vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
+    if vm_pu is not None:
+        ppc["bus"][:n_bus, VM] = vm_pu
 
+    va_degree = get_voltage_init_vector(net, init_va_degree, "angle")
+    if va_degree is not None:
+        ppc["bus"][:n_bus, VA] = va_degree
 
     if mode == "sc":
         _add_c_to_ppc(net, ppc)

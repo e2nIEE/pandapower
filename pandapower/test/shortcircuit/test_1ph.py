@@ -96,7 +96,7 @@ def test_1ph_with_switches():
     check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
           
 if __name__ == "__main__":
-    test_1ph_with_switches()
-    test_iec60909_example_4()
-    test_1ph_shortcircuit()
-#    pytest.main(["test_1ph.py"])
+#    test_1ph_with_switches()
+#    test_iec60909_example_4()
+#    test_1ph_shortcircuit()
+    pytest.main()
