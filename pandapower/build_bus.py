@@ -36,8 +36,6 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     if root1 == root2:
         return
     if bus_is_pv[root2]:
-        if bus_is_pv[root1]:
-            raise UserWarning("Can't fuse two PV buses")
         ar[root1] = root2
     else:
         ar[root2] = root1
@@ -167,11 +165,9 @@ def create_bus_lookup(net, n_bus, bus_index, bus_is_idx, gen_is_mask, eg_is_mask
                 if nr_pv_bus == 0:
                     # no pv buses. Use any bus in dj
                     map_to = bus_lookup[dj.pop()]
-                elif nr_pv_bus == 1:
+                else:
                     # one pv bus. Get bus from pv_buses_in_set
                     map_to = bus_lookup[pv_buses_in_set.pop()]
-                else:
-                    raise UserWarning("Can't fuse two PV buses")
                 for bus in dj:
                     # update lookup
                     bus_lookup[bus] = map_to
