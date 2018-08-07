@@ -154,7 +154,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                      marker=dict(color=color, size=size, symbol=patch_type))
 
     buses = net.bus.index.tolist() if buses is None else list(buses)
-    bus_plot_index = sorted(list(set(buses) & set(net.bus_geodata.index)))
+    bus_plot_index = [b for b in buses if b in list(set(buses) & set(net.bus_geodata.index))]
 
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
@@ -323,7 +323,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                              "set cmap_vals input argument if you want colormap according to some specific values...")
             cmap_vals = net.res_line.loc[lines_to_plot.index, 'loading_percent'].values
 
-        print(cmap_vals)
         cmap_lines = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
         if len(cmap_lines) == len(net.line):
             # some lines are not plotted although cmap_value were provided for all lines
