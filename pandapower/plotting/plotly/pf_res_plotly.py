@@ -93,7 +93,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     hoverinfo = (
             net.bus.name.astype(str) + '<br />' +
             'V_m = ' + net.res_bus.vm_pu.round(precision).astype(str) + ' pu' + '<br />' +
-            'V_m = ' + (net.res_bus.vm_pu.round(precision) * net.bus.vn_kv.round(2)).astype(str) + ' kV' + '<br />' +
+            'V_m = ' + (net.res_bus.vm_pu * net.bus.vn_kv.round(2)).round(precision).astype(str) + ' kV' + '<br />' +
             'V_a = ' + net.res_bus.va_degree.round(precision).astype(str) + ' deg').tolist()
     bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
                                  cbar_title='Bus Voltage [pu]', cmin=0.9, cmax=1.1)
