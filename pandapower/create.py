@@ -451,10 +451,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    try:
-        net["bus"] = pd.concat([net["bus"], dd], axis=0, sort=True).reindex(net["bus"].columns, axis=1)
-    except:  # legacy for pandas <0.21
-        net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex_axis(net["bus"].columns, axis=1)
+    net["bus"] = net["bus"].append(dd)[net["bus"].columns.tolist()]
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
 
