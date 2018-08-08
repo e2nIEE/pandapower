@@ -456,7 +456,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     trafos_mask = net.trafo.index.isin(trafos)
     trafos_to_plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
-    trafo_idx_map = dict(zip(net.trafo.index.tolist(), range(len(net.line))))
+    trafo_idx_map = dict(zip(net.trafo.index.tolist(), range(len(net.trafo))))
     if infofunc is not None:
         # reduce infofunc to the lines that are being plotted and also map from infofunc 0-based index to pp index
         infofunc = [infofunc[trafo_idx_map[idx]] for idx in trafos_to_plot.index]
