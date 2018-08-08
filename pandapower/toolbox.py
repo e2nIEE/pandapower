@@ -1158,8 +1158,11 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     """ Drops duplicated measurements at given set buses. If buses is None, all buses are
     considered. """
     buses = buses if buses is not None else net.bus.index
-    idx_to_drop = net.measurement.index[net.measurement.loc[net.measurement.bus.isin(buses)].fillna(
-        "nan").duplicated(subset=["type", "element_type", "bus", "element"], keep=keep)]
+    # only analyze measurements at given buses
+    analyzed_meas = net.measurement.loc[net.measurement.bus.isin(buses).fillna("nan")]
+    # drop duplicates
+    idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
+        "type", "element_type", "bus", "element"], keep=keep)]
     net.measurement.drop(idx_to_drop, inplace=True)
 
 
