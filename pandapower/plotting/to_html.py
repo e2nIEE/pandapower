@@ -147,7 +147,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
         json.dumps(nodes), json.dumps(edges))
     script += "var container = document.getElementById('net');"
     script += "var network = new vis.Network(container, data);"
-    script += "network.setOptions({interaction: {zoomView: false}});"
+    script += "network.setOptions({interaction: {zoomView: true}});"
 
     return script
 

@@ -36,8 +36,6 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
     if root1 == root2:
         return
     if bus_is_pv[root2]:
-        if bus_is_pv[root1]:
-            raise UserWarning("Can't fuse two PV buses")
         ar[root1] = root2
     else:
         ar[root2] = root1
@@ -167,11 +165,9 @@ def create_bus_lookup(net, n_bus, bus_index, bus_is_idx, gen_is_mask, eg_is_mask
                 if nr_pv_bus == 0:
                     # no pv buses. Use any bus in dj
                     map_to = bus_lookup[dj.pop()]
-                elif nr_pv_bus == 1:
+                else:
                     # one pv bus. Get bus from pv_buses_in_set
                     map_to = bus_lookup[pv_buses_in_set.pop()]
-                else:
-                    raise UserWarning("Can't fuse two PV buses")
                 for bus in dj:
                     # update lookup
                     bus_lookup[bus] = map_to
@@ -189,8 +185,17 @@ def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
             if len(net.res_bus) > 0:
-                return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
+                # init voltage possible if bus results are available
+                if net.res_bus.index.equals(net.bus.index):
+                    # init bus voltages from results if the sorting is correct
+                    return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
+                else:
+                    # cannot init from results, since sorting of results is different from element table
+                    UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
+                                "You should sort res_bus before calling runpp.")
+                    return None
             else:
+                # No results available. Cannot init from results
                 return None
         if init_v == "flat":
             return None
@@ -201,7 +206,7 @@ def get_voltage_init_vector(net, init_v, mode):
             return init_v.loc[net.bus.index]
         else:
             raise UserWarning("Voltage starting vector indices do not match bus indices")
-    
+
 
 def _build_bus_ppc(net, ppc):
     """
@@ -279,10 +284,10 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # get in service elements
     # _is_elements = check if element is at a bus & if element is in service
     _is_elements = net["_is_elements"]
-    
+
     # distinguish calculation modes
     mode = net["_options"]["mode"]
-    
+
     # if mode == powerflow...
     if mode == "pf":
         l = net["load"]
@@ -294,35 +299,35 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
                 if ((cz + ci) > 1).any():
                     raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
                                      "100%!")
-    
+
                 # cumulative sum of constant-current loads
                 b_zip = l["bus"].values
                 load_counter = Counter(b_zip)
-    
+
                 bus_lookup = net["_pd2ppc_lookups"]["bus"]
                 b_zip = bus_lookup[b_zip]
                 load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
                 b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
-    
+
                 for bus, no_loads in load_counter.items():
                     ci_sum[b_zip == bus] /= no_loads
                     cz_sum[b_zip == bus] /= no_loads
-    
+
                 ppc["bus"][b_zip, CID] = ci_sum
                 ppc["bus"][b_zip, CZD] = cz_sum
-    
+
             vl = _is_elements["load"] * l["scaling"].values.T / np.float64(1000.)
             q = np.hstack([q, l["q_kvar"].values * vl])
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
-    
+
         sgen = net["sgen"]
         if len(sgen) > 0:
             vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
-    
+
         stor = net["storage"]
         if len(stor) > 0:
             # TODO: Limit p_kw according to SOC and max_e_kwh/min_e_kwh
@@ -334,21 +339,21 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, stor["q_kvar"].values * vl])
             p = np.hstack([p, stor["p_kw"].values * vl])
             b = np.hstack([b, stor["bus"].values])
-    
+
         w = net["ward"]
         if len(w) > 0:
             vl = _is_elements["ward"] / np.float64(1000.)
             q = np.hstack([q, w["qs_kvar"].values * vl])
             p = np.hstack([p, w["ps_kw"].values * vl])
             b = np.hstack([b, w["bus"].values])
-    
+
         xw = net["xward"]
         if len(xw) > 0:
             vl = _is_elements["xward"] / np.float64(1000.)
             q = np.hstack([q, xw["qs_kvar"].values * vl])
             p = np.hstack([p, xw["ps_kw"].values * vl])
             b = np.hstack([b, xw["bus"].values])
-            
+
     # if mode == optimal power flow...
     if mode == "opf":
         l = net["load"]
@@ -359,7 +364,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, l["q_kvar"].values * vl])
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
-    
+
         sgen = net["sgen"]
         if not sgen.empty:
             sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
@@ -368,7 +373,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
-        
+
         stor = net["storage"]
         if not stor.empty:
             stor["controllable"] = _controllable_to_bool(stor["controllable"])
@@ -416,15 +421,15 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         q = np.hstack([q, xw["qz_kvar"].values * vl])
         p = np.hstack([p, xw["pz_kw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
-        
+
     loss_location = net._options["trafo3w_losses"].lower()
     trafo3w = net["trafo3w"]
     if loss_location == "star" and len(trafo3w) > 0:
-            
+
         pfe_kw = trafo3w["pfe_kw"].values
         i0 = trafo3w["i0_percent"].values
         sn_kv = trafo3w["sn_hv_kva"].values
-        
+
         q_kvar= (sn_kv * i0 / 100.) ** 2 - pfe_kw **2
         q_kvar[q_kvar<0] = 0
         q_kvar= np.sqrt(q_kvar)
@@ -432,11 +437,11 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         vn_hv_trafo = trafo3w["vn_hv_kv"].values
         vn_hv_bus = ppc["bus"][bus_lookup[trafo3w.hv_bus.values], BASE_KV]
         v_ratio = (vn_hv_bus / vn_hv_trafo) ** 2
-        
+
         q = np.hstack([q, q_kvar / np.float64(1000.) * v_ratio])
         p = np.hstack([p, pfe_kw / np.float64(1000.) * v_ratio])
         b = np.hstack([b, trafo3w["ad_bus"].values])
-        
+
     # if array is not empty
     if b.size:
         b = bus_lookup[b]

@@ -63,7 +63,8 @@ def _get_line_results(net, ppc, i_ft):
         pl_kw = np.zeros_like(pf_kw)
         ql_kvar = np.zeros_like(q_from_kvar)
 
-    i_ka = np.max(i_ft[f:t], axis=1)
+    with np.errstate(invalid='ignore'):
+        i_ka = np.max(i_ft[f:t], axis=1)
     i_from_ka = i_ft[f:t][:, 0]
     i_to_ka = i_ft[f:t][:, 1]
     line_df = net["line"]
@@ -111,7 +112,8 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
         vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
         lds_trafo = i_ft[f:t] * vns * 1000. * np.sqrt(3) \
                     / trafo_df["sn_kva"].values[:, np.newaxis] * 100.
-        ld_trafo = np.max(lds_trafo, axis=1)
+        with np.errstate(invalid='ignore'):
+            ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
         ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100., axis=1)
     else:
@@ -181,7 +183,8 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
         ld_h = i_h * t3["vn_hv_kv"].values * 1000. * np.sqrt(3) / t3["sn_hv_kva"].values * 100
         ld_m = i_m * t3["vn_mv_kv"].values * 1000. * np.sqrt(3) / t3["sn_mv_kva"].values * 100
         ld_l = i_l * t3["vn_lv_kv"].values * 1000. * np.sqrt(3) / t3["sn_lv_kva"].values * 100
-        ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
+        with np.errstate(invalid='ignore'):
+            ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     elif trafo_loading == "power":
         ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_kva"] * 100.
         ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_kva"] * 100.
@@ -273,5 +276,7 @@ def _get_switch_results(net, i_ft):
     if not "switch" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["switch"]
-    net["res_switch"] = pd.DataFrame(data=np.max(i_ft[f:t], axis=1), columns=["i_ka"],
+    with np.errstate(invalid='ignore'):
+        i_ka = np.max(i_ft[f:t], axis=1)
+    net["res_switch"] = pd.DataFrame(data=i_ka, columns=["i_ka"],
                                      index=net.switch[net._closed_bb_switches].index)
