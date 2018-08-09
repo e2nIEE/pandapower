@@ -201,6 +201,8 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
+    if use_bus_geodata:
+        linetab = net.line if lines is None else net.line.loc[lines]
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return None
@@ -214,13 +216,14 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     lines_with_geo = []
     if use_bus_geodata:
         data = []
-        for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows():
-            if a in bus_geodata.index.values and b in bus_geodata.index.values:
+        buses_with_geodata = bus_geodata.index.values
+        bg_dict = bus_geodata.to_dict() #transforming to dict to make lookup faster
+        for line, fb, tb in zip(linetab.index, linetab.from_bus.values, linetab.to_bus.values):
+            if fb in buses_with_geodata and tb in buses_with_geodata:
                 lines_with_geo.append(line)
-                data.append(([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
-                              (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
+                data.append(([(bg_dict["x"][fb], bg_dict["y"][fb]),
+                              (bg_dict["x"][tb], bg_dict["y"][tb])],
                              infofunc(line) if infofunc else[]))
-
         lines_without_geo = set(lines)-set(lines_with_geo)
         if lines_without_geo:
             logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
