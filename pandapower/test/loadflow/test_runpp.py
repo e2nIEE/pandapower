@@ -790,47 +790,69 @@ def test_vm_start_pu():
     pp.create_ext_grid(net, b1, vm_pu=0.7)
     pp.create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", index=4)
     pp.create_load(net, b2, p_kw=10)
-    
+
     pp.runpp(net, init_va_degree="flat", init_vm_pu=1.02)
     assert net._ppc["iterations"] == 5
-    
+
     pp.runpp(net, init_va_degree="dc", init_vm_pu=0.8)
     assert net._ppc["iterations"] == 4
-    
-    pp.runpp(net, init_va_degree="flat", init_vm_pu=np.array([0.75,  0.7]))
+
+    pp.runpp(net, init_va_degree="flat", init_vm_pu=np.array([0.75, 0.7]))
     assert net._ppc["iterations"] == 3
-    
-    pp.runpp(net, init_va_degree="dc", init_vm_pu=[0.75,  0.7])
+
+    pp.runpp(net, init_va_degree="dc", init_vm_pu=[0.75, 0.7])
     assert net._ppc["iterations"] == 3
-    
+
     pp.runpp(net, init_va_degree="flat", init_vm_pu="auto")
     assert net._ppc["iterations"] == 3
-    
+
     pp.runpp(net, init_va_degree="dc", init_vm_pu="auto")
     assert net._ppc["iterations"] == 3
 
 
-if __name__ == "__main__":
-#    net = pp.create_empty_network()
-#    b1 = pp.create_bus(net, vn_kv=1.)
-#    b2 = pp.create_bus(net, vn_kv=1.)
-#    pp.create_ext_grid(net, b1)
-#    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
-#                                   x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
-#    pp.create_load(net, b2, p_kw=2., const_z_percent=0, const_i_percent=100)
-#
-#    pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
-#
-#    pp.runpp(net, init="results")
-#    print(net._options["calculate_voltage_angles"])
-#    print(net._options["init_va_degree"])
-#
-#    res_load = net.res_load.copy()
-#    net.ext_grid.va_degree = 100
-#
-#    pp.runpp(net)
-#    print(net._options["calculate_voltage_angles"])
-#    print(net._options["init_va_degree"])
+def test_equal_indices_res():
+    # tests if res_bus indices of are the same as the ones in bus.
+    # If this is not the case and you init from results, the PF will fail
+    net = pp.create_empty_network()
 
-#    test_vm_start_pu()
+    b1 = pp.create_bus(net, vn_kv=10., index=3)
+    b2 = pp.create_bus(net, vn_kv=0.4, index=1)
+    b3 = pp.create_bus(net, vn_kv=0.4, index=2)
+
+    pp.create_ext_grid(net, b1)
+    pp.create_transformer(net, b1, b2, std_type="0.63 MVA 20/0.4 kV")
+    pp.create_line(net, b2, b3, 0.5, std_type="NAYY 4x50 SE", index=4)
+    pp.create_load(net, b3, p_kw=10)
+    pp.runpp(net)
+    net["bus"] = net["bus"].sort_index()
+    try:
+        pp.runpp(net, init_vm_pu="results", init_va_degree="results")
+        assert True
+    except LoadflowNotConverged:
+        assert False
+
+
+if __name__ == "__main__":
+    #    net = pp.create_empty_network()
+    #    b1 = pp.create_bus(net, vn_kv=1.)
+    #    b2 = pp.create_bus(net, vn_kv=1.)
+    #    pp.create_ext_grid(net, b1)
+    #    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
+    #                                   x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
+    #    pp.create_load(net, b2, p_kw=2., const_z_percent=0, const_i_percent=100)
+    #
+    #    pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
+    #
+    #    pp.runpp(net, init="results")
+    #    print(net._options["calculate_voltage_angles"])
+    #    print(net._options["init_va_degree"])
+    #
+    #    res_load = net.res_load.copy()
+    #    net.ext_grid.va_degree = 100
+    #
+    #    pp.runpp(net)
+    #    print(net._options["calculate_voltage_angles"])
+    #    print(net._options["init_va_degree"])
+
+    #    test_vm_start_pu()
     pytest.main(["test_runpp.py"])

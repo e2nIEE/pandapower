@@ -39,8 +39,9 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
             dodfs[item] = pd.DataFrame(value[["x", "y"]])
         elif item == "line_geodata":
             geo = pd.DataFrame()
-            for i, coord in value.iterrows():
-                for nr, (x, y) in enumerate(coord.coords):
+            for i in value.index:
+                coords = value.get_value(i, 'coords')
+                for nr, (x, y) in enumerate(coords):
                     geo.loc[i, "x%u" % nr] = x
                     geo.loc[i, "y%u" % nr] = y
             dodfs[item] = geo
@@ -83,7 +84,9 @@ def from_dict_of_dfs(dodfs):
             continue
         elif item == "line_geodata":
             num_points = len(table.columns) // 2
-            for i, coords in table.iterrows():
+            for i in table.index:
+                coords = table.loc[i]
+            # for i, coords in table.iterrows():
                 coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points)
                          if pd.notnull(coords["x%u" % nr])]
                 net.line_geodata.loc[i, "coords"] = coord
