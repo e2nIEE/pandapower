@@ -6,7 +6,6 @@
 
 import copy
 import json
-import numbers
 import os
 import pickle
 import sys
@@ -17,7 +16,7 @@ try:
     from shapely.geometry import Point, LineString
 
     GEOPANDAS_INSTALLED = True
-except:
+except ImportError:
     GEOPANDAS_INSTALLED = False
 
 import pandas as pd
@@ -27,8 +26,8 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
-    from_dict_of_dfs
+from pandapower.io_utils import to_dict_of_dfs, dicts_to_pandas, from_dict_of_dfs, \
+    PPJSONEncoder, PPJSONDecoder
 
 
 def to_pickle(net, filename):
@@ -62,7 +61,8 @@ def to_pickle(net, filename):
                 item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
 
         save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
-                                                                 for col, dt in zip(item.columns, item.dtypes)}} \
+                                                                 for col, dt in
+                                                                 zip(item.columns, item.dtypes)}} \
             if isinstance(item, pd.DataFrame) else item
 
     with open(filename, "wb") as f:
@@ -96,7 +96,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     writer.save()
 
 
-def to_json_string(net, default_handler=None):
+def to_json_string(net):
     """
         Returns a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -116,28 +116,12 @@ def to_json_string(net, default_handler=None):
     for k in sorted(net.keys()):
         if k[0] == "_":
             continue
-        if isinstance(net[k], pd.DataFrame):
-            json_string += '"%s":%s,' % (k, net[k].to_json(orient="columns",
-                                         default_handler=default_handler, double_precision=14))
-        elif isinstance(net[k], numpy.ndarray):
-            json_string += k + ":" + json.dumps(net[k].tolist()) + ","
-        elif isinstance(net[k], dict):
-            json_string += '"%s":%s,' % (k, json.dumps(net[k]))
-        elif isinstance(net[k], bool):
-            json_string += '"%s":%s,' % (k, "true" if net[k] else "false")
-        elif isinstance(net[k], str):
-            json_string += '"%s":"%s",' % (k, net[k])
-        elif isinstance(net[k], numbers.Number):
-            json_string += '"%s":%s,' % (k, net[k])
-        elif net[k] is None:
-            json_string += '"%s":null,' % k
-        else:
-            raise UserWarning("could not detect type of %s" % k)
+        json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder, indent=4))
     json_string = json_string[:-1] + "}\n"
     return json_string
 
 
-def to_json(net, filename=None, include_results=True, default_handler=None):
+def to_json(net, filename=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -153,8 +137,7 @@ def to_json(net, filename=None, include_results=True, default_handler=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    dict_net = to_dict_of_dfs(net, include_results)
-    json_string = to_json_string(dict_net, default_handler=default_handler)
+    json_string = to_json_string(net)
     if hasattr(filename, 'write'):
         filename.write(json_string)
         return
@@ -216,6 +199,11 @@ def from_pickle(filename, convert=True):
         if isinstance(item, dict) and "DF" in item:
             df_dict = item["DF"]
             if "columns" in df_dict:
+                # make sure the index is Int64Index
+                try:
+                    df_index = pd.Int64Index(df_dict['index'])
+                except TypeError:
+                    df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
                         and epsg is not None:
                     # convert primitive data-types to shapely-objects
@@ -228,9 +216,9 @@ def from_pickle(filename, convert=True):
                         geo = [LineString(row[1]) for row in df_dict["data"]]
 
                     net[key] = GeoDataFrame(data, crs=from_epsg(epsg), geometry=geo,
-                                            index=df_dict["index"])
+                                            index=df_index)
                 else:
-                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_dict["index"],
+                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
                                             data=df_dict["data"])
             else:
                 # TODO: is this legacy code?
@@ -238,9 +226,8 @@ def from_pickle(filename, convert=True):
                 if "columns" in item:
                     try:
                         net[key] = net[key].reindex(item["columns"], axis=1)
-                    except: #legacy for pandas <0.21
+                    except TypeError:  # legacy for pandas <0.21
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
-
 
             if "dtypes" in item:
                 if "columns" in df_dict and "geometry" in df_dict["columns"]:
@@ -282,7 +269,7 @@ def from_excel(filename, convert=True):
     try:
         # pandas < 0.21
         xls = pd.ExcelFile(filename).parse(sheetname=None)
-    except:
+    except TypeError:
         # pandas 0.21
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
 
@@ -338,12 +325,12 @@ def from_json(filename, convert=True):
 
     """
     if hasattr(filename, 'read'):
-        data = json.load(filename)
+        data = json.load(filename, cls=PPJSONDecoder)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
         with open(filename) as data_file:
-            data = json.load(data_file)
+            data = json.load(data_file, cls=PPJSONDecoder)
     try:
         pd_dicts = dicts_to_pandas(data)
         net = from_dict_of_dfs(pd_dicts)
@@ -374,7 +361,7 @@ def from_json_string(json_string, convert=True):
         >>> net = pp.from_json_string(json_str)
 
     """
-    data = json.loads(json_string)
+    data = json.loads(json_string, cls=PPJSONDecoder)
     return from_json_dict(data, convert=convert)
 
 
@@ -406,19 +393,23 @@ def from_json_dict(json_dict, convert=True):
                 return True
             elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], dict):
                 return True
+            elif GEOPANDAS_INSTALLED and \
+                    isinstance(net[name], pd.DataFrame) and \
+                    isinstance(json_dict[name], GeoDataFrame):
+                return True
             else:
                 return False
         return True
 
     for k in sorted(json_dict.keys()):
+        if k == 'dtypes':
+            continue
         if not check_equal_type(k):
-            raise UserWarning("Different data type for existing pandapower field")
+            raise UserWarning("Different data type for existing pandapower field %s" % k)
         if isinstance(json_dict[k], dict):
             if isinstance(net[k], pd.DataFrame):
-                columns = net[k].columns
                 net[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
                 net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
-                net[k] = net[k][columns]
             else:
                 net[k] = json_dict[k]
         else:

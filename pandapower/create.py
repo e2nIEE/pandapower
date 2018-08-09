@@ -312,7 +312,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     add_basic_std_types(net)
     reset_results(net)
     net['user_pf_options'] = dict()
@@ -1722,7 +1722,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     dd = pd.DataFrame(v, index=[index])
     try:
         net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except:  # legacy for pandas <0.21
+    except TypeError:  # legacy for pandas <0.21
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):

@@ -493,7 +493,7 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
                        sort=True).drop_duplicates()
         init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1,
                        sort=True).drop_duplicates()
-    except:
+    except TypeError:
         # legacy pandas < 0.21
         init1 = concat([pp_net.line.from_bus, pp_net.line.to_bus], axis=1).drop_duplicates()
         init2 = concat([pp_net.trafo.hv_bus, pp_net.trafo.lv_bus], axis=1).drop_duplicates()
@@ -503,7 +503,7 @@ def validate_from_ppc(ppc_net, pp_net, pf_type="runpp", max_diff_values={
     init2['to_bus'] = nan
     try:
         already_used_branches = concat([init1, init2], axis=0, sort=True)
-    except:
+    except TypeError:
         # pandas < 0.21 legacy
         already_used_branches = concat([init1, init2], axis=0)
     already_used_branches['number'] = zeros([already_used_branches.shape[0], 1]).astype(int)
