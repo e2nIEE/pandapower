@@ -6,7 +6,6 @@
 
 import copy
 import json
-import numbers
 import os
 import pickle
 import sys
@@ -27,8 +26,8 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-from pandapower.io_utils import to_dict_of_dfs, collect_all_dtypes_df, dicts_to_pandas, \
-    from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
+from pandapower.io_utils import to_dict_of_dfs, dicts_to_pandas, from_dict_of_dfs, \
+    PPJSONEncoder, PPJSONDecoder
 
 
 def to_pickle(net, filename):
