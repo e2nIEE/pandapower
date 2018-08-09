@@ -17,7 +17,7 @@ try:
     from shapely.geometry import Point, LineString
 
     GEOPANDAS_INSTALLED = True
-except:
+except ImportError:
     GEOPANDAS_INSTALLED = False
 
 import pandas as pd
@@ -227,7 +227,7 @@ def from_pickle(filename, convert=True):
                 if "columns" in item:
                     try:
                         net[key] = net[key].reindex(item["columns"], axis=1)
-                    except:  # legacy for pandas <0.21
+                    except TypeError:  # legacy for pandas <0.21
                         net[key] = net[key].reindex_axis(item["columns"], axis=1)
 
             if "dtypes" in item:
@@ -270,7 +270,7 @@ def from_excel(filename, convert=True):
     try:
         # pandas < 0.21
         xls = pd.ExcelFile(filename).parse(sheetname=None)
-    except:
+    except TypeError:
         # pandas 0.21
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
 

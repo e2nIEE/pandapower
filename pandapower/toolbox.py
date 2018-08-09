@@ -672,7 +672,7 @@ def convert_format(net):
                     if set(item.columns) == set(new_net[key]):
                         try:
                             net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                        except: #legacy for pandas <0.21
+                        except TypeError: #legacy for pandas <0.21
                             net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
                     if int(pd.__version__[2]) < 2:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,

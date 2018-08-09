@@ -23,7 +23,7 @@ try:
     import geopandas as gpd
 
     GEOPANDAS_INSTALLED = True
-except:
+except ImportError:
     GEOPANDAS_INSTALLED = False
 
 try:
@@ -148,7 +148,7 @@ class PPJSONEncoder(json.JSONEncoder):
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        super().__init__(object_hook=pp_hook, *args, **kwargs)
+        super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
 
 
 def pp_hook(d):
@@ -159,7 +159,7 @@ def pp_hook(d):
 
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
-            if type(d[key]) == dict:
+            if isinstance(d[key], dict):
                 d[key] = pp_hook(d[key])
 
         if class_name in ('DataFrame', 'Series'):
@@ -168,7 +168,6 @@ def pp_hook(d):
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError):
                 logger.debug("failed setting int64 index")
-                pass
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
             df = gpd.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
@@ -203,11 +202,10 @@ def to_serializable(obj):
     return str(obj)
 
 
-"""
-@to_serializable.register()
-def json_array(obj):
-    return 
-"""
+# example
+# @to_serializable.register()
+# def json_array(obj):
+#     return
 
 
 @to_serializable.register(pd.DataFrame)
