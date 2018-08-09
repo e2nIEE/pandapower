@@ -875,7 +875,8 @@ def _pre_release_changes(net):
     net.switch.closed = net.switch.closed.astype(bool)
 
 
-def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None):
+def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,
+                                     verbose=True):
     """
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
@@ -922,8 +923,12 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
             already_validated += [element]
             crossing = sum(net[element][column].values != to_validate[element])
             if crossing > 0:
-                logger.warning("There have been %i %ss with different " % (crossing, element) +
-                               "%s data at from-/hv- and to-/lv-bus" % column)
+                if verbose:
+                    logger.warning("There have been %i %ss with different " % (crossing, element) +
+                                   "%s data at from-/hv- and to-/lv-bus" % column)
+                else:
+                    logger.debug("There have been %i %ss with different " % (crossing, element) +
+                                 "%s data at from-/hv- and to-/lv-bus" % column)
 
 
 def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
@@ -1081,14 +1086,15 @@ def drop_buses(net, buses, drop_elements=True):
     net["bus"].drop(buses, inplace=True)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     if drop_elements:
-        drop_switches_at_buses(net, buses)
         drop_elements_at_buses(net, buses)
 
 
 def drop_switches_at_buses(net, buses):
-    s = net["switch"]
-    mask = (s["bus"].isin(buses)) | ((s["element"].isin(buses)) & (s["et"] == "b"))
-    net["switch"] = net["switch"].loc[~mask]
+    i = net["switch"][(net["switch"]["bus"].isin(buses))
+                      | ((net["switch"]["element"].isin(buses))
+                         & (net["switch"]["et"] == "b"))].index
+    net["switch"].drop(i, inplace=True)
+    logger.info("dropped %d switches" % len(i))
 
 
 def drop_elements_at_buses(net, buses):
@@ -1097,9 +1103,9 @@ def drop_elements_at_buses(net, buses):
     """
     for element, column in element_bus_tuples():
         if element == "switch":
-            n_switch = net.switch.shape[0]
+
             drop_switches_at_buses(net, buses)
-            logger.info("dropped switch elements: %i" % (n_switch-net.switch.shape[0]))
+
         elif any(net[element][column].isin(buses)):
             eid = net[element][net[element][column].isin(buses)].index
             if element == 'line':
@@ -1107,8 +1113,10 @@ def drop_elements_at_buses(net, buses):
             elif element == 'trafo' or element == 'trafo3w':
                 drop_trafos(net, eid, table=element)
             else:
+                n_el = net[element].shape[0]
                 net[element].drop(eid, inplace=True)
-            logger.info("dropped %s elements: %d" % (element, len(eid)))
+                if net[element].shape[0] < n_el:
+                    logger.info("dropped %d %s elements" % (n_el - net[element].shape[0], element))
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -1119,14 +1127,16 @@ def drop_trafos(net, trafos, table="trafo"):
     if table not in ('trafo', 'trafo3w'):
         raise UserWarning("parameter 'table' must be 'trafo' or 'trafo3w'")
     # drop any switches
+    num_switches = 0
     if table == 'trafo':  # remove as soon as the trafo3w switches are implemented
         i = net["switch"].index[(net["switch"]["element"].isin(trafos)) &
                                 (net["switch"]["et"] == "t")]
         net["switch"].drop(i, inplace=True)
+        num_switches = len(i)
 
     # drop the trafos
     net[table].drop(trafos, inplace=True)
-    logger.info("dropped %d %s elements" % (len(trafos), table))
+    logger.info("dropped %d %s elements with %d switches" % (len(trafos), table, num_switches))
 
 
 def drop_lines(net, lines):
@@ -1141,7 +1151,19 @@ def drop_lines(net, lines):
     # drop lines and geodata
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
-    logger.info("dropped %d lines" % len(lines))
+    logger.info("dropped %d lines with %d line switches" % (len(lines), len(i)))
+
+
+def drop_duplicated_measurements(net, buses=None, keep="first"):
+    """ Drops duplicated measurements at given set buses. If buses is None, all buses are
+    considered. """
+    buses = buses if buses is not None else net.bus.index
+    # only analyze measurements at given buses
+    analyzed_meas = net.measurement.loc[net.measurement.bus.isin(buses).fillna("nan")]
+    # drop duplicates
+    idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
+        "type", "element_type", "bus", "element"], keep=keep)]
+    net.measurement.drop(idx_to_drop, inplace=True)
 
 
 def fuse_buses(net, b1, b2, drop=True):
@@ -1159,6 +1181,7 @@ def fuse_buses(net, b1, b2, drop=True):
         i = net[element][net[element][value].isin(b2)].index
         net[element].loc[i, value] = b1
 
+
     i = net["switch"][(net["switch"]["et"] == 'b') & (
         net["switch"]["element"].isin(b2))].index
     net["switch"].loc[i, "element"] = b1
@@ -1167,6 +1190,8 @@ def fuse_buses(net, b1, b2, drop=True):
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
         drop_buses(net, b2, drop_elements=False)
+        # if there were measurements at b1 and b2, these can be duplicated at b1 now -> drop
+        drop_duplicated_measurements(net, buses=[b1])
     return net
 
 
@@ -1242,15 +1267,11 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     p2 = create_empty_network()
 
     p2.bus = net.bus.loc[buses]
-    p2.ext_grid = net.ext_grid[net.ext_grid.bus.isin(buses)]
-    p2.load = net.load[net.load.bus.isin(buses)]
-    p2.sgen = net.sgen[net.sgen.bus.isin(buses)]
-    p2.gen = net.gen[net.gen.bus.isin(buses)]
-    p2.shunt = net.shunt[net.shunt.bus.isin(buses)]
-    p2.ward = net.ward[net.ward.bus.isin(buses)]
-    p2.xward = net.xward[net.xward.bus.isin(buses)]
+    for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False, res_elements=False):
+        p2[elm] = net[elm][net[elm].bus.isin(buses)]
 
     p2.line = net.line[(net.line.from_bus.isin(buses)) & (net.line.to_bus.isin(buses))]
+    p2.dcline = net.dcline[(net.dcline.from_bus.isin(buses)) & (net.dcline.to_bus.isin(buses))]
     p2.trafo = net.trafo[(net.trafo.hv_bus.isin(buses)) & (net.trafo.lv_bus.isin(buses))]
     p2.trafo3w = net.trafo3w[(net.trafo3w.hv_bus.isin(buses)) & (net.trafo3w.mv_bus.isin(buses)) &
                              (net.trafo3w.lv_bus.isin(buses))]

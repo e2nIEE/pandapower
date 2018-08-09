@@ -43,17 +43,15 @@ class wls_matrix_ops:
     def create_y(self):
         self.fb = self.ppc["branch"][:, 0].real.astype(int)
         self.tb = self.ppc["branch"][:, 1].real.astype(int)
-        from_to = np.concatenate((self.fb, self.tb))
-        to_from = from_to[::-1]
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            Ybus, Yf, Yt = makeYbus(self.baseMVA, self.ppc["bus"], self.ppc["branch"])
+            y_bus, y_f, y_t = makeYbus(self.baseMVA, self.ppc["bus"], self.ppc["branch"])
 
         # create relevant matrices
-        self.Y_bus = Ybus.toarray()
-        self.Yf = Yf
-        self.Yt = Yt
+        self.Y_bus = y_bus.toarray()
+        self.Yf = y_f
+        self.Yt = y_t
         self.G = self.Y_bus.real
         self.B = self.Y_bus.imag
         n = len(self.ppc["bus"])
@@ -64,6 +62,8 @@ class wls_matrix_ops:
         # In case that's becoming relevant later, G_shunt will not be removed
         self.G_shunt = np.zeros_like(self.G)
         self.B_shunt = np.zeros((n, n))
+        from_to = np.concatenate((self.fb, self.tb))
+        to_from = np.concatenate((self.tb, self.fb))
         self.B_shunt[from_to, to_from] = np.tile(0.5 * self.ppc["branch"][:, 4].real, 2)
 
     # Get Y as tuple (real, imaginary)

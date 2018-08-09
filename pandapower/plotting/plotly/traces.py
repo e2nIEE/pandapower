@@ -154,7 +154,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                      marker=dict(color=color, size=size, symbol=patch_type))
 
     buses = net.bus.index.tolist() if buses is None else list(buses)
-    bus_plot_index = sorted(list(set(buses) & set(net.bus_geodata.index)))
+    bus_plot_index = [b for b in buses if b in list(set(buses) & set(net.bus_geodata.index))]
 
     bus_trace['x'], bus_trace['y'] = (net.bus_geodata.loc[bus_plot_index, 'x'].tolist(),
                                       net.bus_geodata.loc[bus_plot_index, 'y'].tolist())
@@ -282,7 +282,8 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
         return []
 
     if infofunc is not None:
-        assert len(infofunc) == len(lines), "Different amount of hover info than lines to plot"
+        if len(infofunc) != len(lines) and len(infofunc) != len(net.line):
+            raise UserWarning("Different amount of hover info than lines to plot")
 
     line_idx_map = dict(zip(net.line.loc[lines].index.tolist(), range(len(lines))))
 
@@ -322,7 +323,6 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
                              "set cmap_vals input argument if you want colormap according to some specific values...")
             cmap_vals = net.res_line.loc[lines_to_plot.index, 'loading_percent'].values
 
-        print(cmap_vals)
         cmap_lines = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
         if len(cmap_lines) == len(net.line):
             # some lines are not plotted although cmap_value were provided for all lines
@@ -382,7 +382,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
             line_color = color
             line_trace = dict(type='scatter',
                               text=[], hoverinfo='text', mode='lines', name='disconnected lines',
-                              line=Line(width=width / 2, color='grey'))  # todo dash is not working here
+                              line=Line(width=width / 2, color='grey', dash='dot'))
 
             line_trace['x'], line_trace['y'] = _get_line_geodata_plotly(net, no_go_lines_to_plot.loc[idx:idx], use_line_geodata)
 
@@ -456,7 +456,7 @@ def create_trafo_trace(net, trafos=None, color='green', width=5, infofunc=None, 
     trafos_mask = net.trafo.index.isin(trafos)
     trafos_to_plot = net.trafo[trafo_buses_with_geodata & trafos_mask]
 
-    trafo_idx_map = dict(zip(net.trafo.index.tolist(), range(len(net.line))))
+    trafo_idx_map = dict(zip(net.trafo.index.tolist(), range(len(net.trafo))))
     if infofunc is not None:
         # reduce infofunc to the lines that are being plotted and also map from infofunc 0-based index to pp index
         infofunc = [infofunc[trafo_idx_map[idx]] for idx in trafos_to_plot.index]

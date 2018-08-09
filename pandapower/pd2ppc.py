@@ -24,7 +24,7 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
     _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
-from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc
+from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus
 from pandapower.opf.make_objective import _make_objective
 
 
@@ -106,6 +106,9 @@ def _pd2ppc(net):
 
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
+
+    # check if any generators connected to the same bus have different voltage setpoints
+    _check_voltage_setpoints_at_same_bus(ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
@@ -289,11 +292,14 @@ def _update_ppc(net):
     _calc_shunts_and_add_on_ppc(net, ppc)
     # updates values for gen
     _update_gen_ppc(net, ppc)
+    # check if any generators connected to the same bus have different voltage setpoints
+    _check_voltage_setpoints_at_same_bus(ppc)
+
     if not recycle["Ybus"]:
         # updates trafo and trafo3w values
         _update_trafo_trafo3w_ppc(net, ppc)
 
-    # get OOS busses and place them at the end of the bus array (so that: 3
+    # get OOS buses and place them at the end of the bus array (so that: 3
     # (REF), 2 (PV), 1 (PQ), 4 (OOS))
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     # there are no OOS busses in the ppci

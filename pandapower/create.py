@@ -451,10 +451,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    try:
-        net["bus"] = pd.concat([net["bus"], dd], axis=0, sort=True).reindex(net["bus"].columns, axis=1)
-    except:  # legacy for pandas <0.21
-        net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex(columns=net["bus"].columns)
+    net["bus"] = net["bus"].append(dd)[net["bus"].columns.tolist()]
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
 
@@ -990,11 +987,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
         raise UserWarning(
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
-
-    #    if bus in net.gen.query("in_service").bus.values:
-    #        raise UserWarning(
-    #            "There is already a generator at bus %u, only one voltage controlling " % bus +
-    #            "element (ext_grid, gen) is allowed per bus.")
 
     if index is None:
         index = get_free_id(net["gen"])

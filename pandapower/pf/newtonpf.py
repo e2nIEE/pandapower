@@ -11,7 +11,7 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like
+from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
@@ -45,6 +45,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     numba = options["numba"]
     iwamoto = options["algorithm"] == "iwamoto_nr"
     voltage_depend_loads = options["voltage_depend_loads"]
+    v_debug = options["v_debug"]
 
     baseMVA = ppci['baseMVA']
     bus = ppci['bus']
@@ -58,6 +59,13 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     dVa, dVm = None, None
     if iwamoto:
         dVm, dVa = zeros_like(Vm), zeros_like(Va)
+
+    if v_debug:
+        Vm_it=Vm.copy()
+        Va_it=Va.copy()
+    else:
+        Vm_it=None
+        Va_it=None
 
     ## set up indexing for updating V
     pvpq = r_[pv, pq]
@@ -108,6 +116,10 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         Vm = abs(V)  ## update Vm and Va again in case
         Va = angle(V)  ## we wrapped around with a negative Vm
 
+        if v_debug:
+            Vm_it=column_stack((Vm_it,Vm))
+            Va_it=column_stack((Va_it,Va))
+
         if voltage_depend_loads:
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
@@ -115,7 +127,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
 
         converged = _check_for_convergence(F, tol)
 
-    return V, converged, i, J
+    return V, converged, i, J, Vm_it, Va_it
 
 
 def _evaluate_Fx(Ybus, V, Sbus, pv, pq):
