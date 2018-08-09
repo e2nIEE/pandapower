@@ -8,10 +8,15 @@ import pandas as pd
 from pandapower import create_empty_network
 import numpy
 import numbers
-from functools import singledispatch
 import json
 import copy
 import importlib
+
+try:
+    from functools import singledispatch
+except ImportError:
+    # Python 2.7
+    from singledispatch import singledispatch
 
 try:
     import fiona
