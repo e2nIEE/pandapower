@@ -29,22 +29,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def dicts_to_pandas(json_dict):
-    pd_dict = dict()
-    for k in sorted(json_dict.keys()):
-        if isinstance(json_dict[k], dict):
-            pd_dict[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
-            try:
-                pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
-            except (ValueError, TypeError):
-                logger.debug('failed setting int64 index for %s' % k)
-                pass
-        else:
-            raise UserWarning("The json network is an old version or corrupt. "
-                              "Trying to use the old load function")
-    return pd_dict
-
-
 def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
     dodfs = dict()
     dodfs["dtypes"] = collect_all_dtypes_df(net)
@@ -116,7 +100,7 @@ def from_dict_of_dfs(dodfs):
             num_points = len(table.columns) // 2
             for i in table.index:
                 coords = table.loc[i]
-            # for i, coords in table.iterrows():
+                # for i, coords in table.iterrows():
                 coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points)
                          if pd.notnull(coords["x%u" % nr])]
                 net.line_geodata.loc[i, "coords"] = coord

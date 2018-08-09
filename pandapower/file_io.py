@@ -117,33 +117,9 @@ def to_json_string(net):
     for k in sorted(net.keys()):
         if k[0] == "_":
             continue
-        # old:
-        # json_string += make_string(net, k, default_handler)
-        # new: let singledispatch take care of it
         json_string += '"%s":%s,' % (k, json.dumps(net[k], cls=PPJSONEncoder, indent=4))
     json_string = json_string[:-1] + "}\n"
     return json_string
-
-
-# todo: remove this
-def make_string(net, k, default_handler=None):
-    if isinstance(net[k], pd.DataFrame):
-        return '"%s":%s,' % (
-            k, net[k].to_json(orient="columns", default_handler=default_handler))
-    elif isinstance(net[k], numpy.ndarray):
-        return k + ":" + json.dumps(net[k].tolist()) + ","
-    elif isinstance(net[k], dict):
-        return '"%s":%s,' % (k, json.dumps(net[k]))
-    elif isinstance(net[k], bool):
-        return '"%s":%s,' % (k, "true" if net[k] else "false")
-    elif isinstance(net[k], str):
-        return '"%s":"%s",' % (k, net[k])
-    elif isinstance(net[k], numbers.Number):
-        return '"%s":%s,' % (k, net[k])
-    elif net[k] is None:
-        return '"%s":null,' % k
-    else:
-        raise UserWarning("could not detect type of %s" % k)
 
 
 def to_json(net, filename=None):
@@ -162,8 +138,6 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    # dict_net = to_dict_of_dfs(net, include_results=True, create_dtype_df=True)
-    # dict_net["dtypes"] = collect_all_dtypes_df(net)
     json_string = to_json_string(net)
     if hasattr(filename, 'write'):
         filename.write(json_string)
@@ -352,7 +326,7 @@ def from_json(filename, convert=True):
 
     """
     if hasattr(filename, 'read'):
-        data = json.load(filename)
+        data = json.load(filename, cls=PPJSONDecoder)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
@@ -435,10 +409,8 @@ def from_json_dict(json_dict, convert=True):
             raise UserWarning("Different data type for existing pandapower field %s" % k)
         if isinstance(json_dict[k], dict):
             if isinstance(net[k], pd.DataFrame):
-                # columns = net[k].columns -> We want to load everything!
                 net[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
                 net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
-                # net[k] = net[k][columns]
             else:
                 net[k] = json_dict[k]
         else:
