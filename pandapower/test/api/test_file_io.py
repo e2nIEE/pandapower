@@ -56,7 +56,7 @@ def test_json(net_in, tempdir):
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)
         assert_net_equal(net_geo, net_out)
-    except NameError:
+    except (NameError, ImportError):
         pass
 
     # check if restore_all_dtypes works properly:
