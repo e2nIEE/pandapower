@@ -152,7 +152,7 @@ def test_create_buses():
 
     assert (net.bus_geodata.loc[b3, ['x', 'y']].values == geodata).all()
 
-    # no way of createing buses with not matching shape
+    # no way of creating buses with not matching shape
     with pytest.raises(ValueError):
         pp.create_buses(net, 2, 110, geodata=geodata)
 
