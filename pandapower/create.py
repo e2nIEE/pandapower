@@ -455,10 +455,11 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
 
-    if geodata:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tupel")
-        net["bus_geodata"].loc[bid, ["x", "y"]] = geodata
+    if geodata is not None:
+        # works with a 2-tuple or a matching array
+        net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
+                                                              columns=net.bus_geodata.columns))
+        net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if not isnan(min_vm_pu):
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
