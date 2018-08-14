@@ -1659,13 +1659,6 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
         **buses** (single integer or iterable of ints)
 
     OPTIONAL:
-        **respect_switches** (boolean, True)        - True: open switches will be respected
-                                                     False: open switches will be ignored
-
-        **respect_in_service** (boolean, False)     - True: in_service status of connected
-                                                            buses will be respected
-
-                                                      False: in_service status will be ignored
         **consider** (iterable, ("l", "s", "t"))    - Determines, which types of connections
                                                       will be considered.
                                                       l: lines
