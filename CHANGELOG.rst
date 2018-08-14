@@ -7,6 +7,7 @@ Change Log
 - [ADDED] case_ieee30, case5, case_illinois200
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte
 - [ADDED] toolbox functions replace_impedance_by_line(), replace_line_by_impedance() and get_element_indices() including tests
+- [CHANGED] new implementation of to_json, from_json for loading and saving grids using functools.singledispatch
 
 [1.5.1] - 2018-05-04
 ----------------------

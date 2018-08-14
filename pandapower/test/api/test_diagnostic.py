@@ -17,7 +17,7 @@ from pandapower.diagnostic_reports import DiagnosticReports
 try:
     import numba
     numba_installed = True
-except:
+except ImportError:
     numba_installed = False
 
 @pytest.fixture(scope='function')

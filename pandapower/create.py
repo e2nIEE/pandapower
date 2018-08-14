@@ -312,7 +312,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     add_basic_std_types(net)
     reset_results(net)
     net['user_pf_options'] = dict()
@@ -455,10 +455,11 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
 
-    if geodata:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tupel")
-        net["bus_geodata"].loc[bid, ["x", "y"]] = geodata
+    if geodata is not None:
+        # works with a 2-tuple or a matching array
+        net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
+                                                              columns=net.bus_geodata.columns))
+        net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if not isnan(min_vm_pu):
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
@@ -1722,7 +1723,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     dd = pd.DataFrame(v, index=[index])
     try:
         net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except:  # legacy for pandas <0.21
+    except TypeError:  # legacy for pandas <0.21
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
