@@ -405,13 +405,11 @@ def from_json_dict(json_dict, convert=True):
         if k == 'dtypes':
             continue
         if not check_equal_type(k):
-            raise UserWarning("Different data type for existing pandapower field %s" % k)
-        if isinstance(json_dict[k], dict):
-            if isinstance(net[k], pd.DataFrame):
+            raise UserWarning("Different data type for existing pandapower field %s: %s vs. %s (%s)"
+                              % (k, type(net[k]), type(json_dict[k]), json_dict[k]))
+        if isinstance(json_dict[k], dict) and isinstance(net[k], pd.DataFrame):
                 net[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
                 net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
-            else:
-                net[k] = json_dict[k]
         else:
             net[k] = json_dict[k]
     if convert:
