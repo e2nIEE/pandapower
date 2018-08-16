@@ -116,7 +116,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             kwargs['width'] *= 2
 
     def figmaker(x, y, i):
-        if colors:
+        if colors is not None:
             kwargs["color"] = colors[i]
         if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
             angle = kwargs['angle'] if 'angle' in kwargs else 0
@@ -137,10 +137,10 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                if x != np.nan]
     pc = PatchCollection(patches, match_original=True, picker=picker)
     pc.bus_indices = np.array(buses)
-    if cmap:
+    if cmap is not None:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        if z is None and net:
+        if z is None and net is not None:
             z = net.res_bus.vm_pu.loc[buses]
         else:
             logger.warning("z is None and no net is provided")
@@ -236,7 +236,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                 data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
 
         lines_without_geo = set(lines)-set(lines_with_geo)
-        if lines_without_geo:
+        if len(lines_without_geo) > 0:
             logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
                            % lines_without_geo)
 
@@ -249,7 +249,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(data, picker=picker, **kwargs)
     lc.line_indices = np.array(lines_with_geo)
-    if cmap:
+    if cmap is not None:
         if z is None:
             z = net.res_line.loading_percent.loc[lines_with_geo]
         lc.set_cmap(cmap)
@@ -297,7 +297,7 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
 
     tg = list(zip(hv_geo, lv_geo))
 
-    info = [infofunc(tr) if infofunc else [] for tr in trafos.index.values]
+    info = [infofunc(tr) if infofunc is not None else [] for tr in trafos.index.values]
 
     lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
     lc.info = info
@@ -343,7 +343,7 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
           for x in c]
 
     # 3 times infofunc for every trafo
-    info = [infofunc(x) if infofunc else []
+    info = [infofunc(x) if infofunc is not None else []
             for tr in [(t, t, t) for t in trafos.index.values]
             for x in tr]
 
@@ -801,8 +801,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
             logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
         # switch bus and target coordinates
-        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values
-        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values
+        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values.astype(np.float64)
+        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values.astype(np.float64)
         # position of switch symbol
         vec = pos_tb - pos_sb
         pos_sw = pos_sb + vec * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
@@ -848,7 +848,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         **ax** - matplotlib axes
     """
 
-    if not ax:
+    if ax is None:
         plt.figure(facecolor="white", figsize=figsize)
         plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.05,
                             wspace=0.02, hspace=0.04)
@@ -882,6 +882,8 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
                 cbar_load = plt.colorbar(c, extend=extend, ax=ax)
                 if hasattr(c, "cbar_title"):
                     cbar_load.ax.set_ylabel(c.cbar_title)
+
+
 if __name__ == "__main__":
     if 0:
         import pandapower as pp
