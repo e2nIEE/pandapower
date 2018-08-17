@@ -1668,7 +1668,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
         **status** (string, ("all", "closed", "open"))    - Determines, which switches will
                                                             be considered
     OUTPUT:
-       **cl** (set) - Returns connected buses.
+       **cl** (set) - Returns connected switches.
 
     """
 

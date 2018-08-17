@@ -340,7 +340,7 @@ class DiagnosticReports:
             # message body
             diag_result = self.diag_results["overload"]
             overload_scaling_factor = self.diag_params["overload_scaling_factor"]
-            if not (diag_result["load"] and diag_result["generation"]):
+            if not diag_result["load"] and not diag_result["generation"]:
                 logger.warning("Overload check failed: Power flow still does not "
                                "converge with load and generation scaled down to %s percent."
                                % (overload_scaling_factor * 100))
