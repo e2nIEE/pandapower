@@ -22,8 +22,8 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     net.res_bus.va_degree = delta_start
     # select elements in service and convert pandapower ppc to ppc
     net._options = {}
-    _add_ppc_options(net, check_connectivity=False, init="results", trafo_model="t",
-                     copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
+    _add_ppc_options(net, check_connectivity=False, init_vm_pu="results", init_va_degree="results",
+                     trafo_model="t", copy_constraints_to_ppc=False, mode="pf", enforce_q_lims=False,
                      calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
     net["_is_elements"] = _select_is_elements_numba(net)
@@ -39,15 +39,25 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     return ppc, ppci
 
 
-def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
+def _add_measurements_to_ppc(net, ppci, s_ref):
     """
     Add pandapower measurements to the ppci structure by adding new columns
     :param net: pandapower net
-    :param mapping_table: mapping table pd->ppc
     :param ppci: generated ppci
     :param s_ref: reference power in W
     :return: ppc with added columns
     """
+
+    map_bus = net["_pd2ppc_lookups"]["bus"]
+    map_line, map_trafo = None, None
+    # mapping to dict instead of np array ensures good performance for large indices
+    # (e.g., 999999999 requires a large np array even if there are only 2 buses)
+    # downside is loop comprehension to access the map
+    if "line" in net["_pd2ppc_lookups"]["branch"]:
+        map_line = dict(zip(net.line.index, range(*net["_pd2ppc_lookups"]["branch"]["line"])))
+    if "trafo" in net["_pd2ppc_lookups"]["branch"]:
+        map_trafo = dict(zip(net.trafo.index, range(*net["_pd2ppc_lookups"]["branch"]["trafo"])))
+
     # set measurements for ppc format
     # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
     # pandapower measurement indices V, P, Q
@@ -56,7 +66,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     v_measurements = net.measurement[(net.measurement.type == "v")
                                      & (net.measurement.element_type == "bus")]
     if len(v_measurements):
-        bus_positions = mapping_table[v_measurements.bus.values.astype(int)]
+        bus_positions = map_bus[v_measurements.bus.values.astype(int)]
         bus_append[bus_positions, VM] = v_measurements.value.values
         bus_append[bus_positions, VM_STD] = v_measurements.std_dev.values
         bus_append[bus_positions, VM_IDX] = v_measurements.index.values
@@ -64,7 +74,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     p_measurements = net.measurement[(net.measurement.type == "p")
                                      & (net.measurement.element_type == "bus")]
     if len(p_measurements):
-        bus_positions = mapping_table[p_measurements.bus.values.astype(int)]
+        bus_positions = map_bus[p_measurements.bus.values.astype(int)]
         bus_append[bus_positions, P] = p_measurements.value.values * 1e3 / s_ref
         bus_append[bus_positions, P_STD] = p_measurements.std_dev.values * 1e3 / s_ref
         bus_append[bus_positions, P_IDX] = p_measurements.index.values
@@ -72,7 +82,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     q_measurements = net.measurement[(net.measurement.type == "q")
                                      & (net.measurement.element_type == "bus")]
     if len(q_measurements):
-        bus_positions = mapping_table[q_measurements.bus.values.astype(int)]
+        bus_positions = map_bus[q_measurements.bus.values.astype(int)]
         bus_append[bus_positions, Q] = q_measurements.value.values * 1e3 / s_ref
         bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values * 1e3 / s_ref
         bus_append[bus_positions, Q_IDX] = q_measurements.index.values
@@ -80,7 +90,7 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
     # add virtual measurements for artificial buses, which were created because
     # of an open line switch. p/q are 0. and std dev is 1. (small value)
     new_in_line_buses = np.setdiff1d(np.arange(ppci["bus"].shape[0]),
-                                     mapping_table[mapping_table >= 0])
+                                     map_bus[map_bus >= 0])
     bus_append[new_in_line_buses, 2] = 0.
     bus_append[new_in_line_buses, 3] = 1.
     bus_append[new_in_line_buses, 4] = 0.
@@ -99,16 +109,16 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
                                     net.line.from_bus[i_measurements.element]).values]
         meas_to = i_measurements[(i_measurements.bus.values.astype(int) ==
                                   net.line.to_bus[i_measurements.element]).values]
-        ix_from = meas_from.element.values.astype(int)
-        ix_to = meas_to.element.values.astype(int)
+        ix_from = [map_line[l] for l in meas_from.element.values.astype(int)]
+        ix_to = [map_line[l] for l in meas_to.element.values.astype(int)]
         i_a_to_pu_from = (net.bus.vn_kv[meas_from.bus] * 1e3 / s_ref).values
         i_a_to_pu_to = (net.bus.vn_kv[meas_to.bus] * 1e3 / s_ref).values
         branch_append[ix_from, IM_FROM] = meas_from.value.values * i_a_to_pu_from
         branch_append[ix_from, IM_FROM_STD] = meas_from.std_dev.values * i_a_to_pu_from
+        branch_append[ix_from, IM_FROM_IDX] = meas_from.index.values
         branch_append[ix_to, IM_TO] = meas_to.value.values * i_a_to_pu_to
         branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values * i_a_to_pu_to
-        branch_append[meas_from.element.values.astype(int), IM_FROM_IDX] = meas_from.index.values
-        branch_append[meas_to.element.values.astype(int), IM_TO_IDX] = meas_to.index.values
+        branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
 
     p_measurements = net.measurement[(net.measurement.type == "p")
                                       & (net.measurement.element_type == "line")]
@@ -117,14 +127,14 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
                                     net.line.from_bus[p_measurements.element]).values]
         meas_to = p_measurements[(p_measurements.bus.values.astype(int) ==
                                   net.line.to_bus[p_measurements.element]).values]
-        ix_from = meas_from.element.values.astype(int)
-        ix_to = meas_to.element.values.astype(int)
+        ix_from = [map_line[l] for l in meas_from.element.values.astype(int)]
+        ix_to = [map_line[l] for l in meas_to.element.values.astype(int)]
         branch_append[ix_from, P_FROM] = meas_from.value.values * 1e3 / s_ref
         branch_append[ix_from, P_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
+        branch_append[ix_from, P_FROM_IDX] = meas_from.index.values
         branch_append[ix_to, P_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, P_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[meas_from.element.values.astype(int), P_FROM_IDX] = meas_from.index.values
-        branch_append[meas_to.element.values.astype(int), P_TO_IDX] = meas_to.index.values
+        branch_append[ix_to, P_TO_IDX] = meas_to.index.values
 
     q_measurements = net.measurement[(net.measurement.type == "q")
                                      & (net.measurement.element_type == "line")]
@@ -133,14 +143,14 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
                                     net.line.from_bus[q_measurements.element]).values]
         meas_to = q_measurements[(q_measurements.bus.values.astype(int) ==
                                   net.line.to_bus[q_measurements.element]).values]
-        ix_from = meas_from.element.values.astype(int)
-        ix_to = meas_to.element.values.astype(int)
+        ix_from = [map_line[l] for l in meas_from.element.values.astype(int)]
+        ix_to = [map_line[l] for l in meas_to.element.values.astype(int)]
         branch_append[ix_from, Q_FROM] = meas_from.value.values * 1e3 / s_ref
         branch_append[ix_from, Q_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
+        branch_append[ix_from, Q_FROM_IDX] = meas_from.index.values
         branch_append[ix_to, Q_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[meas_from.element.values.astype(int), Q_FROM_IDX] = meas_from.index.values
-        branch_append[meas_to.element.values.astype(int), Q_TO_IDX] = meas_to.index.values
+        branch_append[ix_to, Q_TO_IDX] = meas_to.index.values
 
     # determine number of lines in ppci["branch"]
     # out of service lines and lines with open switches at both ends are not in the ppci
@@ -162,16 +172,16 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
                                        net.trafo.hv_bus[i_tr_measurements.element]).values]
         meas_to = i_tr_measurements[(i_tr_measurements.bus.values.astype(int) ==
                                      net.trafo.lv_bus[i_tr_measurements.element]).values]
-        ix_from = ppci_lines + meas_from.element.values.astype(int)
-        ix_to = ppci_lines + meas_to.element.values.astype(int)
+        ix_from = [map_trafo[t] for t in meas_from.element.values.astype(int)]
+        ix_to = [map_trafo[t] for t in meas_to.element.values.astype(int)]
         i_a_to_pu_from = (net.bus.vn_kv[meas_from.bus] * 1e3 / s_ref).values
         i_a_to_pu_to = (net.bus.vn_kv[meas_to.bus] * 1e3 / s_ref).values
         branch_append[ix_from, IM_FROM] = meas_from.value.values * i_a_to_pu_from
         branch_append[ix_from, IM_FROM_STD] = meas_from.std_dev.values * i_a_to_pu_from
+        branch_append[ix_from, IM_FROM_IDX] = meas_from.index.values
         branch_append[ix_to, IM_TO] = meas_to.value.values * i_a_to_pu_to
         branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values * i_a_to_pu_to
-        branch_append[meas_from.element.values.astype(int), IM_FROM_IDX] = meas_from.index.values
-        branch_append[meas_to.element.values.astype(int), IM_TO_IDX] = meas_to.index.values
+        branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
 
     p_tr_measurements = net.measurement[(net.measurement.type == "p") &
                                         (net.measurement.element_type == "trafo")]
@@ -181,14 +191,14 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
                                        net.trafo.hv_bus[p_tr_measurements.element]).values]
         meas_to = p_tr_measurements[(p_tr_measurements.bus.values.astype(int) ==
                                      net.trafo.lv_bus[p_tr_measurements.element]).values]
-        ix_from = ppci_lines + meas_from.element.values.astype(int)
-        ix_to = ppci_lines + meas_to.element.values.astype(int)
+        ix_from = [map_trafo[t] for t in meas_from.element.values.astype(int)]
+        ix_to = [map_trafo[t] for t in meas_to.element.values.astype(int)]
         branch_append[ix_from, P_FROM] = meas_from.value.values * 1e3 / s_ref
         branch_append[ix_from, P_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
+        branch_append[ix_from, P_FROM_IDX] = meas_from.index.values
         branch_append[ix_to, P_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, P_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[meas_from.element.values.astype(int), P_FROM_IDX] = meas_from.index.values
-        branch_append[meas_to.element.values.astype(int), P_TO_IDX] = meas_to.index.values
+        branch_append[ix_to, P_TO_IDX] = meas_to.index.values
 
     q_tr_measurements = net.measurement[(net.measurement.type == "q") &
                                         (net.measurement.element_type == "trafo")]
@@ -197,14 +207,14 @@ def _add_measurements_to_ppc(net, mapping_table, ppci, s_ref):
                                        net.trafo.hv_bus[q_tr_measurements.element]).values]
         meas_to = q_tr_measurements[(q_tr_measurements.bus.values.astype(int) ==
                                      net.trafo.lv_bus[q_tr_measurements.element]).values]
-        ix_from = ppci_lines + meas_from.element.values.astype(int)
-        ix_to = ppci_lines + meas_to.element.values.astype(int)
+        ix_from = [map_trafo[t] for t in meas_from.element.values.astype(int)]
+        ix_to = [map_trafo[t] for t in meas_to.element.values.astype(int)]
         branch_append[ix_from, Q_FROM] = meas_from.value.values * 1e3 / s_ref
         branch_append[ix_from, Q_FROM_STD] = meas_from.std_dev.values * 1e3 / s_ref
+        branch_append[ix_from, Q_FROM_IDX] = meas_from.index.values
         branch_append[ix_to, Q_TO] = meas_to.value.values * 1e3 / s_ref
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values * 1e3 / s_ref
-        branch_append[meas_from.element.values.astype(int), Q_FROM_IDX] = meas_from.index.values
-        branch_append[meas_to.element.values.astype(int), Q_TO_IDX] = meas_to.index.values
+        branch_append[ix_to, Q_TO_IDX] = meas_to.index.values
 
     ppci["bus"] = np.hstack((ppci["bus"], bus_append))
     ppci["branch"] = np.hstack((ppci["branch"], branch_append))

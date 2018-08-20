@@ -28,7 +28,7 @@ def get_testgrids(name, filename):
     This function return the ppc (or pp net) which is saved in ppc_testgrids.p to validate the
     from_ppc function via validate_from_ppc.
     """
-    pp_path = pp_path = os.path.split(pp.__file__)[0]
+    pp_path = os.path.split(pp.__file__)[0]
     folder = os.path.join(pp_path, 'test', 'converter')
     ppcs = pickle.load(open(os.path.join(folder, filename), "rb"))
     return ppcs[name]
@@ -37,7 +37,7 @@ def get_testgrids(name, filename):
 def test_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
-    net_by_code = pp.from_json("case2_2_by_code.json")
+    net_by_code = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
     pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
@@ -52,7 +52,7 @@ def test_from_ppc():
 
 def test_validate_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
-    net = pp.from_json("case2_2_by_code.json")
+    net = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 

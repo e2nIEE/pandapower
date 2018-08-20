@@ -71,7 +71,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
      voltages and bus voltages
 
     OUTPUT:
-     - **diag_results** (dict): dict that contains the indeces of all elements where errors were found
+     - **diag_results** (dict): dict that contains the indices of all elements where errors were found
 
       Format: {'check_name': check_results}
 
@@ -80,7 +80,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-    diag_functions = ["missing_bus_indeces(net)",
+    diag_functions = ["missing_bus_indices(net)",
                       "disconnected_elements(net)",
                       "different_voltage_levels_connected(net)",
                       "impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu)",
@@ -432,7 +432,7 @@ def wrong_switch_configuration(net):
         runpp(net)
     except:
         try:
-            net.switch.closed = 1
+            net.switch.closed = True
             runpp(net)
             net.switch.closed = switch_configuration
             return True
@@ -441,22 +441,22 @@ def wrong_switch_configuration(net):
             return False
 
 
-def missing_bus_indeces(net):
+def missing_bus_indices(net):
     """
-        Checks for missing bus indeces.
+        Checks for missing bus indices.
 
          INPUT:
             **net** (PandapowerNet)    - pandapower network
 
 
          OUTPUT:
-            **check_results** (list)   - List of tuples each containing missing bus indeces.
+            **check_results** (list)   - List of tuples each containing missing bus indices.
                                          Format:
                                          [(element_index, bus_name (e.g. "from_bus"),  bus_index]
 
     """
     check_results = {}
-    bus_indeces = set(net.bus.index)
+    bus_indices = set(net.bus.index)
     element_bus_names = {"ext_grid": ["bus"], "load": ["bus"], "gen": ["bus"], "sgen": ["bus"],
                          "trafo": ["lv_bus", "hv_bus"], "trafo3w": ["lv_bus", "mv_bus", "hv_bus"],
                          "switch": ["bus", "element"], "line": ["from_bus", "to_bus"]}
@@ -464,7 +464,7 @@ def missing_bus_indeces(net):
         element_check = []
         for i, row in net[element].iterrows():
             for bus_name in element_bus_names[element]:
-                if row[bus_name] not in bus_indeces:
+                if row[bus_name] not in bus_indices:
                     if not ((element == "switch") and (bus_name == "element") and (
                                 row.et in ['l', 't'])):
                         element_check.append((i, bus_name, row[bus_name]))
@@ -518,7 +518,7 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
 
 
      OUTPUT:
-        **implausible_lines** (list)    - list that contains the indeces of all lines with an
+        **implausible_lines** (list)    - list that contains the indices of all lines with an
                                           impedance value of zero.
 
 
@@ -587,13 +587,13 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
 
                                           Format:
 
-                                          {trafo': {'hv_bus' : trafos_indeces,
-                                                    'lv_bus' : trafo_indeces,
-                                                    'hv_lv_swapped' : trafo_indeces},
-                                           trafo3w': {'hv_bus' : trafos3w_indeces,
-                                                      'mv_bus' : trafos3w_indeces
-                                                      'lv_bus' : trafo3w_indeces,
-                                                      'connectors_swapped_3w' : trafo3w_indeces}}
+                                          {trafo': {'hv_bus' : trafos_indices,
+                                                    'lv_bus' : trafo_indices,
+                                                    'hv_lv_swapped' : trafo_indices},
+                                           trafo3w': {'hv_bus' : trafos3w_indices,
+                                                      'mv_bus' : trafos3w_indices
+                                                      'lv_bus' : trafo3w_indices,
+                                                      'connectors_swapped_3w' : trafo3w_indices}}
 
     """
     results = {}
@@ -708,13 +708,13 @@ def disconnected_elements(net):
         **disc_elements** (dict)        - list that contains all network elements, without a
                                           connection to an ext_grid.
 
-                                          format: {'disconnected buses'   : bus_indeces,
-                                                   'disconnected switches' : switch_indeces,
-                                                   'disconnected lines'    : line_indeces,
-                                                   'disconnected trafos'   : trafo_indeces
-                                                   'disconnected loads'    : load_indeces,
-                                                   'disconnected gens'     : gen_indeces,
-                                                   'disconnected sgens'    : sgen_indeces}
+                                          format: {'disconnected buses'   : bus_indices,
+                                                   'disconnected switches' : switch_indices,
+                                                   'disconnected lines'    : line_indices,
+                                                   'disconnected trafos'   : trafo_indices
+                                                   'disconnected loads'    : load_indices,
+                                                   'disconnected gens'     : gen_indices,
+                                                   'disconnected sgens'    : sgen_indices}
 
     """
 
@@ -793,10 +793,10 @@ def wrong_reference_system(net):
         **net** (pandapowerNet)    - pandapower network
 
      OUTPUT:
-        **check_results** (dict)        - dict that contains the indeces of all components where the
+        **check_results** (dict)        - dict that contains the indices of all components where the
                                           usage of the wrong reference system was found.
 
-                                          Format: {'element_type': element_indeces}
+                                          Format: {'element_type': element_indices}
 
     """
     check_results = {}

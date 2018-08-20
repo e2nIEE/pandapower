@@ -120,17 +120,42 @@ def test_tp_phase_shifter_default():
     pp.create_transformer(net, 0, 1, "without_tp_shifter_info")
     assert (net.trafo.tp_phase_shifter == expected_default).all()
 
+
 def test_create_line_conductance():
     net = pp.create_empty_network()
     pp.create_bus(net, 20)
     pp.create_bus(net, 20)
-    pp.create_std_type(net, {'c_nf_per_km': 210, 'max_i_ka': 0.142,  'q_mm2': 50,
+    pp.create_std_type(net, {'c_nf_per_km': 210, 'max_i_ka': 0.142, 'q_mm2': 50,
                              'r_ohm_per_km': 0.642, 'type': 'cs', 'x_ohm_per_km': 0.083,
                              "g_us_per_km": 1}, "test_conductance")
-        
+
     l = pp.create_line(net, 0, 1, 1., "test_conductance")
     assert net.line.g_us_per_km.at[l] == 1
-    
-if __name__ == '__main__':
-     pytest.main(["test_create.py"])
 
+
+def test_create_buses():
+    net = pp.create_empty_network()
+    # standard
+    b1 = pp.create_buses(net, 3, 110)
+    # with geodata
+    b2 = pp.create_buses(net, 3, 110, geodata=(10, 20))
+    # with geodata as array
+    geodata = np.array([[10, 20], [20, 30], [30, 40]])
+    b3 = pp.create_buses(net, 3, 110, geodata=geodata)
+
+    assert len(net.bus) == 9
+    assert len(net.bus_geodata) == 6
+
+    for i in b2:
+        assert net.bus_geodata.at[i, 'x'] == 10
+        assert net.bus_geodata.at[i, 'y'] == 20
+
+    assert (net.bus_geodata.loc[b3, ['x', 'y']].values == geodata).all()
+
+    # no way of creating buses with not matching shape
+    with pytest.raises(ValueError):
+        pp.create_buses(net, 2, 110, geodata=geodata)
+
+
+if __name__ == '__main__':
+    pytest.main(["test_create.py"])

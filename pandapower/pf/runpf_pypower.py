@@ -50,10 +50,10 @@ def _runpf_pypower(ppci, options, **kwargs):
     ##-----  run the power flow  -----
     t0 = time()
     # ToDo: Options should be extracted in every subfunction not here...
-    init, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
+    init_va_degree, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
 
     if ac:  # AC formulation
-        if init == "dc":
+        if init_va_degree == "dc":
             ppci = _run_dc_pf(ppci)
             success = True
 
@@ -69,7 +69,7 @@ def _runpf_pypower(ppci, options, **kwargs):
 
 
 def _get_options(options, **kwargs):
-    init = options["init"]
+    init_va_degree = options["init_va_degree"]
     ac = options["ac"]
     recycle = options["recycle"]
     numba = options["numba"]
@@ -87,7 +87,7 @@ def _get_options(options, **kwargs):
     ppopt['PF_MAX_IT_GS'] = max_iteration
     ppopt['PF_MAX_IT_FD'] = max_iteration
     ppopt['VERBOSE'] = 0
-    return init, ac, numba, recycle, ppopt
+    return init_va_degree, ac, numba, recycle, ppopt
 
 
 def _ac_runpf(ppci, ppopt, numba, recycle):
