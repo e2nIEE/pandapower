@@ -432,7 +432,7 @@ def wrong_switch_configuration(net):
         runpp(net)
     except:
         try:
-            net.switch.closed = 1
+            net.switch.closed = True
             runpp(net)
             net.switch.closed = switch_configuration
             return True
