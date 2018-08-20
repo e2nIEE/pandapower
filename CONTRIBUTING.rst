@@ -26,8 +26,8 @@ Setup
 The develop branch is now configured to automatically track the official pandapower develop branch. So if you pull the develop branch, it will by default pull from the official repository.
 Since you cannot push directly to the official pandapower repository, pushes are by default routed to your own fork instead of the official pandapower repository.
 
-Contribute
-----------
+Contribute from your develop branch
+------------------------------------
 
 #. Check out the develop branch on your local machine:
 
@@ -47,6 +47,42 @@ Contribute
 
 #. Push your changes to your fork:
 
-   git push
+    git push
 
-#. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request/
+#. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
+
+Contribute from your develop branch
+------------------------------------
+
+#. Check out the develop branch on your local machine:
+
+    git checkout develop
+
+#. Update your local copy to the most recent version of the pandpower develop branch
+
+    git pull
+
+#. Create a new branch:
+
+    git checkout -b my_branch
+    
+#. Make changes in the code
+
+#. Add and commit your changes
+
+    git add --all
+
+    git commit -m"commit message"
+
+#. Push your changes to your fork:
+
+    git push -u pp_fork my_branch
+    
+   this pushes the new branch to your fork and also sets up the remote tracking. So if you make more commits and push them, you only need to do:
+
+    git push
+   
+
+#. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
+
+
