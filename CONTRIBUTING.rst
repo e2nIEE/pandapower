@@ -52,7 +52,7 @@ Contribute from your develop branch
 
     git pull
 
-#. Make changes in the code: 
+#. Make changes in the code
 
 #. Add and commit your changes: ::
 
@@ -65,6 +65,12 @@ Contribute from your develop branch
 
 #. Push your changes to your fork: ::
 
+    git push
+    
+#. If you want to ammend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch: ::
+
+    git add --all
+    git commit -m"I have updated the pull request after discussions #3"
     git push
 
 #. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
@@ -99,11 +105,15 @@ Contribute from a feature branch
 
     git push -u pp_fork my_branch
     
-   this pushes the new branch to your fork and also sets up the remote tracking. So if you make more commits and push them, you only need to do: ::
-
-    git push
+   this pushes the new branch to your fork and also sets up the remote tracking. 
    
-#. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
+#. Put in a Pull request to the official repository (see https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
+
+#. If you want to ammend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch. Since the remote tracking branch has been set up, this is as easy as: ::
+
+    git add --all
+    git commit -m"I have updated the pull request after discussions #3"
+    git push
 
 #. If the pull request was merged and you don't expect further development on this feature, you can delete the feature branch to keep your repository clean.
 
