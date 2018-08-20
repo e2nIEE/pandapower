@@ -73,6 +73,7 @@ def _build_branch_ppc(net, ppc):
 def _initialize_branch_lookup(net):
     r_switch = net["_options"]["r_switch"]
     start = 0
+    end = 0
     net._pd2ppc_lookups["branch"] = {}
     for element in ["line", "trafo", "trafo3w", "impedance", "xward"]:
         if len(net[element]) > 0:
@@ -504,6 +505,8 @@ def _trafo_df_from_trafo3w(net):
         i += 1
 
     trafo_df = pd.DataFrame.from_dict(trafos2w, orient="index")
+    if any(trafo_df.vsc_percent==0):
+        raise UserWarning("Equivalent transformer with zero impedance!")
     return trafo_df
 
 

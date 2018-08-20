@@ -78,7 +78,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
-        if on_map == True:
+        if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
@@ -88,15 +88,13 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
     # ----- Buses ------
     # initializating bus trace
-    idx = net.bus.index
     # hoverinfo which contains name and pf results
     precision = 3
-    hoverinfo = (net.bus.loc[idx, 'name'].astype(str) + '<br>' +
-                 'U = ' + net.res_bus.loc[idx, 'vm_pu'].round(precision).astype(str) + ' pu' + '<br>' +
-                 'U = ' + (net.res_bus.loc[idx, 'vm_pu'].round(precision) * net.bus.loc[idx, 'vn_kv'].round(2)).astype(
-                str) + ' kV' + '<br>' +
-                 'ang = ' + net.res_bus.loc[idx, 'va_degree'].round(precision).astype(str) + ' deg'
-                 ).tolist()
+    hoverinfo = (
+            net.bus.name.astype(str) + '<br />' +
+            'V_m = ' + net.res_bus.vm_pu.round(precision).astype(str) + ' pu' + '<br />' +
+            'V_m = ' + (net.res_bus.vm_pu * net.bus.vn_kv.round(2)).round(precision).astype(str) + ' kV' + '<br />' +
+            'V_a = ' + net.res_bus.va_degree.round(precision).astype(str) + ' deg').tolist()
     bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
                                  cbar_title='Bus Voltage [pu]', cmin=0.9, cmax=1.1)
 
@@ -111,28 +109,27 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         use_line_geodata = False
     idx = net.line.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.line.loc[idx, 'name'].astype(str) + '<br>' +
-                 'I = ' + net.res_line.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br>' +
-                 'I_from = ' + net.res_line.loc[idx, 'i_from_ka'].round(precision).astype(str) + ' kA' + '<br>' +
-                 'I_to = ' + net.res_line.loc[idx, 'i_to_ka'].round(precision).astype(str) + ' kA' + '<br>'
-                 ).tolist()
+    hoverinfo = (
+            net.line.name.astype(str) + '<br />' +
+            'I = ' + net.res_line.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
+            'I_from = ' + net.res_line.i_from_ka.round(precision).astype(str) + ' kA' + '<br />' +
+            'I_to = ' + net.res_line.i_to_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
     line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
                                     width=line_width,
                                     infofunc=hoverinfo,
                                     cmap=cmap_lines,
-                                    cmap_vals=net.res_line.loc[:, 'loading_percent'].values,
+                                    cmap_vals=net.res_line['loading_percent'].values,
                                     cmin=0,
                                     cmax=100,
                                     cbar_title='Line Loading [%]')
 
     # ----- Trafos ------
-    idx = net.trafo.index
     # hoverinfo which contains name and pf results
-    hoverinfo = (net.trafo.loc[idx, 'name'].astype(str) + '<br>' +
-                 'I = ' + net.res_trafo.loc[idx, 'loading_percent'].round(precision).astype(str) + ' %' + '<br>' +
-                 'I_hv = ' + net.res_trafo.loc[idx, 'i_hv_ka'].round(precision).astype(str) + ' kA' + '<br>' +
-                 'I_lv = ' + net.res_trafo.loc[idx, 'i_lv_ka'].round(precision).astype(str) + ' kA' + '<br>'
-                 ).tolist()
+    hoverinfo = (
+            net.trafo.name.astype(str) + '<br />' +
+            'I = ' + net.res_trafo.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
+            'I_hv = ' + net.res_trafo.i_hv_ka.round(precision).astype(str) + ' kA' + '<br />' +
+            'I_lv = ' + net.res_trafo.i_lv_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)
 

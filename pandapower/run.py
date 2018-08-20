@@ -12,6 +12,7 @@ from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_opt
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow
+import inspect
 
 try:
     import pplog as logging
@@ -63,25 +64,13 @@ def _passed_runpp_parameters(local_parameters):
     :param local_parameters: locals() in the runpp() function
     :return: dictionary of explicitly passed parameters
     """
-    default_parameters = {
-        'algorithm': 'nr',
-        'calculate_voltage_angles': 'auto',
-        'check_connectivity': True,
-        'delta_q': 0,
-        'enforce_q_lims': False,
-        'init': 'auto',
-        'kwargs': {},
-        'max_iteration': 'auto',
-        'numba': True,
-        'r_switch': 0.0,
-        'recycle': None,
-        'tolerance_kva': 1e-05,
-        'trafo_loading': 'current',
-        'trafo_model': 't',
-        'voltage_depend_loads': True,
-        "trafo3w_losses": "hv"
-    }
-
+    try:
+        default_parameters = {k: v.default for k, v in inspect.signature(runpp).parameters.items()}
+    except:
+        args, varargs, keywords, defaults = inspect.getargspec(runpp)
+        default_parameters = dict(zip(args[-len(defaults):], defaults))
+    default_parameters.update({"init": "auto"})
+    
     passed_parameters = {
         key: val for key, val in local_parameters.items()
         if key in default_parameters.keys() and val != default_parameters.get(key, None)}
@@ -89,10 +78,11 @@ def _passed_runpp_parameters(local_parameters):
     return passed_parameters
 
 
-def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max_iteration="auto",
-          tolerance_kva=1e-5, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
+def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="auto",
+          init_vm_pu="auto", max_iteration="auto", tolerance_kva=1e-5, trafo_model="t", 
+          trafo_loading="current", enforce_q_lims=False,
           numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, trafo3w_losses="hv", vm_start_pu=1.0, **kwargs):
+          delta_q=0, trafo3w_losses="hv", vm_start_pu=1.0, v_debug=False, **kwargs):
     """
     Runs PANDAPOWER AC Flow
 
@@ -207,8 +197,22 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
 
+          
+    kwargs.update(overrule_options)
+    init = kwargs.get("init")
+    if init is not None:
+        if init_vm_pu != "auto" or init_va_degree != "auto":
+            raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
+        elif init == "dc":
+            init_vm_pu = "flat"
+            init_va_degree = "dc"
+        else:
+            init_vm_pu = init            
+            init_va_degree = init
+    
         ## check if numba is available and the corresponding flag
-    if numba:
+            
+    if numba == True:
         numba = _check_if_numba_is_installed(numba)
 
     if voltage_depend_loads:
@@ -231,33 +235,30 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto", max
             hv_buses = net.bus.index[is_hv_bus]
             if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
-    if init == "auto":
-        init = "dc" if calculate_voltage_angles else "flat"
-    if init == "results" and len(net.res_bus) == 0:
-        init = "auto"
-        
-    if isinstance(vm_start_pu, str):
-        if vm_start_pu == "auto":
-            vm_start_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
-                          (len(net.ext_grid.vm_pu) + len(net.gen.vm_pu))
-        else:
-            raise ValueError("starting voltage vector is invalid. Set vm_start_pu either to 'auto', a float or an iterable with the length of the bus table.")
-
+                
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
 
+    if isinstance(init_va_degree, str) and init_va_degree  == "auto":
+        init_va_degree = "dc" if calculate_voltage_angles else "flat"
+    
+    if isinstance(init_vm_pu, str) and init_vm_pu == "auto":
+        init_vm_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
+                          (len(net.ext_grid.vm_pu) + len(net.gen.vm_pu))
+        
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims,
-                     recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q,
+                     r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    vm_start_pu=vm_start_pu)
+                    vm_start_pu=vm_start_pu, v_debug=v_debug)
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
@@ -323,7 +324,8 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
@@ -401,9 +403,10 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, numba=numba)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
@@ -463,9 +466,10 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac)
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

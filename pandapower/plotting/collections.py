@@ -7,7 +7,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc
+from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch, \
+    FancyArrowPatch
+from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
 from itertools import combinations
 import copy
@@ -27,6 +29,26 @@ def _rotate_dim2(arr, ang):
     """
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
+
+def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
+    """
+    Creates PatchCollection of Texts shown at the given coordinates
+
+    Input:
+        **texts** (iterable of strings) - The texts to be
+        **coords** (iterable of tuples) - The pandapower network
+        **size** (int) - The pandapower network
+
+    OPTIONAL:
+        **prop** - FontProperties being passed to the TextPatches
+        **kwargs** - Any other keyword-arguments will be passed to the PatchCollection.
+    """
+    tp = []
+    # we convert TextPaths to PathPatches to create a PatchCollection
+    for t, c in zip(texts, coords):
+        tp.append(PathPatch(TextPath(c, t, size=size, prop=prop)))
+
+    return PatchCollection(tp, **kwargs)
 
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
@@ -84,14 +106,17 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
 
     infos = []
 
-    if 'height' not in kwargs and 'width' not in kwargs:
-        kwargs['height'] = kwargs['width'] = 2 * size
-    if patch_type == "rect":
-        kwargs['height'] *= 2
-        kwargs['width'] *= 2
+    # RegularPolygon has no param width/height, everything else might use defaults
+    if not patch_type.startswith("poly"):
+        if 'height' not in kwargs and 'width' not in kwargs:
+            kwargs['height'] = kwargs['width'] = 2 * size
+
+        if patch_type == "rect":
+            kwargs['height'] *= 2
+            kwargs['width'] *= 2
 
     def figmaker(x, y, i):
-        if colors:
+        if colors is not None:
             kwargs["color"] = colors[i]
         if patch_type == 'ellipse' or patch_type == 'circle':  # circles are just ellipses
             angle = kwargs['angle'] if 'angle' in kwargs else 0
@@ -112,10 +137,10 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
                if x != np.nan]
     pc = PatchCollection(patches, match_original=True, picker=picker)
     pc.bus_indices = np.array(buses)
-    if cmap:
+    if cmap is not None:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        if z is None and net:
+        if z is None and net is not None:
             z = net.res_bus.vm_pu.loc[buses]
         else:
             logger.warning("z is None and no net is provided")
@@ -176,6 +201,8 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     OUTPUT:
         **lc** - line collection
     """
+    if use_bus_geodata:
+        linetab = net.line if lines is None else net.line.loc[lines]
     lines = net.line.index.tolist() if lines is None else list(lines)
     if len(lines) == 0:
         return None
@@ -189,13 +216,14 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     lines_with_geo = []
     if use_bus_geodata:
         data = []
-        for line, (a, b) in net.line.loc[lines, ["from_bus", "to_bus"]].iterrows():
-            if a in bus_geodata.index.values and b in bus_geodata.index.values:
+        buses_with_geodata = bus_geodata.index.values
+        bg_dict = bus_geodata.to_dict() #transforming to dict to make lookup faster
+        for line, fb, tb in zip(linetab.index, linetab.from_bus.values, linetab.to_bus.values):
+            if fb in buses_with_geodata and tb in buses_with_geodata:
                 lines_with_geo.append(line)
-                data.append(([(bus_geodata.at[a, "x"], bus_geodata.at[a, "y"]),
-                              (bus_geodata.at[b, "x"], bus_geodata.at[b, "y"])],
+                data.append(([(bg_dict["x"][fb], bg_dict["y"][fb]),
+                              (bg_dict["x"][tb], bg_dict["y"][tb])],
                              infofunc(line) if infofunc else[]))
-
         lines_without_geo = set(lines)-set(lines_with_geo)
         if lines_without_geo:
             logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
@@ -208,7 +236,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                 data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
 
         lines_without_geo = set(lines)-set(lines_with_geo)
-        if lines_without_geo:
+        if len(lines_without_geo) > 0:
             logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
                            % lines_without_geo)
 
@@ -221,7 +249,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     # b) prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(data, picker=picker, **kwargs)
     lc.line_indices = np.array(lines_with_geo)
-    if cmap:
+    if cmap is not None:
         if z is None:
             z = net.res_line.loading_percent.loc[lines_with_geo]
         lc.set_cmap(cmap)
@@ -269,7 +297,7 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
 
     tg = list(zip(hv_geo, lv_geo))
 
-    info = [infofunc(tr) if infofunc else [] for tr in trafos.index.values]
+    info = [infofunc(tr) if infofunc is not None else [] for tr in trafos.index.values]
 
     lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
     lc.info = info
@@ -315,7 +343,7 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
           for x in c]
 
     # 3 times infofunc for every trafo
-    info = [infofunc(x) if infofunc else []
+    info = [infofunc(x) if infofunc is not None else []
             for tr in [(t, t, t) for t in trafos.index.values]
             for x in tr]
 
@@ -362,6 +390,8 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None,
     infos = []
     color = kwargs.pop("color", "k")
     linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
     for i, trafo in trafo_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[trafo.hv_bus].values
         p2 = net.bus_geodata[["x", "y"]].loc[trafo.lv_bus].values
@@ -771,8 +801,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
             logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
         # switch bus and target coordinates
-        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values
-        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values
+        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values.astype(np.float64)
+        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values.astype(np.float64)
         # position of switch symbol
         vec = pos_tb - pos_sb
         pos_sw = pos_sb + vec * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb
@@ -794,20 +824,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     return switches, helper_lines
 
 
-def add_collections_to_axes(ax, collections, plot_colorbars=True):
-    for c in collections:
-        if c:
-            c = copy.copy(c)
-            ax.add_collection(c)
-            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
-
-
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
-                     axes_visible=(False, False)):
+                     axes_visible=(False, False), copy_collections=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -830,13 +848,14 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         **ax** - matplotlib axes
     """
 
-    if not ax:
+    if ax is None:
         plt.figure(facecolor="white", figsize=figsize)
         plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.05,
                             wspace=0.02, hspace=0.04)
     ax = ax or plt.gca()
 
-    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars)
+    add_collections_to_axes(ax, collections, plot_colorbars=plot_colorbars,
+                            copy_collections=copy_collections)
 
     try:
         ax.set_facecolor("white")
@@ -850,6 +869,19 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     ax.margins(.02)
     plt.draw()
     return ax
+
+
+def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
+    for c in collections:
+        if c:
+            if copy_collections:
+                c = copy.copy(c)
+            ax.add_collection(c)
+            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
+                extend = c.extend if hasattr(c, "extend") else "neither"
+                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+                if hasattr(c, "cbar_title"):
+                    cbar_load.ax.set_ylabel(c.cbar_title)
 
 
 if __name__ == "__main__":

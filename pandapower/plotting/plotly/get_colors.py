@@ -9,7 +9,7 @@ import sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import matplotlib.colors as colors
+import matplotlib.colors as mplc
 
 import numpy as np
 
@@ -19,19 +19,12 @@ except ImportError:
     pass
 
 
-
 def get_plotly_color(color_string):
-    colors_names = ['blue', 'green', 'red', 'purple', 'yellow', 'cyan']
-    colors = mpl.rcParams['axes.prop_cycle'].by_key()['color']
-    colors_plotly = []
-    if 'seaborn' in sys.modules:
-        for c in colors:
-            colors_plotly.append(_to_plotly_color(c))
-        colors_dict = dict(zip(colors_names, colors_plotly))
-    else:
-        colors_dict = dict(zip(colors_names, colors_names))
-
-    return color_string if colors_dict.get(color_string) is None else colors_dict.get(color_string)
+    try:
+        converted = _to_plotly_color(mplc.to_rgba(color_string))
+        return converted
+    except ValueError:
+        return None
 
 
 def get_plotly_color_palette(n):
@@ -46,23 +39,30 @@ def _to_plotly_palette(scl, transparence=None):
     """
     converts a rgb color palette in format (0-1,0-1,0-1) to a plotly color palette 'rgb(0-255,0-255,0-255)'
     """
-    if transparence:
-        return ['rgb({0},{1},{2},{3})'.format(r*255, g*255, b*255, transparence) for r, g, b in scl]
-    else:
-        return ['rgb({0},{1},{2})'.format(r*255, g*255, b*255) for r, g, b in scl]
-
+    _out = []
+    for color in scl:
+        plotly_col = [255 * _c for _c in mplc.to_rgba(color)]
+        if transparence:
+            assert 0. <= transparence <= 1.0
+            plotly_col[3] = transparence
+            plotly_col = "rgba({:.0f}, {:.0f}, {:.0f}, {:.4f})".format(*plotly_col)
+        else:
+            plotly_col = "rgb({:.0f}, {:.0f}, {:.0f})".format(*plotly_col[:3])
+        _out.append(plotly_col)
+    return _out
 
 
 def _to_plotly_color(scl, transparence=None):
     """
     converts a rgb color in format (0-1,0-1,0-1) to a plotly color 'rgb(0-255,0-255,0-255)'
     """
-    if transparence:
-        return 'rgb' + str((scl[0] * 255, scl[1] * 255, scl[2] * 255, transparence))
-    elif len(scl) > 3:
-        return 'rgb' + str((scl[0] * 255, scl[1] * 255, scl[2] * 255, scl[3]))
+    plotly_col = [255 * _c for _c in mplc.to_rgba(scl)] if len(scl) == 3 else [255 * _c for _c in mplc.to_rgb(scl)]
+    if transparence is not None:
+        assert 0. <= transparence <= 1.0
+        plotly_col[3] = transparence
+        return "rgba({:.0f}, {:.0f}, {:.0f}, {:.4f})".format(*plotly_col)
     else:
-        return 'rgb'+str((scl[0]*255, scl[1]*255, scl[2]*255))
+        return "rgb({:.0f}, {:.0f}, {:.0f})".format(*plotly_col[:3])
 
 
 def get_plotly_cmap(values, cmap_name='jet', cmin=None, cmax=None):
@@ -71,6 +71,6 @@ def get_plotly_cmap(values, cmap_name='jet', cmin=None, cmax=None):
         cmin = values.min()
     if cmax is None:
         cmax = values.max()
-    norm = colors.Normalize(vmin=cmin, vmax=cmax)
+    norm = mplc.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.
     return ['rgb({0},{1},{2})'.format(r, g, b) for r, g, b in bus_fill_colors_rgba]

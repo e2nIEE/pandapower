@@ -17,7 +17,7 @@ from pandapower.diagnostic_reports import DiagnosticReports
 try:
     import numba
     numba_installed = True
-except:
+except ImportError:
     numba_installed = False
 
 @pytest.fixture(scope='function')
@@ -43,7 +43,7 @@ def test_net():
 @pytest.fixture(scope='module')
 def report_methods():
     return {
-    "missing_bus_indeces": "diag_report.report_missing_bus_indeces()",
+    "missing_bus_indices": "diag_report.report_missing_bus_indices()",
     "disconnected_elements": "diag_report.report_disconnected_elements()",
     "different_voltage_levels_connected": "diag_report.report_different_voltage_levels_connected()",
     "impedance_values_close_to_zero": "diag_report.report_impedance_values_close_to_zero()",
@@ -1066,9 +1066,9 @@ def test_parallel_switches(test_net, diag_params, diag_errors, report_methods):
         assert report_check
 
 
-def test_missing_bus_indeces(test_net, diag_params, diag_errors, report_methods):
+def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
-    check_function = 'missing_bus_indeces'
+    check_function = 'missing_bus_indices'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     net.line.from_bus.iloc[0] = 10000
@@ -1077,7 +1077,7 @@ def test_missing_bus_indeces(test_net, diag_params, diag_errors, report_methods)
     net.switch.bus.iloc[0] = 10003
     net.switch.element.iloc[0] = 10004
     net.ext_grid.bus.iloc[0] = 10005
-    check_result = pp.missing_bus_indeces(net)
+    check_result = pp.missing_bus_indices(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:

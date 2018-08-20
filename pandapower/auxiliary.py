@@ -373,14 +373,18 @@ def _select_is_elements_numba(net, isolated_nodes=None):
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, init, enforce_q_lims, recycle, delta=1e-10,
-                     voltage_depend_loads=False, trafo3w_losses="hv"):
+                     copy_constraints_to_ppc, r_switch, enforce_q_lims, recycle, delta=1e-10,
+                     voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
+                     init_va_degree=0):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
-
+    
+    init_results = (isinstance(init_vm_pu, str)     and (init_vm_pu == "results")) or \
+                   (isinstance(init_va_degree, str) and (init_va_degree == "results"))
+                            
     options = {
         "calculate_voltage_angles": calculate_voltage_angles,
         "trafo_model": trafo_model,
@@ -388,12 +392,14 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "mode": mode,
         "copy_constraints_to_ppc": copy_constraints_to_ppc,
         "r_switch": r_switch,
-        "init": init,
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
         "delta": delta,
-        "trafo3w_losses": trafo3w_losses
+        "trafo3w_losses": trafo3w_losses,
+        "init_vm_pu": init_vm_pu,
+        "init_va_degree": init_va_degree,
+        "init_results": init_results
     }
     _add_options(net, options)
 
@@ -437,13 +443,14 @@ def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
     _add_options(net, options)
 
 
-def _add_opf_options(net, trafo_loading, ac, **kwargs):
+def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     options = {
         "trafo_loading": trafo_loading,
-        "ac": ac
+        "ac": ac,
+        "v_debug": v_debug
     }
 
     options.update(kwargs)  # update options with some algorithm-specific parameters

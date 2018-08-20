@@ -64,7 +64,7 @@ def geo_data_to_latlong(net, projection):
     try:
         from pyproj import Proj, transform
     except ImportError:
-        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
+        logger.warning('Geo-coordinates check cannot be peformed because pyproj package not available \n\t--> '
                        'if geo-coordinates are not in lat/lon format an empty plot may appear...')
         return
 

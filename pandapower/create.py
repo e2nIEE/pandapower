@@ -312,7 +312,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
     })
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=[])
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     add_basic_std_types(net)
     reset_results(net)
     net['user_pf_options'] = dict()
@@ -409,7 +409,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
-        **index** (int, default None) - Force specified IDs if available. If None, the indeces \
+        **index** (int, default None) - Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
 
         **vn_kv** (float) - The grid voltage level.
@@ -451,17 +451,15 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     dd["zone"] = zone
     dd["in_service"] = in_service
     dd["name"] = name
-    try:
-        net["bus"] = pd.concat([net["bus"], dd], axis=0, sort=True).reindex(net["bus"].columns, axis=1)
-    except:  # legacy for pandas <0.21
-        net["bus"] = pd.concat([net["bus"], dd], axis=0).reindex_axis(net["bus"].columns, axis=1)
+    net["bus"] = net["bus"].append(dd)[net["bus"].columns.tolist()]
     # and preserve dtypes
     # _preserve_dtypes(net.bus, dtypes)
 
-    if geodata:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tupel")
-        net["bus_geodata"].loc[bid, ["x", "y"]] = geodata
+    if geodata is not None:
+        # works with a 2-tuple or a matching array
+        net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
+                                                              columns=net.bus_geodata.columns))
+        net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if not isnan(min_vm_pu):
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
@@ -986,15 +984,10 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if bus in net.ext_grid.bus.values:
+    if bus in net.ext_grid.query("in_service").bus.values:
         raise UserWarning(
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
-
-    #    if bus in net.gen.bus.values:
-    #        raise UserWarning(
-    #            "There is already a generator at bus %u, only one voltage controlling " % bus +
-    #            "element (ext_grid, gen) is allowed per bus.")
 
     if index is None:
         index = get_free_id(net["gen"])
@@ -1123,15 +1116,14 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     if index is None:
         index = get_free_id(net["ext_grid"])
 
-    if bus in net.ext_grid.bus.values:
+    if bus in net.ext_grid.query("in_service").bus.values:
         raise UserWarning(
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
 
-    if bus in net.gen.bus.values:
-        raise UserWarning(
-            "There is already a generator at bus %u, thus no ext_grid is allowed at this bus." %
-            bus)
+    if bus in net.gen.query("in_service").bus.values:
+        raise UserWarning("There is already a generator (PV-node) at bus %u, "
+                          "thus no ext_grid is allowed at this bus." % bus)
 
         # store dtypes
     dtypes = net.ext_grid.dtypes
@@ -1731,7 +1723,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     dd = pd.DataFrame(v, index=[index])
     try:
         net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except:  # legacy for pandas <0.21
+    except TypeError:  # legacy for pandas <0.21
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):

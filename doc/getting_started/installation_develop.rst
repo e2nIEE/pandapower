@@ -2,7 +2,7 @@
 Installing development version
 ===================================================
 
-The pandapower development version is hosted on github: https://github.com/lthurner/pandapower
+The pandapower development version is hosted on github: https://github.com/e2nIEE/pandapower
 This guide assumes that there is already a working python environment (preferably with anaconda distribution) availble on your computer.
 
 1. Download and install git from https://git-scm.com
@@ -11,7 +11,7 @@ This guide assumes that there is already a working python environment (preferabl
 
 3. Run the following command ::
 
-    git clone https://github.com/lthurner/pandapower develop
+    git clone https://github.com/e2nIEE/pandapower develop
        
 3. Set your python path to the outer pandapower folder (/pandapower, NOT pandapower/pandapower). 
 
