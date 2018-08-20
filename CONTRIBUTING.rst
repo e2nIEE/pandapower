@@ -83,13 +83,15 @@ Contribute from your develop branch
 
     git push
     
+#. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
+
 #. If you want to ammend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch: ::
 
     git add --all
     git commit -m"I have updated the pull request after discussions #3"
     git push
-
-#. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
+    
+   The pull request will be automatically updated.
 
 Contribute from a feature branch
 ------------------------------------
