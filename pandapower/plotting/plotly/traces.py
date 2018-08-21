@@ -191,6 +191,7 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                                      colorbar=ColorBar(thickness=10,
                                                        x=1.0,
                                                        titleside='right'),
+                                     symbol=patch_type
                                      )
 
         if cbar_title:
