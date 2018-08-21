@@ -50,6 +50,7 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
 
     return PatchCollection(tp, **kwargs)
 
+
 def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
                           bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
@@ -638,9 +639,12 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     return sgen1, sgen2
 
 
-def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False, **kwargs):
+def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
+                               ext_grids=None, ext_grid_buses=None, **kwargs):
     """
-    Creates a matplotlib patch collection of pandapower ext_grid.
+    Creates a matplotlib patch collection of pandapower ext_grid. Parameters
+    ext_grids, ext_grid_buses can be used to specify, which ext_grids the collection should be
+    created for.
 
     Input:
         **net** (pandapowerNet) - The pandapower network
@@ -655,6 +659,8 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
 
         **picker** (bool, False) - picker argument passed to the patch collection
 
+        **ext_grid_buses** (np.ndarray, None) - buses to be used as ext_grid locations
+
         **kwargs - key word arguments are passed to the patch function
 
     OUTPUT:
@@ -666,13 +672,17 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     polys = []
     infos = []
     color = kwargs.pop("color", "k")
-    for i, ext_grid in net.ext_grid.iterrows():
-        p1 = net.bus_geodata[["x", "y"]].loc[ext_grid.bus]
+    if ext_grid_buses is None:
+        ext_grid_buses = net.ext_grid.bus.values
+    if ext_grids is None:
+        ext_grids = net.ext_grid.index.values
+    for ext_grid_idx, bus_idx in zip(ext_grids, ext_grid_buses):
+        p1 = net.bus_geodata[["x", "y"]].loc[bus_idx].values
         p2 = p1 + _rotate_dim2(np.array([0, size]), orientation)
         polys.append(Rectangle([p2[0] - size / 2, p2[1] - size / 2], size, size))
         lines.append((p1, p2 - _rotate_dim2(np.array([0, size / 2]), orientation)))
         if infofunc is not None:
-            infos.append(infofunc(i))
+            infos.append(infofunc(ext_grid_idx))
     ext_grid1 = PatchCollection(polys, facecolor=(1, 0, 0, 0), edgecolor=(0, 0, 0, 1),
                                 hatch="XXX", picker=picker, color=color, **kwargs)
     ext_grid2 = LineCollection(lines, color=color, picker=picker, **kwargs)
