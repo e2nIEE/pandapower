@@ -85,7 +85,7 @@ Contribute from your develop branch
     
 #. Put in a Pull request to the main repository: https://help.github.com/articles/creating-a-pull-request-from-a-fork/
 
-#. If you want to ammend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch: ::
+#. If you want to amend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch: ::
 
     git add --all
     git commit -m"I have updated the pull request after discussions #3"
@@ -177,6 +177,6 @@ This function is now automatically detected by pytest as part of the test suite 
     def double_rated_power(net):
        net.sn_kva *= 3
        
-The introduced test will fail. If this change would be submitted, the pull request would not be accepted, as it leads to failing tests in Travis CI. In that way, tests ensure the continuing integrity of the development and ensure that no functionality is inadverdently broken. 
+The introduced test will fail. If this change would be submitted, the pull request would not be accepted, as it leads to failing tests in Travis CI. In that way, tests ensure the continuing integrity of the development and ensure that no functionality is inadvertently broken. 
 
-Tests with pytest can be more complex than the simple example above. For how to handle e.g. pytest fixtures, xfailing tests etc. referr to the documentation of pytest.
+Tests with pytest can be more complex than the simple example above. For how to handle e.g. pytest fixtures, xfailing tests etc. refer to the documentation of pytest.
