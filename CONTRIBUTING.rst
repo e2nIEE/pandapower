@@ -127,7 +127,7 @@ Contribute from a feature branch
    
 #. Put in a Pull request to the official repository (see https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
-#. If you want to ammend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch. Since the remote tracking branch has been set up, this is as easy as: ::
+#. If you want to amend the pull request (for example because tests are failing in Travis, or because the community/maintainers have asked for modifications), simply push more commits to the branch. Since the remote tracking branch has been set up, this is as easy as: ::
 
     git add --all
     git commit -m"I have updated the pull request after discussions #3"
