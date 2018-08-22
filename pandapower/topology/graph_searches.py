@@ -487,4 +487,10 @@ def estimate_voltage_vector(net):
             elif pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]):
                 # parallel transformer, lv buses are already set from previous transformer
                 trafo_index.remove(tix)
+            if len(trafo_index) == len(trafos):
+                # after the initial run we could not identify any areas correctly, it's probably a transmission grid
+                # with slack on the LV bus and multiple transformers/gens. do flat init and return
+                res_bus.vm_pu.loc[res_bus.vm_pu.isnull()] = 1.
+                res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
+                return res_bus
     return res_bus

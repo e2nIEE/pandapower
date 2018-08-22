@@ -4,18 +4,18 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from collections import defaultdict
+from collections import Iterable, defaultdict
 
 import numpy as np
 import pandas as pd
 
+from pandapower import __version__
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
 from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch, \
     create_line_from_parameters, create_impedance
-from pandapower.topology import unsupplied_buses
-from pandapower.run import runpp
-from pandapower import __version__
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
+from pandapower.run import runpp
+from pandapower.topology import unsupplied_buses
 
 try:
     import pplog as logging
@@ -1171,16 +1171,11 @@ def fuse_buses(net, b1, b2, drop=True):
     Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
     if drop=True (default).
     """
-    try:
-        b2.__iter__
-        b2 = set(b2) - {b1}
-    except:
-        b2 = [b2]
+    b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
 
     for element, value in element_bus_tuples():
         i = net[element][net[element][value].isin(b2)].index
         net[element].loc[i, value] = b1
-
 
     i = net["switch"][(net["switch"]["et"] == 'b') & (
         net["switch"]["element"].isin(b2))].index
