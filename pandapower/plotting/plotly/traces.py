@@ -20,7 +20,10 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly.graph_objs import Figure, Data, Layout, Marker, XAxis, YAxis, Line, ColorBar
+    from plotly.graph_objs import Figure, Layout, ColorBar
+    from plotly.graph_objs.layout import XAxis, YAxis
+    from plotly.graph_objs.scatter import Line, Marker
+    from plotly.graph_objs.scattermapbox import Line as scmLine
 except ImportError:
     logger.debug("Failed to import plotly - interactive plotting will not be available")
 
@@ -557,9 +560,18 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             trace['lat'] = trace.pop('x')
             trace['lon'] = trace.pop('y')
             trace['type'] = 'scattermapbox'
+            if "line" in trace and on_map and isinstance(trace["line"], Line):
+                # scattermapboxplot lines do not support dash for some reason, make it a red line instead
+                if "dash" in trace["line"]._props:
+                    _prps = dict(trace["line"]._props)
+                    _prps.pop("dash", None)
+                    _prps["color"] = "red"
+                    trace["line"] = scmLine(_prps)
+                else:
+                    trace["line"] = scmLine(dict(trace["line"]._props))
 
     # setting Figure object
-    fig = Figure(data=Data(traces),  # edge_trace
+    fig = Figure(data=traces,  # edge_trace
                  layout=Layout(
                      titlefont=dict(size=16),
                      showlegend=showlegend,

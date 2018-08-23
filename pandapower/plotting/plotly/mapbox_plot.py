@@ -28,7 +28,7 @@ def _on_map_test(x, y):
     try:
         from geopy.geocoders import Nominatim
         from geopy.exc import GeocoderTimedOut
-        geolocator = Nominatim()
+        geolocator = Nominatim(user_agent="pandapower_user_mapboxplot")
 
     except ImportError:
         # if geopy is not available there will be no geo-coordinates check
