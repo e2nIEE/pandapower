@@ -70,5 +70,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     :target: https://www.iee.fraunhofer.de/en.html
     :width: 25em
 
+|
+|
 
 We welcome contributions to pandapower of any kind - if you want to contribute, please check out the `pandapower contribution guidelines <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`_.
