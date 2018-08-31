@@ -42,15 +42,22 @@
 pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
-More information about pandapower can be found on www.pandapower.org
+More information about pandapower can be found on www.pandapower.org:
 
-Quick Links:
+About pandapower:
 
-- `Installation Notes <https://www.pandapower.org/start/>`_
-- `Documentation <https://pandapower.readthedocs.io/en/v1.5.1/>`_
 - `Power System Modeling <https://www.pandapower.org/about/#modeling>`_
 - `Power System Analysis <https://www.pandapower.org/about/#analysis>`_
 - `Citing pandapower <https://www.pandapower.org/references/>`_
+
+Getting Started:
+
+- `Installation Notes <https://www.pandapower.org/start/>`_
+- `Minimal Example <https://www.pandapower.org/start/#a-short-introduction->`_
+- `Interactive Tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_
+- `Documentation <https://pandapower.readthedocs.io/en/v1.5.1/>`_
+
+
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
