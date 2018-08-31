@@ -1,8 +1,10 @@
 
 .. image:: https://www.pandapower.org/images/pp.svg
-   :target: https://app.codacy.com/project/lthurner/pandapower/dashboard
+   :target: https://www.pandapower.org
    :alt: codacy
-----
+
+pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
+aimed at automation of analysis and optimization in power systems.
 
 
 .. image:: https://badge.fury.io/py/pandapower.svg
@@ -33,9 +35,6 @@
    :target: https://github.com/e2nIEE/pandapower/blob/master/LICENSE
    :alt: BSD
    
-pandapower combines the data analysis library `pandas <http://pandas.pydata.org>`_ and the power flow solver `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ to create an easy to use network calculation program
-aimed at automation of analysis and optimization in power systems.
-
 
 More information about pandapower can be found on www.pandapower.org
 
