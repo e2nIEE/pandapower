@@ -3,7 +3,7 @@
    :target: https://www.pandapower.org
    :alt: logo
 
- |
+|
 
 .. image:: https://badge.fury.io/py/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
