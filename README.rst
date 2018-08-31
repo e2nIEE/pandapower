@@ -27,9 +27,11 @@
    :target: https://github.com/e2nIEE/pandapower/blob/master/LICENSE
    :alt: BSD
  
+ 
  |
  
- .. image:: https://www.pandapower.org/images/pp.svg
+ 
+.. image:: https://www.pandapower.org/images/pp.svg
    :target: https://www.pandapower.org
    :alt: codacy
   
