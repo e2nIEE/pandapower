@@ -57,7 +57,7 @@ Getting Started:
 - `Interactive Tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_
 - `Documentation <https://pandapower.readthedocs.io/en/v1.5.1/>`_
 
-
+If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
 pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
@@ -69,3 +69,6 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 .. image:: https://www.uni-kassel.de/eecs/fileadmin/datas/fb16/Fachgebiete/energiemanagement/iee.png
     :target: https://www.iee.fraunhofer.de/en.html
     :width: 25em
+
+
+We welcome contributions to pandapower of any kind - if you want to contribute, please check out the `pandapower contribution guidelines <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`_.
