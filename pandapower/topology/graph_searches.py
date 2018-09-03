@@ -380,7 +380,8 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     if mg is None:
         mg = create_nxgraph(net, respect_switches=respect_switches)
     # remove buses with degree lower 2 until none left
-    roots = roots or set(net.ext_grid.bus)
+    if roots is None:
+        roots = set(net.ext_grid.bus)
     #    mg.add_edges_from((a, b) for a, b in zip(list(roots)[:-1], list(roots)[1:]))
     #    while True:
     #        dgo = {g for g, d in list(mg.degree().items()) if d < 2} #- roots
