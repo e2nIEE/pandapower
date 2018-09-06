@@ -295,7 +295,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     ppci0["success"] = (count < 3 * max_iteration)
     ppci1["success"] = ppci0["success"]
     ppci2["success"] = ppci0["success"]
-
+    
     # Todo: Add reference to paper to explain the following steps
     ref, pv, pq = bustypes(ppci0["bus"], ppci0["gen"])
     ppci0["bus"][ref, GS] = 0
@@ -312,7 +312,19 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
     ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
-
+    
+    ppci0["internal"]["Ybus"] = Y0_pu
+    ppci1["internal"]["Ybus"] = Y1_pu
+    ppci2["internal"]["Ybus"] = Y2_pu
+    
+    ppci0["internal"]["Yf"] = Y0_f
+    ppci1["internal"]["Yf"] = Y1_f
+    ppci2["internal"]["Yf"] = Y2_f
+    
+    ppci0["internal"]["Yt"] = Y0_t
+    ppci1["internal"]["Yt"] = Y1_t
+    ppci2["internal"]["Yt"] = Y2_t
+    
     ppc0 = net["_ppc0"]
     ppc1 = net["_ppc1"]
     ppc2 = net["_ppc2"]
