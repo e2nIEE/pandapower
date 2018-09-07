@@ -386,28 +386,14 @@ def from_json_dict(json_dict, convert=True):
     """
     net = create_empty_network(name=json_dict["name"], f_hz=json_dict["f_hz"])
 
-    # checks if field exists in empty network and if yes, matches data type
-    for name in sorted(json_dict.keys()):
-        if name == 'dtypes':
+    for key in sorted(json_dict.keys()):
+        if key == 'dtypes':
             continue
-        if name not in net or isinstance(net[name], type(json_dict[name])):
-            net[name] = json_dict[name]
-        elif GEOPANDAS_INSTALLED and \
-                isinstance(net[name], pd.DataFrame) and \
-                isinstance(json_dict[name], GeoDataFrame):
-            net[name] = json_dict[name]
-        elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], dict):
-            net[name] = pd.DataFrame.from_dict(json_dict[name], orient="columns")
-            net[name].set_index(net[name].index.astype(numpy.int64), inplace=True)
+        if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict):
+            net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
+            net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:
-            # try to cast the type for cases like int -> float
-            try:
-                t = type(net[name])
-                net[name] = t(json_dict[name])
-            except:
-                raise UserWarning(
-                    "Cannot cast data type %s to %s for existing pandapower field %s (%s)"
-                    % (type(json_dict[name]), type(net[name]), name, json_dict[name]))
+            net[key] = json_dict[key]
 
     if convert:
         convert_format(net)
