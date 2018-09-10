@@ -38,7 +38,8 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
-                           'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration']
+                           'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration',
+                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
@@ -78,13 +79,12 @@ def _passed_runpp_parameters(local_parameters):
     return passed_parameters
 
 
-def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="auto",
-          init_vm_pu="auto", max_iteration="auto", tolerance_kva=1e-5, trafo_model="t", 
-          trafo_loading="current", enforce_q_lims=False,
-          numba=True, recycle=None, check_connectivity=True, r_switch=0.0, voltage_depend_loads=True,
-          delta_q=0, trafo3w_losses="hv", vm_start_pu=1.0, v_debug=False, **kwargs):
+def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
+          max_iteration="auto", tolerance_kva=1e-5, trafo_model="t", 
+          trafo_loading="current", enforce_q_lims=False, recycle=None, check_connectivity=True,
+          voltage_depend_loads=True, **kwargs):
     """
-    Runs PANDAPOWER AC Flow
+    Runs a power flow
 
     INPUT:
         **net** - The pandapower format network
@@ -159,10 +159,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="
 
             Note: enforce_q_lims only works if algorithm="nr"!
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
-
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.
 
         **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
 
@@ -176,17 +172,43 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are set out of service in the ppc
 
-        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
-
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
+
+
+        KWARGS:
+
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
+
+            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+            which leads to significant speed improvements.    
+            
+        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
         **trafo3w_losses** - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
-        
-        **vm_start_pu** (float, 1.0) starting voltage magnitude for "flat" and "dc" initialization modes. Can either be a float or "auto", in which case the voltage is initialized as the mean of all voltage controlled elements.
 
-        ****kwargs** - options to use for PYPOWER.runpf
+        **v_debug** (bool, False) - if True, voltage values in each newton-raphson iteration are logged in the ppc
+
+        **init_vm_pu** (bool, None) - Allows to define initialization specifically for voltage magnitudes. Only works with init == "auto"!
+        
+            - "auto": all buses are initialized with the mean value of all voltage controlled elements in the grid
+            - "flat" for flat start from 1.0
+            - "results": voltage magnitude vector is taken from result table
+            - a float with which all voltage magnitudes are initialized
+            - an iterable with a voltage magnitude value for each bus (length and order has to match with the buses in net.bus)
+            - a pandas Series with a voltage magnitude value for each bus (indexes have to match the indexes in net.bus)
+
+        **init_vm_pu** (bool, None) - Allows to define initialization specifically for voltage angles. Only works with init == "auto"!
+        
+            - "auto": voltage angles are initialized from DC power flow if angles are calculated or as 0 otherwise
+            - "dc": voltage angles are initialized from DC power flow
+            - "flat" for flat start from 0
+            - "results": voltage angle vector is taken from result table
+            - a float with which all voltage angles are initialized
+            - an iterable with a voltage angle value for each bus (length and order has to match with the buses in net.bus)
+            - a pandas Series with a voltage angle value for each bus (indexes have to match the indexes in net.bus)
+
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
@@ -199,19 +221,18 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="
 
           
     kwargs.update(overrule_options)
-    init = kwargs.get("init")
-    if init is not None:
-        if init_vm_pu != "auto" or init_va_degree != "auto":
-            raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
-        elif init == "dc":
-            init_vm_pu = "flat"
-            init_va_degree = "dc"
-        else:
-            init_vm_pu = init            
-            init_va_degree = init
     
-        ## check if numba is available and the corresponding flag
-            
+    trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
+    v_debug = kwargs.get("v_debug", False)
+    delta_q= kwargs.get("delta_q", 0)    
+    r_switch = kwargs.get("r_switch", 0.0)
+    numba = kwargs.get("numba", True)
+    init_vm_pu = kwargs.get("init_vm_pu", None)
+    init_va_degree = kwargs.get("init_va_degree", None)
+    if "init" in overrule_options:
+        init = overrule_options["init"]
+   
+    ## check if numba is available and the corresponding flag            
     if numba == True:
         numba = _check_if_numba_is_installed(numba)
 
@@ -239,13 +260,23 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
-
-    if isinstance(init_va_degree, str) and init_va_degree  == "auto":
-        init_va_degree = "dc" if calculate_voltage_angles else "flat"
     
-    if isinstance(init_vm_pu, str) and init_vm_pu == "auto":
-        init_vm_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
+    if init != "auto" and ((init_va_degree != None) or (init_vm_pu != None)) :
+        raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
+        
+    if init == "auto":
+        if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
+            init_va_degree = "dc" if calculate_voltage_angles else "flat"
+        if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
+            init_vm_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
                           (len(net.ext_grid.vm_pu) + len(net.gen.vm_pu))
+    elif init == "dc":
+        init_vm_pu = "flat"
+        init_va_degree = "dc"
+    else:
+        init_vm_pu = init            
+        init_va_degree = init
+
         
     # init options
     net._options = {}
@@ -258,8 +289,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init_va_degree="
                      trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
-                    vm_start_pu=vm_start_pu, v_debug=v_debug)
-    # net.__internal_options.update(overrule_options)
+                    v_debug=v_debug)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
