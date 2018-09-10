@@ -71,7 +71,7 @@ def _passed_runpp_parameters(local_parameters):
         args, varargs, keywords, defaults = inspect.getargspec(runpp)
         default_parameters = dict(zip(args[-len(defaults):], defaults))
     default_parameters.update({"init": "auto"})
-    
+
     passed_parameters = {
         key: val for key, val in local_parameters.items()
         if key in default_parameters.keys() and val != default_parameters.get(key, None)}
@@ -80,8 +80,8 @@ def _passed_runpp_parameters(local_parameters):
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
-          max_iteration="auto", tolerance_kva=1e-5, trafo_model="t", 
-          trafo_loading="current", enforce_q_lims=False, recycle=None, check_connectivity=True,
+          max_iteration="auto", tolerance_kva=1e-5, trafo_model="t",
+          trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, **kwargs):
     """
     Runs a power flow
@@ -160,13 +160,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             Note: enforce_q_lims only works if algorithm="nr"!
 
 
-        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
-
-            Contains a dict with the following parameters:
-            _is_elements: If True in service elements are not filtered again and are taken from the last result in net["_is_elements"]
-            ppc: If True the ppc is taken from net["_ppc"] and gets updated instead of reconstructed entirely
-            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
-
         **check_connectivity** (bool, True) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
 
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
@@ -175,13 +168,13 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
 
 
-        KWARGS:
+        **KWARGS:
 
         **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
 
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.    
-            
+            which leads to significant speed improvements.
+
         **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
@@ -190,8 +183,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
         **v_debug** (bool, False) - if True, voltage values in each newton-raphson iteration are logged in the ppc
 
-        **init_vm_pu** (bool, None) - Allows to define initialization specifically for voltage magnitudes. Only works with init == "auto"!
-        
+        **init_vm_pu** (string/float/array/Series, None) - Allows to define initialization specifically for voltage magnitudes. Only works with init == "auto"!
+
             - "auto": all buses are initialized with the mean value of all voltage controlled elements in the grid
             - "flat" for flat start from 1.0
             - "results": voltage magnitude vector is taken from result table
@@ -199,8 +192,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             - an iterable with a voltage magnitude value for each bus (length and order has to match with the buses in net.bus)
             - a pandas Series with a voltage magnitude value for each bus (indexes have to match the indexes in net.bus)
 
-        **init_vm_pu** (bool, None) - Allows to define initialization specifically for voltage angles. Only works with init == "auto"!
-        
+        **init_va_degree** (string/float/array/Series, None) - Allows to define initialization specifically for voltage angles. Only works with init == "auto"!
+
             - "auto": voltage angles are initialized from DC power flow if angles are calculated or as 0 otherwise
             - "dc": voltage angles are initialized from DC power flow
             - "flat" for flat start from 0
@@ -208,6 +201,13 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             - a float with which all voltage angles are initialized
             - an iterable with a voltage angle value for each bus (length and order has to match with the buses in net.bus)
             - a pandas Series with a voltage angle value for each bus (indexes have to match the indexes in net.bus)
+
+        **recycle** (dict, none) - Reuse of internal powerflow variables for time series calculation
+
+            Contains a dict with the following parameters:
+            _is_elements: If True in service elements are not filtered again and are taken from the last result in net["_is_elements"]
+            ppc: If True the ppc is taken from net["_ppc"] and gets updated instead of reconstructed entirely
+            Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
     """
 
@@ -219,20 +219,21 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
 
-          
+
     kwargs.update(overrule_options)
-    
+
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
     v_debug = kwargs.get("v_debug", False)
-    delta_q= kwargs.get("delta_q", 0)    
+    delta_q = kwargs.get("delta_q", 0)
     r_switch = kwargs.get("r_switch", 0.0)
     numba = kwargs.get("numba", True)
     init_vm_pu = kwargs.get("init_vm_pu", None)
     init_va_degree = kwargs.get("init_va_degree", None)
+    recycle = kwargs.get("recycle", None)
     if "init" in overrule_options:
         init = overrule_options["init"]
-   
-    ## check if numba is available and the corresponding flag            
+
+    ## check if numba is available and the corresponding flag
     if numba == True:
         numba = _check_if_numba_is_installed(numba)
 
@@ -256,14 +257,14 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             hv_buses = net.bus.index[is_hv_bus]
             if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
-                
+
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
-    
+
     if init != "auto" and ((init_va_degree != None) or (init_vm_pu != None)) :
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
-        
+
     if init == "auto":
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles else "flat"
@@ -274,10 +275,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         init_vm_pu = "flat"
         init_va_degree = "dc"
     else:
-        init_vm_pu = init            
+        init_vm_pu = init
         init_va_degree = init
 
-        
+
     # init options
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
