@@ -26,21 +26,20 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 from pandapower.toolbox import nets_equal
 
 
-@pytest.mark.xfail
 def test_minimal_net():
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pp.create_empty_network()
     b = pp.create_bus(net, 110)
     pp.create_ext_grid(net, b)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     pp.create_load(net, b, 100)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     b2 = pp.create_bus(net, 110)
     pp.create_switch(net, b, b2, 'b')
-    pp.runpp(net)
-
+    pp.create_sgen(net, b2, 200)
+    runpp_with_consistency_checks(net)
 
 def test_set_user_pf_options():
     net = example_simple()
@@ -356,7 +355,6 @@ def test_isolated_in_service_bus_at_oos_line():
     assert runpp_with_consistency_checks(net, init="flat")
 
 
-@pytest.mark.xfail
 def test_isolated_in_service_line():
     # ToDo: Fix this
     net = pp.create_empty_network()
@@ -836,7 +834,6 @@ def test_equal_indices_res():
         assert True
     except LoadflowNotConverged:
         assert False
-
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])

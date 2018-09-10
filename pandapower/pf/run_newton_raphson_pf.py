@@ -37,31 +37,32 @@ def _run_newton_raphson_pf(ppci, options):
     """
 
     ##-----  run the power flow  -----
+
+
     t0 = time()
-
-    if options["init_va_degree"] == "dc":
-        ppci = _run_dc_pf(ppci)
-
-    ppci, success, iterations = _nr_ac_pf(ppci, options)
-
-    ppci["et"] = time() - t0
-    ppci["success"] = success
-    ppci["iterations"] = iterations
-
-    return ppci
-
-
-def _nr_ac_pf(ppci, options):
-    if options["enforce_q_lims"]:
-        ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
+    if ppci["branch"].shape[0] == 0:
+        ppci, success, iterations, bus, gen, branch = _pf_without_branches(ppci, options)
 
     else:
-        ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
+        if options["init_va_degree"] == "dc":
+            ppci = _run_dc_pf(ppci)
+        if options["enforce_q_lims"]:
+            ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
+        else:
+            ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
 
-    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
+    et = time() - t0
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
+    return ppci
 
-    return ppci, success, iterations
-
+def _pf_without_branches(ppci, options):
+    Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
+    V = ppci["bus"][:,VM]
+    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
+    success = True
+    iterations = 0
+    return ppci, success, iterations, bus, gen, branch
 
 def _get_pf_variables_from_ppci(ppci):
     ## default arguments
@@ -88,8 +89,11 @@ def _get_pf_variables_from_ppci(ppci):
     return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
 
 
-def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
+def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    ppci["success"] = success
+    ppci["iterations"] = iterations
+    ppci["et"] = et
     return ppci
 
 
