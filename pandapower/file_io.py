@@ -386,32 +386,15 @@ def from_json_dict(json_dict, convert=True):
     """
     net = create_empty_network(name=json_dict["name"], f_hz=json_dict["f_hz"])
 
-    # checks if field exists in empty network and if yes, matches data type
-    def check_equal_type(name):
-        if name in net:
-            if isinstance(net[name], type(json_dict[name])):
-                return True
-            elif isinstance(net[name], pd.DataFrame) and isinstance(json_dict[name], dict):
-                return True
-            elif GEOPANDAS_INSTALLED and \
-                    isinstance(net[name], pd.DataFrame) and \
-                    isinstance(json_dict[name], GeoDataFrame):
-                return True
-            else:
-                return False
-        return True
-
-    for k in sorted(json_dict.keys()):
-        if k == 'dtypes':
+    for key in sorted(json_dict.keys()):
+        if key == 'dtypes':
             continue
-        if not check_equal_type(k):
-            raise UserWarning("Different data type for existing pandapower field %s: %s vs. %s (%s)"
-                              % (k, type(net[k]), type(json_dict[k]), json_dict[k]))
-        if isinstance(json_dict[k], dict) and isinstance(net[k], pd.DataFrame):
-                net[k] = pd.DataFrame.from_dict(json_dict[k], orient="columns")
-                net[k].set_index(net[k].index.astype(numpy.int64), inplace=True)
+        if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict):
+            net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
+            net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:
-            net[k] = json_dict[k]
+            net[key] = json_dict[key]
+
     if convert:
         convert_format(net)
     return net
