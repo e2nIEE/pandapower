@@ -12,8 +12,7 @@
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import asarray, pi, ones, finfo, c_, real, flatnonzero as find, angle, conj, zeros, \
-                  complex128, setdiff1d
+from numpy import pi, finfo, c_, real, flatnonzero as find, angle, conj, zeros, complex128
 
 try:
     from numba import jit

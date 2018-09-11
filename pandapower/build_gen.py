@@ -430,20 +430,34 @@ def _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_defau
 
 def _check_voltage_setpoints_at_same_bus(ppc):
     # generator buses:
-    gen_bus=ppc['gen'][:,GEN_BUS].astype(int)
+    gen_bus = ppc['gen'][:, GEN_BUS].astype(int)
     # generator setpoints:
-    gen_vm=ppc['gen'][:,VG]
+    gen_vm = ppc['gen'][:, VG]
+    if _different_values_at_one_bus(gen_bus, gen_vm):
+        raise UserWarning("Generators with different voltage setpoints connected to the same bus")
 
+def _check_voltage_angles_at_same_bus(net, ppc):
+    gen_va = net.ext_grid.va_degree[net._is_elements["ext_grid"]].values
+    eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
+    gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
+    if _different_values_at_one_bus(gen_bus, gen_va):
+        raise UserWarning("Ext grids with different voltage angle setpoints connected to the same bus")
+
+
+def _different_values_at_one_bus(buses, values):
+    """
+    checks if there are different values in any of the
+
+    """
     # buses with one or more generators and their index
-    unique_bus, index_first_bus =np.unique(gen_bus, return_index=True)
+    unique_bus, index_first_bus = np.unique(buses, return_index=True)
 
     # voltage setpoint lookup with the voltage of the first occurence of that bus
-    first_gen_vm=-np.ones(gen_bus.max()+1)
-    first_gen_vm[unique_bus]=gen_vm[index_first_bus]
+    first_values = -np.ones(buses.max() + 1)
+    first_values[unique_bus] = values[index_first_bus]
 
     # generate voltage setpoints where all generators at the same bus
     # have the voltage of the first generator at that bus
-    gen_vm_equal = first_gen_vm[gen_bus]
+    values_equal = first_values[buses]
 
-    if not np.array_equal(gen_vm, gen_vm_equal):
-        raise UserWarning("Generators with different voltage setpoints connected to the same bus")
+    return not np.array_equal(values, values_equal)

@@ -887,6 +887,45 @@ def test_ext_grid_and_gen_at_one_bus():
     net.ext_grid["min_q_kvar"] = [-100, -10]
     runpp_with_consistency_checks(net, enforce_q_lims=True)
     assert net.res_ext_grid.q_kvar.values[0] < net.ext_grid.min_q_kvar.values[0]
+    assert np.allclose(net.res_gen.q_kvar.values, net.gen.min_q_kvar.values)
+
+def two_ext_grids_at_one_bus():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110, index=3)
+    b2 = pp.create_bus(net, vn_kv=110, index=5)
+    pp.create_ext_grid(net, b1, vm_pu=1.01, index=2)
+    pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
+    pp.create_load(net, bus=b2, p_kw=3.5e3, q_kvar=1e3)
+    pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    pp.runpp(net)
+    assert net.converged
+
+    # connect second ext_grid to b1 with different angle but out of service
+    eg2 = pp.create_ext_grid(net, b1, vm_pu=1.01, va_degree=20, index=5, in_service=False)
+    pp.runpp(net) #power flow still converges since eg2 is out of service
+    assert net.converged
+
+    # error is raised after eg2 is set in service
+    net.ext_grid.in_service.at[eg2] = True
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+    #  error is also raised when eg2 is connected to first ext_grid through bus-bus switch
+    b3 = pp.create_bus(net, vn_kv=110)
+    pp.create_switch(net, b1, b3, et="b")
+    net.ext_grid.bus.at[eg2] = b3
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+    # no error is raised when voltage angles are not calculated
+    pp.runpp(net, calculate_voltage_angles=False)
+    assert net.converged
+
+    # same angle but different voltage magnitude also raises an error
+    net.ext_grid.vm_pu.at[eg2] = 1.02
+    net.ext_grid.va_degree.at[eg2] = 0
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])
