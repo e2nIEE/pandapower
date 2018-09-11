@@ -7,16 +7,17 @@
 
 from time import time
 
-from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
+from numpy import flatnonzero as find, r_, zeros, argmax
 
-from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
-from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
+from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
+from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pf.newtonpf import newtonpf
 from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
 from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 try:
     from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
@@ -40,62 +41,15 @@ def _run_newton_raphson_pf(ppci, options):
 
 
     t0 = time()
-    if ppci["branch"].shape[0] == 0:
-        ppci, success, iterations, bus, gen, branch = _pf_without_branches(ppci, options)
-
+    if options["init_va_degree"] == "dc":
+        ppci = _run_dc_pf(ppci)
+    if options["enforce_q_lims"]:
+        ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
     else:
-        if options["init_va_degree"] == "dc":
-            ppci = _run_dc_pf(ppci)
-        if options["enforce_q_lims"]:
-            ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
-        else:
-            ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
-
+        ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
     et = time() - t0
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
     return ppci
-
-def _pf_without_branches(ppci, options):
-    Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
-    V = ppci["bus"][:,VM]
-    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
-    success = True
-    iterations = 0
-    return ppci, success, iterations, bus, gen, branch
-
-def _get_pf_variables_from_ppci(ppci):
-    ## default arguments
-    if ppci is None:
-        ValueError('ppci is empty')
-    # ppopt = ppoption(ppopt)
-
-    # get data for calc
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-
-    ## get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
-
-    ## generator info
-    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
-
-    ## initial state
-    # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
-    V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
-
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
-
-
-def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
-    ppci["success"] = success
-    ppci["iterations"] = iterations
-    ppci["et"] = et
-    return ppci
-
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]

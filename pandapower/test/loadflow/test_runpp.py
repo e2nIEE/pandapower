@@ -17,7 +17,7 @@ from pandapower.networks import create_cigre_network_mv, four_loads_with_branche
     example_simple, simple_four_bus_system
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.create_jacobian import _create_J_without_numba
-from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import \
