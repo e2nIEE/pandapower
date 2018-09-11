@@ -841,11 +841,10 @@ def test_ext_grid_and_gen_at_one_bus():
     b2 = pp.create_bus(net, vn_kv=110)
     pp.create_ext_grid(net, b1, vm_pu=1.01)
     pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
-    pp.create_load(net, bus=b2, p_kw=2e3, q_kvar=1e3)
+    pp.create_load(net, bus=b2, p_kw=3.5e3, q_kvar=1e3)
 
     runpp_with_consistency_checks(net)
     q = net.res_ext_grid.q_kvar.sum()
-
 
     ##create two gens at the slack bus
     g1 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
@@ -853,7 +852,7 @@ def test_ext_grid_and_gen_at_one_bus():
     runpp_with_consistency_checks(net)
 
     #all the reactive power previously provided by the ext_grid is now provided by the generators
-    assert np.allclose(net.res_ext_grid.q_kvar.values, [0])
+    assert np.isclose(net.res_ext_grid.q_kvar.values, 0)
     assert np.isclose(net.res_gen.q_kvar.sum(), q)
     #since no Q-limits were set, reactive power is distributed equally to both generators
     assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2])
@@ -875,9 +874,17 @@ def test_ext_grid_and_gen_at_one_bus():
     # the total reactive power remains unchanged, but the rest of the power is now provided by the ext_grid
     assert np.isclose(net.res_gen.q_kvar.sum() + net.res_ext_grid.q_kvar.sum(), q)
 
-    # q limits at the ext_grid are not enforced
-    net.ext_grid["max_q_kvar"] = [100]
-    net.ext_grid["min_q_kvar"] = [-100]
+    # second ext_grid at the slack bus
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    runpp_with_consistency_checks(net, enforce_q_lims=False)
+    # gens still have the correct active power
+    assert np.allclose(net.gen.p_kw.values, net.res_gen.p_kw.values)
+    # slack active power is evenly distributed to both ext_grids
+    assert np.isclose(net.res_ext_grid.p_kw.values[0], net.res_ext_grid.p_kw.values[1])
+
+    # q limits at the ext_grids are not enforced
+    net.ext_grid["max_q_kvar"] = [100, 10]
+    net.ext_grid["min_q_kvar"] = [-100, -10]
     runpp_with_consistency_checks(net, enforce_q_lims=True)
     assert net.res_ext_grid.q_kvar.values[0] < net.ext_grid.min_q_kvar.values[0]
 

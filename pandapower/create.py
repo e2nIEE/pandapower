@@ -1111,11 +1111,6 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     if index is None:
         index = get_free_id(net["ext_grid"])
 
-    if bus in net.ext_grid.query("in_service").bus.values:
-        raise UserWarning(
-            "There is already an external grid at bus %u, thus no other voltage " % bus +
-            "controlling element (ext_grid, gen) is allowed at this bus.")
-
     # store dtypes
     dtypes = net.ext_grid.dtypes
 
