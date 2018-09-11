@@ -984,11 +984,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if bus in net.ext_grid.query("in_service").bus.values:
-        raise UserWarning(
-            "There is already an external grid at bus %u, thus no other voltage " % bus +
-            "controlling element (ext_grid, gen) is allowed at this bus.")
-
     if index is None:
         index = get_free_id(net["gen"])
 
@@ -1121,11 +1116,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
             "There is already an external grid at bus %u, thus no other voltage " % bus +
             "controlling element (ext_grid, gen) is allowed at this bus.")
 
-    if bus in net.gen.query("in_service").bus.values:
-        raise UserWarning("There is already a generator (PV-node) at bus %u, "
-                          "thus no ext_grid is allowed at this bus." % bus)
-
-        # store dtypes
+    # store dtypes
     dtypes = net.ext_grid.dtypes
 
     net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \

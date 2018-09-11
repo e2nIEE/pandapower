@@ -17,7 +17,7 @@ from pandapower.networks import create_cigre_network_mv, four_loads_with_branche
     example_simple, simple_four_bus_system
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.create_jacobian import _create_J_without_numba
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
+from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import \
@@ -834,6 +834,52 @@ def test_equal_indices_res():
         assert True
     except LoadflowNotConverged:
         assert False
+
+def test_ext_grid_and_gen_at_one_bus():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110)
+    b2 = pp.create_bus(net, vn_kv=110)
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
+    pp.create_load(net, bus=b2, p_kw=2e3, q_kvar=1e3)
+
+    runpp_with_consistency_checks(net)
+    q = net.res_ext_grid.q_kvar.sum()
+
+
+    ##create two gens at the slack bus
+    g1 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    g2 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    runpp_with_consistency_checks(net)
+
+    #all the reactive power previously provided by the ext_grid is now provided by the generators
+    assert np.allclose(net.res_ext_grid.q_kvar.values, [0])
+    assert np.isclose(net.res_gen.q_kvar.sum(), q)
+    #since no Q-limits were set, reactive power is distributed equally to both generators
+    assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2])
+
+    #set reactive power limits at the generators
+    net.gen["min_q_kvar"] = [-100, -10]
+    net.gen["max_q_kvar"] = [100, 10]
+    runpp_with_consistency_checks(net)
+    #g1 now has 10 times the reactive power of g2 in accordance with the different Q ranges
+    assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2]*10)
+    #all the reactive power is still provided by the generators, because Q-lims are not enforced
+    assert np.allclose(net.res_ext_grid.q_kvar.values, [0])
+    assert np.isclose(net.res_gen.q_kvar.sum(), q)
+
+    # now enforce Q-lims
+    runpp_with_consistency_checks(net, enforce_q_lims=True)
+    # both generators are at there lower limit with regard to the reactive power
+    assert np.allclose(net.res_gen.q_kvar.values, net.gen.min_q_kvar.values)
+    # the total reactive power remains unchanged, but the rest of the power is now provided by the ext_grid
+    assert np.isclose(net.res_gen.q_kvar.sum() + net.res_ext_grid.q_kvar.sum(), q)
+
+    # q limits at the ext_grid are not enforced
+    net.ext_grid["max_q_kvar"] = [100]
+    net.ext_grid["min_q_kvar"] = [-100]
+    runpp_with_consistency_checks(net, enforce_q_lims=True)
+    assert net.res_ext_grid.q_kvar.values[0] < net.ext_grid.min_q_kvar.values[0]
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])

@@ -7,7 +7,7 @@
 
 from time import time
 
-from numpy import flatnonzero as find, r_, zeros, argmax
+from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d
 
 from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
 from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
@@ -112,15 +112,11 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
         qg_max_lim = gen[:, QG] > gen[:, QMAX]
         qg_min_lim = gen[:, QG] < gen[:, QMIN]
 
-        mx = find(gen_status & qg_max_lim)
-        mn = find(gen_status & qg_min_lim)
+        non_refs = (gen[:, QMAX] != 0.) & (gen[:, QMIN] != 0.)
+        mx = find(gen_status & qg_max_lim & non_refs)
+        mn = find(gen_status & qg_min_lim & non_refs)
 
         if len(mx) > 0 or len(mn) > 0:  ## we have some Q limit violations
-            # No PV generators
-            if len(pv) == 0:
-                success = 0
-                break
-
             ## one at a time?
             if qlim == 2:  ## fix largest violation, ignore the rest
                 k = argmax(r_[gen[mx, QG] - gen[mx, QMAX],
@@ -144,12 +140,13 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
                 bi = gen[mx[i], GEN_BUS].astype(int)  ## adjust load accordingly,
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[mx[i], [PG, QG]])
 
-            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
-                raise ValueError('Sorry, pandapower cannot enforce Q '
-                                 'limits for slack buses in systems '
-                                 'with multiple slacks.')
+#            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
+#                raise ValueError('Sorry, pandapower cannot enforce Q '
+#                                 'limits for slack buses in systems '
+#                                 'with multiple slacks.')
 
-            bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] = PQ  ## & set bus type to PQ
+            changed_gens = gen[mx, GEN_BUS].astype(int)
+            bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
             ref, pv, pq = bustypes(bus, gen)
