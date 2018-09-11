@@ -22,7 +22,7 @@ from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.pfsoln_pypower import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
-
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 try:
     from pypower.makeB import makeB
     from pypower.ppoption import ppoption
@@ -57,14 +57,13 @@ def _runpf_pypower(ppci, options, **kwargs):
             ppci = _run_dc_pf(ppci)
             success = True
 
-        ppci, success = _ac_runpf(ppci, ppopt, numba, recycle)
+        ppci, success, bus, gen, branch = _ac_runpf(ppci, ppopt, numba, recycle)
     else:  ## DC formulation
         ppci = _run_dc_pf(ppci)
         success = True
 
-    ppci["et"] = time() - t0
-    ppci["success"] = success
-
+    et = time() - t0
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, None, et)
     return ppci, success
 
 
@@ -92,46 +91,10 @@ def _get_options(options, **kwargs):
 
 def _ac_runpf(ppci, ppopt, numba, recycle):
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(numba)
-
     if ppopt["ENFORCE_Q_LIMS"]:
-        ppci, success, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt)
-
+        return _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt)
     else:
-        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt)
-
-    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
-
-    return ppci, success
-
-
-def _get_pf_variables_from_ppci(ppci):
-    ## default arguments
-    if ppci is None:
-        ValueError('ppci is empty')
-    # ppopt = ppoption(ppopt)
-
-    # get data for calc
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-
-    ## get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
-
-    ## generator info
-    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
-
-    ## initial state
-    # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
-    V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
-
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
-
-
-def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
-    return ppci
+        return _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt)
 
 
 def _import_numba_extensions_if_flag_is_true(numba):

@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+from pandapower.idx_bus import VM
 from pandapower.auxiliary import ppException, _clean_up
 from pandapower.create import create_gen
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
@@ -12,6 +12,9 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results
+from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
+from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 import pandas as pd
 
 
@@ -45,12 +48,12 @@ def _powerflow(net, **kwargs):
     net["converged"] = False
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)
-       
+
     if not ac or init_results:
         verify_results(net)
     else:
         reset_results(net)
-        
+
     # TODO remove this when zip loads are integrated for all PF algorithms
     if algorithm not in ['nr', 'bfsw']:
         net["_options"]["voltage_depend_loads"] = False
@@ -93,7 +96,9 @@ def _run_pf_algorithm(ppci, options, **kwargs):
 
     if ac:
         # ----- run the powerflow -----
-        if algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
+        if ppci["branch"].shape[0] == 0:
+            result = _pf_without_branches(ppci, options)
+        elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)[0]
         elif algorithm in ['nr', 'iwamoto_nr']:
             result = _run_newton_raphson_pf(ppci, options)
@@ -106,6 +111,17 @@ def _run_pf_algorithm(ppci, options, **kwargs):
 
     return result
 
+
+def _pf_without_branches(ppci, options):
+    Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
+    V = ppci["bus"][:,VM]
+    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
+    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    ppci["success"] = True
+    ppci["iterations"] = 0
+    ppci["et"] = 0
+    return ppci
 
 def _add_auxiliary_elements(net):
     # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
