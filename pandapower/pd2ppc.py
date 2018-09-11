@@ -250,6 +250,7 @@ def _ppc2ppci(ppc, ppci, net):
     if 'userfcn' in ppci:
         ppci = run_userfcn(ppci['userfcn'], 'ext2int', ppci)
 
+    ppci["internal"]["ref_gens"] = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
     return ppci
 
 

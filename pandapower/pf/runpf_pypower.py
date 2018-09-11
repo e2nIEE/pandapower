@@ -135,7 +135,7 @@ def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
 
 
 def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch)
 
@@ -146,13 +146,13 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     V, success, it = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
 
     return ppci, success, bus, gen, branch, it
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     qlim = ppopt["ENFORCE_Q_LIMS"]
     limited = []  ## list of indices of gens @ Q lims

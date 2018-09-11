@@ -80,7 +80,7 @@ def _get_numba_functions(ppci, options):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
@@ -92,13 +92,13 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     V, success, iterations, ppci["internal"]["J"], ppci["internal"]["Vm_it"], ppci["internal"]["Va_it"] = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
 
     return ppci, success, iterations, bus, gen, branch
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     qlim = options["enforce_q_lims"]
     limited = []  ## list of indices of gens @ Q lims
@@ -112,9 +112,8 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
         qg_max_lim = gen[:, QG] > gen[:, QMAX]
         qg_min_lim = gen[:, QG] < gen[:, QMIN]
 
-        non_refs = (gen[:, QMAX] != 0.) & (gen[:, QMIN] != 0.)
-        mx = find(gen_status & qg_max_lim & non_refs)
-        mn = find(gen_status & qg_min_lim & non_refs)
+        mx = setdiff1d(find(gen_status & qg_max_lim), ref_gens)
+        mn = setdiff1d(find(gen_status & qg_min_lim), ref_gens)
 
         if len(mx) > 0 or len(mn) > 0:  ## we have some Q limit violations
             ## one at a time?
