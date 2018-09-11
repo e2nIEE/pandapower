@@ -57,13 +57,13 @@ def _runpf_pypower(ppci, options, **kwargs):
             ppci = _run_dc_pf(ppci)
             success = True
 
-        ppci, success, bus, gen, branch = _ac_runpf(ppci, ppopt, numba, recycle)
+        ppci, success, bus, gen, branch, it = _ac_runpf(ppci, ppopt, numba, recycle)
     else:  ## DC formulation
         ppci = _run_dc_pf(ppci)
         success = True
 
     et = time() - t0
-    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, None, et)
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, it, et)
     return ppci, success
 
 
@@ -143,12 +143,12 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     Sbus = makeSbus(baseMVA, bus, gen)
 
     ## run the power flow
-    V, success = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
+    V, success, it = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
 
     ## update data matrices with solution
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
 
-    return ppci, success, bus, gen, branch
+    return ppci, success, bus, gen, branch, it
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
@@ -157,9 +157,11 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     qlim = ppopt["ENFORCE_Q_LIMS"]
     limited = []  ## list of indices of gens @ Q lims
     fixedQg = zeros(gen.shape[0])  ## Qg of gens at Q limits
-
+    it = 0
     while True:
-        ppci, success, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt)
+        ppci, success, bus, gen, branch, it_inner = _run_ac_pf_without_qlims_enforced(ppci, recycle,
+                                                                                      makeYbus, ppopt)
+        it += it_inner
 
         ## find gens with violated Q constraints
         gen_status = gen[:, GEN_STATUS] > 0
@@ -220,7 +222,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[i, [PG, QG]]
             gen[i, GEN_STATUS] = 1  ## and turn gen back on
 
-    return ppci, success, bus, gen, branch
+    return ppci, success, bus, gen, branch, it
 
 
 def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt):
@@ -228,12 +230,12 @@ def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq,
     # alg == 1 was deleted = nr -> moved as own pandapower solver
     if alg == 2 or alg == 3:
         Bp, Bpp = makeB(baseMVA, bus, real(branch), alg)
-        V, success, _ = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
+        V, success, it = fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt)
     elif alg == 4:
-        V, success, _ = gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt)
+        V, success, it = gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt)
     else:
         raise ValueError('Only PYPOWERS fast-decoupled, and '
                          'Gauss-Seidel power flow algorithms currently '
                          'implemented.\n')
 
-    return V, success
+    return V, success, it

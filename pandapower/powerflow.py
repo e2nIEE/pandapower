@@ -114,12 +114,12 @@ def _run_pf_algorithm(ppci, options, **kwargs):
 
 def _pf_without_branches(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, _, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:,VM]
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
     ppci["success"] = True
-    ppci["iterations"] = 0
+    ppci["iterations"] = 1
     ppci["et"] = 0
     return ppci
 

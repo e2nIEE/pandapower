@@ -33,7 +33,7 @@ def _get_pf_variables_from_ppci(ppci):
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
-    ppci["success"] = success
+    ppci["success"] = bool(success)
     ppci["iterations"] = iterations
     ppci["et"] = et
     return ppci
