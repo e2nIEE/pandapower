@@ -7,16 +7,17 @@
 
 from time import time
 
-from numpy import flatnonzero as find, pi, exp, r_, zeros, argmax
+from numpy import flatnonzero as find, r_, zeros, argmax
 
-from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, VM, VA
-from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG
+from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
+from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pf.bustypes import bustypes
 from pandapower.pf.makeSbus import makeSbus
 from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pf.newtonpf import newtonpf
 from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
 from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 try:
     from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
@@ -37,61 +38,18 @@ def _run_newton_raphson_pf(ppci, options):
     """
 
     ##-----  run the power flow  -----
-    t0 = time()
 
+
+    t0 = time()
     if options["init_va_degree"] == "dc":
         ppci = _run_dc_pf(ppci)
-
-    ppci, success, iterations = _nr_ac_pf(ppci, options)
-
-    ppci["et"] = time() - t0
-    ppci["success"] = success
-    ppci["iterations"] = iterations
-
-    return ppci
-
-
-def _nr_ac_pf(ppci, options):
     if options["enforce_q_lims"]:
         ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
-
     else:
         ppci, success, iterations, bus, gen, branch = _run_ac_pf_without_qlims_enforced(ppci, options)
-
-    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
-
-    return ppci, success, iterations
-
-
-def _get_pf_variables_from_ppci(ppci):
-    ## default arguments
-    if ppci is None:
-        ValueError('ppci is empty')
-    # ppopt = ppoption(ppopt)
-
-    # get data for calc
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-
-    ## get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
-
-    ## generator info
-    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
-
-    ## initial state
-    # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
-    V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
-
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
-
-
-def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    et = time() - t0
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
     return ppci
-
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]

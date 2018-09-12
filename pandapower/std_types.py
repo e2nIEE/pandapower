@@ -289,6 +289,7 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "r0_ohm_per_km")
     parameter_from_std_type(net, "x0_ohm_per_km")
 
+
 def add_basic_std_types(net):
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}

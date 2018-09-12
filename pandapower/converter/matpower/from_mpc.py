@@ -31,8 +31,7 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
 
         **f_hz** (int, 50) - The frequency of the network.
 
-        **casename_mpc_file** (str, 'mpc') - If mpc_file does not contain the arrays "gen", "branch"
-        and "bus" it will use the sub-struct casename_mpc_file
+        **casename_mpc_file** (str, 'mpc') - The name of the variable in .mat file which contain the matpower case structure, i.e. the arrays "gen", "branch" and "bus".
 
     OUTPUT:
 

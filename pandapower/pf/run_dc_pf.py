@@ -7,16 +7,15 @@
 
 from time import time
 
-from numpy import flatnonzero as find, pi, exp, zeros, ones, real
+from numpy import flatnonzero as find, pi, zeros, real
 
 from pandapower.idx_brch import PF, PT, QF, QT
-from pandapower.idx_bus import VM, VA, GS
-from pandapower.idx_gen import PG, VG, GEN_STATUS, GEN_BUS
-from pandapower.pf.bustypes import bustypes
+from pandapower.idx_bus import VA, GS
+from pandapower.idx_gen import PG
 from pandapower.pf.dcpf import dcpf
 from pandapower.pf.makeBdc import makeBdc
 from pandapower.pf.makeSbus import makeSbus
-
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 def _run_dc_pf(ppci):
     t0 = time()
@@ -52,39 +51,8 @@ def _run_dc_pf(ppci):
     gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
 
     # store results from DC powerflow for AC powerflow
-    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
-
-    ppci["et"] = time() - t0
-    ppci["success"] = True
-
-    return ppci
-
-
-def _get_pf_variables_from_ppci(ppci):
-    ## default arguments
-    if ppci is None:
-        ValueError('ppci is empty')
-    # ppopt = ppoption(ppopt)
-
-    # get data for calc
-    baseMVA, bus, gen, branch = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
-
-    ## get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
-
-    ## generator info
-    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
-
-    ## initial state
-    # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
-    V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
-
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
-
-
-def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
+    et = time() - t0
+    success = True
+    iterations = 1
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
     return ppci

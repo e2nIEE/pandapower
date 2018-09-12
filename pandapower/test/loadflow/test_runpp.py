@@ -17,7 +17,7 @@ from pandapower.networks import create_cigre_network_mv, four_loads_with_branche
     example_simple, simple_four_bus_system
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.create_jacobian import _create_J_without_numba
-from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import \
@@ -26,21 +26,20 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 from pandapower.toolbox import nets_equal
 
 
-@pytest.mark.xfail
 def test_minimal_net():
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pp.create_empty_network()
     b = pp.create_bus(net, 110)
     pp.create_ext_grid(net, b)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     pp.create_load(net, b, 100)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     b2 = pp.create_bus(net, 110)
     pp.create_switch(net, b, b2, 'b')
-    pp.runpp(net)
-
+    pp.create_sgen(net, b2, 200)
+    runpp_with_consistency_checks(net)
 
 def test_set_user_pf_options():
     net = example_simple()
@@ -78,6 +77,14 @@ def test_set_user_pf_options():
     assert net.user_pf_options['tolerance_kva'] == 1e-3
     assert net._options['tolerance_kva'] == 1e-2
     assert net._options['max_iteration'] == 20
+
+def test_kwargs_with_user_options():
+    net = example_simple()
+    pp.runpp(net)
+    assert net._options["trafo3w_losses"] == "hv"
+    pp.set_user_pf_options(net, trafo3w_losses="lv")
+    pp.runpp(net)
+    assert net._options["trafo3w_losses"] == "lv"
 
 
 def test_runpp_init():
@@ -160,16 +167,15 @@ def test_bus_bus_switches(bus_bus_net):
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
 
 
-@pytest.mark.xfail
-def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
+def test_bus_bus_switches_merges_two_gens(bus_bus_net):
     "buses should not be fused if two gens are connected"
     net = bus_bus_net
     net.bus.in_service.at[5] = False
     pp.create_gen(net, 6, 10)
     pp.create_gen(net, 4, 10)
     net.bus.in_service.at[5] = True
-    with pytest.raises(UserWarning):
-        pp.runpp(net)
+    pp.runpp(net)
+    assert net.converged == True
 
 
 def test_bus_bus_switches_throws_exception_for_two_gen_with_diff_vm(bus_bus_net):
@@ -349,7 +355,6 @@ def test_isolated_in_service_bus_at_oos_line():
     assert runpp_with_consistency_checks(net, init="flat")
 
 
-@pytest.mark.xfail
 def test_isolated_in_service_line():
     # ToDo: Fix this
     net = pp.create_empty_network()
@@ -552,8 +557,8 @@ def test_zip_loads_gridcal():
     losses_gridcal = 4.69773448916 - 2.710430515j
 
     abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                            'networks', 'power_system_test_case_pickles', 'case5_demo_gridcal.p')
-    net = pp.from_pickle(abs_path)
+                            'networks', 'power_system_test_case_jsons', 'case5_demo_gridcal.json')
+    net = pp.from_json(abs_path)
 
     pp.runpp(net, voltage_depend_loads=True,
              recycle=dict(_is_elements=False, ppc=False, Ybus=True, bfsw=False))
@@ -605,7 +610,6 @@ def test_zip_loads_pf_algorithms():
         assert np.allclose(va_nr, va_alg)
 
 
-# @pytest.mark.xfail
 def test_zip_loads_with_voltage_angles():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=1.)
@@ -781,7 +785,7 @@ def test_add_element_and_init_results():
     pp.runpp(net, init="results")
 
 
-def test_vm_start_pu():
+def test_pp_initialization():
     net = pp.create_empty_network()
 
     b1 = pp.create_bus(net, vn_kv=0.4)
@@ -806,7 +810,7 @@ def test_vm_start_pu():
     pp.runpp(net, init_va_degree="flat", init_vm_pu="auto")
     assert net._ppc["iterations"] == 3
 
-    pp.runpp(net, init_va_degree="dc", init_vm_pu="auto")
+    pp.runpp(net, init_va_degree="dc")
     assert net._ppc["iterations"] == 3
 
 
@@ -831,28 +835,5 @@ def test_equal_indices_res():
     except LoadflowNotConverged:
         assert False
 
-
 if __name__ == "__main__":
-    #    net = pp.create_empty_network()
-    #    b1 = pp.create_bus(net, vn_kv=1.)
-    #    b2 = pp.create_bus(net, vn_kv=1.)
-    #    pp.create_ext_grid(net, b1)
-    #    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
-    #                                   x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
-    #    pp.create_load(net, b2, p_kw=2., const_z_percent=0, const_i_percent=100)
-    #
-    #    pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
-    #
-    #    pp.runpp(net, init="results")
-    #    print(net._options["calculate_voltage_angles"])
-    #    print(net._options["init_va_degree"])
-    #
-    #    res_load = net.res_load.copy()
-    #    net.ext_grid.va_degree = 100
-    #
-    #    pp.runpp(net)
-    #    print(net._options["calculate_voltage_angles"])
-    #    print(net._options["init_va_degree"])
-
-    #    test_vm_start_pu()
     pytest.main(["test_runpp.py"])
