@@ -58,7 +58,7 @@ Case 30
 ---------------------------
 
 Case case_ieee30
---------
+-------------------
 
 .. autofunction:: pandapower.networks.case_ieee30
 
