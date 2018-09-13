@@ -16,6 +16,16 @@ of low voltage networks, exemplary results and a method for the generation of re
 (source: https:/mediatum.ub.tum.de/doc/681082/681082.pdf)
 
 
+.. warning::
+
+    The representative grids for sub-urban areas (Vorstadt) were deduced as open-ring grids from meshed grids.
+    They are therefore only valid under the assumption of homogeneous load and generation profiles, and not for
+    inhomogeneous operation or even short-circuit situations.
+
+.. seealso::
+
+	- Georg Kerber, `Aufnahmefähigkeit von Niederspannungsverteilnetzen für die Einspeisung aus Photovoltaikkleinanlagen <https:/mediatum.ub.tum.de/doc/998003/998003.pdf>`_, Dissertation
+	- Georg Kerber, `Statistische Analyse von NS-Verteilungsnetzen und Modellierung von Referenznetzen <https:/mediatum.ub.tum.de/doc/681082/681082.pdf>`_
 
 
 
@@ -43,13 +53,6 @@ Average Kerber networks
  - Typical network topologies: open ring, meshed networks
 
 
-
-
-
-.. seealso::
-
-	- Georg Kerber, `Aufnahmefähigkeit von Niederspannungsverteilnetzen für die Einspeisung aus Photovoltaikkleinanlagen <https:/mediatum.ub.tum.de/doc/998003/998003.pdf>`_, Dissertation
-	- Georg Kerber, `Statistische Analyse von NS-Verteilungsnetzen und Modellierung von Referenznetzen <https:/mediatum.ub.tum.de/doc/681082/681082.pdf>`_
 
 .. tabularcolumns:: |l|l|l|l|l|
 .. csv-table::
@@ -257,8 +260,6 @@ extreme network. By including the extreme networks, kerber reached the 95% confi
 Therefore 95% of all parameter results in an considered distribution grid are equal or better compared to the outcomes from kerber extreme networks.
 Besides testing for extreme parameters you are able to check for functional capability of reactive power control.
 Since more rare network combination exist, the total number of extreme grids is higher than the amount of typical kerber networks.
-
-
 
 .. seealso::
 
