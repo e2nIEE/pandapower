@@ -379,7 +379,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     """
     time_start = time()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     enforce_q_lims, tolerance_kva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
 
