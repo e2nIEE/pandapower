@@ -16,7 +16,7 @@ The function simple_plotly() can be used for a simple interactive plotting.
 
 Example plot with mv_oberrhein network from the pandapower.networks package:
 
-.. image:: /pics/simple_plotly_mvoberr_sample.png
+.. image:: /pics/plotting/simple_plotly_mvoberr_sample.png
 	:width: 30em
 	:align: center
 
@@ -29,7 +29,7 @@ Example simple plot ::
     simple_plotly(net)
 
 
-.. image:: /pics/simple_plotly_map_mvoberr_sample.png
+.. image:: /pics/plotting/simple_plotly_map_mvoberr_sample.png
 	:width: 30em
 	:align: center
 
@@ -38,7 +38,7 @@ Example simple plot on a map::
     net = mv_oberrhein()
     simple_plotly(net, on_map=True, projection='epsg:31467')
 
-.. image:: /pics/simple_plotly_mapsatelite_mvoberr_sample.png
+.. image:: /pics/plotting/simple_plotly_mapsatelite_mvoberr_sample.png
 	:width: 30em
 	:align: center
 
@@ -61,7 +61,7 @@ Example plot with mv_oberrhein network from the pandapower.networks package::
     net = mv_oberrhein()
     vlevel_plotly(net)
 
-.. image:: /pics/vlevel_plotly_mvoberr_sample.png
+.. image:: /pics/plotting/vlevel_plotly_mvoberr_sample.png
 	:width: 30em
 	:align: center
 
@@ -84,7 +84,7 @@ Example power flow results plot::
     pf_res_plotly(net)
 
 
-.. image:: /pics/pf_res_plotly_mvoberr_sample.png
+.. image:: /pics/plotting/pf_res_plotly_mvoberr_sample.png
 	:width: 30em
 	:align: center
 
@@ -93,7 +93,7 @@ Power flow results on a map::
     net = mv_oberrhein()
     pf_res_plotly(net, on_map=True, projection='epsg:31467', map_style='dark')
 
-.. image:: /pics/pf_res_plotly_map_mvoberr_sample.png
+.. image:: /pics/plotting/pf_res_plotly_map_mvoberr_sample.png
 	:width: 30em
 	:align: center
 

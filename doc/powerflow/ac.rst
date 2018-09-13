@@ -3,7 +3,7 @@ Power Flow
 
 pandapower uses PYPOWER to solve the power flow problem:
 
-.. image:: /pics/pandapower_power flow.png
+.. image:: /pics/flowcharts/pandapower_power flow.png
 		:width: 40em
 		:alt: alternate Text
 		:align: center

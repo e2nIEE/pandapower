@@ -106,7 +106,7 @@ Kerber Landnetze
 
 
 
-.. image:: /pics/kerber_landnetz_freileitung.png
+.. image:: /pics/networks/kerber//kerber_landnetz_freileitung.png
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -143,7 +143,7 @@ Kerber Landnetze
  '''
 
 
-.. image:: /pics/kerber_landnetz_kabel.png
+.. image:: /pics/networks/kerber//kerber_landnetz_kabel.png
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -173,7 +173,7 @@ Kerber Dorfnetz
 
 
 
-.. image:: /pics/kerber_dorfnetz_1.PNG
+.. image:: /pics/networks/kerber//kerber_dorfnetz_1.PNG
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -205,7 +205,7 @@ Kerber Vorstadtnetze
 
 
 
-.. image:: /pics/kerber_vorstadtnetz_a.PNG
+.. image:: /pics/networks/kerber//kerber_vorstadtnetz_a.PNG
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -233,7 +233,7 @@ Kerber Vorstadtnetze
 
 
 
-.. image:: /pics/kerber_vorstadtnetz_b.PNG
+.. image:: /pics/networks/kerber//kerber_vorstadtnetz_b.PNG
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -305,7 +305,7 @@ Extreme Kerber Landnetze
 
 
 
-.. image:: /pics/kerber_extrem_landnetz_typ_1.png
+.. image:: /pics/networks/kerber//kerber_extrem_landnetz_typ_1.png
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -329,7 +329,7 @@ Extreme Kerber Landnetze
 
 
 
-.. image:: /pics/kerber_extrem_landnetz_typ_2.png
+.. image:: /pics/networks/kerber//kerber_extrem_landnetz_typ_2.png
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -352,7 +352,7 @@ Extreme Kerber Dorfnetze
 
 
 
-.. image:: /pics/kerber_extrem_dorfnetz_typ_1.png
+.. image:: /pics/networks/kerber//kerber_extrem_dorfnetz_typ_1.png
 	:height: 918.0px
 	:width: 1282.0px
 	:scale: 52%
@@ -370,7 +370,7 @@ Extreme Kerber Dorfnetze
 
 
 
-.. image:: /pics/kerber_extrem_dorfnetz_typ_2.png
+.. image:: /pics/networks/kerber//kerber_extrem_dorfnetz_typ_2.png
 	:height: 918.0px
 	:width: 1582.0px
 	:scale: 52%
@@ -388,7 +388,7 @@ Extreme Kerber Vorstadtnetze
  net = pn.kb_extrem_vorstadtnetz_1()
 
 
-.. image:: /pics/kerber_extrem_vorstadt_a_typ_1.png
+.. image:: /pics/networks/kerber//kerber_extrem_vorstadt_a_typ_1.png
 	:height: 718.0px
 	:width: 1402.0px
 	:scale: 52%
@@ -406,7 +406,7 @@ Extreme Kerber Vorstadtnetze
  net = pn.kb_extrem_vorstadtnetz_2()
 
 
-.. image:: /pics/kerber_extrem_vorstadt_b_typ_1.png
+.. image:: /pics/networks/kerber//kerber_extrem_vorstadt_b_typ_1.png
 	:height: 818.0px
 	:width: 1452.0px
 	:scale: 52%
@@ -424,7 +424,7 @@ Extreme Kerber Vorstadtnetze
  net = pn.kb_extrem_vorstadtnetz_trafo_1()
 
 
-.. image:: /pics/kerber_extrem_vorstadt_c_typ_2.png
+.. image:: /pics/networks/kerber//kerber_extrem_vorstadt_c_typ_2.png
 	:height: 918.0px
 	:width: 1482.0px
 	:scale: 52%
@@ -442,7 +442,7 @@ Extreme Kerber Vorstadtnetze
  net = pn.kb_extrem_vorstadtnetz_trafo_2()
 
 
-.. image:: /pics/kerber_extrem_vorstadt_d_typ_2.png
+.. image:: /pics/networks/kerber//kerber_extrem_vorstadt_d_typ_2.png
 	:height: 918.0px
 	:width: 1482.0px
 	:scale: 52%
