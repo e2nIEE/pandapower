@@ -897,12 +897,12 @@ def two_ext_grids_at_one_bus():
     pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
     pp.create_load(net, bus=b2, p_kw=3.5e3, q_kvar=1e3)
     pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
     assert net.converged
 
     # connect second ext_grid to b1 with different angle but out of service
     eg2 = pp.create_ext_grid(net, b1, vm_pu=1.01, va_degree=20, index=5, in_service=False)
-    pp.runpp(net) #power flow still converges since eg2 is out of service
+    runpp_with_consistency_checks(net) #power flow still converges since eg2 is out of service
     assert net.converged
 
     # error is raised after eg2 is set in service
@@ -918,7 +918,7 @@ def two_ext_grids_at_one_bus():
         pp.runpp(net)
 
     # no error is raised when voltage angles are not calculated
-    pp.runpp(net, calculate_voltage_angles=False)
+    runpp_with_consistency_checks(net, calculate_voltage_angles=False)
     assert net.converged
 
     # same angle but different voltage magnitude also raises an error
@@ -926,6 +926,24 @@ def two_ext_grids_at_one_bus():
     net.ext_grid.va_degree.at[eg2] = 0
     with pytest.raises(UserWarning):
         pp.runpp(net)
+
+
+def test_dc_with_ext_grid_at_one_bus():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110)
+    b2 = pp.create_bus(net, vn_kv=110)
+
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    pp.create_ext_grid(net, b2, vm_pu=1.01)
+
+    pp.create_dcline(net, from_bus=b1, to_bus=b2, p_kw=10,loss_percent=0,loss_kw=0, vm_from_pu=1.01, vm_to_pu=1.01)
+
+    pp.create_sgen(net,b1,p_kw=-10)
+    pp.create_load(net,b2,p_kw=10)
+
+    runpp_with_consistency_checks(net)
+    assert np.allclose(net.res_ext_grid.p_kw.values, [0,0])
+
 
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])

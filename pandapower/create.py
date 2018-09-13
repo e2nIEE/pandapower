@@ -2274,14 +2274,6 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
         if bus not in net["bus"].index.values:
             raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-        if bus in net.ext_grid.bus.values:
-            raise UserWarning("There is already an external grid at bus %u, only one voltage " +
-                              "controlling element (ext_grid, gen) is allowed per bus." % bus)
-
-        if bus in net.gen.bus.values:
-            raise UserWarning("There is already a generator at bus %u, only one voltage " +
-                              "controlling element (ext_grid, gen) is allowed per bus." % bus)
-
     if index is None:
         index = get_free_id(net["dcline"])
 
