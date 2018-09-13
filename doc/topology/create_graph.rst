@@ -8,7 +8,7 @@ Multiple parallel edges between nodes are possible.
 
 This is a very simple example of a pandapower network being converted to a MultiGraph. (Note: The MultiGraph's shape is completely arbitrary since MultiGraphs have no inherent shape unless geodata is provided.)
 
-.. image:: /pics/multigraph_example.png
+.. image:: /pics/topology/multigraph_example.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -47,7 +47,7 @@ The function create_nxgraph function from the pandapower.topology package allows
 
 	create_nxgraph(net, respect_switches = False)
 
-.. image:: /pics/multigraph_example_respect_switches.png
+.. image:: /pics/topology/multigraph_example_respect_switches.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -57,7 +57,7 @@ The function create_nxgraph function from the pandapower.topology package allows
 
 	create_nxgraph(net, include_lines = False, include_impedances = False)
 
-.. image:: /pics/multigraph_example_include_lines.png
+.. image:: /pics/topology/multigraph_example_include_lines.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -67,7 +67,7 @@ The function create_nxgraph function from the pandapower.topology package allows
 
 	create_nxgraph(net, include_trafos = False)
 
-.. image:: /pics/multigraph_example_include_trafos.png
+.. image:: /pics/topology/multigraph_example_include_trafos.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -77,7 +77,7 @@ The function create_nxgraph function from the pandapower.topology package allows
 
 	create_nxgraph(net, nogobuses = [4])
 
-.. image:: /pics/multigraph_example_nogobuses.png
+.. image:: /pics/topology/multigraph_example_nogobuses.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -88,7 +88,7 @@ The function create_nxgraph function from the pandapower.topology package allows
 
 	create_nxgraph(net, notravbuses = [4])
 
-.. image:: /pics/multigraph_example_notravbuses.png
+.. image:: /pics/topology/multigraph_example_notravbuses.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center

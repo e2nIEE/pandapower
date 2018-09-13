@@ -7,7 +7,7 @@ DC Power flow
 
 pandapower uses PYPOWER to solve the DC power flow problem:
 
-.. image:: /pics/pandapower_dc_powerflow.png
+.. image:: /pics/flowcharts/pandapower_dc_powerflow.png
 		:width: 40em
 		:alt: alternate Text
 		:align: center

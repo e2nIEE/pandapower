@@ -36,7 +36,7 @@ Here are a few examples of what logging output looks like:
 
 Both reports show the same result, but on the left hand picture with detailed information, on the right hand picture summary only.
 
-.. image:: /pics/diag_detailed_report.png
+.. image:: /pics/diagnostic/diag_detailed_report.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -44,7 +44,7 @@ Both reports show the same result, but on the left hand picture with detailed in
 
 *warnings_only = True/False*
 
-.. image:: /pics/diag_warnings_only.png
+.. image:: /pics/diagnostic/diag_warnings_only.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -55,7 +55,7 @@ Result Dictionary
 Aditionally all check results are returned in a dict to allow simple access to the indeces of all element where
 errors were found.
 
-.. image:: /pics/diag_results_dict.png
+.. image:: /pics/diagnostic/diag_results_dict.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center

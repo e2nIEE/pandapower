@@ -57,8 +57,8 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 	:align: center
 
     
-*Transformer Ratio:*
-
+Transformer Ratio
+-------------------
 
 The magnitude of the transformer ratio is given as:
 
@@ -69,8 +69,7 @@ The magnitude of the transformer ratio is given as:
    n &= \frac{V_{ref, HV, transformer}}{V_{ref, LV, transformer}} \cdot \frac{V_{ref, LV bus}}{V_{ref, HV bus}}
    \end{align*}
 
-The reference voltages of the high- and low voltage buses are taken from the net.bus table.
-If no tap changer is defined, the reference voltage of the transformer  is taken directly from the transformer table:
+The reference voltages of the high- and low voltage buses are taken from the net.bus table. The reference voltage of the transformer  is taken directly from the transformer table:
 
 .. math::
    :nowrap:
@@ -79,28 +78,7 @@ If no tap changer is defined, the reference voltage of the transformer  is taken
     V_{ref, HV, transformer} &= vn\_hv\_kv \\
     V_{ref, LV, transformer} &= vn\_lv\_kv
    \end{align*}
-
-If a tap changer is defined, the reference voltage is multiplied with the tap factor:
-
-.. math::
-   :nowrap:
    
-   \begin{align*}
-    n_{tap} = 1 + (tp\_pos - tp\_mid) \cdot \frac{tp\_st\_percent}{100}
-    \end{align*}
-    
-On which side the reference voltage is adapted depends on the :math:`tp\_side` variable:
-
-.. tabularcolumns:: |p{0.2\linewidth}|p{0.15\linewidth}|p{0.15\linewidth}|
-.. csv-table:: 
-   :file: trafo_tap.csv
-   :delim: ;
-   :widths: 20, 15, 15
-
-.. note::
-    The variables tp_min and tp_max are not considered in the power flow. The user is responsible to ensure that tp_min < tp_pos < tp_max!
-   
-*Phase Shift:*
 
 If the power flow is run with voltage_angles=True, the complex ratio is given as:
 
@@ -108,8 +86,8 @@ If the power flow is run with voltage_angles=True, the complex ratio is given as
    :nowrap:
    
    \begin{align*}
-   \underline{n} &= n \cdot e^{j \cdot \theta} \\
-   \theta &= shift\_degree \cdot \frac{\pi}{180}
+   \underline{n} &= n \cdot e^{j \cdot \theta \cdot \frac{\pi}{180}} \\
+   \theta &= shift\_degree 
    \end{align*}
    
 Otherwise, the ratio does not include a phase shift:
@@ -121,7 +99,8 @@ Otherwise, the ratio does not include a phase shift:
    \underline{n} &= n
    \end{align*}
    
-*Impedances:*
+Impedance Values
+------------------
 
 The short-circuit impedance is calculated as:
 
@@ -161,10 +140,81 @@ The values calculated in that way are relative to the rated values of the transf
 
 Where the reference voltage :math:`V_{N}` is the nominal voltage at the low voltage side of the transformer and the rated apparent power :math:`S_{N}` is defined system wide in the net object (see :ref:`Unit Systems and Conventions<conventions>`). 
 
+Tap Changer
+---------------
+
+**Longitudinal regulator**
+
+A longitudinal regulator can be modeled by setting tp_phase_shifter to False and defining the tap changer voltage step with tp_st_percent.
+
+The reference voltage is then multiplied with the tap factor:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+    n_{tap} = 1 + (tp\_pos - tp\_mid) \cdot \frac{tp\_st\_percent}{100}
+    \end{align*}
+    
+On which side the reference voltage is adapted depends on the :math:`tp\_side` variable:
+
+.. tabularcolumns:: |p{0.2\linewidth}|p{0.15\linewidth}|p{0.15\linewidth}|
+.. csv-table:: 
+   :file: trafo_tap.csv
+   :delim: ;
+   :widths: 20, 15, 15
 
 .. note::
-    Tap magnitude and angle shift are considered independently of each other. A specific diagonal transformer shift implemented that shifts the complex voltage angle specifically is not implemented in pandapower.
-  
+    The variables tp_min and tp_max are not considered in the power flow. The user is responsible to ensure that tp_min < tp_pos < tp_max!
+
+**Cross regulator**
+
+In addition to tp_st_percent a value for tp_st_degree can be defined to model an angle shift for each tap, resulting in a cross
+regulator that affects the magnitude as well as the angle of the transformer ratio.
+
+
+**Ideal phase shifter**
+
+If tp_phase_shifter is set to True, the tap changer is modeled as an ideal phase shifter, meaning that a constant
+angle shift is added with each tap step:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+   \underline{n} &= n \cdot e^{j \cdot (\theta + \theta_{tp}) \cdot \frac{\pi}{180}} \\
+   \theta &= shift\_degree 
+   \end{align*}
+   
+The angle shift can be directly defined in tp_st_degree, in which case:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+   \theta_{tp} = tp\_st\_degree \cdot (tp\_pos - tp\_mid)
+   \end{align*}
+
+or it can be given as a constant voltage step in tp_st_percent, in which case the angle is calculated as:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tp\_st\_percent}{100})  \cdot (tp\_pos - tp\_mid)
+   \end{align*}
+
+If both values are given for an ideal phase shift transformer, the power flow will raise an error.
+
+.. seealso::
+
+    `ENTSO-E - Phase Shift Transformers Modelling, Version 1.0.0, May 2015 <https://docstore.entsoe.eu/Documents/CIM_documents/Grid_Model_CIM/ENTSOE_CGMES_v2.4_28May2014_PSTmodelling.pdf>`_
+    
+    `J. Verboomen, D. Van Hertem, P. H. Schavemaker, W. L. Kling and R. Belmans, "Phase shifting transformers: principles and applications," 2005 International Conference on Future Power Systems, Amsterdam, 2005 <https://ieeexplore.ieee.org/document/1600575/>`_
+
+
+
+
 Result Parameters
 ==========================
 *net.res_trafo*
