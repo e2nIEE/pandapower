@@ -19,7 +19,7 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_res
 
 def _run_dc_pf(ppci):
     t0 = time()
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _, _ = _get_pf_variables_from_ppci(ppci)
 
     ## initial state
     Va0 = bus[:, VA] * (pi / 180.)
