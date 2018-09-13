@@ -984,11 +984,6 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     if bus not in net["bus"].index.values:
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
-    if bus in net.ext_grid.query("in_service").bus.values:
-        raise UserWarning(
-            "There is already an external grid at bus %u, thus no other voltage " % bus +
-            "controlling element (ext_grid, gen) is allowed at this bus.")
-
     if index is None:
         index = get_free_id(net["gen"])
 
@@ -1116,16 +1111,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     if index is None:
         index = get_free_id(net["ext_grid"])
 
-    if bus in net.ext_grid.query("in_service").bus.values:
-        raise UserWarning(
-            "There is already an external grid at bus %u, thus no other voltage " % bus +
-            "controlling element (ext_grid, gen) is allowed at this bus.")
-
-    if bus in net.gen.query("in_service").bus.values:
-        raise UserWarning("There is already a generator (PV-node) at bus %u, "
-                          "thus no ext_grid is allowed at this bus." % bus)
-
-        # store dtypes
+    # store dtypes
     dtypes = net.ext_grid.dtypes
 
     net.ext_grid.loc[index, ["bus", "name", "vm_pu", "va_degree", "in_service"]] = \
@@ -1186,8 +1172,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
                 df=1., parallel=1, in_service=True, max_loading_percent=nan):
-    """ create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, \
-                geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan)
+    """ create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None, \
+                df=1., parallel=1, in_service=True, max_loading_percent=nan)
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
 
@@ -1387,7 +1373,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.):
     """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True, \
-                       index=None, max_loading_percent=nan, parallel=1)
+                       index=None, max_loading_percent=nan, parallel=1, df=1.)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1502,8 +1488,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_kva, vn_hv_kv, vn
                                        vscr_percent, vsc_percent, pfe_kw, i0_percent, \
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan, \
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan, \
-                                       tp_pos=nan, in_service=True, name=None, index=None, \
-                                       max_loading_percent=nan, parallel=1, **kwargs)
+                                       tp_pos=nan, tp_phase_shifter=False, in_service=True, \
+                                       name=None, index=None, max_loading_percent=nan, parallel=1, \
+                                       df=1., **kwargs)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1630,7 +1617,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
                          in_service=True, index=None, max_loading_percent=nan,
                          tap_at_star_point=False):
     """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan, \
-                         in_service=True, index=None, max_loading_percent=nan)
+                         in_service=True, index=None, max_loading_percent=nan, \
+                         tap_at_star_point=False)
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
 
@@ -1747,12 +1735,12 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
                                          sn_hv_kva, sn_mv_kva, sn_lv_kva, vsc_hv_percent, \
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
-                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,\
+                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, \
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
-                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
+                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan, \
                                          tp_mid=nan, tp_max=nan, \
                                          tp_min=nan, name=None, in_service=True, index=None, \
-                                         max_loading_percent=nan)
+                                         max_loading_percent=nan, tap_at_star_point=False)
     Adds a three-winding transformer in table net["trafo3w"].
 
     Input:
@@ -2285,14 +2273,6 @@ def create_dcline(net, from_bus, to_bus, p_kw, loss_percent, loss_kw, vm_from_pu
     for bus in [from_bus, to_bus]:
         if bus not in net["bus"].index.values:
             raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
-
-        if bus in net.ext_grid.bus.values:
-            raise UserWarning("There is already an external grid at bus %u, only one voltage " +
-                              "controlling element (ext_grid, gen) is allowed per bus." % bus)
-
-        if bus in net.gen.bus.values:
-            raise UserWarning("There is already a generator at bus %u, only one voltage " +
-                              "controlling element (ext_grid, gen) is allowed per bus." % bus)
 
     if index is None:
         index = get_free_id(net["dcline"])

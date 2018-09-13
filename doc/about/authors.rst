@@ -1,4 +1,4 @@
-﻿.. _license:
+﻿.. _authors:
 
 =========
 Authors

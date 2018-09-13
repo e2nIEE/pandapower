@@ -14,11 +14,11 @@ from pandapower.estimation.results import _copy_power_flow_results, _rename_resu
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pf.runpf_pypower import _get_pf_variables_from_ppci, \
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, \
     _store_results_from_pf_in_ppci
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
 from pandapower.topology import estimate_voltage_vector
-
+from time import time
 try:
     import pplog as logging
 except ImportError:
@@ -229,7 +229,7 @@ class state_estimation(object):
         """
         if self.net is None:
             raise UserWarning("Component was not initialized with a network.")
-
+        t0 = time()
         # add initial values for V and delta
         # node voltages
         # V<delta
@@ -347,7 +347,8 @@ class state_estimation(object):
         St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) * s_ref
         branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
         branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
-        ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch)
+        et = time() - t0
+        ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, successful, cur_it, et)
 
         # convert to pandapower indices
         ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")

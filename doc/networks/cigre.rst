@@ -39,7 +39,7 @@ High voltage transmission network
  '''
 
 
-.. image:: /pics/cigre_network_hv.png
+.. image:: /pics/networks/cigre//cigre_network_hv.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -68,7 +68,7 @@ Medium voltage distribution network
  '''
 
 
-.. image:: /pics/cigre_network_mv.png
+.. image:: /pics/networks/cigre//cigre_network_mv.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -107,7 +107,7 @@ Although the case study mentions the High Voltage as 220 kV, we assume 110 kV ag
       - bus_geodata (15 elements)
     '''
 
-.. image:: /pics/cigre_network_mv_der.png
+.. image:: /pics/networks/cigre//cigre_network_mv_der.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -149,7 +149,7 @@ considered. Although the case study mentions the High Voltage as 220 kV, we assu
       - bus_geodata (15 elements)
     '''
 
-.. image:: /pics/cigre_network_mv_der_all.png
+.. image:: /pics/networks/cigre//cigre_network_mv_der_all.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -179,7 +179,7 @@ Low voltage distribution network
  '''
 
 
-.. image:: /pics/cigre_network_lv.png
+.. image:: /pics/networks/cigre//cigre_network_lv.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center

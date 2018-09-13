@@ -20,7 +20,7 @@ basic principles of creating a pandapower network.
 	:alt: alternate Text
 	:align: center  
     
-The stepwise creation of this network is shown in the :ref:`pandapower tutorials<tutorial>`.
+The stepwise creation of this network is shown in the `pandapower tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_.
 
     
 Multi-Voltage Level Example Network
@@ -41,4 +41,4 @@ equivalent loads. As an example one double busbar and one single busbar are cons
 	:alt: alternate Text
 	:align: center
 
-The stepwise creation of this network is shown in the :ref:`pandapower tutorials<tutorial>`. 
+The stepwise creation of this network is shown in the `pandapower tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_. 

@@ -74,7 +74,7 @@ Finding the shortest path between two buses is a good example for that.
 
 	Out: [0, 1, 6, 5]
 
-.. image:: /pics/nx_shortest_path.png
+.. image:: /pics/topology/nx_shortest_path.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -95,7 +95,7 @@ With *unsupplied_buses* you can easily find buses that are not connected to an e
 
 	Out: {5, 6}
 
-.. image:: /pics/top_disconnected_buses.png
+.. image:: /pics/topology/top_disconnected_buses.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -130,7 +130,7 @@ This is possible since line lengths are being transferred into the MultiGraph as
 **Interpretation:** The distance between bus 1 and itself is 0 km. Bus 1 is also 0 km away from bus 0, since they are connected with a transformer.
 The shortest path between bus 1 and bus 5 is 4 km long.
 
-.. image:: /pics/top_calc_distance_to_bus.png
+.. image:: /pics/topology/top_calc_distance_to_bus.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -152,7 +152,7 @@ Find connected buses with the same voltage level
 	In	: next(cc)
 	Out	: {1, 2, 3, 4, 5, 6}
 
-.. image:: /pics/multigraph_example_include_trafos.png
+.. image:: /pics/topology/multigraph_example_include_trafos.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -181,7 +181,7 @@ be set as a nogobuses. With *respect_switches = True* you get the ring sections,
 	In 	: next(cc_ring_sections)
 	Out	: {5, 6}
 
-.. image:: /pics/top_find_ring_sections.png
+.. image:: /pics/topology/top_find_ring_sections.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -200,7 +200,7 @@ be set as a nogobuses. With *respect_switches = True* you get the ring sections,
 	In	: next(cc_ring)
 	Out	: {2, 3, 4, 5, 6}
 
-.. image:: /pics/top_find_rings.png
+.. image:: /pics/topology/top_find_rings.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center
@@ -259,7 +259,7 @@ This is a small extension for the example network:
 	6  line 6  NAYY 150         6       7          1         0.206         0.091   		0    0.284   1   cs       True     True
 	7  line 7  NAYY 150         7       8          1         0.206         0.091   		0    0.284   1   cs       True     True
 
-.. image:: /pics/top_determine_stubs.png
+.. image:: /pics/topology/top_determine_stubs.png
 	:width: 42em
 	:alt: alternate Text
 	:align: center

@@ -26,21 +26,20 @@ from pandapower.test.toolbox import add_grid_connection, create_test_line, asser
 from pandapower.toolbox import nets_equal
 
 
-@pytest.mark.xfail
 def test_minimal_net():
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pp.create_empty_network()
     b = pp.create_bus(net, 110)
     pp.create_ext_grid(net, b)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     pp.create_load(net, b, 100)
-    pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
     b2 = pp.create_bus(net, 110)
     pp.create_switch(net, b, b2, 'b')
-    pp.runpp(net)
-
+    pp.create_sgen(net, b2, 200)
+    runpp_with_consistency_checks(net)
 
 def test_set_user_pf_options():
     net = example_simple()
@@ -78,6 +77,14 @@ def test_set_user_pf_options():
     assert net.user_pf_options['tolerance_kva'] == 1e-3
     assert net._options['tolerance_kva'] == 1e-2
     assert net._options['max_iteration'] == 20
+
+def test_kwargs_with_user_options():
+    net = example_simple()
+    pp.runpp(net)
+    assert net._options["trafo3w_losses"] == "hv"
+    pp.set_user_pf_options(net, trafo3w_losses="lv")
+    pp.runpp(net)
+    assert net._options["trafo3w_losses"] == "lv"
 
 
 def test_runpp_init():
@@ -160,16 +167,15 @@ def test_bus_bus_switches(bus_bus_net):
     assert net.res_bus.vm_pu.at[6] != net.res_bus.vm_pu.at[4]
 
 
-@pytest.mark.xfail
-def test_bus_bus_switches_throws_exception_for_two_gens(bus_bus_net):
+def test_bus_bus_switches_merges_two_gens(bus_bus_net):
     "buses should not be fused if two gens are connected"
     net = bus_bus_net
     net.bus.in_service.at[5] = False
     pp.create_gen(net, 6, 10)
     pp.create_gen(net, 4, 10)
     net.bus.in_service.at[5] = True
-    with pytest.raises(UserWarning):
-        pp.runpp(net)
+    pp.runpp(net)
+    assert net.converged == True
 
 
 def test_bus_bus_switches_throws_exception_for_two_gen_with_diff_vm(bus_bus_net):
@@ -349,7 +355,6 @@ def test_isolated_in_service_bus_at_oos_line():
     assert runpp_with_consistency_checks(net, init="flat")
 
 
-@pytest.mark.xfail
 def test_isolated_in_service_line():
     # ToDo: Fix this
     net = pp.create_empty_network()
@@ -552,8 +557,8 @@ def test_zip_loads_gridcal():
     losses_gridcal = 4.69773448916 - 2.710430515j
 
     abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                            'networks', 'power_system_test_case_pickles', 'case5_demo_gridcal.p')
-    net = pp.from_pickle(abs_path)
+                            'networks', 'power_system_test_case_jsons', 'case5_demo_gridcal.json')
+    net = pp.from_json(abs_path)
 
     pp.runpp(net, voltage_depend_loads=True,
              recycle=dict(_is_elements=False, ppc=False, Ybus=True, bfsw=False))
@@ -605,7 +610,6 @@ def test_zip_loads_pf_algorithms():
         assert np.allclose(va_nr, va_alg)
 
 
-# @pytest.mark.xfail
 def test_zip_loads_with_voltage_angles():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=1.)
@@ -715,7 +719,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
 
@@ -781,7 +785,7 @@ def test_add_element_and_init_results():
     pp.runpp(net, init="results")
 
 
-def test_vm_start_pu():
+def test_pp_initialization():
     net = pp.create_empty_network()
 
     b1 = pp.create_bus(net, vn_kv=0.4)
@@ -806,7 +810,7 @@ def test_vm_start_pu():
     pp.runpp(net, init_va_degree="flat", init_vm_pu="auto")
     assert net._ppc["iterations"] == 3
 
-    pp.runpp(net, init_va_degree="dc", init_vm_pu="auto")
+    pp.runpp(net, init_va_degree="dc")
     assert net._ppc["iterations"] == 3
 
 
@@ -831,28 +835,115 @@ def test_equal_indices_res():
     except LoadflowNotConverged:
         assert False
 
+def test_ext_grid_and_gen_at_one_bus():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110)
+    b2 = pp.create_bus(net, vn_kv=110)
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
+    pp.create_load(net, bus=b2, p_kw=3.5e3, q_kvar=1e3)
+
+    runpp_with_consistency_checks(net)
+    q = net.res_ext_grid.q_kvar.sum()
+
+    ##create two gens at the slack bus
+    g1 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    g2 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    runpp_with_consistency_checks(net)
+
+    #all the reactive power previously provided by the ext_grid is now provided by the generators
+    assert np.isclose(net.res_ext_grid.q_kvar.values, 0)
+    assert np.isclose(net.res_gen.q_kvar.sum(), q)
+    #since no Q-limits were set, reactive power is distributed equally to both generators
+    assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2])
+
+    #set reactive power limits at the generators
+    net.gen["min_q_kvar"] = [-100, -10]
+    net.gen["max_q_kvar"] = [100, 10]
+    runpp_with_consistency_checks(net)
+    #g1 now has 10 times the reactive power of g2 in accordance with the different Q ranges
+    assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2]*10)
+    #all the reactive power is still provided by the generators, because Q-lims are not enforced
+    assert np.allclose(net.res_ext_grid.q_kvar.values, [0])
+    assert np.isclose(net.res_gen.q_kvar.sum(), q)
+
+    # now enforce Q-lims
+    runpp_with_consistency_checks(net, enforce_q_lims=True)
+    # both generators are at there lower limit with regard to the reactive power
+    assert np.allclose(net.res_gen.q_kvar.values, net.gen.min_q_kvar.values)
+    # the total reactive power remains unchanged, but the rest of the power is now provided by the ext_grid
+    assert np.isclose(net.res_gen.q_kvar.sum() + net.res_ext_grid.q_kvar.sum(), q)
+
+    # second ext_grid at the slack bus
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    runpp_with_consistency_checks(net, enforce_q_lims=False)
+    # gens still have the correct active power
+    assert np.allclose(net.gen.p_kw.values, net.res_gen.p_kw.values)
+    # slack active power is evenly distributed to both ext_grids
+    assert np.isclose(net.res_ext_grid.p_kw.values[0], net.res_ext_grid.p_kw.values[1])
+
+    # q limits at the ext_grids are not enforced
+    net.ext_grid["max_q_kvar"] = [100, 10]
+    net.ext_grid["min_q_kvar"] = [-100, -10]
+    runpp_with_consistency_checks(net, enforce_q_lims=True)
+    assert net.res_ext_grid.q_kvar.values[0] < net.ext_grid.min_q_kvar.values[0]
+    assert np.allclose(net.res_gen.q_kvar.values, net.gen.min_q_kvar.values)
+
+def two_ext_grids_at_one_bus():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110, index=3)
+    b2 = pp.create_bus(net, vn_kv=110, index=5)
+    pp.create_ext_grid(net, b1, vm_pu=1.01, index=2)
+    pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
+    pp.create_load(net, bus=b2, p_kw=3.5e3, q_kvar=1e3)
+    pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    runpp_with_consistency_checks(net)
+    assert net.converged
+
+    # connect second ext_grid to b1 with different angle but out of service
+    eg2 = pp.create_ext_grid(net, b1, vm_pu=1.01, va_degree=20, index=5, in_service=False)
+    runpp_with_consistency_checks(net) #power flow still converges since eg2 is out of service
+    assert net.converged
+
+    # error is raised after eg2 is set in service
+    net.ext_grid.in_service.at[eg2] = True
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+    #  error is also raised when eg2 is connected to first ext_grid through bus-bus switch
+    b3 = pp.create_bus(net, vn_kv=110)
+    pp.create_switch(net, b1, b3, et="b")
+    net.ext_grid.bus.at[eg2] = b3
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+    # no error is raised when voltage angles are not calculated
+    runpp_with_consistency_checks(net, calculate_voltage_angles=False)
+    assert net.converged
+
+    # same angle but different voltage magnitude also raises an error
+    net.ext_grid.vm_pu.at[eg2] = 1.02
+    net.ext_grid.va_degree.at[eg2] = 0
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+
+def test_dc_with_ext_grid_at_one_bus():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110)
+    b2 = pp.create_bus(net, vn_kv=110)
+
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    pp.create_ext_grid(net, b2, vm_pu=1.01)
+
+    pp.create_dcline(net, from_bus=b1, to_bus=b2, p_kw=10,loss_percent=0,loss_kw=0, vm_from_pu=1.01, vm_to_pu=1.01)
+
+    pp.create_sgen(net,b1,p_kw=-10)
+    pp.create_load(net,b2,p_kw=10)
+
+    runpp_with_consistency_checks(net)
+    assert np.allclose(net.res_ext_grid.p_kw.values, [0,0])
+
 
 if __name__ == "__main__":
-    #    net = pp.create_empty_network()
-    #    b1 = pp.create_bus(net, vn_kv=1.)
-    #    b2 = pp.create_bus(net, vn_kv=1.)
-    #    pp.create_ext_grid(net, b1)
-    #    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
-    #                                   x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
-    #    pp.create_load(net, b2, p_kw=2., const_z_percent=0, const_i_percent=100)
-    #
-    #    pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
-    #
-    #    pp.runpp(net, init="results")
-    #    print(net._options["calculate_voltage_angles"])
-    #    print(net._options["init_va_degree"])
-    #
-    #    res_load = net.res_load.copy()
-    #    net.ext_grid.va_degree = 100
-    #
-    #    pp.runpp(net)
-    #    print(net._options["calculate_voltage_angles"])
-    #    print(net._options["init_va_degree"])
-
-    #    test_vm_start_pu()
     pytest.main(["test_runpp.py"])

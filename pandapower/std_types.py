@@ -122,10 +122,6 @@ def load_std_type(net, name, element="line"):
     """
     library = net.std_types[element]
     if name in library:
-        if name in ["%i MVA 110/%i0 kV" % (i1, i2) for i1 in [63, 40, 25] for i2 in [1, 2]]:
-            logger.warning("Be aware that the transformator parameters of '%s' " % name +
-                           "has changed. The old parameter values are available in " +
-                           "'%s' on an interim basis." % (name+" v1.4.3 and older"))
         return library[name]
     else:
         raise UserWarning("Unknown standard %s type %s" % (element, name))
@@ -288,6 +284,7 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "c0_nf_per_km")
     parameter_from_std_type(net, "r0_ohm_per_km")
     parameter_from_std_type(net, "x0_ohm_per_km")
+
 
 def add_basic_std_types(net):
     if "std_types" not in net:
