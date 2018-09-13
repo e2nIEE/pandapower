@@ -29,7 +29,9 @@ def _get_pf_variables_from_ppci(ppci):
     # V0    = ones(bus.shape[0])            ## flat start
     V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
+
+    ref_gens = ppci["internal"]["ref_gens"]
+    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0, ref_gens
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
