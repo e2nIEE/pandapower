@@ -127,7 +127,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
         if calc_r_ohm:
             trafo_edge_data['R_ohm']=(trafo_edge_data.vscr_percent/100) / base_Z
         if calc_z_ohm:
-            trafo_edge_data['Z_ohm']=(trafo_edge_data.vsc_percent/100)  / base_Z
+            trafo_edge_data['Z_ohm']=(trafo_edge_data.vsc_percent/100).abs()  / base_Z
 
         for trafo in trafo_edge_data.itertuples():
             weights={'weight': 0}
