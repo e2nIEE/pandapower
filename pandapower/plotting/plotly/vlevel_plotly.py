@@ -7,7 +7,8 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace, draw_traces
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace, draw_traces, \
+    version_check
 from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
 from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.topology import create_nxgraph, connected_components
@@ -64,9 +65,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
         **bus_size** (float, 10.0) -  size of buses to plot.
 
     """
-
+    version_check()
     # create geocoord if none are available
-    # TODO remove this if not necessary:
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])
     if 'bus_geodata' not in net:
@@ -75,7 +75,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches)
-        if on_map == True:
+        if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
@@ -109,7 +109,6 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     colors = get_plotly_color_palette(nvlevs)
     colors_dict = dict(zip(vlev_bus_dict.keys(), colors))
 
-
     # creating traces for buses and lines for each voltage level
     bus_traces = []
     line_traces = []
@@ -132,4 +131,3 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
 
     draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                 aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
-

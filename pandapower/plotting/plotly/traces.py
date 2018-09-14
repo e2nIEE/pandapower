@@ -5,10 +5,11 @@
 
 
 import math
-from itertools import compress
 
 import numpy as np
 import pandas as pd
+from packaging import version
+from plotly import __version__
 
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, MapboxTokenMissing
@@ -20,12 +21,21 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly.graph_objs import Figure, Layout, ColorBar
+    from plotly.graph_objs.scatter.marker import ColorBar
+    from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
     from plotly.graph_objs.scattermapbox import Line as scmLine
+    from plotly.graph_objs.scattermapbox import Marker as scmMarker
 except ImportError:
     logger.debug("Failed to import plotly - interactive plotting will not be available")
+
+
+def version_check():
+    if version.parse(__version__) < version.parse("3.1.1"):
+        raise UserWarning("Your plotly version {} is no longer supported.\r\n"
+                          "Please upgrade your python-plotly installation, "
+                          "e.g., via pip install --upgrade plotly".format(__version__))
 
 
 def _in_ipynb():
@@ -560,7 +570,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             trace['lat'] = trace.pop('x')
             trace['lon'] = trace.pop('y')
             trace['type'] = 'scattermapbox'
-            if "line" in trace and on_map and isinstance(trace["line"], Line):
+            if "line" in trace and isinstance(trace["line"], Line):
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
                 if "dash" in trace["line"]._props:
                     _prps = dict(trace["line"]._props)
@@ -569,6 +579,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                     trace["line"] = scmLine(_prps)
                 else:
                     trace["line"] = scmLine(dict(trace["line"]._props))
+            elif "marker" in trace and isinstance(trace["marker"], Marker):
+                trace["marker"] = scmMarker(trace["marker"]._props)
 
     # setting Figure object
     fig = Figure(data=traces,  # edge_trace
@@ -642,27 +654,11 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
     plot(fig, filename=filename)
 
 
-# if __name__ == "__main__":
-#     # test 1
-#     from pandapower.plotting.plotly import simple_plotly
-#     from pandapower.networks import mv_oberrhein
-#
-#     grid = mv_oberrhein()
-#     simple_plotly(grid)
-#
-#     # test 2
-#     import pandapower as pp
-#     import pandapower.networks as nw
-#     import pandapower.plotting.plotly as pplotly
-#
-#     net = nw.mv_oberrhein()
-#     long_lines = net.line[net.line.length_km > 2.].index
-#     lc = pplotly.create_line_trace(net, net.line.index, color="grey")
-#     lcl = pplotly.create_line_trace(net, long_lines, color="green", width=2,
-#                                     infofunc=net.line.name + '<br>' + net.line.length_km.astype(str) + ' km')
-#
-#     low_voltage_buses = net.res_bus[net.res_bus.vm_pu < 0.98].index
-#     bc = pplotly.create_bus_trace(net, net.bus.index, size=10, color="blue")
-#     bch = pplotly.create_bus_trace(net, low_voltage_buses, size=10, color="red")
-#
-#     pplotly.draw_traces(bc + bch + lc + lcl)
+if __name__ == "__main__":
+    from pandapower.networks import mv_oberrhein
+    from pandapower import runpp
+    from pandapower.plotting import simple_plotly, pf_res_plotly
+    net = mv_oberrhein()
+    runpp(net)
+    simple_plotly(net, on_map=True, projection='epsg:31467', map_style='streets')
+    pf_res_plotly(net, on_map=True, projection='epsg:31467', map_style='dark')
