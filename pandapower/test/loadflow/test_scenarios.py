@@ -328,8 +328,7 @@ def test_oos_buses_at_trafo3w():
 
     assert net.res_line.loading_percent.at[l1] > 0
     assert np.isnan(net.res_trafo3w.i_hv_ka.at[tidx])
-
+    
     
 if __name__ == "__main__":
-#    test_volt_dep_load_at_inactive_bus()
      pytest.main(["test_scenarios.py"])

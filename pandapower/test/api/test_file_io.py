@@ -68,6 +68,14 @@ def test_json(net_in, tempdir):
     assert_net_equal(net_in, net_out)
 
 
+def test_type_casting_json(net_in, tempdir):
+    filename = os.path.join(tempdir, "testfile.json")
+    net_in.sn_kva = 1000
+    pp.to_json(net_in, filename)
+    net = pp.from_json(filename)
+    assert_net_equal(net_in, net)
+
+
 def test_sqlite(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.db")
     pp.to_sqlite(net_in, filename)

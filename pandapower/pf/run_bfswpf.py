@@ -21,7 +21,8 @@ from pandapower.pf.bustypes import bustypes
 from pandapower.pf.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pf.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
-from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true, _get_pf_variables_from_ppci
+from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
 
 class LoadflowNotConverged(ppException):
@@ -378,8 +379,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     """
     time_start = time()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, ref, pv, pq, \
-    on, gbus, V0 = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     enforce_q_lims, tolerance_kva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
 
@@ -452,7 +452,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     # #----- output results to ppc ------
     ppci["et"] = time() - time_start  # pf time end
 
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V_final, ref)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
     ppci["success"] = success

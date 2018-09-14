@@ -10,7 +10,7 @@ MV Oberrhein
 
 The geographical representation of the network looks like this:
 
-.. image:: /pics/plotting_tutorial1.png
+.. image:: /pics/plotting/plotting_tutorial1.png
 	:width: 30em
 	:align: center
 
@@ -19,7 +19,7 @@ If you are interested in how to make plots such as these, check out the pandapow
 
 The power flow results of the network in the different worst case scenarios look like this:
 
-.. image:: /pics/oberrhein_loadcases.png
+.. image:: /pics/networks/oberrhein_loadcases.png
 	:width: 40em
 	:align: center
     

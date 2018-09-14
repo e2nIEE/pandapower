@@ -147,7 +147,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                     net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
                     va_degree=ppc['bus'][current_bus_idx, 8], in_service=bool(ppc['gen'][i, 7] > 0),
                     max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
-                    max_q_kvar=ppc['gen'][i, 3] * 1e3, min_q_kvar=ppc['gen'][i, 4] * 1e3)
+                    max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3)
                 gen_lookup.element_type.loc[i] = 'ext_grid'
                 if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
                     logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
@@ -163,7 +163,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                     p_kw=-ppc['gen'][i, 1] * 1e3,
                     in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
                     max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
-                    max_q_kvar=ppc['gen'][i, 3] * 1e3, min_q_kvar=ppc['gen'][i, 4] * 1e3)
+                    max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3)
                 gen_lookup.element_type.loc[i] = 'gen'
                 if ppc['gen'][i, 1] < 0:
                     logger.info('p_kw of gen %d must be less than zero but is not.' % i)
@@ -179,7 +179,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 net, bus=current_bus_idx, p_kw=-ppc['gen'][i, 1] * 1e3,
                 q_kvar=-ppc['gen'][i, 2] * 1e3, type="", in_service=bool(ppc['gen'][i, 7] > 0),
                 max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
-                max_q_kvar=ppc['gen'][i, 3] * 1e3, min_q_kvar=ppc['gen'][i, 4] * 1e3,
+                max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3,
                 controllable=True)
             gen_lookup.element_type.loc[i] = 'sgen'
             if ppc['gen'][i, 1] < 0:
@@ -199,7 +199,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         from_vn_kv = ppc['bus'][from_bus, 9]
         to_vn_kv = ppc['bus'][to_bus, 9]
         if (from_vn_kv == to_vn_kv) & ((ppc['branch'][i, 8] == 0) | (ppc['branch'][i, 8] == 1)) & \
-           (ppc['branch'][i, 9] == 0):
+           (ppc['branch'][i, 9] == 0):  # create line
             Zni = ppc['bus'][to_bus, 9]**2/baseMVA  # ohm
             max_i_ka = ppc['branch'][i, 5]/ppc['bus'][to_bus, 9]/sqrt(3)
             if max_i_ka == 0.0:
@@ -213,7 +213,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 max_i_ka=max_i_ka, type='ol', max_loading_percent=100,
                 in_service=bool(ppc['branch'][i, 10]))
 
-        else:
+        else:  # create transformer
             if from_vn_kv >= to_vn_kv:
                 hv_bus = from_bus
                 vn_hv_kv = from_vn_kv
