@@ -8,8 +8,6 @@ import math
 
 import numpy as np
 import pandas as pd
-from packaging import version
-from plotly import __version__
 
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, MapboxTokenMissing
@@ -21,6 +19,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
+    from packaging import version
+    from plotly import __version__
     from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
@@ -652,13 +652,3 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         from plotly.offline import plot as plot
 
     plot(fig, filename=filename)
-
-
-if __name__ == "__main__":
-    from pandapower.networks import mv_oberrhein
-    from pandapower import runpp
-    from pandapower.plotting import simple_plotly, pf_res_plotly
-    net = mv_oberrhein()
-    runpp(net)
-    simple_plotly(net, on_map=True, projection='epsg:31467', map_style='streets')
-    pf_res_plotly(net, on_map=True, projection='epsg:31467', map_style='dark')
