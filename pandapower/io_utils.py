@@ -5,9 +5,9 @@
 
 
 import pandas as pd
-from pandapower import create_empty_network
+from pandapower.create import create_empty_network
+from pandapower.auxiliary import pandapowerNet
 import numpy
-import numbers
 import json
 import copy
 import importlib
@@ -134,8 +134,64 @@ def restore_all_dtypes(net, dtypes):
         except KeyError:
             pass
 
+from json.encoder import _make_iterencode
+from json.encoder import *
 
 class PPJSONEncoder(json.JSONEncoder):
+
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string
+        representation as available.
+
+        For example::
+
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+
+        """
+        if self.check_circular:
+            markers = {}
+        else:
+            markers = None
+        if self.ensure_ascii:
+            _encoder = encode_basestring_ascii
+        else:
+            _encoder = encode_basestring
+
+        def floatstr(o, allow_nan=self.allow_nan,
+                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+
+            if o != o:
+                text = 'NaN'
+            elif o == _inf:
+                text = 'Infinity'
+            elif o == _neginf:
+                text = '-Infinity'
+            else:
+                return _repr(o)
+
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: " +
+                    repr(o))
+
+            return text
+
+
+        _iterencode = _make_iterencode(
+                markers, self.default, _encoder, self.indent, floatstr,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, _one_shot, isinstance=self.isinstance)
+        return _iterencode(o, 0)
+
+    def isinstance(self, obj, cls):
+        if isinstance(obj, pandapowerNet):
+            return False
+        return isinstance(obj, cls)
+
     def default(self, o):
         try:
             s = to_serializable(o)
@@ -145,17 +201,20 @@ class PPJSONEncoder(json.JSONEncoder):
         else:
             return s
 
-
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
 
+import jsonpickle
 
 def pp_hook(d):
+    from pandapower import from_json_string
     if '_module' in d.keys() and '_class' in d.keys():
         class_name = d.pop('_class')
         module_name = d.pop('_module')
         obj = d.pop('_object')
+        if module_name == "jsonpickle":
+            return jsonpickle.decode(obj)
 
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
@@ -177,6 +236,8 @@ def pp_hook(d):
                 df['coords'] = df.coords.apply(json.loads)
             df = df.reindex(columns=d['columns'])
             return df
+        elif class_name == "pandapowerNet":
+            return from_json_string(obj)
         else:
             module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
@@ -199,14 +260,15 @@ def with_signature(obj, val, obj_module=None, obj_class=None):
 @singledispatch
 def to_serializable(obj):
     logger.debug('standard case')
-    return str(obj)
+    d = with_signature(obj, jsonpickle.encode(obj), obj_module="jsonpickle")
+    return d
 
 
-# example
-# @to_serializable.register()
-# def json_array(obj):
-#     return
-
+@to_serializable.register(pandapowerNet)
+def json_net(obj):
+    from pandapower.file_io import to_json_string
+    d = with_signature(obj, to_json_string(obj))
+    return d
 
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
@@ -215,7 +277,6 @@ def json_dataframe(obj):
                                         default_handler=to_serializable, double_precision=14))
     d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
     return d
-
 
 try:
     @to_serializable.register(gpd.GeoDataFrame)
@@ -228,7 +289,6 @@ try:
 except NameError:
     pass
 
-
 @to_serializable.register(pd.Series)
 def json_series(obj):
     logger.debug('DataFrame')
@@ -236,46 +296,7 @@ def json_series(obj):
     d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
     return d
 
-
-@to_serializable.register(numpy.ndarray)
-def json_array(obj):
-    logger.debug("ndarray")
-    d = with_signature(obj, list(obj), obj_module='numpy', obj_class='array')
-    return d
-
-
-@to_serializable.register(numpy.integer)
-def json_npint(obj):
-    logger.debug("integer")
-    return int(obj)
-
-
-@to_serializable.register(numpy.floating)
-def json_npfloat(obj):
-    logger.debug("floating")
-    return float(obj)
-
-
-@to_serializable.register(numbers.Number)
-def json_num(obj):
-    logger.debug("numbers.Number")
-    return str(obj)
-
-
 @to_serializable.register(pd.Index)
 def json_pdindex(obj):
     logger.debug("pd.Index")
     return with_signature(obj, list(obj), obj_module='pandas')
-
-
-@to_serializable.register(bool)
-def json_bool(obj):
-    logger.debug("bool")
-    return "true" if obj else "false"
-
-
-@to_serializable.register(tuple)
-def json_tuple(obj):
-    logger.debug("tuple")
-    d = with_signature(obj, obj, obj_module='builtins', obj_class='tuple')
-    return d
