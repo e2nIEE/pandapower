@@ -9,7 +9,7 @@
    :target: https://pypi.python.org/pypi/pandapower
    :alt: PyPI
    
-.. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
+.. image:: https://www.pandapower.org/images/home/shield_python_versions.svg
    :target: https://pypi.python.org/pypi/pandapower
    :alt: PyPI
 
@@ -53,9 +53,9 @@ About pandapower:
 Getting Started:
 
 - `Installation Notes <https://www.pandapower.org/start/>`_
-- `Minimal Example <https://www.pandapower.org/start/#a-short-introduction->`_
-- `Interactive Tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_
-- `Documentation <https://pandapower.readthedocs.io/en/v1.5.1/>`_
+- `Minimal Example <https://www.pandapower.org/start/#intro>`_
+- `Interactive Tutorials <https://www.pandapower.org/start/#tutorials>`_
+- `Documentation <https://pandapower.readthedocs.io/>`_
 
 If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
