@@ -14,7 +14,7 @@ Change Log
 - [CHANGED] create_ext_grid_collection (plotting): ext_grid and ext_grid buses can be specified if a collection should only include some of ext grids
 - [ADDED] ability to define phase shifting transformers with tp_st_percent #117
 - [ADDED] support for multiple voltage controlling elements (ext_grid, gen, dcline) at one bus #134
-- [CHANGED] reduced number of arguments in runpp by moving some less important arguments to **kwargs #122
+- [CHANGED] reduced number of arguments in runpp by moving some less important arguments to kwargs #122
 - [ADDED] parameters init_vm_pu and init_va_degree to allow independent initialization of bus magnitude and angle #113
 - [ADDED] number of power flow iterations are now saved
 - [ADDED] calculation of r, x and z for networkx branches

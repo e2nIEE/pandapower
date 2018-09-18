@@ -55,7 +55,7 @@ Getting Started:
 - `Installation Notes <https://www.pandapower.org/start/>`_
 - `Minimal Example <https://www.pandapower.org/start/#a-short-introduction->`_
 - `Interactive Tutorials <https://www.pandapower.org/start/#interactive-tutorials->`_
-- `Documentation <https://pandapower.readthedocs.io/en/v1.5.1/>`_
+- `Documentation <https://pandapower.readthedocs.io/>`_
 
 If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
