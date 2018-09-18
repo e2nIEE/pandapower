@@ -185,13 +185,8 @@ class PPJSONEncoder(json.JSONEncoder):
         _iterencode = _make_iterencode(
                 markers, self.default, _encoder, self.indent, floatstr,
                 self.key_separator, self.item_separator, self.sort_keys,
-                self.skipkeys, _one_shot, isinstance=self.isinstance)
+                self.skipkeys, _one_shot, isinstance=isinstance_partial)
         return _iterencode(o, 0)
-
-    def isinstance(self, obj, cls):
-        if isinstance(obj, (pandapowerNet, tuple)):
-            return False
-        return isinstance(obj, cls)
 
     def default(self, o):
         try:
@@ -201,7 +196,12 @@ class PPJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, o)
         else:
             return s
-
+            
+def isinstance_partial(obj, cls):
+    if isinstance(obj, (pandapowerNet, tuple)):
+        return False
+    return isinstance(obj, cls)
+            
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
