@@ -8,7 +8,7 @@
 from setuptools import setup, find_packages
 
 with open('README.rst', 'rb') as f:
-    install = f.read().decode('utf-8').partition("Minimal Example")[0]
+    install = f.read().decode('utf-8')
 with open('CHANGELOG.rst', 'rb') as f:
     changelog = f.read().decode('utf-8')
 
