@@ -8,6 +8,10 @@ Change Log
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte
 - [ADDED] toolbox functions replace_impedance_by_line(), replace_line_by_impedance() and get_element_indices() including tests
 - [CHANGED] new implementation of to_json, from_json for loading and saving grids using functools.singledispatch
+- [FIXED] checking similar to "if x: ..." or "x = x or ..." when it is meant "if x is None: ...", because it is potentially problematic with some types
+- [FIXED] convert_format: some older pandapower grids had "0" as "tp_side" in net.trafo, this is checked now as well
+- [FIXED] create_buses: accepts a single tuple (set the same geodata for all buses) or an array of the corresponding shape (for individual geodata)
+- [CHANGED] create_ext_grid_collection (plotting): ext_grid and ext_grid buses can be specified if a collection should only include some of ext grids
 
 [1.5.1] - 2018-05-04
 ----------------------
