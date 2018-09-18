@@ -28,6 +28,7 @@ setup(
                       "networkx",
                       "numpy",
                       "scipy"],
+    extras_require = {":python_version<'3.0'": ["future"]}
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
