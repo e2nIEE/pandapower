@@ -30,7 +30,6 @@ install:
          conda uninstall numba --yes;
     fi
   - conda install matplotlib --yes
-  - pip install future
   - pip install pytest pytest-cov
   - pip install codecov
   - python setup.py install
