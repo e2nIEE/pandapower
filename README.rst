@@ -18,10 +18,10 @@
    :alt: docs
     
 .. image:: https://travis-ci.org/e2nIEE/pandapower.svg?branch=master
-   :target: https://travis-ci.org/e2nIEE/pandapower
+   :target: https://travis-ci.org/e2nIEE/pandapower/branches
    :alt: travis
 
-.. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=master
+.. image:: https://codecov.io/gh/e2nIEE/pandapower/branch/develop/graph/badge.svg
    :target: https://codecov.io/github/e2nIEE/pandapower?branch=master
    :alt: codecov
     
