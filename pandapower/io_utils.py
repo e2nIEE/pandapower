@@ -206,15 +206,12 @@ class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
 
-import jsonpickle
 
 def pp_hook(d):
     if '_module' in d.keys() and '_class' in d.keys():
         class_name = d.pop('_class')
         module_name = d.pop('_module')
         obj = d.pop('_object')
-        if module_name == "jsonpickle":
-            return jsonpickle.decode(obj)
 
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
