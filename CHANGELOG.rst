@@ -1,13 +1,22 @@
 Change Log
 =============
-[develop]
+[1.6.0] - 2018-xx-xx
 ----------------------
-- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.5.2/powerflow/opf.html) and opf_changes-may18.ipynb
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
 - [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
 - [ADDED] case_ieee30, case5, case_illinois200
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte
 - [ADDED] toolbox functions replace_impedance_by_line(), replace_line_by_impedance() and get_element_indices() including tests
 - [CHANGED] new implementation of to_json, from_json for loading and saving grids using functools.singledispatch
+- [ADDED] ability to define phase shifting transformers with tp_st_percent #117
+- [ADDED] support for multiple voltage controlling elements (ext_grid, gen, dcline) at one bus #134
+- [CHANGED] reduced number of arguments in runpp by moving some less important arguments to **kwargs #122
+- [ADDED] parameters init_vm_pu and init_va_degree to allow independent initialization of bus magnitude and angle #113
+- [ADDED] number of power flow iterations are now saved
+- [ADDED] calculation of r, x and z for networkx branches
+- [ADDED] support for plotly 3.2
+- [FIXED] plotly bugfixes for trafo traces and result representation
+- [ADDED] Iwamoto algorithm for solving ill-conditioned power flow problems
 
 [1.5.1] - 2018-05-04
 ----------------------
