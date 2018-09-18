@@ -1,6 +1,6 @@
 Change Log
 =============
-[1.6.0] - 2018-xx-xx
+[1.6.0] - 2018-09-18
 ----------------------
 - [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
 - [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
