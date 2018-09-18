@@ -9,7 +9,7 @@
    :target: https://pypi.python.org/pypi/pandapower
    :alt: PyPI
    
-.. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
+.. image:: https://www.pandapower.org/images/home/shield_python_versions.svg
    :target: https://pypi.python.org/pypi/pandapower
    :alt: PyPI
 
