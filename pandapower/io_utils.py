@@ -8,6 +8,7 @@ import pandas as pd
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import pandapowerNet
 import numpy
+import numbers
 import json
 import copy
 import importlib
@@ -188,7 +189,7 @@ class PPJSONEncoder(json.JSONEncoder):
         return _iterencode(o, 0)
 
     def isinstance(self, obj, cls):
-        if isinstance(obj, pandapowerNet):
+        if isinstance(obj, (pandapowerNet, tuple)):
             return False
         return isinstance(obj, cls)
 
@@ -208,7 +209,6 @@ class PPJSONDecoder(json.JSONDecoder):
 import jsonpickle
 
 def pp_hook(d):
-    from pandapower import from_json_string
     if '_module' in d.keys() and '_class' in d.keys():
         class_name = d.pop('_class')
         module_name = d.pop('_module')
@@ -221,11 +221,13 @@ def pp_hook(d):
             if isinstance(d[key], dict):
                 d[key] = pp_hook(d[key])
 
-        if class_name in ('DataFrame', 'Series'):
+        if class_name  == 'Series':
+            return pd.read_json(obj, **d)
+        elif class_name == "DataFrame":
             df = pd.read_json(obj, **d)
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, AttributeError):
                 logger.debug("failed setting int64 index")
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
@@ -237,6 +239,7 @@ def pp_hook(d):
             df = df.reindex(columns=d['columns'])
             return df
         elif class_name == "pandapowerNet":
+            from pandapower import from_json_string
             return from_json_string(obj)
         else:
             module = importlib.import_module(module_name)
@@ -260,8 +263,7 @@ def with_signature(obj, val, obj_module=None, obj_class=None):
 @singledispatch
 def to_serializable(obj):
     logger.debug('standard case')
-    d = with_signature(obj, jsonpickle.encode(obj), obj_module="jsonpickle")
-    return d
+    return str(obj)
 
 
 @to_serializable.register(pandapowerNet)
@@ -291,12 +293,65 @@ except NameError:
 
 @to_serializable.register(pd.Series)
 def json_series(obj):
-    logger.debug('DataFrame')
+    logger.debug('Series')
     d = with_signature(obj, obj.to_json(orient='split', default_handler=to_serializable))
     d.update({'dtype': str(obj.dtypes), 'orient': 'split', 'typ': 'series'})
     return d
+
+
+@to_serializable.register(numpy.ndarray)
+def json_array(obj):
+    logger.debug("ndarray")
+    d = with_signature(obj, list(obj), obj_module='numpy', obj_class='array')
+    return d
+
+
+@to_serializable.register(numpy.integer)
+def json_npint(obj):
+    logger.debug("integer")
+    return int(obj)
+
+
+@to_serializable.register(numpy.floating)
+def json_npfloat(obj):
+    logger.debug("floating")
+    return float(obj)
+
+
+@to_serializable.register(numbers.Number)
+def json_num(obj):
+    logger.debug("numbers.Number")
+    return str(obj)
+
 
 @to_serializable.register(pd.Index)
 def json_pdindex(obj):
     logger.debug("pd.Index")
     return with_signature(obj, list(obj), obj_module='pandas')
+
+
+@to_serializable.register(bool)
+def json_bool(obj):
+    logger.debug("bool")
+    return "true" if obj else "false"
+
+
+@to_serializable.register(tuple)
+def json_tuple(obj):
+    logger.debug("tuple")
+    d = with_signature(obj, list(obj), obj_module='builtins', obj_class='tuple')
+    return d
+
+
+@to_serializable.register(set)
+def json_set(obj):
+    logger.debug("set")
+    d = with_signature(obj, list(obj), obj_module='builtins', obj_class='set')
+    return d
+
+
+@to_serializable.register(frozenset)
+def json_frozenset(obj):
+    logger.debug("frozenset")
+    d = with_signature(obj, list(obj), obj_module='builtins', obj_class='frozenset')
+    return d
