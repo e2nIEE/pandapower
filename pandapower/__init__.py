@@ -1,4 +1,4 @@
-__version__ = "1.5.1"
+__version__ = "1.6.0"
 
 from pandapower.auxiliary import *
 from pandapower.create import *
