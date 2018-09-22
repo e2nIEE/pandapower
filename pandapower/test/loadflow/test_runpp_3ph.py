@@ -14,44 +14,39 @@ import copy
 from pandapower.pf.makeYbus import makeYbus 
 from pandapower.pf.runpp_3ph import I0_from_V012,I1_from_V012,I2_from_V012
 
-    
-def test_2bus_network():
-    # =============================================================================
-    # Base Value Assignmeent
-    # =============================================================================
-    V_base = 110                     # 110kV Base Voltage
-    kVA_base = 100000                      # 100 MVA
+
+@pytest.fixture
+def net():
+    V_base = 110              # 110kV Base Voltage
+    kVA_base = 100000         # 100 MVA
 #    I_base = (kVA_base/V_base) * 1e-3           # in kA
     net = pp.create_empty_network(sn_kva = kVA_base )
     
-    busn  =  pp.create_bus(net, vn_kv = V_base, name = "busn", index=1)
-    busk  =  pp.create_bus(net, vn_kv = V_base, name = "busk", index=5)
-    pp.create_bus(net, vn_kv=20., in_service=False)
-    pp.create_bus(net, vn_kv=20., in_service=True)
+    pp.create_bus(net, vn_kv = V_base, index=1)
+    pp.create_bus(net, vn_kv = V_base, index=5)
     
-    
-    pp.create_ext_grid(net, bus=busn, vm_pu= 1.0, name="Grid Connection",
-                       s_sc_max_mva=5000, rx_max=0.1)
+    pp.create_ext_grid(net, bus=1, vm_pu= 1.0, s_sc_max_mva=5000, rx_max=0.1)
     net.ext_grid["r0x0_max"] = 0.1
     net.ext_grid["x0x_max"] = 1.0
     
-    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":\
-        230.6,"max_i_ka": 0.963, "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
-                 "c_nf_per_km":  230}, "example_type")
-    
-    create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":
+                             230.6,"max_i_ka": 0.963, "r_ohm_per_km": 0.0212,
+                             "x_ohm_per_km": 0.1162389, "c_nf_per_km":  230},
+                       "example_type")
+    pp.create_line(net, from_bus = 1, to_bus = 5, length_km = 50.0, std_type="example_type")
+
+    create_load_3ph(net, 5, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
                        p_kw_C=10000, q_kvar_C=5000)
-    
-    pp.create_line(net, from_bus = busn, to_bus = busk, length_km = 50.0, std_type="example_type")
-    
-    pp.add_zero_impedance_parameters(net)
-    
-    runpp_3ph(net)
-    
-    
-    assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)], np.array([0.96742893, 0.74957533]))
-    assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)], np.array([1.01302766, 1.09137945]))
-    assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)], np.array([1.019784, 1.05124282]))
+    return net
+
+
+def check_it(net):
+    assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)],
+                       np.array([0.96742893, 0.74957533]))
+    assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)],
+                       np.array([1.01302766, 1.09137945]))
+    assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)],
+                       np.array([1.019784, 1.05124282]))
 
     assert abs(net.res_line_3ph.iA_from_ka.values[0] - 1.34212045) < 1e-5
     assert abs(net.res_line_3ph.iA_to_ka.values[0]   - 1.48537916) < 1e-5
@@ -81,6 +76,40 @@ def test_2bus_network():
     assert abs(net.res_line_3ph.loading_percentB.values[0] - 27.00894) < 1e-2
     assert abs(net.res_line_3ph.loading_percentC.values[0] - 23.71589) < 1e-2
     assert abs(net.res_line_3ph.loading_percent.values[0]  - 154.2452) < 1e-2
+
+
+def test_2bus_network(net):
+    pp.add_zero_impedance_parameters(net)
+    runpp_3ph(net)
+    check_it(net)    
+
+
+def test_2bus_network_single_isolated_busses(net):
+    pp.create_bus(net, vn_kv=110)
+    pp.create_bus(net, vn_kv=110, in_service=False)
+    pp.add_zero_impedance_parameters(net)
+    runpp_3ph(net)
+    check_it(net)    
+
+
+def test_2bus_network_isolated_net_part(net):
+    b1 = pp.create_bus(net, vn_kv=110)
+    b2 = pp.create_bus(net, vn_kv=110, in_service=False)
+    pp.create_line(net, from_bus=b1, to_bus=b2, length_km = 50.0, std_type="example_type")
+    create_load_3ph(net, b2, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
+                   p_kw_C=10000, q_kvar_C=5000)
+    pp.add_zero_impedance_parameters(net)
+    runpp_3ph(net)
+    check_it(net)
+
+#def test_2bus_network_oos_bus(net):
+#    b1 = pp.create_bus(net, vn_kv=110)
+#    net.bus.loc[5, "in_service"] = False
+#    pp.create_line(net, from_bus=5, to_bus=b1, length_km = 10.0, std_type="example_type")
+#    create_load_3ph(net, b1, p_kw_A=-5000, q_kvar_A=5000, p_kw_B=-1000, q_kvar_B=1500,
+#                    p_kw_C=-1000, q_kvar_C=500)
+#    pp.add_zero_impedance_parameters(net)
+#    assert runpp_3ph(net)[3]["success"]
 
 
 def test_4bus_network():
@@ -581,7 +610,7 @@ def test_3ph_isolated_nodes():
     # Loads on supplied buses
     create_load_3ph(net, busk, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
                     p_kw_C=10000, q_kvar_C=5000)
-    create_load(net, bus=busl, p_kw=70000, q_kvar=70000, name="Load 1")
+    create_load(net, bus=busl, p_kw=7000, q_kvar=70, name="Load 1")
 
     # Loads on unsupplied buses
     # create_load(net, bus=busy, p_kw=0, q_kvar=0, name="Load Y")
@@ -594,11 +623,9 @@ def test_3ph_isolated_nodes():
 
     pp.add_zero_impedance_parameters(net)
 
-    runpp_3ph(net)
+    r = runpp_3ph(net)
 
-    print(net["res_bus"])
-    print(net["res_bus_3ph"])
-
+    assert r[3]["success"]
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vmA_pu", "vaA_degree", "vmB_pu", "vaB_degree", "vmC_pu", "vaC_degree"]], np.nan, equal_nan=True)
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["pA_kw", "qA_kvar", "pB_kw", "qB_kvar", "pC_kw", "qC_kvar"]], 0.0)
 
