@@ -79,12 +79,14 @@ def check_it(net):
 
 
 def test_2bus_network(net):
+    "#-o---o"
     pp.add_zero_impedance_parameters(net)
     runpp_3ph(net)
     check_it(net)    
 
 
 def test_2bus_network_single_isolated_busses(net):
+    "#-o---o o x"
     pp.create_bus(net, vn_kv=110)
     pp.create_bus(net, vn_kv=110, in_service=False)
     pp.add_zero_impedance_parameters(net)
@@ -93,8 +95,9 @@ def test_2bus_network_single_isolated_busses(net):
 
 
 def test_2bus_network_isolated_net_part(net):
+    "#-o---o o---o"
     b1 = pp.create_bus(net, vn_kv=110)
-    b2 = pp.create_bus(net, vn_kv=110, in_service=False)
+    b2 = pp.create_bus(net, vn_kv=110)
     pp.create_line(net, from_bus=b1, to_bus=b2, length_km = 50.0, std_type="example_type")
     create_load_3ph(net, b2, p_kw_A=50000, q_kvar_A=50000, p_kw_B=10000, q_kvar_B=15000,
                    p_kw_C=10000, q_kvar_C=5000)
@@ -102,14 +105,16 @@ def test_2bus_network_isolated_net_part(net):
     runpp_3ph(net)
     check_it(net)
 
-#def test_2bus_network_oos_bus(net):
-#    b1 = pp.create_bus(net, vn_kv=110)
-#    net.bus.loc[5, "in_service"] = False
-#    pp.create_line(net, from_bus=5, to_bus=b1, length_km = 10.0, std_type="example_type")
-#    create_load_3ph(net, b1, p_kw_A=-5000, q_kvar_A=5000, p_kw_B=-1000, q_kvar_B=1500,
-#                    p_kw_C=-1000, q_kvar_C=500)
-#    pp.add_zero_impedance_parameters(net)
-#    assert runpp_3ph(net)[3]["success"]
+
+def test_2bus_network_singel_oos_bus(net):
+    "#-o---x---o"
+    b1 = pp.create_bus(net, vn_kv=110)
+    net.bus.loc[5, "in_service"] = False
+    pp.create_line(net, from_bus=5, to_bus=b1, length_km = 10.0, std_type="example_type")
+    create_load_3ph(net, b1, p_kw_A=-5000, q_kvar_A=5000, p_kw_B=-1000, q_kvar_B=1500,
+                    p_kw_C=-1000, q_kvar_C=500)
+    pp.add_zero_impedance_parameters(net)
+    assert runpp_3ph(net)[3]["success"]
 
 
 def test_4bus_network():
