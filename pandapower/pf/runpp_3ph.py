@@ -206,6 +206,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     #        'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf_3ph",'copy_constraints_to_ppc': False,
     #        'enforce_q_lims': False, 'numba': True, 'recycle': {'Ybus': False, '_is_elements': False, 'bfsw': False, 'ppc': False},
     #        "tolerance_kva": 1e-5, "max_iteration": 10}
+    net["_is_elements"] = None
     _, ppci1 = _pd2ppc(net, 1)
 
     _, ppci2 = _pd2ppc(net, 2)

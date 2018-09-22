@@ -90,6 +90,7 @@ def _pd2ppc(net, sequence=None):
         _build_branch_ppc_zero(net, ppc)
     else:
         _build_branch_ppc(net, ppc)
+        
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
         _add_gen_impedances_ppc(net, ppc)
@@ -107,17 +108,15 @@ def _pd2ppc(net, sequence=None):
     _branches_with_oos_buses(net, ppc)
 
     if check_connectivity:
-        if sequence == 0:
-            if hasattr(net, "_isolated_buses"):
-                ppc["bus"][net._isolated_buses, 1] = NONE
-                isolated_nodes = net._isolated_buses
-        else:
+        if sequence in [None, 1]:
             # sets islands (multiple isolated nodes) out of service
-            isolated_nodes, _, _ = aux._check_connectivity(ppc)
-        net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes, sequence)
-
-    # sets buses out of service, which aren't connected to branches / REF buses
-    if sequence != 0:
+            net["_isolated_buses"], _, _ = aux._check_connectivity(ppc)
+            net["_is_elements_final"] = aux._select_is_elements_numba(net, net["_isolated_buses"],
+                                                                      sequence)
+        else:
+            ppc["bus"][net._isolated_buses, 1] = NONE
+        net["_is_elements"] = net["_is_elements_final"]
+    else:
         aux._set_isolated_buses_out_of_service(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
