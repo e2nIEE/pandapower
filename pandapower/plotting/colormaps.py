@@ -4,9 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from decimal import Decimal
-
-from matplotlib.colors import LinearSegmentedColormap, Normalize, ListedColormap
+from matplotlib.colors import ListedColormap, BoundaryNorm
 
 
 def cmap_discrete(cmap_list):
@@ -28,20 +26,18 @@ def cmap_discrete(cmap_list):
         >>> lc = create_line_trace(net, cmap=cmap, norm=norm)
         >>> draw_traces([lc])
     """
-    # TODO: this implementation is extremely hacky, should be possible to implement this more
-    # elegenatly with BoundaryNorm, but I failed in doing so. Works, but should be refactored. LT
     cmap_colors = []
-    min_loading = cmap_list[0][0][0]
-    max_loading = cmap_list[-1][0][1]
-    max_decimal = max([abs(Decimal(str(x1)).as_tuple().exponent) for (x1, x2), color in cmap_list])
-    x2_before = None
-    for (x1, x2), color in cmap_list:
-        if x2_before and x2_before != x1:
+    boundaries = []
+    last_upper = None
+    for (lower, upper), color in cmap_list:
+        if last_upper is not None and lower != last_upper:
             raise ValueError("Ranges for colormap must be continous")
-        cmap_colors += [color]*int((x2-x1)*10**(max_decimal+1))
-        x2_before = x2
+        cmap_colors.append(color)
+        boundaries.append(lower)
+        last_upper = upper
+    boundaries.append(upper)
     cmap = ListedColormap(cmap_colors)
-    norm = Normalize(min_loading, max_loading)
+    norm = BoundaryNorm(boundaries, cmap.N)
     return cmap, norm
 
 
