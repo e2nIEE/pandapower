@@ -53,14 +53,14 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
 
 
 def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
-                         std_type="NAYY 4x150 SE", p_per_load_in_kw=0,
-                         q_per_load_in_kvar=0, branchnr=1,
+                         std_type="NAYY 4x150 SE", p_load_kw=0,
+                         q_load_kvar=0, branchnr=1,
                          l_para_per_km=None):
     """
     Creates a single unsplitted branch on the startbus of n lines. It \
     sequencely adds lines, buses and loads.
 
-    Loads will only be added if p_per_load_in_kw or q_per_load_in_kvar \
+    Loads will only be added if p_load_kw or q_load_kvar \
     is assigned
 
     The branch number could be assigned with branchnr. It will be added to \
@@ -78,8 +78,8 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
         pp.create_line(pd_net, bus_before, created_bus_nr, length_km=length_per_line,
                        name="line_%d_%d" % (branchnr, linecounter), std_type=std_type)
 
-        if p_per_load_in_kw or q_per_load_in_kvar:
-            pp.create_load(pd_net, created_bus_nr, p_kw=p_per_load_in_kw, q_kvar=q_per_load_in_kvar)
+        if p_load_kw or q_load_kvar:
+            pp.create_load(pd_net, created_bus_nr, p_kw=p_load_kw, q_kvar=q_load_kvar)
 
         bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
 
@@ -87,8 +87,8 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
 
 
 def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
-                                   std_type="NAYY 4x150 SE", p_per_load_in_kw=0,
-                                   q_per_load_in_kvar=0,
+                                   std_type="NAYY 4x150 SE", p_load_kw=0,
+                                   q_load_kvar=0,
                                    length_branchout_line_1=0.022,
                                    length_branchout_line_2=0,
                                    std_type_branchout_line_1="NAYY 4x50 SE",
@@ -107,7 +107,7 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
     It begins with length 1 and switches to length 2. The cable with length 1 \
     is named as "MUF_" and length 2 becomes "KV_".
 
-    Loads will only be added if p_per_load_in_kw or q_per_load_in_kvar \
+    Loads will only be added if p_load_kw or q_load_kvar \
     is assigned
 
     The branch number could be assigned with branchnr. It will be added to the\
@@ -142,13 +142,13 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
                        name="branchout_line_%d_%d" % (branchnr, linecounter),
                        std_type=std_type_branchout_line)
 
-        if p_per_load_in_kw or q_per_load_in_kvar:
+        if p_load_kw or q_load_kvar:
             pp.create_load(net, loadbusnr,
-                           p_kw=p_per_load_in_kw, q_kvar=q_per_load_in_kvar)
+                           p_kw=p_load_kw, q_kvar=q_load_kvar)
 
         bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
 
-        # alternates the lenght of the branch out lines if needed
+        # alternates the length of the branch out lines if needed
         if length_branchout_line_2:
             if length_branchout_line == length_branchout_line_1:
                 length_branchout_line = length_branchout_line_2
@@ -164,19 +164,33 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
                 std_type_branchout_line = std_type_branchout_line_1
     return net
 
+def _create_branch_network(trafotype, v_os, num_lines, len_lines, **kwargs):
+    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
+    for i, (n_line, len_line) in enumerate(zip(num_lines, len_lines), start=1):
+        _add_lines_and_loads(pd_net, n_line, startbusnr=main_busbar_nr,
+                             length_per_line=len_line, branchnr=i, **kwargs)
+    return pd_net
+
+
+def _create_branched_loads_network(trafotype, v_os, num_lines, len_lines, **kwargs):
+    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
+    for i, (n_line, len_line) in enumerate(zip(num_lines, len_lines), start=1):
+        _add_lines_with_branched_loads(pd_net, n_line, startbus=main_busbar_nr,
+                                       length_per_line=len_line, branchnr=i, **kwargs)
+    return pd_net
 
 # --- main functions
 
 def create_kerber_landnetz_freileitung_1(n_lines=13,
                                          l_lines_in_km=0.021, std_type="NFA2X 4x70",
                                          trafotype="0.16 MVA 10/0.4 kV",
-                                         p_load_in_kw=8., q_load_in_kvar=0, v_os=10.):
+                                         p_load_kw=8., q_load_kvar=0, v_os=10.):
 
     pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
     _add_lines_and_loads(pd_net, n_lines, startbusnr=main_busbar_nr,
                          length_per_line=l_lines_in_km, std_type=std_type,
-                         p_per_load_in_kw=p_load_in_kw,
-                         q_per_load_in_kvar=q_load_in_kvar)
+                         p_load_kw=p_load_kw,
+                         q_load_kvar=q_load_kvar)
     return pd_net
 
 
@@ -185,82 +199,61 @@ def create_kerber_landnetz_freileitung_2(n_branch_1=6, n_branch_2=2,
                                          l_lines_2_in_km=0.081,
                                          std_type="NFA2X 4x70",
                                          trafotype="0.1 MVA 10/0.4 kV",
-                                         p_load_in_kw=8, q_load_in_kvar=0,
+                                         p_load_kw=8, q_load_kvar=0,
                                          v_os=10.):
-    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
     num_lines = [n_branch_1, n_branch_2]
     len_lines = [l_lines_1_in_km, l_lines_2_in_km]
-
-    for i, n_lines in enumerate(num_lines):
-        _add_lines_and_loads(pd_net, n_lines, startbusnr=main_busbar_nr,
-                             length_per_line=len_lines[i],
-                             std_type=std_type, p_per_load_in_kw=p_load_in_kw,
-                             q_per_load_in_kvar=q_load_in_kvar, branchnr=i + 1)
-
+    pd_net = _create_branch_network(trafotype=trafotype, v_os=v_os, num_lines=num_lines,
+                                    len_lines=len_lines, std_type=std_type,
+                                    p_load_kw=p_load_kw, q_load_kvar=q_load_kvar)
     return pd_net
 
 
 def create_kerber_landnetz_kabel_1(n_branch_1=6, n_branch_2=2, l_lines_1_in_km=0.082,
                                    l_lines_2_in_km=0.175, std_type="NAYY 4x150",
                                    std_type_branchout_line="NAYY 4x50",
-                                   trafotype="0.1 MVA 10/0.4 kV", p_load_in_kw=8.,
-                                   q_load_in_kvar=0., length_branchout_line_1=0.018,
+                                   trafotype="0.1 MVA 10/0.4 kV", p_load_kw=8.,
+                                   q_load_kvar=0., length_branchout_line_1=0.018,
                                    length_branchout_line_2=0.033, v_os=10.):
     """
     .. note:: It is assumed that every second bus in a branch is a "KV".
     """
     num_lines = [n_branch_1, n_branch_2]
     len_lines = [l_lines_1_in_km, l_lines_2_in_km]
-
-    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
-
-    for i, n_lines in enumerate(num_lines):
-        pd_net = _add_lines_with_branched_loads(pd_net, n_lines,
-                                                startbus=main_busbar_nr,
-                                                length_per_line=len_lines[i],
-                                                std_type=std_type,
-                                                p_per_load_in_kw=p_load_in_kw,
-                                                q_per_load_in_kvar=q_load_in_kvar,
-                                                length_branchout_line_1=length_branchout_line_1,
-                                                length_branchout_line_2=length_branchout_line_2,
-                                                std_type_branchout_line_1=std_type_branchout_line,
-                                                branchnr=i+1)
-
+    pd_net = _create_branched_loads_network(trafotype=trafotype, v_os=v_os, num_lines=num_lines,
+                                            len_lines=len_lines, std_type=std_type,
+                                            p_load_kw=p_load_kw,
+                                            q_load_kvar=q_load_kvar,
+                                            length_branchout_line_1=length_branchout_line_1,
+                                            length_branchout_line_2=length_branchout_line_2,
+                                            std_type_branchout_line_1=std_type_branchout_line)
     return pd_net
 
 
 def create_kerber_landnetz_kabel_2(n_branch_1=12, n_branch_2=2, l_lines_1_in_km=0.053,
                                    l_lines_2_in_km=0.175, std_type="NAYY 4x150",
-                                   trafotype="0.16 MVA 10/0.4 kV", p_load_in_kw=8.,
-                                   q_load_in_kvar=0., lenght_branchout_line_1=0.018,
-                                   lenght_branchout_line_2=0.033,
+                                   trafotype="0.16 MVA 10/0.4 kV", p_load_kw=8.,
+                                   q_load_kvar=0., length_branchout_line_1=0.018,
+                                   length_branchout_line_2=0.033,
                                    std_type_branchout_line="NAYY 4x50", v_os=10.):
     """
     .. note:: It is assumed that every second bus in a branch is a "KV".
     """
     num_lines = [n_branch_1, n_branch_2]
     len_lines = [l_lines_1_in_km, l_lines_2_in_km]
-
-    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
-
-    for i, n_lines in enumerate(num_lines):
-        pd_net = _add_lines_with_branched_loads(pd_net, n_lines,
-                                                startbus=main_busbar_nr,
-                                                length_per_line=len_lines[i],
-                                                std_type=std_type,
-                                                p_per_load_in_kw=p_load_in_kw,
-                                                q_per_load_in_kvar=q_load_in_kvar,
-                                                length_branchout_line_1=lenght_branchout_line_1,
-                                                length_branchout_line_2=lenght_branchout_line_2,
-                                                std_type_branchout_line_1=std_type_branchout_line,
-                                                branchnr=i+1)
-
+    pd_net = _create_branched_loads_network(trafotype=trafotype, v_os=v_os, num_lines=num_lines,
+                                            len_lines=len_lines, std_type=std_type,
+                                            p_load_kw=p_load_kw,
+                                            q_load_kvar=q_load_kvar,
+                                            length_branchout_line_1=length_branchout_line_1,
+                                            length_branchout_line_2=length_branchout_line_2,
+                                            std_type_branchout_line_1=std_type_branchout_line)
     return pd_net
 
 
 def create_kerber_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
-                           p_load_in_kw=6.,
-                           q_load_in_kvar=0., length_branchout_line_1=0.015,
+                           p_load_kw=6.,
+                           q_load_kvar=0., length_branchout_line_1=0.015,
                            length_branchout_line_2=0.031,
                            std_type_branchout_line="NAYY 4x50", v_os=10.):
     """
@@ -268,25 +261,17 @@ def create_kerber_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
     """
     num_lines = [9, 9, 16, 12, 7, 4]
     len_lines = [0.04, 0.04, 0.029, 0.032, 0.043, 0.064]
-
-    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
-
-    for i, n_lines in enumerate(num_lines):
-        pd_net = _add_lines_with_branched_loads(pd_net, n_lines,
-                                                startbus=main_busbar_nr,
-                                                length_per_line=len_lines[i],
-                                                std_type=std_type,
-                                                p_per_load_in_kw=p_load_in_kw,
-                                                q_per_load_in_kvar=q_load_in_kvar,
-                                                length_branchout_line_1=length_branchout_line_1,
-                                                length_branchout_line_2=length_branchout_line_2,
-                                                std_type_branchout_line_1=std_type_branchout_line,
-                                                branchnr=i+1)
-
+    pd_net = _create_branched_loads_network(trafotype=trafotype, v_os=v_os, num_lines=num_lines,
+                                            len_lines=len_lines, std_type=std_type,
+                                            p_load_kw=p_load_kw,
+                                            q_load_kvar=q_load_kvar,
+                                            length_branchout_line_1=length_branchout_line_1,
+                                            length_branchout_line_2=length_branchout_line_2,
+                                            std_type_branchout_line_1=std_type_branchout_line)
     return pd_net
 
 
-def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_in_kw=2., q_load_in_kvar=0.,
+def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_kw=2., q_load_kvar=0.,
                                        trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
     """
     .. note:: Please pay attention, that the linetypes of the branch out house connections are \
@@ -294,26 +279,18 @@ def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_in_kw=2., q
     """
     num_lines = [14, 14, 14, 19, 19, 10, 10, 10, 32, 4]
     len_lines = [0.021, 0.021, 0.021, 0.017, 0.017, 0.025, 0.025, 0.025, 0.011, 0.060]
-
-    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
-
-    for i, n_lines in enumerate(num_lines):
-        pd_net = _add_lines_with_branched_loads(pd_net, n_lines,
-                                                startbus=main_busbar_nr,
-                                                length_per_line=len_lines[i],
-                                                std_type=std_type,
-                                                p_per_load_in_kw=p_load_in_kw,
-                                                q_per_load_in_kvar=q_load_in_kvar,
-                                                length_branchout_line_1=0.011,
-                                                std_type_branchout_line_1="NAYY 4x50",
-                                                std_type_branchout_line_2="NYY 4x35",
-                                                prob_branchout_line_1=0.5,
-                                                branchnr=i+1)
-
+    pd_net = _create_branched_loads_network(trafotype=trafotype, v_os=v_os, num_lines=num_lines,
+                                            len_lines=len_lines, std_type=std_type,
+                                            p_load_kw=p_load_kw,
+                                            q_load_kvar=q_load_kvar,
+                                            length_branchout_line_1=0.011,
+                                            std_type_branchout_line_1="NAYY 4x50",
+                                            std_type_branchout_line_2="NYY 4x35",
+                                            prob_branchout_line_1=0.5)
     return pd_net
 
 
-def create_kerber_vorstadtnetz_kabel_2(std_type="NAYY 4x185", p_load_in_kw=2., q_load_in_kvar=0.,
+def create_kerber_vorstadtnetz_kabel_2(std_type="NAYY 4x185", p_load_kw=2., q_load_kvar=0.,
                                        trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
     """
     .. note:: Please pay attention, that the linetypes of the branch out house \
@@ -322,33 +299,15 @@ def create_kerber_vorstadtnetz_kabel_2(std_type="NAYY 4x185", p_load_in_kw=2., q
     """
 
     num_lines = [15, 15, 15, 20, 20, 11, 11, 32, 5]
-    len_lines = [0.023, 0.023, 0.023, 0.020, 0.020,
-                 0.026, 0.026, 0.014, 0.050]
-
-    pd_net, main_busbar_nr = _create_empty_network_with_transformer(trafotype, V_OS=v_os)
-
-    for i, n_lines in enumerate(num_lines):
-        pd_net = _add_lines_with_branched_loads(pd_net, n_lines,
-                                                startbus=main_busbar_nr,
-                                                length_per_line=len_lines[i],
-                                                std_type=std_type,
-                                                p_per_load_in_kw=p_load_in_kw,
-                                                q_per_load_in_kvar=q_load_in_kvar,
-                                                length_branchout_line_1=0.011,
-                                                std_type_branchout_line_1="NAYY 4x50",
-                                                std_type_branchout_line_2="NYY 4x35",
-                                                prob_branchout_line_1=0.5,
-                                                branchnr=i+1)
-
+    len_lines = [0.023, 0.023, 0.023, 0.020, 0.020, 0.026, 0.026, 0.014, 0.050]
+    pd_net = _create_branched_loads_network(trafotype=trafotype, v_os=v_os, num_lines=num_lines,
+                                            len_lines=len_lines, std_type=std_type,
+                                            p_load_kw=p_load_kw,
+                                            q_load_kvar=q_load_kvar,
+                                            length_branchout_line_1=0.011,
+                                            std_type_branchout_line_1="NAYY 4x50",
+                                            std_type_branchout_line_2="NYY 4x35",
+                                            prob_branchout_line_1=0.5)
     return pd_net
 
-# usage(how to import kerber networks):
-# import pandapower.networks as pn
-# test_grid = pn.create_kerber_landnetz_freileitung_1()
-#test_grid = pn.create_kerber_landnetz_freileitung_2()
-#test_grid = pn.create_kerber_landnetz_kabel_1()
-#test_grid = pn.create_kerber_landnetz_kabel_2()
-#test_grid = pn.create_kerber_dorfnetz()
-#test_grid = pn.kb_dorfnetz_trafo()
-#test_grid = pn.create_kerber_vorstadtnetz_kabel_1()
-#test_grid = pn.create_kerber_vorstadtnetz_kabel_2()
+
