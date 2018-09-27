@@ -145,7 +145,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             z = net.res_bus.vm_pu.loc[buses]
         else:
             logger.warning("z is None and no net is provided")
-        pc.set_array(np.array(z))
+        pc.set.array(np.ma.masked_invalid(z))
         pc.has_colormap = True
         pc.cbar_title = cbar_title
 
@@ -257,7 +257,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         lc.set_norm(norm)
         if clim is not None:
             lc.set_clim(clim)
-        lc.set_array(np.array(z))
+        lc.set.array(np.ma.masked_invalid(z))
         lc.has_colormap = True
         lc.cbar_title = cbar_title
     lc.info = info
