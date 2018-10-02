@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, create_edge_center_trace
+    create_trafo_trace, draw_traces, version_check
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
@@ -115,6 +115,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
 
         **ext_grid_color** (String, 'yellow') - External Grid Color. Init is yellow
     """
+    version_check()
     # create geocoord if none are available
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])

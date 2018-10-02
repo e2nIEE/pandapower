@@ -103,7 +103,7 @@ The most common optimization goal is the minimization of the overall generator f
 	
 It is a straight with a negative slope, so that it has the highest cost value at p_min_kw and is zero when the feed in is zero:
 
-.. image:: /pics/minimizegeneration.png
+.. image:: /pics/opf/minimizegeneration.png
 		:width: 20em
 		:alt: alternate Text
 		:align: center
@@ -125,7 +125,7 @@ This cost function may be used, when the curtailment of renewables should be min
 It is a straight with a positive slope, so that the cost is zero at p_min_kw and is at its maximum when the generation equals zero.
 		
 		
-.. image:: /pics/maximizegeneration.png
+.. image:: /pics/opf/maximizegeneration.png
 		:width: 20em
 		:alt: alternate Text
 		:align: center
@@ -145,7 +145,7 @@ In case that the load should be maximized, the cost function could be defined li
 	
 	
 		
-.. image:: /pics/maximizeload.png
+.. image:: /pics/opf/maximizeload.png
 		:width: 20em
 		:alt: alternate Text
 		:align: center
@@ -162,7 +162,7 @@ In case that the load should be minimized, the cost function could be defined li
 	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_kw.at[0], -1000], [net.storage.max_p_kw.at[0], 1000]]))
 
 
-.. image:: /pics/minimizeload.png
+.. image:: /pics/opf/minimizeload.png
 		:width: 20em
 		:alt: alternate Text
 		:align: center

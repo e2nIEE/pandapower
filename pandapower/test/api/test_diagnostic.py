@@ -17,7 +17,7 @@ from pandapower.diagnostic_reports import DiagnosticReports
 try:
     import numba
     numba_installed = True
-except:
+except ImportError:
     numba_installed = False
 
 @pytest.fixture(scope='function')
@@ -500,13 +500,6 @@ def test_switch_configuration(test_net, diag_params, diag_errors, report_methods
             report_check = False
         assert report_check
 
-    net = copy.deepcopy(test_net)
-    net.switch.closed = False
-    # this will raise the warning "Matrix is exactly singular" -> ignore
-    warnings.simplefilter("ignore")
-    check_result = pp.wrong_switch_configuration(net)
-    diag_results = {check_function: check_result}
-    assert diag_results[check_function] == True
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
@@ -1105,8 +1098,4 @@ def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     diag = pp.diagnostic(net)
 
 if __name__ == "__main__":
-#    net = copy.deepcopy(test_net)()
-#    params = diag_params()
-#    methods = report_methods()
-#    test_numba_comparison(net, params, methods)
     pytest.main(["test_diagnostic.py", "-xs"])

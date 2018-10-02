@@ -20,7 +20,7 @@ import pandapower.networks as networks
 
 try:
     import pplog as logging
-except:
+except ImportError:
     import logging
 
 

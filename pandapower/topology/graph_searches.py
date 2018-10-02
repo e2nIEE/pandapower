@@ -154,7 +154,8 @@ def unsupplied_buses(net, mg=None, in_service_only=False, slacks=None, respect_s
     """
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
-    slacks = slacks or set(net.ext_grid[net.ext_grid.in_service].bus.values)
+    if slacks is None:
+        slacks = set(net.ext_grid[net.ext_grid.in_service].bus.values)
     not_supplied = set()
     for cc in nx.connected_components(mg):
         if not set(cc) & slacks:
@@ -380,7 +381,8 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     if mg is None:
         mg = create_nxgraph(net, respect_switches=respect_switches)
     # remove buses with degree lower 2 until none left
-    roots = roots or set(net.ext_grid.bus)
+    if roots is None:
+        roots = set(net.ext_grid.bus)
     #    mg.add_edges_from((a, b) for a, b in zip(list(roots)[:-1], list(roots)[1:]))
     #    while True:
     #        dgo = {g for g, d in list(mg.degree().items()) if d < 2} #- roots
@@ -487,4 +489,10 @@ def estimate_voltage_vector(net):
             elif pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]):
                 # parallel transformer, lv buses are already set from previous transformer
                 trafo_index.remove(tix)
+            if len(trafo_index) == len(trafos):
+                # after the initial run we could not identify any areas correctly, it's probably a transmission grid
+                # with slack on the LV bus and multiple transformers/gens. do flat init and return
+                res_bus.vm_pu.loc[res_bus.vm_pu.isnull()] = 1.
+                res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
+                return res_bus
     return res_bus

@@ -24,7 +24,8 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
     _update_trafo_trafo3w_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
-from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus
+from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus, \
+                                 _check_voltage_angles_at_same_bus
 from pandapower.opf.make_objective import _make_objective
 
 
@@ -68,6 +69,7 @@ def _pd2ppc(net):
     # get options
     mode = net["_options"]["mode"]
     check_connectivity = net["_options"]["check_connectivity"]
+    calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
     ppc = _init_ppc(net)
 
@@ -113,6 +115,9 @@ def _pd2ppc(net):
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
+
+    if calculate_voltage_angles:
+        _check_voltage_angles_at_same_bus(net, ppci)
 
     if mode == "opf":
         # make opf objective
@@ -245,6 +250,7 @@ def _ppc2ppci(ppc, ppci, net):
     if 'userfcn' in ppci:
         ppci = run_userfcn(ppci['userfcn'], 'ext2int', ppci)
 
+    ppci["internal"]["ref_gens"] = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
     return ppci
 
 
