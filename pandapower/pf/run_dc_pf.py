@@ -19,7 +19,7 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_res
 
 def _run_dc_pf(ppci):
     t0 = time()
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, _, refgen = _get_pf_variables_from_ppci(ppci)
 
     ## initial state
     Va0 = bus[:, VA] * (pi / 180.)
@@ -39,15 +39,11 @@ def _run_dc_pf(ppci):
     branch[:, PF] = (Bf * Va + Pfinj) * baseMVA
     branch[:, PT] = -branch[:, PF]
     bus[:, VA] = Va * (180. / pi)
-    ## update Pg for slack generator (1st gen at ref bus)
+    ## update Pg for slack generators
     ## (note: other gens at ref bus are accounted for in Pbus)
     ##      Pg = Pinj + Pload + Gs
     ##      newPg = oldPg + newPinj - oldPinj
 
-    refgen = zeros(len(ref), dtype=int)
-    for k in range(len(ref)):
-        temp = find(gbus == ref[k])
-        refgen[k] = on[temp[0]]
     gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
 
     # store results from DC powerflow for AC powerflow
