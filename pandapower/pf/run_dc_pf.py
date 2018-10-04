@@ -7,11 +7,11 @@
 
 from time import time
 
-from numpy import flatnonzero as find, pi, zeros, real
+from numpy import flatnonzero as find, pi, zeros, real, bincount
 
 from pandapower.idx_brch import PF, PT, QF, QT
 from pandapower.idx_bus import VA, GS
-from pandapower.idx_gen import PG
+from pandapower.idx_gen import PG, GEN_BUS
 from pandapower.pf.dcpf import dcpf
 from pandapower.pf.makeBdc import makeBdc
 from pandapower.pf.makeSbus import makeSbus
@@ -44,7 +44,11 @@ def _run_dc_pf(ppci):
     ##      Pg = Pinj + Pload + Gs
     ##      newPg = oldPg + newPinj - oldPinj
 
-    gen[refgen, PG] = real(gen[refgen, PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA)
+    ## ext_grid (refgen) buses
+    refgenbus=gen[refgen, GEN_BUS].astype(int)
+    ## number of ext_grids (refgen) at those buses
+    ext_grids_bus=bincount(refgenbus)
+    gen[refgen, PG] = real(gen[refgen, PG] + (B[refgenbus, :] * Va - Pbus[refgenbus]) * baseMVA / ext_grids_bus[refgenbus])
 
     # store results from DC powerflow for AC powerflow
     et = time() - t0
