@@ -145,7 +145,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             z = net.res_bus.vm_pu.loc[buses]
         else:
             logger.warning("z is None and no net is provided")
-        pc.set_array(np.array(z))
+        pc.set_array(np.ma.masked_invalid(z))
         pc.has_colormap = True
         pc.cbar_title = cbar_title
 
@@ -257,7 +257,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         lc.set_norm(norm)
         if clim is not None:
             lc.set_clim(clim)
-        lc.set_array(np.array(z))
+        lc.set_array(np.ma.masked_invalid(z))
         lc.has_colormap = True
         lc.cbar_title = cbar_title
     lc.info = info
@@ -835,7 +835,7 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
 
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,
-                     axes_visible=(False, False), copy_collections=True):
+                     axes_visible=(False, False), copy_collections=True, draw=True):
     """
     Draws matplotlib collections which can be created with the create collection functions.
 
@@ -877,7 +877,8 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         ax.set_aspect('equal', 'datalim')
     ax.autoscale_view(True, True, True)
     ax.margins(.02)
-    plt.draw()
+    if draw:
+        plt.draw()
     return ax
 
 
