@@ -180,7 +180,10 @@ def available_std_types(net, element="line"):
     try:
         return pd.DataFrame(net.std_types[element]).T.infer_objects()
     except AttributeError:
-        return pd.DataFrame(net.std_types[element]).T
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pd.DataFrame(net.std_types[element]).T.convert_objects()
 
 
 def parameter_from_std_type(net, parameter, element="line", fill=None):
