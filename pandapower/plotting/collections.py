@@ -112,10 +112,6 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         if 'height' not in kwargs and 'width' not in kwargs:
             kwargs['height'] = kwargs['width'] = 2 * size
 
-        if patch_type == "rect":
-            kwargs['height'] *= 2
-            kwargs['width'] *= 2
-
     def figmaker(x, y, i):
         if colors is not None:
             kwargs["color"] = colors[i]
