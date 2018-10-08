@@ -8,7 +8,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
@@ -23,6 +22,7 @@ from pandapower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.idx_bus import VM, VA, PD, QD
 from pandapower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
 from pandapower.pf.pfsoln_pypower import _update_v, _update_q, _update_p
+
 EPS = finfo(float).eps
 
 
@@ -33,7 +33,7 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
     @author: Richard Lincoln
     """
     ## generator info
-    on = find(gen[:, GEN_STATUS] > 0) ## which generators are on?
+    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
     gbus = gen[on, GEN_BUS].astype(int)  ## what buses are they at?
 
     ## compute total injected bus powers
@@ -56,7 +56,7 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
     return bus, gen, branch
 
 
-def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, Ibus=None):
+def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None):
     """ experimental faster version of pfsoln.
 
         NOTE: this function is not used yet in standard pp, since there seems to be a problem with shunts
