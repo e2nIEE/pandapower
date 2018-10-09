@@ -26,6 +26,7 @@ def result_test_network_generator(sn_kva=1e3, skip_test_impedance=False):
     yield add_test_xward(net)
     yield add_test_xward_combination(net)
     yield add_test_gen(net)
+    yield add_test_ppc_gen_order(net)
     yield add_test_ext_grid_gen_switch(net)
     yield add_test_enforce_qlims(net)
     yield add_test_trafo3w(net)
@@ -262,6 +263,21 @@ def add_test_gen(net):
     net.last_added_case = "test_gen"
     return net
 
+def add_test_ppc_gen_order(net):
+    b_ids=[]
+    for b in range(6):
+        b_ids.append(pp.create_bus(net,vn_kv=1., name=b, zone='test_gen_order'))
+
+    for l_bus in [b_ids[0],b_ids[2],b_ids[4]]:
+        pp.create_line(net, from_bus=l_bus, to_bus=l_bus+1, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+
+    for slack_bus in [b_ids[0],b_ids[2],b_ids[5]]:
+        pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)
+
+    for gen_bus in [ b_ids[x] for x in [ 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5]]:
+        pp.create_gen(net, bus=gen_bus, p_kw=-1, vm_pu=1.)
+
+    net.last_added_case = "test_gen_order"
 
 def add_test_enforce_qlims(net):
     b1, b2, ln = add_grid_connection(net, zone="test_enforce_qlims")
