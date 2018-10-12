@@ -547,15 +547,30 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
     # determine at which end the switch is located
     # 1 = to-bus/lv-bus; 0 = from-bus/hv-bus
     branch_id = int(branch_id)
+    lookup = net._pd2ppc_lookups["branch"]
     if branch_type == "l":
         branch_bus = net["line"]["to_bus"].at[branch_id]
         is_to_bus = int(branch_bus == bus)
-        return is_to_bus, bus, net["line"].index.get_loc(branch_id)
-    else:
+        branch_idx = net["line"].index.get_loc(branch_id)
+        return is_to_bus, bus, branch_idx
+    elif branch_type == "t":
         branch_bus = net["trafo"]["lv_bus"].at[branch_id]
         is_to_bus = int(branch_bus == bus)
-        return is_to_bus, bus, net["trafo"].index.get_loc(branch_id)
-
+        branch_idx = lookup["trafo"][0] + net["trafo"].index.get_loc(branch_id)
+        return is_to_bus, bus, branch_idx
+    elif branch_type == "t3":
+        f, t = lookup["trafo3w"]
+        if net["trafo3w"]["hv_bus"].at[branch_id] == bus:
+            is_to_bus = 0
+            offset = 0
+        elif net["trafo3w"]["mv_bus"].at[branch_id] == bus:
+            is_to_bus = 1
+            offset = (t - f)/3
+        elif net["trafo3w"]["lv_bus"].at[branch_id] == bus:
+            is_to_bus = 1
+            offset = (t - f)/3*2
+        branch_idx = lookup["trafo3w"][0] + net["trafo3w"].index.get_loc(branch_id) + offset
+        return is_to_bus, bus,branch_idx
 
 def _switch_branches(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
@@ -618,7 +633,8 @@ def _switch_branches(net, ppc):
     nlo = np.count_nonzero(slidx)
 
     stidx = (net.switch["closed"].values == 0) & (net.switch["et"].values == "t")
-    nto = np.count_nonzero(stidx)
+    st3idx = (net.switch["closed"].values == 0) & (net.switch["et"].values == "t3")
+    nto =  np.count_nonzero(stidx) + np.count_nonzero(st3idx)
 
     if (nlo + nto) > 0:
         n_bus = len(ppc["bus"])
@@ -635,7 +651,7 @@ def _switch_branches(net, ppc):
             # we now have the following matrix
             # 0: 1 if switch is at to_bus, 0 else
             # 1: bus of the switch
-            # 2: position of the line a switch is connected to
+            # 2: branch index of the line a switch is connected to
             ls_info = np.array(ls_info, dtype=int)
 
             # build new buses
@@ -678,16 +694,19 @@ def _switch_branches(net, ppc):
         if nto:
             future_buses = [ppc["bus"]]
             trafo_switches = net["switch"].loc[stidx]
-
+            trafo3_switches = net["switch"].loc[st3idx]
             # determine on which side the switch is located
-            mapfunc = partial(_gather_branch_switch_info, branch_type="t", net=net)
-            ts_info = list(map(mapfunc,
+            t2s_info = list(map(partial(_gather_branch_switch_info, branch_type="t", net=net),
                                trafo_switches["bus"].values,
                                trafo_switches["element"].values))
+            t3s_info = list(map(partial(_gather_branch_switch_info, branch_type="t3", net=net),
+                               trafo3_switches["bus"].values,
+                               trafo3_switches["element"].values))
+            ts_info = t2s_info + t3s_info
             # we now have the following matrix
             # 0: 1 if switch is at lv_bus, 0 else
             # 1: bus of the switch
-            # 2: position of the trafo a switch is connected to
+            # 2: branch index of the trafo a switch is connected to
             ts_info = np.array(ts_info, dtype=int)
 
             # build new buses
@@ -726,10 +745,8 @@ def _switch_branches(net, ppc):
             # (trafo entries follow line entries)
             at_lv_bus = ts_info[:, 0].astype(bool)
             at_hv_bus = ~at_lv_bus
-            ppc["branch"][len(net.line) + ts_info[at_lv_bus, 2], 1] = \
-                new_indices[at_lv_bus]
-            ppc["branch"][len(net.line) + ts_info[at_hv_bus, 2], 0] = \
-                new_indices[at_hv_bus]
+            ppc["branch"][ts_info[at_lv_bus, 2], 1] = new_indices[at_lv_bus]
+            ppc["branch"][ts_info[at_hv_bus, 2], 0] = new_indices[at_hv_bus]
 
             ppc["bus"] = np.vstack(future_buses)
 
