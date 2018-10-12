@@ -15,7 +15,6 @@ from pandapower.test.toolbox import assert_net_equal, create_test_network, tempd
 from pandapower.io_utils import collect_all_dtypes_df, restore_all_dtypes
 import pandapower.networks as nw
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from networkx.testing import assert_graphs_equal
 import json
 import numpy as np
 
@@ -146,10 +145,20 @@ def test_json_encoding_decoding():
     assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
     assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
     assert d["b"] == d1["b"]
-    for u, v, data in net1.mg.edges(data=True):
-        del data["json_id"]
-        del data["json_key"]
     assert_graphs_equal(net.mg, net1.mg)
+
+
+def assert_graphs_equal(mg1, mg2):
+    edge1 = mg1.edges(data=True)
+    edge2 = mg2.edges(data=True)
+    for (u, v, data), (u1, v1, data1) in zip(sorted(edge1), sorted(edge2)):
+        assert u == u1
+        assert v == v1
+        if "json_id" in data1:
+            del data1["json_id"]
+        if "json_key" in data1:
+            del data1["json_key"]
+        assert data == data1
 
 @pytest.mark.xfail
 def test_json_tuple_in_pandas():
