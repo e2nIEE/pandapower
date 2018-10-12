@@ -750,60 +750,6 @@ def _switch_branches(net, ppc):
 
             ppc["bus"] = np.vstack(future_buses)
 
-#        if nto3:
-#            future_buses = [ppc["bus"]]
-#            trafo3_switches = net["switch"].loc[st3idx]
-#            # determine on which side the switch is located
-#            ts_info = list(map(partial(_gather_branch_switch_info, branch_type="t3", net=net),
-#                               trafo3_switches["bus"].values,
-#                               trafo3_switches["element"].values))
-#            # we now have the following matrix
-#            # 0: 1 if switch is at lv_bus, 0 else
-#            # 1: bus of the switch
-#            # 2: position of the trafo a switch is connected to
-#            ts_info = np.array(ts_info, dtype=int)
-#
-#            # build new buses
-#            new_ts_buses = np.zeros(shape=(nto3, ppc["bus"].shape[1]), dtype=float)
-#            new_indices = np.arange(n_bus + nlo + nto, n_bus + nlo + nto + nto3)
-#            new_ts_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
-#            new_ts_buses[:, 0] = new_indices
-#            new_ts_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ts_info[:, 1], bus_lookup)
-#            # set voltage of new buses to voltage on other branch end
-#            to_buses = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], 1].real.astype(int)
-#            from_buses = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], 0].real \
-#                .astype(int)
-#
-#            # set newly created buses to voltage on other side of
-#            if len(to_buses):
-#                ix = ts_info[:, 0] == 1
-#                taps = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], VA].real
-#                shift = ppc["branch"][ts_info[ts_info[:, 0].astype(bool), 2], BASE_KV].real
-#                new_ts_buses[ix, VM] = ppc["bus"][to_buses, VM] * taps
-#                new_ts_buses[ix, VA] = ppc["bus"][to_buses, VA] + shift
-#                if mode == "sc":
-#                    new_ts_buses[ix, C_MAX] = ppc["bus"][to_buses, C_MAX]
-#                    new_ts_buses[ix, C_MIN] = 0.95  # ppc["bus"][to_buses, C_MIN]
-#            if len(from_buses):
-#                ix = ts_info[:, 0] == 0
-#                taps = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], VA].real
-#                shift = ppc["branch"][ts_info[np.logical_not(ts_info[:, 0]), 2], BASE_KV].real
-#                new_ts_buses[ix, VM] = ppc["bus"][from_buses, VM] * taps
-#                new_ts_buses[ix, VA] = ppc["bus"][from_buses, VA] + shift
-#                if mode == "sc":
-#                    new_ts_buses[ix, C_MAX] = ppc["bus"][from_buses, C_MAX]
-#                    new_ts_buses[ix, C_MIN] = ppc["bus"][from_buses, C_MIN]
-#            future_buses.append(new_ts_buses)
-#
-#            # re-route the hv/lv-side of the trafo to a new bus
-#            # (trafo entries follow line entries)
-#            at_lv_bus = ts_info[:, 0].astype(bool)
-#            at_hv_bus = ~at_lv_bus
-#            ppc["branch"][ts_info[at_lv_bus, 2], 1] = new_indices[at_lv_bus]
-#            ppc["branch"][ts_info[at_hv_bus, 2], 0] = new_indices[at_hv_bus]
-#
-#            ppc["bus"] = np.vstack(future_buses)
-
 
 def _branches_with_oos_buses(net, ppc):
     """
