@@ -5,6 +5,8 @@
 
 
 import pandas as pd
+import warnings
+
 try:
     import pplog as logging
 except ImportError:
@@ -177,7 +179,13 @@ def available_std_types(net, element="line"):
         **typedata** - table of standard type parameters
 
     """
-    return pd.DataFrame(net.std_types[element]).T
+    std_types = pd.DataFrame(net.std_types[element]).T
+    try:
+        return std_types.infer_objects()
+    except AttributeError:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return std_types.convert_objects()
 
 
 def parameter_from_std_type(net, parameter, element="line", fill=None):

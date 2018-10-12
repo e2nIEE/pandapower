@@ -417,8 +417,16 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             "flat" (default): starting vector is (upper bound - lower bound) / 2
             "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
+
+         **kwargs** - Pypower / Matpower keyword arguments: - OPF_VIOLATION (5e-6) constraint violation tolerance
+                                                            - PDIPM_COSTTOL (1e-6) optimality tolerance
+                                                            - PDIPM_GRADTOL (1e-6) gradient tolerance
+                                                            - PDIPM_COMPTOL (1e-6) complementarity condition (inequality) tolerance
+                                                            - PDIPM_FEASTOL (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
+                                                            - PDIPM_MAX_IT  (150) maximum number of iterations
+                                                            - SCPDIPM_RED_IT(20) maximum number of step size reductions per iteration
+
     """
-    logger.warning("The OPF cost definition has changed! Please check out the tutorial 'opf_changes-may18.ipynb' or the documentation!")
     _check_necessary_opf_parameters(net, logger)
     if numba:
         numba = _check_if_numba_is_installed(numba)
