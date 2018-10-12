@@ -4,15 +4,15 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import copy
+from itertools import combinations
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch, \
-    FancyArrowPatch
+from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
-from itertools import combinations
-import copy
 
 try:
     import pplog as logging
@@ -190,10 +190,10 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
         **picker** (bool, False) - picker argument passed to the patch collection
 
-        **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
-            cmap. If None net.res_bus.vm_pu is used.
+        **z** (array, None) - array of line loading magnitudes for colormap. Used in case of given
+            cmap. If None net.res_line.loading_percent is used.
 
-        **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
+        **cbar_title** (str, "Line Loading [%]") - colormap bar title in case of given cmap
 
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
@@ -218,14 +218,14 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     if use_bus_geodata:
         data = []
         buses_with_geodata = bus_geodata.index.values
-        bg_dict = bus_geodata.to_dict() #transforming to dict to make lookup faster
+        bg_dict = bus_geodata.to_dict()  # transforming to dict to make lookup faster
         for line, fb, tb in zip(linetab.index, linetab.from_bus.values, linetab.to_bus.values):
             if fb in buses_with_geodata and tb in buses_with_geodata:
                 lines_with_geo.append(line)
                 data.append(([(bg_dict["x"][fb], bg_dict["y"][fb]),
                               (bg_dict["x"][tb], bg_dict["y"][tb])],
-                             infofunc(line) if infofunc else[]))
-        lines_without_geo = set(lines)-set(lines_with_geo)
+                             infofunc(line) if infofunc else []))
+        lines_without_geo = set(lines) - set(lines_with_geo)
         if lines_without_geo:
             logger.warning("Could not plot lines %s. Bus geodata is missing for those lines!"
                            % lines_without_geo)
@@ -236,7 +236,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                 lines_with_geo.append(line)
                 data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
 
-        lines_without_geo = set(lines)-set(lines_with_geo)
+        lines_without_geo = set(lines) - set(lines_with_geo)
         if len(lines_without_geo) > 0:
             logger.warning("Could not plot lines %s. Line geodata is missing for those lines!"
                            % lines_without_geo)
@@ -257,6 +257,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         lc.set_norm(norm)
         if clim is not None:
             lc.set_clim(clim)
+
         lc.set_array(np.ma.masked_invalid(z))
         lc.has_colormap = True
         lc.cbar_title = cbar_title
@@ -525,7 +526,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     polys = []
     infos = []
     off = 2.
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.load.shape[0]
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.load.shape[0]
     color = kwargs.pop("color", "k")
     for i, load in load_table.iterrows():
         p1 = net.bus_geodata[["x", "y"]].loc[load.bus]
@@ -610,23 +611,24 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     polys = []
     infos = []
     off = 1.7
-    r_triangle = size*0.4
-    ang = orientation if hasattr(orientation, '__iter__') else [orientation]*net.sgen.shape[0]
+    r_triangle = size * 0.4
+    ang = orientation if hasattr(orientation, '__iter__') else [orientation] * net.sgen.shape[0]
     color = kwargs.pop("color", "k")
     for i, sgen in sgen_table.iterrows():
         bus_geo = net.bus_geodata[["x", "y"]].loc[sgen.bus]
         mp_circ = bus_geo + _rotate_dim2(np.array([0, size * off]), ang[i])  # mp means midpoint
-        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off-1)]), ang[i])
-        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_triangle, -r_triangle/4]), ang[i])
-        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_triangle, r_triangle/4]), ang[i])
-        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_triangle/2]), ang[i])  # dropped perpendicular foot of triangle1
-        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5*r_triangle, 0]), ang[i])
-        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_triangle/2]), ang[i])
-        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5*r_triangle, 0]), ang[i])
+        circ_edge = bus_geo + _rotate_dim2(np.array([0, size * (off - 1)]), ang[i])
+        mp_tri1 = mp_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), ang[i])
+        mp_tri2 = mp_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), ang[i])
+        perp_foot1 = mp_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]),
+                                            ang[i])  # dropped perpendicular foot of triangle1
+        line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), ang[i])
+        perp_foot2 = mp_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), ang[i])
+        line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), ang[i])
         polys.append(Circle(mp_circ, size))
         polys.append(RegularPolygon(mp_tri1, numVertices=3, radius=r_triangle, orientation=-ang[i]))
         polys.append(RegularPolygon(mp_tri2, numVertices=3, radius=r_triangle,
-                                    orientation=np.pi-ang[i]))
+                                    orientation=np.pi - ang[i]))
         lines.append((bus_geo, circ_edge))
         lines.append((perp_foot1, line_end1))
         lines.append((perp_foot2, line_end2))
@@ -742,7 +744,7 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
                 # check, which end of the line is nearer to the switch bus
                 if len(line_coords) > 2:
                     if abs(line_coords[0][0] - pos_sb[0]) < 0.01 and \
-                                    abs(line_coords[0][1] - pos_sb[1]) < 0.01:
+                            abs(line_coords[0][1] - pos_sb[1]) < 0.01:
                         pos_tb = np.array([line_coords[1][0], line_coords[1][1]])
                     else:
                         pos_tb = np.array([line_coords[-2][0], line_coords[-2][1]])
@@ -777,7 +779,8 @@ def create_line_switch_collection(net, size=1, distance_to_bus=3, use_line_geoda
     return switches
 
 
-def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1., helper_line_color="gray", **kwargs):
+def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1., helper_line_color="gray",
+                                     **kwargs):
     """
     Creates a matplotlib patch collection of pandapower bus-bus switches. Switches are plotted in the center between two buses with a "helper"
     line (dashed and thin) being drawn between the buses as well.
@@ -830,7 +833,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         line_patches.append([pos_sb.tolist(), pos_tb.tolist()])
     # create collections and return
     switches = PatchCollection(switch_patches, match_original=True, **kwargs)
-    helper_lines = LineCollection(line_patches, linestyles=helper_line_style, linewidths=helper_line_size, colors=helper_line_color)
+    helper_lines = LineCollection(line_patches, linestyles=helper_line_style, linewidths=helper_line_size,
+                                  colors=helper_line_color)
     return switches, helper_lines
 
 
