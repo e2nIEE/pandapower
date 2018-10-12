@@ -17,7 +17,7 @@ If you want to contribute for the first time, you can set up your environment li
 
     git clone https://github.com/YOUR-USERNAME/pandapower.git
 
-#. Copy the following configuration at the bottom of to the pandapower/.git/gitconfig file (the .git folder is hidden, so you might have to enable showing hidden folders) and insert your github username: ::
+#. Copy the following configuration at the bottom of to the pandapower/.git/config file (the .git folder is hidden, so you might have to enable showing hidden folders) and insert your github username: ::
 
     [remote "origin"]
         url = https://github.com/e2nIEE/pandapower.git
