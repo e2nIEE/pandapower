@@ -326,14 +326,6 @@ def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3
     assert abs(net.res_bus.vm_pu.at[b3] - u_set) < v_tol
     assert abs(net.res_gen.q_kvar.at[g1] - (-q)) < s_tol
 
-def test_gen_order(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
-    net=result_test_network
-    bus_mask=net.bus.zone=='test_gen_order'
-    gen_mask=net.gen.bus.isin(net.bus[bus_mask].index)
-    xgrid_mask=net.ext_grid.bus.isin(net.bus[bus_mask].index)
-
-    assert all(net.res_gen[gen_mask].p_kw==net.gen[gen_mask].p_kw)
-    assert all(net.res_ext_grid[xgrid_mask].p_kw>0)
 
 def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
