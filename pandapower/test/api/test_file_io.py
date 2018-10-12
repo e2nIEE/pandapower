@@ -10,6 +10,7 @@ import copy
 
 import pandas as pd
 import pandapower as pp
+import pandapower.topology as top
 from pandapower.test.toolbox import assert_net_equal, create_test_network, tempdir, net_in
 from pandapower.io_utils import collect_all_dtypes_df, restore_all_dtypes
 import pandapower.networks as nw
@@ -125,6 +126,7 @@ def test_to_json_dtypes(tempdir):
 def test_json_encoding_decoding():
     net = nw.mv_oberrhein()
     net.tuple = (1, "4")
+    net.mg = top.create_nxgraph(net)
     s = set(['1', 4])
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
@@ -138,10 +140,25 @@ def test_json_encoding_decoding():
     assert f == f1
     assert net.tuple == net1.tuple
     assert np.allclose(a, a1)
+
     #TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists (see test_json_tuple_in_dataframe)
     assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
     assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
     assert d["b"] == d1["b"]
+    assert_graphs_equal(net.mg, net1.mg)
+
+
+def assert_graphs_equal(mg1, mg2):
+    edge1 = mg1.edges(data=True)
+    edge2 = mg2.edges(data=True)
+    for (u, v, data), (u1, v1, data1) in zip(sorted(edge1), sorted(edge2)):
+        assert u == u1
+        assert v == v1
+        if "json_id" in data1:
+            del data1["json_id"]
+        if "json_key" in data1:
+            del data1["json_key"]
+        assert data == data1
 
 @pytest.mark.xfail
 def test_json_tuple_in_pandas():
