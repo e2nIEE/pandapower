@@ -11,6 +11,8 @@ import numpy
 import numbers
 import json
 import copy
+import networkx
+from networkx.readwrite import json_graph
 import importlib
 
 try:
@@ -196,12 +198,12 @@ class PPJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, o)
         else:
             return s
-            
+
 def isinstance_partial(obj, cls):
     if isinstance(obj, (pandapowerNet, tuple)):
         return False
     return isinstance(obj, cls)
-            
+
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super(PPJSONDecoder, self).__init__(object_hook=pp_hook, *args, **kwargs)
@@ -238,6 +240,8 @@ def pp_hook(d):
         elif class_name == "pandapowerNet":
             from pandapower import from_json_string
             return from_json_string(obj)
+        elif module_name == "networkx":
+           return  json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
             module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
@@ -351,4 +355,11 @@ def json_set(obj):
 def json_frozenset(obj):
     logger.debug("frozenset")
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='frozenset')
+    return d
+
+@to_serializable.register(networkx.Graph)
+def json_networkx(obj):
+    logger.debug("nx graph")
+    json_string = json_graph.adjacency_data(obj, attrs={'id': 'json_id', 'key': 'json_key'})
+    d = with_signature(obj, json_string, obj_module="networkx")
     return d
