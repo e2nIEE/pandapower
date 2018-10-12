@@ -140,7 +140,29 @@ def test_two_gens_at_one_bus():
     pp.runpp(net)
     assert net.res_gen.p_kw.at[g1] == p1
     assert net.res_gen.p_kw.at[g2] == p2
+    
+def test_ext_grid_gen_order_in_ppc():
+    net=pp.create_empty_network()
 
+    for b in range(6):
+        pp.create_bus(net,vn_kv=1., name=b)
+
+    for l_bus in range(0,5,2):
+        pp.create_line(net, from_bus=l_bus, to_bus=l_bus+1, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+
+    for slack_bus in [0,2,5]:
+        pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)        
+
+    for gen_bus in [ 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5]:
+        pp.create_gen(net, bus=gen_bus, p_kw=-1, vm_pu=1.)
+
+    pp.rundcpp(net)
+    assert all(net.res_gen.p_kw==net.gen.p_kw)
+    assert all(net.res_ext_grid.p_kw>0)
+
+    pp.runpp(net)
+    assert all(net.res_gen.p_kw==net.gen.p_kw)
+    assert all(net.res_ext_grid.p_kw>0)
 
 def test_transformer_phase_shift():
     net = pp.create_empty_network()
