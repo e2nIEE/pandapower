@@ -1,5 +1,9 @@
 Change Log
 =============
+[develop]
+----------------------
+- [CHANGED] Patch size in create_bus_collection is not duplicated for rectangles anymore #181
+
 [1.6.0] - 2018-09-18
 ----------------------
 - [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
