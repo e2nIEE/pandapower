@@ -15,7 +15,11 @@ from pandapower.networks.power_system_test_cases import get_pp_networks_path
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False):
     """
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer
-    stations. The network supplies 141 HV/MV substations and 6 MV loads through four MV feeders.
+<<<<<<< HEAD
+    stations. The network supplies 141 MV/LV substations and 6 MV loads through four MV feeders.
+=======
+    stations. The network supplies 141 HV/LV substations and 6 MV loads through four MV feeders.
+>>>>>>> 106398035c32f569d31309331bef23d8b5c3dc9e
     The network layout is meshed, but the network is operated as a radial network with 6 open
     sectioning points.
 
