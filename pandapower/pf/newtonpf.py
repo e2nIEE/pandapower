@@ -109,8 +109,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
 
         # iwamoto multiplier to increase convergence
         if iwamoto:
-            Vm, Va = _iwamoto_step(Ybus, J, F, dx, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, dVa, dVm, Vm, Va,
-                                   pv, j1, j2, j3, j4, j5, j6, Sbus)
+            Vm, Va = _iwamoto_step(Ybus, J, F, dx, pq, npv, npq, dVa, dVm, Vm, Va, pv, j1, j2, j3, j4, j5, j6)
 
         V = Vm * exp(1j * Va)
         Vm = abs(V)  ## update Vm and Va again in case
