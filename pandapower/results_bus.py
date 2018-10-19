@@ -38,7 +38,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         q = hstack([q, ql])
         b = hstack([b, l["bus"].values])
         net["res_load"].index = net["load"].index
-
+    # TODO: Add 3ph loads
     sg = net["sgen"]
     if len(sg) > 0:
         sgen_is = _is_elements["sgen"]
@@ -58,7 +58,7 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         p = hstack([p, psg])
         b = hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
-
+    # TODO: Add 3ph sgens
     stor = net["storage"]
     if len(stor) > 0:
         stor_is = _is_elements["storage"]
@@ -245,20 +245,30 @@ def write_pq_results_to_element(net, element):
 
     # info element
     el_data = net[element]
-    res_ = "res_" + element
+    res_ = "res_" + (
+        "load" if element == "load_3ph" else
+        "sgen" if element == "sgen_3ph" else
+        element)
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
-    p_kw = "ps_kw" if element in ["ward", "xward"] else "p_kw"
-    q_kvar = "qs_kvar" if element in ["ward", "xward"] else "q_kvar"
+    p_kw = "ps_kw" if element in ["ward", "xward"] else ["p_kw_A", "p_kw_B", "p_kw_C"] if element in ["load_3ph", "sgen_3ph"] else "p_kw"
+    q_kvar = "qs_kvar" if element in ["ward", "xward"] else ["q_kvar_A", "q_kvar_B", "q_kvar_C"] if element in ["load_3ph", "sgen_3ph"] else "q_kvar"
     scaling = el_data["scaling"].values if element not in ["ward", "xward"] else 1.0
 
     element_in_service = _is_elements[element]
 
-    # P result in kw to element
-    net[res_]["p_kw"] = el_data[p_kw].values * scaling * element_in_service
-    if ac:
-        # Q result in kvar to element
-        net[res_]["q_kvar"] = el_data[q_kvar].values * scaling * element_in_service
+    if element.__contains__("3ph"):
+        # P result in kw to element
+        net[res_]["p_kw"] = np.sum(el_data[p_kw].values, axis=1) * scaling * element_in_service
+        if ac:
+            # Q result in kvar to element
+            net[res_]["q_kvar"] = np.sum(el_data[q_kvar].values, axis=1) * scaling * element_in_service
+    else:
+        # P result in kw to element
+        net[res_]["p_kw"] = el_data[p_kw].values * scaling * element_in_service
+        if ac:
+            # Q result in kvar to element
+            net[res_]["q_kvar"] = el_data[q_kvar].values * scaling * element_in_service
 
     # update index of result table
     net[res_].index = net[element].index
@@ -304,7 +314,10 @@ def write_pq_results_to_element_3ph(net, element):
 
 def get_p_q_b(net, element):
     ac = net["_options"]["ac"]
-    res_ = "res_" + element
+    res_ = "res_" + (
+        "load" if element == "load_3ph" else
+        "sgen" if element == "sgen_3ph" else
+        element)
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
@@ -337,9 +350,9 @@ def _get_p_q_results(net, bus_lookup_aranged):
     if net["_options"]["voltage_depend_loads"] and ac:
         # voltage dependend loads need special treatment here
         p, q, b = write_voltage_dependend_load_results(net, p, q, b)
-        elements = ["sgen", "storage", "ward", "xward"]
+        elements = ["load_3ph", "sgen", "sgen_3ph", "storage", "ward", "xward"]
     else:
-        elements = ["load", "sgen", "storage", "ward", "xward"]
+        elements = ["load", "load_3ph", "sgen", "sgen_3ph", "storage", "ward", "xward"]
 
     for element in elements:
         if len(net[element]):
