@@ -6,10 +6,10 @@ element*;integer; ;"| index of the element the switch is connected to:
 | - bus index if et = *""b""*
 | - line index if et = *""l""*
 | - trafo index if et = *""t""*"
-| - trafo3w index if et = *""t3""*"
 et*;string;"| *""b""* - bus-bus switch
 | *""l""* - bus-line switch
-| *""t""* - bus-trafo switch";element type the switch connects to
+| *""t""* - bus-trafo
+| *""t3""* - bus-trafo3w switch";element type the switch connects to
 type;string;"| naming conventions: 
 | *""CB""* - circuit breaker
 | *""LS""* - load switch
