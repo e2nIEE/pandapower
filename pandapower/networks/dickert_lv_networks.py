@@ -180,7 +180,7 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
     # process network choosing input data
     try:
         net_data = parameters[feeders_range][linetype][customer][case]
-    except:
+    except KeyError:
         raise ValueError("This combination of 'feeders_range', 'linetype', 'customer' and 'case' "
                          "is no dickert network.")
 
