@@ -325,7 +325,7 @@ class TestInvalidValues:
         else:
             diag_results = {}
         assert diag_results[check_function] == \
-        {'line': [(0, 'df', 1.5, '0to1')]}
+        {'line': [(0, 'df', 1.5, '0<x<=1')]}
 
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
