@@ -139,7 +139,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
         pc.set_norm(norm)
         if z is None and net is not None:
             z = net.res_bus.vm_pu.loc[buses]
-        else:
+        elif net is None:
             logger.warning("z is None and no net is provided")
         pc.set_array(np.ma.masked_invalid(z))
         pc.has_colormap = True
