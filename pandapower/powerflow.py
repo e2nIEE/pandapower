@@ -123,6 +123,7 @@ def _pf_without_branches(ppci, options):
     ppci["et"] = 0
     return ppci
 
+
 def _add_auxiliary_elements(net):
     # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
     if len(net["trafo3w"]) > 0:
@@ -142,10 +143,10 @@ def _create_xward_buses(net):
                        vn_kv=main_buses.vn_kv.values,
                        in_service=net["xward"]["in_service"].values)
     net.xward["ad_bus"] = bid
-    if init_results:
+    if init_results and len(net.res_bus) > 0:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2ppc anyways. LT
-        net.res_bus=net.res_bus.append(pd.DataFrame(index=bid,data=net.res_bus.loc[main_buses.index].values,columns=net.res_bus.columns))
+        net.res_bus = net.res_bus.append(pd.DataFrame(index=bid, data=net.res_bus.loc[main_buses.index].values, columns=net.res_bus.columns))
 
 
 def _create_trafo3w_buses(net):
@@ -157,10 +158,10 @@ def _create_trafo3w_buses(net):
                        vn_kv=hv_buses.vn_kv.values,
                        in_service=net.trafo3w.in_service.values)
     net.trafo3w["ad_bus"] = bid
-    if init_results:
+    if init_results and len(net.res_bus) > 0:
         # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
         #      pd2ppc anyways. LT
-        net.res_bus=net.res_bus.append(pd.DataFrame(index=bid,data=net.res_bus.loc[hv_buses.index].values,columns=net.res_bus.columns))
+        net.res_bus = net.res_bus.append(pd.DataFrame(index=bid, data=net.res_bus.loc[hv_buses.index].values, columns=net.res_bus.columns))
 
 
 def _add_dcline_gens(net):
