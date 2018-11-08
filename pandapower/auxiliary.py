@@ -186,7 +186,7 @@ class pandapowerNet(ADict):
         par = []
         res = []
         for tb in list(self.keys()):
-            if isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
+            if not tb.startswith("_") and isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
                 if 'res_' in tb:
                     res.append(tb)
                 else:
@@ -381,10 +381,10 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
-    
+
     init_results = (isinstance(init_vm_pu, str)     and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
-                            
+
     options = {
         "calculate_voltage_angles": calculate_voltage_angles,
         "trafo_model": trafo_model,
