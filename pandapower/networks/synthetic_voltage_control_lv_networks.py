@@ -14,9 +14,15 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     This function creates a LV network from M. Lindner, C. Aigner, R. Witzmann, F. Wirtz, \
     I. Berber, M. Gödde and R. Frings. "Aktuelle Musternetze zur Untersuchung von \
     Spannungsproblemen in der Niederspannung". 14. Symposium Energieinnovation TU Graz. 2014
-    which are representative, synthetic grids for voltage control analysis. According to Lindner \
-    the household loads are 5.1 kW and the special loads are 7.9 kW. The user is suggested to \
-    assume load distribution and load profile generation.
+    which are representative, synthetic grids for voltage control analysis.
+
+    Neccessary assumptions, in addition to the paper above:
+
+    According to Lindner the household loads are 5.1 kW and the special loads are 7.9 kW. \
+    The user is suggested to assume load distribution and load profile generation. The line
+    parameters according to the given types are received from pandapower standard types and
+    literatur (as stated in the code). Transformer parameters, except the given 'vsc_percent',
+    'sn_kva' and voltage levels, are based the pandapower standard type data.
 
     OPTIONAL:
 

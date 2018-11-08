@@ -19,10 +19,11 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0,
-                plot_loads=False, plot_sgens=False, load_size=1.0, sgen_size=1.0, switch_size=2.0, switch_distance=1.0,
-                plot_line_switches=False, scale_size=True, bus_color="b", line_color='grey', trafo_color='k',
-                ext_grid_color='y', switch_color='k', library="igraph", show_plot=True):
+def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
+                trafo_size=1.0, plot_loads=False, plot_sgens=False, load_size=1.0, sgen_size=1.0,
+                switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
+                bus_color="b", line_color='grey', trafo_color='k', ext_grid_color='y',
+                switch_color='k', library="igraph", show_plot=True):
     """
     Plots a pandapower network as simple as possible. If no geodata is available, artificial
     geodata is generated. For advanced plotting see the tutorial
@@ -52,11 +53,15 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
         **trafo_size** (float, 1.0) - Relative size of trafos to plot.
 
+        **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
+
+        **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
+
         **load_size** (float, 1.0) - Relative size of loads to plot.
 
         **sgen_size** (float, 1.0) - Relative size of sgens to plot.
 
-        **switch_size** (float, 1.0) - Relative size of switches to plot. See bus size for details
+        **switch_size** (float, 2.0) - Relative size of switches to plot. See bus size for details
 
         **switch_distance** (float, 1.0) - Relative distance of the switch to its corresponding \
                                            bus. See bus size for details
@@ -76,6 +81,9 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
 
         **switch_color** (String, 'k') - Switch Color. Init is black
+
+        **library** (String, "igraph") - library name to create generic coordinates (case of
+            missing geodata). "igraph" to use igraph package or "networkx" to use networkx package.
 
         **plot_show** (bool, True) - Shows plot at the end of plotting
 
