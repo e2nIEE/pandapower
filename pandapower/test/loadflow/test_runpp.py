@@ -945,5 +945,12 @@ def test_dc_with_ext_grid_at_one_bus():
     assert np.allclose(net.res_ext_grid.p_kw.values, [0,0])
 
 
+def test_init_results_without_results():
+    # should switch to "auto" mode and not fail
+    net = four_loads_with_branches_out()
+    pp.reset_results(net)
+    pp.runpp(net, init="results")
+
+
 if __name__ == "__main__":
     pytest.main(["test_runpp.py"])
