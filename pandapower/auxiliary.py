@@ -412,6 +412,7 @@ def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
             " Try resetting the bus indices with the toolbox function "
             "create_continous_bus_index()" % max_bus)
 
+
 def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
     if net.gen.empty:
         return
@@ -553,7 +554,6 @@ def _check_if_numba_is_installed(numba):
             logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
                            numba_warning_str)
             numba = False
-
     except:
         logger.warning(numba_warning_str)
         numba = False
