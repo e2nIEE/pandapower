@@ -163,6 +163,28 @@ def test_ext_grid_gen_order_in_ppc():
     assert all(net.res_gen.p_kw==net.gen.p_kw)
     assert all(net.res_ext_grid.p_kw>0)
 
+
+def test_isolated_gen_lookup():
+    net=pp.create_empty_network()
+
+    gen_bus=pp.create_bus(net,vn_kv=1., name='gen_bus')
+    slack_bus=pp.create_bus(net,vn_kv=1., name='slack_bus')
+    gen_iso_bus=pp.create_bus(net,vn_kv=1., name='iso_bus')
+
+    pp.create_line(net, from_bus=slack_bus, to_bus=gen_bus, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+
+    pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)
+
+    pp.create_gen(net, bus=gen_iso_bus, p_kw=-1, vm_pu=1., name='iso_gen')
+    pp.create_gen(net, bus=gen_bus, p_kw=-2, vm_pu=1., name='gen')
+
+    pp.rundcpp(net)
+    assert net.res_gen.p_kw.values[1] == net.gen.p_kw.values[1]
+
+    pp.runpp(net)
+    assert net.res_gen.p_kw.values[1] == net.gen.p_kw.values[1]
+
+
 def test_transformer_phase_shift():
     net = pp.create_empty_network()
     for side in ["hv", "lv"]:
