@@ -50,8 +50,14 @@ def branch_loss_consistent_with_bus_feed_in(net, rtol=1e-5):
                     net.res_trafo3w.ql_kvar.values.sum() + net.res_impedance.ql_kvar.values.sum() + \
                     net.res_dcline.q_to_kvar.values.sum() + net.res_dcline.q_from_kvar.values.sum()
 
-    assert allclose(bus_surplus_p, branch_loss_p, rtol=rtol)
-    assert allclose(bus_surplus_q, branch_loss_q, rtol=rtol)
+    try:
+        assert allclose(bus_surplus_p, branch_loss_p, rtol=rtol)
+    except AssertionError:
+        raise AssertionError("Branch losses are %.2f kW, but power generation at the buses exceeds the feedin by %.2f kW"%(branch_loss_p, bus_surplus_p))
+    try:
+        assert allclose(bus_surplus_q, branch_loss_q, rtol=rtol)
+    except AssertionError:
+        raise AssertionError("Branch losses are %.2f kVar, but power generation at the buses exceeds the feedin by %.2f kVar"%(branch_loss_q, bus_surplus_q))
 
 
 def element_power_consistent_with_bus_power(net, rtol=1e-5):
@@ -78,7 +84,7 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
     for idx, tab in net.sgen.iterrows():
         bus_p.at[tab.bus] += net.res_sgen.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_sgen.q_kvar.at[idx]
-        
+
     for idx, tab in net.storage.iterrows():
         bus_p.at[tab.bus] += net.res_storage.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_storage.q_kvar.at[idx]
