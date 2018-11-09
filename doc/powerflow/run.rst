@@ -3,12 +3,10 @@ Run a Power Flow
 =====================
 .. _ppLoadflow:
 
-pandapower provides an AC powerflow, DC powerflow and an OPF.
+pandapower provides an AC and linearized (DC) powerflow.
 
 .. toctree:: 
     :maxdepth: 2
 
     ac
     dc
-    opf
-    dcopf
