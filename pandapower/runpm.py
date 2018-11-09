@@ -6,8 +6,7 @@
 
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pf.pfsoln import pfsoln
-from pandapower.pf.makeYbus import makeYbus
+from pandapower.pf.run_newton_raphson_pf import _get_numba_functions
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.results import _extract_results_opf, reset_results, _copy_results_ppci_to_ppc
 from pandapower.powerflow import _add_auxiliary_elements
@@ -234,6 +233,7 @@ def pm_results_to_ppc_results(ppc, ppci, result_pm):
     ppci["f"] = result_pm["objective"]
     ppci["internal_gencost"] = result_pm["objective"]
 
+    makeYbus, pfsoln = _get_numba_functions(ppci, net._options)
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
