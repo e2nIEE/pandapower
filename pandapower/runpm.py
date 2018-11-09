@@ -32,6 +32,46 @@ from pandapower.idx_cost import MODEL, STARTUP, SHUTDOWN, COST
 
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=0, trafo3w_losses="hv"):
+    """
+    Runs a power system optimization using PowerModels.jl.
+    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
+    flexibilities apply:
+        - net.sgen.min_p_kw / net.sgen.max_p_kw
+        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
+        - net.load.min_q_kvar / net.load.max_q_kvar
+        - net.gen.min_p_kw / net.gen.max_p_kw
+        - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
+        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
+
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        - net.bus.min_vm_pu / net.bus.max_vm_pu
+        - net.line.max_loading_percent
+        - net.trafo.max_loading_percent
+        - net.trafo3w.max_loading_percent
+
+    How these costs are combined into a cost function depends on the cost_function parameter.
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+     """
+
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=False,
