@@ -1,16 +1,7 @@
 .. _opf:
 
-Optimal Power Flow
-=====================
-
-Pandapower provides an interface for AC and DC optimal power flow calculations. In the following, it is presented how the optimisation problem can be formulated with the pandapower data format.
-
-.. note::
-
-    We highly recommend the tutorials for the usage of the optimal power flow.
-
 Optimisation problem
----------------------
+======================
 
 The equation describes the basic formulation of the optimal power flow problem. The pandapower optimal power flow can be constrained by either, AC and DC loadflow equations. The branch constraints represent the maximum apparent power loading of transformers and the maximum line current loadings. The bus constraints can contain maximum and minimum voltage magnitude and angle. For the external grid, generators, loads, DC lines and static generators, the maximum and minimum active resp. reactive power can be considered as operational constraints for the optimal power flow. The constraints are defined element wise in the respective element tables.
 
@@ -172,30 +163,5 @@ In case that the load should be minimized, the cost function could be defined li
 Please note, that the costs of the DC line transmission are always related to the power at the from_bus! 
 
 		
-You can always check your Optimization result by comparing your result (From res_sgen, res_load etc.) 
-
-
-		
-
-Parametrisation of the calculation
------------------------------------
-
-The internal solver uses the interior point method. By default, the initial state is the center of the operational constraints. Another option would be to initialize the optimisation with a valid loadflow solution. For optimiation of a timeseries, this warm start possibilty could imply a significant speedup. 
-This is not yet provided in the actual version, but could be an useful extension in the future.
-Another parametrisation for the AC OPF is, if voltage angles should be considered, which is the same option than for the loadflow calculation with pandapower.runpp: 
-
-.. autofunction:: pandapower.runopp
-
-References:
-      - "On the Computation and Application of Multi-period
-        Security-Constrained Optimal Power Flow for Real-time
-        Electricity Market Operations", Cornell University, May 2007.
-      - H. Wang, C. E. Murillo-Sanchez, R. D. Zimmerman, R. J. Thomas,
-        "On Computational Issues of Market-Based Optimal Power Flow",
-        IEEE Transactions on Power Systems, Vol. 22, No. 3, Aug. 2007,
-        pp. 1185-1193.
-      - R. D. Zimmerman, C. E. Murillo-Sánchez, and R. J. Thomas, "MATPOWER: Steady-State 
-        Operations, Planning and Analysis Tools for Power Systems Research and Education," 
-        Power Systems, IEEE Transactions on, vol. 26, no. 1, pp. 12-19, Feb. 2011.
-      
+You can always check your Optimization result by comparing your result (From res_sgen, res_load etc.).      
       
