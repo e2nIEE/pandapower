@@ -324,12 +324,27 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
 
+        l_3ph = net["load_3ph"]
+        if len(l_3ph) > 0 and mode == "pf":
+            # TODO: Voltage dependent loads
+            vl = _is_elements["load_3ph"] * l_3ph["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, np.sum(l_3ph[["q_kvar_A", "q_kvar_B", "q_kvar_C"]].values, axis=1) * vl])
+            p = np.hstack([p, np.sum(l_3ph[["p_kw_A", "p_kw_B", "p_kw_C"]].values, axis=1) * vl])
+            b = np.hstack([b, l_3ph["bus"].values])
+
         sgen = net["sgen"]
         if len(sgen) > 0:
             vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
+
+        sgen_3ph = net["sgen_3ph"]
+        if len(sgen_3ph) > 0 and mode == "pf":
+            vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T / np.float64(1000.)
+            q = np.hstack([q, np.sum(sgen_3ph[["q_kvar_A", "q_kvar_B", "q_kvar_C"]].values, axis=1) * vl])
+            p = np.hstack([p, np.sum(sgen_3ph[["p_kw_A", "p_kw_B", "p_kw_C"]].values, axis=1) * vl])
+            b = np.hstack([b, sgen_3ph["bus"].values])
 
         stor = net["storage"]
         if len(stor) > 0:
@@ -367,7 +382,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
             q = np.hstack([q, l["q_kvar"].values * vl])
             p = np.hstack([p, l["p_kw"].values * vl])
             b = np.hstack([b, l["bus"].values])
-
+        # TODO: Add 3ph loads
         sgen = net["sgen"]
         if not sgen.empty:
             sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
@@ -376,7 +391,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
             q = np.hstack([q, sgen["q_kvar"].values * vl])
             p = np.hstack([p, sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
-
+        # TODO: Add 3ph sgens
         stor = net["storage"]
         if not stor.empty:
             stor["controllable"] = _controllable_to_bool(stor["controllable"])
