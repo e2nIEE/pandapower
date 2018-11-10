@@ -591,6 +591,13 @@ def test_trafo_vg_loadflow():
         check_results(net, vc, result)
 
 
+def test_2trafos():
+    net = pp.create_empty_network() 
+    make_nw(net, "YNyn")
+    make_nw(net, "YNyn")
+    runpp_3ph(net)
+    
+
 def test_3ph_isolated_nodes():
     V_base = 110  # 110kV Base Voltage
     kVA_base = 100000  # 100 MVA
