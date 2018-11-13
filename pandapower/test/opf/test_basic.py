@@ -23,7 +23,7 @@ def simple_opf_test_net():
     net = pp.create_empty_network()
     pp.create_bus(net, vn_kv=10.)
     pp.create_bus(net, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
@@ -44,7 +44,7 @@ def test_convert_format():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     net.gen["cost_per_kw"] = 100
     pp.create_ext_grid(net, 0)
@@ -79,7 +79,7 @@ def test_simplest_voltage():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
@@ -124,7 +124,7 @@ def test_eg_voltage():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0, vm_pu=1.01)
     pp.create_load(net, 1, p_kw=20, controllable=False)
@@ -156,7 +156,7 @@ def test_simplest_dispatch():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
     pp.create_ext_grid(net, 0)
@@ -201,7 +201,7 @@ def test_opf_gen_voltage():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=200)
-    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=0, min_p_kw=-25, max_q_kvar=500,
+    pp.create_gen(net, 3, p_kw=-10, controllable=True, min_p_kw=0, max_p_kw=25, max_q_kvar=500,
                   min_q_kvar=-500)
     pp.create_polynomial_cost(net, 0, "gen", np.array([10, 0]))
     pp.create_ext_grid(net, 0)
@@ -294,7 +294,7 @@ def test_opf_gen_loading():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=145)
-    pp.create_gen(net, 3, p_kw=-10, controllable=True, max_p_kw=-5, min_p_kw=-15, max_q_kvar=50,
+    pp.create_gen(net, 3, p_kw=10, controllable=True, min_p_kw=5, max_p_kw=15, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_polynomial_cost(net, 0, "gen", np.array([-10, 0]))
     pp.create_ext_grid(net, 0)
@@ -386,7 +386,7 @@ def test_unconstrained_line():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False)
@@ -518,9 +518,9 @@ def test_opf_varying_max_line_loading():
 
 
 
-    pp.create_sgen(net, 3, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=25,
+    pp.create_sgen(net, 3, p_kw=100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=25,
                    min_q_kvar=-25)
-    pp.create_sgen(net, 2, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=25,
+    pp.create_sgen(net, 2, p_kw=100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=25,
                    min_q_kvar=-25)
     pp.create_polynomial_cost(net, 0, "sgen", np.array([10, 0]))
     pp.create_polynomial_cost(net, 1, "sgen", np.array([10, 0]))

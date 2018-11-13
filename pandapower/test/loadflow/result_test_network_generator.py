@@ -104,7 +104,7 @@ def add_test_ext_grid_gen_switch(net):
     pp.create_switch(net, bus=b4, element=b5, et="b")
 
     pp.create_ext_grid(net, bus=b1, vm_pu=1.01)
-    pp.create_gen(net, bus=b5, vm_pu=1.015, p_kw=-300)
+    pp.create_gen(net, bus=b5, vm_pu=1.015, p_kw=300)
     return net
 
 

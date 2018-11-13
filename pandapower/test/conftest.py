@@ -29,8 +29,8 @@ def simple_network():
                    std_type="NAYY 4x150 SE")
     pp.create_load(net, b2, p_kw=10, q_kvar=0, name="load1")
     pp.create_load(net, b3, p_kw=40, q_kvar=2, name="load2")
-    pp.create_gen(net, 3, p_kw=-200., vm_pu=1.0)
-    pp.create_sgen(net, 2, p_kw=-50, sn_kva=100)
+    pp.create_gen(net, 3, p_kw=200., vm_pu=1.0)
+    pp.create_sgen(net, 2, p_kw=50, sn_kva=100)
     return net
 
 

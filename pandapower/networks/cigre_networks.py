@@ -117,9 +117,9 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_ext_grid(net_cigre_hv, bus9, vm_pu=1.03, va_degree=0, name='Generator 9')
 
     # Generators
-    pp.create_gen(net_cigre_hv, bus10, vm_pu=1.03, p_kw=-5e5, name='Generator 10')
-    pp.create_gen(net_cigre_hv, bus11, vm_pu=1.03, p_kw=-2e5, name='Generator 11')
-    pp.create_gen(net_cigre_hv, bus12, vm_pu=1.03, p_kw=-3e5, name='Generator 12')
+    pp.create_gen(net_cigre_hv, bus10, vm_pu=1.03, p_kw=5e5, name='Generator 10')
+    pp.create_gen(net_cigre_hv, bus11, vm_pu=1.03, p_kw=2e5, name='Generator 11')
+    pp.create_gen(net_cigre_hv, bus12, vm_pu=1.03, p_kw=3e5, name='Generator 12')
 
     # Shunts
     pp.create_shunt(net_cigre_hv, bus4, p_kw=0.0, q_kvar=-160000, name='Shunt 4')

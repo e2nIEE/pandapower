@@ -217,12 +217,16 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                                   ("f", dtype(object))],
         "polynomial_cost": [("type", dtype(object)),
                             ("element", dtype(object)),
-                            ("et", dtype(object)),
-                            ("cp0_eur", dtype("f8")),
-                            ("cp1_eur_per_kw", dtype("f8")),
-                            ("cq0_eur", dtype("f8")),
-                            ("cq1_eur_per_kvar", dtype("f8"))
-                            ],
+                            ("element_type", dtype(object)),
+                            ("c", dtype(object))],
+#        "polynomial_cost": [("type", dtype(object)),
+#                            ("element", dtype(object)),
+#                            ("et", dtype(object)),
+#                            ("cp0_eur", dtype("f8")),
+#                            ("cp1_eur_per_kw", dtype("f8")),
+#                            ("cq0_eur", dtype("f8")),
+#                            ("cq1_eur_per_kvar", dtype("f8"))
+#                            ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
@@ -982,7 +986,7 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
         **index** (int) - The unique ID of the created generator
 
     EXAMPLE:
-        create_gen(net, 1, p_kw = -120, vm_pu = 1.02)
+        create_gen(net, 1, p_kw = 120, vm_pu = 1.02)
 
     """
     if bus not in net["bus"].index.values:
@@ -2508,9 +2512,9 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
 
     return index
 
-
-def create_polynomial_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
-                           cq0_eur=0, index=None):
+def create_polynomial_cost(net, element, element_type, coefficients, type="p", index=None):
+#def create_polynomial_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
+#                           cq0_eur=0, index=None):
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are
      - Generator
@@ -2553,21 +2557,27 @@ def create_polynomial_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_
     if index in net["polynomial_cost"].index:
         raise UserWarning("A polynomial_cost with the id %s already exists" % index)
 
-#    if not net["polynomial_cost"].loc[
-#        (net["polynomial_cost"].element_type == element_type) &
-#        (net["polynomial_cost"].element == element) &
-#        (net["polynomial_cost"].type == type)].empty:
-#        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
-#                          (element_type, element))
-#
-#    if not net["piecewise_linear_cost"].loc[
-#        (net["piecewise_linear_cost"].element_type == element_type) &
-#        (net["piecewise_linear_cost"].element == element) &
-#        (net["piecewise_linear_cost"].type == type)].empty:
-#        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
-#                          (element_type, element))
+    if not net["polynomial_cost"].loc[
+        (net["polynomial_cost"].element_type == element_type) &
+        (net["polynomial_cost"].element == element) &
+        (net["polynomial_cost"].type == type)].empty:
+        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
+                          (element_type, element))
 
-    net.polynomial_cost.loc[index, ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar"]] = \
-        [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar]
+    if not net["piecewise_linear_cost"].loc[
+        (net["piecewise_linear_cost"].element_type == element_type) &
+        (net["piecewise_linear_cost"].element == element) &
+        (net["piecewise_linear_cost"].type == type)].empty:
+        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
+                          (element_type, element))
+
+
+    net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
+        [type, element, element_type]
+
+    net.polynomial_cost.c.loc[index] = coefficients.reshape((1, -1))
+
+#    net.polynomial_cost.loc[index, ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar"]] = \
+#        [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar]
 
     return index
