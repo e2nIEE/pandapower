@@ -112,8 +112,8 @@ def add_test_load_sgen(net):
     b1, b2, ln = add_grid_connection(net, zone="test_load_sgen")
     pl = 1200
     ql = 1100
-    ps = -500
-    qs = 100
+    ps = 500
+    qs = -100
     # load and sgen at one bus
     pp.create_load(net, b2, p_kw=pl, q_kvar=ql)
     pp.create_sgen(net, b2, p_kw=ps, q_kvar=qs)
@@ -131,8 +131,8 @@ def add_test_load_sgen_split(net):
     nr = 2
     pl = 1200
     ql = 1100
-    ps = -500
-    qs = 100
+    ps = 500
+    qs = -100
     for _ in list(range(nr)):
         pp.create_load(net, b2, p_kw=pl, q_kvar=ql, scaling=1. / nr)
         pp.create_sgen(net, b2, p_kw=ps, q_kvar=qs, scaling=1. / nr)
@@ -247,7 +247,7 @@ def add_test_gen(net):
     b1, b2, ln = add_grid_connection(net, zone="test_gen")
     pl = 1200
     ql = 1100
-    ps = -500
+    ps = 500
     u_set = 1.0
 
     b3 = pp.create_bus(net, zone="test_gen", vn_kv=.4)
@@ -267,8 +267,8 @@ def add_test_enforce_qlims(net):
     b1, b2, ln = add_grid_connection(net, zone="test_enforce_qlims")
     pl = 1200
     ql = 1100
-    ps = -500
-    qmax = 200.
+    ps = 500
+    qmin = -200.
     u_set = 1.0
 
     b3 = pp.create_bus(net, zone="test_enforce_qlims", vn_kv=.4)
@@ -276,7 +276,7 @@ def add_test_enforce_qlims(net):
                                    c_nf_per_km=300, max_i_ka=.2, df=.8)
 
     pp.create_load(net, b3, p_kw=pl, q_kvar=ql)
-    pp.create_gen(net, b3, p_kw=ps, vm_pu=u_set, max_q_kvar=qmax)
+    pp.create_gen(net, b3, p_kw=ps, vm_pu=u_set, min_q_kvar=qmin)
 
     net.last_added_case = "test_enforce_qlims"
     return net
@@ -337,8 +337,8 @@ def add_test_bus_bus_switch(net):
     pl = 1000
     ql = 500
 
-    psg = -500
-    qsg = 100
+    psg = 500
+    qsg = -100
 
     pz = 1200
     qz = 1100

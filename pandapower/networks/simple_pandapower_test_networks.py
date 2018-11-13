@@ -139,8 +139,8 @@ def simple_four_bus_system():
     pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.50000, std_type="NAYY 4x50 SE")
     pp.create_load(net, busnr3, 30, 10, name="load1")
     pp.create_load(net, busnr4, 30, 10, name="load2")
-    pp.create_sgen(net, busnr3, p_kw=-20., q_kvar=-5., name="pv1", sn_kva=30)
-    pp.create_sgen(net, busnr4, p_kw=-15., q_kvar=-2., name="pv2", sn_kva=20)
+    pp.create_sgen(net, busnr3, p_kw=20., q_kvar=-5., name="pv1", sn_kva=30)
+    pp.create_sgen(net, busnr4, p_kw=15., q_kvar=-2., name="pv2", sn_kva=20)
 
     n = busnr4 + 1
     net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])

@@ -324,8 +324,8 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
         sgen = net["sgen"]
         if len(sgen) > 0:
             vl = _is_elements["sgen"] * sgen["scaling"].values.T / np.float64(1000.)
-            q = np.hstack([q, sgen["q_kvar"].values * vl])
-            p = np.hstack([p, sgen["p_kw"].values * vl])
+            q = np.hstack([q, -sgen["q_kvar"].values * vl])
+            p = np.hstack([p, -sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
 
         stor = net["storage"]
@@ -355,7 +355,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             b = np.hstack([b, xw["bus"].values])
 
     # if mode == optimal power flow...
-    if mode == "opf":
+    if mode.startswith("opf"):
         l = net["load"]
         if not l.empty:
             l["controllable"] = _controllable_to_bool(l["controllable"])
@@ -370,8 +370,8 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             sgen["controllable"] = _controllable_to_bool(sgen["controllable"])
             vl = (_is_elements["sgen"] & ~sgen["controllable"]) * sgen["scaling"].values.T / \
                  np.float64(1000.)
-            q = np.hstack([q, sgen["q_kvar"].values * vl])
-            p = np.hstack([p, sgen["p_kw"].values * vl])
+            q = np.hstack([q, -sgen["q_kvar"].values * vl])
+            p = np.hstack([p, -sgen["p_kw"].values * vl])
             b = np.hstack([b, sgen["bus"].values])
 
         stor = net["storage"]

@@ -17,27 +17,22 @@ from pandapower.test.toolbox import create_test_network2, add_grid_connection
 def test_2gen_1ext_grid():
     net = create_test_network2()
     net.shunt.q_kvar *= -1
-    pp.create_gen(net, 2, p_kw=-100)
+    pp.create_gen(net, 2, p_kw=100)
     net.trafo.shift_degree = 150
     pp.runpp(net, init='dc', calculate_voltage_angles=True)
 
-    assert np.allclose(net.res_gen.p_kw.values, [-100., -100.])
-    assert np.allclose(net.res_gen.q_kvar.values, [447.397232056,
-                                                   51.8152713776])
-    assert np.allclose(net.res_gen.va_degree.values, [0.242527288986,
-                                                      -143.558157703])
+    assert np.allclose(net.res_gen.p_kw.values, [100., 100.])
+    assert np.allclose(net.res_gen.q_kvar.values, [-447.397232056, -51.8152713776])
+    assert np.allclose(net.res_gen.va_degree.values, [0.242527288986,-143.558157703])
     assert np.allclose(net.res_gen.vm_pu.values, [1.0, 1.0])
 
-    assert np.allclose(net.res_bus.vm_pu, [1.000000, 0.956422, 1.000000,
-                                           1.000000])
-    assert np.allclose(net.res_bus.va_degree, [0.000000, -145.536429154,
-                                               -143.558157703, 0.242527288986])
-    assert np.allclose(net.res_bus.p_kw, [61.87173, 30.00000, -100.00000,
-                                          0.00000])
-    assert np.allclose(net.res_bus.q_kvar, [-470.929980278, 2.000000,
-                                            21.8152713776, 447.397232056])
-    assert np.allclose(net.res_ext_grid.p_kw.values, [61.87173])
-    assert np.allclose(net.res_ext_grid.q_kvar, [-470.927898])
+    assert np.allclose(net.res_bus.vm_pu, [1.000000, 0.956422, 1.000000, 1.000000])
+    assert np.allclose(net.res_bus.va_degree, [0.000000, -145.536429154, -143.558157703,
+                                               0.242527288986])
+    assert np.allclose(net.res_bus.p_kw, [61.87173, 30.00000, -100.00000, 0.00000])
+    assert np.allclose(net.res_bus.q_kvar, [-470.929980278, 2.000000, 21.8152713776, 447.397232056])
+    assert np.allclose(net.res_ext_grid.p_kw.values, [-61.87173])
+    assert np.allclose(net.res_ext_grid.q_kvar, [470.927898])
 
 
 def test_0gen_2ext_grid():
@@ -60,8 +55,8 @@ def test_0gen_2ext_grid():
     assert np.allclose(net.res_bus.vm_pu.values,  [1.000000, 0.932225,
                                                    0.976965, 1.000000])
 
-    assert np.allclose(net.res_ext_grid.p_kw.values, [-0.000000, 0.000000, -132.993015])
-    assert np.allclose(net.res_ext_grid.q_kvar, [4.08411026001, 0.000000, 27.437210083])
+    assert np.allclose(net.res_ext_grid.p_kw.values, [-0.000000, 0.000000, 132.993015])
+    assert np.allclose(net.res_ext_grid.q_kvar, [-4.08411026001, 0.000000, -27.437210083])
 
 
 def test_0gen_2ext_grid_decoupled():
@@ -94,8 +89,8 @@ def test_0gen_2ext_grid_decoupled():
     assert np.allclose(net.res_bus.vm_pu.values,  [1.000000, 0.930961,
                                                    0.975764, 0.998865, 1.0])
 
-    assert np.allclose(net.res_ext_grid.p_kw.values, [-133.158732, 0.000000, 0.000000, -0.000000])
-    assert np.allclose(net.res_ext_grid.q_kvar, [39.5843982697, 0.000000, 0.000000, -0.000000])
+    assert np.allclose(net.res_ext_grid.p_kw.values, [133.158732, 0.000000, 0.000000, -0.000000])
+    assert np.allclose(net.res_ext_grid.q_kvar, [-39.5843982697, 0.000000, 0.000000, -0.000000])
 
 
 def test_bus_bus_switch_at_eg():
@@ -153,15 +148,15 @@ def test_ext_grid_gen_order_in_ppc():
         pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)
 
     for gen_bus in [ 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5]:
-        pp.create_gen(net, bus=gen_bus, p_kw=-1, vm_pu=1.)
+        pp.create_gen(net, bus=gen_bus, p_kw=1, vm_pu=1.)
 
     pp.rundcpp(net)
     assert all(net.res_gen.p_kw==net.gen.p_kw)
-    assert all(net.res_ext_grid.p_kw>0)
+    assert all(net.res_ext_grid.p_kw<0)
 
     pp.runpp(net)
     assert all(net.res_gen.p_kw==net.gen.p_kw)
-    assert all(net.res_ext_grid.p_kw>0)
+    assert all(net.res_ext_grid.p_kw<0)
 
 
 def test_isolated_gen_lookup():
@@ -175,8 +170,8 @@ def test_isolated_gen_lookup():
 
     pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)
 
-    pp.create_gen(net, bus=gen_iso_bus, p_kw=-1, vm_pu=1., name='iso_gen')
-    pp.create_gen(net, bus=gen_bus, p_kw=-2, vm_pu=1., name='gen')
+    pp.create_gen(net, bus=gen_iso_bus, p_kw=1, vm_pu=1., name='iso_gen')
+    pp.create_gen(net, bus=gen_bus, p_kw=2, vm_pu=1., name='gen')
 
     pp.rundcpp(net)
     assert net.res_gen.p_kw.values[1] == net.gen.p_kw.values[1]
@@ -429,4 +424,4 @@ def test_trafo3w_switches():
     assert 0 < net.res_trafo3w.p_hv_kw.at[t3] < 1
 
 if __name__ == "__main__":
-     pytest.main(["test_scenarios.py"])
+     pytest.main(["test_scenarios.py", "-xs"])

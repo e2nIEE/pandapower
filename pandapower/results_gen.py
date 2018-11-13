@@ -33,8 +33,8 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
     b = bus_lookup_aranged[b_sum]
-    pq_bus[b, 0] += p_sum
-    pq_bus[b, 1] += q_sum
+    pq_bus[b, 0] -= p_sum
+    pq_bus[b, 1] -= q_sum
 
 
 def _get_ext_grid_results(net, ppc):
@@ -52,13 +52,13 @@ def _get_ext_grid_results(net, ppc):
     # read results from ppc for these buses
     p = np.zeros(n_res_eg)
     q = np.zeros(n_res_eg)
-    p[eg_is_mask] = -ppc["gen"][gen_idx_ppc, PG] * 1e3
+    p[eg_is_mask] = ppc["gen"][gen_idx_ppc, PG] * 1e3
     # store result in net['res']
     net["res_ext_grid"]["p_kw"] = p
 
     # if ac PF q results are also available
     if ac:
-        q[eg_is_mask] = -ppc["gen"][gen_idx_ppc, QG] * 1e3
+        q[eg_is_mask] = ppc["gen"][gen_idx_ppc, QG] * 1e3
         net["res_ext_grid"]["q_kvar"] = q
 
     # get bus values for pq_bus
@@ -83,11 +83,11 @@ def _get_p_q_gen_resuts(net, ppc):
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
     p_gen = np.zeros(n_res_gen)
-    p_gen[gen_is_mask] = -ppc["gen"][gen_idx_ppc, PG] * 1e3
+    p_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, PG] * 1e3
     q_gen = None
     if net["_options"]["ac"]:
         q_gen = np.zeros(n_res_gen)
-        q_gen[gen_is_mask] = -ppc["gen"][gen_idx_ppc, QG] * 1e3
+        q_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, QG] * 1e3
         net["res_gen"]["q_kvar"] = q_gen
 
     net["res_gen"]["p_kw"] = p_gen

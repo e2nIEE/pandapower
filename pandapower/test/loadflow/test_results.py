@@ -25,22 +25,22 @@ def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
     # result values from powerfactory
     load1 = 14.578
     load2 = 8.385
-    
+
     ika1 = 0.0466482
     ika2 = 0.0134161
-    
+
     p_from1 = 1212.158
     p_from2 = 5.11
-    
+
     q_from1 = 167.416
     q_from2 = -469.371
-    
+
     p_to1 = -1200.00
     p_to2 = 0.000
-    
+
     q_to1 = -1100.000
     q_to2 = 0.0000
-    
+
     v = 1.007389386
 
 
@@ -91,9 +91,9 @@ def test_load_sgen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
     assert abs(net.res_load.p_kw.at[l1] - pl1) < s_tol
     assert abs(net.res_load.q_kvar.at[l1] - ql1) < s_tol
     # pf uses generator system
-    assert abs(net.res_sgen.p_kw.at[sg1] - (- ps1)) < s_tol
+    assert abs(net.res_sgen.p_kw.at[sg1] - ps1) < s_tol
     # pf uses generator system
-    assert abs(net.res_sgen.q_kvar.at[sg1] - (-qs1)) < s_tol
+    assert abs(net.res_sgen.q_kvar.at[sg1] - qs1) < s_tol
     assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
 
 
@@ -318,7 +318,7 @@ def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3
     b3 = buses.index[2]
     g1 = gens[0]
     # powerfactory results
-    q = -260.660
+    q = 260.660
     u2 = 1.00584636
     u_set = 1.0
 
@@ -344,7 +344,7 @@ def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, 
 
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
-    assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < s_tol
+    assert abs(net.res_gen.q_kvar.at[g1] - net.gen.min_q_kvar.at[g1]) < s_tol
 
 
 def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=1e-3):
@@ -374,7 +374,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     phv = 300.43
     pmv = -200.00
     plv = -100.00
-    
+
 
     assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
@@ -393,7 +393,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
-    
+
     runpp_with_consistency_checks(net, trafo_model="pi",trafo3w_losses='star')
 
     #Test results Integral:
@@ -413,7 +413,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     phv = 300.43
     pmv = -200.00
     plv = -100.00
-    
+
     assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b4] - ulv)) < v_tol
@@ -502,7 +502,7 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     u_set = 1.0
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - u_set) < v_tol
-    assert abs(net.res_gen.q_kvar.at[g1] - (-q)) < s_tol
+    assert abs(net.res_gen.q_kvar.at[g1] - q) < s_tol
 
     # test_enforce_qlims
     net = add_test_enforce_qlims(net)
@@ -517,7 +517,7 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     u3 = 1.00045091
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < 1e-2
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1e-2
-    assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < 1e-2
+    assert abs(net.res_gen.q_kvar.at[g1] - net.gen.min_q_kvar.at[g1]) < 1e-2
 
 
 def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -561,4 +561,11 @@ def test_open(result_test_network):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_results.py"])
+#    test_enforce_q_lims()
+#    from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
+#    net = pp.create_empty_network()
+#    add_test_enforce_qlims(net)
+#    test_enforce_qlims(net)
+#    pp.runpp(net)
+#    test_load_sgen(net)
+    pytest.main(["test_results.py", "-xs", "-W error::UserWarning"])

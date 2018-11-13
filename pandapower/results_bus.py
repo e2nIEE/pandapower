@@ -43,8 +43,8 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         sgen_is = _is_elements["sgen"]
         sgen_ctrl = (sg.in_service & sg.controllable).values
         scaling = sg["scaling"].values
-        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
-        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
+        psg = - sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
+        qsg = - sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
         if any(sgen_ctrl):
             # get gen index in ppc
             gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][_is_elements["sgen_controllable"].index]
@@ -242,8 +242,12 @@ def _get_p_q_results(net, bus_lookup_aranged):
         if len(net[element]):
             write_pq_results_to_element(net, element)
             p_el, q_el, bus_el = get_p_q_b(net, element)
-            p = np.hstack([p, p_el])
-            q = np.hstack([q, q_el])
+            if element == "sgen":
+                p = np.hstack([p, p_el*-1])
+                q = np.hstack([q, q_el*-1])
+            else:
+                p = np.hstack([p, p_el])
+                q = np.hstack([q, q_el])
             b = np.hstack([b, bus_el])
 
     if not ac:

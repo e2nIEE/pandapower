@@ -120,7 +120,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             pp.create_load(net, i, p_kw=ppc['bus'][i, 2] * 1e3, q_kvar=ppc['bus'][i, 3] * 1e3,
                            controllable=False)
         elif ppc['bus'][i, 2] < 0:
-            pp.create_sgen(net, i, p_kw=ppc['bus'][i, 2] * 1e3, q_kvar=ppc['bus'][i, 3] * 1e3,
+            pp.create_sgen(net, i, p_kw=-ppc['bus'][i, 2] * 1e3, q_kvar=-ppc['bus'][i, 3] * 1e3,
                            type="", controllable=False)
         elif ppc['bus'][i, 3] != 0:
             pp.create_load(net, i, p_kw=ppc['bus'][i, 2] * 1e3, q_kvar=ppc['bus'][i, 3] * 1e3,
@@ -160,7 +160,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             if i == first_same_bus_in_service_gen_idx:
                 gen_lookup.element.loc[i] = pp.create_gen(
                     net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
-                    p_kw=-ppc['gen'][i, 1] * 1e3,
+                    p_kw=ppc['gen'][i, 1] * 1e3,
                     in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
                     max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
                     max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3)
@@ -176,8 +176,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         # create sgen
         if current_bus_type == 1:
             gen_lookup.element.loc[i] = pp.create_sgen(
-                net, bus=current_bus_idx, p_kw=-ppc['gen'][i, 1] * 1e3,
-                q_kvar=-ppc['gen'][i, 2] * 1e3, type="", in_service=bool(ppc['gen'][i, 7] > 0),
+                net, bus=current_bus_idx, p_kw=ppc['gen'][i, 1] * 1e3,
+                q_kvar=ppc['gen'][i, 2] * 1e3, type="", in_service=bool(ppc['gen'][i, 7] > 0),
                 max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
                 max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3,
                 controllable=True)

@@ -27,7 +27,7 @@ import json
 from pandapower.idx_gen import QC1MAX, PG,QC2MAX, RAMP_AGC, QG, GEN_BUS, RAMP_10,VG, MBASE, PC2, QMAX,GEN_STATUS, QMIN,QC1MIN, QC2MIN, PC1, PMIN, PMAX, RAMP_Q, RAMP_30, APF
 from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
 from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, ANGMIN, ANGMAX, TAP, SHIFT
-from pandapower.idx_cost import MODEL, STARTUP, SHUTDOWN, COST
+from pandapower.idx_cost import MODEL, STARTUP, SHUTDOWN, COST, NCOST
 
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=0, trafo3w_losses="hv"):
@@ -74,7 +74,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=False,
-                     mode="opf", copy_constraints_to_ppc=True,
+                     mode="opf_pm", copy_constraints_to_ppc=True,
                      r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
@@ -101,7 +101,7 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
         _clean_up(net)
         net["OPF_converged"] = True
     else:
-        _clean_up(net)
+#        _clean_up(net)
         logger.warning("OPF did not converge!")
 
 def _call_powermodels(pm, julia_file=None):
@@ -188,34 +188,50 @@ def ppc_to_pm(net, ppc):
         gen["qc1max"] = row[QC1MAX]
         gen["pg"] = row[PG]
         gen["qc2max"] = row[QC2MAX]
-        gen["ramp_agc"] = row[RAMP_AGC]
+#        gen["ramp_agc"] = row[RAMP_AGC]
         gen["qg"] = row[QG]
         gen["gen_bus"] = int(row[GEN_BUS]) + 1
-        gen["ramp_10"] = row[RAMP_10]
+#        gen["ramp_10"] = row[RAMP_10]
         gen["vg"] = row[VG]
-        gen["mbase"] = row[MBASE]
-        gen["pc2"] = row[PC2]
+#        gen["mbase"] = row[MBASE]
+#        gen["pc2"] = row[PC2]
         gen["qmax"] = row[QMAX]
         gen["gen_status"] = int(row[GEN_STATUS])
         gen["qmin"] = row[QMIN]
-        gen["qc1min"] = row[QC1MIN]
-        gen["qc2min"] = row[QC2MIN]
-        gen["pc1"] = row[PC1]
-        gen["ramp_q"] = row[RAMP_Q]
-        gen["ramp_30"] = row[RAMP_30]
+#        gen["qc1min"] = row[QC1MIN]
+#        gen["qc2min"] = row[QC2MIN]
+#        gen["pc1"] = row[PC1]
+#        gen["ramp_q"] = row[RAMP_Q]
+#        gen["ramp_30"] = row[RAMP_30]
         gen["pmin"] = row[PMIN]
         gen["pmax"] = row[PMAX]
-        gen["apf"] = row[APF]
+#        gen["apf"] = row[APF]
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
-    for idx, row in enumerate(ppc["gencost"], start=1):
-        gen = pm["gen"][str(idx)]
-        gen["model"] = int(row[MODEL])
-        gen["shutdown"] = row[SHUTDOWN]
-        gen["startup"] = row[STARTUP]
-        gen["ncost"] = 2#int(row[NCOST])
-        gen["cost"] = [row[COST], row[COST +1], 0]
+
+    gens_with_costs = set()
+    for c in net.polynomial_cost.itertuples():
+        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
+        if gen_index in gens_with_costs:
+            raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
+        else:
+            gens_with_costs.update({gen_index})
+        gen = pm["gen"][str(gen_index + 1)]
+        gen["ncost"] = 2
+        gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
+        gen["model"] = 2
+#    for idx, row in enumerate(ppc["gencost"], start=1):
+#        gen = pm["gen"][str(idx)]
+#        gen["model"] = int(row[MODEL])
+#        gen["shutdown"] = row[SHUTDOWN]
+#        gen["startup"] = row[STARTUP]
+#        ncost = int(row[NCOST])
+#        gen["ncost"] = ncost
+#        cost = [0] * (ncost + 1)
+#        cost[-2] = row[COST]
+#        cost[-1] = row[COST + 1]
+#        gen["cost"] = cost
     return pm
 
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
@@ -227,11 +243,10 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
         ppci["gen"][int(i)-1, PG] = gen["pg"]
         ppci["gen"][int(i)-1, QG] = gen["qg"]
 
-    ppci["obj"] = result_pm["objective"]
+    ppc["obj"] = result_pm["objective"]
     ppci["success"] = result_pm["status"] == "LocalOptimal"
     ppci["et"] = result_pm["solve_time"]
-    ppci["f"] = result_pm["objective"]
-    ppci["internal_gencost"] = result_pm["objective"]
+#    ppc["obj"] = result_pm["objective"]
 
     makeYbus, pfsoln = _get_numba_functions(ppci, net._options)
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
@@ -239,7 +254,7 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
     ppc["bus"][:, VM] = np.nan
     ppc["bus"][:, VA] = np.nan
-    result = _copy_results_ppci_to_ppc(ppci, ppc, "opf")
+    result = _copy_results_ppci_to_ppc(ppci, ppc, net._options["mode"])
     return result
 
 if __name__ == '__main__':
@@ -263,30 +278,39 @@ if __name__ == '__main__':
                                             vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_kw=100.,
                                             i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
                                             sn_hv_kva=100e3, sn_mv_kva=50e3, sn_lv_kva=50e3)
-    net.trafo3w["max_loading_percent"] = 50
+#    net.trafo3w["max_loading_percent"] = 50
 
     #create 110 kV lines
     pp.create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
     pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
     pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
     pp.create_line(net, bus4, bus5, length_km=30., std_type='149-AL1/24-ST1A 110.0')
-    net.line["max_loading_percent"] = 30
+#    net.line["max_loading_percent"] = 30
 
     #create loads
-    pp.create_load(net, bus2, p_kw=60e3, controllable = False)
+#    pp.create_load(net, bus2, p_kw=60e3, controllable = False)
     pp.create_load(net, bus3, p_kw=70e3, controllable = False)
+    pp.create_sgen(net, bus3, p_kw=70e3, controllable=False)
     pp.create_load(net, bus4, p_kw=10e3, controllable = False)
 
     #create generators
-    eg = pp.create_ext_grid(net, bus1, min_p_kw = -1e9, max_p_kw = 1e9)
-    g0 = pp.create_gen(net, bus3, p_kw=-80*1e3, min_p_kw=-80e3, max_p_kw=0,vm_pu=1.01, controllable=True)
-    g1 = pp.create_gen(net, bus4, p_kw=-100*1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01, controllable=True)
+    eg = pp.create_ext_grid(net, bus1, min_p_kw=0, max_p_kw=1e3, max_q_kvar=10, min_q_kvar=0)
+#    g0 = pp.create_gen(net, bus3, p_kw=80*1e3, min_p_kw=0, max_p_kw=80e3, vm_pu=1.01, controllable=True)
+#    g1 = pp.create_gen(net, bus4, p_kw=100*1e3, min_p_kw=0, max_p_kw=100e3, vm_pu=1.01, controllable=True)
 
-    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-1, 0]))
-    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', np.array([-1, 0]))
-    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', np.array([-1, 0]))
+    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', cp1_eur_per_kw=12)
+    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', cp1_eur_per_kw=10, cp0_eur=100000)
+    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', cp1_eur_per_kw=10)
 
-    runpm(net)
-    if net.OPF_converged:
-        from pandapower.test.consistency_checks import consistency_checks
-        consistency_checks(net)
+#    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-10, -10,]), type="q")
+#    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', np.array([-10, -10]), type="q")
+#    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', np.array([-10, -10]), type="q")
+
+    pp.runpp(net)
+
+#    pp.runopp(net)
+
+#    runpm(net)
+#    if net.OPF_converged:
+#        from pandapower.test.consistency_checks import consistency_checks
+#        consistency_checks(net)

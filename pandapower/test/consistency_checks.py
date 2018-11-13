@@ -69,21 +69,21 @@ def element_power_consistent_with_bus_power(net, rtol=1e-5):
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
-            bus_p.at[tab.bus] += net.res_ext_grid.p_kw.at[idx]
-            bus_q.at[tab.bus] += net.res_ext_grid.q_kvar.at[idx]
+            bus_p.at[tab.bus] -= net.res_ext_grid.p_kw.at[idx]
+            bus_q.at[tab.bus] -= net.res_ext_grid.q_kvar.at[idx]
 
     for idx, tab in net.gen.iterrows():
         if tab.in_service:
-            bus_p.at[tab.bus] += net.res_gen.p_kw.at[idx]
-            bus_q.at[tab.bus] += net.res_gen.q_kvar.at[idx]
+            bus_p.at[tab.bus] -= net.res_gen.p_kw.at[idx]
+            bus_q.at[tab.bus] -= net.res_gen.q_kvar.at[idx]
 
     for idx, tab in net.load.iterrows():
         bus_p.at[tab.bus] += net.res_load.p_kw.at[idx]
         bus_q.at[tab.bus] += net.res_load.q_kvar.at[idx]
 
     for idx, tab in net.sgen.iterrows():
-        bus_p.at[tab.bus] += net.res_sgen.p_kw.at[idx]
-        bus_q.at[tab.bus] += net.res_sgen.q_kvar.at[idx]
+        bus_p.at[tab.bus] -= net.res_sgen.p_kw.at[idx]
+        bus_q.at[tab.bus] -= net.res_sgen.q_kvar.at[idx]
 
     for idx, tab in net.storage.iterrows():
         bus_p.at[tab.bus] += net.res_storage.p_kw.at[idx]

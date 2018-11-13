@@ -739,11 +739,11 @@ def test_storage_pf():
 
     pp.create_ext_grid(net, b2)
     pp.create_load(net, b1, p_kw=10)
-    pp.create_sgen(net, b1, p_kw=-10)
+    pp.create_sgen(net, b1, p_kw=10)
 
     # test generator behaviour
     pp.create_storage(net, b1, p_kw=-10, max_e_kwh=10)
-    pp.create_sgen(net, b1, p_kw=-10, in_service=False)
+    pp.create_sgen(net, b1, p_kw=10, in_service=False)
 
     res_gen_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
@@ -847,8 +847,8 @@ def test_ext_grid_and_gen_at_one_bus():
     q = net.res_ext_grid.q_kvar.sum()
 
     ##create two gens at the slack bus
-    g1 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
-    g2 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    g1 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=1e3)
+    g2 = pp.create_gen(net, b1, vm_pu=1.01, p_kw=1e3)
     runpp_with_consistency_checks(net)
 
     #all the reactive power previously provided by the ext_grid is now provided by the generators
@@ -858,8 +858,8 @@ def test_ext_grid_and_gen_at_one_bus():
     assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2])
 
     #set reactive power limits at the generators
-    net.gen["min_q_kvar"] = [-100, -10]
     net.gen["max_q_kvar"] = [100, 10]
+    net.gen["min_q_kvar"] = [-100, -10]
     runpp_with_consistency_checks(net)
     #g1 now has 10 times the reactive power of g2 in accordance with the different Q ranges
     assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2]*10)
@@ -870,7 +870,7 @@ def test_ext_grid_and_gen_at_one_bus():
     # now enforce Q-lims
     runpp_with_consistency_checks(net, enforce_q_lims=True)
     # both generators are at there lower limit with regard to the reactive power
-    assert np.allclose(net.res_gen.q_kvar.values, net.gen.min_q_kvar.values)
+    assert np.allclose(net.res_gen.q_kvar.values, net.gen.max_q_kvar.values)
     # the total reactive power remains unchanged, but the rest of the power is now provided by the ext_grid
     assert np.isclose(net.res_gen.q_kvar.sum() + net.res_ext_grid.q_kvar.sum(), q)
 
@@ -886,8 +886,8 @@ def test_ext_grid_and_gen_at_one_bus():
     net.ext_grid["max_q_kvar"] = [100, 10]
     net.ext_grid["min_q_kvar"] = [-100, -10]
     runpp_with_consistency_checks(net, enforce_q_lims=True)
-    assert net.res_ext_grid.q_kvar.values[0] < net.ext_grid.min_q_kvar.values[0]
-    assert np.allclose(net.res_gen.q_kvar.values, net.gen.min_q_kvar.values)
+    assert net.res_ext_grid.q_kvar.values[0] > net.ext_grid.max_q_kvar.values[0]
+    assert np.allclose(net.res_gen.q_kvar.values, net.gen.max_q_kvar.values)
 
 def two_ext_grids_at_one_bus():
     net = pp.create_empty_network()
@@ -896,7 +896,7 @@ def two_ext_grids_at_one_bus():
     pp.create_ext_grid(net, b1, vm_pu=1.01, index=2)
     pp.create_line(net, b1, b2, 1., std_type="305-AL1/39-ST1A 110.0")
     pp.create_load(net, bus=b2, p_kw=3.5e3, q_kvar=1e3)
-    pp.create_gen(net, b1, vm_pu=1.01, p_kw=-1e3)
+    pp.create_gen(net, b1, vm_pu=1.01, p_kw=1e3)
     runpp_with_consistency_checks(net)
     assert net.converged
 
@@ -938,7 +938,7 @@ def test_dc_with_ext_grid_at_one_bus():
 
     pp.create_dcline(net, from_bus=b1, to_bus=b2, p_kw=10,loss_percent=0,loss_kw=0, vm_from_pu=1.01, vm_to_pu=1.01)
 
-    pp.create_sgen(net,b1,p_kw=-10)
+    pp.create_sgen(net,b1,p_kw=10)
     pp.create_load(net,b2,p_kw=10)
 
     runpp_with_consistency_checks(net)
@@ -953,4 +953,5 @@ def test_init_results_without_results():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_runpp.py"])
+#    test_ext_grid_and_gen_at_one_bus()
+    pytest.main(["test_runpp.py", "-xs", "-W error::UserWarning"])

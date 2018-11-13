@@ -656,13 +656,12 @@ def convert_format(net):
         net["_pd2ppc_lookups"] = {"bus": None,
                                   "gen": None,
                                   "branch": None}
-    net.version = float(__version__[:3])
     if "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
 
     if "time_resolution" not in net:
         # for storages
-        time_resolution = 1.0
+        net.time_resolution = 1.0
 
     new_net = create_empty_network()
     for key, item in net.items():
@@ -682,6 +681,13 @@ def convert_format(net):
                                                              errors="ignore")
     if not "g_us_per_km" in net.line:
         net.line["g_us_per_km"] = 0.
+
+    if net.version < 2:
+        net.sgen.p_kw *= -1
+        net.sgen.q_kvar *= -1
+        net.gen.p_kw *= -1
+
+    net.version = float(__version__[:3])
     return net
 
 

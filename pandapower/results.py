@@ -163,7 +163,7 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
 
     if "iterations" in result:
         ppc["iterations"] = result["iterations"]
-        
+
 
     result = ppc
     return result

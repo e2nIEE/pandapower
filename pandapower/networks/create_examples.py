@@ -69,7 +69,7 @@ def example_simple():
                   name="generator")
 
     # create static generator
-    pp.create_sgen(net, bus7, p_kw=-2000, q_kvar=500, name="static generator")
+    pp.create_sgen(net, bus7, p_kw=2000, q_kvar=500, name="static generator")
 
     # create shunt
     pp.create_shunt(net, bus3, q_kvar=-960, p_kw=0, name='Shunt')
@@ -223,16 +223,16 @@ def example_multivoltage():
     # --- Static generators
 
     # HV
-    pp.create_sgen(net, pp.get_element_index(net, "bus", 'Bus SB 5'), p_kw=-20000,
-                   q_kvar=-4000, sn_kva=45000, type='WP', name='Wind Park')
+    pp.create_sgen(net, pp.get_element_index(net, "bus", 'Bus SB 5'), p_kw=20000,
+                   q_kvar=4000, sn_kva=45000, type='WP', name='Wind Park')
 
     # MV
     mv_sgens = pd.DataFrame()
     mv_sgens['sgen_name'] = ['Biogas plant', 'Further MV Generator', 'Industry Generator',
                              'PV Park']
     mv_sgens['bus'] = ['Bus MV6', 'Bus MV0', 'Bus MV0 20kV', 'Bus MV5']
-    mv_sgens['p'] = [-500, -500, -15000, -2000]
-    mv_sgens['q'] = [0, -50, -3000, -100]
+    mv_sgens['p'] = [500, 500, 15000, 2000]
+    mv_sgens['q'] = [0, 50, 3000, 100]
     mv_sgens['sn'] = [750, 1000, 20000, 5000]
     mv_sgens['type'] = ['SGEN', 'SGEN', 'SGEN', 'PV']
 
@@ -245,7 +245,7 @@ def example_multivoltage():
     lv_sgens = pd.DataFrame()
     lv_sgens['sgen_name'] = ['PV'] + ['PV(%s)' % i for i in range(1, 6)]
     lv_sgens['bus'] = ['Bus LV%s' % i for i in ['1.1', '1.3', '2.3', '2.4', '2.2.1', '2.2.2']]
-    lv_sgens['p'] = [-6, -5, -5, -5, -5, -5]
+    lv_sgens['p'] = [6, 5, 5, 5, 5, 5]
     lv_sgens['q'] = 0
     lv_sgens['sn'] = [12, 10, 10, 10, 10, 10]
     lv_sgens['type'] = 'PV'

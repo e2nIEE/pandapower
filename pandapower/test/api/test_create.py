@@ -36,8 +36,9 @@ def test_convenience_create_functions():
     sg0 = pp.create_sgen_from_cosphi(net, b2, 5e3, 0.95, "cap", name="sgen")
     pp.runpp(net, init="flat")
     assert np.sqrt(net.sgen.p_kw.at[sg0] ** 2 + net.sgen.q_kvar.at[sg0] ** 2) == 5e3
-    assert net.sgen.p_kw.at[sg0] == -4.75e3
-    assert net.sgen.q_kvar.at[sg0] < 0
+    assert net.sgen.p_kw.at[sg0] == 4.75e3
+    assert net.sgen.q_kvar.at[sg0] > 0
+    assert False #ToDO we need to think again about what the correct behaviour is for "cap" / "ind" here
     assert np.isclose(net.res_bus.vm_pu.at[b2], 1.0029376578)
     assert net.sgen.name.at[sg0] == "sgen"
 
