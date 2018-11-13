@@ -93,7 +93,7 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
         pp_to_pm_callback(net, ppci, pm)
     result_pm = _call_powermodels(pm, julia_file)
     net._result_pm = result_pm
-    result = pm_results_to_ppc_results(ppc, ppci, result_pm)
+    result = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     success = ppc["success"]
     net["_ppc_opf"] = ppci
     if success:
@@ -214,11 +214,11 @@ def ppc_to_pm(net, ppc):
         gen["model"] = int(row[MODEL])
         gen["shutdown"] = row[SHUTDOWN]
         gen["startup"] = row[STARTUP]
-        gen["ncost"] = 1#int(row[NCOST])
+        gen["ncost"] = 2#int(row[NCOST])
         gen["cost"] = [row[COST], row[COST +1], 0]
     return pm
 
-def pm_results_to_ppc_results(ppc, ppci, result_pm):
+def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     V = np.zeros(len(ppci["bus"]), dtype="complex")
     for i, bus in result_pm["solution"]["bus"].items():
         V[int(i)-1] = bus["vm"] * np.exp(1j*bus["va"])
@@ -286,7 +286,7 @@ if __name__ == '__main__':
     costgen1 = pp.create_polynomial_cost(net, 0, 'gen', np.array([-1, 0]))
     costgen2 = pp.create_polynomial_cost(net, 1, 'gen', np.array([-1, 0]))
 
-    runpm(net, "run_powermodels.jl")
+    runpm(net)
     if net.OPF_converged:
         from pandapower.test.consistency_checks import consistency_checks
         consistency_checks(net)
