@@ -115,13 +115,13 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc_pu = sequence_to_phase(V012_pu)
 
     if ac:
-        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0, :].getA1())
-        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1, :].getA1())
-        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2, :].getA1())
+        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0, :].flatten())
+        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1, :].flatten())
+        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2, :].flatten())
     # voltage angles
-    net["res_bus_3ph"]["vaA_degree"] = angle(Vabc_pu[0, :].getA1())*180/np.pi
-    net["res_bus_3ph"]["vaB_degree"] = angle(Vabc_pu[1, :].getA1())*180/np.pi
-    net["res_bus_3ph"]["vaC_degree"] = angle(Vabc_pu[2, :].getA1())*180/np.pi
+    net["res_bus_3ph"]["vaA_degree"] = angle(Vabc_pu[0, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["vaB_degree"] = angle(Vabc_pu[1, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["vaC_degree"] = angle(Vabc_pu[2, :].flatten())*180/np.pi
     net["res_bus_3ph"].index = net["bus"].index
 
 

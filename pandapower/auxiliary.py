@@ -608,7 +608,8 @@ def X012_to_X2(X012):
 # =============================================================================
 
 def combine_X012(X0, X1, X2):
-    return np.transpose(np.concatenate((X0, X1, X2), axis=1))
+    comb = np.vstack((X0, X1, X2))
+    return comb
 
 
 # =============================================================================
@@ -623,27 +624,27 @@ def phase_shift_unit_operator(angle_deg):
 
 a = phase_shift_unit_operator(120)
 asq = phase_shift_unit_operator(-120)
-Tabc = np.matrix(
+Tabc = np.array(
     [
         [1, 1, 1],
         [1, asq, a],
         [1, a, asq]
-    ], dtype=np.complex)
+    ])
 
-T012 = np.divide(np.matrix(
+T012 = np.divide(np.array(
     [
         [1, 1, 1],
         [1, a, asq],
         [1, asq, a]
-    ], dtype=np.complex), 3)
+    ]), 3)
 
 
 def sequence_to_phase(X012):
-    return np.matmul(Tabc, X012)
+    return np.asarray(np.matmul(Tabc, X012))
 
 
 def phase_to_sequence(Xabc):
-    return np.matmul(T012, Xabc)
+    return np.asarray(np.matmul(T012, Xabc))
 
 
 # =============================================================================
@@ -653,45 +654,46 @@ def phase_to_sequence(Xabc):
 def I0_from_V012(V012, Y):
     V0 = X012_to_X0(V012)
     if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V0)
+        return np.asarray(np.matmul(Y.todense(), V0))
     else:
-        return np.matmul(Y, V0)
+        return np.asarray(np.matmul(Y, V0))
 
 
 def I1_from_V012(V012, Y):
-    V1 = X012_to_X1(V012)
+    V1 = X012_to_X1(V012)[:,np.newaxis]
     if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V1)
+        i1 = np.asarray(np.matmul(Y.todense(), V1))
+        return np.transpose(i1)
     else:
-        return np.matmul(Y, V1)
+        i1 = np.asarray(np.matmul(Y, V1))
+        return np.transpose(i1)
 
 
 def I2_from_V012(V012, Y):
     V2 = X012_to_X2(V012)
     if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V2)
+        return np.asarray(np.matmul(Y.todense(), V2))
     else:
-        return np.matmul(Y, V2)
+        return np.asarray(np.matmul(Y, V2))
 
 
 def V1_from_ppc(ppc):
     return np.transpose(
-        np.matrix(
+        np.array(
             ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))
-            , dtype=np.complex
         )
     )
 
 
 def V_from_I(Y, I):
-    return np.transpose(np.matrix(sp.sparse.linalg.spsolve(Y, I)))
+    return np.transpose(np.array(sp.sparse.linalg.spsolve(Y, I)))
 
 
 def I_from_V(Y, V):
     if type(Y) == sp.sparse.csr.csr_matrix:
-        return np.matmul(Y.todense(), V)
+        return np.asarray(np.matmul(Y.todense(), V))
     else:
-        return np.matmul(Y, V)
+        return np.asarray(np.matmul(Y, V))
 
 
 # =============================================================================
@@ -708,7 +710,7 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         n_res = S012.shape[1]
     if idx is None:
         idx = np.ones(n_res, dtype="bool")
-    I012 = np.matrix(np.zeros((3, n_res), dtype=complex128))
+    I012 = np.array(np.zeros((3, n_res)))
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
     Vabc = sequence_to_phase(V012[:, idx])
     Iabc = sequence_to_phase(I012[:, idx])

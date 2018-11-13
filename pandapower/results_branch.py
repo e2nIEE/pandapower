@@ -64,14 +64,14 @@ def _get_branch_flows(ppc):
 def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
     br_from_idx = ppc1["branch"][:, F_BUS].real.astype(int)
     br_to_idx = ppc1["branch"][:, T_BUS].real.astype(int)
-    V012_f = np.matrix([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
+    V012_f = np.array([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
                          np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
-    V012_t = np.matrix([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
+    V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
                          np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
-    S012_f = np.matrix([((ppc["branch"][:, PF].real +
+    S012_f = np.array([((ppc["branch"][:, PF].real +
                     1j * ppc["branch"][:, QF].real) * 1e3)
                     for ppc in [ppc0, ppc1, ppc2]])
-    S012_t = np.matrix([((ppc["branch"][:, PT].real +
+    S012_t = np.array([((ppc["branch"][:, PT].real +
                     1j * ppc["branch"][:, QT].real) * 1e3)
                     for ppc in [ppc0, ppc1, ppc2]])
     I012_f = I_from_SV_elementwise(S012_f * 1e-3, V012_f / np.sqrt(3))
@@ -155,30 +155,30 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     Iabc_ka = np.maximum.reduce([Iabc_t_ka, Iabc_f_ka])
 
     # write to line
-    net["res_line_3ph"]["pA_from_kw"] = Pabcf_kw[0, :].A1
-    net["res_line_3ph"]["pB_from_kw"] = Pabcf_kw[1, :].A1
-    net["res_line_3ph"]["pC_from_kw"] = Pabcf_kw[2, :].A1
-    net["res_line_3ph"]["qA_from_kvar"] = Qabcf_kvar[0, :].A1
-    net["res_line_3ph"]["qB_from_kvar"] = Qabcf_kvar[1, :].A1
-    net["res_line_3ph"]["qC_from_kvar"] = Qabcf_kvar[2, :].A1
-    net["res_line_3ph"]["pA_to_kw"] = Pabct_kw[0, :].A1
-    net["res_line_3ph"]["pB_to_kw"] = Pabct_kw[1, :].A1
-    net["res_line_3ph"]["pC_to_kw"] = Pabct_kw[2, :].A1
-    net["res_line_3ph"]["qA_to_kvar"] = Qabct_kvar[0, :].A1
-    net["res_line_3ph"]["qB_to_kvar"] = Qabct_kvar[1, :].A1
-    net["res_line_3ph"]["qC_to_kvar"] = Qabct_kvar[2, :].A1
-    net["res_line_3ph"]["pAl_kw"] = Pabcl_kw[0, :].A1
-    net["res_line_3ph"]["pBl_kw"] = Pabcl_kw[1, :].A1
-    net["res_line_3ph"]["pCl_kw"] = Pabcl_kw[2, :].A1
-    net["res_line_3ph"]["qAl_kvar"] = Qabcl_kvar[0, :].A1
-    net["res_line_3ph"]["qBl_kvar"] = Qabcl_kvar[1, :].A1
-    net["res_line_3ph"]["qCl_kvar"] = Qabcl_kvar[2, :].A1
-    net["res_line_3ph"]["iA_from_ka"] = Iabc_f_ka[0, :].A1
-    net["res_line_3ph"]["iB_from_ka"] = Iabc_f_ka[1, :].A1
-    net["res_line_3ph"]["iC_from_ka"] = Iabc_f_ka[2, :].A1
-    net["res_line_3ph"]["iA_to_ka"] = Iabc_t_ka[0, :].A1
-    net["res_line_3ph"]["iB_to_ka"] = Iabc_t_ka[1, :].A1
-    net["res_line_3ph"]["iC_to_ka"] = Iabc_t_ka[2, :].A1
+    net["res_line_3ph"]["pA_from_kw"] = Pabcf_kw[0, :].flatten()
+    net["res_line_3ph"]["pB_from_kw"] = Pabcf_kw[1, :].flatten()
+    net["res_line_3ph"]["pC_from_kw"] = Pabcf_kw[2, :].flatten()
+    net["res_line_3ph"]["qA_from_kvar"] = Qabcf_kvar[0, :].flatten()
+    net["res_line_3ph"]["qB_from_kvar"] = Qabcf_kvar[1, :].flatten()
+    net["res_line_3ph"]["qC_from_kvar"] = Qabcf_kvar[2, :].flatten()
+    net["res_line_3ph"]["pA_to_kw"] = Pabct_kw[0, :].flatten()
+    net["res_line_3ph"]["pB_to_kw"] = Pabct_kw[1, :].flatten()
+    net["res_line_3ph"]["pC_to_kw"] = Pabct_kw[2, :].flatten()
+    net["res_line_3ph"]["qA_to_kvar"] = Qabct_kvar[0, :].flatten()
+    net["res_line_3ph"]["qB_to_kvar"] = Qabct_kvar[1, :].flatten()
+    net["res_line_3ph"]["qC_to_kvar"] = Qabct_kvar[2, :].flatten()
+    net["res_line_3ph"]["pAl_kw"] = Pabcl_kw[0, :].flatten()
+    net["res_line_3ph"]["pBl_kw"] = Pabcl_kw[1, :].flatten()
+    net["res_line_3ph"]["pCl_kw"] = Pabcl_kw[2, :].flatten()
+    net["res_line_3ph"]["qAl_kvar"] = Qabcl_kvar[0, :].flatten()
+    net["res_line_3ph"]["qBl_kvar"] = Qabcl_kvar[1, :].flatten()
+    net["res_line_3ph"]["qCl_kvar"] = Qabcl_kvar[2, :].flatten()
+    net["res_line_3ph"]["iA_from_ka"] = Iabc_f_ka[0, :].flatten()
+    net["res_line_3ph"]["iB_from_ka"] = Iabc_f_ka[1, :].flatten()
+    net["res_line_3ph"]["iC_from_ka"] = Iabc_f_ka[2, :].flatten()
+    net["res_line_3ph"]["iA_to_ka"] = Iabc_t_ka[0, :].flatten()
+    net["res_line_3ph"]["iB_to_ka"] = Iabc_t_ka[1, :].flatten()
+    net["res_line_3ph"]["iC_to_ka"] = Iabc_t_ka[2, :].flatten()
     net["res_line_3ph"]["iA_ka"] = Iabc_ka[0, :]
     net["res_line_3ph"]["iB_ka"] = Iabc_ka[1, :]
     net["res_line_3ph"]["iC_ka"] = Iabc_ka[2, :]
@@ -289,30 +289,30 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
 
     # write results to trafo dataframe
     res_trafo_df = net["res_trafo_3ph"]
-    res_trafo_df["pA_hv_kw"] = Pabc_hv_kw[0, :].A1
-    res_trafo_df["pB_hv_kw"] = Pabc_hv_kw[1, :].A1
-    res_trafo_df["pC_hv_kw"] = Pabc_hv_kw[2, :].A1
-    res_trafo_df["qA_hv_kvar"] = Qabc_hv_kvar[0, :].A1
-    res_trafo_df["qB_hv_kvar"] = Qabc_hv_kvar[1, :].A1
-    res_trafo_df["qC_hv_kvar"] = Qabc_hv_kvar[2, :].A1
-    res_trafo_df["pA_lv_kw"] = Pabc_lv_kw[0, :].A1
-    res_trafo_df["pB_lv_kw"] = Pabc_lv_kw[1, :].A1
-    res_trafo_df["pC_lv_kw"] = Pabc_lv_kw[2, :].A1
-    res_trafo_df["qA_lv_kvar"] = Qabc_lv_kvar[0, :].A1
-    res_trafo_df["qB_lv_kvar"] = Qabc_lv_kvar[1, :].A1
-    res_trafo_df["qC_lv_kvar"] = Qabc_lv_kvar[2, :].A1
-    res_trafo_df["pAl_kw"] = Pabcl_kw[0, :].A1
-    res_trafo_df["pBl_kw"] = Pabcl_kw[1, :].A1
-    res_trafo_df["pCl_kw"] = Pabcl_kw[2, :].A1
-    res_trafo_df["qAl_kvar"] = Qabcl_kvar[0, :].A1
-    res_trafo_df["qBl_kvar"] = Qabcl_kvar[1, :].A1
-    res_trafo_df["qCl_kvar"] = Qabcl_kvar[2, :].A1
-    res_trafo_df["iA_hv_ka"] = Iabc_hv_ka[0, :].A1
-    res_trafo_df["iB_hv_ka"] = Iabc_hv_ka[1, :].A1
-    res_trafo_df["iC_hv_ka"] = Iabc_hv_ka[2, :].A1
-    res_trafo_df["iA_lv_ka"] = Iabc_lv_ka[0, :].A1
-    res_trafo_df["iB_lv_ka"] = Iabc_lv_ka[1, :].A1
-    res_trafo_df["iC_lv_ka"] = Iabc_lv_ka[2, :].A1
+    res_trafo_df["pA_hv_kw"] = Pabc_hv_kw[0, :].flatten()
+    res_trafo_df["pB_hv_kw"] = Pabc_hv_kw[1, :].flatten()
+    res_trafo_df["pC_hv_kw"] = Pabc_hv_kw[2, :].flatten()
+    res_trafo_df["qA_hv_kvar"] = Qabc_hv_kvar[0, :].flatten()
+    res_trafo_df["qB_hv_kvar"] = Qabc_hv_kvar[1, :].flatten()
+    res_trafo_df["qC_hv_kvar"] = Qabc_hv_kvar[2, :].flatten()
+    res_trafo_df["pA_lv_kw"] = Pabc_lv_kw[0, :].flatten()
+    res_trafo_df["pB_lv_kw"] = Pabc_lv_kw[1, :].flatten()
+    res_trafo_df["pC_lv_kw"] = Pabc_lv_kw[2, :].flatten()
+    res_trafo_df["qA_lv_kvar"] = Qabc_lv_kvar[0, :].flatten()
+    res_trafo_df["qB_lv_kvar"] = Qabc_lv_kvar[1, :].flatten()
+    res_trafo_df["qC_lv_kvar"] = Qabc_lv_kvar[2, :].flatten()
+    res_trafo_df["pAl_kw"] = Pabcl_kw[0, :].flatten()
+    res_trafo_df["pBl_kw"] = Pabcl_kw[1, :].flatten()
+    res_trafo_df["pCl_kw"] = Pabcl_kw[2, :].flatten()
+    res_trafo_df["qAl_kvar"] = Qabcl_kvar[0, :].flatten()
+    res_trafo_df["qBl_kvar"] = Qabcl_kvar[1, :].flatten()
+    res_trafo_df["qCl_kvar"] = Qabcl_kvar[2, :].flatten()
+    res_trafo_df["iA_hv_ka"] = Iabc_hv_ka[0, :].flatten()
+    res_trafo_df["iB_hv_ka"] = Iabc_hv_ka[1, :].flatten()
+    res_trafo_df["iC_hv_ka"] = Iabc_hv_ka[2, :].flatten()
+    res_trafo_df["iA_lv_ka"] = Iabc_lv_ka[0, :].flatten()
+    res_trafo_df["iB_lv_ka"] = Iabc_lv_ka[1, :].flatten()
+    res_trafo_df["iC_lv_ka"] = Iabc_lv_ka[2, :].flatten()
     res_trafo_df["loading_percentA"] = loading_percent[0, :]
     res_trafo_df["loading_percentB"] = loading_percent[1, :]
     res_trafo_df["loading_percentC"] = loading_percent[2, :]

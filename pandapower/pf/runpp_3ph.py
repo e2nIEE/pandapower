@@ -226,9 +226,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     nb = ppci1["bus"].shape[0]
     V012_it = np.concatenate(
         (
-            np.matrix(np.zeros((1, nb), dtype=np.complex128))
-            , np.matrix(np.ones((1, nb), dtype=np.complex128))
-            , np.matrix(np.zeros((1, nb), dtype=np.complex128))
+            np.array(np.zeros((1, nb), dtype=np.complex128))
+            , np.array(np.ones((1, nb), dtype=np.complex128))
+            , np.array(np.zeros((1, nb), dtype=np.complex128))
         )
         , axis=0
     )
@@ -239,7 +239,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     # Initialise iteration variables
     # =============================================================================
     count = 0
-    S_mismatch = np.matrix([[True], [True]], dtype=bool)
+    S_mismatch = np.array([[True], [True]], dtype=bool)
     Sabc = load_mapping(net,ppci1)
     # =============================================================================
     #             Iteration using Power mismatch criterion
@@ -264,12 +264,12 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # Current used to find S1 Positive sequence power
         # =============================================================================
 
-        ppci1["bus"][pq_bus, PD] = np.real(S1[:, pq_bus]) * ppci1["baseMVA"]
-        ppci1["bus"][pq_bus, QD] = np.imag(S1[:, pq_bus]) * ppci1["baseMVA"]
+        ppci1["bus"][pq_bus, PD] = np.real(S1[pq_bus]) * ppci1["baseMVA"]
+        ppci1["bus"][pq_bus, QD] = np.imag(S1[pq_bus]) * ppci1["baseMVA"]
 
         _run_newton_raphson_pf(ppci1, net._options)
 
-        I1_from_V_it = -np.transpose(I1_from_V012(V012_it, Y1_pu))
+        I1_from_V_it = I1_from_V012(V012_it, Y1_pu).flatten()
         s_from_voltage = S_from_VI_elementwise(V1_for_S1, I1_from_V_it)
 
         V1_pu_it = V1_from_ppc(ppci1)
@@ -285,7 +285,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
         # =============================================================================
         #     Mismatch from Sabc to Vabc Needs to be done tomorrow
         # =============================================================================
-        S_mismatch = np.abs(S1[:, pq_bus] - s_from_voltage[:, pq_bus])*ppci0["baseMVA"]
+        S_mismatch = np.abs(S1[pq_bus] - s_from_voltage[pq_bus])*ppci0["baseMVA"]
         V012_it = V012_new
         Vabc_it = sequence_to_phase(V012_it)
         count += 1
@@ -306,9 +306,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
     ## update data matrices with solution
     # Todo: Add reference to paper to explain the choice of Y1 over Y2 in the negative sequence
-    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].A1, sl_bus)
-    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].A1, sl_bus)
-    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y1_pu, Y1_f, Y1_t, V012_it[2, :].A1, sl_bus)
+    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].flatten(), sl_bus)
+    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].flatten(), sl_bus)
+    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y1_pu, Y1_f, Y1_t, V012_it[2, :].flatten(), sl_bus)
 
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)

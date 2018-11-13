@@ -122,19 +122,19 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     gen_idx_ppc = ext_grid_lookup[eg_is_idx]
 
     # read results from ppc for these buses
-    V012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex128))
-    V012[:, gen_idx_ppc] = np.matrix([ppc["bus"][gen_idx_ppc, VM]
+    V012 = np.array(np.zeros((3, n_res_eg)))
+    V012[:, gen_idx_ppc] = np.array([ppc["bus"][gen_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
-    S012 = np.matrix(np.zeros((3, n_res_eg), dtype=complex128))
-    S012[:, gen_idx_ppc] = np.matrix([-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
+    S012 = np.array(np.zeros((3, n_res_eg)))
+    S012[:, gen_idx_ppc] = np.array([-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
 
     Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=gen_idx_ppc)
     Sabc = Sabc * 1e3
 
-    pA, pB, pC = map(lambda x: x.A1, np.real(Sabc))
-    qA, qB, qC = map(lambda x: x.A1, np.imag(Sabc))
+    pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
+    qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
 
     # store result in net['res']
     net["res_ext_grid_3ph"]["p_kw_A"] = pA
@@ -191,22 +191,22 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
 
-    V012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
-    V012[:, gen_idx_ppc] = np.matrix([ppc["bus"][gen_idx_ppc, VM]
+    V012 = np.array(np.zeros((3, n_res_gen)))
+    V012[:, gen_idx_ppc] = np.array([ppc["bus"][gen_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
-    S012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
-    S012[:, gen_idx_ppc] = np.matrix(
+    S012 = np.array(np.zeros((3, n_res_gen)))
+    S012[:, gen_idx_ppc] = np.array(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
-    I012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
+    I012 = np.array(np.zeros((3, n_res_gen)))
     I012[:, gen_idx_ppc] = I_from_SV_elementwise(S012[:, gen_idx_ppc], V012[:, gen_idx_ppc])
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e3
-    pA, pB, pC = map(lambda x: x.A1, np.real(Sabc))
-    qA, qB, qC = map(lambda x: x.A1, np.imag(Sabc))
+    pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
+    qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
 
     net["res_gen_3ph"]["pA_kw"] = pA
     net["res_gen_3ph"]["pB_kw"] = pB
@@ -251,8 +251,8 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
 
     n_res_gen = len(net['gen'])
 
-    V012 = np.matrix(np.zeros((3, n_res_gen), dtype=complex128))
-    V012[:, gen_is_mask] = np.matrix([ppc["bus"][gen_is_mask, VM]
+    V012 = np.array(np.zeros((3, n_res_gen)))
+    V012[:, gen_is_mask] = np.array([ppc["bus"][gen_is_mask, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_is_mask, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
     VABC = sequence_to_phase(V012)
