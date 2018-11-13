@@ -265,9 +265,12 @@ def test_in_serv_load():
     
     runpp_3ph(net)
     
-    assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)], np.array([0.96742893, 0.74957533]))
-    assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)], np.array([1.01302766, 1.09137945]))
-    assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)], np.array([1.019784, 1.05124282]))
+    assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)],
+                                              np.array([0.96742893, 0.74957533]))
+    assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)],
+                                              np.array([1.01302766, 1.09137945]))
+    assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)],
+                                              np.array([1.019784, 1.05124282]))
 
     assert abs(net.res_line_3ph.iA_from_ka.values[0] - 1.34212045) < 1e-5
     assert abs(net.res_line_3ph.iA_to_ka.values[0]   - 1.48537916) < 1e-5
@@ -303,9 +306,12 @@ def test_in_serv_load():
 
     runpp_3ph(net)
     
-    assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)], np.array([0.96742893, 0.74957533]))
-    assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)], np.array([1.01302766, 1.09137945]))
-    assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)], np.array([1.019784, 1.05124282]))
+    assert np.allclose(net.res_bus_3ph.vmA_pu[~np.isnan(net.res_bus_3ph.vmA_pu)],
+                                              np.array([0.96742893, 0.74957533]))
+    assert np.allclose(net.res_bus_3ph.vmB_pu[~np.isnan(net.res_bus_3ph.vmB_pu)],
+                                              np.array([1.01302766, 1.09137945]))
+    assert np.allclose(net.res_bus_3ph.vmC_pu[~np.isnan(net.res_bus_3ph.vmC_pu)],
+                                              np.array([1.019784, 1.05124282]))
 
     assert abs(net.res_line_3ph.iA_from_ka.values[0] - 1.34212045) < 1e-5
     assert abs(net.res_line_3ph.iA_to_ka.values[0]   - 1.48537916) < 1e-5
@@ -596,6 +602,7 @@ def test_2trafos():
     make_nw(net, "YNyn")
     make_nw(net, "YNyn")
     runpp_3ph(net)
+    assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
     
 
 def test_3ph_isolated_nodes():
@@ -638,8 +645,10 @@ def test_3ph_isolated_nodes():
     r = runpp_3ph(net)
 
     assert r[3]["success"]
-    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vmA_pu", "vaA_degree", "vmB_pu", "vaB_degree", "vmC_pu", "vaC_degree"]], np.nan, equal_nan=True)
-    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["pA_kw", "qA_kvar", "pB_kw", "qB_kvar", "pC_kw", "qC_kvar"]], 0.0)
+    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vmA_pu", "vaA_degree", "vmB_pu",
+                       "vaB_degree", "vmC_pu", "vaC_degree"]], np.nan, equal_nan=True)
+    assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["pA_kw", "qA_kvar", "pB_kw", "qB_kvar",
+                       "pC_kw", "qC_kvar"]], 0.0)
 
 
 # def test_3bus_trafo_network():
