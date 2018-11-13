@@ -43,13 +43,13 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
         sgen_is = _is_elements["sgen"]
         sgen_ctrl = (sg.in_service & sg.controllable).values
         scaling = sg["scaling"].values
-        psg = - sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
-        qsg = - sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
+        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
+        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
         if any(sgen_ctrl):
             # get gen index in ppc
             gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][_is_elements["sgen_controllable"].index]
-            psg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, PG] * 1000
-            qsg[sgen_is & sgen_ctrl] = - ppc["gen"][gidx_ppc, QG] * 1000
+            psg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, PG] * 1000
+            qsg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, QG] * 1000
 
         net["res_sgen"]["p_kw"] = psg
         net["res_sgen"]["q_kvar"] = qsg

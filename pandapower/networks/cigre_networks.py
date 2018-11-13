@@ -258,28 +258,28 @@ def create_cigre_network_mv(with_der=False):
 
     # Optional distributed energy recources
     if with_der in ["pv_wind", "all"]:
-        pp.create_sgen(net_cigre_mv, buses[2], -20, q_kvar=0, sn_kva=20, name='PV 3', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[3], -20, q_kvar=0, sn_kva=20, name='PV 4', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[4], -30, q_kvar=0, sn_kva=30, name='PV 5', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[5], -30, q_kvar=0, sn_kva=30, name='PV 6', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[7], -30, q_kvar=0, sn_kva=30, name='PV 8', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[8], -30, q_kvar=0, sn_kva=30, name='PV 9', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[9], -40, q_kvar=0, sn_kva=40, name='PV 10', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[10], -10, q_kvar=0, sn_kva=10, name='PV 11', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[6], -1500, q_kvar=0, sn_kva=1500, name='WKA 7',
+        pp.create_sgen(net_cigre_mv, buses[2], 20, q_kvar=0, sn_kva=20, name='PV 3', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[3], 20, q_kvar=0, sn_kva=20, name='PV 4', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[4], 30, q_kvar=0, sn_kva=30, name='PV 5', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[5], 30, q_kvar=0, sn_kva=30, name='PV 6', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[7], 30, q_kvar=0, sn_kva=30, name='PV 8', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[8], 30, q_kvar=0, sn_kva=30, name='PV 9', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[9], 40, q_kvar=0, sn_kva=40, name='PV 10', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[10], 10, q_kvar=0, sn_kva=10, name='PV 11', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[6], 1500, q_kvar=0, sn_kva=1500, name='WKA 7',
                        type='WP')
         if with_der == "all":
-            pp.create_storage(net_cigre_mv, bus=buses[4], p_kw=-600, max_e_kwh=nan, sn_kva=200,
+            pp.create_storage(net_cigre_mv, bus=buses[4], p_kw=600, max_e_kwh=nan, sn_kva=200,
                               name='Battery 1', type='Battery', max_p_kw=-600, min_p_kw=600)
-            pp.create_sgen(net_cigre_mv, bus=buses[4], p_kw=-33, sn_kva=33,
+            pp.create_sgen(net_cigre_mv, bus=buses[4], p_kw=33, sn_kva=33,
                            name='Residential fuel cell 1', type='Residential fuel cell')
-            pp.create_sgen(net_cigre_mv, bus=buses[8], p_kw=-310, sn_kva=310, name='CHP diesel 1',
+            pp.create_sgen(net_cigre_mv, bus=buses[8], p_kw=310, sn_kva=310, name='CHP diesel 1',
                            type='CHP diesel')
-            pp.create_sgen(net_cigre_mv, bus=buses[8], p_kw=-212, sn_kva=212, name='Fuel cell 1',
+            pp.create_sgen(net_cigre_mv, bus=buses[8], p_kw=212, sn_kva=212, name='Fuel cell 1',
                            type='Fuel cell')
-            pp.create_storage(net_cigre_mv, bus=buses[9], p_kw=-200, max_e_kwh=nan, sn_kva=200,
+            pp.create_storage(net_cigre_mv, bus=buses[9], p_kw=200, max_e_kwh=nan, sn_kva=200,
                               name='Battery 2', type='Battery', max_p_kw=-200, min_p_kw=200)
-            pp.create_sgen(net_cigre_mv, bus=buses[9], p_kw=-14, sn_kva=14,
+            pp.create_sgen(net_cigre_mv, bus=buses[9], p_kw=14, sn_kva=14,
                            name='Residential fuel cell 2', type='Residential fuel cell')
 
     # Bus geo data

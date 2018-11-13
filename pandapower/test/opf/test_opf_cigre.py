@@ -29,8 +29,8 @@ def test_opf_cigre():
     net.bus["min_vm_pu"] = 0.9
     net.line["max_loading_percent"] = 200
     net.trafo["max_loading_percent"] = 100
-    net.sgen["min_p_kw"] = -net.sgen.sn_kva
-    net.sgen["max_p_kw"] = 0
+    net.sgen["max_p_kw"] = net.sgen.sn_kva
+    net.sgen["min_p_kw"] = 0
     net.sgen["max_q_kvar"] = 10
     net.sgen["min_q_kvar"] = -10
     net.sgen["controllable"] = 1
@@ -55,8 +55,8 @@ def test_some_sgens_not_controllable():
     net.bus["min_vm_pu"] = 0.9
     net.line["max_loading_percent"] = 200
     net.trafo["max_loading_percent"] = 100
-    net.sgen["min_p_kw"] = -net.sgen.sn_kva
-    net.sgen["max_p_kw"] = 0
+    net.sgen["max_p_kw"] = net.sgen.sn_kva
+    net.sgen["min_p_kw"] = 0
     net.sgen["max_q_kvar"] = 10
     net.sgen["min_q_kvar"] = -10
     net.sgen["controllable"] = 1

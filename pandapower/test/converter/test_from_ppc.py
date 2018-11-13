@@ -111,4 +111,31 @@ def test_case9_conversion():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_from_ppc.py"])
+#    net = pn.case9()
+#    # set max_loading_percent to enable line limit conversion
+#    net.line["max_loading_percent"] = 100
+#    ppc = to_ppc(net, mode="opf")
+#    # correction because voltage limits are set to 1.0 at slack buses
+#    ppc["bus"][0, 12] = 0.9
+#    ppc["bus"][0, 11] = 1.1
+#
+#    net2 = from_ppc(ppc, f_hz=net.f_hz)
+#    # again add max_loading_percent to enable valid comparison
+#    net2.line["max_loading_percent"] = 100
+#
+#    # compare loadflow results
+#    pp.runpp(net)
+#    pp.runpp(net2)
+#    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
+#
+#    # compare optimal powerflow results
+#    pp.runopp(net)
+#    pp.runopp(net2)
+#    assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
+#    ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
+#    net = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
+#    from pandapower.converter.pypower.from_ppc import logger
+#    import logging
+#    logger.setLevel(logging.INFO)
+#    validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    pytest.main(["test_from_ppc.py", "-W ignore::PendingDeprecationWarning"])

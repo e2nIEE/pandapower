@@ -686,7 +686,17 @@ def convert_format(net):
         net.sgen.p_kw *= -1
         net.sgen.q_kvar *= -1
         net.gen.p_kw *= -1
-
+        for element in ["gen", "sgen", "ext_grid"]:
+            for suffix in ["p_kw", "q_kvar"]:
+                constraints = {}
+                if "min_%s"%suffix in net[element]:
+                    constraints["max_%s"%suffix] = net[element]["min_%s"%suffix] * -1
+                    del net[element]["min_%s"%suffix]
+                if "max_%s"%suffix in net[element]:
+                    constraints["min_%s"%suffix] = net[element]["max_%s"%suffix] * -1
+                    del net[element]["max_%s"%suffix]
+                for column, values in constraints.items():
+                    net[element][column] = values
     net.version = float(__version__[:3])
     return net
 
@@ -872,7 +882,6 @@ def _pre_release_changes(net):
         for std_type, parameters in net.std_types[element].items():
             if old in parameters:
                 net.std_types[element][std_type][new] = net.std_types[element][std_type].pop(old)
-    net.version = 1.0
     if "f_hz" not in net:
         net["f_hz"] = 50.
 

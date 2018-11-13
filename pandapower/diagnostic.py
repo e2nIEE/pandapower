@@ -801,8 +801,8 @@ def wrong_reference_system(net):
     """
     check_results = {}
     neg_loads = list(net.load[net.load.p_kw < 0].index)
-    pos_gens = list(net.gen[net.gen.p_kw > 0].index)
-    pos_sgens = list(net.sgen[net.sgen.p_kw > 0].index)
+    pos_gens = list(net.gen[net.gen.p_kw < 0].index)
+    pos_sgens = list(net.sgen[net.sgen.p_kw < 0].index)
 
     if neg_loads:
         check_results['loads'] = neg_loads

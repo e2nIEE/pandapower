@@ -204,13 +204,13 @@ def _build_gen_ppc(net, ppc):
         ppc["gen"][:eg_end, VG] = eg_is["vm_pu"].values
         ppc["gen"][:eg_end, GEN_STATUS] = eg_is["in_service"].values
         if "max_p_kw" in eg_is.columns:
-            ppc["gen"][:eg_end, PMAX] = eg_is["max_p_kw"].values * 1e-3 - delta
+            ppc["gen"][:eg_end, PMAX] = eg_is["max_p_kw"].values * 1e-3 + delta
             max_p_kw = ppc["gen"][:eg_end, [PMAX]]
             ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
             ppc["gen"][:eg_end, [PMAX]] = max_p_kw
 
         if "min_p_kw" in eg_is.columns:
-            ppc["gen"][:eg_end, PMIN] = eg_is["min_p_kw"].values * 1e-3 + delta
+            ppc["gen"][:eg_end, PMIN] = eg_is["min_p_kw"].values * 1e-3 - delta
             min_p_kw = ppc["gen"][:eg_end, [PMIN]]
             ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
             ppc["gen"][:eg_end, [PMIN]] = min_p_kw
@@ -222,7 +222,7 @@ def _build_gen_ppc(net, ppc):
             ppc["gen"][:eg_end, [QMIN]] = min_q_kvar
 
         if "max_q_kvar" in eg_is.columns:
-            ppc["gen"][:eg_end, QMAX] = - (eg_is["max_q_kvar"].values * 1e-3 + delta)
+            ppc["gen"][:eg_end, QMAX] = eg_is["max_q_kvar"].values * 1e-3 + delta
             max_q_kvar = ppc["gen"][:eg_end, [QMAX]]
             ncn.copyto(max_q_kvar, q_lim_default, where=isnan(max_q_kvar))
             ppc["gen"][:eg_end, [QMAX]] = max_q_kvar
@@ -401,31 +401,29 @@ def _copy_p_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask):
     delta = net["_options"]["delta"]
 
     if "max_p_kw" in net["gen"].columns:
-        ppc["gen"][eg_end:gen_end, PMIN] = -net["gen"]["max_p_kw"].values[gen_is_mask] * 1e-3 + delta
+        ppc["gen"][eg_end:gen_end, PMAX] = net["gen"]["max_p_kw"].values[gen_is_mask] * 1e-3 + delta
     if "min_p_kw" in net["gen"].columns:
-        ppc["gen"][eg_end:gen_end, PMAX] = -net["gen"]["min_p_kw"].values[gen_is_mask] * 1e-3 - delta
+        ppc["gen"][eg_end:gen_end, PMIN] = net["gen"]["min_p_kw"].values[gen_is_mask] * 1e-3 - delta
 
 
 def _replace_nans_with_default_q_limits_in_ppc(ppc, eg_end, gen_end, q_lim_default):
-    # Note: Pypower has generator reference system, pandapower uses load reference system (max <-> min)
-    max_q_kvar = ppc["gen"][eg_end:gen_end, [QMIN]]
-    ncn.copyto(max_q_kvar, -q_lim_default, where=np.isnan(max_q_kvar))
-    ppc["gen"][eg_end:gen_end, [QMIN]] = max_q_kvar
+    max_q_kvar = ppc["gen"][eg_end:gen_end, [QMAX]]
+    ncn.copyto(max_q_kvar, q_lim_default, where=np.isnan(max_q_kvar))
+    ppc["gen"][eg_end:gen_end, [QMAX]] = max_q_kvar
 
-    min_q_kvar = ppc["gen"][eg_end:gen_end, [QMAX]]
-    ncn.copyto(min_q_kvar, q_lim_default, where=np.isnan(min_q_kvar))
-    ppc["gen"][eg_end:gen_end, [QMAX]] = min_q_kvar
+    min_q_kvar = ppc["gen"][eg_end:gen_end, [QMIN]]
+    ncn.copyto(min_q_kvar, -q_lim_default, where=np.isnan(min_q_kvar))
+    ppc["gen"][eg_end:gen_end, [QMIN]] = min_q_kvar
 
 
 def _replace_nans_with_default_p_limits_in_ppc(ppc, eg_end, gen_end, p_lim_default):
-    # Note: Pypower has generator reference system, pandapower uses load reference system (max <-> min)
-    max_p_kw = ppc["gen"][eg_end:gen_end, [PMIN]]
-    ncn.copyto(max_p_kw, -p_lim_default, where=isnan(max_p_kw))
-    ppc["gen"][eg_end:gen_end, [PMIN]] = max_p_kw
+    max_p_kw = ppc["gen"][eg_end:gen_end, [PMAX]]
+    ncn.copyto(max_p_kw, p_lim_default, where=isnan(max_p_kw))
+    ppc["gen"][eg_end:gen_end, [PMAX]] = max_p_kw
 
-    min_p_kw = ppc["gen"][eg_end:gen_end, [PMAX]]
-    ncn.copyto(min_p_kw, p_lim_default, where=isnan(min_p_kw))
-    ppc["gen"][eg_end:gen_end, [PMAX]] = min_p_kw
+    min_p_kw = ppc["gen"][eg_end:gen_end, [PMIN]]
+    ncn.copyto(min_p_kw, -p_lim_default, where=isnan(min_p_kw))
+    ppc["gen"][eg_end:gen_end, [PMIN]] = min_p_kw
 
 
 def _check_voltage_setpoints_at_same_bus(ppc):

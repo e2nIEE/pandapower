@@ -19,8 +19,8 @@ def base_net():
 def test_contingency_sgen(base_net):
 
     net = base_net
-    pp.create_sgen(net, 1, p_kw=-100, q_kvar =0, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
-                  min_q_kvar=-50)
+    pp.create_sgen(net, 1, p_kw=100, q_kvar=0, controllable=True, min_p_kw=5, max_p_kw=150,
+                   max_q_kvar=50, min_q_kvar=-50)
     # pwl costs
     # maximize the sgen feed in by using a positive cost slope
     # using a slope of 1
@@ -33,7 +33,8 @@ def test_contingency_sgen(base_net):
     #                 / |
     #                /  |
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", array([[net.sgen.min_p_kw.at[0], net.sgen.min_p_kw.at[0]], [0, 0]]))
+    pp.create_piecewise_linear_cost(net, 0, "sgen",
+                                    array([[0, 0], [net.sgen.max_p_kw.at[0], net.sgen.max_p_kw.at[0]]]))
     pp.runopp(net)
 
 
@@ -59,7 +60,7 @@ def test_contingency_sgen(base_net):
         net.piecewise_linear_cost = net.piecewise_linear_cost.drop(0)
 
     # first using a positive slope as in the case above
-    pp.create_polynomial_cost(net, 0, "sgen", array([1, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", array([-1, 0]))
     pp.runopp(net)
     assert abs(net.res_cost - net.res_sgen.p_kw.at[0]) < 1e-5
 
@@ -130,8 +131,8 @@ def test_contingency_load(base_net):
 def test_contingency_gen(base_net):
 
     net = base_net
-    pp.create_gen(net, 1, p_kw=-100, vm_pu = 1.05, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
-                  min_q_kvar=-50)
+    pp.create_gen(net, 1, p_kw=100, vm_pu = 1.05, controllable=True, min_p_kw=5, max_p_kw=150,
+                  max_q_kvar=50, min_q_kvar=-50)
     # pwl costs
     # maximize the sgen feed in by using a positive cost slope
     # using a slope of 1

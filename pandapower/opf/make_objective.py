@@ -134,10 +134,10 @@ def _make_objective(ppci, net):
                                 # --> storage gencosts are similar to sgen gencosts
                                 if el in ["load", "dcline"]:
                                     ppci["gencost"][elements, COST+1:COST +
-                                                    n_piece_lin_coefficients+1:2] = - f * 1e3
+                                                    n_piece_lin_coefficients+1:2] = f * 1e3
                                 else:
                                     ppci["gencost"][elements, COST+1:COST+n_piece_lin_coefficients +
-                                                    1:2] = - f * 1e3 * sign_corr
+                                                    1:2] = f * 1e3 * sign_corr
 
                                 ppci["gencost"][elements,
                                                 NCOST] = n_coefficients / 2

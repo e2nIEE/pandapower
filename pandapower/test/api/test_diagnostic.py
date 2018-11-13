@@ -906,8 +906,8 @@ def test_wrong_reference_system(test_net, diag_params, diag_errors, report_metho
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     net.load.p_kw.at[0] = -1
-    net.gen.p_kw.at[0] = 1
-    net.sgen.p_kw.at[0] = 1
+    net.gen.p_kw.at[0] = -1
+    net.sgen.p_kw.at[0] = -1
     check_result = pp.wrong_reference_system(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -1098,4 +1098,4 @@ def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     diag = pp.diagnostic(net)
 
 if __name__ == "__main__":
-    pytest.main(["test_diagnostic.py", "-xs"])
+    pytest.main(["test_diagnostic.py", "-xs", "-W ignore::PendingDeprecationWarning"])
