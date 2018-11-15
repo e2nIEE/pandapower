@@ -219,14 +219,14 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                             ("element", dtype(object)),
                             ("element_type", dtype(object)),
                             ("c", dtype(object))],
-#        "polynomial_cost": [("type", dtype(object)),
-#                            ("element", dtype(object)),
-#                            ("et", dtype(object)),
-#                            ("cp0_eur", dtype("f8")),
-#                            ("cp1_eur_per_kw", dtype("f8")),
-#                            ("cq0_eur", dtype("f8")),
-#                            ("cq1_eur_per_kvar", dtype("f8"))
-#                            ],
+        "polynomial_cost_new": [("type", dtype(object)),
+                            ("element", dtype(object)),
+                            ("et", dtype(object)),
+                            ("cp0_eur", dtype("f8")),
+                            ("cp1_eur_per_kw", dtype("f8")),
+                            ("cq0_eur", dtype("f8")),
+                            ("cq1_eur_per_kvar", dtype("f8"))
+                            ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
@@ -2513,8 +2513,7 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
     return index
 
 def create_polynomial_cost(net, element, element_type, coefficients, type="p", index=None):
-#def create_polynomial_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
-#                           cq0_eur=0, index=None):
+
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are
      - Generator
@@ -2577,7 +2576,14 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
 
     net.polynomial_cost.c.loc[index] = coefficients.reshape((1, -1))
 
-#    net.polynomial_cost.loc[index, ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar"]] = \
-#        [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar]
-
     return index
+
+def create_polynomial_cost_new(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
+                           cq0_eur=0, index=None):
+    if index is None:
+        index = get_free_id(net["polynomial_cost_new"])
+    columns = ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar"]
+    variables = [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar]
+    net.polynomial_cost_new.loc[index, columns] = variables
+    return index
+

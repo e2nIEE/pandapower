@@ -145,7 +145,7 @@ def test_contingency_gen(base_net):
     #                 / |
     #                /  |
 
-    pp.create_piecewise_linear_cost(net, 0, "gen", array([[net.gen.min_p_kw.at[0], net.gen.min_p_kw.at[0]], [0, 0]]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", array([[0, 0], [net.gen.max_p_kw.at[0], net.gen.max_p_kw.at[0]]]))
     pp.runopp(net)
 
 

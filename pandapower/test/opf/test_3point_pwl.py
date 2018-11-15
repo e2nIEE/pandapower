@@ -12,15 +12,21 @@ def test_3point_pwl():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_sgen(net, 1, p_kw=-100, q_kvar=0, controllable=True, max_p_kw=-100, min_p_kw=-100.5, max_q_kvar=50,
-                   min_q_kvar=-50)
-    pp.create_ext_grid(net, 0)
+    pp.create_sgen(net, 1, p_kw=100, q_kvar=0, controllable=True, min_p_kw=0, max_p_kw=200,
+                   max_q_kvar=500, min_q_kvar=-500)
+    pp.create_ext_grid(net, 0, max_p_kw=500, min_p_kw=-500, min_q_kvar=-500, max_q_kvar=500)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array(
-        [[-100, -1], [0, 0], [100, -1], ]), type="q")
+#    pp.create_piecewise_linear_cost(net, 0, "sgen",
+#                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="q")
+    pp.create_piecewise_linear_cost(net, 0, "sgen",
+                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="p")
+#    pp.create_piecewise_linear_cost(net, 0, "ext_grid",
+#                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="q")
+    pp.create_piecewise_linear_cost(net, 0, "ext_grid",
+                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="p")
 
     # creating a pwl cost function that actually is realistic: The absolute value of the reactive power has costs.
 
@@ -37,10 +43,9 @@ def test_3point_pwl():
     net.sgen.min_q_kvar.at[0] = 0
 
     # what we can do instead is modelling a second sgen on the same bus representing the negative segment of the function:
-    pp.create_sgen(net, 1, p_kw=0, q_kvar=0, controllable=True, max_p_kw=0.01, min_p_kw=-0.01, max_q_kvar=0,
-                   min_q_kvar=-10)
-    pp.create_piecewise_linear_cost(net, 1, "sgen", np.array(
-        [[-100, -100], [0, 0], ]), type="q")
+    pp.create_sgen(net, 1, p_kw=0, q_kvar=0, controllable=True, min_p_kw=-0.01, max_p_kw=0.01,
+                   min_q_kvar=0, max_q_kvar=10)
+    pp.create_piecewise_linear_cost(net, 1, "sgen", np.array([[0, 0], [10, 100]]), type="q")
 
     # runOPF
     pp.runopp(net, verbose=False)
@@ -55,5 +60,28 @@ def test_3point_pwl():
 
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    vm_max = 1.05
+    vm_min = 0.95
+
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_sgen(net, 1, p_kw=100, q_kvar=0, controllable=True, min_p_kw=0, max_p_kw=200,
+                   max_q_kvar=500, min_q_kvar=-500)
+    pp.create_ext_grid(net, 0, max_p_kw=500, min_p_kw=-500, min_q_kvar=-500, max_q_kvar=500)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100 * 690)
+#    pp.create_piecewise_linear_cost(net, 0, "sgen",
+#                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="q")
+    pp.create_piecewise_linear_cost(net, 0, "sgen",
+                                    np.array([[0, 0], [250, 0.25], [500, 1]]), type="p")
+#    pp.create_piecewise_linear_cost(net, 0, "ext_grid",
+#                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="q")
+    pp.create_piecewise_linear_cost(net, 0, "ext_grid",
+                                    np.array([[-500, 1], [0, 0], [500, 1]]), type="p")
+    pp.runpm(net)
+#    print(net.piecewise_linear_cost)
+#    pytest.main(['-s', __file__])
     # test_cost_piecewise_linear_eg_q()

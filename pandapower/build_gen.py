@@ -55,7 +55,7 @@ def _build_gen_ppc(net, ppc):
             _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default)
 
     # if mode == optimal power flow...
-    if mode == "opf":
+    if mode.startswith("opf"):
 
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]

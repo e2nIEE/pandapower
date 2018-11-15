@@ -26,8 +26,8 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     if len(net.dcline) > 0:
         _get_dcline_results(net)
         b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
-        p = np.hstack([p, -net.res_dcline[["p_from_kw", "p_to_kw"]].values.flatten()])
-        q = np.hstack([q, -net.res_dcline[["q_from_kvar", "q_to_kvar"]].values.flatten()])
+        p = np.hstack([p, net.res_dcline[["p_from_kw", "p_to_kw"]].values.flatten()])
+        q = np.hstack([q, net.res_dcline[["q_from_kvar", "q_to_kvar"]].values.flatten()])
 
     if not ac:
         q = np.zeros(len(p))
@@ -136,12 +136,12 @@ def _get_dcline_results(net):
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]
 
-    net.res_dcline.p_from_kw = from_gens.p_kw.values
-    net.res_dcline.p_to_kw = to_gens.p_kw.values
-    net.res_dcline.pl_kw = from_gens.p_kw.values + to_gens.p_kw.values
+    net.res_dcline.p_from_kw = - from_gens.p_kw.values
+    net.res_dcline.p_to_kw = - to_gens.p_kw.values
+    net.res_dcline.pl_kw = - (to_gens.p_kw.values + from_gens.p_kw.values)
 
-    net.res_dcline.q_from_kvar = from_gens.q_kvar.values
-    net.res_dcline.q_to_kvar = to_gens.q_kvar.values
+    net.res_dcline.q_from_kvar = - from_gens.q_kvar.values
+    net.res_dcline.q_to_kvar = - to_gens.q_kvar.values
 
     net.res_dcline.vm_from_pu = from_gens.vm_pu.values
     net.res_dcline.vm_to_pu = to_gens.vm_pu.values

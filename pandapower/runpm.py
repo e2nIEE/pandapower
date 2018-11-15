@@ -74,7 +74,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=False,
-                     mode="opf_pm", copy_constraints_to_ppc=True,
+                     mode="opf", copy_constraints_to_ppc=True,
                      r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
@@ -87,6 +87,7 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
     _add_auxiliary_elements(net)
     reset_results(net)
     ppc, ppci = _pd2ppc(net)
+    net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     net._pm = pm
     if pp_to_pm_callback is not None:
@@ -95,7 +96,6 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
     net._result_pm = result_pm
     result = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     success = ppc["success"]
-    net["_ppc_opf"] = ppci
     if success:
         _extract_results_opf(net, result)
         _clean_up(net)
@@ -211,16 +211,37 @@ def ppc_to_pm(net, ppc):
 
 
     gens_with_costs = set()
-    for c in net.polynomial_cost.itertuples():
-        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
-        if gen_index in gens_with_costs:
-            raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
-        else:
-            gens_with_costs.update({gen_index})
-        gen = pm["gen"][str(gen_index + 1)]
-        gen["ncost"] = 2
-        gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
-        gen["model"] = 2
+    if len(net.polynomial_cost_new) > 0 and len(net.piecewise_linear_cost) > 0:
+        raise UserWarning
+    if len(net.polynomial_cost_new) > 0:
+        for c in net.polynomial_cost.itertuples():
+            gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
+            if gen_index in gens_with_costs:
+                raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
+            else:
+                gens_with_costs.update({gen_index})
+            gen = pm["gen"][str(gen_index + 1)]
+            gen["ncost"] = 2
+            gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
+            gen["model"] = 2
+    if len(net.piecewise_linear_cost) > 0:
+        for c in net.piecewise_linear_cost.itertuples():
+            element = "%s_controllable"%c.element_type if c.element_type in ["load", "sgen"] else c.element_type
+            gen_index = net._pd2ppc_lookups[element][int(c.element)]
+            if gen_index in gens_with_costs:
+                raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
+            else:
+                gens_with_costs.update({gen_index})
+            gen = pm["gen"][str(gen_index + 1)]
+            gen["model"] = 1
+            x = c.p[0].astype(float)
+            y = c.f[0].astype(float)
+            cost = [0]*len(x)*2
+            cost[0::2] = x
+            cost[1::2] = y
+            gen["cost"] = cost
+#            gen["ncost"] = 1
+#            gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
 #    for idx, row in enumerate(ppc["gencost"], start=1):
 #        gen = pm["gen"][str(idx)]
 #        gen["model"] = int(row[MODEL])
@@ -298,15 +319,15 @@ if __name__ == '__main__':
 #    g0 = pp.create_gen(net, bus3, p_kw=80*1e3, min_p_kw=0, max_p_kw=80e3, vm_pu=1.01, controllable=True)
 #    g1 = pp.create_gen(net, bus4, p_kw=100*1e3, min_p_kw=0, max_p_kw=100e3, vm_pu=1.01, controllable=True)
 
-    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', cp1_eur_per_kw=12)
-    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', cp1_eur_per_kw=10, cp0_eur=100000)
-    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', cp1_eur_per_kw=10)
+    costeg = pp.create_polynomial_cost_new(net, 0, 'ext_grid', cp1_eur_per_kw=12)
+    costgen1 = pp.create_polynomial_cost_new(net, 0, 'gen', cp1_eur_per_kw=10, cp0_eur=100000)
+    costgen2 = pp.create_polynomial_cost_new(net, 1, 'gen', cp1_eur_per_kw=10)
 
 #    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-10, -10,]), type="q")
 #    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', np.array([-10, -10]), type="q")
 #    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', np.array([-10, -10]), type="q")
 
-    pp.runpp(net)
+#    pp.runpp(net)
 
 #    pp.runopp(net)
 
