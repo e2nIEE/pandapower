@@ -180,7 +180,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 q_kvar=-ppc['gen'][i, 2] * 1e3, type="", in_service=bool(ppc['gen'][i, 7] > 0),
                 max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
                 max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3,
-                controllable=False)
+                controllable=True)
             gen_lookup.element_type.loc[i] = 'sgen'
             if ppc['gen'][i, 1] < 0:
                 logger.info('p_kw of sgen %d must be less than zero but is not.' % i)

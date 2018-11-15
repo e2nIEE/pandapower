@@ -117,4 +117,5 @@ def test_case24():
     assert net.OPF_converged
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    test_case24()
+#    pytest.main([__file__])

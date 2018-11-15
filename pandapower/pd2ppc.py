@@ -110,7 +110,8 @@ def _pd2ppc(net):
     aux._set_isolated_buses_out_of_service(net, ppc)
 
     # check if any generators connected to the same bus have different voltage setpoints
-    _check_voltage_setpoints_at_same_bus(ppc)
+    if mode == "pf":
+        _check_voltage_setpoints_at_same_bus(ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
