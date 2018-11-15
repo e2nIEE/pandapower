@@ -29,7 +29,7 @@ def test_cost_mixed():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False, max_q_kvar=50, max_p_kw=100, min_p_kw=50,
@@ -39,17 +39,17 @@ def test_cost_mixed():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost == - net.res_gen.p_kw.values
+    assert net.res_cost == net.res_gen.p_kw.values
 
-    net.polynomial_cost.c.at[0] = np.array([[-1, 0, 0]])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost - net.res_gen.p_kw.values**2 < 1e-5
 
-    net.polynomial_cost.c.at[0] = np.array([[-1, 0, -1]])
+    net.polynomial_cost.c.at[0] = np.array([[1, 0, 1]])
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost - net.res_gen.p_kw.values**2 - 1 < 1e-5
@@ -71,7 +71,7 @@ def test_mixed_p_q_pol():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False, max_q_kvar=50, max_p_kw=100, min_p_kw=50,
@@ -81,11 +81,11 @@ def test_mixed_p_q_pol():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, -1, 0]))
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, -1, 0]), type ="q")
+    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]), type ="q")
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost == - net.res_gen.p_kw.values + net.res_gen.q_kvar.values
+    assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
 
 
 def test_mixed_p_q_pwl():
@@ -96,7 +96,7 @@ def test_mixed_p_q_pwl():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 1, p_kw=20, controllable=False, max_q_kvar=50, max_p_kw=100, min_p_kw=50,
@@ -106,11 +106,11 @@ def test_mixed_p_q_pwl():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, 150],[150, -150]]))
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, 150],[150, -150]]), type ="q")
+    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -150],[150, 150]]))
+    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -150],[150, 150]]), type ="q")
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost == - net.res_gen.p_kw.values + net.res_gen.q_kvar.values
+    assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
 
 if __name__ == "__main__":
     pytest.main(["test_costs_mixed.py", "-xs"])

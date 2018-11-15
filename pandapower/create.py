@@ -794,7 +794,7 @@ def create_sgen_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
     """
     from pandapower.toolbox import pq_from_cosphi
     p_kw, q_kvar = pq_from_cosphi(sn_kva, cos_phi, qmode=mode, pmode="gen")
-    return create_sgen(net, bus, sn_kva=sn_kva, p_kw=-p_kw, q_kvar=-q_kvar, **kwargs)
+    return create_sgen(net, bus, sn_kva=sn_kva, p_kw=p_kw, q_kvar=q_kvar, **kwargs)
 
 
 def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=nan, min_e_kwh=0.0,

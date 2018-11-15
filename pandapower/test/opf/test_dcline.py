@@ -110,16 +110,23 @@ def test_dcline_dispatch2(dcline_net):
 def test_dcline_dispatch3(dcline_net):
     net = dcline_net
     pp.create_polynomial_cost(net, 0, "dcline", array([1, 0]))
-    net.bus["max_vm_pu"] = 2  # needs to be constrained more than default
+    net.bus["max_vm_pu"] = 1.03 # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     pp.runopp(net)
     consistency_checks(net, rtol=1e-3)
-    consistency_checks(net, rtol=1e-3)
-    rel_loss_expect = (net.res_dcline.pl_kw - net.dcline.loss_kw) / \
-                      (net.res_dcline.p_from_kw - net.res_dcline.pl_kw) * 100
-    assert allclose(rel_loss_expect.values, net.dcline.loss_percent.values)
 
-    assert abs(net.res_dcline.p_from_kw.values + net.res_cost) < 1e-3
+    # dc line is not dispatched because of the assigned costs
+    assert (net.res_dcline.at[0, "p_to_kw"]) < 1e-3
+    assert all(net.res_ext_grid.p_kw.values > 0)
+
+    # costs for ext_grid at the end of the DC line get double the costs of DC line transfer
+    pp.create_polynomial_cost(net, 1, "ext_grid", array([2, 0]))
+
+    pp.runopp(net)
+
+    #now the total power is supplied through the DC line
+    assert (net.res_dcline.at[0, "p_to_kw"]) < 1e-3
+    assert net.res_ext_grid.p_kw.at[1] < 1
 
 if __name__ == "__main__":
     pytest.main([__file__])

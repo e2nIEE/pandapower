@@ -133,7 +133,7 @@ def _build_gen_ppc(net, ppc):
 
             ppc["gen"][sg_end:l_end, GEN_BUS] = load_buses
             ppc["gen"][sg_end:l_end, PG] = - l_is["p_kw"].values * 1e-3 * l_is["scaling"].values
-            ppc["gen"][sg_end:l_end, QG] = l_is["q_kvar"].values * 1e-3 * l_is["scaling"].values
+            ppc["gen"][sg_end:l_end, QG] = - l_is["q_kvar"].values * 1e-3 * l_is["scaling"].values
 
             # set bus values for controllable loads
             ppc["bus"][load_buses, BUS_TYPE] = PQ

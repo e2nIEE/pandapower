@@ -85,62 +85,60 @@ def _make_objective(ppci, net):
 
                     if cost_type == "q":
                         shift_idx = ng
-                        sign_corr = -1
+                        sign_corr = 1
                     else:
                         shift_idx = 0
                         sign_corr = 1
+#                    if l
 
                     # for element types with costs defined
                     for el in pd.unique(costs.element_type):
+                        if el == "gen":
+                            idx = gen_idx
+                        elif el == "sgen":
+                            idx = sgen_idx
+                        elif el == "ext_grid":
+                            idx = eg_idx
+                        elif el == "load":
+                            idx = load_idx
+                        elif el == "storage":
+                            idx = stor_idx
+                        elif el == "dcline":
+                            idx = dcline_idx
 
-                        if not costs.element[costs.element_type == el].empty:
+                        # cost data to write into gencost
+                        # (only write cost data of controllable and in service elements)
+                        if el == "ext_grid" or el == "dcline":
+                            el_is = net[el].loc[net[el].in_service & net[el].index.isin(
+                                costs.loc[costs.element_type == el].element)].index
+                        else:
+                            el_is = net[el].loc[net[el].controllable & net[el].in_service &
+                                                net[el].index.isin(costs.loc[costs.element_type
+                                                                             == el].element)].index
 
-                            if el == "gen":
-                                idx = gen_idx
-                            elif el == "sgen":
-                                idx = sgen_idx
-                            elif el == "ext_grid":
-                                idx = eg_idx
-                            elif el == "load":
-                                idx = load_idx
-                            elif el == "storage":
-                                idx = stor_idx
-                            elif el == "dcline":
-                                idx = dcline_idx
+                        p = costs.loc[(costs.element_type == el) & (
+                            costs.element.isin(el_is))].p.reset_index(drop=True)
+                        f = costs.loc[(costs.element_type == el) & (
+                            costs.element.isin(el_is))].f.reset_index(drop=True)
 
-                            # cost data to write into gencost
-                            # (only write cost data of controllable and in service elements)
-                            if el == "ext_grid" or el == "dcline":
-                                el_is = net[el].loc[net[el].in_service & net[el].index.isin(
-                                    costs.loc[costs.element_type == el].element)].index
+                        if len(p) > 0:
+                            p = concatenate(p)
+                            f = concatenate(f)
+                            # gencost indices
+                            elements = idx[el_is] + shift_idx
+                            ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
+                            # gencost for storages: positive costs in pandapower per definition
+                            # --> storage gencosts are similar to sgen gencosts
+                            if el in ["load", "dcline", "storage"]:
+                                ppci["gencost"][elements, COST+1:COST +
+                                                n_piece_lin_coefficients+1:2] = - f * 1e3
                             else:
-                                el_is = net[el].loc[net[el].controllable & net[el].in_service &
-                                                    net[el].index.isin(costs.loc[costs.element_type
-                                                                                 == el].element)].index
+                                ppci["gencost"][elements, COST+1:COST+n_piece_lin_coefficients +
+                                                1:2] = f * 1e3 * sign_corr
 
-                            p = costs.loc[(costs.element_type == el) & (
-                                costs.element.isin(el_is))].p.reset_index(drop=True)
-                            f = costs.loc[(costs.element_type == el) & (
-                                costs.element.isin(el_is))].f.reset_index(drop=True)
-
-                            if len(p) > 0:
-                                p = concatenate(p)
-                                f = concatenate(f)
-                                # gencost indices
-                                elements = idx[el_is] + shift_idx
-                                ppci["gencost"][elements, COST:COST+n_piece_lin_coefficients:2] = p
-                                # gencost for storages: positive costs in pandapower per definition
-                                # --> storage gencosts are similar to sgen gencosts
-                                if el in ["load", "dcline"]:
-                                    ppci["gencost"][elements, COST+1:COST +
-                                                    n_piece_lin_coefficients+1:2] = f * 1e3
-                                else:
-                                    ppci["gencost"][elements, COST+1:COST+n_piece_lin_coefficients +
-                                                    1:2] = f * 1e3 * sign_corr
-
-                                ppci["gencost"][elements,
-                                                NCOST] = n_coefficients / 2
-                                ppci["gencost"][elements, MODEL] = 1
+                            ppci["gencost"][elements,
+                                            NCOST] = n_coefficients / 2
+                            ppci["gencost"][elements, MODEL] = 1
 
         if len(net.polynomial_cost):
             for cost_type in ["p", "q"]:
@@ -157,53 +155,51 @@ def _make_objective(ppci, net):
 
                     # for element types with costs defined
                     for el in pd.unique(costs.element_type):
+                        if el == "gen":
+                            idx = gen_idx
+                        if el == "sgen":
+                            idx = sgen_idx
+                        if el == "ext_grid":
+                            idx = eg_idx
+                        if el == "load":
+                            idx = load_idx
+                        if el == "storage":
+                            idx = stor_idx
+                        if el == "dcline":
+                            idx = dcline_idx
 
-                        if not costs.element[costs.element_type == el].empty:
-                            if el == "gen":
-                                idx = gen_idx
-                            if el == "sgen":
-                                idx = sgen_idx
-                            if el == "ext_grid":
-                                idx = eg_idx
-                            if el == "load":
-                                idx = load_idx
-                            if el == "storage":
-                                idx = stor_idx
-                            if el == "dcline":
-                                idx = dcline_idx
+                        # cost data to write into gencost
+                        # (only write cost data of controllable and in service elements)
+                        if el == "ext_grid" or el == "dcline":
+                            el_is = net[el].loc[net[el].in_service & net[el].index.isin(
+                                costs.loc[costs.element_type == el].element)].index
+                        else:
+                            el_is = net[el].loc[net[el].controllable & net[el].in_service & net[el].index.isin(
+                                costs.loc[costs.element_type == el].element)].index
 
-                            # cost data to write into gencost
-                            # (only write cost data of controllable and in service elements)
-                            if el == "ext_grid" or el == "dcline":
-                                el_is = net[el].loc[net[el].in_service & net[el].index.isin(
-                                    costs.loc[costs.element_type == el].element)].index
+                        c = costs.loc[(costs.element_type == el) &
+                                      (costs.element.isin(el_is))].c.reset_index(drop=True)
+
+                        if len(c) > 0 and isinstance(idx, ndarray):
+                            c = concatenate(c)
+                            n_c = c.shape[1]
+                            c = c * power(1e3, array(range(n_c))[::-1])
+                            # gencost indices
+                            elements = idx[el_is] + shift_idx
+                            n_gencost = ppci["gencost"].shape[1]
+
+                            elcosts = costs[costs.element_type == el]
+                            elcosts.index = elcosts.element
+
+                            # gencost for storages: positive costs in pandapower per definition
+                            # --> storage gencosts are similar to sgen gencosts
+                            if el in ["load", "dcline", "storage"]:
+                                ppci["gencost"][elements,  COST:(COST + n_c):] = - c
                             else:
-                                el_is = net[el].loc[net[el].controllable & net[el].in_service & net[el].index.isin(
-                                    costs.loc[costs.element_type == el].element)].index
+                                ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
 
-                            c = costs.loc[(costs.element_type == el) &
-                                          (costs.element.isin(el_is))].c.reset_index(drop=True)
-
-                            if len(c) > 0 and isinstance(idx, ndarray):
-                                c = concatenate(c)
-                                n_c = c.shape[1]
-                                c = c * power(1e3, array(range(n_c))[::-1])
-                                # gencost indices
-                                elements = idx[el_is] + shift_idx
-                                n_gencost = ppci["gencost"].shape[1]
-
-                                elcosts = costs[costs.element_type == el]
-                                elcosts.index = elcosts.element
-
-                                # gencost for storages: positive costs in pandapower per definition
-                                # --> storage gencosts are similar to sgen gencosts
-                                if el in ["load", "dcline"]:
-                                    ppci["gencost"][elements,  COST:(COST + n_c):] = c
-                                else:
-                                    ppci["gencost"][elements, -n_c:n_gencost] = c * sign_corr
-
-                                ppci["gencost"][elements, NCOST] = n_coefficients
-                                ppci["gencost"][elements, MODEL] = 2
+                            ppci["gencost"][elements, NCOST] = n_coefficients
+                            ppci["gencost"][elements, MODEL] = 2
 
     else:
         ppci["gencost"] = zeros((len_gencost, 8), dtype=float)

@@ -201,7 +201,7 @@ def test_opf_gen_voltage():
                                           tp_st_percent=2.5, i0_percent=0.68751,
                                           sn_kva=16.0, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=200)
-    pp.create_gen(net, 3, p_kw=-10, controllable=True, min_p_kw=0, max_p_kw=25, max_q_kvar=500,
+    pp.create_gen(net, 3, p_kw=10, controllable=True, min_p_kw=0, max_p_kw=25, max_q_kvar=500,
                   min_q_kvar=-500)
     pp.create_polynomial_cost(net, 0, "gen", np.array([10, 0]))
     pp.create_ext_grid(net, 0)
@@ -415,8 +415,9 @@ def test_trafo3w_loading():
     tidx = pp.create_transformer3w(
         net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV', max_loading_percent=120)
     pp.create_load(net, b3, 5e3, controllable=False)
-    id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0, min_q_kvar=-1e9, max_q_kvar= 1e9)
-    pp.create_polynomial_cost(net, id, "load", np.array([-1, 0]))
+    load_id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0, min_q_kvar=-1e9,
+                        max_q_kvar= 1e9)
+    pp.create_polynomial_cost(net, load_id, "load", np.array([-1, 0]))
     #pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
@@ -525,7 +526,7 @@ def test_opf_varying_max_line_loading():
     pp.create_polynomial_cost(net, 0, "sgen", np.array([10, 0]))
     pp.create_polynomial_cost(net, 1, "sgen", np.array([10, 0]))
     pp.create_ext_grid(net, 0)
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([-.1, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([.1, 0]))
     pp.create_line_from_parameters(net, 1, 2, 1, name="line1", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.200, x_ohm_per_km=0.1159876,
                                    max_loading_percent=20)
@@ -582,10 +583,10 @@ def test_storage_opf():
                    max_q_kvar=25, min_q_kvar=-25)
 
     # costs
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, -3, 0]))
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, -2, 0]))
+    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
     pp.create_polynomial_cost(net, 0, "storage", np.array([0, -1, 0]))
-    pp.create_polynomial_cost(net, 1, "sgen", np.array([0, -1, 0]))
+    pp.create_polynomial_cost(net, 1, "sgen", np.array([0, 1, 0]))
 
     pp.create_polynomial_cost(net, 1, "load", np.array([0, -3, 0]))
 
@@ -615,8 +616,8 @@ def test_storage_opf():
     res_cost_sgen = net["res_cost"]
 
     # assert storage generator behaviour
-    assert np.isclose(res_stor_p_kw, res_sgen_p_kw)
-    assert np.isclose(res_stor_q_kvar, res_sgen_q_kvar)
+    assert np.isclose(res_stor_p_kw, -res_sgen_p_kw)
+    assert np.isclose(res_stor_q_kvar, -res_sgen_q_kvar)
     assert np.isclose(res_cost_stor, res_cost_sgen)
 
     # test storage load behaviour
@@ -795,13 +796,13 @@ def test_opf_no_controllables_vs_pf():
 
 
 if __name__ == "__main__":
-#    pytest.main(['-s', __file__])
-    net = simple_opf_test_net()
-    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+    pytest.main(['-s', __file__])
+#    net = simple_opf_test_net()
+#    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
     # run OPF
-    pp.runopp(net, verbose=False)
-
-    # test_storage_opf()
+#    pp.runopp(net, verbose=False)
+#
+#     test_storage_opf()
     # test_opf_varying_max_line_loading()
     #pytest.main(['-s', __file__])
     #test_storage_opf()
@@ -809,7 +810,7 @@ if __name__ == "__main__":
     #test_opf_varying_max_line_loading()
      # pytest.main(["test_basic.py", "-s"])
     # test_simplest_dispatch()
-    # test_trafo3w_loading()
+#     test_trafo3w_loading()
     # test_trafo3w_loading()
 #     test_dcopf_pwl(net)
     # net = simple_opf_test_net()

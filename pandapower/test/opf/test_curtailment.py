@@ -41,9 +41,9 @@ def test_minimize_active_power_curtailment():
 
     # create generators
     pp.create_ext_grid(net, bus1)
-    pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01,
+    pp.create_gen(net, bus3, p_kw=80 * 1e3, max_p_kw=80e3, min_p_kw=0, vm_pu=1.01,
                   controllable=True)
-    pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01,
+    pp.create_gen(net, bus4, p_kw=100 * 1e3, max_p_kw=100e3, min_p_kw=0, vm_pu=1.01,
                   controllable=True)
 
     net.trafo["max_loading_percent"] = 50
@@ -52,8 +52,8 @@ def test_minimize_active_power_curtailment():
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    pp.create_polynomial_cost(net, 0, "gen", array([1e-5, 0]))
-    pp.create_polynomial_cost(net, 1, "gen", array([1e-5, 0]))
+    pp.create_polynomial_cost(net, 0, "gen", array([-1e-5, 0]))
+    pp.create_polynomial_cost(net, 1, "gen", array([-1e-5, 0]))
     pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
 
 
@@ -67,4 +67,4 @@ def test_minimize_active_power_curtailment():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_curtailment.py", "-xs"])
+    pytest.main([__file__, "-xs"])

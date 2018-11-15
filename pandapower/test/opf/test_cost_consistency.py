@@ -60,7 +60,7 @@ def test_contingency_sgen(base_net):
         net.piecewise_linear_cost = net.piecewise_linear_cost.drop(0)
 
     # first using a positive slope as in the case above
-    pp.create_polynomial_cost(net, 0, "sgen", array([-1, 0]))
+    pp.create_polynomial_cost(net, 0, "sgen", array([1, 0]))
     pp.runopp(net)
     assert abs(net.res_cost - net.res_sgen.p_kw.at[0]) < 1e-5
 

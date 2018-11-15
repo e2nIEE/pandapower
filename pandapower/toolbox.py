@@ -659,9 +659,9 @@ def convert_format(net):
     if "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
 
-    if "time_resolution" not in net:
-        # for storages
-        net.time_resolution = 1.0
+#    if "time_resolution" not in net:
+#        # for storages
+#        net.time_resolution = 1.0
 
     new_net = create_empty_network()
     for key, item in net.items():
@@ -1737,24 +1737,13 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
     """
     if qmode == "ind":
-        qsign = 1
+        qsign = 1 if pmode == "load" else -1
     elif qmode == "cap":
-        qsign = -1
-    elif qmode == "ohm":
-        qsign = 1
-        if cosphi != 1:
-            raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
+        qsign = -1 if pmode == "load" else 1
     else:
         raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
 
-    if pmode == "load":
-        psign = 1
-    elif pmode == "gen":
-        psign = -1
-    else:
-        raise ValueError("Unknown mode %s - specify 'load' or 'gen'" % pmode)
-
-    p = psign * s * cosphi
+    p = s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
     return p, q
 
