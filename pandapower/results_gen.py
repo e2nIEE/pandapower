@@ -8,7 +8,7 @@ import numpy as np
 from numpy import complex128
 
 from pandapower.idx_bus import VM, VA
-from pandapower.idx_gen import PG, QG
+from pandapower.idx_gen import PG, QG,GEN_BUS
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
     I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012
@@ -120,11 +120,12 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     # indices of in service gens in the ppc
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     gen_idx_ppc = ext_grid_lookup[eg_is_idx]
-
+    """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
+    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(int)
     # read results from ppc for these buses
     V012 = np.array(np.zeros((3, n_res_eg)))
-    V012[:, gen_idx_ppc] = np.array([ppc["bus"][gen_idx_ppc, VM]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
+    V012[:, gen_idx_ppc] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
+                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
     S012 = np.array(np.zeros((3, n_res_eg)))
