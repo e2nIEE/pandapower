@@ -114,7 +114,7 @@ def test_case9_conversion():
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net, verbose=True)
-    assert net._opf_converded
+    assert net.OPF_converged
 
 if __name__ == '__main__':
-    pytest.main(["test_from_ppc.py"])
+    pytest.main([__file__])
