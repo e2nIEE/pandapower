@@ -46,13 +46,4 @@ def bustypes(bus, gen):
     ref = find((bus[:, BUS_TYPE] == REF) & bus_gen_status) # ref bus index
     pv  = find((bus[:, BUS_TYPE] == PV)  & bus_gen_status) # PV bus indices
     pq  = find((bus[:, BUS_TYPE] == PQ) | ~bus_gen_status) # PQ bus indices
-
-    # throw an error since no reference bus is defined
-    if len(ref) == 0:
-        raise KeyError("No reference bus (ext_grid) is available. Abort power flow calculation. Please add an ext_grid")
-        # bugfix Pypower: must be an numpy array!
-        # ref = zeros(1, dtype=int)
-        # ref[0] = pv[0]      # use the first PV bus
-        # pv = pv[1:]      # take it off PV list
-
     return ref, pv, pq

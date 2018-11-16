@@ -11,7 +11,6 @@ from numpy import zeros, array, concatenate, power, ndarray
 import pandas as pd
 from pandapower.idx_cost import MODEL, NCOST, COST
 
-
 def _make_objective(ppci, net):
     """
     Implementaton of objective functions for the OPF
@@ -35,7 +34,6 @@ def _make_objective(ppci, net):
                          "element: %s\ntypes: %s" % (duplicates.element_type.values,
                                                      duplicates.element.values,
                                                      duplicates.type.values))
-
     # Determine length of gencost array
     ng = len(ppci["gen"])
     if (net.piecewise_linear_cost.type == "q").any() or (net.polynomial_cost.type == "q").any():
@@ -76,6 +74,7 @@ def _make_objective(ppci, net):
         # initialize array
         ppci["gencost"] = zeros((len_gencost, 4 + n_coefficients), dtype=float)
         ppci["gencost"][:, MODEL:COST] = array([2, 0, 0, n_coefficients])
+
 
         if len(net.piecewise_linear_cost):
             for cost_type in ["p", "q"]:

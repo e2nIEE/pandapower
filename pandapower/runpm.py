@@ -95,6 +95,7 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
     result_pm = _call_powermodels(pm, julia_file)
     net._result_pm = result_pm
     result = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
+    net._pm_result = result_pm
     success = ppc["success"]
     if success:
         _extract_results_opf(net, result)
@@ -106,6 +107,7 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
 
 def _call_powermodels(pm, julia_file=None):
     buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
+    logger.debug("writing PowerModels data structure to %s"%buffer_file)
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     try:
@@ -209,50 +211,47 @@ def ppc_to_pm(net, ppc):
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
-
     gens_with_costs = set()
-    if len(net.polynomial_cost_new) > 0 and len(net.piecewise_linear_cost) > 0:
-        raise UserWarning
-    if len(net.polynomial_cost_new) > 0:
-        for c in net.polynomial_cost.itertuples():
-            gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
-            if gen_index in gens_with_costs:
-                raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
-            else:
-                gens_with_costs.update({gen_index})
-            gen = pm["gen"][str(gen_index + 1)]
-            gen["ncost"] = 2
-            gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
-            gen["model"] = 2
-    if len(net.piecewise_linear_cost) > 0:
-        for c in net.piecewise_linear_cost.itertuples():
-            element = "%s_controllable"%c.element_type if c.element_type in ["load", "sgen"] else c.element_type
-            gen_index = net._pd2ppc_lookups[element][int(c.element)]
-            if gen_index in gens_with_costs:
-                raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
-            else:
-                gens_with_costs.update({gen_index})
-            gen = pm["gen"][str(gen_index + 1)]
-            gen["model"] = 1
-            x = c.p[0].astype(float)
-            y = c.f[0].astype(float)
-            cost = [0]*len(x)*2
-            cost[0::2] = x
-            cost[1::2] = y
-            gen["cost"] = cost
-#            gen["ncost"] = 1
-#            gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
+    for c in net.poly_cost.itertuples():
+        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
+        if gen_index in gens_with_costs:
+            raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
+        else:
+            gens_with_costs.update({gen_index})
+        gen = pm["gen"][str(gen_index + 1)]
+        gen["ncost"] = 2
+        gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
+        gen["model"] = 2
+
+    for c in net.pwl_cost.itertuples():
+        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
+        if gen_index in gens_with_costs:
+            raise ValueError("Duplicate cost function definition for %s %u"%(c.et, gen_index))
+        else:
+            gens_with_costs.update({gen_index})
+        gen = pm["gen"][str(gen_index + 1)]
+        gen["model"] = 1
+        gen["cost"] = c.points#
+        gen["cost"] = [item for sublist in c.points for item in sublist]
+        gen["ncost"] = len(gen["cost"])
+    if len(gens_with_costs) < len(pm["gen"].keys()):
+        raise ValueError("Missing cost function for generators")
 #    for idx, row in enumerate(ppc["gencost"], start=1):
 #        gen = pm["gen"][str(idx)]
 #        gen["model"] = int(row[MODEL])
-#        gen["shutdown"] = row[SHUTDOWN]
-#        gen["startup"] = row[STARTUP]
-#        ncost = int(row[NCOST])
-#        gen["ncost"] = ncost
-#        cost = [0] * (ncost + 1)
-#        cost[-2] = row[COST]
-#        cost[-1] = row[COST + 1]
-#        gen["cost"] = cost
+##        gen["shutdown"] = row[SHUTDOWN]
+##        gen["startup"] = row[STARTUP]
+#        if gen["model"] == 1:
+#            gen["ncost"] = int(row[NCOST])
+#            gen["cost"] = list(row[COST:])
+#        elif gen["model"] == 2:
+#            gen["ncost"] = 2
+#            gen["cost"] = [0] * 3
+#            costs = row[COST:]
+#            if len(costs) > 3:
+#                print(costs)
+#                raise ValueError("Maximum quadratic cost function allowed")
+#            gen["cost"][-len(costs):] = costs
     return pm
 
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
@@ -267,7 +266,7 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     ppc["obj"] = result_pm["objective"]
     ppci["success"] = result_pm["status"] == "LocalOptimal"
     ppci["et"] = result_pm["solve_time"]
-#    ppc["obj"] = result_pm["objective"]
+    ppci["f"] = result_pm["objective"]
 
     makeYbus, pfsoln = _get_numba_functions(ppci, net._options)
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
@@ -278,60 +277,4 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     result = _copy_results_ppci_to_ppc(ppci, ppc, net._options["mode"])
     return result
 
-if __name__ == '__main__':
-    import pandapower as pp
-    net = pp.create_empty_network()
 
-    #create buses
-    bus1 = pp.create_bus(net, vn_kv=220.)
-    bus2 = pp.create_bus(net, vn_kv=110.)
-    bus3 = pp.create_bus(net, vn_kv=110.)
-    bus4 = pp.create_bus(net, vn_kv=110.)
-    bus5 = pp.create_bus(net, vn_kv=110.)
-
-    bus6 = pp.create_bus(net, vn_kv=110., in_service=False)
-
-
-    #create 220/110 kV transformer
-    pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
-                                            vn_lv_kv=110, vsc_hv_percent=10., vsc_mv_percent=10.,
-                                            vsc_lv_percent=10., vscr_hv_percent=0.5,
-                                            vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_kw=100.,
-                                            i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
-                                            sn_hv_kva=100e3, sn_mv_kva=50e3, sn_lv_kva=50e3)
-#    net.trafo3w["max_loading_percent"] = 50
-
-    #create 110 kV lines
-    pp.create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus4, bus5, length_km=30., std_type='149-AL1/24-ST1A 110.0')
-#    net.line["max_loading_percent"] = 30
-
-    #create loads
-#    pp.create_load(net, bus2, p_kw=60e3, controllable = False)
-    pp.create_load(net, bus3, p_kw=70e3, controllable = False)
-    pp.create_sgen(net, bus3, p_kw=70e3, controllable=False)
-    pp.create_load(net, bus4, p_kw=10e3, controllable = False)
-
-    #create generators
-    eg = pp.create_ext_grid(net, bus1, min_p_kw=0, max_p_kw=1e3, max_q_kvar=10, min_q_kvar=0)
-#    g0 = pp.create_gen(net, bus3, p_kw=80*1e3, min_p_kw=0, max_p_kw=80e3, vm_pu=1.01, controllable=True)
-#    g1 = pp.create_gen(net, bus4, p_kw=100*1e3, min_p_kw=0, max_p_kw=100e3, vm_pu=1.01, controllable=True)
-
-    costeg = pp.create_polynomial_cost_new(net, 0, 'ext_grid', cp1_eur_per_kw=12)
-    costgen1 = pp.create_polynomial_cost_new(net, 0, 'gen', cp1_eur_per_kw=10, cp0_eur=100000)
-    costgen2 = pp.create_polynomial_cost_new(net, 1, 'gen', cp1_eur_per_kw=10)
-
-#    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-10, -10,]), type="q")
-#    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', np.array([-10, -10]), type="q")
-#    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', np.array([-10, -10]), type="q")
-
-#    pp.runpp(net)
-
-#    pp.runopp(net)
-
-#    runpm(net)
-#    if net.OPF_converged:
-#        from pandapower.test.consistency_checks import consistency_checks
-#        consistency_checks(net)

@@ -53,8 +53,8 @@ def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
 
         net["res_sgen"]["p_kw"] = psg
         net["res_sgen"]["q_kvar"] = qsg
-        q = hstack([q, qsg])
-        p = hstack([p, psg])
+        q = hstack([q, -qsg])
+        p = hstack([p, -psg])
         b = hstack([b, sg["bus"].values])
         net["res_sgen"].index = net["sgen"].index
 

@@ -17,7 +17,10 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     eg_end = len(net['ext_grid'])
     gen_end = eg_end + len(net['gen'])
 
-    b, p, q = _get_ext_grid_results(net, ppc)
+    if eg_end > 0:
+        b, p, q = _get_ext_grid_results(net, ppc)
+    else:
+        b, p, q = [], [], []# np.array([]), np.array([]), np.array([])
 
     # get results for gens
     if gen_end > eg_end:
@@ -32,7 +35,7 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     if not ac:
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
-    b = bus_lookup_aranged[b_sum]
+    b = bus_lookup_aranged[b_sum.astype(int)]
     pq_bus[b, 0] -= p_sum
     pq_bus[b, 1] -= q_sum
 

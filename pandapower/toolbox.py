@@ -681,6 +681,8 @@ def convert_format(net):
                                                              errors="ignore")
     if not "g_us_per_km" in net.line:
         net.line["g_us_per_km"] = 0.
+    if not "slack" in net.gen:
+        net.gen["slack"] = False
 
     if net.version < 2:
         net.sgen.p_kw *= -1

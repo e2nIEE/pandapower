@@ -75,6 +75,7 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                 ("min_q_kvar", "f8"),
                 ("max_q_kvar", "f8"),
                 ("scaling", "f8"),
+                ("slack", "bool"),
                 ("in_service", 'bool'),
                 ("type", dtype(object))],
         "switch": [("bus", "i8"),
@@ -215,17 +216,23 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                                   ("element_type", dtype(object)),
                                   ("p", dtype(object)),
                                   ("f", dtype(object))],
+        "pwl_cost": [("power_type", dtype(object)),
+                     ("element", dtype(object)),
+                     ("et", dtype(object)),
+                     ("points", dtype(object))],
         "polynomial_cost": [("type", dtype(object)),
                             ("element", dtype(object)),
                             ("element_type", dtype(object)),
                             ("c", dtype(object))],
-        "polynomial_cost_new": [("type", dtype(object)),
+        "poly_cost": [("type", dtype(object)),
                             ("element", dtype(object)),
                             ("et", dtype(object)),
                             ("cp0_eur", dtype("f8")),
                             ("cp1_eur_per_kw", dtype("f8")),
+                            ("cp2_eur_per_kw2", dtype("f8")),
                             ("cq0_eur", dtype("f8")),
-                            ("cq1_eur_per_kvar", dtype("f8"))
+                            ("cq1_eur_per_kvar", dtype("f8")),
+                            ("cq2_eur_per_kvar2", dtype("f8"))
                             ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
@@ -929,7 +936,7 @@ def create_storage(net, bus, p_kw, max_e_kwh, q_kvar=0, sn_kva=nan, soc_percent=
 
 
 def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan,
-               min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None,
+               min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None, slack=False,
                controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True):
     """create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_q_kvar=nan, \
                min_q_kvar=nan, min_p_kw=nan, max_p_kw=nan, scaling=1., type=None, \
@@ -1001,9 +1008,10 @@ def create_gen(net, bus, p_kw, vm_pu=1., sn_kva=nan, name=None, index=None, max_
     # store dtypes
     dtypes = net.gen.dtypes
 
-    net.gen.loc[index, ["name", "bus", "p_kw", "vm_pu", "sn_kva", "type", "in_service",
-                        "scaling"]] = [name, bus, p_kw, vm_pu, sn_kva, type, bool(in_service),
-                                       scaling]
+    columns = ["name", "bus", "p_kw", "vm_pu", "sn_kva", "type", "slack", "in_service",
+                        "scaling"]
+    variables = [name, bus, p_kw, vm_pu, sn_kva, type, slack, bool(in_service), scaling]
+    net.gen.loc[index, columns] = variables
 
     # and preserve dtypes
     _preserve_dtypes(net.gen, dtypes)
@@ -2512,6 +2520,55 @@ def create_piecewise_linear_cost(net, element, element_type, data_points, type="
 
     return index
 
+def create_pwl_cost(net, element, et, points, power_type="p", index=None):
+    """
+    Creates an entry for piecewise linear costs for an element. The currently supported elements are
+     - Generator
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
+     - Storage
+
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+            are possible
+
+        **data_points** - (numpy array) Numpy array containing n data points (see example)
+
+    OPTIONAL:
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
+
+    NOTE:
+      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
+          supported.
+      - costs for storages are positive per definition (similar to sgen costs)
+    """
+
+    if index is None:
+        index = get_free_id(net["pwl_cost"])
+
+    if index in net["pwl_cost"].index:
+        raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
+
+    net.pwl_cost.loc[index, ["power_type", "element", "et"]] = \
+        [power_type, element, et]
+    net.pwl_cost.points.loc[index] = points
+    return index
+
+
+
 def create_polynomial_cost(net, element, element_type, coefficients, type="p", index=None):
 
     """
@@ -2578,12 +2635,12 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
 
     return index
 
-def create_polynomial_cost_new(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
+def create_poly_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
                            cq0_eur=0, index=None):
     if index is None:
-        index = get_free_id(net["polynomial_cost_new"])
+        index = get_free_id(net["poly_cost"])
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar"]
     variables = [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar]
-    net.polynomial_cost_new.loc[index, columns] = variables
+    net.poly_cost.loc[index, columns] = variables
     return index
 

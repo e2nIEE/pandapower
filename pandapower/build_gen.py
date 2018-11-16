@@ -10,7 +10,7 @@ from numpy import array,  zeros, isnan
 from pandas import DataFrame
 from pandapower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, PQ
 from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
-
+from pandapower.pf.ppci_variables import bustypes
 
 def _build_gen_ppc(net, ppc):
     '''
@@ -295,6 +295,10 @@ def _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_d
     # set bus values for generator buses
 
     ppc["bus"][gen_buses, BUS_TYPE] = PV
+    if any(net["gen"]["slack"].values[gen_is_mask]):
+        slack_buses = net["gen"]["bus"][net["gen"]["slack"].values & gen_is_mask].values
+        ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
+
     ppc["bus"][gen_buses, VM] = gen_is_vm
 
     _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, gen_is_mask)
@@ -435,11 +439,18 @@ def _check_voltage_setpoints_at_same_bus(ppc):
         raise UserWarning("Generators with different voltage setpoints connected to the same bus")
 
 def _check_voltage_angles_at_same_bus(net, ppc):
-    gen_va = net.ext_grid.va_degree[net._is_elements["ext_grid"]].values
-    eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
-    gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
-    if _different_values_at_one_bus(gen_bus, gen_va):
-        raise UserWarning("Ext grids with different voltage angle setpoints connected to the same bus")
+    if len(net.ext_grid) > 0:
+        gen_va = net.ext_grid.va_degree[net._is_elements["ext_grid"]].values
+        eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
+        gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
+        if _different_values_at_one_bus(gen_bus, gen_va):
+            raise UserWarning("Ext grids with different voltage angle setpoints connected to the same bus")
+
+def _check_for_reference_bus(ppci):
+    ref, _, _ = bustypes(ppci["bus"], ppci["gen"])
+    # throw an error since no reference bus is defined
+    if len(ref) == 0:
+        raise KeyError("No reference bus (ext_grid) is available. Abort power flow calculation. Please add an ext_grid")
 
 
 def _different_values_at_one_bus(buses, values):

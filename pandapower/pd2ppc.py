@@ -25,7 +25,7 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus, \
-                                 _check_voltage_angles_at_same_bus
+                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
 
 
@@ -116,8 +116,10 @@ def _pd2ppc(net):
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
 
-    if calculate_voltage_angles:
-        _check_voltage_angles_at_same_bus(net, ppci)
+    if mode == "pf":
+        _check_for_reference_bus(ppci)
+        if calculate_voltage_angles:
+            _check_voltage_angles_at_same_bus(net, ppci)
 
     if mode == "opf":
         # make opf objective
@@ -250,7 +252,14 @@ def _ppc2ppci(ppc, ppci, net):
     if 'userfcn' in ppci:
         ppci = run_userfcn(ppci['userfcn'], 'ext2int', ppci)
 
-    ppci["internal"]["ref_gens"] = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
+    if net._pd2ppc_lookups["ext_grid"] is not None:
+        ref_gens = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
+    else:
+        ref_gens = np.array([])
+    if net.gen[net._is_elements["gen"]].slack.any():
+        slack_gens = net.gen.index[net._is_elements["gen"] & net.gen["slack"]]
+        ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
+    ppci["internal"]["ref_gens"] = ref_gens.astype(int)
     return ppci
 
 

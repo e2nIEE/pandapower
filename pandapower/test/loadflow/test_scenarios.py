@@ -423,5 +423,19 @@ def test_trafo3w_switches():
     assert net.res_trafo3w.i_mv_ka.at[t3] < 1e-5
     assert 0 < net.res_trafo3w.p_hv_kw.at[t3] < 1
 
+def test_generator_as_slack():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110.)
+    pp.create_ext_grid(net, b1, vm_pu=1.02)
+    b2 = pp.create_bus(net, 110.)
+    pp.create_line(net, b1, b2, length_km=70., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_load(net, b2, p_kw=2000)
+    pp.runpp(net)
+    res_bus = net.res_bus.vm_pu.values
+
+    pp.create_gen(net, b1, p_kw=100, vm_pu=1.02, slack=True)
+    pp.runpp(net)
+    assert np.allclose(res_bus, net.res_bus.vm_pu.values)
+
 if __name__ == "__main__":
      pytest.main(["test_scenarios.py", "-xs"])
