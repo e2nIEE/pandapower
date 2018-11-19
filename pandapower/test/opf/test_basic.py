@@ -86,7 +86,7 @@ def test_simplest_voltage():
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=100)
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, verbose=False, init=init)
@@ -158,9 +158,9 @@ def test_simplest_dispatch():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_gen(net, 1, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=50,
                   min_q_kvar=-50)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=100)
     pp.create_ext_grid(net, 0)
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([101, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=101)
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
@@ -203,7 +203,7 @@ def test_opf_gen_voltage():
                                           in_service=True, index=None, max_loading_percent=200)
     pp.create_gen(net, 3, p_kw=10, controllable=True, min_p_kw=0, max_p_kw=25, max_q_kvar=500,
                   min_q_kvar=-500)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([10, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=10)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
@@ -249,7 +249,7 @@ def test_opf_sgen_voltage():
                                           in_service=True, index=None, max_loading_percent=1000000)
     pp.create_sgen(net, 3, p_kw=10, controllable=True, min_p_kw=-5, max_p_kw=15, max_q_kvar=25,
                    min_q_kvar=-25)
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([100, 0]))
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=100)
     pp.create_ext_grid(net, 0)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
@@ -296,9 +296,9 @@ def test_opf_gen_loading():
                                           in_service=True, index=None, max_loading_percent=145)
     pp.create_gen(net, 3, p_kw=10, controllable=True, min_p_kw=5, max_p_kw=15, max_q_kvar=50,
                   min_q_kvar=-50)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([-10, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=-10)
     pp.create_ext_grid(net, 0)
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([.1, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
@@ -347,9 +347,9 @@ def test_opf_sgen_loading():
                                           max_loading_percent=max_trafo_loading)
     pp.create_sgen(net, 3, p_kw=10, controllable=True, min_p_kw=5, max_p_kw=15, max_q_kvar=25,
                    min_q_kvar=-25)
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([-10, 0]))
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=-10)
     pp.create_ext_grid(net, 0)
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([.1, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=max_line_loading)
@@ -392,7 +392,7 @@ def test_unconstrained_line():
     pp.create_load(net, 1, p_kw=20, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([1, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, verbose=False, init=init)
@@ -417,7 +417,7 @@ def test_trafo3w_loading():
     pp.create_load(net, b3, 5e3, controllable=False)
     load_id = pp.create_load(net, b4, 5e3, controllable=True, max_p_kw=5e4, min_p_kw=0, min_q_kvar=-1e9,
                         max_q_kvar= 1e9)
-    pp.create_polynomial_cost(net, load_id, "load", np.array([-1, 0]))
+    pp.create_poly_cost(net, load_id, "load", cp1_eur_per_kw=-1)
     #pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
@@ -431,7 +431,7 @@ def test_trafo3w_loading():
 
 def test_dcopf_poly(simple_opf_test_net):
     net = simple_opf_test_net
-    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=100)
     # run OPF
     pp.rundcopp(net, verbose=False)
 
@@ -445,7 +445,7 @@ def test_dcopf_poly(simple_opf_test_net):
 
 def test_opf_poly(simple_opf_test_net):
     net = simple_opf_test_net
-    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=100)
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, verbose=False, init=init)
@@ -462,8 +462,7 @@ def test_opf_poly(simple_opf_test_net):
 def test_opf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    # pp.create_polynomial_cost(net, 0, "gen", np.array([-100, 0]))
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[0, 0], [100, 10000], [200, 20000]]))
+    pp.create_pwl_cost(net, 0, "gen", [(0, 100, 100), (100, 200, 100)])
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, verbose=False, init=init)
@@ -481,8 +480,8 @@ def test_opf_pwl(simple_opf_test_net):
 def test_dcopf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    # pp.create_polynomial_cost(net, 0, "gen", np.array([-100, 0]))
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[0, 0], [100, 10000], [200, 20000]]))
+    pp.create_pwl_cost(net, 0, "gen"     , [(0, 100, 100), (100, 200, 100)])
+    pp.create_pwl_cost(net, 0, "ext_grid", [(0, 100, 0), (100, 200, 0)])
     # run OPF
     pp.rundcopp(net, verbose=False)
     assert net["OPF_converged"]
@@ -523,10 +522,10 @@ def test_opf_varying_max_line_loading():
                    min_q_kvar=-25)
     pp.create_sgen(net, 2, p_kw=100, controllable=True, min_p_kw=5, max_p_kw=150, max_q_kvar=25,
                    min_q_kvar=-25)
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([10, 0]))
-    pp.create_polynomial_cost(net, 1, "sgen", np.array([10, 0]))
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=10)
+    pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_kw=10)
     pp.create_ext_grid(net, 0)
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([.1, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=.1)
     pp.create_line_from_parameters(net, 1, 2, 1, name="line1", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.200, x_ohm_per_km=0.1159876,
                                    max_loading_percent=20)
@@ -538,7 +537,7 @@ def test_opf_varying_max_line_loading():
     pp.runopp(net, verbose=False, init="flat")
     assert net["OPF_converged"]
 
-    assert sum(net["_ppc"]["branch"][:, 5] - np.array([ 0.02771281+0.j,  0.00692820+0.j,  0.12800000+0.j])) < 1e-8
+    assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281+0.j,  0.00692820+0.j,  0.12800000+0.j]))
 
 
     # assert and check result
@@ -583,12 +582,19 @@ def test_storage_opf():
                    max_q_kvar=25, min_q_kvar=-25)
 
     # costs
+
     pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
     pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
     pp.create_polynomial_cost(net, 0, "storage", np.array([0, -1, 0]))
     pp.create_polynomial_cost(net, 1, "sgen", np.array([0, 1, 0]))
 
     pp.create_polynomial_cost(net, 1, "load", np.array([0, -3, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=3)
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=2)
+    pp.create_poly_cost(net, 0, "storage", cp1_eur_per_kw=-1)
+    pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_kw=1)
+
+    pp.create_poly_cost(net, 1, "load", cp1_eur_per_kw=-3)
 
     # test storage generator behaviour
     net["storage"].in_service.iloc[0] = True
@@ -630,6 +636,7 @@ def test_storage_opf():
     # gencost for storages: positive costs in pandapower per definition
     # --> storage gencosts are similar to sgen gencosts (make_objective.py, l.128ff. and l.185ff.)
     net["polynomial_cost"].c.iloc[2] = net["polynomial_cost"].c.iloc[4]
+    net["poly_cost"].cp1_eur_per_kw.iloc[2] = net.poly_cost.cp1_eur_per_kw.iloc[4]
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
 
@@ -687,11 +694,11 @@ def test_in_service_controllables():
                    max_q_kvar=2.5, min_q_kvar=-2.5)
 
     # costs
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
-    pp.create_polynomial_cost(net, 0, "load", np.array([0, -1, 0]))
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
-    pp.create_polynomial_cost(net, 1, "sgen", np.array([0, 1, 0]))
-    pp.create_polynomial_cost(net, 1, "load", np.array([0, -1, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid",cp1_eur_per_kw= 3)
+    pp.create_poly_cost(net, 0, "load",cp1_eur_per_kw= -1)
+    pp.create_poly_cost(net, 0, "sgen",cp1_eur_per_kw= 2)
+    pp.create_poly_cost(net, 1, "sgen",cp1_eur_per_kw= 1)
+    pp.create_poly_cost(net, 1, "load",cp1_eur_per_kw= -1)
 
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
@@ -706,8 +713,8 @@ def test_no_controllables(simple_opf_test_net):
     net.gen.controllable = False
     # pp.runopp(net)
     # net.gen = net.gen.drop(index=0)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, -2, 0]))
-    pp.create_polynomial_cost(net, 0, "load", np.array([0, 1, 0]))
+    pp.create_poly_cost(net, 0, "gen",cp1_eur_per_kw= -2)
+    pp.create_poly_cost(net, 0, "load",cp1_eur_per_kw= 1)
     pp.runopp(net)
 
 # def test_controllables_default():
@@ -740,10 +747,10 @@ def test_no_controllables(simple_opf_test_net):
 #     # # gen should default to controllable =True
 #
 #     # costs
-#     pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0,-3, 0]))
-#     pp.create_polynomial_cost(net, 0, "load", np.array([0, 1, 0]))
-    # pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
-    # pp.create_polynomial_cost(net, 0, "gen", np.array([0, 2, 0]))
+#     pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=0,-3, 0]))
+#     pp.create_poly_cost(net, 0, "load", cp1_eur_per_kw=0, 1, 0]))
+    # pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=0, 2, 0]))
+    # pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=0, 2, 0]))
 
     pp.runopp(net, verbose=True)
     assert net["OPF_converged"]
@@ -773,9 +780,9 @@ def test_opf_no_controllables_vs_pf():
                    max_q_kvar=25, min_q_kvar=-25)
 
     # testing cost assignment (for non-controllable elements - see Gitlab Issue #27)
-    pp.create_polynomial_cost(net, 0, "ext_grid", np.array([0, 3, 0]))
-    pp.create_polynomial_cost(net, 0, "load", np.array([0, -3, 0]))
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 2, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=3)
+    pp.create_poly_cost(net, 0, "load", cp1_eur_per_kw=-3)
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=2)
 
     # do calculations
     pp.runopp(net, verbose=True)
@@ -796,23 +803,4 @@ def test_opf_no_controllables_vs_pf():
 
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
-#    net = simple_opf_test_net()
-#    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
-    # run OPF
-#    pp.runopp(net, verbose=False)
-#
-#     test_storage_opf()
-    # test_opf_varying_max_line_loading()
-    #pytest.main(['-s', __file__])
-    #test_storage_opf()
-#     test_opf_no_controllables_vs_pf()
-    #test_opf_varying_max_line_loading()
-     # pytest.main(["test_basic.py", "-s"])
-    # test_simplest_dispatch()
-#     test_trafo3w_loading()
-    # test_trafo3w_loading()
-#     test_dcopf_pwl(net)
-    # net = simple_opf_test_net()
-    # test_no_controllables(net)
-    # test_controllables_default()
+    pytest.main(['-xs', __file__])

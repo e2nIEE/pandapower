@@ -224,16 +224,15 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                             ("element", dtype(object)),
                             ("element_type", dtype(object)),
                             ("c", dtype(object))],
-        "poly_cost": [("type", dtype(object)),
-                            ("element", dtype(object)),
-                            ("et", dtype(object)),
-                            ("cp0_eur", dtype("f8")),
-                            ("cp1_eur_per_kw", dtype("f8")),
-                            ("cp2_eur_per_kw2", dtype("f8")),
-                            ("cq0_eur", dtype("f8")),
-                            ("cq1_eur_per_kvar", dtype("f8")),
-                            ("cq2_eur_per_kvar2", dtype("f8"))
-                            ],
+        "poly_cost": [("element", dtype(object)),
+                      ("et", dtype(object)),
+                      ("cp0_eur", dtype("f8")),
+                      ("cp1_eur_per_kw", dtype("f8")),
+                      ("cp2_eur_per_kw2", dtype("f8")),
+                      ("cq0_eur", dtype("f8")),
+                      ("cq1_eur_per_kvar", dtype("f8")),
+                      ("cq2_eur_per_kvar2", dtype("f8"))
+                      ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8")],
@@ -2636,11 +2635,13 @@ def create_polynomial_cost(net, element, element_type, coefficients, type="p", i
     return index
 
 def create_poly_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,
-                           cq0_eur=0, index=None):
+                           cq0_eur=0, cp2_eur_per_kw2=0, cq2_eur_per_kvar2=0, type="p", index=None):
     if index is None:
         index = get_free_id(net["poly_cost"])
-    columns = ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar"]
-    variables = [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar]
+    columns = ["element", "et", "cp0_eur", "cp1_eur_per_kw", "cq0_eur", "cq1_eur_per_kvar",
+               "cp2_eur_per_kw2", "cq2_eur_per_kvar2"]
+    variables = [element, et, cp0_eur, cp1_eur_per_kw, cq0_eur, cq1_eur_per_kvar,
+                 cp2_eur_per_kw2, cq2_eur_per_kvar2]
     net.poly_cost.loc[index, columns] = variables
     return index
 

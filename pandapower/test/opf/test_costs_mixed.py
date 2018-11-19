@@ -39,28 +39,36 @@ def test_cost_mixed():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+#    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost == net.res_gen.p_kw.values
+    assert net.res_cost == net.res_gen.p_kw.values[0]
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
+    net.poly_cost.cp1_eur_per_kw.at[0] = 0
+    net.poly_cost.cp2_eur_per_kw2.at[0] = 1
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_gen.p_kw.values**2 < 1e-5
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values**2)
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 1]])
+    net.poly_cost.cp0_eur.at[0] = 1
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_gen.p_kw.values**2 - 1 < 1e-5
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values**2 + 1)
 
     net.load.controllable.at[0] = True
     pp.runopp(net, verbose=False)
-    assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 < 1e-5
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values ** 2 + 1)
 
-    pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [100, -100]]), type="p")
-    pp.runopp(net, verbose=False)
-    assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 - net.res_load.p_kw.values < 1e-5
+#    pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [100, -100]]), type="p")
+
+#    net.poly_cost.cp1_eur_per_kw.at[0] = 1
+#    net.poly_cost.cp2_eur_per_kw2.at[0] = 0
+#    net.load.controllable.at[0] = True
+#    pp.create_pwl_cost(net, 0, "load", [(0, 100, -1)], power_type="p")
+#    pp.runopp(net, verbose=False)
+#    assert np.isclose(net.res_cost, net.res_gen.p_kw.values[0] - net.res_load.p_kw.values[0] )
+#    assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 - net.res_load.p_kw.values < 1e-5
 
 
 def test_mixed_p_q_pol():
@@ -81,8 +89,8 @@ def test_mixed_p_q_pol():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]), type ="q")
+#    pp.create_polynomial_cost(net, 0, "gen", cp1_eur_per_kw 1, 0]))
+#    pp.create_polynomial_cost(net, 0, "gen", cp1_eur_per_kw 1, 0]), type ="q")
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
@@ -113,6 +121,5 @@ def test_mixed_p_q_pwl():
     assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
 
 if __name__ == "__main__":
-    pytest.main(["test_costs_mixed.py", "-xs"])
-    # test_cost_mixed()
-    # test_cost_pol_gen()
+    pytest.main([])
+
