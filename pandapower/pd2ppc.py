@@ -109,7 +109,6 @@ def _pd2ppc(net):
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
 
-
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
