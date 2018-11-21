@@ -22,7 +22,7 @@ def test_2gen_1ext_grid():
     pp.runpp(net, init='dc', calculate_voltage_angles=True)
 
     assert np.allclose(net.res_gen.p_kw.values, [100., 100.])
-    assert np.allclose(net.res_gen.q_kvar.values, [-447.397232056, -51.8152713776])
+    assert np.allclose(net.res_gen.q_kvar.values, [-447.397232056, -51.8152713776], atol=1e-2)
     assert np.allclose(net.res_gen.va_degree.values, [0.242527288986,-143.558157703])
     assert np.allclose(net.res_gen.vm_pu.values, [1.0, 1.0])
 
@@ -30,7 +30,7 @@ def test_2gen_1ext_grid():
     assert np.allclose(net.res_bus.va_degree, [0.000000, -145.536429154, -143.558157703,
                                                0.242527288986])
     assert np.allclose(net.res_bus.p_kw, [61.87173, 30.00000, -100.00000, 0.00000])
-    assert np.allclose(net.res_bus.q_kvar, [-470.929980278, 2.000000, 21.8152713776, 447.397232056])
+    assert np.allclose(net.res_bus.q_kvar, [-470.929980278, 2.000000, 21.8152713776, 447.397232056], atol=1e-2)
     assert np.allclose(net.res_ext_grid.p_kw.values, [-61.87173])
     assert np.allclose(net.res_ext_grid.q_kvar, [470.927898])
 

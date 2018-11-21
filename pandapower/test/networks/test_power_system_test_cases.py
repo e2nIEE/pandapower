@@ -20,9 +20,9 @@ def _ppc_element_test(net, n_bus=None, n_branch=None, n_gen=None, gencost=False)
         assert len(net.ext_grid) + len(net.gen) + len(net.sgen) == n_gen
     if gencost:
         if isinstance(gencost, bool):
-            assert net.polynomial_cost.shape[0] == n_gen
+            assert net.poly_cost.shape[0] == n_gen
         else:
-            assert net.polynomial_cost.shape[0] == gencost
+            assert net.poly_cost.shape[0] == gencost
     assert net.converged
 
 

@@ -53,8 +53,6 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
             cp0 = ppc['gencost'][idx, COST + 2]
         pp.create_poly_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
                                   cp1_eur_per_kw=cp1, cp2_eur_per_kw2=cp2, cp0_eur=cp0)
-#        pp.create_polynomial_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
-#                                  values, type)
     else:
         logger.info("Cost mode of gencost line %s is unknown." % idx)
 

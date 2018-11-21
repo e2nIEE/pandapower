@@ -63,7 +63,7 @@ def test_minimize_active_power_curtailment():
     assert allclose(net.res_bus.vm_pu.values, array([1., 1.00000149,  1.01998544,  1.01999628]),
                     atol=1e-5)
     assert allclose(net.res_bus.va_degree.values, array([0., -0.7055226, 0.85974768, 2.24584537]),
-                    atol=1e-5)
+                    atol=1e-3)
 
 
 if __name__ == "__main__":

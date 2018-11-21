@@ -107,6 +107,7 @@ def check_opf_data(net):  # pragma: no cover
     _check_necessary_opf_parameters(net, logger)
 
     # --- Determine duplicated cost data
+    raise NotImplementedError
     all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
         net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     duplicates = all_costs.loc[all_costs.duplicated()]
@@ -540,20 +541,26 @@ def convert_format(net):
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
-    if "piecewise_linear_cost" not in net:
-        net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
-                                                                       ("element",
-                                                                        np.dtype(object)),
-                                                                       ("element_type",
-                                                                        np.dtype(object)),
-                                                                       ("p", np.dtype(object)),
-                                                                       ("f", np.dtype(object))]))
+    if "pwl_cost" not in net:
+        net["pwl_cost"] = pd.DataFrame(np.zeros(0, dtype=
+                                                         [("power_type", np.dtype(object)),
+                                                          ("element", np.dtype(object)),
+                                                          ("et", np.dtype(object)),
+                                                          ("points", np.dtype(object))
+                                                          ]))
 
-    if "polynomial_cost" not in net:
-        net["polynomial_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
-                                                                 ("element", np.dtype(object)),
-                                                                 ("element_type", np.dtype(object)),
-                                                                 ("c", np.dtype(object))]))
+
+    if "poly_cost" not in net:
+        net["poly_cost"] = pd.DataFrame(np.zeros(0, dtype=
+                                                   [("element", np.dtype(object)),
+                                                    ("et", np.dtype(object)),
+                                                      ("cp0_eur", np.dtype("f8")),
+                                                      ("cp1_eur_per_kw", np.dtype("f8")),
+                                                      ("cp2_eur_per_kw2", np.dtype("f8")),
+                                                      ("cq0_eur", np.dtype("f8")),
+                                                      ("cq1_eur_per_kvar", np.dtype("f8")),
+                                                      ("cq2_eur_per_kvar2", np.dtype("f8"))
+                                                      ]))
 
     if "cost_per_kw" in net.gen:
         if not "piecewise_linear_cost" in net:

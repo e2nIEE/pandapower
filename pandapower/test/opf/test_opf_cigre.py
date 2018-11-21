@@ -67,8 +67,8 @@ def test_some_sgens_not_controllable():
     net.sgen.controllable[net.sgen.bus == 9] = False
 
     for sgen_idx, row in net["sgen"].iterrows():
-        cost_sgen = pp.create_polynomial_cost(net, sgen_idx, 'sgen', np.array([1, 0]))
-        net.polynomial_cost.c.at[cost_sgen] = np.array([[0.1, 0]])
+        cost_sgen = pp.create_poly_cost(net, sgen_idx, 'sgen', cp1_eur_per_kw=1.)
+        net.poly_cost.cp1_eur_per_kw.at[cost_sgen] = 0.1
 
     # run OPF
     pp.runopp(net, verbose=False)

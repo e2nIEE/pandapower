@@ -169,6 +169,4 @@ def test_json_tuple_in_pandas():
     assert (type(s["test"][0]) == type(s1["test"][0]))
 
 if __name__ == "__main__":
-#    net = nw.mv_oberrhein()
-#    pp.convert_format(net)
     pytest.main([__file__])

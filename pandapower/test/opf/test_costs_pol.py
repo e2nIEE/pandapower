@@ -76,8 +76,6 @@ def test_cost_pol_all_elements():
 
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=1)
-#    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-#    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 1, 0]))
     # run OPF
     pp.runopp(net, verbose=False)
 
