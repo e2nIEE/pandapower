@@ -52,7 +52,7 @@ def test_contingency_sgen(base_net):
 
     assert isclose(net.res_cost, -net.res_sgen.p_kw.at[0], atol=1e-4)
 
-    net.pwl_cost.drop(index=0, inplace=True)
+    net.pwl_cost.drop(0, inplace=True)
 
     # first using a positive slope as in the case above
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=1.)
