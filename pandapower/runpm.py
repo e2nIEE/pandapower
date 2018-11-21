@@ -211,47 +211,45 @@ def ppc_to_pm(net, ppc):
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
-    gens_with_costs = set()
-    for c in net.poly_cost.itertuples():
-        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
-        if gen_index in gens_with_costs:
-            raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
-        else:
-            gens_with_costs.update({gen_index})
-        gen = pm["gen"][str(gen_index + 1)]
-        gen["ncost"] = 2
-        gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
-        gen["model"] = 2
-
-    for c in net.pwl_cost.itertuples():
-        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
-        if gen_index in gens_with_costs:
-            raise ValueError("Duplicate cost function definition for %s %u"%(c.et, gen_index))
-        else:
-            gens_with_costs.update({gen_index})
-        gen = pm["gen"][str(gen_index + 1)]
-        gen["model"] = 1
-        gen["cost"] = c.points#
-        gen["cost"] = [item for sublist in c.points for item in sublist]
-        gen["ncost"] = len(gen["cost"])
-    if len(gens_with_costs) < len(pm["gen"].keys()):
-        raise ValueError("Missing cost function for generators")
-#    for idx, row in enumerate(ppc["gencost"], start=1):
-#        gen = pm["gen"][str(idx)]
-#        gen["model"] = int(row[MODEL])
-##        gen["shutdown"] = row[SHUTDOWN]
-##        gen["startup"] = row[STARTUP]
-#        if gen["model"] == 1:
-#            gen["ncost"] = int(row[NCOST])
-#            gen["cost"] = list(row[COST:])
-#        elif gen["model"] == 2:
-#            gen["ncost"] = 2
-#            gen["cost"] = [0] * 3
-#            costs = row[COST:]
-#            if len(costs) > 3:
-#                print(costs)
-#                raise ValueError("Maximum quadratic cost function allowed")
-#            gen["cost"][-len(costs):] = costs
+#    gens_with_costs = set()
+#    for c in net.poly_cost.itertuples():
+#        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
+#        if gen_index in gens_with_costs:
+#            raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
+#        else:
+#            gens_with_costs.update({gen_index})
+#        gen = pm["gen"][str(gen_index + 1)]
+#        gen["ncost"] = 2
+#        gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
+#        gen["model"] = 2
+#
+#    for c in net.pwl_cost.itertuples():
+#        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
+#        if gen_index in gens_with_costs:
+#            raise ValueError("Duplicate cost function definition for %s %u"%(c.et, gen_index))
+#        else:
+#            gens_with_costs.update({gen_index})
+#        gen = pm["gen"][str(gen_index + 1)]
+#        gen["model"] = 1
+#        gen["cost"] = c.points#
+#        gen["cost"] = [item for sublist in c.points for item in sublist]
+#        gen["ncost"] = len(gen["cost"])
+#    if len(gens_with_costs) < len(pm["gen"].keys()):
+#        raise ValueError("Missing cost function for generators")
+    for idx, row in enumerate(ppc["gencost"], start=1):
+        gen = pm["gen"][str(idx)]
+        gen["model"] = int(row[MODEL])
+        if gen["model"] == 1:
+            gen["ncost"] = int(row[NCOST])
+            gen["cost"] = row[COST:COST+gen["ncost"]*2].tolist()
+        elif gen["model"] == 2:
+            gen["ncost"] = 2
+            gen["cost"] = [0] * 3
+            costs = row[COST:]
+            if len(costs) > 3:
+                print(costs)
+                raise ValueError("Maximum quadratic cost function allowed")
+            gen["cost"][-len(costs):] = costs
     return pm
 
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):

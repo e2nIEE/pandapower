@@ -37,19 +37,20 @@ def test_cost_pol_gen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-    # run OPF
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
+
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_kw.values
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
+    net.poly_cost.cp1_eur_per_kw.at[0] = 0
+    net.poly_cost.cp2_eur_per_kw2.at[0] = 1
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert abs(net.res_cost - net.res_gen.p_kw.values**2) < 1e-5
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values**2)
 
 
 def test_cost_pol_all_elements():
@@ -73,20 +74,23 @@ def test_cost_pol_all_elements():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 1, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=1)
+#    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
+#    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, 1, 0]))
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
     assert abs(net.res_cost - (net.res_gen.p_kw.values + net.res_sgen.p_kw.values)) < 1e-2
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
-    # run OPF
+    net.poly_cost.cp1_eur_per_kw.at[0] = 0
+    net.poly_cost.cp2_eur_per_kw2.at[0] = -1
+
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert abs(net.res_cost - net.res_gen.p_kw.values**2 - net.res_sgen.p_kw.values) < 1e-5
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values**2 + net.res_sgen.p_kw.values)
 
 def test_cost_pol_q():
     """ Testing a very simple network for the resulting cost value
@@ -107,19 +111,21 @@ def test_cost_pol_q():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_polynomial_cost(net, 0, "sgen", np.array([0, -1, 0]), type="q")
+    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=0, cq1_eur_per_kvar=-1)
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
     assert abs(net.res_cost + (net.res_sgen.q_kvar.values)) < 1e-2
 
-    net.polynomial_cost.c.at[0] = np.array([[1, 0, 0]])
+    net.poly_cost.cq1_eur_per_kvar.at[0] = 0
+    net.poly_cost.cq2_eur_per_kvar2.at[0] = 1
+#    net.poly_cost.c.at[0] = np.array([[1, 0, 0]])
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert abs(net.res_cost - net.res_sgen.q_kvar.values**2) < 1e-5
+    assert np.isclose(net.res_cost, net.res_sgen.q_kvar.values**2)
 
 
 

@@ -52,9 +52,9 @@ def test_minimize_active_power_curtailment():
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    pp.create_polynomial_cost(net, 0, "gen", array([-1e-5, 0]))
-    pp.create_polynomial_cost(net, 1, "gen", array([-1e-5, 0]))
-    pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=-1e-5)
+    pp.create_poly_cost(net, 1, "gen", cp1_eur_per_kw=-1e-5)
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=0)
 
 
 

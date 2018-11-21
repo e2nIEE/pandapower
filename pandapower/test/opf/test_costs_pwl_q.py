@@ -81,7 +81,7 @@ def test_cost_piecewise_linear_sgen_q():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_sgen.q_kvar.values < 1e-3
+    assert np.isclose(net.res_cost, net.res_sgen.q_kvar.values)
 
 
 def test_cost_piecewise_linear_load_q():
@@ -108,7 +108,7 @@ def test_cost_piecewise_linear_load_q():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_load.q_kvar.values < 1e-3
+    assert np.isclose(net.res_cost, net.res_load.q_kvar.values)
 
 
 def test_cost_piecewise_linear_eg_q():
@@ -135,7 +135,7 @@ def test_cost_piecewise_linear_eg_q():
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost + net.res_ext_grid.q_kvar.values * 1 < 1e-3
+    assert np.isclose(net.res_cost, -net.res_ext_grid.q_kvar.values)
     # check and assert result
 
 def test_cost_pwl_q_3point():
@@ -164,12 +164,8 @@ def test_cost_pwl_q_3point():
 
     assert net["OPF_converged"]
     # test failing because somehow, the res_cost is the eg reactive power and the result is not the optimum!
-    # assert net.res_cost - net.res_sgen.q_kvar.values < 1e-3
+    assert np.isclose(net.res_cost, net.res_sgen.q_kvar.values)
 
 
 if __name__ == "__main__":
     pytest.main(["-xs"])
-    # test_cost_piecewise_linear_eg_q()
-    # test_cost_piecewise_linear_sgen_q()
-    # test_cost_piecewise_linear_gen_q()
-    # test_get_costs()

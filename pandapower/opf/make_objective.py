@@ -10,6 +10,8 @@
 from numpy import zeros, array, concatenate, power, ndarray
 import pandas as pd
 from pandapower.idx_cost import MODEL, NCOST, COST
+from pandapower.idx_gen import PMIN, PMAX
+
 try:
     import pplog as logging
 except ImportError:
@@ -18,11 +20,23 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 def get_gen_index(net, et, element):
+    if et == "dcline":
+        dc_idx = net.dcline.index.get_loc(element)
+        element = len(net.gen.index) - 2*len(net.dcline) + dc_idx*2
+        et = "gen"
     lookup = "%s_controllable"%et if et in ["load", "sgen", "storage"] else et
     if lookup in net._pd2ppc_lookups:
         if len(net._pd2ppc_lookups[lookup]) > element:
             return int(net._pd2ppc_lookups[lookup][int(element)])
 
+
+def map_costs_to_gen(net, cost):
+    gens = array([get_gen_index(net, et, element)
+              for et, element in zip(cost.et.values, cost.element.values)])
+    cost_is = array([gen is not None for gen in gens])
+    cost = cost[cost_is]
+    gens = gens[cost_is].astype(int)
+    return gens, cost
 
 def _init_gencost(ppci, net):
     is_quadratic = net.poly_cost[["cp2_eur_per_kw2", "cq2_eur_per_kvar2"]].values.any()
@@ -31,58 +45,57 @@ def _init_gencost(ppci, net):
     rows = len(ppci["gen"])*2 if q_costs else len(ppci["gen"])
     if len(net.pwl_cost):
         nr_points = {len(p) for p in net.pwl_cost.points.values}
-#        if len(nr_points) > 1:
-#            raise ValueError("All generators need the same number of points")
         points = max(nr_points)
         if is_quadratic:
             raise ValueError("Quadratic costs can be mixed with piecewise linear costs")
-        columns = COST + (points +1)*2
-        ncost = 2
+        columns = COST + (max(points, 2) + 1)*2
     else:
-        columns = COST + 3 #if is_quadratic else COST + 2
-        ncost = 3 if is_quadratic else 2
+        columns = COST + 3 if is_quadratic else COST + 2
     ppci["gencost"] = zeros((rows, columns), dtype=float)
-    ppci["gencost"][:, MODEL] = 2
-    ppci["gencost"][:, NCOST] = ncost
-#    ppci["gencost"][:, COST] = 1
     return is_quadratic, q_costs
 
 
 def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
-    cost = net.poly_cost
-    gens = array([get_gen_index(net, et, element)
-                  for et, element in zip(cost.et.values, cost.element.values)])
-    cost_is = array([gen is not None for gen in gens])
-    gens = gens[cost_is].astype(int)
-    cost = cost[cost_is]
+    gens, cost = map_costs_to_gen(net, net.poly_cost)
     c0 = cost["cp0_eur"].values
     c1 = cost["cp1_eur_per_kw"].values
     signs = array([-1 if element in ["load", "storage"] else 1 for element in cost.et])
     if is_quadratic:
         c2 = cost["cp2_eur_per_kw2"]
+        ppci["gencost"][gens, NCOST] = 3
         ppci["gencost"][gens, COST] = c2 * 1e6 * signs
         ppci["gencost"][gens, COST + 1] = c1 * 1e3 * signs
         ppci["gencost"][gens, COST + 2] = c0 * signs
     else:
+        ppci["gencost"][gens, NCOST] = 2
         ppci["gencost"][gens, COST] = c1 * 1e3 * signs
         ppci["gencost"][gens, COST + 1] = c0 * signs
-    #TODO Q Costs
+    if q_costs:
+        gens_q = gens + len(ppci["gen"])
+        c0 = cost["cq0_eur"].values
+        c1 = cost["cq1_eur_per_kvar"].values
+        signs = array([-1 if element in ["load", "storage"] else 1 for element in cost.et])
+        if is_quadratic:
+            c2 = cost["cq2_eur_per_kvar2"]
+            ppci["gencost"][gens_q, NCOST] = 3
+            ppci["gencost"][gens_q, COST] = c2 * 1e6 * signs
+            ppci["gencost"][gens_q, COST + 1] = c1 * 1e3 * signs
+            ppci["gencost"][gens_q, COST + 2] = c0 * signs
+        else:
+            ppci["gencost"][gens_q, NCOST] = 2
+            ppci["gencost"][gens_q, COST] = c1 * 1e3 * signs
+            ppci["gencost"][gens_q, COST + 1] = c0 * signs
 
 def _fill_gencost_pwl(ppci, net):
     for power_mode, cost in net.pwl_cost.groupby("power_type"):
-        gens = array([get_gen_index(net, et, element)
-                  for et, element in zip(cost.et.values, cost.element.values)])
-        cost_is = array([gen is not None for gen in gens])
-        cost = cost[cost_is]
-        gens = gens[cost_is].astype(int)
+        gens, cost = map_costs_to_gen(net, cost)
         signs = [-1 if element in ["load", "storage"] else 1 for element in cost.et]
         if power_mode == "q":
-            gens = [idx + len(ppci["gen"]) for idx in gens]
-        ppci["gencost"][gens, MODEL] = 1
+            gens += len(ppci["gen"])
         for gen, points, sign in zip(gens, cost.points.values, signs):
             costs = costs_from_areas(points, sign)
             print(costs)
-            ppci["gencost"][gen, COST:] = costs
+            ppci["gencost"][gen, COST:COST+len(costs)] = costs
             ppci["gencost"][gen, NCOST] = len(costs) / 2
 
 def costs_from_areas(points, sign):
@@ -105,6 +118,16 @@ def costs_from_areas(points, sign):
     return costs
 
 
+def _add_linear_costs_as_pwl_cost(ppci, net):
+    gens, cost = map_costs_to_gen(net, net.poly_cost)
+    ppci["gencost"][gens, NCOST] = 2
+    pmin = ppci["gen"][gens, PMIN]
+    pmax = ppci["gen"][gens, PMAX]
+    ppci["gencost"][gens, COST] = pmin
+    ppci["gencost"][gens, COST + 1] = pmin * cost.cp1_eur_per_kw.values * 1e3
+    ppci["gencost"][gens, COST + 2] = pmax
+    ppci["gencost"][gens, COST + 3] = pmax * cost.cp1_eur_per_kw.values * 1e3
+
 def _make_objective(ppci, net):
     use_old = False
     if use_old and (len(net.piecewise_linear_cost) or len(net.polynomial_cost)):
@@ -113,11 +136,22 @@ def _make_objective(ppci, net):
         return ppci
     is_quadratic, q_costs = _init_gencost(ppci, net)
     if len(net.pwl_cost):
+        ppci["gencost"][:, MODEL] = 1
+        ppci["gencost"][:, NCOST] = 2
+        ppci["gencost"][:, COST + 2] = 1
+
         _fill_gencost_pwl(ppci, net)
+        if is_quadratic:
+            raise ValueError("Piecewise linear costs can not be mixed with quadratic costs")
+        elif len(net.poly_cost):
+            _add_linear_costs_as_pwl_cost(ppci, net)
     elif len(net.poly_cost):
+        ppci["gencost"][:, MODEL] = 2
         _fill_gencost_poly(ppci, net, is_quadratic, q_costs)
     else:
         logger.warning("no costs are given - overall generated power is minimized")
+        ppci["gencost"][:, MODEL] = 2
+        ppci["gencost"][:, NCOST] = 2
         ppci["gencost"][:, COST + 1] = 1
     return ppci
 

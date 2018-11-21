@@ -1,7 +1,7 @@
 import pytest
 
 import pandapower as pp
-
+import numpy as np
 
 def test_3point_pwl():
     vm_max = 1.05
@@ -18,18 +18,14 @@ def test_3point_pwl():
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
-#    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array(
-#        [[-100, 1.5], [0, 0], [100, 1], ]), type="q")
-
-    pp.create_pwl_cost(net, 0, "sgen", [(-50, 0, 1.5), (0, 50, 1.5)], power_type="q")
 
     # creating a pwl cost function that actually is realistic: The absolute value of the reactive power has costs.
+    pp.create_pwl_cost(net, 0, "sgen", [(-50, 0, -1.5), (0, 50, 1.5)], power_type="q")
 
     pp.runopp(net, verbose=False)
 
     # The reactive power should be at zero to minimze the costs.
-    #TODO: it is actually not?
-    assert abs(net.res_sgen.q_kvar.values ) < 1e-3
+    assert np.isclose(net.res_sgen.q_kvar.values, 0, atol=1e-4)
 
 if __name__ == "__main__":
     pytest.main(['-s', __file__])

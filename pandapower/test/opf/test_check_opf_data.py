@@ -93,9 +93,4 @@ def test_opf_data_check_lim_col():
 
 
 if __name__ == "__main__":
-    if 1:
-        pytest.main(['-x', "test_check_opf_data.py"])
-    elif 1:
-        test_opf_data_check_basic()
-    else:
-        pass
+    pytest.main(['-x', "test_check_opf_data.py"])

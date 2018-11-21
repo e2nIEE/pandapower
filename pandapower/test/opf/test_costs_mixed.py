@@ -21,7 +21,6 @@ logger.setLevel("DEBUG")
 def test_cost_mixed():
     """ Testing a very simple network for the resulting cost value
     constraints with OPF """
-    # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
@@ -39,7 +38,6 @@ def test_cost_mixed():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-#    pp.create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
@@ -60,15 +58,16 @@ def test_cost_mixed():
     pp.runopp(net, verbose=False)
     assert np.isclose(net.res_cost, net.res_gen.p_kw.values ** 2 + 1)
 
-#    pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [100, -100]]), type="p")
+    net.load.controllable.at[0] = False
+    net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
+    pp.create_pwl_cost(net, 0, "ext_grid", [(-1000, 0, -2), (0, 1000, 2)], power_type="p")
 
-#    net.poly_cost.cp1_eur_per_kw.at[0] = 1
-#    net.poly_cost.cp2_eur_per_kw2.at[0] = 0
-#    net.load.controllable.at[0] = True
-#    pp.create_pwl_cost(net, 0, "load", [(0, 100, -1)], power_type="p")
-#    pp.runopp(net, verbose=False)
-#    assert np.isclose(net.res_cost, net.res_gen.p_kw.values[0] - net.res_load.p_kw.values[0] )
-#    assert net.res_cost - net.res_gen.p_kw.values ** 2 - 1 - net.res_load.p_kw.values < 1e-5
+    net.poly_cost.cp1_eur_per_kw.at[0] = 1
+    net.poly_cost.cp2_eur_per_kw2.at[0] = 0
+    pp.runopp(net, verbose=False)
+    pp.runpm(net)
+    assert np.isclose(net.res_ext_grid.p_kw.values[0], 0, atol=1e-4)
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values[0], atol=1e-4)
 
 
 def test_mixed_p_q_pol():
@@ -89,11 +88,10 @@ def test_mixed_p_q_pol():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-#    pp.create_polynomial_cost(net, 0, "gen", cp1_eur_per_kw 1, 0]))
-#    pp.create_polynomial_cost(net, 0, "gen", cp1_eur_per_kw 1, 0]), type ="q")
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1, cq1_eur_per_kvar=1)
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.values + net.res_gen.q_kvar.values)
 
 
 def test_mixed_p_q_pwl():
@@ -114,12 +112,12 @@ def test_mixed_p_q_pwl():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -150],[150, 150]]))
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[-150, -150],[150, 150]]), type ="q")
+    pp.create_pwl_cost(net, 0, "gen", [(-150, 150, 1)])
+    pp.create_pwl_cost(net, 0, "gen", [(-150, 150, 1)], power_type="q")
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
 
 if __name__ == "__main__":
-    pytest.main([])
+    pytest.main([__file__])
 

@@ -58,9 +58,9 @@ def net_3w_trafo_opf():
 @pytest.mark.skipif(julia_installed==False, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
     net = net_3w_trafo_opf
-    pp.create_pwl_cost(net, 0, 'ext_grid', [(0, 0), (1e6, 1e6)])
-    pp.create_pwl_cost(net, 0, 'gen', [(0, 0), (80e3, 240e3)])
-    pp.create_pwl_cost(net, 1, 'gen', [(0, 0), (100e3, 200e3)])
+    pp.create_pwl_cost(net, 0, 'ext_grid', [(0, 1e6, 1)])
+    pp.create_pwl_cost(net, 0, 'gen', [(0, 30e3, 3), (30e3, 80e3, 3)])
+    pp.create_pwl_cost(net, 1, 'gen', [(0, 100e3, 2)])
 
     pp.runpm(net)
     consistency_checks(net)
@@ -106,8 +106,10 @@ def test_pwl():
     g2 = pp.create_gen(net, bus3, p_kw=80*1e3, min_p_kw=0, max_p_kw=80e3, vm_pu=1.01)
     net.gen["controllable"] = False
 
-    pp.create_pwl_cost(net, g1, 'gen', [(0, 0), (20, 40), (80, 340)])
-    pp.create_pwl_cost(net, g2, 'gen', [(0, 0), (20, 40), (80, 340)])
+#    pp.create_pwl_cost(net, g1, 'gen', [(0, 0), (20, 40), (80, 340)])
+#    pp.create_pwl_cost(net, g2, 'gen', [(0, 0), (20, 40), (80, 340)])
+    pp.create_pwl_cost(net, g1, 'gen', [(0, 20, 2), (20, 80, 5)])
+    pp.create_pwl_cost(net, g2, 'gen', [(0, 20, 2), (20, 80, 5)])
 
     pp.runpm(net)
     consistency_checks(net, rtol=1e-3)
@@ -118,31 +120,34 @@ def test_pwl():
     g3 = pp.create_gen(net, bus1, p_kw=80*1e3, min_p_kw=0, max_p_kw=80e3, vm_pu=1.01, slack=True)
 
 
-    pp.create_pwl_cost(net, g1, 'gen', [(0, 0), (0.2, 0.2), (0.4, 1.8)])
-    pp.create_pwl_cost(net, g2, 'gen', [(0, 0), (0.3, 0.6), (0.4, 2)])
-    pp.create_pwl_cost(net, g3, 'gen', [(0, 0), (0.1, 0.3)])
+    pp.create_pwl_cost(net, g1, 'gen', [(0, 200, 1.), (200, 0.4, 8.)])
+    pp.create_pwl_cost(net, g2, 'gen', [(0, 300, 2.), (300, 0.4, 14)])
+    pp.create_pwl_cost(net, g3, 'gen', [(0, 100, 3.)])
+#    pp.create_pwl_cost(net, g1, 'gen', [(0, 0), (0.2, 0.2), (0.4, 1.8)])
+#    pp.create_pwl_cost(net, g2, 'gen', [(0, 0), (0.3, 0.6), (0.4, 2)])
+#    pp.create_pwl_cost(net, g3, 'gen', [(0, 0), (0.1, 0.3)])
 
     net.load.p_kw = 0.1e3
     pp.runpm(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_kw.at[g2], 0)
     assert np.isclose(net.res_gen.p_kw.at[g3], 0)
-    assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1]*1e-3)
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1])
 
     net.load.p_kw = 0.3e3
     pp.runpm(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_kw.at[g3], 0)
     assert np.isclose(net.res_gen.p_kw.at[g1], 200)
-    assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1]*1e-3 + net.res_gen.p_kw.at[g2]*2e-3)
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1] + net.res_gen.p_kw.at[g2]*2)
 
     net.load.p_kw = 0.5e3
     pp.runpm(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_kw.at[g1], 200)
     assert np.isclose(net.res_gen.p_kw.at[g2], 300)
-    assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1]*1e-3 + net.res_gen.p_kw.at[g2]*2e-3 + \
-                                    net.res_gen.p_kw.at[g3]*3e-3)
+    assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1] + net.res_gen.p_kw.at[g2]*2 + \
+                                    net.res_gen.p_kw.at[g3]*3)
 
 if __name__ == '__main__':
     pytest.main([__file__])

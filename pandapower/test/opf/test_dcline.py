@@ -5,7 +5,7 @@
 
 
 import pytest
-from numpy import array, allclose
+from numpy import array, allclose, isclose
 
 import pandapower as pp
 from pandapower.test.consistency_checks import consistency_checks
@@ -32,7 +32,7 @@ def dcline_net():
     pp.create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
     pp.create_dcline(net, name="dc line", from_bus=b2, to_bus=b3, p_kw=0.2e6, loss_percent=1.0,
                      loss_kw=500, vm_from_pu=1.01, vm_to_pu=1.012, max_p_kw=1e6,
-                     in_service=True)
+                     in_service=True, index=4)
     pp.create_line(net, b3, b4, 20, "490-AL1/64-ST1A 380.0")
 
     pp.create_load(net, bus=b4, p_kw=800e3, controllable=False)
@@ -44,8 +44,8 @@ def dcline_net():
 
 def test_dispatch1(dcline_net):
     net = dcline_net
-    pp.create_piecewise_linear_cost(net, 0, "ext_grid", array([[-1e12, -0.1*1e12], [1e12, 0.1*1e12]]))
-    pp.create_piecewise_linear_cost(net, 1, "ext_grid", array([[-1e12, -0.08*1e12], [1e12, 0.08*1e12]]))
+    pp.create_pwl_cost(net, 0, "ext_grid", [(-1e12, 1e12, 0.1)])
+    pp.create_pwl_cost(net, 1, "ext_grid", [(-1e12, 1e12, 0.08)])
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
@@ -76,8 +76,10 @@ def test_dispatch1(dcline_net):
 
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
-    pp.create_polynomial_cost(net, 0, "ext_grid", array([.08, 0]))
-    pp.create_polynomial_cost(net, 1, "ext_grid", array([.1, 0]))
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_kw=.08)
+    pp.create_poly_cost(net, 1, "ext_grid", cp1_eur_per_kw=.1)
+#    pp.create_poly_cost(net, 0, "ext_grid", array([.08, 0]))
+#    pp.create_poly_cost(net, 1, "ext_grid", array([.1, 0]))
 
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0# needs to be constrained more than default
@@ -109,23 +111,23 @@ def test_dcline_dispatch2(dcline_net):
 
 def test_dcline_dispatch3(dcline_net):
     net = dcline_net
-    pp.create_polynomial_cost(net, 0, "dcline", array([1, 0]))
+    pp.create_poly_cost(net, 4, "dcline", cp1_eur_per_kw=1)
     net.bus["max_vm_pu"] = 1.03 # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     pp.runopp(net)
     consistency_checks(net, rtol=1e-3)
 
     # dc line is not dispatched because of the assigned costs
-    assert (net.res_dcline.at[0, "p_to_kw"]) < 1e-3
+    assert isclose(net.res_dcline.at[4, "p_to_kw"], 0, atol=1e-3)
     assert all(net.res_ext_grid.p_kw.values > 0)
 
     # costs for ext_grid at the end of the DC line get double the costs of DC line transfer
-    pp.create_polynomial_cost(net, 1, "ext_grid", array([2, 0]))
+    pp.create_poly_cost(net, 1, "ext_grid", cp1_eur_per_kw=2)
 
     pp.runopp(net)
 
     #now the total power is supplied through the DC line
-    assert (net.res_dcline.at[0, "p_to_kw"]) < 1e-3
+    assert (net.res_dcline.at[4, "p_to_kw"]) < 1e3
     assert net.res_ext_grid.p_kw.at[1] < 1
 
 if __name__ == "__main__":

@@ -8,8 +8,9 @@ from math import pi
 from numpy import sign, nan, append, zeros, array, power, sqrt, where
 from numpy import max as max_
 from pandas import Series, DataFrame, concat
-from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
-
+from pandapower.idx_gen import GEN_BUS, PMIN, PMAX, QMIN, QMAX, GEN_STATUS
+from pandapower.idx_cost import COST, NCOST
+from pandapower.idx_bus import BUS_I, BASE_KV
 import pandapower as pp
 
 try:
@@ -30,16 +31,16 @@ ppc_elms = ["bus", "branch", "gen"]
 
 def _create_costs(net, ppc, gen_lookup, type, idx):
     if ppc['gencost'][idx, 0] == 1:
-        if not len(ppc['gencost'][idx, 4:]) == 2*ppc['gencost'][idx, 3]:
+        if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
             logger.error("In gencost line %s, the number n does not fit to the number of values" %
                          idx)
         pp.create_piecewise_linear_cost(net, gen_lookup.element.at[idx],
                                         gen_lookup.element_type.at[idx],
                                         ppc['gencost'][idx, 4:], type)
     elif ppc['gencost'][idx, 0] == 2:
-        if len(ppc['gencost'][idx, 4:]) == ppc['gencost'][idx, 3]:
-            n = len(ppc['gencost'][idx, 4:])
-            values = ppc['gencost'][idx, 4:] / power(1e3, array(range(n))[::-1])
+        if len(ppc['gencost'][idx, COST:]) == ppc['gencost'][idx, NCOST]:
+            n = len(ppc['gencost'][idx, COST:])
+            values = ppc['gencost'][idx, COST:] / power(1e3, array(range(n))[::-1])
         else:
             logger.error("In gencost line %s, the number n does not fit to the number of values" %
                          idx)
@@ -50,13 +51,13 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
 
 
 def _gen_bus_info(ppc, idx_gen):
-    bus_name = int(ppc["gen"][idx_gen, 0])
+    bus_name = int(ppc["gen"][idx_gen, GEN_BUS])
     # assumption: there is only one bus with this bus_name:
-    idx_bus = int(where(ppc["bus"][:, 0] == bus_name)[0][0])
+    idx_bus = int(where(ppc["bus"][:, BUS_I] == bus_name)[0][0])
     current_bus_type = int(ppc["bus"][idx_bus, 1])
 
-    same_bus_gen_idx = where(ppc["gen"][:, 0] == ppc["gen"][idx_gen, 0])[0].astype(int)
-    same_bus_in_service_gen_idx = same_bus_gen_idx[where(ppc["gen"][same_bus_gen_idx, 7] > 0)]
+    same_bus_gen_idx = where(ppc["gen"][:, GEN_BUS] == ppc["gen"][idx_gen, GEN_BUS])[0].astype(int)
+    same_bus_in_service_gen_idx = same_bus_gen_idx[where(ppc["gen"][same_bus_gen_idx, GEN_STATUS] > 0)]
     first_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[0] if len(
         same_bus_in_service_gen_idx) else None
     last_same_bus_in_service_gen_idx = same_bus_in_service_gen_idx[-1] if len(
@@ -100,7 +101,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
     """
     # --- catch common failures
-    if Series(ppc['bus'][:, 9] <= 0).any():
+    if Series(ppc['bus'][:, BASE_KV] <= 0).any():
         logger.info('There are false baseKV given in the pypower case file.')
 
     # --- general_parameters

@@ -39,7 +39,8 @@ def test_cost_piecewise_linear_gen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([ [0, 0], [75, 50], [150, 100]]))
+    pp.create_pwl_cost(net, 0, "gen", [(0, 75, 1.5), (75, 150, 1.5)])
+#    pp.create_pwl_cost(net, 0, "gen", np.array([ [0, 0], [75, 50], [150, 100]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -67,13 +68,13 @@ def test_cost_piecewise_linear_eg():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[0, 0], [50, -500]]))
+    pp.create_pwl_cost(net, 0, "ext_grid", [(0, 50, -10)])
+#    pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[0, 0], [50, -500]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - - net.res_ext_grid.p_kw.values * 10 < 1e-3
-    # check and assert result
+    assert np.isclose(net.res_cost, -10*net.res_ext_grid.p_kw.values)
 
 
 def test_get_costs():
@@ -96,7 +97,8 @@ def test_get_costs():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[0, 0], [150, 300]]))
+    pp.create_pwl_cost(net, 0, "gen", [(0, 150, 2)])
+#    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[0, 0], [150, 300]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -126,7 +128,8 @@ def test_cost_piecewise_linear_sgen():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, -100], [-75, -50], [0, 0]]))
+    pp.create_pwl_cost(net, 0, "sgen", [(-150, -75, 1.5), (-75, 0, -1.5)])
+#    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, -100], [-75, -50], [0, 0]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -153,12 +156,12 @@ def test_cost_piecewise_linear_load():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
-    # run OPF
+    pp.create_pwl_cost(net, 0, "load", [(0, 75, 1.5), (75, 150, 1.5)])
+
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert abs(net.res_cost - net.res_load.p_kw.values / 1.5) < 1e-3
+    assert abs(net.res_cost - net.res_load.p_kw.values * 1.5) < 1e-3
 
 def test_cost_piecewise_linear_sgen_uneven_slopes():
     """ Testing a very simple network for the resulting cost value
@@ -180,12 +183,13 @@ def test_cost_piecewise_linear_sgen_uneven_slopes():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [75, 50], [150, 200]]))
+    pp.create_pwl_cost(net, 0, "sgen", [(0, 75, 1.5), (75, 150, 1.5)])
+#    pp.create_pwl_cost(net, 0, "sgen", np.array([[0, 0], [75, 50], [150, 200]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
-    assert net.res_cost - net.res_sgen.p_kw.values / 1.5 < 1e-3
+    assert net.res_cost - net.res_sgen.p_kw.values * 1.5 < 1e-3
 
 
 def test_cost_piecewise_linear_load_uneven_slopes():
@@ -207,13 +211,18 @@ def test_cost_piecewise_linear_load_uneven_slopes():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
+#
+#    pp.create_pwl_cost(net, 0, "load", [(0, 75, 2), (75, 150, 1)])
+    pp.create_pwl_cost(net, 0, "load", [(0, 75, 2), (75, 150, 1)])
 
-    pp.create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 51], [150, 101]]))
     # run OPF
-    with pytest.raises(OPFNotConverged):
-        pp.runopp(net, verbose=False)
-        assert net["OPF_converged"]
-        assert abs(net.res_cost - net.res_load.p_kw.values / 1.5) < 1e-3
+    pp.runopp(net, verbose=False)
+    assert net["OPF_converged"]
+    assert abs(net.res_cost - net.res_load.p_kw.values * 2) < 1e-3
+
+    net.load.min_p_kw = 100
+    pp.runopp(net, verbose=False)
+    assert abs(net.res_cost - (75*2 + net.res_load.p_kw.values[0] - 75)) < 1e-3
 
 def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
     """ Testing a very simple network for the resulting cost value
@@ -235,7 +244,7 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0,2], [750,1 ], [1500, 2]]))
+    pp.create_pwl_cost(net, 0, "sgen", np.array([[0,2], [750,1 ], [1500, 2]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -246,4 +255,32 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    # boundaries:
+    vm_max = 1.05
+    vm_min = 0.95
+
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_load(net, 1, p_kw=100, controllable=False, max_p_kw=150, min_p_kw=50, max_q_kvar=0,
+                   min_q_kvar=0)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100 * 690)
+
+
+#    pp.create_pwl_cost(net, 0, "load", [(0, 75, 2), (75, 150, 1)])
+    pp.create_pwl_cost(net, 0, "ext_grid", [(0, 75, 2), (75, 150, 1)])
+
+    # run OPF
+    pp.runopp(net, verbose=False)
+    assert net["OPF_converged"]
+    assert abs(net.res_cost - net.res_load.p_kw.values * 2) < 1e-3
+
+    net.load.min_p_kw = 100
+    pp.runopp(net, verbose=False)
+    assert abs(net.res_cost - (75*2 + net.res_load.p_kw.values[0] - 75)) < 1e-3
+#        assert net["OPF_converged"]
+    #    pytest.main([__file__, "-xs"])
