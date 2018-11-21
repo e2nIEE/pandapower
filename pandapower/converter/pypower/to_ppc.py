@@ -83,7 +83,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
         ppc = pc.to_ppc(net)
 
     """
-    if (not (net["polynomial_cost"].empty and net["piecewise_linear_cost"].empty) and
+    if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and
        mode is None) or mode == "opf":
         mode = "opf"
         _check_necessary_opf_parameters(net, logger)

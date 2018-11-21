@@ -34,18 +34,27 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
         if not len(ppc['gencost'][idx, COST:]) == 2*ppc['gencost'][idx, NCOST]:
             logger.error("In gencost line %s, the number n does not fit to the number of values" %
                          idx)
-        pp.create_piecewise_linear_cost(net, gen_lookup.element.at[idx],
-                                        gen_lookup.element_type.at[idx],
-                                        ppc['gencost'][idx, 4:], type)
+        raise NotImplementedError
+        pp.create_pwl_cost(net, gen_lookup.element.at[idx],
+                           gen_lookup.element_type.at[idx],
+                           ppc['gencost'][idx, 4:], type)
+#        pp.create_piecewise_linear_cost(net, gen_lookup.element.at[idx],
+#                                        gen_lookup.element_type.at[idx],
+#                                        ppc['gencost'][idx, 4:], type)
     elif ppc['gencost'][idx, 0] == 2:
-        if len(ppc['gencost'][idx, COST:]) == ppc['gencost'][idx, NCOST]:
-            n = len(ppc['gencost'][idx, COST:])
-            values = ppc['gencost'][idx, COST:] / power(1e3, array(range(n))[::-1])
-        else:
-            logger.error("In gencost line %s, the number n does not fit to the number of values" %
-                         idx)
-        pp.create_polynomial_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
-                                  values, type)
+        ncost = ppc['gencost'][idx, NCOST]
+        if ncost == 2:
+            cp2 = 0
+            cp1 = ppc['gencost'][idx, COST]
+            cp0 = ppc['gencost'][idx, COST + 1] * 1e-3
+        elif ncost == 3:
+            cp2 = ppc['gencost'][idx, COST] * 1e-6
+            cp1 = ppc['gencost'][idx, COST + 1] * 1e-3
+            cp0 = ppc['gencost'][idx, COST + 2]
+        pp.create_poly_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
+                                  cp1_eur_per_kw=cp1, cp2_eur_per_kw2=cp2, cp0_eur=cp0)
+#        pp.create_polynomial_cost(net, gen_lookup.element.at[idx], gen_lookup.element_type.at[idx],
+#                                  values, type)
     else:
         logger.info("Cost mode of gencost line %s is unknown." % idx)
 
@@ -180,8 +189,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             gen_lookup.element.loc[i] = pp.create_sgen(
                 net, bus=current_bus_idx, p_kw=ppc['gen'][i, 1] * 1e3,
                 q_kvar=ppc['gen'][i, 2] * 1e3, type="", in_service=bool(ppc['gen'][i, 7] > 0),
-                max_p_kw=-ppc['gen'][i, 9] * 1e3, min_p_kw=-ppc['gen'][i, 8] * 1e3,
-                max_q_kvar=-ppc['gen'][i, 4] * 1e3, min_q_kvar=-ppc['gen'][i, 3] * 1e3,
+                max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_kw=ppc['gen'][i, PMIN] * 1e3,
+                max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_kvar=ppc['gen'][i, QMIN] * 1e3,
                 controllable=True)
             gen_lookup.element_type.loc[i] = 'sgen'
             if ppc['gen'][i, 1] < 0:

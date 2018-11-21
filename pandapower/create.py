@@ -211,19 +211,10 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                         ("std_dev", "f8"),
                         ("bus", "u4"),
                         ("element", dtype(object))],
-        "piecewise_linear_cost": [("type", dtype(object)),
-                                  ("element", dtype(object)),
-                                  ("element_type", dtype(object)),
-                                  ("p", dtype(object)),
-                                  ("f", dtype(object))],
         "pwl_cost": [("power_type", dtype(object)),
                      ("element", dtype(object)),
                      ("et", dtype(object)),
                      ("points", dtype(object))],
-        "polynomial_cost": [("type", dtype(object)),
-                            ("element", dtype(object)),
-                            ("element_type", dtype(object)),
-                            ("c", dtype(object))],
         "poly_cost": [("element", dtype(object)),
                       ("et", dtype(object)),
                       ("cp0_eur", dtype("f8")),
@@ -2411,114 +2402,6 @@ def create_measurement(net, meas_type, element_type, value, std_dev, bus, elemen
     _preserve_dtypes(net.measurement, dtypes)
     return index
 
-
-def create_piecewise_linear_cost(net, element, element_type, data_points, type="p", index=None):
-    """
-    Creates an entry for piecewise linear costs for an element. The currently supported elements are
-     - Generator
-     - External Grid
-     - Static Generator
-     - Load
-     - Dcline
-     - Storage
-
-    INPUT:
-        **element** (int) - ID of the element in the respective element table
-
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
-
-        **data_points** - (numpy array) Numpy array containing n data points (see example)
-
-    OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
-
-        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of created cost entry
-
-    EXAMPLE:
-        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
-
-    NOTE:
-      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
-          supported.
-      - costs for storages are positive per definition (similar to sgen costs)
-    """
-
-    if index is None:
-        index = get_free_id(net["piecewise_linear_cost"])
-
-    if index in net["piecewise_linear_cost"].index:
-        raise UserWarning("A piecewise_linear_cost with the id %s already exists" % index)
-
-    if not net["polynomial_cost"].loc[
-        (net["polynomial_cost"].element_type == element_type) &
-        (net["polynomial_cost"].element == element) &
-        (net["polynomial_cost"].type == type)].empty:
-        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
-                          (element_type, element))
-
-    if not net["piecewise_linear_cost"].loc[
-        (net["piecewise_linear_cost"].element_type == element_type) &
-        (net["piecewise_linear_cost"].element == element) &
-        (net["piecewise_linear_cost"].type == type)].empty:
-        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
-                          (element_type, element))
-
-    p = data_points[:, 0]
-    f = data_points[:, 1]
-
-    if not (p[:-1] < p[1:]).all():
-        raise ValueError("Piecewise linear costs need to be defined in ascending order: " +
-                         "p0 < p1 < ... < pn")
-
-    if element_type != 'dcline':
-        if type == "p":
-            if not (hasattr(net[element_type], "max_p_kw") and hasattr(net[element_type],
-                                                                       "min_p_kw")):
-                raise AttributeError("No operational constraints defined for controllable element!")
-            if not (net[element_type].max_p_kw.at[element] <= max(p) and
-                    net[element_type].min_p_kw.at[element] >= min(p)):
-                raise ValueError("Cost function must be defined for whole power range of the "
-                                 "generator")
-        if type == "q":
-            if not (hasattr(net[element_type], "max_q_kvar") or hasattr(net[element_type],
-                                                                        "min_q_kvar")):
-                raise AttributeError("No operational constraints defined!")
-            if not (net[element_type].max_q_kvar.at[element] <= max(p) and net[
-                element_type].min_q_kvar.at[element] >= min(p)):
-                raise ValueError("Cost function must be defined for whole power range of the "
-                                 "generator")
-    else:
-        if type == "p":
-            if not (hasattr(net[element_type], "max_p_kw")):
-                raise AttributeError("No operational constraints defined for controllable element!")
-            if not (net[element_type].max_p_kw.at[element] <= max(p)):
-                raise ValueError("Cost function must be defined for whole power range of the "
-                                 "generator")
-        if type == "q":
-            if not pd.Series([
-                "max_q_to_kvar", "max_q_from_kvar", "min_q_to_kvar", "min_q_from_kvar"]).isin(
-                net[element_type].columns).all():
-                raise AttributeError("No operational constraints defined!")
-            if not (net[element_type].max_q_to_kvar.at[element] <= max(p) and
-                    net[element_type].max_q_from_kvar.at[element] <= max(p) and
-                    net[element_type].min_q_to_kvar.at[element] <= min(p) and
-                    net[element_type].min_q_from_kvar.at[element] >= min(p)):
-                raise ValueError("Cost function must be defined for whole power range of the "
-                                 "generator")
-
-    net.piecewise_linear_cost.loc[index, ["type", "element", "element_type"]] = \
-        [type, element, element_type]
-
-    net.piecewise_linear_cost.p.loc[index] = p.reshape((1, -1))
-    net.piecewise_linear_cost.f.loc[index] = f.reshape((1, -1))
-
-    return index
-
 def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
@@ -2564,74 +2447,6 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     net.pwl_cost.loc[index, ["power_type", "element", "et"]] = \
         [power_type, element, et]
     net.pwl_cost.points.loc[index] = points
-    return index
-
-
-
-def create_polynomial_cost(net, element, element_type, coefficients, type="p", index=None):
-
-    """
-    Creates an entry for polynomial costs for an element. The currently supported elements are
-     - Generator
-     - External Grid
-     - Static Generator
-     - Load
-     - Dcline
-     - Storage
-
-    INPUT:
-        **element** (int) - ID of the element in the respective element table
-
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
-
-        **data_points** - (numpy array) Numpy array containing n cost coefficients, starting with highest \
-            order (see example)
-
-        **type ** -"p" or "q"
-
-    OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of created cost entry
-
-    EXAMPLE:
-        create_polynomial_cost(net, 0, "gen", np.array([0, 1, 0]))
-
-    NOTE:
-        - costs for storages are positive per definition (similar to sgen costs)
-    """
-
-    if index is None:
-        index = get_free_id(net["polynomial_cost"])
-
-    if index in net["polynomial_cost"].index:
-        raise UserWarning("A polynomial_cost with the id %s already exists" % index)
-
-    if not net["polynomial_cost"].loc[
-        (net["polynomial_cost"].element_type == element_type) &
-        (net["polynomial_cost"].element == element) &
-        (net["polynomial_cost"].type == type)].empty:
-        raise UserWarning("A polynomial_cost for %s with index %s already exists" %
-                          (element_type, element))
-
-    if not net["piecewise_linear_cost"].loc[
-        (net["piecewise_linear_cost"].element_type == element_type) &
-        (net["piecewise_linear_cost"].element == element) &
-        (net["piecewise_linear_cost"].type == type)].empty:
-        raise UserWarning("A piecewise_linear_cost for %s with index %s already exists" %
-                          (element_type, element))
-
-
-    net.polynomial_cost.loc[index, ["type", "element", "element_type"]] = \
-        [type, element, element_type]
-
-    net.polynomial_cost.c.loc[index] = coefficients.reshape((1, -1))
-
     return index
 
 def create_poly_cost(net, element, et, cp1_eur_per_kw, cp0_eur=0, cq1_eur_per_kvar=0,

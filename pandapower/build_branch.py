@@ -255,7 +255,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
-        return _wye_delta(r, x, y)
+        return                                                                                                                                                                                              (r, x, y)
     else:
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 

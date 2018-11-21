@@ -11,8 +11,8 @@ import pandas as pd
 
 from pandapower import __version__
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
-from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch, \
-    create_line_from_parameters, create_impedance
+from pandapower.create import create_empty_network, create_switch, \
+    create_line_from_parameters, create_impedance, create_poly_cost
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
@@ -559,9 +559,7 @@ def convert_format(net):
         if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    p = net.gen.min_p_kw.at[index]
-                    create_piecewise_linear_cost(net, index, "gen",
-                                                 np.array([[p, cost * p], [0, 0]]))
+                    create_poly_cost(net, index, "gen", cp1_eur_per_kw=cost)
 
     if "cost_per_kw" in net.sgen:
         if "min_p_kw" not in net.sgen:
@@ -572,9 +570,8 @@ def convert_format(net):
         if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    p = net.sgen.min_p_kw.at[index]
-                    create_piecewise_linear_cost(net, index, "sgen",
-                                                 np.array([[p, cost * p], [0, 0]]))
+                    create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
+
 
     if "cost_per_kw" in net.ext_grid:
         if "min_p_kw" not in net.ext_grid:
@@ -584,39 +581,29 @@ def convert_format(net):
         if not "piecewise_linear_cost" in net:
             for index, cost in net.ext_grid.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    p = net.ext_grid.min_p_kw.at[index]
-                    create_piecewise_linear_cost(net, index, "ext_grid",
-                                                 np.array([[p, cost * p], [0, 0]]))
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
+
 
     if "cost_per_kvar" in net.gen:
         if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    qmin = net.gen.min_q_kvar.at[index]
-                    qmax = net.gen.max_q_kvar.at[index]
-                    create_piecewise_linear_cost(net, index, "gen",
-                                                 np.array([[qmin, cost * qmin], [0, 0],
-                                                           [qmax, cost * qmax]]), type="q")
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=0, cq1_eur_per_kvar=cost)
+
 
     if "cost_per_kvar" in net.sgen:
         if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    qmin = net.sgen.min_q_kvar.at[index]
-                    qmax = net.sgen.max_q_kvar.at[index]
-                    create_piecewise_linear_cost(net, index, "sgen",
-                                                 np.array([[qmin, cost * qmin], [0, 0],
-                                                           [qmax, cost * qmax]]), type="q")
+                    create_poly_cost(net, index, "sgen", cp1_eur_per_kw=0, cq1_eur_per_kvar=cost)
+
 
     if "cost_per_kvar" in net.ext_grid:
         if not "piecewise_linear_cost" in net:
             for index, cost in net.ext_grid.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    qmin = net.ext_grid.min_q_kvar.at[index]
-                    qmax = net.ext_grid.max_q_kvar.at[index]
-                    create_piecewise_linear_cost(net, index, "ext_grid",
-                                                 np.array([[qmin, cost * qmin], [0, 0],
-                                                           [qmax, cost * qmax]]), type="q")
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=0, cq1_eur_per_kvar=cost)
+
 
     if "tp_st_degree" not in net.trafo:
         net.trafo["tp_st_degree"] = np.nan
@@ -699,6 +686,20 @@ def convert_format(net):
                     del net[element]["max_%s"%suffix]
                 for column, values in constraints.items():
                     net[element][column] = values
+        if "polynomial_cost" in net:
+            for cost in net.polynomial_cost.itertuples():
+                values = cost.c[0]
+                if len(values) == 2:
+                    cp0 = values[1]
+                    cp1 = values[0]
+                    cp2 = 0
+                elif len(values) == 3:
+                    cp0 = values[2]
+                    cp1 = values[1]
+                    cp2 = values[0]
+                create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
+                                 cp1_eur_per_kw=cp1, cp2_eur_per_kw2=cp2)
+            del net.polynomial_cost
     net.version = float(__version__[:3])
     return net
 

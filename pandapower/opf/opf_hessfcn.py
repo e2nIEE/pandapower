@@ -21,7 +21,8 @@ from pandapower.idx_brch import F_BUS, T_BUS
 from pandapower.idx_cost import MODEL, POLYNOMIAL
 from pandapower.idx_gen import PG, QG
 from pypower.opf_consfcn import opf_consfcn
-from pypower.opf_costfcn import opf_costfcn
+from pandapower.opf.opf_costfcn import opf_costfcn
+
 from pypower.polycost import polycost
 from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
 

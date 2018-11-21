@@ -36,8 +36,8 @@ def _make_objective(ppci, net):
     else:
         logger.warning("no costs are given - overall generated power is minimized")
         ppci["gencost"][:, MODEL] = POLYNOMIAL
-        ppci["gencost"][:, NCOST] = 3
-        ppci["gencost"][:, COST + 1] = 1
+        ppci["gencost"][:, NCOST] = 2
+        ppci["gencost"][:, COST] = 1
     return ppci
 
 def _get_gen_index(net, et, element):
@@ -73,7 +73,7 @@ def _init_gencost(ppci, net):
             raise ValueError("Quadratic costs can be mixed with piecewise linear costs")
         columns = COST + (max(points, 2) + 1)*2
     else:
-        columns = COST + 4 if is_quadratic else COST + 3
+        columns = COST + 3 if is_quadratic else COST + 2
     ppci["gencost"] = zeros((rows, columns), dtype=float)
     return is_quadratic, q_costs
 
