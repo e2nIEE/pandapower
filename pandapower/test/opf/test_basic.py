@@ -628,7 +628,6 @@ def test_storage_opf():
     net["storage"].min_q_kvar.iloc[0] = -25
     # gencost for storages: positive costs in pandapower per definition
     # --> storage gencosts are similar to sgen gencosts (make_objective.py, l.128ff. and l.185ff.)
-    net["polynomial_cost"].c.iloc[2] = net["polynomial_cost"].c.iloc[4]
     net["poly_cost"].cp1_eur_per_kw.iloc[2] = net.poly_cost.cp1_eur_per_kw.iloc[4]
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False

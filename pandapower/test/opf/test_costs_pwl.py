@@ -66,7 +66,6 @@ def test_cost_piecewise_linear_eg():
                                    max_loading_percent=100 * 690)
 
     pp.create_pwl_cost(net, 0, "ext_grid", [(0, 50, -10)])
-#    pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[0, 0], [50, -500]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -95,7 +94,6 @@ def test_get_costs():
                                    max_loading_percent=100 * 690)
 
     pp.create_pwl_cost(net, 0, "gen", [(0, 150, 2)])
-#    pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[0, 0], [150, 300]]))
     # run OPF
     pp.runopp(net, verbose=False)
 
@@ -126,7 +124,6 @@ def test_cost_piecewise_linear_sgen():
                                    max_loading_percent=100 * 690)
 
     pp.create_pwl_cost(net, 0, "sgen", [(-150, -75, 1.5), (-75, 0, -1.5)])
-#    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[-150, -100], [-75, -50], [0, 0]]))
     # run OPF
     pp.runopp(net, verbose=False)
 

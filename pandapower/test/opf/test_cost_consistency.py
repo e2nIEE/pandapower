@@ -32,8 +32,6 @@ def test_contingency_sgen(base_net):
     #                 / |
     #                /  |
 
-#    pp.create_piecewise_linear_cost(net, 0, "sgen",
-#                                    array([[0, 0], [net.sgen.max_p_kw.at[0], net.sgen.max_p_kw.at[0]]]))
     pwl = pp.create_pwl_cost(net, 0, "sgen", [(0, net.sgen.max_p_kw.at[0], 1)])
     pp.runopp(net)
 
@@ -57,7 +55,6 @@ def test_contingency_sgen(base_net):
     net.pwl_cost.drop(index=0, inplace=True)
 
     # first using a positive slope as in the case above
-#    pp.create_polynomial_cost(net, 0, "sgen", array([1, 0]))
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=1.)
     pp.runopp(net)
     assert isclose(net.res_cost, net.res_sgen.p_kw.at[0], atol=1e-3)

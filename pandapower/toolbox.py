@@ -707,6 +707,10 @@ def convert_format(net):
                 create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
                                  cp1_eur_per_kw=cp1, cp2_eur_per_kw2=cp2)
             del net.polynomial_cost
+        if "piecewise_linear_cost" in net:
+            if len(net.piecewise_linear_cost) > 0:
+                raise NotImplementedError
+            del net.piecewise_linear_cost
     net.version = float(__version__[:3])
     return net
 

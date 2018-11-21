@@ -38,9 +38,6 @@ def _create_costs(net, ppc, gen_lookup, type, idx):
         pp.create_pwl_cost(net, gen_lookup.element.at[idx],
                            gen_lookup.element_type.at[idx],
                            ppc['gencost'][idx, 4:], type)
-#        pp.create_piecewise_linear_cost(net, gen_lookup.element.at[idx],
-#                                        gen_lookup.element_type.at[idx],
-#                                        ppc['gencost'][idx, 4:], type)
     elif ppc['gencost'][idx, 0] == 2:
         ncost = ppc['gencost'][idx, NCOST]
         if ncost == 2:

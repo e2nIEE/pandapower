@@ -245,7 +245,7 @@ def test_overloaded_lines():
     line3 = pp.create_line(net, bus0, bus1, length_km=10, std_type="149-AL1/24-ST1A 10.0")
 
     pp.create_load(net, bus1, p_kw=200, q_kvar=50)
-    
+
     pp.runpp(net)
     # test the overloaded lines by default value of max_load=100
     overloaded_lines = tb.overloaded_lines(net, max_load=100)
@@ -613,4 +613,4 @@ def test_impedance_line_replacement():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_toolbox.py", "-xs"])
+    pytest.main([__file__, "-xs"])
