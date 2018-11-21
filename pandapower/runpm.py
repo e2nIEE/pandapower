@@ -236,6 +236,9 @@ def ppc_to_pm(net, ppc):
 #        gen["ncost"] = len(gen["cost"])
 #    if len(gens_with_costs) < len(pm["gen"].keys()):
 #        raise ValueError("Missing cost function for generators")
+    if len(ppc["gencost"]) > len(ppc["gen"]):
+        logger.warning("PowerModels.jl does not reactive power cost - costs are ignored")
+        ppc["gencost"] = ppc["gencost"][:ppc["gen"].shape[0], :]
     for idx, row in enumerate(ppc["gencost"], start=1):
         gen = pm["gen"][str(idx)]
         gen["model"] = int(row[MODEL])

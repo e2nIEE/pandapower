@@ -6,8 +6,6 @@
 
 import numpy as np
 import pytest
-from pandapower.optimal_powerflow import OPFNotConverged
-
 
 import pandapower as pp
 
@@ -210,12 +208,8 @@ def test_cost_piecewise_linear_load_uneven_slopes():
                                    max_loading_percent=100 * 690)
 
 
-#    pp.create_pwl_cost(net, 0, "load", [(0, 75, 2), (75, 150, 1)])
     pp.create_pwl_cost(net, 0, "ext_grid", [(0, 75, 1), (75, 150, 2)])
 
-    pp.runpm(net)
-
-    # run OPF
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_ext_grid.p_kw.values[0])
@@ -252,8 +246,6 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
     assert net["OPF_converged"]
     assert np.isclose(net.res_sgen.p_kw.values[0], 750)
     assert np.isclose(net.res_sgen.p_kw.values[0], -net.res_cost)
-
-
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import pandapower as pp
 import pytest
-from numpy import array
+from numpy import array, isclose
 
 @pytest.fixture()
 def base_net():
@@ -17,7 +17,6 @@ def base_net():
     return net
 
 def test_contingency_sgen(base_net):
-
     net = base_net
     pp.create_sgen(net, 1, p_kw=100, q_kvar=0, controllable=True, min_p_kw=5, max_p_kw=150,
                    max_q_kvar=50, min_q_kvar=-50)
@@ -39,7 +38,7 @@ def test_contingency_sgen(base_net):
     pp.runopp(net)
 
 
-    assert abs(net.res_cost - net.res_sgen.p_kw.at[0]) < 1e-5
+    assert isclose(net.res_cost, net.res_sgen.p_kw.at[0], atol=1e-3)
     # minimize the sgen feed in by using a positive cost slope
     # using a slope of 1
     #               \   |
@@ -53,7 +52,7 @@ def test_contingency_sgen(base_net):
     net.pwl_cost.points.loc[pwl] = [(0, net.sgen.max_p_kw.at[0], -1)]
     pp.runopp(net)
 
-    assert abs(net.res_cost - net.res_sgen.p_kw.at[0]*-1) < 1e-5
+    assert isclose(net.res_cost, -net.res_sgen.p_kw.at[0], atol=1e-4)
 
     net.pwl_cost.drop(index=0, inplace=True)
 
@@ -61,13 +60,13 @@ def test_contingency_sgen(base_net):
 #    pp.create_polynomial_cost(net, 0, "sgen", array([1, 0]))
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_kw=1.)
     pp.runopp(net)
-    assert abs(net.res_cost - net.res_sgen.p_kw.at[0]) < 1e-5
+    assert isclose(net.res_cost, net.res_sgen.p_kw.at[0], atol=1e-3)
 
     # negative slope as in the case above
     net.poly_cost.cp1_eur_per_kw.at[0] *= -1
     pp.runopp(net)
 
-    assert abs(net.res_cost - net.res_sgen.p_kw.at[0]*-1) < 1e-5
+    assert isclose(net.res_cost, -net.res_sgen.p_kw.at[0], atol=1e-4)
 
 
 def test_contingency_load(base_net):
@@ -90,7 +89,7 @@ def test_contingency_load(base_net):
     pp.runopp(net)
 
 
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]) < 1e-5
+    assert isclose(net.res_cost, net.res_gen.p_kw.at[0], atol=1e-3)
     # minimize the sgen feed in by using a positive cost slope
     # using a slope of 1
     #               \   |
@@ -104,24 +103,23 @@ def test_contingency_load(base_net):
     net.pwl_cost.points.iloc[0] = [(0, net.gen.max_p_kw.at[0], -1)]
     pp.runopp(net)
 
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]*-1) < 1e-5
+    assert isclose(net.res_cost, -net.res_gen.p_kw.at[0], atol=1e-3)
 
     net.pwl_cost.drop(0, inplace=True)
 
     # first using a positive slope as in the case above
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
     pp.runopp(net)
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]) < 1e-5
+    assert isclose(net.res_cost, net.res_gen.p_kw.at[0], atol=1e-3)
 
     # negative slope as in the case above
     net.poly_cost.cp1_eur_per_kw.at[0] *= -1
     pp.runopp(net)
 
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]*-1) < 1e-5
+    assert isclose(net.res_cost, -net.res_gen.p_kw.at[0], atol=1e-3)
 
 
 def test_contingency_gen(base_net):
-
     net = base_net
     pp.create_gen(net, 1, p_kw=100, vm_pu = 1.05, controllable=True, min_p_kw=5, max_p_kw=150,
                   max_q_kvar=50, min_q_kvar=-50)
@@ -141,7 +139,7 @@ def test_contingency_gen(base_net):
     pp.runopp(net)
 
 
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]) < 1e-5
+    assert isclose(net.res_cost, net.res_gen.p_kw.at[0], atol=1e-3)
     # minimize the sgen feed in by using a positive cost slope
     # using a slope of 1
     #               \   |
@@ -155,7 +153,7 @@ def test_contingency_gen(base_net):
     net.pwl_cost.points.iloc[0] =  [(0, net.gen.max_p_kw.at[0], -1)]
     pp.runopp(net)
 
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]*-1) < 1e-5
+    assert isclose(net.res_cost, -net.res_gen.p_kw.at[0], atol=1e-3)
 
     net.pwl_cost.drop(0, inplace=True)
 
@@ -163,13 +161,13 @@ def test_contingency_gen(base_net):
 #    pp.create_polynomial_cost(net, 0, "gen", array([1, 0]))
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_kw=1)
     pp.runopp(net)
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]) < 1e-5
+    assert isclose(net.res_cost, net.res_gen.p_kw.at[0], atol=1e-3)
 
     # negative slope as in the case above
     net.poly_cost.cp1_eur_per_kw *= -1
     pp.runopp(net)
 
-    assert abs(net.res_cost - net.res_gen.p_kw.at[0]*-1) < 1e-5
+    assert isclose(net.res_cost, -net.res_gen.p_kw.at[0], atol=1e-3)
 
 if __name__ == "__main__":
     pytest.main(['-s', __file__])

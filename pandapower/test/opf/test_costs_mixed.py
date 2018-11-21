@@ -65,7 +65,6 @@ def test_cost_mixed():
     net.poly_cost.cp1_eur_per_kw.at[0] = 1
     net.poly_cost.cp2_eur_per_kw2.at[0] = 0
     pp.runopp(net, verbose=False)
-    pp.runpm(net)
     assert np.isclose(net.res_ext_grid.p_kw.values[0], 0, atol=1e-4)
     assert np.isclose(net.res_cost, net.res_gen.p_kw.values[0], atol=1e-4)
 

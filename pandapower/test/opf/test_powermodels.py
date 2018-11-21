@@ -106,8 +106,6 @@ def test_pwl():
     g2 = pp.create_gen(net, bus3, p_kw=80*1e3, min_p_kw=0, max_p_kw=80e3, vm_pu=1.01)
     net.gen["controllable"] = False
 
-#    pp.create_pwl_cost(net, g1, 'gen', [(0, 0), (20, 40), (80, 340)])
-#    pp.create_pwl_cost(net, g2, 'gen', [(0, 0), (20, 40), (80, 340)])
     pp.create_pwl_cost(net, g1, 'gen', [(0, 20, 2), (20, 80, 5)])
     pp.create_pwl_cost(net, g2, 'gen', [(0, 20, 2), (20, 80, 5)])
 
@@ -123,9 +121,6 @@ def test_pwl():
     pp.create_pwl_cost(net, g1, 'gen', [(0, 200, 1.), (200, 0.4, 8.)])
     pp.create_pwl_cost(net, g2, 'gen', [(0, 300, 2.), (300, 0.4, 14)])
     pp.create_pwl_cost(net, g3, 'gen', [(0, 100, 3.)])
-#    pp.create_pwl_cost(net, g1, 'gen', [(0, 0), (0.2, 0.2), (0.4, 1.8)])
-#    pp.create_pwl_cost(net, g2, 'gen', [(0, 0), (0.3, 0.6), (0.4, 2)])
-#    pp.create_pwl_cost(net, g3, 'gen', [(0, 0), (0.1, 0.3)])
 
     net.load.p_kw = 0.1e3
     pp.runpm(net)
