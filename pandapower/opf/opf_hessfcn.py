@@ -61,7 +61,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
     @author: Richard Lincoln
-    
+
     Modified by University of Kassel (Friederike Meier): Bugfix in line 173
     """
     ##----- initialize -----
@@ -108,7 +108,8 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f_dPg2 = zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Pg
     d2f_dQg2 = zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Qg
     ipolp = find(pcost[:, MODEL] == POLYNOMIAL)
-    d2f_dPg2[ipolp] = \
+    if len(ipolp):
+        d2f_dPg2[ipolp] = \
             baseMVA**2 * polycost(pcost[ipolp, :], Pg[ipolp] * baseMVA, 2)
     if qcost.any():          ## Qg is not free
         ipolq = find(qcost[:, MODEL] == POLYNOMIAL)
@@ -201,7 +202,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2H = vstack([
             hstack([
                 vstack([hstack([Hfaa, Hfav]),
-				hstack([Hfva, Hfvv])]) + 
+				hstack([Hfva, Hfvv])]) +
 				vstack([hstack([Htaa, Htav]),
                         hstack([Htva, Htvv])]),
                 sparse((2 * nb, nxtra))

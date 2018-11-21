@@ -95,7 +95,7 @@ def opf_setup(ppc, ppopt):
                 bcc = delete(arange(ppc['N'].shape[1]), acc)
                 ppc['N'] = ppc['N'].tolil()[:, bcc].tocsr()               ## delete Vm and Qg columns
 
-    ## convert single-block piecewise-linear costs into linear polynomial cost
+#    ## convert single-block piecewise-linear costs into linear polynomial cost
     pwl1 = find((ppc['gencost'][:, MODEL] == PW_LINEAR) & (ppc['gencost'][:, NCOST] == 2))
     # p1 = array([])
     if len(pwl1) > 0:

@@ -357,7 +357,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # if mode == optimal power flow...
     if mode.startswith("opf"):
         l = net["load"]
-        if not l.empty:
+        if not l.empty and "controllable" in l:
             l["controllable"] = _controllable_to_bool(l["controllable"])
             vl = (_is_elements["load"] & ~l["controllable"]) * l["scaling"].values.T / \
                  np.float64(1000.)

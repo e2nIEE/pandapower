@@ -111,7 +111,7 @@ def test_dcline_dispatch2(dcline_net):
 
 def test_dcline_dispatch3(dcline_net):
     net = dcline_net
-    pp.create_poly_cost(net, 4, "dcline", cp1_eur_per_kw=1)
+    pp.create_poly_cost(net, 4, "dcline", cp1_eur_per_kw=1.5)
     net.bus["max_vm_pu"] = 1.03 # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     pp.runopp(net)
@@ -129,6 +129,7 @@ def test_dcline_dispatch3(dcline_net):
     #now the total power is supplied through the DC line
     assert (net.res_dcline.at[4, "p_to_kw"]) < 1e3
     assert net.res_ext_grid.p_kw.at[1] < 1
+    assert isclose(net.res_cost, net.res_dcline.at[4, "p_from_kw"]*1.5)
 
 if __name__ == "__main__":
     pytest.main([__file__])

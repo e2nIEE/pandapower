@@ -75,9 +75,8 @@ def test_cost_piecewise_linear_sgen_q():
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
 
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array(
-        [[-50, 50], [50, -50]]), type="q")
-    # run OPF
+    pp.create_pwl_cost(net, 0, "sgen", [(-50, 50, 1)], power_type="q")
+
     pp.runopp(net, verbose=False)
 
     assert net["OPF_converged"]
@@ -156,8 +155,9 @@ def test_cost_pwl_q_3point():
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
-    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array(
-        [[-50, 50], [0,0], [50, 50]]), type="q")
+    pp.create_pwl_cost(net, 0, "sgen", [(-50, 0, -1), (0, 50, 1)], power_type="q")
+#    pp.create_piecewise_linear_cost(net, 0, "sgen", np.array(
+#        [[-50, 50], [0,0], [50, 50]]), type="q")
 
     # run OPF
     pp.runopp(net, verbose=False)
