@@ -174,9 +174,6 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     i_h = i_ft[:, 0][f:hv]
     i_m = i_ft[:, 1][hv:mv]
     i_l = i_ft[:, 1][mv:lv]
-    i_hv_ka = i_h
-    i_mv_ka = i_m
-    i_lv_ka = i_l
 
     t3 = net["trafo3w"]
     if trafo_loading == "current":
@@ -186,9 +183,9 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
         with np.errstate(invalid='ignore'):
             ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     elif trafo_loading == "power":
-        ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_kva"] * 100.
-        ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_kva"] * 100.
-        ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_kva"] * 100.
+        ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_kva"].values * 100.
+        ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_kva"].values * 100.
+        ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_kva"].values * 100.
         ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     else:
         raise ValueError(
@@ -205,9 +202,9 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     res_trafo3w_df["q_lv_kvar"].values[:] = q_lv_kvar
     res_trafo3w_df["pl_kw"].values[:] = pl_kw
     res_trafo3w_df["ql_kvar"].values[:] = ql_kvar
-    res_trafo3w_df["i_hv_ka"].values[:] = i_hv_ka
-    res_trafo3w_df["i_mv_ka"].values[:] = i_mv_ka
-    res_trafo3w_df["i_lv_ka"].values[:] = i_lv_ka
+    res_trafo3w_df["i_hv_ka"].values[:] = i_h
+    res_trafo3w_df["i_mv_ka"].values[:] = i_m
+    res_trafo3w_df["i_lv_ka"].values[:] = i_l
     res_trafo3w_df["loading_percent"].values[:] = loading_percent
 
 

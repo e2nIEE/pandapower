@@ -195,10 +195,8 @@ def test_without_ext_grid():
     net.trafo3w["max_loading_percent"] = 50
     pp.runpm(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_trafo3w.loading_percent.values[0], 50)
+    assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50
     assert np.isclose(net.res_cost, net.res_gen.p_kw.at[g1] + 2*net.res_gen.p_kw.at[g2])
-
-
 
 if __name__ == '__main__':
     pytest.main([__file__])

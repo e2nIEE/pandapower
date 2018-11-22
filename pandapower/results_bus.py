@@ -5,84 +5,9 @@
 
 
 import numpy as np
-from numpy import zeros, array, float, hstack, invert
-
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
 from pandapower.idx_gen import PG, QG
-
-
-#def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
-#    bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
-#    b, p, q = array([]), array([]), array([])
-#
-#    _is_elements = net["_is_elements"]
-#
-#    l = net["load"]
-#    if len(l) > 0:
-#        load_is = _is_elements["load"]
-#        load_ctrl = (l.in_service & l.controllable).values if "controllable" in l else np.zeros(l.shape[0]).astype(bool)
-#        scaling = l["scaling"].values
-#        pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
-#        ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
-#        if any(load_ctrl):
-#            # get load index in ppc
-#            lidx_ppc = net._pd2ppc_lookups["load_controllable"][_is_elements["load_controllable"].index]
-#            pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
-#            ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
-#
-#        net["res_load"]["p_kw"] = pl
-#        net["res_load"]["q_kvar"] = ql
-#        p = hstack([p, pl])
-#        q = hstack([q, ql])
-#        b = hstack([b, l["bus"].values])
-#        net["res_load"].index = net["load"].index
-#
-#    sg = net["sgen"]
-#    if len(sg) > 0:
-#        sgen_is = _is_elements["sgen"]
-#        sgen_ctrl = (sg.in_service & sg.controllable).values
-#        scaling = sg["scaling"].values
-#        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
-#        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
-#        if any(sgen_ctrl):
-#            # get gen index in ppc
-#            gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][_is_elements["sgen_controllable"].index]
-#            psg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, PG] * 1000
-#            qsg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, QG] * 1000
-#
-#        net["res_sgen"]["p_kw"] = psg
-#        net["res_sgen"]["q_kvar"] = qsg
-#        q = hstack([q, -qsg])
-#        p = hstack([p, -psg])
-#        b = hstack([b, sg["bus"].values])
-#        net["res_sgen"].index = net["sgen"].index
-#
-#    stor = net["storage"]
-#    if len(stor) > 0:
-#        stor_is = _is_elements["storage"]
-#        stor_ctrl = (stor.in_service & stor.controllable).values
-#        scaling = stor["scaling"].values
-#        pstor = stor["p_kw"].values * scaling * stor_is * invert(stor_ctrl)
-#        qstor = stor["q_kvar"].values * scaling * stor_is * invert(stor_ctrl)
-#        if any(stor_ctrl):
-#            # get storage index in ppc
-#            stidx_ppc = net._pd2ppc_lookups["storage_controllable"][_is_elements["storage_controllable"].index]
-#            pstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, PG] * 1000
-#            qstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, QG] * 1000
-#
-#        net["res_storage"]["p_kw"] = pstor
-#        net["res_storage"]["q_kvar"] = qstor
-#        q = hstack([q, qstor])
-#        p = hstack([p, pstor])
-#        b = hstack([b, stor["bus"].values])
-#        net["res_storage"].index = net["storage"].index
-#
-#    b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-#    b_ppc = bus_lookup_aranged[b_pp]
-#    bus_pq[b_ppc, 0] = vp
-#    bus_pq[b_ppc, 1] = vq
-#    return bus_pq
 
 
 def _set_buses_out_of_service(ppc):
@@ -100,8 +25,6 @@ def _get_bus_v_results(net, ppc):
         net["res_bus"]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
-
-
 
 def _get_bus_idx(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -238,24 +161,6 @@ def write_pq_results_to_element(net, ppc, element):
     # update index of result table
     net[res_].index = net[element].index
     return net
-
-
-#        load_is = _is_elements["load"]
-#        load_ctrl = (l.in_service & l.controllable).values if "controllable" in l else np.zeros(l.shape[0]).astype(bool)
-#        scaling = l["scaling"].values
-#        pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
-#        ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
-#        if any(load_ctrl):
-#            # get load index in ppc
-#            lidx_ppc = net._pd2ppc_lookups["load_controllable"][_is_elements["load_controllable"].index]
-#            pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
-#            ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
-#        net["res_load"]["p_kw"] = pl
-#        net["res_load"]["q_kvar"] = ql
-#        p = hstack([p, pl])
-#        q = hstack([q, ql])
-#        b = hstack([b, l["bus"].values])
-#        net["res_load"].index = net["load"].index
 
 def get_p_q_b(net, element):
     ac = net["_options"]["ac"]
