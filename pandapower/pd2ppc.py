@@ -109,6 +109,10 @@ def _pd2ppc(net):
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
 
+
+    if "pf" in mode:
+        _check_for_reference_bus(ppc)
+
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
@@ -116,7 +120,6 @@ def _pd2ppc(net):
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints
         _check_voltage_setpoints_at_same_bus(ppc)
-        _check_for_reference_bus(ppci)
         if calculate_voltage_angles:
             _check_voltage_angles_at_same_bus(net, ppci)
 

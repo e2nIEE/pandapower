@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.results_branch import _get_branch_results
-from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buses_out_of_service, \
-    _get_shunt_results, _get_p_q_results_opf, _get_bus_v_results
+from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
+    _get_shunt_results, _get_p_q_results, _get_bus_v_results
 from pandapower.results_gen import _get_gen_results
 
 
@@ -20,25 +20,13 @@ def _extract_results(net, ppc):
     bus_lookup_aranged = _get_aranged_lookup(net)
 
     _get_bus_v_results(net, ppc)
-    bus_pq = _get_p_q_results(net, bus_lookup_aranged)
+    bus_pq = _get_p_q_results(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
-
-
-def _extract_results_opf(net, ppc):
-    # get options
-    bus_lookup_aranged = _get_aranged_lookup(net)
-
-    _get_bus_v_results(net, ppc)
-    _set_buses_out_of_service(ppc)
-    bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
-    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
-    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
-    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
-    _get_bus_results(net, ppc, bus_pq)
-    _get_costs(net, ppc)
+    if net._options["mode"] == "opf":
+        _get_costs(net, ppc)
 
 
 def _extract_results_se(net, ppc):

@@ -179,7 +179,7 @@ def _build_gen_ppc(net, ppc):
                 ppc["gen"][l_end:stor_end, QMAX] = - (stor_is["min_q_kvar"].values * 1e-3 - delta)
                 max_q_kvar = ppc["gen"][l_end:stor_end, [QMAX]]
                 ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-                ppc["gen"][l_end:stor_end, [QMIN]] = max_q_kvar
+                ppc["gen"][l_end:stor_end, [QMAX]] = max_q_kvar
 
             if "max_q_kvar" in stor_is.columns:
                 ppc["gen"][l_end:stor_end, QMIN] = - (stor_is["max_q_kvar"].values * 1e-3 + delta)
@@ -248,6 +248,9 @@ def _build_gen_ppc(net, ppc):
             gen_buses = bus_lookup[gen_is["bus"].values]
             ppc["bus"][gen_buses, BUS_TYPE] = PV
             ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
+            if any(gen_is["slack"].values):
+                slack_buses = net["gen"]["bus"][net["gen"]["slack"].values].values
+                ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
 
             # set constraints for PV generators
             _copy_q_limits_to_ppc(net, ppc, eg_end, gen_end, _is_elements['gen'])
@@ -446,11 +449,11 @@ def _check_voltage_angles_at_same_bus(net, ppc):
         if _different_values_at_one_bus(gen_bus, gen_va):
             raise UserWarning("Ext grids with different voltage angle setpoints connected to the same bus")
 
-def _check_for_reference_bus(ppci):
-    ref, _, _ = bustypes(ppci["bus"], ppci["gen"])
+def _check_for_reference_bus(ppc):
+    ref, _, _ = bustypes(ppc["bus"], ppc["gen"])
     # throw an error since no reference bus is defined
     if len(ref) == 0:
-        raise KeyError("No reference bus (ext_grid) is available. Abort power flow calculation. Please add an ext_grid")
+        raise KeyError("No reference bus is available. Either add an ext_grid or a gen with slack=True")
 
 
 def _different_values_at_one_bus(buses, values):

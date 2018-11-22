@@ -8,7 +8,7 @@ from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-from pandapower.results import _extract_results_opf, reset_results, _copy_results_ppci_to_ppc
+from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.auxiliary import _clean_up
 
@@ -24,10 +24,11 @@ import tempfile
 import os
 import json
 
-from pandapower.idx_gen import QC1MAX, PG,QC2MAX, RAMP_AGC, QG, GEN_BUS, RAMP_10,VG, MBASE, PC2, QMAX,GEN_STATUS, QMIN,QC1MIN, QC2MIN, PC1, PMIN, PMAX, RAMP_Q, RAMP_30, APF
+from pandapower.idx_gen import  PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
 from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
-from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, ANGMIN, ANGMAX, TAP, SHIFT
-from pandapower.idx_cost import MODEL, STARTUP, SHUTDOWN, COST, NCOST
+from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
+                                ANGMIN, ANGMAX, TAP, SHIFT
+from pandapower.idx_cost import MODEL, COST, NCOST
 
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=0, trafo3w_losses="hv"):
@@ -93,12 +94,12 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
     if pp_to_pm_callback is not None:
         pp_to_pm_callback(net, ppci, pm)
     result_pm = _call_powermodels(pm, julia_file)
-    net._result_pm = result_pm
+    net._pm_res = result_pm
     result = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net._pm_result = result_pm
     success = ppc["success"]
     if success:
-        _extract_results_opf(net, result)
+        _extract_results(net, result)
         _clean_up(net)
         net["OPF_converged"] = True
     else:
@@ -187,55 +188,18 @@ def ppc_to_pm(net, ppc):
 
     for idx, row in enumerate(ppc["gen"], start=1):
         gen = dict()
-        gen["qc1max"] = row[QC1MAX]
         gen["pg"] = row[PG]
-        gen["qc2max"] = row[QC2MAX]
-#        gen["ramp_agc"] = row[RAMP_AGC]
         gen["qg"] = row[QG]
         gen["gen_bus"] = int(row[GEN_BUS]) + 1
-#        gen["ramp_10"] = row[RAMP_10]
         gen["vg"] = row[VG]
-#        gen["mbase"] = row[MBASE]
-#        gen["pc2"] = row[PC2]
         gen["qmax"] = row[QMAX]
         gen["gen_status"] = int(row[GEN_STATUS])
         gen["qmin"] = row[QMIN]
-#        gen["qc1min"] = row[QC1MIN]
-#        gen["qc2min"] = row[QC2MIN]
-#        gen["pc1"] = row[PC1]
-#        gen["ramp_q"] = row[RAMP_Q]
-#        gen["ramp_30"] = row[RAMP_30]
         gen["pmin"] = row[PMIN]
         gen["pmax"] = row[PMAX]
-#        gen["apf"] = row[APF]
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
-#    gens_with_costs = set()
-#    for c in net.poly_cost.itertuples():
-#        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
-#        if gen_index in gens_with_costs:
-#            raise ValueError("Duplicate cost function definition for gen %u"%gen_index)
-#        else:
-#            gens_with_costs.update({gen_index})
-#        gen = pm["gen"][str(gen_index + 1)]
-#        gen["ncost"] = 2
-#        gen["cost"] = [0, c.cp1_eur_per_kw, c.cp0_eur]
-#        gen["model"] = 2
-#
-#    for c in net.pwl_cost.itertuples():
-#        gen_index = net._pd2ppc_lookups[c.et][int(c.element)]
-#        if gen_index in gens_with_costs:
-#            raise ValueError("Duplicate cost function definition for %s %u"%(c.et, gen_index))
-#        else:
-#            gens_with_costs.update({gen_index})
-#        gen = pm["gen"][str(gen_index + 1)]
-#        gen["model"] = 1
-#        gen["cost"] = c.points#
-#        gen["cost"] = [item for sublist in c.points for item in sublist]
-#        gen["ncost"] = len(gen["cost"])
-#    if len(gens_with_costs) < len(pm["gen"].keys()):
-#        raise ValueError("Missing cost function for generators")
     if len(ppc["gencost"]) > len(ppc["gen"]):
         logger.warning("PowerModels.jl does not reactive power cost - costs are ignored")
         ppc["gencost"] = ppc["gencost"][:ppc["gen"].shape[0], :]
@@ -269,10 +233,11 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
-    makeYbus, pfsoln = _get_numba_functions(ppci, net._options)
+    makeYbus, _ = _get_numba_functions(ppci, net._options)
     baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
+    from pandapower.pf.pfsoln import pfsoln
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, update_p=False)
     ppc["bus"][:, VM] = np.nan
     ppc["bus"][:, VA] = np.nan
     result = _copy_results_ppci_to_ppc(ppci, ppc, net._options["mode"])

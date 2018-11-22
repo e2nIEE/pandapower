@@ -12,77 +12,77 @@ from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
 from pandapower.idx_gen import PG, QG
 
 
-def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
-    bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
-    b, p, q = array([]), array([]), array([])
-
-    _is_elements = net["_is_elements"]
-
-    l = net["load"]
-    if len(l) > 0:
-        load_is = _is_elements["load"]
-        load_ctrl = (l.in_service & l.controllable).values if "controllable" in l else np.zeros(l.shape[0]).astype(bool)
-        scaling = l["scaling"].values
-        pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
-        ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
-        if any(load_ctrl):
-            # get load index in ppc
-            lidx_ppc = net._pd2ppc_lookups["load_controllable"][_is_elements["load_controllable"].index]
-            pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
-            ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
-
-        net["res_load"]["p_kw"] = pl
-        net["res_load"]["q_kvar"] = ql
-        p = hstack([p, pl])
-        q = hstack([q, ql])
-        b = hstack([b, l["bus"].values])
-        net["res_load"].index = net["load"].index
-
-    sg = net["sgen"]
-    if len(sg) > 0:
-        sgen_is = _is_elements["sgen"]
-        sgen_ctrl = (sg.in_service & sg.controllable).values
-        scaling = sg["scaling"].values
-        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
-        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
-        if any(sgen_ctrl):
-            # get gen index in ppc
-            gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][_is_elements["sgen_controllable"].index]
-            psg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, PG] * 1000
-            qsg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, QG] * 1000
-
-        net["res_sgen"]["p_kw"] = psg
-        net["res_sgen"]["q_kvar"] = qsg
-        q = hstack([q, -qsg])
-        p = hstack([p, -psg])
-        b = hstack([b, sg["bus"].values])
-        net["res_sgen"].index = net["sgen"].index
-
-    stor = net["storage"]
-    if len(stor) > 0:
-        stor_is = _is_elements["storage"]
-        stor_ctrl = (stor.in_service & stor.controllable).values
-        scaling = stor["scaling"].values
-        pstor = stor["p_kw"].values * scaling * stor_is * invert(stor_ctrl)
-        qstor = stor["q_kvar"].values * scaling * stor_is * invert(stor_ctrl)
-        if any(stor_ctrl):
-            # get storage index in ppc
-            stidx_ppc = net._pd2ppc_lookups["storage_controllable"][_is_elements["storage_controllable"].index]
-            pstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, PG] * 1000
-            qstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, QG] * 1000
-
-        net["res_storage"]["p_kw"] = pstor
-        net["res_storage"]["q_kvar"] = qstor
-        q = hstack([q, qstor])
-        p = hstack([p, pstor])
-        b = hstack([b, stor["bus"].values])
-        net["res_storage"].index = net["storage"].index
-
-    b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
-    b_ppc = bus_lookup_aranged[b_pp]
-    bus_pq[b_ppc, 0] = vp
-    bus_pq[b_ppc, 1] = vq
-    return bus_pq
+#def _get_p_q_results_opf(net, ppc, bus_lookup_aranged):
+#    bus_pq = zeros(shape=(len(net["bus"].index), 2), dtype=float)
+#    b, p, q = array([]), array([]), array([])
+#
+#    _is_elements = net["_is_elements"]
+#
+#    l = net["load"]
+#    if len(l) > 0:
+#        load_is = _is_elements["load"]
+#        load_ctrl = (l.in_service & l.controllable).values if "controllable" in l else np.zeros(l.shape[0]).astype(bool)
+#        scaling = l["scaling"].values
+#        pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
+#        ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
+#        if any(load_ctrl):
+#            # get load index in ppc
+#            lidx_ppc = net._pd2ppc_lookups["load_controllable"][_is_elements["load_controllable"].index]
+#            pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
+#            ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
+#
+#        net["res_load"]["p_kw"] = pl
+#        net["res_load"]["q_kvar"] = ql
+#        p = hstack([p, pl])
+#        q = hstack([q, ql])
+#        b = hstack([b, l["bus"].values])
+#        net["res_load"].index = net["load"].index
+#
+#    sg = net["sgen"]
+#    if len(sg) > 0:
+#        sgen_is = _is_elements["sgen"]
+#        sgen_ctrl = (sg.in_service & sg.controllable).values
+#        scaling = sg["scaling"].values
+#        psg = sg["p_kw"].values * scaling * sgen_is * invert(sgen_ctrl)
+#        qsg = sg["q_kvar"].values * scaling * sgen_is * invert(sgen_ctrl)
+#        if any(sgen_ctrl):
+#            # get gen index in ppc
+#            gidx_ppc = net._pd2ppc_lookups["sgen_controllable"][_is_elements["sgen_controllable"].index]
+#            psg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, PG] * 1000
+#            qsg[sgen_is & sgen_ctrl] = ppc["gen"][gidx_ppc, QG] * 1000
+#
+#        net["res_sgen"]["p_kw"] = psg
+#        net["res_sgen"]["q_kvar"] = qsg
+#        q = hstack([q, -qsg])
+#        p = hstack([p, -psg])
+#        b = hstack([b, sg["bus"].values])
+#        net["res_sgen"].index = net["sgen"].index
+#
+#    stor = net["storage"]
+#    if len(stor) > 0:
+#        stor_is = _is_elements["storage"]
+#        stor_ctrl = (stor.in_service & stor.controllable).values
+#        scaling = stor["scaling"].values
+#        pstor = stor["p_kw"].values * scaling * stor_is * invert(stor_ctrl)
+#        qstor = stor["q_kvar"].values * scaling * stor_is * invert(stor_ctrl)
+#        if any(stor_ctrl):
+#            # get storage index in ppc
+#            stidx_ppc = net._pd2ppc_lookups["storage_controllable"][_is_elements["storage_controllable"].index]
+#            pstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, PG] * 1000
+#            qstor[stor_is & stor_ctrl] = - ppc["gen"][stidx_ppc, QG] * 1000
+#
+#        net["res_storage"]["p_kw"] = pstor
+#        net["res_storage"]["q_kvar"] = qstor
+#        q = hstack([q, qstor])
+#        p = hstack([p, pstor])
+#        b = hstack([b, stor["bus"].values])
+#        net["res_storage"].index = net["storage"].index
+#
+#    b_pp, vp, vq = _sum_by_group(b.astype(int), p, q)
+#    b_ppc = bus_lookup_aranged[b_pp]
+#    bus_pq[b_ppc, 0] = vp
+#    bus_pq[b_ppc, 1] = vq
+#    return bus_pq
 
 
 def _set_buses_out_of_service(ppc):
@@ -178,7 +178,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
         return p, q, b
 
 
-def write_pq_results_to_element(net, element):
+def write_pq_results_to_element(net, ppc, element):
     """
     get p_kw and q_kvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table
@@ -191,28 +191,71 @@ def write_pq_results_to_element(net, element):
     # info from net
     _is_elements = net["_is_elements"]
     ac = net["_options"]["ac"]
+    mode = net["_options"]["mode"]
 
     # info element
     el_data = net[element]
     res_ = "res_" + element
+    is_controllable = False
+    if mode =="opf" and "controllable" in el_data and el_data.controllable.any():
+#        ctrl_default = element == "gen"
+        controllable = el_data["controllable"].fillna(False)
+        element_in_service = _is_elements[element] & (~controllable)
+        controlled_elements = _is_elements[element] & controllable
+        if controlled_elements.any():
+            is_controllable = True
+            controllable = el_data["controllable"].fillna(False)
+            controlled_elements = _is_elements[element] & controllable
+            gen_sign = 1 if element == "sgen" else -1
+
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_kw = "ps_kw" if element in ["ward", "xward"] else "p_kw"
     q_kvar = "qs_kvar" if element in ["ward", "xward"] else "q_kvar"
     scaling = el_data["scaling"].values if element not in ["ward", "xward"] else 1.0
 
-    element_in_service = _is_elements[element]
+    if is_controllable:
+        element_in_service = _is_elements[element] & (~controllable)
+        controllable_elements = _is_elements["%s_controllable"%element].index
+        gen_idx = net._pd2ppc_lookups["%s_controllable"%element][controllable_elements]
+    else:
+        element_in_service = _is_elements[element]
+
 
     # P result in kw to element
-    net[res_]["p_kw"] = el_data[p_kw].values * scaling * element_in_service
+    p = el_data[p_kw].values * scaling * element_in_service
+    if is_controllable:
+        p[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign * 1e3
+    net[res_]["p_kw"] = p
+
     if ac:
         # Q result in kvar to element
-        net[res_]["q_kvar"] = el_data[q_kvar].values * scaling * element_in_service
+        q = el_data[q_kvar].values * scaling * element_in_service
+        if is_controllable:
+            q[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign * 1e3
+        net[res_]["q_kvar"] = q
 
     # update index of result table
     net[res_].index = net[element].index
     return net
 
+
+#        load_is = _is_elements["load"]
+#        load_ctrl = (l.in_service & l.controllable).values if "controllable" in l else np.zeros(l.shape[0]).astype(bool)
+#        scaling = l["scaling"].values
+#        pl = l["p_kw"].values * scaling * load_is * invert(load_ctrl)
+#        ql = l["q_kvar"].values * scaling * load_is * invert(load_ctrl)
+#        if any(load_ctrl):
+#            # get load index in ppc
+#            lidx_ppc = net._pd2ppc_lookups["load_controllable"][_is_elements["load_controllable"].index]
+#            pl[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, PG] * 1000
+#            ql[load_is & load_ctrl] = - ppc["gen"][lidx_ppc, QG] * 1000
+#        net["res_load"]["p_kw"] = pl
+#        net["res_load"]["q_kvar"] = ql
+#        p = hstack([p, pl])
+#        q = hstack([q, ql])
+#        b = hstack([b, l["bus"].values])
+#        net["res_load"].index = net["load"].index
 
 def get_p_q_b(net, element):
     ac = net["_options"]["ac"]
@@ -225,7 +268,7 @@ def get_p_q_b(net, element):
     return p, q, b
 
 
-def _get_p_q_results(net, bus_lookup_aranged):
+def _get_p_q_results(net, ppc, bus_lookup_aranged):
     # results to be filled (bus, p in kw, q in kvar)
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
@@ -240,7 +283,7 @@ def _get_p_q_results(net, bus_lookup_aranged):
 
     for element in elements:
         if len(net[element]):
-            write_pq_results_to_element(net, element)
+            write_pq_results_to_element(net, ppc, element)
             p_el, q_el, bus_el = get_p_q_b(net, element)
             if element == "sgen":
                 p = np.hstack([p, p_el*-1])

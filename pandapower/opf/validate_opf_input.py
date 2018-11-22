@@ -13,44 +13,34 @@ def _check_necessary_opf_parameters(net, logger):
                              'max_q_to_kvar'])}
     missing_val = []
     error = False
-    for element_type in opf_col.keys():
+    for element_type, columns in opf_col.items():
         if len(net[element_type]):
-            missing_col = opf_col[element_type].loc[~opf_col[element_type].isin(
-                net[element_type].columns)].values
+            missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
             # --- ensure "controllable" as column
             controllable = True
             if element_type in ['gen', 'sgen', 'load', 'storage']:
-                if 'controllable' not in net[element_type].columns:
+                if 'controllable' in net[element_type]:
                     if element_type == 'gen':
-                        net[element_type]['controllable'] = True
-                        logger.info(
-                            "'controllable' has been added to gen as True.")
-                    else:
-                        net[element_type]['controllable'] = False
-                        logger.info(
-                            "'controllable' has been added to %s as False." % element_type)
-                        controllable = False
-                else:
-                    if element_type == 'gen':
-                        net[element_type].controllable.fillna(
-                            True, inplace=True)
+                        net[element_type].controllable.fillna(True, inplace=True)
                     else:  # 'sgen', 'load'
-                        net[element_type].controllable.fillna(
-                            False, inplace=True)
+                        net[element_type].controllable.fillna(False, inplace=True)
                         if not net[element_type].controllable.any():
                             controllable = False
+                else:
+                    controllable = False
+
             # --- logging for missing data in element tables with controllables
             if controllable:
-                if bool(len(missing_col)):
+                if len(missing_col):
                     if element_type != "ext_grid":
                         logger.error("These columns are missing in " + element_type + ": " +
                                      str(missing_col))
                         error = True
                     else:  # "ext_grid" -> no error due to missing columns at ext_grid
-                        logger.info("These missing columns in ext_grid are considered in OPF as " +
+                        logger.debug("These missing columns in ext_grid are considered in OPF as " +
                                     "+- 1000 TW.: " + str(missing_col))
                 # determine missing values
-                for lim_col in set(opf_col[element_type]) - set(missing_col):
+                for lim_col in set(columns) - set(missing_col):
                     if element_type in ['gen', 'sgen', 'load', 'storage']:
                         controllables = net[element_type].loc[net[element_type].controllable].index
                     else:  # 'ext_grid', 'dcline'
