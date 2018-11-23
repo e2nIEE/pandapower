@@ -114,50 +114,37 @@ def write_pq_results_to_element(net, ppc, element):
     # info from net
     _is_elements = net["_is_elements"]
     ac = net["_options"]["ac"]
-    mode = net["_options"]["mode"]
 
     # info element
     el_data = net[element]
-    res_ = "res_" + element
-    is_controllable = False
-    if mode =="opf" and "controllable" in el_data and el_data.controllable.any():
-#        ctrl_default = element == "gen"
-        controllable = el_data["controllable"].fillna(False)
-        element_in_service = _is_elements[element] & (~controllable)
-        controlled_elements = _is_elements[element] & controllable
-        if controlled_elements.any():
-            is_controllable = True
-            controllable = el_data["controllable"].fillna(False)
-            controlled_elements = _is_elements[element] & controllable
-            gen_sign = 1 if element == "sgen" else -1
+    res_ = "res_%s"%element
+    ctrl_ = "%s_controllable"%element
 
+    is_controllable = False
+    if ctrl_ in net._is_elements:
+        if len(net._is_elements[ctrl_]):
+            controlled_elements = net._is_elements[ctrl_].index
+            gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
+            gen_sign = 1 if element == "sgen" else -1
+            is_controllable = True
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_kw = "ps_kw" if element in ["ward", "xward"] else "p_kw"
     q_kvar = "qs_kvar" if element in ["ward", "xward"] else "q_kvar"
     scaling = el_data["scaling"].values if element not in ["ward", "xward"] else 1.0
 
-    if is_controllable:
-        element_in_service = _is_elements[element] & (~controllable)
-        controllable_elements = _is_elements["%s_controllable"%element].index
-        gen_idx = net._pd2ppc_lookups["%s_controllable"%element][controllable_elements]
-    else:
-        element_in_service = _is_elements[element]
-
+    element_in_service = _is_elements[element]
 
     # P result in kw to element
-    p = el_data[p_kw].values * scaling * element_in_service
+    net[res_]["p_kw"] = el_data[p_kw].values * scaling * element_in_service
     if is_controllable:
-        p[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign * 1e3
-    net[res_]["p_kw"] = p
+        net[res_]["p_kw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign * 1e3
 
     if ac:
         # Q result in kvar to element
-        q = el_data[q_kvar].values * scaling * element_in_service
+        net[res_]["q_kvar"] = el_data[q_kvar].values * scaling * element_in_service
         if is_controllable:
-            q[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign * 1e3
-        net[res_]["q_kvar"] = q
-
+            net[res_]["q_kvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign * 1e3
     # update index of result table
     net[res_].index = net[element].index
     return net

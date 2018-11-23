@@ -118,5 +118,5 @@ def test_mixed_p_q_pwl():
     assert net.res_cost == net.res_gen.p_kw.values + net.res_gen.q_kvar.values
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main(["-xs"])
 
