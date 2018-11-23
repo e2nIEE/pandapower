@@ -523,44 +523,50 @@ def check_results(net, vc, result):
     res_vm_kv = np.concatenate(
             (
             net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmA_pu,
+            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vaA_degree,
             net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmB_pu,
+            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vaB_degree,
             net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vmC_pu,
-#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].pA_kw*1e-3,
-#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].qA_kvar*1e-3,
-#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].pB_kw*1e-3,
-#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].qB_kvar*1e-3,
-#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].pC_kw*1e-3,
-#            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].qC_kvar*1e-3
+            net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vaC_degree
             )
             ,axis =0)
-    if not np.allclose(result, res_vm_kv,atol=1e-4):
+    if not np.allclose(result, res_vm_kv,atol=1e-0):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
         
-def make_nw(net,vectorgroup):
-        hv_base = 20                     # 110kV Base Voltage
-        lv_base = 0.4
-        bushv  =  pp.create_bus(net, vn_kv = hv_base, zone=vectorgroup, name = "bushv")
-        buslv  =  pp.create_bus(net, vn_kv = lv_base, zone=vectorgroup, name = "buslv")
-    #    pp.create_bus(net, vn_kv=20., in_service=False)
-    #    pp.create_bus(net, vn_kv=20., in_service=True)
-        
-        pp.create_ext_grid(net, bushv, s_sc_max_mva=5000, rx_max=0.1)
-        net.ext_grid["r0x0_max"] = 0.1
-        net.ext_grid["x0x_max"] = 1.0
-        
-        transformer_type = copy.copy(pp.load_std_type(net, "0.63 MVA 20/0.4 kV","trafo"))
-        transformer_type.update({"vsc0_percent": 6, "vscr0_percent": 1.095238, "mag0_percent": 100,
-                         "mag0_rx": 0., "vector_group": vectorgroup,"vscr_percent": 1.095238,
-                         "shift_degree": 0, "si0_hv_partial": 0.9 })
-        pp.create_std_type(net, transformer_type, vectorgroup, "trafo")
-        t1= pp.create_transformer(net, bushv, buslv, std_type=vectorgroup, parallel=1,
-                              index=pp.get_free_id(net.trafo)+1)
-    #    pp.create_transformer(net, bushv, buslv, std_type=vector_group, in_service=False)
-        
-        create_load_3ph(net, buslv, p_kw_A=300, q_kvar_A=20, p_kw_B=100, q_kvar_B=50,
-                           p_kw_C=100, q_kvar_C=30)
-        pp.add_zero_impedance_parameters(net)
-        return t1
+def make_nw(net,vector_group):
+    b1 = pp.create_bus(net, 110, zone=vector_group, index=pp.get_free_id(net.bus))
+    b2 = pp.create_bus(net, 20, zone=vector_group)
+    pp.create_bus(net, 20, in_service=False)
+    b3 = pp.create_bus(net, 20, zone=vector_group)
+    b4 = pp.create_bus(net, 20, zone=vector_group)
+    pp.create_bus(net, 20)
+    
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=80, rx_min=0.20, rx_max=0.35)
+    net.ext_grid["r0x0_max"] = 0.4
+    net.ext_grid["x0x_max"] = 1.0
+    
+    pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112, "c_nf_per_km": 304,
+    					 "max_i_ka": 0.421, "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
+    					 "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000}, "unsymmetric_line_type")
+    l1 = pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type",
+    			   index=pp.get_free_id(net.line)+1)
+    l2 = pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
+    pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
+    
+    
+    transformer_type = copy.copy(pp.load_std_type(net, "25 MVA 110/20 kV v1.4.3 and older","trafo"))
+    transformer_type.update({"vsc0_percent": 5, "vscr0_percent": 0.4, "mag0_percent": 10,
+    						 "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
+    						 "vector_group": vector_group})
+    pp.create_std_type(net, transformer_type, vector_group, "trafo")
+    t1 = pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2,
+    					  index=pp.get_free_id(net.trafo)+1)
+    pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
+    
+    create_load_3ph(net, b4, p_kw_A=3000, q_kvar_A=1000, p_kw_B=3000, q_kvar_B=2000,
+                               p_kw_C=5000, q_kvar_C=1000)
+    pp.add_zero_impedance_parameters(net)    
+    return t1
         
 def test_trafo_vg_loadflow():
     
@@ -573,9 +579,13 @@ def test_trafo_vg_loadflow():
 #                "Yyn":  [	0.999945441976376,1.22794573109855,1.00002125565888,1.4416173022977,1.00003330458372,0.464803132596897	]
 #                ,"Yd":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
 #                ,"YNy": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
-                "YNyn":[	0.999989798411917,0.974535554759052,0.999998062978948,0.979767191100436,1.00001214446541,0.98580613030435\
-#                        ,0.29998199048,0.30491398063,0.019995651922,0.046418929571,0.099999883488,0.10140597436,0.04999993784,0.054212417817,0.099999915123,0.10148829148,0.029999966177,0.032762701427	
-                        ]
+                "YNyn":np.array([1.0306911599,1.0163317179,1.0159694438,1.013193773
+                        ,2.1845701116,1.0567772064,-0.86317335077,-3.4136055414
+                        ,1.036081416,1.028806037,0.98066151352,0.90549355498
+                        ,-119.80082828,-121.39853295,-119.92676962,-117.51197515
+                        ,0.93496705292,0.91339100449,0.78839050714,0.61482727531
+                        ,117.37071803,114.73842685,110.59150892,101.53098908	
+                        ])
 
 #                ,"YNd": [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
 #                ,"Dy":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
@@ -583,11 +593,12 @@ def test_trafo_vg_loadflow():
 #                ,"Dd":  [	0.999933012433371,1.25037438180859,1.00002589218568,1.54325333471415,1.00004109872575,0.426542038619223	]
 
                }
+
     for vc in results.keys():
         net = pp.create_empty_network() 
         make_nw(net, vc)
         runpp_3ph(net)
-        print(net.res_bus_3ph)
+#        print(net.res_bus_3ph)
 #        try:
 #             runpp_3ph(net)
 #        except:

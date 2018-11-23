@@ -107,7 +107,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         hv_buses = trafos["hv_bus"].values.astype(int)
         lv_buses_ppc = bus_lookup[lv_buses]
         hv_buses_ppc = bus_lookup[hv_buses]
-        mag0_percent = trafos.mag0_percent.values.astype(float)
+        mag0_ratio = trafos.mag0_percent.values.astype(float)
         mag0_rx = trafos["mag0_rx"].values.astype(float)
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
@@ -144,7 +144,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             z0_k *= kt
         y0_k = 1 / z0_k
         # zero sequence transformer magnetising impedance 
-        z_m = ( (vsc0_percent * mag0_percent) / 100.) *(net.sn_kva/ trafo_kva) * tap_lv
+        z_m = z_sc * mag0_ratio
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
         r_m = x_m * mag0_rx
         r0_trafo_mag = r_m / parallel
