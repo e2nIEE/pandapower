@@ -12,6 +12,7 @@ import pytest
 import pandapower as pp
 import pandapower.networks as pn
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
+import pypower.case24_ieee_rts as c24
 
 try:
     import pplog as logging
@@ -110,5 +111,11 @@ def test_case9_conversion():
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
 
+def test_case24():
+    net = from_ppc(c24.case24_ieee_rts())
+    pp.runopp(net, verbose=True)
+    assert net.OPF_converged
+
 if __name__ == '__main__':
-    pytest.main(["test_from_ppc.py"])
+    test_case24()
+#    pytest.main([__file__])
