@@ -70,41 +70,6 @@ def to_pickle(net, filename):
         pickle.dump(save_net, f, protocol=2)  # use protocol 2 for py2 / py3 compatibility
 
 
-def to_dill(net, filename):
-    """
-    Saves a pandapower Network with the dill library.
-
-    INPUT:
-        **net** (dict) - The pandapower format network
-
-        **filename** (string) - The absolute or relative path to the output file or an writable file-like objects
-
-    EXAMPLE:
-
-        >>> pp.to_dill(net, os.path.join("C:", "example_folder", "example1.d"))  # absolute path
-        >>> pp.to_dill(net, "example2.d")  # relative path
-
-    """
-    try:
-        from dill import dump as ddump
-    except ImportError:
-        raise UserWarning("Can only use to_dill if the python package \"dill\" is installed")
-    if hasattr(filename, 'write'):
-        ddump(dict(net), filename, protocol=2)
-        return
-    if not filename.endswith(".d"):
-        raise Exception("Please use .d to save pandapower networks!")
-    save_net = dict()
-    for key, item in net.items():
-        save_net[key] = {"DF": item.to_dict("split"), "dtypes": {col: dt
-                                                                 for col, dt in
-                                                                 zip(item.columns, item.dtypes)}} \
-            if isinstance(item, pd.DataFrame) else item
-
-    with open(filename, "wb") as f:
-        ddump(save_net, f, protocol=2)  # use protocol 2 for py2 / py3 compatibility
-
-
 def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
     Saves a pandapower Network to an excel file.
@@ -276,54 +241,6 @@ def from_pickle(filename, convert=True):
                         # works with pandas <0.19
                         for column in net[key].columns:
                             net[key][column] = net[key][column].astype(item["dtypes"][column])
-    if convert:
-        convert_format(net)
-    return net
-
-
-def from_pickle(filename, convert=True):
-    """
-    Load a pandapower format Network from pickle file
-
-    INPUT:
-        **filename** (string or file) - The absolute or relative path to the input file or file-like object
-
-    OUTPUT:
-        **net** (dict) - The pandapower format network
-
-    EXAMPLE:
-
-        >>> net1 = pp.from_dill(os.path.join("C:", "example_folder", "example1.d"))  # absolute path
-        >>> net2 = pp.from_dill("example2.d")  # relative path
-
-    """
-    try:
-        from dill import load as dload
-    except ImportError:
-        raise UserWarning("Can only use from_dill if the python package \"dill\" is installed")
-
-    if hasattr(filename, 'read'):
-        net = dload(filename)
-    elif not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
-    else:
-        with open(filename, "rb") as f:
-            net = dload(f)
-    net = pandapowerNet(net)
-
-    for key, item in net.items():
-        if isinstance(item, dict) and "DF" in item:
-            df_dict = item["DF"]
-            if "columns" in df_dict:
-                # make sure the index is Int64Index
-                try:
-                    df_index = pd.Int64Index(df_dict['index'])
-                except TypeError:
-                    df_index = df_dict['index']
-                net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
-                                        data=df_dict["data"])
-            if "dtypes" in item:
-                net[key] = net[key].astype(item["dtypes"])
     if convert:
         convert_format(net)
     return net
