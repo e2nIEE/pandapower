@@ -133,6 +133,30 @@ def case9():
     case9 = pp.from_json(_get_cases_path("case9.json"))
     return case9
 
+def case11_iwamoto():
+    """
+    Calls the json file case11_iwamoto.json which represents \
+    the 11 bus example from `S. Iwamoto ; Y. Tamura , \
+    A Load Flow Calculation Method for Ill-Conditioned Power Systems
+    <https://ieeexplore.ieee.org/document/4110791/>'_ \
+    IEEE Transactions on Power Apparatus and Systems
+
+    Its data origin is the paper \
+    `S.C. Tripathy, G. Durga Prasad, O.P. Malik, G.S. Hope, \
+    Load-Flow Solutions for Ill-Conditioned Power Systems by a Newton-Like Method
+    <https://ieeexplore.ieee.org/document/4111178/>`_\
+    IEEE  IEEE Transactions on Power Apparatus and Systems, 1982.
+
+    OUTPUT:
+         **net** - Returns the required network case11_iwamoto
+
+    EXAMPLE:
+         import pandapower.networks as pn
+
+         net = pn.case11_iwamoto()
+    """
+    case11 = pp.from_json(_get_cases_path("case11_iwamoto.json"))
+    return case11
 
 def case14():
     """
