@@ -948,6 +948,8 @@ def create_continuous_bus_index(net, start=0):
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
+	
+    net.bus.sort_index(inplace=True)
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -961,6 +963,46 @@ def create_continuous_bus_index(net, start=0):
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et == "b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+    return net
+
+
+def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
+    """
+    Creates a continuous index for alle the elements, starting at zero and replaces all references 
+    of old indices by the new ones.
+    """
+  
+    elements = pp_elements(res_elements=True)
+    
+    # create continous bus index
+    create_continuous_bus_index(net, start=start)
+    elements -= {"bus", "bus_geodata", "res_bus"}
+    
+    elements |= add_df_to_reindex
+    
+    for elm in list(elements):
+        net[elm].sort_index(inplace=True)
+        new_index = list(np.arange(start, len(net[elm]) + start))
+            
+        if elm == "line":
+            line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
+            
+        elif elm == "trafo":
+            trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
+        
+        elif elm == "line_geodata" and "line_geodata" in net:
+            line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
+            net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
+                                          inplace=True)
+    
+        net[elm].index = new_index 
+        
+    line_switches = net.switch[net.switch.et == "l"]
+    net.switch.loc[line_switches.index, "element"] = get_indices(line_switches.element, line_lookup)
+  
+    trafo_switches = net.switch[net.switch.et == "t"]
+    net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element, trafo_lookup)
+       
     return net
 
 
