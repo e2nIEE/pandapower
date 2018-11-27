@@ -15,11 +15,7 @@ from pandapower.networks.power_system_test_cases import get_pp_networks_path
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False):
     """
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer
-<<<<<<< HEAD
     stations. The network supplies 141 MV/LV substations and 6 MV loads through four MV feeders.
-=======
-    stations. The network supplies 141 HV/LV substations and 6 MV loads through four MV feeders.
->>>>>>> 106398035c32f569d31309331bef23d8b5c3dc9e
     The network layout is meshed, but the network is operated as a radial network with 6 open
     sectioning points.
 
@@ -56,8 +52,8 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein_substations.json"))
     else:
         net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein.json"))
-    net.load.q_kvar = np.tan(np.arccos(cosphi_load)) * net.load.p_kw
-    net.sgen.q_kvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_kw
+    net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
+    net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 
     hv_trafos = net.trafo[net.trafo.sn_kva > 1e3].index
     if scenario == "load":
@@ -73,3 +69,8 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
     pp.runpp(net)
     return net
+
+
+if __name__ == '__main__':
+    import pandas as pd
+    net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein_substations.json"))

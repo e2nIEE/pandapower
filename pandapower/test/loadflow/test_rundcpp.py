@@ -77,8 +77,8 @@ def get_isolated(net):
 
 
 def test_test_sn_kva():
-    test_net_gen1 = result_test_network_generator_dcpp(sn_kva=1e3)
-    test_net_gen2 = result_test_network_generator_dcpp(sn_kva=2e3)
+    test_net_gen1 = result_test_network_generator_dcpp(sn_mva=1)
+    test_net_gen2 = result_test_network_generator_dcpp(sn_mva=2)
     for net1, net2 in zip(test_net_gen1, test_net_gen2):
         pp.rundcpp(net1)
         pp.rundcpp(net2)

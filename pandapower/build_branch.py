@@ -102,7 +102,7 @@ def _calc_trafo3w_parameter(net, ppc):
     temp_para[:, 7] = trafo_df["in_service"].values
     if copy_constraints_to_ppc:
         max_load = trafo_df.max_loading_percent if "max_loading_percent" in trafo_df else 0
-        temp_para[:, 8] = max_load / 100. * trafo_df.sn_kva / 1000.
+        temp_para[:, 8] = max_load / 100. * trafo_df.sn_mva
     return temp_para
 
 
@@ -126,7 +126,7 @@ def _calc_line_parameter(net, ppc):
     tb = bus_lookup[line["to_bus"].values]
     length = line["length_km"].values
     parallel = line["parallel"].values
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
     t[:, 0] = fb
@@ -178,7 +178,7 @@ def _calc_trafo_parameter(net, ppc):
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
     if copy_constraints_to_ppc:
         max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
-        temp_para[:, 8] = max_load / 100. * trafo.sn_kva.values / 1000. * trafo.df.values * parallel
+        temp_para[:, 8] = max_load / 100. * trafo.sn_mva.values * trafo.df.values * parallel
     return temp_para
 
 
@@ -226,7 +226,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_kva)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_mva)
     temp_para[:, 0] = r / parallel
     temp_para[:, 1] = x / parallel
     temp_para[:, 2] = y * parallel
@@ -235,11 +235,11 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     return temp_para
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_mva):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
-    r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+    r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva)
     if mode == "sc":
         y = 0
         if trafo_df.equals(net.trafo):
@@ -247,11 +247,11 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_kva):
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = net._ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
             kt = _transformer_correction_factor(trafo_df.vsc_percent, trafo_df.vscr_percent,
-                                                trafo_df.sn_kva, cmax)
+                                                trafo_df.sn_mva, cmax)
             r *= kt
             x *= kt
     else:
-        y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva)
+        y = _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva)
     if trafo_model == "pi":
         return r, x, y
     elif trafo_model == "t":
@@ -279,7 +279,7 @@ def _wye_delta(r, x, y):
     return r, x, y
 
 
-def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
+def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
     Calculate the subsceptance y from the transformer dataframe.
 
@@ -292,15 +292,15 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
         **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
         the form (-b_img, -b_real)
     """
-    baseR = np.square(vn_lv) / sn_kva * 1e3
+    baseR = np.square(vn_lv) / sn_mva
 
     ### Calculate subsceptance ###
     vnl_squared = trafo_df["vn_lv_kv"].values ** 2
-    b_real = trafo_df["pfe_kw"].values / (1000. * vnl_squared) * baseR
+    b_real = trafo_df["pfe_mw"].values / vnl_squared * baseR
     i0 = trafo_df["i0_percent"].values
-    pfe = trafo_df["pfe_kw"].values
-    sn = trafo_df["sn_kva"].values
-    b_img = (i0 / 100. * sn / 1000.) ** 2 - (pfe / 1000.) ** 2
+    pfe = trafo_df["pfe_mw"].values
+    sn = trafo_df["sn_mva"].values
+    b_img = (i0 / 100. * sn) ** 2 - pfe ** 2
 
     b_img[b_img < 0] = 0
     b_img = np.sqrt(b_img) * baseR / vnl_squared
@@ -374,16 +374,16 @@ def _calc_tap_from_dataframe(net, trafo_df):
     return vnh, vnl, trafo_shift
 
 
-def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_kva):
+def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
 
     """
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_kva  # adjust for low voltage side voltage converter
-    sn_trafo_kva = trafo_df.sn_kva.values
-    z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_kva * tap_lv
-    r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_kva * tap_lv
+    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
+    sn_trafo_mva = trafo_df.sn_mva.values
+    z_sc = trafo_df["vsc_percent"].values / 100. / sn_trafo_mva * tap_lv
+    r_sc = trafo_df["vscr_percent"].values / 100. / sn_trafo_mva * tap_lv
     x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
     return r_sc, x_sc
 
@@ -432,7 +432,7 @@ def _trafo_df_from_trafo3w(net):
     for ttab in net["trafo3w"].itertuples():
         vsc = np.array([ttab.vsc_hv_percent, ttab.vsc_mv_percent, ttab.vsc_lv_percent], dtype=float)
         vscr = np.array([ttab.vscr_hv_percent, ttab.vscr_mv_percent, ttab.vscr_lv_percent], dtype=float)
-        sn = np.array([ttab.sn_hv_kva, ttab.sn_mv_kva, ttab.sn_lv_kva])
+        sn = np.array([ttab.sn_hv_mva, ttab.sn_mv_mva, ttab.sn_lv_mva])
         vsc_2w_delta = z_br_to_bus(vsc, sn)
         vscr_2w_delta = z_br_to_bus(vscr, sn)
         if mode == "sc":
@@ -467,10 +467,10 @@ def _trafo_df_from_trafo3w(net):
 
         max_load = ttab.max_loading_percent if "max_loading_percent" in ttab._fields else 0
 
-        trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_kva": ttab.sn_hv_kva,
+        trafos2w[i] = {"hv_bus": ttab.hv_bus, "lv_bus": ttab.ad_bus, "sn_mva": ttab.sn_hv_mva,
                        "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_hv_kv,
                        "vscr_percent": vscr_2w[0], "vsc_percent": vsc_2w[0],
-                       "pfe_kw": ttab.pfe_kw if loss_location == "hv" else 0,
+                       "pfe_mw": ttab.pfe_mw if loss_location == "hv" else 0,
                        "i0_percent": ttab.i0_percent if loss_location == "hv" else 0,
                        "tp_side": taps[0]["tp_side"],
                        "tp_mid": taps[0]["tp_mid"], "tp_max": taps[0]["tp_max"],
@@ -480,10 +480,10 @@ def _trafo_df_from_trafo3w(net):
                        "parallel": 1, "df": 1, "in_service": ttab.in_service, "shift_degree": 0,
                        "max_loading_percent": max_load}
         trafos2w[i + nr_trafos] = {
-            "hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus, "sn_kva": ttab.sn_mv_kva,
+            "hv_bus": ttab.ad_bus, "lv_bus": ttab.mv_bus, "sn_mva": ttab.sn_mv_mva,
             "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_mv_kv, "vscr_percent": vscr_2w[1],
-            "vsc_percent": vsc_2w[1], "pfe_kw": ttab.pfe_kw if loss_location == "mv" else 0,
-            "i0_percent": ttab.i0_percent * ttab.sn_hv_kva / ttab.sn_mv_kva
+            "vsc_percent": vsc_2w[1], "pfe_mw": ttab.pfe_mw if loss_location == "mv" else 0,
+            "i0_percent": ttab.i0_percent * ttab.sn_hv_mva / ttab.sn_mv_mva
             if loss_location == "mv" else 0,
             "tp_side": taps[1]["tp_side"], "tp_mid": taps[1]["tp_mid"],
             "tp_max": taps[1]["tp_max"], "tp_min": taps[1]["tp_min"],
@@ -492,10 +492,10 @@ def _trafo_df_from_trafo3w(net):
             "df": 1, "in_service": ttab.in_service, "shift_degree": ttab.shift_mv_degree,
             "max_loading_percent": max_load}
         trafos2w[i + 2 * nr_trafos] = {
-            "hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus, "sn_kva": ttab.sn_lv_kva,
+            "hv_bus": ttab.ad_bus, "lv_bus": ttab.lv_bus, "sn_mva": ttab.sn_lv_mva,
             "vn_hv_kv": ttab.vn_hv_kv, "vn_lv_kv": ttab.vn_lv_kv, "vscr_percent": vscr_2w[2],
-            "vsc_percent": vsc_2w[2], "pfe_kw": ttab.pfe_kw if loss_location == "lv" else 0,
-            "i0_percent": ttab.i0_percent * ttab.sn_hv_kva / ttab.sn_lv_kva
+            "vsc_percent": vsc_2w[2], "pfe_mw": ttab.pfe_mw if loss_location == "lv" else 0,
+            "i0_percent": ttab.i0_percent * ttab.sn_hv_mva / ttab.sn_lv_mva
             if loss_location == "lv" else 0, "tp_side": taps[2]["tp_side"],
             "tp_mid": taps[2]["tp_mid"], "tp_max": taps[2]["tp_max"],
             "tp_min": taps[2]["tp_min"], "tp_pos": taps[2]["tp_pos"],
@@ -513,8 +513,8 @@ def _trafo_df_from_trafo3w(net):
 def _calc_impedance_parameter(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     t = np.zeros(shape=(len(net["impedance"].index), 7), dtype=np.complex128)
-    sn_impedance = net["impedance"]["sn_kva"].values
-    sn_net = net.sn_kva
+    sn_impedance = net["impedance"]["sn_mva"].values
+    sn_net = net.sn_mva
     rij = net["impedance"]["rft_pu"].values
     xij = net["impedance"]["xft_pu"].values
     rji = net["impedance"]["rtf_pu"].values
@@ -532,7 +532,7 @@ def _calc_impedance_parameter(net):
 def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) / \
-            net.sn_kva * 1e3
+            net.sn_mva
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = net["_is_elements"]["xward"]
     t[:, 0] = bus_lookup[net["xward"]["bus"].values]
@@ -873,7 +873,7 @@ def _calc_switch_parameter(net, ppc):
     switch = net.switch[net._closed_bb_switches]
     fb = bus_lookup[switch["bus"].values]
     tb = bus_lookup[switch["element"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     t = np.zeros(shape=(len(switch), 3), dtype=np.complex128)
 
     t[:, 0] = fb

@@ -29,8 +29,8 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     if len(net.dcline) > 0:
         _get_dcline_results(net)
         b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
-        p = np.hstack([p, net.res_dcline[["p_from_kw", "p_to_kw"]].values.flatten()])
-        q = np.hstack([q, net.res_dcline[["q_from_kvar", "q_to_kvar"]].values.flatten()])
+        p = np.hstack([p, net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten()])
+        q = np.hstack([q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()])
 
     if not ac:
         q = np.zeros(len(p))
@@ -55,14 +55,14 @@ def _get_ext_grid_results(net, ppc):
     # read results from ppc for these buses
     p = np.zeros(n_res_eg)
     q = np.zeros(n_res_eg)
-    p[eg_is_mask] = ppc["gen"][gen_idx_ppc, PG] * 1e3
+    p[eg_is_mask] = ppc["gen"][gen_idx_ppc, PG]
     # store result in net['res']
-    net["res_ext_grid"]["p_kw"] = p
+    net["res_ext_grid"]["p_mw"] = p
 
     # if ac PF q results are also available
     if ac:
-        q[eg_is_mask] = ppc["gen"][gen_idx_ppc, QG] * 1e3
-        net["res_ext_grid"]["q_kvar"] = q
+        q[eg_is_mask] = ppc["gen"][gen_idx_ppc, QG]
+        net["res_ext_grid"]["q_mvar"] = q
 
     # get bus values for pq_bus
     b = net['ext_grid'].bus.values
@@ -86,14 +86,14 @@ def _get_p_q_gen_resuts(net, ppc):
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
     p_gen = np.zeros(n_res_gen)
-    p_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, PG] * 1e3
+    p_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, PG]
     q_gen = None
     if net["_options"]["ac"]:
         q_gen = np.zeros(n_res_gen)
-        q_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, QG] * 1e3
-        net["res_gen"]["q_kvar"] = q_gen
+        q_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, QG]
+        net["res_gen"]["q_mvar"] = q_gen
 
-    net["res_gen"]["p_kw"] = p_gen
+    net["res_gen"]["p_mw"] = p_gen
     return p_gen, q_gen
 
 
@@ -139,12 +139,12 @@ def _get_dcline_results(net):
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]
 
-    net.res_dcline.p_from_kw = - from_gens.p_kw.values
-    net.res_dcline.p_to_kw = - to_gens.p_kw.values
-    net.res_dcline.pl_kw = - (to_gens.p_kw.values + from_gens.p_kw.values)
+    net.res_dcline.p_from_mw = - from_gens.p_mw.values
+    net.res_dcline.p_to_mw = - to_gens.p_mw.values
+    net.res_dcline.pl_mw = - (to_gens.p_mw.values + from_gens.p_mw.values)
 
-    net.res_dcline.q_from_kvar = - from_gens.q_kvar.values
-    net.res_dcline.q_to_kvar = - to_gens.q_kvar.values
+    net.res_dcline.q_from_mvar = - from_gens.q_mvar.values
+    net.res_dcline.q_to_mvar = - to_gens.q_mvar.values
 
     net.res_dcline.vm_from_pu = from_gens.vm_pu.values
     net.res_dcline.vm_to_pu = to_gens.vm_pu.values

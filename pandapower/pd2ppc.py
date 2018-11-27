@@ -132,7 +132,7 @@ def _pd2ppc(net):
 
 def _init_ppc(net):
     # init empty ppc
-    ppc = {"baseMVA": net.sn_kva * 1e-3
+    ppc = {"baseMVA": net.sn_mva
         , "version": 2
         , "bus": np.array([], dtype=float)
         , "branch": np.array([], dtype=np.complex128)

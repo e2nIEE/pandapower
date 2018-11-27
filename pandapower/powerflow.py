@@ -166,14 +166,14 @@ def _create_trafo3w_buses(net):
 
 def _add_dcline_gens(net):
     for dctab in net.dcline.itertuples():
-        pfrom = dctab.p_kw
-        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_kw)
-        pmax = dctab.max_p_kw
-        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_kw=0, max_p_kw=pmax,
-                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
+        pfrom = dctab.p_mw
+        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
+        pmax = dctab.max_p_mw
+        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=0, max_p_mw=pmax,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
                    in_service=dctab.in_service)
-        create_gen(net, bus=dctab.from_bus, p_kw=-pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_kw=-pmax, max_p_kw=0,
-                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar,
+        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-pmax, max_p_mw=0,
+                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
                    in_service=dctab.in_service)

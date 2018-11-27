@@ -15,13 +15,13 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def create_std_type(net, data, name, element="line", overwrite=True):
+def create_std_type(net, data, name, element="line", overwrite=True, check_required=True):
     """
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
         - c_nf_per_km, r_ohm_per_km, x_ohm_per_km and max_i_ka (for lines)
-        - sn_kva, vn_hv_kv, vn_lv_kv, vsc_percent, vscr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)
-        - sn_hv_kva, sn_mv_kva, sn_lv_kva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
+        - sn_mva, vn_hv_kv, vn_lv_kv, vsc_percent, vscr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)
+        - sn_hv_mva, sn_mv_mva, sn_lv_mva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
     additional parameters can be added and later loaded into pandapower with the function
     "parameter_from_std_type".
 
@@ -46,27 +46,29 @@ def create_std_type(net, data, name, element="line", overwrite=True):
 
     if type(data) != dict:
         raise UserWarning("type data has to be given as a dictionary of parameters")
-    if element == "line":
-        required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
-    elif element == "trafo":
-        required = ["sn_kva", "vn_hv_kv", "vn_lv_kv", "vsc_percent", "vscr_percent",
-                    "pfe_kw", "i0_percent", "shift_degree"]
-    elif element == "trafo3w":
-        required = ["sn_hv_kva", "sn_mv_kva", "sn_lv_kva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                    "vsc_hv_percent", "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
-                    "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent", "shift_mv_degree",
-                    "shift_lv_degree"]
-    else:
-        raise ValueError("Unkown element type %s" % element)
-    for par in required:
-        if par not in data:
-            raise UserWarning("%s is required as %s type parameter" % (par, element))
+
+    if check_required:
+        if element == "line":
+            required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
+        elif element == "trafo":
+            required = ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vsc_percent", "vscr_percent",
+                        "pfe_mw", "i0_percent", "shift_degree"]
+        elif element == "trafo3w":
+            required = ["sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
+                        "vsc_hv_percent", "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
+                        "vscr_mv_percent", "vscr_lv_percent", "pfe_mw", "i0_percent", "shift_mv_degree",
+                        "shift_lv_degree"]
+        else:
+            raise ValueError("Unkown element type %s" % element)
+        for par in required:
+            if par not in data:
+                raise UserWarning("%s is required as %s type parameter" % (par, element))
     library = net.std_types[element]
     if overwrite or not (name in library):
         library.update({name: data})
 
 
-def create_std_types(net, data, element="line", overwrite=True):
+def create_std_types(net, data, element="line", overwrite=True, check_required=True):
     """
     Creates multiple standard types in the type database.
 
@@ -85,7 +87,8 @@ def create_std_types(net, data, element="line", overwrite=True):
 
     """
     for name, typdata in data.items():
-        create_std_type(net, data=typdata, name=name, element=element, overwrite=overwrite)
+        create_std_type(net, data=typdata, name=name, element=element, overwrite=overwrite,
+                        check_required=check_required)
 
 
 def copy_std_types(to_net, from_net, element="line", overwrite=True):
@@ -634,7 +637,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.06,
             "pfe_kw": 60,
             "vscr_percent": 0.25,
-            "sn_kva": 16e4,
+            "sn_mva": 16e4,
             "vn_lv_kv": 110.0,
             "vn_hv_kv": 380.0,
             "vsc_percent": 12.2,
@@ -651,7 +654,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.06,
             "pfe_kw": 55,
             "vscr_percent": 0.26,
-            "sn_kva": 1e5,
+            "sn_mva": 1e5,
             "vn_lv_kv": 110.0,
             "vn_hv_kv": 220.0,
             "vsc_percent": 12.0,
@@ -670,7 +673,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.04,
             "pfe_kw": 22,
             "vscr_percent": 0.32,
-            "sn_kva": 63000,
+            "sn_mva": 63000,
             "vn_lv_kv": 20.0,
             "vn_hv_kv": 110.0,
             "vsc_percent": 18,
@@ -687,7 +690,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.05,
             "pfe_kw": 18,
             "vscr_percent": 0.34,
-            "sn_kva": 40000,
+            "sn_mva": 40000,
             "vn_lv_kv": 20.0,
             "vn_hv_kv": 110.0,
             "vsc_percent": 16.2,
@@ -704,7 +707,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.07,
             "pfe_kw": 14,
             "vscr_percent": 0.41,
-            "sn_kva": 25000,
+            "sn_mva": 25000,
             "vn_lv_kv": 20.0,
             "vn_hv_kv": 110.0,
             "vsc_percent": 12,
@@ -718,7 +721,7 @@ def add_basic_std_types(net):
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
         "63 MVA 110/10 kV":
-        {"sn_kva": 63000,
+        {"sn_mva": 63000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vsc_percent": 18,
@@ -735,7 +738,7 @@ def add_basic_std_types(net):
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
         "40 MVA 110/10 kV":
-        {"sn_kva": 40000,
+        {"sn_mva": 40000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vsc_percent": 16.2,
@@ -752,7 +755,7 @@ def add_basic_std_types(net):
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
         "25 MVA 110/10 kV":
-        {"sn_kva": 25000,
+        {"sn_mva": 25000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vsc_percent": 12,
@@ -773,7 +776,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.086,
             "pfe_kw": 33,
             "vscr_percent": 0.322,
-            "sn_kva": 63000,
+            "sn_mva": 63000,
             "vn_lv_kv": 20.0,
             "vn_hv_kv": 110.0,
             "vsc_percent": 11.2,
@@ -790,7 +793,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.08,
             "pfe_kw": 31,
             "vscr_percent": 0.302,
-            "sn_kva": 40000,
+            "sn_mva": 40000,
             "vn_lv_kv": 20.0,
             "vn_hv_kv": 110.0,
             "vsc_percent": 11.2,
@@ -807,7 +810,7 @@ def add_basic_std_types(net):
         {"i0_percent": 0.071,
             "pfe_kw": 29,
             "vscr_percent": 0.282,
-            "sn_kva": 25000,
+            "sn_mva": 25000,
             "vn_lv_kv": 20.0,
             "vn_hv_kv": 110.0,
             "vsc_percent": 11.2,
@@ -821,7 +824,7 @@ def add_basic_std_types(net):
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
         "63 MVA 110/10 kV v1.4.3 and older":
-        {"sn_kva": 63000,
+        {"sn_mva": 63000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vsc_percent": 10.04,
@@ -838,7 +841,7 @@ def add_basic_std_types(net):
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
         "40 MVA 110/10 kV v1.4.3 and older":
-        {"sn_kva": 40000,
+        {"sn_mva": 40000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vsc_percent": 10.04,
@@ -855,7 +858,7 @@ def add_basic_std_types(net):
             "tp_st_percent": 1.5,
             "tp_phase_shifter": False},
         "25 MVA 110/10 kV v1.4.3 and older":
-        {"sn_kva": 25000,
+        {"sn_mva": 25000,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vsc_percent": 10.04,
@@ -874,7 +877,7 @@ def add_basic_std_types(net):
         # Tafo20/0.4
         # 0.25 MVA 20/0.4 kV 0.45 Trafo Union
         "0.25 MVA 20/0.4 kV":
-        {"sn_kva": 250,
+        {"sn_mva": 250,
             "vn_hv_kv": 20,
             "vn_lv_kv": 0.4,
             "vsc_percent": 6,
@@ -892,7 +895,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         # 0.4 MVA 20/0.4 kV Trafo Union
         "0.4 MVA 20/0.4 kV":
-        {"sn_kva": 400, "vn_hv_kv": 20, "vn_lv_kv": 0.4,
+        {"sn_mva": 400, "vn_hv_kv": 20, "vn_lv_kv": 0.4,
             "vsc_percent": 6,
             "vscr_percent": 1.425,
             "pfe_kw": 1.35,
@@ -908,7 +911,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         # 0.63 MVA 20/0.4 kV Trafo Union
         "0.63 MVA 20/0.4 kV":
-        {"sn_kva": 630,
+        {"sn_mva": 630,
             "vn_hv_kv": 20,
             "vn_lv_kv": 0.4,
             "vsc_percent": 6,
@@ -927,7 +930,7 @@ def add_basic_std_types(net):
         # Tafo10/0.4:
         # 0.25 MVA 10/0.4 kV 0.4 Trafo Union wnr
         "0.25 MVA 10/0.4 kV":
-        {"sn_kva": 250,
+        {"sn_mva": 250,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
             "vsc_percent": 4,
@@ -945,7 +948,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         # 0.4 MVA 10/0.4 kV Trafo Union wnr
         "0.4 MVA 10/0.4 kV":
-        {"sn_kva": 400,
+        {"sn_mva": 400,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
             "vsc_percent": 4,
@@ -963,7 +966,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         # 0.63 MVA 10/0.4 kV Trafo Union wnr
         "0.63 MVA 10/0.4 kV":
-        {"sn_kva": 630,
+        {"sn_mva": 630,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
             "vsc_percent": 4,
@@ -980,14 +983,14 @@ def add_basic_std_types(net):
             "tp_st_percent": 2.5,
             "tp_phase_shifter": False},
     }
-    create_std_types(net, data=trafotypes, element="trafo")
+    create_std_types(net, data=trafotypes, element="trafo", check_required=False)
 
     trafo3wtypes = {
         # generic trafo3w
         "63/25/38 MVA 110/20/10 kV":
-        {"sn_hv_kva": 63000,
-            "sn_mv_kva": 25000,
-            "sn_lv_kva": 38000,
+        {"sn_hv_mva": 63000,
+            "sn_mv_mva": 25000,
+            "sn_lv_mva": 38000,
             "vn_hv_kv": 110,
             "vn_mv_kv": 20,
             "vn_lv_kv": 10,
@@ -1008,9 +1011,9 @@ def add_basic_std_types(net):
             "tp_max": 10,
             "tp_st_percent": 1.2},
         "63/25/38 MVA 110/10/10 kV":
-        {"sn_hv_kva": 63000,
-            "sn_mv_kva": 25000,
-            "sn_lv_kva": 38000,
+        {"sn_hv_mva": 63000,
+            "sn_mv_mva": 25000,
+            "sn_lv_mva": 38000,
             "vn_hv_kv": 110,
             "vn_mv_kv": 10,
             "vn_lv_kv": 10,
@@ -1031,5 +1034,7 @@ def add_basic_std_types(net):
             "tp_max": 10,
             "tp_st_percent": 1.2}
     }
-    create_std_types(net, data=trafo3wtypes, element="trafo3w")
+    create_std_types(net, data=trafo3wtypes, element="trafo3w", check_required=False)
+    from pandapower.toolbox import _convert_to_mw
+    _convert_to_mw(net)
     return linetypes, trafotypes, trafo3wtypes

@@ -35,9 +35,9 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
     u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
-    s_ft = (np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
-                    ppc["branch"][:, (QF, QT)].real ** 2) * 1e3)
-    i_ft = s_ft * 1e-3 / u_ft / np.sqrt(3)
+    s_ft = np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
+                    ppc["branch"][:, (QF, QT)].real ** 2)
+    i_ft = s_ft / u_ft / np.sqrt(3)
     return i_ft, s_ft
 
 
@@ -48,20 +48,20 @@ def _get_line_results(net, ppc, i_ft):
     if not "line" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["line"]
-    pf_kw = ppc["branch"][f:t, PF].real * 1e3
-    q_from_kvar = ppc["branch"][f:t, QF].real * 1e3
-    p_from_kw = pf_kw
+    pf_mw = ppc["branch"][f:t, PF].real
+    q_from_mvar = ppc["branch"][f:t, QF].real
+    p_from_mw = pf_mw
 
-    pt_kw = ppc["branch"][f:t, PT].real * 1e3
-    q_to_kvar = ppc["branch"][f:t, QT].real * 1e3
-    p_to_kw = pt_kw
+    pt_mw = ppc["branch"][f:t, PT].real
+    q_to_mvar = ppc["branch"][f:t, QT].real
+    p_to_mw = pt_mw
 
     if ac:
-        pl_kw = pf_kw + pt_kw
-        ql_kvar = q_from_kvar + q_to_kvar
+        pl_mw = pf_mw + pt_mw
+        ql_mvar = q_from_mvar + q_to_mvar
     else:
-        pl_kw = np.zeros_like(pf_kw)
-        ql_kvar = np.zeros_like(q_from_kvar)
+        pl_mw = np.zeros_like(pf_mw)
+        ql_mvar = np.zeros_like(q_from_mvar)
 
     with np.errstate(invalid='ignore'):
         i_ka = np.max(i_ft[f:t], axis=1)
@@ -72,12 +72,12 @@ def _get_line_results(net, ppc, i_ft):
 
     # write to line
     res_line_df = net["res_line"]
-    res_line_df["p_from_kw"].values[:] = p_from_kw
-    res_line_df["q_from_kvar"].values[:] = q_from_kvar
-    res_line_df["p_to_kw"].values[:] = p_to_kw
-    res_line_df["q_to_kvar"].values[:] = q_to_kvar
-    res_line_df["pl_kw"].values[:] = pl_kw
-    res_line_df["ql_kvar"].values[:] = ql_kvar
+    res_line_df["p_from_mw"].values[:] = p_from_mw
+    res_line_df["q_from_mvar"].values[:] = q_from_mvar
+    res_line_df["p_to_mw"].values[:] = p_to_mw
+    res_line_df["q_to_mvar"].values[:] = q_to_mvar
+    res_line_df["pl_mw"].values[:] = pl_mw
+    res_line_df["ql_mvar"].values[:] = ql_mvar
     res_line_df["i_from_ka"].values[:] = i_from_ka
     res_line_df["i_to_ka"].values[:] = i_to_ka
     res_line_df["i_ka"].values[:] = i_ka
@@ -91,31 +91,30 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     if not "trafo" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
-    p_hv_kw = ppc["branch"][f:t, PF].real * 1e3
-    p_lv_kw = ppc["branch"][f:t, PT].real * 1e3
+    p_hv_mw = ppc["branch"][f:t, PF].real
+    p_lv_mw = ppc["branch"][f:t, PT].real
 
     if ac:
-        q_hv_kvar = ppc["branch"][f:t, QF].real * 1e3
-        q_lv_kvar = ppc["branch"][f:t, QT].real * 1e3
-        pl_kw = p_hv_kw + p_lv_kw
-        ql_kvar = q_hv_kvar + q_lv_kvar
+        q_hv_mvar = ppc["branch"][f:t, QF].real
+        q_lv_mvar = ppc["branch"][f:t, QT].real
+        pl_mw = p_hv_mw + p_lv_mw
+        ql_mvar = q_hv_mvar + q_lv_mvar
     else:
-        q_hv_kvar = np.zeros_like(p_hv_kw)
-        q_lv_kvar = np.zeros_like(p_lv_kw)
-        pl_kw = np.zeros_like(p_lv_kw)
-        ql_kvar = np.zeros_like(p_lv_kw)
+        q_hv_mvar = np.zeros_like(p_hv_mw)
+        q_lv_mvar = np.zeros_like(p_lv_mw)
+        pl_mw = np.zeros_like(p_lv_mw)
+        ql_mvar = np.zeros_like(p_lv_mw)
 
     i_hv_ka = i_ft[:, 0][f:t]
     i_lv_ka = i_ft[:, 1][f:t]
     if trafo_loading == "current":
         trafo_df = net["trafo"]
         vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
-        lds_trafo = i_ft[f:t] * vns * 1000. * np.sqrt(3) \
-                    / trafo_df["sn_kva"].values[:, np.newaxis] * 100.
+        lds_trafo = i_ft[f:t] * vns * np.sqrt(3) / trafo_df["sn_mva"].values[:, np.newaxis] * 100.
         with np.errstate(invalid='ignore'):
             ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
-        ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_kva"].values[:, np.newaxis] * 100., axis=1)
+        ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_mva"].values[:, np.newaxis] * 100., axis=1)
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
@@ -127,12 +126,12 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
 
     # write results to trafo dataframe
     res_trafo_df = net["res_trafo"]
-    res_trafo_df["p_hv_kw"].values[:] = p_hv_kw
-    res_trafo_df["q_hv_kvar"].values[:] = q_hv_kvar
-    res_trafo_df["p_lv_kw"].values[:] = p_lv_kw
-    res_trafo_df["q_lv_kvar"].values[:] = q_lv_kvar
-    res_trafo_df["pl_kw"].values[:] = pl_kw
-    res_trafo_df["ql_kvar"].values[:] = ql_kvar
+    res_trafo_df["p_hv_mw"].values[:] = p_hv_mw
+    res_trafo_df["q_hv_mvar"].values[:] = q_hv_mvar
+    res_trafo_df["p_lv_mw"].values[:] = p_lv_mw
+    res_trafo_df["q_lv_mvar"].values[:] = q_lv_mvar
+    res_trafo_df["pl_mw"].values[:] = pl_mw
+    res_trafo_df["ql_mvar"].values[:] = ql_mvar
     res_trafo_df["i_hv_ka"].values[:] = i_hv_ka
     res_trafo_df["i_lv_ka"].values[:] = i_lv_ka
     res_trafo_df["loading_percent"].values[:] = loading_percent
@@ -149,27 +148,27 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     mv = int(f + 2 * (t - f) / 3)
     lv = t
 
-    phv_kw = ppc["branch"][f:hv, PF].real * 1e3
-    pmv_kw = ppc["branch"][hv:mv, PT].real * 1e3
-    plv_kw = ppc["branch"][mv:lv, PT].real * 1e3
+    phv_mw = ppc["branch"][f:hv, PF].real
+    pmv_mw = ppc["branch"][hv:mv, PT].real
+    plv_mw = ppc["branch"][mv:lv, PT].real
 
-    p_hv_kw = phv_kw
-    p_mv_kw = pmv_kw
-    p_lv_kw = plv_kw
+    p_hv_mw = phv_mw
+    p_mv_mw = pmv_mw
+    p_lv_mw = plv_mw
 
     if ac:
-        q_hv_kvar = ppc["branch"][f:hv, QF].real * 1e3
-        q_mv_kvar = ppc["branch"][hv:mv, QT].real * 1e3
-        q_lv_kvar = ppc["branch"][mv:lv, QT].real * 1e3
-        pl_kw = phv_kw + pmv_kw + plv_kw
-        ql_kvar = q_hv_kvar + q_mv_kvar + q_lv_kvar
+        q_hv_mvar = ppc["branch"][f:hv, QF].real
+        q_mv_mvar = ppc["branch"][hv:mv, QT].real
+        q_lv_mvar = ppc["branch"][mv:lv, QT].real
+        pl_mw = phv_mw + pmv_mw + plv_mw
+        ql_mvar = q_hv_mvar + q_mv_mvar + q_lv_mvar
     else:
-        zeros = np.zeros_like(phv_kw)
-        q_hv_kvar = zeros
-        q_mv_kvar = zeros
-        q_lv_kvar = zeros
-        pl_kw = zeros
-        ql_kvar = zeros
+        zeros = np.zeros_like(phv_mw)
+        q_hv_mvar = zeros
+        q_mv_mvar = zeros
+        q_lv_mvar = zeros
+        pl_mw = zeros
+        ql_mvar = zeros
 
     i_h = i_ft[:, 0][f:hv]
     i_m = i_ft[:, 1][hv:mv]
@@ -177,15 +176,15 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
 
     t3 = net["trafo3w"]
     if trafo_loading == "current":
-        ld_h = i_h * t3["vn_hv_kv"].values * 1000. * np.sqrt(3) / t3["sn_hv_kva"].values * 100
-        ld_m = i_m * t3["vn_mv_kv"].values * 1000. * np.sqrt(3) / t3["sn_mv_kva"].values * 100
-        ld_l = i_l * t3["vn_lv_kv"].values * 1000. * np.sqrt(3) / t3["sn_lv_kva"].values * 100
+        ld_h = i_h * t3["vn_hv_kv"].values * np.sqrt(3) / t3["sn_hv_mva"].values * 100
+        ld_m = i_m * t3["vn_mv_kv"].values * np.sqrt(3) / t3["sn_mv_mva"].values * 100
+        ld_l = i_l * t3["vn_lv_kv"].values * np.sqrt(3) / t3["sn_lv_mva"].values * 100
         with np.errstate(invalid='ignore'):
             ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     elif trafo_loading == "power":
-        ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_kva"].values * 100.
-        ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_kva"].values * 100.
-        ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_kva"].values * 100.
+        ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_mva"].values * 100.
+        ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_mva"].values * 100.
+        ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_mva"].values * 100.
         ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     else:
         raise ValueError(
@@ -194,14 +193,14 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
 
     # write results to trafo3w dataframe
     res_trafo3w_df = net["res_trafo3w"]
-    res_trafo3w_df["p_hv_kw"].values[:] = p_hv_kw
-    res_trafo3w_df["q_hv_kvar"].values[:] = q_hv_kvar
-    res_trafo3w_df["p_mv_kw"].values[:] = p_mv_kw
-    res_trafo3w_df["q_mv_kvar"].values[:] = q_mv_kvar
-    res_trafo3w_df["p_lv_kw"].values[:] = p_lv_kw
-    res_trafo3w_df["q_lv_kvar"].values[:] = q_lv_kvar
-    res_trafo3w_df["pl_kw"].values[:] = pl_kw
-    res_trafo3w_df["ql_kvar"].values[:] = ql_kvar
+    res_trafo3w_df["p_hv_mw"].values[:] = p_hv_mw
+    res_trafo3w_df["q_hv_mvar"].values[:] = q_hv_mvar
+    res_trafo3w_df["p_mv_mw"].values[:] = p_mv_mw
+    res_trafo3w_df["q_mv_mvar"].values[:] = q_mv_mvar
+    res_trafo3w_df["p_lv_mw"].values[:] = p_lv_mw
+    res_trafo3w_df["q_lv_mvar"].values[:] = q_lv_mvar
+    res_trafo3w_df["pl_mw"].values[:] = pl_mw
+    res_trafo3w_df["ql_mvar"].values[:] = ql_mvar
     res_trafo3w_df["i_hv_ka"].values[:] = i_h
     res_trafo3w_df["i_mv_ka"].values[:] = i_m
     res_trafo3w_df["i_lv_ka"].values[:] = i_l
@@ -214,23 +213,23 @@ def _get_impedance_results(net, ppc, i_ft):
     if not "impedance" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["impedance"]
-    pf_kw = ppc["branch"][f:t, (PF)].real * 1e3
-    pt_kw = ppc["branch"][f:t, (PT)].real * 1e3
-    p_from_kw = pf_kw
-    p_to_kw = pt_kw
+    pf_mw = ppc["branch"][f:t, (PF)].real
+    pt_mw = ppc["branch"][f:t, (PT)].real
+    p_from_mw = pf_mw
+    p_to_mw = pt_mw
 
     if ac:
-        q_from_kvar = ppc["branch"][f:t, (QF)].real * 1e3
-        q_to_kvar = ppc["branch"][f:t, (QT)].real * 1e3
-        ql_kvar = q_from_kvar + q_to_kvar
-        pl_kw = pf_kw + pt_kw
+        q_from_mvar = ppc["branch"][f:t, (QF)].real
+        q_to_mvar = ppc["branch"][f:t, (QT)].real
+        ql_mvar = q_from_mvar + q_to_mvar
+        pl_mw = pf_mw + pt_mw
     else:
-        zeros = np.zeros_like(p_from_kw)
+        zeros = np.zeros_like(p_from_mw)
         # this looks like a pyramid
-        q_from_kvar = zeros
-        q_to_kvar = zeros
-        ql_kvar = zeros
-        pl_kw = zeros
+        q_from_mvar = zeros
+        q_to_mvar = zeros
+        ql_mvar = zeros
+        pl_mw = zeros
         # zeros
 
     i_from_ka = i_ft[f:t][:, 0]
@@ -238,12 +237,12 @@ def _get_impedance_results(net, ppc, i_ft):
 
     # write to impedance
     res_impediance_df = net["res_impedance"]
-    res_impediance_df["p_from_kw"].values[:] = p_from_kw
-    res_impediance_df["q_from_kvar"].values[:] = q_from_kvar
-    res_impediance_df["p_to_kw"].values[:] = p_to_kw
-    res_impediance_df["q_to_kvar"].values[:] = q_to_kvar
-    res_impediance_df["pl_kw"].values[:] = pl_kw
-    res_impediance_df["ql_kvar"].values[:] = ql_kvar
+    res_impediance_df["p_from_mw"].values[:] = p_from_mw
+    res_impediance_df["q_from_mvar"].values[:] = q_from_mvar
+    res_impediance_df["p_to_mw"].values[:] = p_to_mw
+    res_impediance_df["q_to_mvar"].values[:] = q_to_mvar
+    res_impediance_df["pl_mw"].values[:] = pl_mw
+    res_impediance_df["ql_mvar"].values[:] = ql_mvar
     res_impediance_df["i_from_ka"].values[:] = i_from_ka
     res_impediance_df["i_to_ka"].values[:] = i_to_ka
 
@@ -254,11 +253,11 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     if not "xward" in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["xward"]
-    p_branch_xward = ppc["branch"][f:t, PF].real * 1e3
-    net["res_xward"]["p_kw"] += p_branch_xward
+    p_branch_xward = ppc["branch"][f:t, PF].real
+    net["res_xward"]["p_mw"] += p_branch_xward
     if ac:
-        q_branch_xward = ppc["branch"][f:t, QF].real * 1e3
-        net["res_xward"]["q_kvar"] += q_branch_xward
+        q_branch_xward = ppc["branch"][f:t, QF].real
+        net["res_xward"]["q_mvar"] += q_branch_xward
     else:
         q_branch_xward = np.zeros(len(p_branch_xward))
     b_pp, p, q = _sum_by_group(net["xward"]["bus"].values, p_branch_xward, q_branch_xward)

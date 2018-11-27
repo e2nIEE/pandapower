@@ -53,8 +53,8 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
 
 
 def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
-                         std_type="NAYY 4x150 SE", p_load_kw=0,
-                         q_load_kvar=0, branchnr=1,
+                         std_type="NAYY 4x150 SE", p_load_mw=0,
+                         q_load_mvar=0, branchnr=1,
                          l_para_per_km=None):
     """
     Creates a single unsplitted branch on the startbus of n lines. It \
@@ -79,7 +79,7 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
                        name="line_%d_%d" % (branchnr, linecounter), std_type=std_type)
 
         if p_load_kw or q_load_kvar:
-            pp.create_load(pd_net, created_bus_nr, p_kw=p_load_kw, q_kvar=q_load_kvar)
+            pp.create_load(pd_net, created_bus_nr, p_mw=p_load_kw, q_kvar=q_load_kvar)
 
         bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
 
@@ -87,8 +87,8 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
 
 
 def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
-                                   std_type="NAYY 4x150 SE", p_load_kw=0,
-                                   q_load_kvar=0,
+                                   std_type="NAYY 4x150 SE", p_load_mw=0,
+                                   q_load_mvar=0,
                                    length_branchout_line_1=0.022,
                                    length_branchout_line_2=0,
                                    std_type_branchout_line_1="NAYY 4x50 SE",
@@ -142,9 +142,9 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
                        name="branchout_line_%d_%d" % (branchnr, linecounter),
                        std_type=std_type_branchout_line)
 
-        if p_load_kw or q_load_kvar:
+        if p_load_mw or q_load_mvar:
             pp.create_load(net, loadbusnr,
-                           p_kw=p_load_kw, q_kvar=q_load_kvar)
+                           p_mw=p_load_mw, q_mvar=q_load_mvar)
 
         bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
 

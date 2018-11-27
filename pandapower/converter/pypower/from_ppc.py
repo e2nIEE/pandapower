@@ -113,7 +113,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    net = pp.create_empty_network(f_hz=f_hz, sn_kva=baseMVA*1e3)
+    net = pp.create_empty_network(f_hz=f_hz, sn_mva=baseMVA)
 
     # --- bus data -> create buses, sgen, load, shunt
     for i in range(len(ppc['bus'])):
@@ -123,18 +123,18 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                       max_vm_pu=ppc['bus'][i, 11], min_vm_pu=ppc['bus'][i, 12])
         # create sgen, load
         if ppc['bus'][i, 2] > 0:
-            pp.create_load(net, i, p_kw=ppc['bus'][i, 2] * 1e3, q_kvar=ppc['bus'][i, 3] * 1e3,
+            pp.create_load(net, i, p_kw=ppc['bus'][i, 2] * 1e3, q_mvar=ppc['bus'][i, 3],
                            controllable=False)
         elif ppc['bus'][i, 2] < 0:
-            pp.create_sgen(net, i, p_kw=-ppc['bus'][i, 2] * 1e3, q_kvar=-ppc['bus'][i, 3] * 1e3,
+            pp.create_sgen(net, i, p_mw=-ppc['bus'][i, 2], q_mvar=-ppc['bus'][i, 3],
                            type="", controllable=False)
         elif ppc['bus'][i, 3] != 0:
-            pp.create_load(net, i, p_kw=ppc['bus'][i, 2] * 1e3, q_kvar=ppc['bus'][i, 3] * 1e3,
+            pp.create_load(net, i, p_mw=ppc['bus'][i, 2] * 1e3, q_mvar=ppc['bus'][i, 3],
                            controllable=False)
         # create shunt
         if ppc['bus'][i, 4] != 0 or ppc['bus'][i, 5] != 0:
-            pp.create_shunt(net, i, p_kw=ppc['bus'][i, 4] * 1e3,
-                            q_kvar=-ppc['bus'][i, 5] * 1e3)
+            pp.create_shunt(net, i, p_mw=ppc['bus'][i, 4],
+                            q_mvar=-ppc['bus'][i, 5])
     # unused data of ppc: Vm, Va (partwise: in ext_grid), zone
 
     # --- gen data -> create ext_grid, gen, sgen
@@ -152,8 +152,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 gen_lookup.element.loc[i] = pp.create_ext_grid(
                     net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
                     va_degree=ppc['bus'][current_bus_idx, 8], in_service=bool(ppc['gen'][i, 7] > 0),
-                    max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_kw=ppc['gen'][i, PMIN] * 1e3,
-                    max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_kvar=ppc['gen'][i, QMIN] * 1e3)
+                    max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_mw=ppc['gen'][i, PMIN],
+                    max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_mvar=ppc['gen'][i, QMIN])
                 gen_lookup.element_type.loc[i] = 'ext_grid'
                 if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
                     logger.info('min_q_kvar of gen %d must be less than max_q_kvar but is not.' % i)
@@ -168,8 +168,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                     net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
                     p_kw=ppc['gen'][i, 1] * 1e3,
                     in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
-                    max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_kw=ppc['gen'][i, PMIN] * 1e3,
-                    max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_kvar=ppc['gen'][i, QMIN] * 1e3)
+                    max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_mw=ppc['gen'][i, PMIN],
+                    max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_mvar=ppc['gen'][i, QMIN])
                 gen_lookup.element_type.loc[i] = 'gen'
                 if ppc['gen'][i, 1] < 0:
                     logger.info('p_kw of gen %d must be less than zero but is not.' % i)
@@ -184,8 +184,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             gen_lookup.element.loc[i] = pp.create_sgen(
                 net, bus=current_bus_idx, p_kw=ppc['gen'][i, 1] * 1e3,
                 q_kvar=ppc['gen'][i, 2] * 1e3, type="", in_service=bool(ppc['gen'][i, 7] > 0),
-                max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_kw=ppc['gen'][i, PMIN] * 1e3,
-                max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_kvar=ppc['gen'][i, QMIN] * 1e3,
+                max_p_kw=ppc['gen'][i, PMAX] * 1e3, min_p_mw=ppc['gen'][i, PMIN],
+                max_q_kvar=ppc['gen'][i, QMAX] * 1e3, min_q_mvar=ppc['gen'][i, QMIN],
                 controllable=True)
             gen_lookup.element_type.loc[i] = 'sgen'
             if ppc['gen'][i, 1] < 0:
@@ -240,22 +240,22 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
             rk = ppc['branch'][i, 2]
             xk = ppc['branch'][i, 3]
             zk = (rk ** 2 + xk ** 2) ** 0.5
-            sn = ppc['branch'][i, 5] * 1e3
+            sn = ppc['branch'][i, 5]
             if sn == 0.0:
                 sn = MAX_VAL
                 logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                              "apparent power")
             ratio_1 = 0 if ppc['branch'][i, 8] == 0 else (ppc['branch'][i, 8] - 1) * 100
-            i0_percent = -ppc['branch'][i, 4] * 100 * baseMVA * 1e3 / sn
+            i0_percent = -ppc['branch'][i, 4] * 100 * baseMVA / sn
             if i0_percent < 0:
                 logger.info('A transformer always behaves inductive consumpting but the '
                             'susceptance of pypower branch %d (from_bus, to_bus)=(%d, %d) is '
                             'positive.', i, ppc['branch'][i, 0], ppc['branch'][i, 1])
 
             pp.create_transformer_from_parameters(
-                net, hv_bus=hv_bus, lv_bus=lv_bus, sn_kva=sn, vn_hv_kv=vn_hv_kv,
-                vn_lv_kv=vn_lv_kv, vsc_percent=sign(xk) * zk * sn / 1e3 * 100 / baseMVA,
-                vscr_percent=rk * sn / 1e3 * 100 / baseMVA, max_loading_percent=100,
+                net, hv_bus=hv_bus, lv_bus=lv_bus, sn_mva=sn, vn_hv_kv=vn_hv_kv,
+                vn_lv_kv=vn_lv_kv, vsc_percent=sign(xk) * zk * sn * 100 / baseMVA,
+                vscr_percent=rk * sn * 100 / baseMVA, max_loading_percent=100,
                 pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
                 tp_st_percent=abs(ratio_1) if ratio_1 else nan,
                 tp_pos=sign(ratio_1) if ratio_1 else nan,

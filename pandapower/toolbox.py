@@ -711,8 +711,33 @@ def convert_format(net):
             if len(net.piecewise_linear_cost) > 0:
                 raise NotImplementedError
             del net.piecewise_linear_cost
+
+        _convert_to_mw(net)
     net.version = float(__version__[:3])
     return net
+
+def _convert_to_mw(net):
+    replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
+    for element, tab in net.items():
+        if isinstance(tab, pd.DataFrame):
+            for old, new in replace:
+                diff = {column: column.replace(old, new) for column in tab.columns if old in column}
+                tab.rename(columns=diff, inplace=True)
+                for old, new in diff.items():
+                    tab[new] *= 1e-3
+
+    for element, std_types in net.std_types.items():
+        for std_type, parameters in std_types.items():
+            for parameter, value in parameters.items():
+                for old, new in replace:
+                    if old in parameter:
+                        parameters[parameter.replace(old, new)] = value*1e-3
+                        del parameters[parameter]
+    if "sn_kva" in net.keys():
+        net.sn_mva = net.sn_kva*1e-3
+        del net.sn_kva
+#    else:
+#        net.sn_mva = 1.
 
 
 def _pre_release_changes(net):

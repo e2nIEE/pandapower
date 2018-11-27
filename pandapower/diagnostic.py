@@ -260,7 +260,7 @@ def invalid_values(net):
                                  ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
                                  ('max_i_ka', '>0'), ('df', '0<x<=1'), ('in_service', 'boolean')],
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
-                                  ('sn_kva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
+                                  ('sn_mva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
                                   ('vscr_percent', '>=0'),
                                   ('vsc_percent', '>0'), ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                   ('in_service', 'boolean')],

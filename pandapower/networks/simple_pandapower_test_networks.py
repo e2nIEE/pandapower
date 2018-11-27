@@ -100,10 +100,10 @@ def four_loads_with_branches_out():
     pp.create_line(pd_net, busnr6, busnr10, name="line8", length_km=0.05,
                    std_type="NAYY 4x120 SE")
 
-    pp.create_load(pd_net, busnr7, p_kw=30, q_kvar=10)
-    pp.create_load(pd_net, busnr8, p_kw=30, q_kvar=10)
-    pp.create_load(pd_net, busnr9, p_kw=30, q_kvar=10)
-    pp.create_load(pd_net, busnr10, p_kw=30, q_kvar=10)
+    pp.create_load(pd_net, busnr7, p_mw=0.030, q_mvar=0.010)
+    pp.create_load(pd_net, busnr8, p_mw=0.030, q_mvar=0.010)
+    pp.create_load(pd_net, busnr9, p_mw=0.030, q_mvar=0.010)
+    pp.create_load(pd_net, busnr10, p_mw=0.030, q_mvar=0.010)
 
     n1 = 6
     n2 = 10
@@ -137,10 +137,10 @@ def simple_four_bus_system():
     pp.create_line(net, busnr2, busnr3, name="line1", length_km=0.50000, std_type="NAYY 4x50 SE")
     busnr4 = pp.create_bus(net, name="bus4", vn_kv=.4)
     pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.50000, std_type="NAYY 4x50 SE")
-    pp.create_load(net, busnr3, 30, 10, name="load1")
-    pp.create_load(net, busnr4, 30, 10, name="load2")
-    pp.create_sgen(net, busnr3, p_kw=20., q_kvar=-5., name="pv1", sn_kva=30)
-    pp.create_sgen(net, busnr4, p_kw=15., q_kvar=-2., name="pv2", sn_kva=20)
+    pp.create_load(net, busnr3, 0.030, 0.010, name="load1")
+    pp.create_load(net, busnr4, 0.030, 0.010, name="load2")
+    pp.create_sgen(net, busnr3, p_mw=0.020, q_mvar=-0.005, name="pv1", sn_mva=0.03)
+    pp.create_sgen(net, busnr4, p_mw=0.015, q_mvar=-0.002, name="pv2", sn_mva=0.02)
 
     n = busnr4 + 1
     net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])
@@ -190,11 +190,11 @@ def simple_mv_open_ring_net():
 
     pp.create_transformer(net, hv_bus=0, lv_bus=1, std_type="25 MVA 110/20 kV")
 
-    pp.create_load(net, 2, p_kw=1000, q_kvar=200, name="load 0")
-    pp.create_load(net, 3, p_kw=1000, q_kvar=200, name="load 1")
-    pp.create_load(net, 4, p_kw=1000, q_kvar=200, name="load 2")
-    pp.create_load(net, 5, p_kw=1000, q_kvar=200, name="load 3")
-    pp.create_load(net, 6, p_kw=1000, q_kvar=200, name="load 4")
+    pp.create_load(net, 2, p_mw=1, q_mvar=0.200, name="load 0")
+    pp.create_load(net, 3, p_mw=1, q_mvar=0.200, name="load 1")
+    pp.create_load(net, 4, p_mw=1, q_mvar=0.200, name="load 2")
+    pp.create_load(net, 5, p_mw=1, q_mvar=0.200, name="load 3")
+    pp.create_load(net, 6, p_mw=1, q_mvar=0.200, name="load 4")
 
     pp.create_switch(net, bus=1, element=0, et='l')
     pp.create_switch(net, bus=2, element=0, et='l')

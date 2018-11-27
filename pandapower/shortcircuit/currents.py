@@ -63,7 +63,7 @@ def _current_source_current(net, ppc):
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
     Zbus = ppc["internal"]["Zbus"]
-    i_sgen_pu = sgen.sn_kva.values / net.sn_kva * sgen.k.values
+    i_sgen_pu = sgen.sn_mva.values / net.sn_mva * sgen.k.values
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
     ppc["bus"][buses, IKCV] = ikcv_pu
     ppc["bus"][:, IKSS2] = abs(

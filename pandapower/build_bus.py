@@ -318,9 +318,9 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             active = _is_elements["load"] & ~l["controllable"].fillna(False).values
         else:
             active = _is_elements["load"]
-        vl = active * l["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, l["q_kvar"].values * vl])
-        p = np.hstack([p, l["p_kw"].values * vl])
+        vl = active * l["scaling"].values.T
+        q = np.hstack([q, l["q_mvar"].values * vl])
+        p = np.hstack([p, l["p_mw"].values * vl])
         b = np.hstack([b, l["bus"].values])
 
     sgen = net["sgen"]
@@ -329,15 +329,15 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             active = _is_elements["sgen"]  & ~sgen["controllable"].fillna(False).values
         else:
             active = _is_elements["sgen"]
-        vl = active * sgen["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, -sgen["q_kvar"].values * vl])
-        p = np.hstack([p, -sgen["p_kw"].values * vl])
+        vl = active * sgen["scaling"].values.T
+        q = np.hstack([q, -sgen["q_mvar"].values * vl])
+        p = np.hstack([p, -sgen["p_mw"].values * vl])
         b = np.hstack([b, sgen["bus"].values])
 
     stor = net["storage"]
     if len(stor) > 0:
-        # TODO: Limit p_kw according to SOC and max_e_kwh/min_e_kwh
-        # Note: p_kw depends on the timestep resolution -> implement a resolution factor in options
+        # TODO: Limit p_mw according to SOC and max_e_kwh/min_e_kwh
+        # Note: p_mw depends on the timestep resolution -> implement a resolution factor in options
         # Note: SOC during power flow not updated, time domain introduction would lead to \
         #   paradigm shift in pandapower
         #   --> energy content of storage is currently neglected!
@@ -345,23 +345,23 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
             active = _is_elements["storage"] & ~stor["controllable"].fillna(False).values
         else:
             active = _is_elements["storage"]
-        vl = active * stor["scaling"].values.T / np.float64(1000.)
-        q = np.hstack([q, stor["q_kvar"].values * vl])
-        p = np.hstack([p, stor["p_kw"].values * vl])
+        vl = active * stor["scaling"].values.T
+        q = np.hstack([q, stor["q_mvar"].values * vl])
+        p = np.hstack([p, stor["p_mw"].values * vl])
         b = np.hstack([b, stor["bus"].values])
 
     w = net["ward"]
     if len(w) > 0:
-        vl = _is_elements["ward"] / np.float64(1000.)
-        q = np.hstack([q, w["qs_kvar"].values * vl])
-        p = np.hstack([p, w["ps_kw"].values * vl])
+        vl = _is_elements["ward"]
+        q = np.hstack([q, w["qs_mvar"].values * vl])
+        p = np.hstack([p, w["ps_mw"].values * vl])
         b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
     if len(xw) > 0:
-        vl = _is_elements["xward"] / np.float64(1000.)
-        q = np.hstack([q, xw["qs_kvar"].values * vl])
-        p = np.hstack([p, xw["ps_kw"].values * vl])
+        vl = _is_elements["xward"]
+        q = np.hstack([q, xw["qs_mvar"].values * vl])
+        p = np.hstack([p, xw["ps_mw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
 
     # sum up p & q of bus elements
@@ -383,44 +383,44 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
     s = net["shunt"]
     if len(s) > 0:
-        vl = _is_elements["shunt"] / np.float64(1000.)
+        vl = _is_elements["shunt"]
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2
-        q = np.hstack([q, s["q_kvar"].values * s["step"] * v_ratio * vl])
-        p = np.hstack([p, s["p_kw"].values * s["step"] * v_ratio * vl])
+        q = np.hstack([q, s["q_mvar"].values * s["step"] * v_ratio * vl])
+        p = np.hstack([p, s["p_mw"].values * s["step"] * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
     if len(w) > 0:
-        vl = _is_elements["ward"] / np.float64(1000.)
-        q = np.hstack([q, w["qz_kvar"].values * vl])
-        p = np.hstack([p, w["pz_kw"].values * vl])
+        vl = _is_elements["ward"]
+        q = np.hstack([q, w["qz_mvar"].values * vl])
+        p = np.hstack([p, w["pz_mw"].values * vl])
         b = np.hstack([b, w["bus"].values])
 
     xw = net["xward"]
     if len(xw) > 0:
-        vl = _is_elements["xward"] / np.float64(1000.)
-        q = np.hstack([q, xw["qz_kvar"].values * vl])
-        p = np.hstack([p, xw["pz_kw"].values * vl])
+        vl = _is_elements["xward"]
+        q = np.hstack([q, xw["qz_mvar"].values * vl])
+        p = np.hstack([p, xw["pz_mw"].values * vl])
         b = np.hstack([b, xw["bus"].values])
 
     loss_location = net._options["trafo3w_losses"].lower()
     trafo3w = net["trafo3w"]
     if loss_location == "star" and len(trafo3w) > 0:
 
-        pfe_kw = trafo3w["pfe_kw"].values
+        pfe_mw = trafo3w["pfe_mw"].values
         i0 = trafo3w["i0_percent"].values
-        sn_kv = trafo3w["sn_hv_kva"].values
+        sn_mva = trafo3w["sn_hv_mva"].values
 
-        q_kvar= (sn_kv * i0 / 100.) ** 2 - pfe_kw **2
-        q_kvar[q_kvar<0] = 0
-        q_kvar= np.sqrt(q_kvar)
+        q_mvar= (sn_mva * i0 / 100.) ** 2 - pfe_mw **2
+        q_mvar[q_mvar<0] = 0
+        q_mvar= np.sqrt(q_mvar)
 
         vn_hv_trafo = trafo3w["vn_hv_kv"].values
         vn_hv_bus = ppc["bus"][bus_lookup[trafo3w.hv_bus.values], BASE_KV]
         v_ratio = (vn_hv_bus / vn_hv_trafo) ** 2
 
-        q = np.hstack([q, q_kvar / np.float64(1000.) * v_ratio])
-        p = np.hstack([p, pfe_kw / np.float64(1000.) * v_ratio])
+        q = np.hstack([q, q_mvar * v_ratio])
+        p = np.hstack([p, pfe_mw * v_ratio])
         b = np.hstack([b, trafo3w["ad_bus"].values])
 
     # if array is not empty
@@ -497,7 +497,7 @@ def _add_gen_sc_impedance(net, ppc):
     phi_gen = np.arccos(gen.cos_phi)
 
     vn_gen = gen.vn_kv.values
-    sn_gen = gen.sn_kva.values
+    sn_gen = gen.sn_mva.values
 
     z_r = vn_net ** 2 / sn_gen * 1e3
     x_gen = gen.xdss.values / 100 * z_r
@@ -516,14 +516,14 @@ def _add_motor_impedances_ppc(net, ppc):
     if "motor" not in sgen.type.values:
         return
     motor = sgen[sgen.type == "motor"]
-    for par in ["sn_kva", "rx", "k"]:
+    for par in ["sn_mva", "rx", "k"]:
         if any(pd.isnull(motor[par])):
             raise UserWarning("%s needs to be specified for all motors in net.sgen.%s" % (par, par))
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     motor_buses = motor.bus.values
     motor_buses_ppc = bus_lookup[motor_buses]
 
-    z_motor = 1 / (motor.sn_kva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
+    z_motor = 1 / (motor.sn_mva.values * 1e-3) / motor.k  # vn_kv**2 becomes 1**2=1 in per unit
     x_motor = z_motor / np.sqrt(motor.rx ** 2 + 1)
     r_motor = motor.rx * x_motor
     y_motor = 1 / (r_motor + x_motor * 1j)
