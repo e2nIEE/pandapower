@@ -42,7 +42,7 @@ def _create_loads_with_coincidence(net, buses):
 
     # create loads
     for i in buses:
-        pp.create_load(net, i, p_mw=p_mw, q_mvar=q_mvar, sn_kva=P_max1)
+        pp.create_load(net, i, p_mw=p_mw, q_mvar=q_mvar, sn_mva=P_max1)
 
 
 def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):

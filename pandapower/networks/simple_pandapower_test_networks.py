@@ -44,10 +44,10 @@ def panda_four_load_branch():
     pp.create_line(pd_net, busnr5, busnr6, name="line4", length_km=0.05,
                    std_type="NAYY 4x120 SE")
 
-    pp.create_load(pd_net, busnr3, 30, 10)
-    pp.create_load(pd_net, busnr4, 30, 10)
-    pp.create_load(pd_net, busnr5, 30, 10)
-    pp.create_load(pd_net, busnr6, 30, 10)
+    pp.create_load(pd_net, busnr3, 0.030, 0.010)
+    pp.create_load(pd_net, busnr4, 0.030, 0.010)
+    pp.create_load(pd_net, busnr5, 0.030, 0.010)
+    pp.create_load(pd_net, busnr6, 0.030, 0.010)
 
     n = busnr6 + 1
     pd_net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])

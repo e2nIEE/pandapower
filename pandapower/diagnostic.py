@@ -262,24 +262,24 @@ def invalid_values(net):
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
                                   ('sn_mva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
                                   ('vscr_percent', '>=0'),
-                                  ('vsc_percent', '>0'), ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
+                                  ('vsc_percent', '>0'), ('pfe_mw', '>=0'), ('i0_percent', '>=0'),
                                   ('in_service', 'boolean')],
                         'trafo3w': [('hv_bus', 'positive_integer'), ('mv_bus', 'positive_integer'),
                                     ('lv_bus', 'positive_integer'),
-                                    ('sn_hv_kva', '>0'), ('sn_mv_kva', '>0'), ('sn_lv_kva', '>0'),
+                                    ('sn_hv_mva', '>0'), ('sn_mv_mva', '>0'), ('sn_lv_mva', '>0'),
                                     ('vn_hv_kv', '>0'), ('vn_mv_kv', '>0'), ('vn_lv_kv', '>0'),
                                     ('vscr_hv_percent', '>=0'), ('vscr_mv_percent', '>=0'),
                                     ('vscr_lv_percent', '>=0'), ('vsc_hv_percent', '>0'),
                                     ('vsc_mv_percent', '>0'), ('vsc_lv_percent', '>0'),
-                                    ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
+                                    ('pfe_mw', '>=0'), ('i0_percent', '>=0'),
                                     ('in_service', 'boolean')],
-                        'load': [('bus', 'positive_integer'), ('p_kw', 'number'),
-                                 ('q_kvar', 'number'),
+                        'load': [('bus', 'positive_integer'), ('p_mw', 'number'),
+                                 ('q_mvar', 'number'),
                                  ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'sgen': [('bus', 'positive_integer'), ('p_kw', 'number'),
-                                 ('q_kvar', 'number'),
+                        'sgen': [('bus', 'positive_integer'), ('p_mw', 'number'),
+                                 ('q_mvar', 'number'),
                                  ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'gen': [('bus', 'positive_integer'), ('p_kw', 'number'),
+                        'gen': [('bus', 'positive_integer'), ('p_mw', 'number'),
                                 ('scaling', '>=0'), ('in_service', 'boolean')],
                         'ext_grid': [('bus', 'positive_integer'), ('vm_pu', '>0'),
                                      ('va_degree', 'number')],
@@ -800,9 +800,9 @@ def wrong_reference_system(net):
 
     """
     check_results = {}
-    neg_loads = list(net.load[net.load.p_kw < 0].index)
-    pos_gens = list(net.gen[net.gen.p_kw < 0].index)
-    pos_sgens = list(net.sgen[net.sgen.p_kw < 0].index)
+    neg_loads = list(net.load[net.load.p_mw < 0].index)
+    pos_gens = list(net.gen[net.gen.p_mw < 0].index)
+    pos_sgens = list(net.sgen[net.sgen.p_mw < 0].index)
 
     if neg_loads:
         check_results['loads'] = neg_loads

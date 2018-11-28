@@ -555,8 +555,8 @@ def convert_format(net):
                                                    [("element", np.dtype(object)),
                                                     ("et", np.dtype(object)),
                                                       ("cp0_eur", np.dtype("f8")),
-                                                      ("cp1_eur_per_kw", np.dtype("f8")),
-                                                      ("cp2_eur_per_kw2", np.dtype("f8")),
+                                                      ("cp1_eur_per_mw", np.dtype("f8")),
+                                                      ("cp2_eur_per_mw2", np.dtype("f8")),
                                                       ("cq0_eur", np.dtype("f8")),
                                                       ("cq1_eur_per_kvar", np.dtype("f8")),
                                                       ("cq2_eur_per_kvar2", np.dtype("f8"))
@@ -566,7 +566,7 @@ def convert_format(net):
         if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    create_poly_cost(net, index, "gen", cp1_eur_per_kw=cost)
+                    create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost*1e3)
 
     if "cost_per_kw" in net.sgen:
         if "min_p_kw" not in net.sgen:
@@ -595,21 +595,21 @@ def convert_format(net):
         if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=0, cq1_eur_per_kvar=cost)
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
 
     if "cost_per_kvar" in net.sgen:
         if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    create_poly_cost(net, index, "sgen", cp1_eur_per_kw=0, cq1_eur_per_kvar=cost)
+                    create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
 
     if "cost_per_kvar" in net.ext_grid:
         if not "piecewise_linear_cost" in net:
             for index, cost in net.ext_grid.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=0, cq1_eur_per_kvar=cost)
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
 
     if "tp_st_degree" not in net.trafo:
@@ -705,7 +705,7 @@ def convert_format(net):
                     cp1 = values[1]
                     cp2 = values[0]
                 create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
-                                 cp1_eur_per_kw=cp1, cp2_eur_per_kw2=cp2)
+                                 cp1_eur_per_mw=cp1*1e3, cp2_eur_per_mw2=cp2*1e6)
             del net.polynomial_cost
         if "piecewise_linear_cost" in net:
             if len(net.piecewise_linear_cost) > 0:
@@ -713,6 +713,9 @@ def convert_format(net):
             del net.piecewise_linear_cost
 
         _convert_to_mw(net)
+    if "sn_kva" in net.keys():
+        net.sn_mva = net.sn_kva*1e-3
+        del net.sn_kva
     net.version = float(__version__[:3])
     return net
 
@@ -733,9 +736,6 @@ def _convert_to_mw(net):
                     if old in parameter:
                         parameters[parameter.replace(old, new)] = value*1e-3
                         del parameters[parameter]
-    if "sn_kva" in net.keys():
-        net.sn_mva = net.sn_kva*1e-3
-        del net.sn_kva
 #    else:
 #        net.sn_mva = 1.
 
@@ -1926,15 +1926,15 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_ma
                          "parameters always pertain in both direction. only from_bus to " +
                          "to_bus parameters are considered.")
         vn = net.bus.vn_kv.at[imp.from_bus]
-        Zni = vn ** 2 / imp.sn_kva * 1e3
-        max_i_ka = imp.sn_kva / vn / np.sqrt(3) * 1e-3 if sn_as_max else np.nan
+        Zni = vn ** 2 / imp.sn_mva
+        max_i_ka = imp.sn_kva / vn / np.sqrt(3) if sn_as_max else np.nan
         create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni,
                                     imp.xft_pu * Zni, 0, max_i_ka, name=imp.name,
                                     in_service=imp.in_service)
     net.impedance.drop(index, inplace=True)
 
 
-def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=True):
+def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
     Creates impedances by given lines data, while the lines are dropped.
     INPUT:
@@ -1952,11 +1952,11 @@ def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=T
             be neglected.
     """
     index = index or net.line.index
-    sn_kva = sn_kva or net.sn_kva
-    sn_kva = sn_kva if sn_kva != "max_i_ka" else net.line.max_i_ka.loc[index]
-    sn_kva = sn_kva if hasattr(sn_kva, "__iter__") else [sn_kva] * len(index)
-    if len(sn_kva) != len(index):
-        raise ValueError("index and sn_kva must have the same length.")
+    sn_mva = sn_mva or net.sn_mva
+    sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
+    sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
+    if len(sn_mva) != len(index):
+        raise ValueError("index and sn_mva must have the same length.")
     i = 0
     for idx, line_ in net.line.loc[index].iterrows():
         if line_.c_nf_per_km or line_.g_us_per_km:
@@ -1965,10 +1965,10 @@ def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=T
             logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
-        Zni = vn ** 2 / sn_kva[i] * 1e3
+        Zni = vn ** 2 / sn_mva[i]
         create_impedance(net, line_.from_bus, line_.to_bus,
                          line_.r_ohm_per_km * line_.length_km / Zni,
-                         line_.x_ohm_per_km * line_.length_km / Zni, sn_kva[i], name=line_.name,
+                         line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
                          in_service=line_.in_service)
         i += 1
     net.line.drop(index, inplace=True)

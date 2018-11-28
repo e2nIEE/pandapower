@@ -74,7 +74,7 @@ def test_json(net_in, tempdir):
 
 def test_type_casting_json(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.json")
-    net_in.sn_kva = 1000
+    net_in.sn_mva = 1
     pp.to_json(net_in, filename)
     net = pp.from_json(filename)
     assert_net_equal(net_in, net)

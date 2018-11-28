@@ -35,7 +35,7 @@ def test_nets_equal():
     net = copy.deepcopy(original)
 
     # detecting alternated value
-    net["load"]["p_kw"][net["load"].index[0]] += 0.1
+    net["load"]["p_mw"][net["load"].index[0]] += 0.1
     assert not tb.nets_equal(original, net)
     assert not tb.nets_equal(net, original)
     net = copy.deepcopy(original)
@@ -47,7 +47,7 @@ def test_nets_equal():
     net = copy.deepcopy(original)
 
     # not detecting alternated value if difference is beyond tolerance
-    net["load"]["p_kw"][net["load"].index[0]] += 0.0001
+    net["load"]["p_mw"][net["load"].index[0]] += 0.0001
     assert tb.nets_equal(original, net, tol=0.1)
     assert tb.nets_equal(net, original, tol=0.1)
 
@@ -56,15 +56,15 @@ def test_continuos_bus_numbering():
     net = pp.create_empty_network()
 
     bus0 = pp.create_bus(net, 0.4, index=12)
-    pp.create_load(net, bus0, p_kw=0.)
-    pp.create_load(net, bus0, p_kw=0.)
-    pp.create_load(net, bus0, p_kw=0.)
-    pp.create_load(net, bus0, p_kw=0.)
+    pp.create_load(net, bus0, p_mw=0.)
+    pp.create_load(net, bus0, p_mw=0.)
+    pp.create_load(net, bus0, p_mw=0.)
+    pp.create_load(net, bus0, p_mw=0.)
 
     bus0 = pp.create_bus(net, 0.4, index=42)
-    pp.create_sgen(net, bus0, p_kw=0.)
-    pp.create_sgen(net, bus0, p_kw=0.)
-    pp.create_sgen(net, bus0, p_kw=0.)
+    pp.create_sgen(net, bus0, p_mw=0.)
+    pp.create_sgen(net, bus0, p_mw=0.)
+    pp.create_sgen(net, bus0, p_mw=0.)
 
     bus0 = pp.create_bus(net, 0.4, index=543)
     pp.create_shunt(net, bus0, 2, 1)
@@ -106,8 +106,8 @@ def test_scaling_by_type():
     net = pp.create_empty_network()
 
     bus0 = pp.create_bus(net, 0.4)
-    pp.create_load(net, bus0, p_kw=0., type="Household")
-    pp.create_sgen(net, bus0, p_kw=0., type="PV")
+    pp.create_load(net, bus0, p_mw=0., type="Household")
+    pp.create_sgen(net, bus0, p_mw=0., type="PV")
 
     tb.set_scaling_by_type(net, {"Household": 42., "PV": 12})
 
@@ -133,8 +133,8 @@ def test_drop_inactive_elements():
         bus2 = pp.create_bus(net, vn_kv=.4, in_service=service)
         pp.create_line(net, bus1, bus2, length_km=1, in_service=service,
                        std_type='149-AL1/24-ST1A 10.0')
-        pp.create_load(net, bus2, p_kw=0., in_service=service)
-        pp.create_sgen(net, bus2, p_kw=0., in_service=service)
+        pp.create_load(net, bus2, p_mw=0., in_service=service)
+        pp.create_sgen(net, bus2, p_mw=0., in_service=service)
         bus3 = pp.create_bus(net, vn_kv=.4, in_service=service)
         bus4 = pp.create_bus(net, vn_kv=.4, in_service=service)
         pp.create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
@@ -171,7 +171,7 @@ def test_drop_inactive_elements():
     bus1 = pp.create_bus(net, vn_kv=.4, in_service=False)
     pp.create_line(net, bus0, bus1, length_km=1, in_service=False,
                    std_type='149-AL1/24-ST1A 10.0')
-    gen0 = pp.create_gen(net, bus=bus1, p_kw=1)
+    gen0 = pp.create_gen(net, bus=bus1, p_mw=0.001)
 
     tb.drop_inactive_elements(net)
 
@@ -244,7 +244,7 @@ def test_overloaded_lines():
     line2 = pp.create_line(net, bus0, bus1, length_km=1, std_type="15-AL1/3-ST1A 0.4")
     line3 = pp.create_line(net, bus0, bus1, length_km=10, std_type="149-AL1/24-ST1A 10.0")
 
-    pp.create_load(net, bus1, p_kw=200, q_kvar=50)
+    pp.create_load(net, bus1, p_mw=0.2, q_mvar=0.05)
 
     pp.runpp(net)
     # test the overloaded lines by default value of max_load=100
@@ -297,8 +297,8 @@ def test_fuse_buses():
     sw1 = pp.create_switch(net, b2, line1, et="l")
     sw2 = pp.create_switch(net, b1, b2, et="b")
 
-    load1 = pp.create_load(net, b1, p_kw=6)
-    load2 = pp.create_load(net, b2, p_kw=5)
+    load1 = pp.create_load(net, b1, p_mw=0.006)
+    load2 = pp.create_load(net, b2, p_mw=0.005)
 
     tb.fuse_buses(net, b1, b2, drop=True)
 
@@ -350,10 +350,10 @@ def test_create_replacement_switch_for_branch():
 
     line0 = pp.create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
     line1 = pp.create_line(net, bus2, bus3, length_km=1, std_type="NAYY 4x50 SE")
-    impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
-    impedance1 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
+    impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_mva=100)
+    impedance1 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_mva=100)
 
-    pp.create_load(net, bus2, 1)
+    pp.create_load(net, bus2, 0.001)
 
     pp.runpp(net)
 
@@ -400,9 +400,9 @@ def net():
     line2 = pp.create_line_from_parameters(net, bus3, bus4, length_km=1, r_ohm_per_km=0,
                                            x_ohm_per_km=0, c_nf_per_km=0, max_i_ka=1)
 
-    impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_kva=1e5)
-    impedance1 = pp.create_impedance(net, bus4, bus5, 0, 0, sn_kva=1e5)
-    impedance2 = pp.create_impedance(net, bus5, bus6, 0, 0, rtf_pu=0.1, sn_kva=1e5)
+    impedance0 = pp.create_impedance(net, bus1, bus2, 0.01, 0.01, sn_mva=100)
+    impedance1 = pp.create_impedance(net, bus4, bus5, 0, 0, sn_mva=100)
+    impedance2 = pp.create_impedance(net, bus5, bus6, 0, 0, rtf_pu=0.1, sn_mva=100)
     return net
 
 
@@ -584,11 +584,11 @@ def test_drop_elements_at_buses():
 
 def test_impedance_line_replacement():
     # create test net
-    net1 = pp.create_empty_network(sn_kva=1.1e3)
+    net1 = pp.create_empty_network(sn_mva=1.1)
     pp.create_buses(net1, 2, 10)
     pp.create_ext_grid(net1, 0)
-    pp.create_impedance(net1, 0, 1, 0.1, 0.1, 8.7)
-    pp.create_load(net1, 1, 7, 2)
+    pp.create_impedance(net1, 0, 1, 0.1, 0.1, 8.7e-3)
+    pp.create_load(net1, 1, 7e-3, 2e-3)
 
     # validate loadflow results
     pp.runpp(net1)
@@ -599,7 +599,7 @@ def test_impedance_line_replacement():
     pp.runpp(net2)
 
     assert pp.nets_equal(net1, net2, exclude_elms={"line", "impedance"})  # Todo: exclude_elms
-    cols = ["p_from_kw", "q_from_kvar", "p_to_kw", "q_to_kvar", "pl_kw", "ql_kvar", "i_from_ka",
+    cols = ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar", "pl_mw", "ql_mvar", "i_from_ka",
             "i_to_ka"]
     assert np.allclose(net1.res_impedance[cols].values, net2.res_line[cols].values)
 

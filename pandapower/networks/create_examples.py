@@ -200,7 +200,7 @@ def example_multivoltage():
     pp.create_transformer_from_parameters(net, hv_bus, lv_bus,
                                           sn_mva=0.4, vn_hv_kv=10, vn_lv_kv=0.4,
                                           vscr_percent=1.325, vsc_percent=4,
-                                          pfe_mw=0.95, i0_percent=0.2375, tp_side="hv",
+                                          pfe_mw=0.95e-3, i0_percent=0.2375, tp_side="hv",
                                           tp_mid=0, tp_min=-2, tp_max=2,
                                           tp_st_percent=2.5, tp_pos=0,
                                           shift_degree=150, name='MV-LV-Trafo')
@@ -238,16 +238,16 @@ def example_multivoltage():
 
     for _, sgen in mv_sgens.iterrows():
         bus_idx = pp.get_element_index(net, "bus", sgen.bus)
-        pp.create_sgen(net, bus_idx, p_mw=sgen.p, q_mvar=sgen.q, sn_kma=sgen.sn,
+        pp.create_sgen(net, bus_idx, p_mw=sgen.p, q_mvar=sgen.q, sn_mva=sgen.sn,
                        type=sgen.type, name=sgen.sgen_name)
 
     # LV
     lv_sgens = pd.DataFrame()
     lv_sgens['sgen_name'] = ['PV'] + ['PV(%s)' % i for i in range(1, 6)]
     lv_sgens['bus'] = ['Bus LV%s' % i for i in ['1.1', '1.3', '2.3', '2.4', '2.2.1', '2.2.2']]
-    lv_sgens['p'] = [0.06, 0.05, 0.05, 0.05, 0.05, 0.05]
+    lv_sgens['p'] = [0.006, 0.005, 0.005, 0.005, 0.005, 0.005]
     lv_sgens['q'] = 0
-    lv_sgens['sn'] = [0.012, 0.010, 0.010, 0.010, 0.010, 0.010]
+    lv_sgens['sn'] = [0.012, 0.01, 0.01, 0.01, 0.01, 0.01]
     lv_sgens['type'] = 'PV'
 
     for _, sgen in lv_sgens.iterrows():
@@ -287,7 +287,7 @@ def example_multivoltage():
         'Residential Load%s' % i for i in idx[0:5]] + ['Rural Load%s' % i for i in idx[0:6]]
     lv_loads['bus'] = ['Bus LV%s' % i for i in ['0', '1.1', '1.2', '1.3', '1.4', '1.5', '2.1',
                        '2.2', '2.3', '2.4', '2.2.1', '2.2.2']]
-    lv_loads['p'] = [0.1] + [0.10]*11
+    lv_loads['p'] = [0.1] + [0.01]*11
     lv_loads['q'] = [0.01] + [0.03]*11
 
     for _, load in lv_loads.iterrows():
@@ -317,7 +317,7 @@ def example_multivoltage():
     pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV3'), ps_mw=23.942,
                     qs_mvar=-12.24187, pz_mw=2.814571, qz_mvar=0, r_ohm=0, x_ohm=12.18951,
                     vm_pu=1.02616, name='XWard 1')
-    pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV1'), ps_kw=3776,
+    pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV1'), ps_mw=3.776,
                     qs_mvar=-7.769979, pz_mw=9.174917, qz_mvar=0, r_ohm=0, x_ohm=50.56217,
                     vm_pu=1.024001, name='XWard 2')
 

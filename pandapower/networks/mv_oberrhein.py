@@ -55,7 +55,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 
-    hv_trafos = net.trafo[net.trafo.sn_kva > 1e3].index
+    hv_trafos = net.trafo[net.trafo.sn_mva > 1].index
     if scenario == "load":
         net.load.scaling = 0.6
         net.sgen.scaling = 0.0
@@ -69,8 +69,3 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
     pp.runpp(net)
     return net
-
-
-if __name__ == '__main__':
-    import pandas as pd
-    net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein_substations.json"))

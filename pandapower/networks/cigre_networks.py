@@ -269,7 +269,7 @@ def create_cigre_network_mv(with_der=False):
         pp.create_sgen(net_cigre_mv, buses[6], 1.5, q_mvar=0, sn_mva=1.5, name='WKA 7',
                        type='WP')
         if with_der == "all":
-            pp.create_storage(net_cigre_mv, bus=buses[4], p_mw=0.6, max_e_kwh=nan, sn_mva=0.2,
+            pp.create_storage(net_cigre_mv, bus=buses[4], p_mw=0.6, max_e_mwh=nan, sn_mva=0.2,
                               name='Battery 1', type='Battery', max_p_mw=0.6, min_p_mw=-0.6)
             pp.create_sgen(net_cigre_mv, bus=buses[4], p_mw=0.033, sn_mva=0.033,
                            name='Residential fuel cell 1', type='Residential fuel cell')
@@ -277,7 +277,7 @@ def create_cigre_network_mv(with_der=False):
                            type='CHP diesel')
             pp.create_sgen(net_cigre_mv, bus=buses[8], p_mw=0.212, sn_mva=0.212, name='Fuel cell 1',
                            type='Fuel cell')
-            pp.create_storage(net_cigre_mv, bus=buses[9], p_mw=0.200, max_e_kwh=nan, sn_mva=0.2,
+            pp.create_storage(net_cigre_mv, bus=buses[9], p_mw=0.200, max_e_mwh=nan, sn_mva=0.2,
                               name='Battery 2', type='Battery', max_p_mw=0.2, min_p_mw=-0.2)
             pp.create_sgen(net_cigre_mv, bus=buses[9], p_mw=0.014, sn_mva=.014,
                            name='Residential fuel cell 2', type='Residential fuel cell')
@@ -468,17 +468,17 @@ def create_cigre_network_lv():
     # Trafos
     pp.create_transformer_from_parameters(net_cigre_lv, busR0, busR1, sn_mva=0.5, vn_hv_kv=20.0,
                                           vn_lv_kv=0.4, vscr_percent=1.0, vsc_percent=4.123106,
-                                          pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
+                                          pfe_mw=0.0, i0_percent=0.0, shift_degree=30.0,
                                           tp_pos=0.0, name='Trafo R0-R1')
 
     pp.create_transformer_from_parameters(net_cigre_lv, busI0, busI1, sn_mva=0.15, vn_hv_kv=20.0,
                                           vn_lv_kv=0.4, vscr_percent=1.003125, vsc_percent=4.126896,
-                                          pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
+                                          pfe_mw=0.0, i0_percent=0.0, shift_degree=30.0,
                                           tp_pos=0.0, name='Trafo I0-I1')
 
     pp.create_transformer_from_parameters(net_cigre_lv, busC0, busC1, sn_mva=0.3, vn_hv_kv=20.0,
                                           vn_lv_kv=0.4, vscr_percent=0.993750, vsc_percent=4.115529,
-                                          pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
+                                          pfe_mw=0.0, i0_percent=0.0, shift_degree=30.0,
                                           tp_pos=0.0, name='Trafo C0-C1')
 
     # External grid
@@ -486,7 +486,7 @@ def create_cigre_network_lv():
                        s_sc_min_mva=100.0, rx_max=1.0, rx_min=1.0)
 
     # Loads
-    pp.create_load(net_cigre_lv, busR1, p_mw=1.9, q_mvar=0.062449980, name='Load R1')
+    pp.create_load(net_cigre_lv, busR1, p_mw=0.19, q_mvar=0.062449980, name='Load R1')
     pp.create_load(net_cigre_lv, busR11, p_mw=0.01425, q_mvar=0.004683748, name='Load R11')
     pp.create_load(net_cigre_lv, busR15, p_mw=0.0494, q_mvar=0.016236995, name='Load R15')
     pp.create_load(net_cigre_lv, busR16, p_mw=0.05225, q_mvar=0.017173744, name='Load R16')

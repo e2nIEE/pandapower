@@ -22,4 +22,5 @@ function run_powermodels(json_path)
     return result
 end
 
-#pm = load_pm_from_json("C:\\Users\\thurner\\AppData\\Local\\Temp\\pp_pm.json")
+pm = load_pm_from_json("D:\\pp_pm.json")
+result = PowerModels.run_ac_opf(pm, Ipopt.IpoptSolver())

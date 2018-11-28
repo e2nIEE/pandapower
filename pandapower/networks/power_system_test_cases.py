@@ -53,12 +53,12 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
         net.gen.drop(i, inplace=True)
         if gen_data.bus not in net.ext_grid.bus.values:
             pp.create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
-                               min_q_kvar=gen_data.min_q_kvar, max_q_kvar=gen_data.max_q_kvar,
-                               min_p_kw=gen_data.min_p_kw, max_p_kw=gen_data.max_p_kw)
+                               min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
+                               min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
         else:
-            pp.create_sgen(net, gen_data.bus, p_kw=gen_data.p_kw,
-                           min_q_kvar=gen_data.min_q_kvar, max_q_kvar=gen_data.max_q_kvar,
-                           min_p_kw=gen_data.min_p_kw, max_p_kw=gen_data.max_p_kw)
+            pp.create_sgen(net, gen_data.bus, p_mw=gen_data.p_mw,
+                           min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
+                           min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
 
 
 def case4gs():
@@ -471,11 +471,10 @@ def case1888rte(ref_bus_idx=1246):
          net = pn.case1888rte()
     """
     case1888rte = pp.from_json(_get_cases_path("case1888rte.json"))
-    case1888rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']] = 2 * \
-        case1888rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']]
+    case1888rte.ext_grid.loc[0, ['min_p_mw',  'max_p_mw',  'min_q_mvar', 'max_q_mvar']] *= 2
 
     if ref_bus_idx != 1246:  # change reference bus
-        _change_ref_bus(case1888rte, ref_bus_idx, ext_grid_p=[89.5e3])
+        _change_ref_bus(case1888rte, ref_bus_idx, ext_grid_p=[-89.5])
     return case1888rte
 
 
@@ -507,7 +506,7 @@ def case2848rte(ref_bus_idx=271):
     """
     case2848rte = pp.from_json(_get_cases_path("case2848rte.json"))
     if ref_bus_idx != 271:  # change reference bus
-        _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[-44.01e3])
+        _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[44.01])
     return case2848rte
 
 
@@ -579,10 +578,9 @@ def case6470rte(ref_bus_idx=5988):
          net = pn.case6470rte()
     """
     case6470rte = pp.from_json(_get_cases_path("case6470rte.json"))
-    case6470rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']] = 2 * \
-        case6470rte.ext_grid.loc[0, ['min_p_kw',  'max_p_kw',  'min_q_kvar', 'max_q_kvar']]
+    case6470rte.ext_grid.loc[0, ['min_p_mw',  'max_p_mw',  'min_q_mvar', 'max_q_mvar']] *= 2
     if ref_bus_idx != 5988:  # change reference bus
-        _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[169.41e3])
+        _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[-169.41])
     return case6470rte
 
 
@@ -616,8 +614,8 @@ def case6495rte(ref_bus_idx=None):
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
     case6495rte = pp.from_json(_get_cases_path("case6495rte.json"))
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
-        _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[-1382.35e3, -2894.13e3, -1498.32e3,
-                                                              -1498.32e3, -1493.11e3, -1493.12e3])
+        _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[1382.35, 2894.13, 1498.32,
+                                                              1498.32, 1493.11, 1493.12])
     return case6495rte
 
 
@@ -649,7 +647,7 @@ def case6515rte(ref_bus_idx=6171):
     """
     case6515rte = pp.from_json(_get_cases_path("case6515rte.json"))
     if ref_bus_idx != 6171:  # change reference bus
-        _change_ref_bus(case6515rte, ref_bus_idx, ext_grid_p=-2850.78e3)
+        _change_ref_bus(case6515rte, ref_bus_idx, ext_grid_p=2850.78)
     return case6515rte
 
 
