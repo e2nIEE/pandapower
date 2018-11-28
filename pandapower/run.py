@@ -37,7 +37,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
-                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
+                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_mva',
                            'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree']
 
@@ -135,7 +135,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - 30 for "fdbx"
                 - 30 for "fdxb"
 
-        **tolerance_kva** (float, 1e-5) - loadflow termination condition referring to P / Q mismatch of node power in kva
+        **tolerance_mva** (float, 1e-8) - loadflow termination condition referring to P / Q mismatch of node power in MVA
 
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         pandapower provides two equivalent circuit models for the transformer:
@@ -345,7 +345,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     enforce_q_lims = False
     algorithm = None
     max_iteration = None
-    tolerance_kva = None
+    tolerance_mva = None
 
     # net.__internal_options = {}
     net._options = {}
@@ -355,7 +355,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
                      r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
-    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)

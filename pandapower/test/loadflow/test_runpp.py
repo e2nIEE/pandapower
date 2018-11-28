@@ -391,7 +391,7 @@ def test_makeYbus():
     assert runpp_with_consistency_checks(net)
 
 
-def test_test_sn_kva():
+def test_test_sn_mva():
     test_net_gen1 = result_test_network_generator(sn_mva=1)
     test_net_gen2 = result_test_network_generator(sn_mva=2)
     for net1, net2 in zip(test_net_gen1, test_net_gen2):
@@ -400,7 +400,7 @@ def test_test_sn_kva():
         try:
             assert_net_equal(net1, net2)
         except:
-            raise UserWarning("Result difference due to sn_kva after adding %s" %
+            raise UserWarning("Result difference due to sn_mva after adding %s" %
                               net1.last_added_case)
 
 
@@ -955,17 +955,4 @@ def test_init_results_without_results():
 
 
 if __name__ == "__main__":
-#    runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg)
-#    alg_to_test = ['fdbx', 'fdxb', 'gs']
-#    for alg in alg_to_test:
-#        for net in result_test_network_generator(skip_test_impedance=True):
-#            try:
-#                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg)
-#                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg)
-#            except (AssertionError):
-#                raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
-#            except(LoadflowNotConverged):
-#                raise UserWarning("Power flow did not converge after adding %s" %
-#                                  net.last_added_case)
-
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

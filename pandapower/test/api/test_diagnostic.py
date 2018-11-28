@@ -33,7 +33,7 @@ def diag_params():
     "min_r_pu":1e-05,
     "min_x_pu":1e-05,
     "nom_voltage_tolerance": 0.3,
-    "numba_tolerance": 1e-5}
+    "numba_tolerance": 1e-8}
 
 @pytest.fixture(scope='module')
 def test_net():
@@ -1098,4 +1098,28 @@ def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     diag = pp.diagnostic(net)
 
 if __name__ == "__main__":
-    pytest.main(["test_diagnostic.py", "-xs", "-W ignore::PendingDeprecationWarning"])
+#    net = test_net()
+#    check_function = 'numba_comparison'
+#    diag_params = diag_params()
+#    diag_params['numba_tolerance'] = 1e-10
+#    check_result = pp.numba_comparison(net, numba_tolerance=diag_params['numba_tolerance'])
+#    if check_result:
+#        diag_results = {check_function: check_result}
+#    else:
+#        diag_results = {}
+#    for element_type in diag_results[check_function]:
+#        check_results = diag_results[check_function]
+#        for result_type in check_results[element_type]:
+#            for result in check_results[element_type][result_type]:
+#                assert result > diag_params['numba_tolerance']
+#
+#    for bool_value in [True, False]:
+#        diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
+#        report_check = None
+#        try:
+#            eval(report_methods[check_function])
+#            report_check = True
+#        except:
+#            report_check = False
+#        assert report_check
+    pytest.main(["test_diagnostic.py", "-xs"])

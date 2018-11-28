@@ -28,9 +28,9 @@ def test_rundcpp_init_auxiliary_buses():
     b3 = pp.create_bus(net, vn_kv=20.)
     b4 = pp.create_bus(net, vn_kv=10.)
     tidx = pp.create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV')
-    pp.create_load(net, b3, 5e3)
-    pp.create_load(net, b4, 5e3)
-    pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
+    pp.create_load(net, b3, p_mw=5)
+    pp.create_load(net, b4, p_mw=5)
+    pp.create_xward(net, b4, 1, 1, 1, 1, 0.1, 0.1, 1.0)
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
     pp.rundcpp(net)
