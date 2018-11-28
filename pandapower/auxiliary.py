@@ -425,14 +425,14 @@ def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
             % max_gen)
 
 
-def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
+def _add_pf_options(net, tolerance_mva, trafo_loading, numba, ac,
                     algorithm, max_iteration, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
     options = {
-        "tolerance_kva": tolerance_kva,
+        "tolerance_mva": tolerance_mva,
         "trafo_loading": trafo_loading,
         "numba": numba,
         "ac": ac,

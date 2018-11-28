@@ -354,7 +354,7 @@ class state_estimation(object):
         ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
         # extract results from ppc
-        _add_pf_options(self.net, tolerance_kva=1e-5, trafo_loading="current",
+        _add_pf_options(self.net, tolerance_mva=1e-8, trafo_loading="current",
                         numba=True, ac=True, algorithm='nr', max_iteration="auto")
         # writes res_bus.vm_pu / va_degree and res_line
         _extract_results_se(self.net, ppc)

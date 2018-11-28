@@ -27,10 +27,10 @@ def simple_network():
                    geodata=np.array([[1, 2], [3, 4]]))
     pp.create_line(net, b1, b4, 1, name="line2",
                    std_type="NAYY 4x150 SE")
-    pp.create_load(net, b2, p_kw=10, q_kvar=0, name="load1")
-    pp.create_load(net, b3, p_kw=40, q_kvar=2, name="load2")
-    pp.create_gen(net, 3, p_kw=200., vm_pu=1.0)
-    pp.create_sgen(net, 2, p_kw=50, sn_kva=100)
+    pp.create_load(net, b2, p_mw=0.01, q_mvar=0, name="load1")
+    pp.create_load(net, b3, p_mw=0.04, q_mvar=0.002, name="load2")
+    pp.create_gen(net, 3, q_mvar=0.020, vm_pu=1.0)
+    pp.create_sgen(net, 2, p_mw=0.050, sn_mva=0.1)
     return net
 
 

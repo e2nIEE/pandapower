@@ -61,7 +61,7 @@ def _build_gen_ppc(net, ppc):
         calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
         if len(net.dcline) > 0:
-            ppc["dcline"] = net.dcline[["loss_kw", "loss_percent"]].values
+            ppc["dcline"] = net.dcline[["loss_mw", "loss_percent"]].values
         # get in service elements
         _is_elements = net["_is_elements"]
         eg_is = net["ext_grid"][_is_elements['ext_grid']]

@@ -4,13 +4,13 @@ import pandas as pd
 def _check_necessary_opf_parameters(net, logger):
     # Check if all necessary parameters are given:
     opf_col = {
-        'ext_grid': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'gen': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'sgen': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'load': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'storage': pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar']),
-        'dcline': pd.Series(['max_p_kw', 'min_q_from_kvar', 'min_q_to_kvar', 'max_q_from_kvar',
-                             'max_q_to_kvar'])}
+        'ext_grid': pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']),
+        'gen': pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']),
+        'sgen': pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']),
+        'load': pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']),
+        'storage': pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']),
+        'dcline': pd.Series(['max_p_mw', 'min_q_from_mvar', 'min_q_to_mvar', 'max_q_from_mvar',
+                             'max_q_to_mvar'])}
     missing_val = []
     error = False
     for element_type, columns in opf_col.items():

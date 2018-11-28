@@ -82,11 +82,11 @@ def _add_dcline_constraints(om, net):
                                                      net.dcline.loss_percent.values,
                                                      net.dcline.in_service.values)):
             if active:
-                Adc[i, gen_lookup[f]] = 1. + loss * 1e-2
+                Adc[i, gen_lookup[f]] = 1. + loss / 100
                 Adc[i, gen_lookup[t]] = 1.
 
         ## constraints
-        nL0 = -net.dcline.loss_kw.values * 1e-3  # absolute losses
+        nL0 = -net.dcline.loss_mw.values # absolute losses
         #    L1  = -net.dcline.loss_percent.values * 1e-2 #relative losses
         #    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
 
@@ -96,7 +96,7 @@ def _add_dcline_constraints(om, net):
 
 def _run_pf_before_opf(net, ppci):
 #    net._options["numba"] = True
-    net._options["tolerance_kva"] = 1e-5
+    net._options["tolerance_mva"] = 1e-8
     net._options["max_iteration"] = 10
     net._options["algorithm"] = "nr"
     return _run_newton_raphson_pf(ppci, net["_options"])

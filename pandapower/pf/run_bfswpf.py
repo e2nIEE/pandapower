@@ -233,17 +233,16 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     :return: power flow result
     """
     enforce_q_lims = options["enforce_q_lims"]
-    tolerance_kva = options["tolerance_kva"]
+    tolerance_mva = options["tolerance_mva"]
     max_iteration = options["max_iteration"]
     voltage_depend_loads = options["voltage_depend_loads"]
     # setting options
-    tolerance_mva = tolerance_kva * 1e-3
     max_it = max_iteration  # maximum iterations
     verbose = kwargs["VERBOSE"]  # verbose is set in run._runpppf() #
 
     # tolerance for the inner loop for PV nodes
-    if 'tolerance_kva_pv' in kwargs:
-        tol_mva_inner = kwargs['tolerance_kva_pv'] * 1e-3
+    if 'tolerance_mva_pv' in kwargs:
+        tol_mva_inner = kwargs['tolerance_mva_pv']
     else:
         tol_mva_inner = 1.e-2
 

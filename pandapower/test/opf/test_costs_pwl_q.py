@@ -12,10 +12,10 @@ def test_3point_pwl():
     net = pp.create_empty_network()
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_sgen(net, 1, p_kw=-100, q_kvar=0, controllable=True, min_p_kw=100, max_p_kw=100.5, max_q_kvar=50,
-                   min_q_kvar=-50)
+    pp.create_sgen(net, 1, p_mw=0.1, q_mvar=0, controllable=True, min_p_mw=0.1, max_p_mw=0.15,
+                   max_q_mvar=0.05, min_q_mvar=-0.05)
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_load(net, 1, p_mw=0.02, controllable=False)
     pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
                                    max_loading_percent=100 * 690)
@@ -26,16 +26,16 @@ def test_3point_pwl():
     pp.runopp(net, verbose=False)
 
     # The reactive power should be at zero to minimze the costs.
-    assert np.isclose(net.res_sgen.q_kvar.values, 0, atol=1e-4)
-    assert np.isclose(net.res_cost, abs(net.res_sgen.q_kvar.values)*1.5, atol=1e-4)
-    #TODO costs seem to be assigned to ext_grid, not to sgen (net.res_ext_grid.q_kvar*1.5=net.res_cost)
+    assert np.isclose(net.res_sgen.q_mvar.values, 0, atol=1e-4)
+    assert np.isclose(net.res_cost, abs(net.res_sgen.q_mvar.values)*1.5, atol=1e-4)
+    #TODO costs seem to be assigned to ext_grid, not to sgen (net.res_ext_grid.q_mvar*1.5=net.res_cost)
     #     They are however correctly assigned in the gencost array, this seems to be a bug in PYPOWER
 
-    net.sgen.min_q_kvar = 50
-    net.sgen.max_q_kvar = 100
+    net.sgen.min_q_mvar = 0.05
+    net.sgen.max_q_mvar = 0.1
     pp.runopp(net, verbose=False)
-    assert np.isclose(net.res_sgen.q_kvar.values, 50, atol=1e-4)
-    assert np.isclose(net.res_cost, abs(net.res_sgen.q_kvar.values)*1.5, atol=1e-4)
+    assert np.isclose(net.res_sgen.q_mvar.values, 0.05, atol=1e-4)
+    assert np.isclose(net.res_cost, abs(net.res_sgen.q_mvar.values)*1.5, atol=1e-4)
 
 if __name__ == "__main__":
     pytest.main(['-s', __file__])

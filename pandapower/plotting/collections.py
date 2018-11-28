@@ -904,8 +904,8 @@ if __name__ == "__main__":
         b2 = pp.create_bus(net, 0.4, geodata=(5, 15))
         b3 = pp.create_bus(net, 0.4, geodata=(0, 22))
         b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
-        pp.create_gen(net, b1, p_kw=100)
-        pp.create_load(net, b3, p_kw=100)
+        pp.create_gen(net, b1, p_mw=0.1)
+        pp.create_load(net, b3, p_mw=0.1)
         pp.create_ext_grid(net, b4)
 
         pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")

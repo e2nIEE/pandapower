@@ -62,8 +62,8 @@ def _map_costs_to_gen(net, cost):
     return gens, cost, signs
 
 def _init_gencost(ppci, net):
-    is_quadratic = net.poly_cost[["cp2_eur_per_kw2", "cq2_eur_per_kvar2"]].values.any()
-    q_costs = net.poly_cost[["cq1_eur_per_kvar", "cq2_eur_per_kvar2"]].values.any() or \
+    is_quadratic = net.poly_cost[["cp2_eur_per_mw2", "cq2_eur_per_mvar2"]].values.any()
+    q_costs = net.poly_cost[["cq1_eur_per_mvar", "cq2_eur_per_mvar2"]].values.any() or \
               "q" in net.pwl_cost.power_type.values
     rows = len(ppci["gen"])*2 if q_costs else len(ppci["gen"])
     if len(net.pwl_cost):
@@ -81,32 +81,32 @@ def _init_gencost(ppci, net):
 def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
     gens, cost, signs = _map_costs_to_gen(net, net.poly_cost)
     c0 = cost["cp0_eur"].values
-    c1 = cost["cp1_eur_per_kw"].values
+    c1 = cost["cp1_eur_per_mw"].values
     signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
     if is_quadratic:
-        c2 = cost["cp2_eur_per_kw2"]
+        c2 = cost["cp2_eur_per_mw2"]
         ppci["gencost"][gens, NCOST] = 3
-        ppci["gencost"][gens, COST] = c2 * 1e6 * signs
-        ppci["gencost"][gens, COST + 1] = c1 * 1e3 * signs
+        ppci["gencost"][gens, COST] = c2 * signs
+        ppci["gencost"][gens, COST + 1] = c1 * signs
         ppci["gencost"][gens, COST + 2] = c0 * signs
     else:
         ppci["gencost"][gens, NCOST] = 2
-        ppci["gencost"][gens, COST] = c1 * 1e3 * signs
+        ppci["gencost"][gens, COST] = c1 * signs
         ppci["gencost"][gens, COST + 1] = c0 * signs
     if q_costs:
         gens_q = gens + len(ppci["gen"])
         c0 = cost["cq0_eur"].values
-        c1 = cost["cq1_eur_per_kvar"].values
+        c1 = cost["cq1_eur_per_mvar"].values
         signs = array([-1 if element in ["load", "storage"] else 1 for element in cost.et])
         if is_quadratic:
-            c2 = cost["cq2_eur_per_kvar2"]
+            c2 = cost["cq2_eur_per_mvar2"]
             ppci["gencost"][gens_q, NCOST] = 3
-            ppci["gencost"][gens_q, COST] = c2 * 1e6 * signs
-            ppci["gencost"][gens_q, COST + 1] = c1 * 1e3 * signs
+            ppci["gencost"][gens_q, COST] = c2 * signs
+            ppci["gencost"][gens_q, COST + 1] = c1 * signs
             ppci["gencost"][gens_q, COST + 2] = c0 * signs
         else:
             ppci["gencost"][gens_q, NCOST] = 2
-            ppci["gencost"][gens_q, COST] = c1 * 1e3 * signs
+            ppci["gencost"][gens_q, COST] = c1 * signs
             ppci["gencost"][gens_q, COST + 1] = c0 * signs
 
 def _fill_gencost_pwl(ppci, net):
@@ -125,14 +125,14 @@ def costs_from_areas(points, sign):
     last_upper = None
     for lower, upper, slope in points:
         if last_upper is None:
-            costs.append(lower * 1e-3)
+            costs.append(lower)
             c = c0 + lower * slope * sign
             c0 = c
             costs.append(c)
         if last_upper is not None and last_upper != lower:
             raise ValueError("Non-consecutive cost function areas")
         last_upper = upper
-        costs.append(upper * 1e-3)
+        costs.append(upper)
         c = c0 + (upper - lower) * slope * sign
         c0 = c
         costs.append(c)
@@ -145,7 +145,7 @@ def _add_linear_costs_as_pwl_cost(ppci, net):
     pmin = ppci["gen"][gens, PMIN]
     pmax = ppci["gen"][gens, PMAX]
     ppci["gencost"][gens, COST] = pmin
-    ppci["gencost"][gens, COST + 1] = pmin * cost.cp1_eur_per_kw.values * signs * 1e3
+    ppci["gencost"][gens, COST + 1] = pmin * cost.cp1_eur_per_mw.values * signs
     ppci["gencost"][gens, COST + 2] = pmax
-    ppci["gencost"][gens, COST + 3] = pmax * cost.cp1_eur_per_kw.values * signs * 1e3
+    ppci["gencost"][gens, COST + 3] = pmax * cost.cp1_eur_per_mw.values * signs
 

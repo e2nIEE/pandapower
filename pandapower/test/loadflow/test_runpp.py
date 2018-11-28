@@ -72,10 +72,10 @@ def test_set_user_pf_options():
 
     # see if user arguments overrule user_pf_options, but other user_pf_options still have the
     # priority
-    pp.set_user_pf_options(net, tolerance_kva=1e-3, max_iteration=20)
-    pp.runpp(net, tolerance_kva=1e-2)
-    assert net.user_pf_options['tolerance_kva'] == 1e-3
-    assert net._options['tolerance_kva'] == 1e-2
+    pp.set_user_pf_options(net, tolerance_mva=1e-6, max_iteration=20)
+    pp.runpp(net, tolerance_mva=1e-2)
+    assert net.user_pf_options['tolerance_mva'] == 1e-6
+    assert net._options['tolerance_mva'] == 1e-2
     assert net._options['max_iteration'] == 20
 
 def test_kwargs_with_user_options():

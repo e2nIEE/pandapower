@@ -449,274 +449,274 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    _pre_release_changes(net)
-    if net.name is None:
-        net.name = ""
-    if "sn_kva" not in net:
-        net.sn_kva = 1e3
-    if "OPF_converged" not in net:
-        net["OPF_converged"] = False
-    net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
-    for typ, data in net.std_types["line"].items():
-        if "imax_ka" in data:
-            net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
-    # unsymmetric impedance
-    if "r_pu" in net.impedance:
-        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
-        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
-    # initialize measurement dataframe
-    if "measurement" in net and "element_type" not in net.measurement:
-        if net.measurement.empty:
-            del net["measurement"]
-        else:
-            logger.warning("The measurement structure seems outdated. Please adjust it "
-                           "according to the documentation.")
-    if "measurement" in net and "name" not in net.measurement:
-        net.measurement.insert(0, "name", None)
-    if "measurement" not in net:
-        net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                             ("type", np.dtype(object)),
-                                                             ("element_type", np.dtype(object)),
-                                                             ("value", "f8"),
-                                                             ("std_dev", "f8"),
-                                                             ("bus", "u4"),
-                                                             ("element", np.dtype(object))]))
-    if "dcline" not in net:
-        net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                        ("from_bus", "u4"),
-                                                        ("to_bus", "u4"),
-                                                        ("p_kw", "f8"),
-                                                        ("loss_percent", 'f8'),
-                                                        ("loss_kw", 'f8'),
-                                                        ("vm_from_pu", "f8"),
-                                                        ("vm_to_pu", "f8"),
-                                                        ("max_p_kw", "f8"),
-                                                        ("min_q_from_kvar", "f8"),
-                                                        ("min_q_to_kvar", "f8"),
-                                                        ("max_q_from_kvar", "f8"),
-                                                        ("max_q_to_kvar", "f8"),
-                                                        ("cost_per_kw", 'f8'),
-                                                        ("in_service", 'bool')]))
-    if "_empty_res_dcline" not in net:
-        net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                   ("q_from_kvar", "f8"),
-                                                                   ("p_to_kw", "f8"),
-                                                                   ("q_to_kvar", "f8"),
-                                                                   ("pl_kw", "f8"),
-                                                                   ("vm_from_pu", "f8"),
-                                                                   ("va_from_degree", "f8"),
-                                                                   ("vm_to_pu", "f8"),
-                                                                   ("va_to_degree", "f8")]))
-    if "_empty_res_storage" not in net:
-        net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
-                                                                    ("q_kvar", "f8")]))
+    if "version" not in net or net.version < 2:
+        _pre_release_changes(net)
+        if net.name is None:
+            net.name = ""
+        if "sn_kva" not in net:
+            net.sn_kva = 1e3
+        if "OPF_converged" not in net:
+            net["OPF_converged"] = False
+        net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
+        for typ, data in net.std_types["line"].items():
+            if "imax_ka" in data:
+                net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
+        # unsymmetric impedance
+        if "r_pu" in net.impedance:
+            net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
+            net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+        # initialize measurement dataframe
+        if "measurement" in net and "element_type" not in net.measurement:
+            if net.measurement.empty:
+                del net["measurement"]
+            else:
+                logger.warning("The measurement structure seems outdated. Please adjust it "
+                               "according to the documentation.")
+        if "measurement" in net and "name" not in net.measurement:
+            net.measurement.insert(0, "name", None)
+        if "measurement" not in net:
+            net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                                 ("type", np.dtype(object)),
+                                                                 ("element_type", np.dtype(object)),
+                                                                 ("value", "f8"),
+                                                                 ("std_dev", "f8"),
+                                                                 ("bus", "u4"),
+                                                                 ("element", np.dtype(object))]))
+        if "dcline" not in net:
+            net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                            ("from_bus", "u4"),
+                                                            ("to_bus", "u4"),
+                                                            ("p_kw", "f8"),
+                                                            ("loss_percent", 'f8'),
+                                                            ("loss_kw", 'f8'),
+                                                            ("vm_from_pu", "f8"),
+                                                            ("vm_to_pu", "f8"),
+                                                            ("max_p_kw", "f8"),
+                                                            ("min_q_from_kvar", "f8"),
+                                                            ("min_q_to_kvar", "f8"),
+                                                            ("max_q_from_kvar", "f8"),
+                                                            ("max_q_to_kvar", "f8"),
+                                                            ("cost_per_kw", 'f8'),
+                                                            ("in_service", 'bool')]))
+        if "_empty_res_dcline" not in net:
+            net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
+                                                                       ("q_from_kvar", "f8"),
+                                                                       ("p_to_kw", "f8"),
+                                                                       ("q_to_kvar", "f8"),
+                                                                       ("pl_kw", "f8"),
+                                                                       ("vm_from_pu", "f8"),
+                                                                       ("va_from_degree", "f8"),
+                                                                       ("vm_to_pu", "f8"),
+                                                                       ("va_to_degree", "f8")]))
+        if "_empty_res_storage" not in net:
+            net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
+                                                                        ("q_kvar", "f8")]))
 
-    if len(net["_empty_res_line"]) < 10:
-        net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                 ("q_from_kvar", "f8"),
-                                                                 ("p_to_kw", "f8"),
-                                                                 ("q_to_kvar", "f8"),
-                                                                 ("pl_kw", "f8"),
-                                                                 ("ql_kvar", "f8"),
-                                                                 ("i_from_ka", "f8"),
-                                                                 ("i_to_ka", "f8"),
-                                                                 ("i_ka", "f8"),
-                                                                 ("loading_percent", "f8")]))
-    if "storage" not in net:
-        net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                         ("bus", "i8"),
-                                                         ("p_kw", "f8"),
-                                                         ("q_kvar", "f8"),
-                                                         ("sn_kva", "f8"),
-                                                         ("soc_percent", "f8"),
-                                                         ("min_e_kwh", "f8"),
-                                                         ("max_e_kwh", "f8"),
-                                                         ("scaling", "f8"),
-                                                         ("in_service", 'bool'),
-                                                         ("type", np.dtype(object))]))
-    if "version" not in net or net.version < 1.1:
+        if len(net["_empty_res_line"]) < 10:
+            net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
+                                                                     ("q_from_kvar", "f8"),
+                                                                     ("p_to_kw", "f8"),
+                                                                     ("q_to_kvar", "f8"),
+                                                                     ("pl_kw", "f8"),
+                                                                     ("ql_kvar", "f8"),
+                                                                     ("i_from_ka", "f8"),
+                                                                     ("i_to_ka", "f8"),
+                                                                     ("i_ka", "f8"),
+                                                                     ("loading_percent", "f8")]))
+        if "storage" not in net:
+            net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                             ("bus", "i8"),
+                                                             ("p_kw", "f8"),
+                                                             ("q_kvar", "f8"),
+                                                             ("sn_kva", "f8"),
+                                                             ("soc_percent", "f8"),
+                                                             ("min_e_kwh", "f8"),
+                                                             ("max_e_kwh", "f8"),
+                                                             ("scaling", "f8"),
+                                                             ("in_service", 'bool'),
+                                                             ("type", np.dtype(object))]))
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
                 pmin = copy.copy(net.gen.min_p_kw.values)
                 pmax = copy.copy(net.gen.max_p_kw.values)
                 net.gen["min_p_kw"] = pmax
                 net.gen["max_p_kw"] = pmin
-    if "pwl_cost" not in net:
-        net["pwl_cost"] = pd.DataFrame(np.zeros(0, dtype=
-                                                         [("power_type", np.dtype(object)),
-                                                          ("element", np.dtype(object)),
-                                                          ("et", np.dtype(object)),
-                                                          ("points", np.dtype(object))
+        if "pwl_cost" not in net:
+            net["pwl_cost"] = pd.DataFrame(np.zeros(0, dtype=
+                                                             [("power_type", np.dtype(object)),
+                                                              ("element", np.dtype(object)),
+                                                              ("et", np.dtype(object)),
+                                                              ("points", np.dtype(object))
+                                                              ]))
+
+
+        if "poly_cost" not in net:
+            net["poly_cost"] = pd.DataFrame(np.zeros(0, dtype=
+                                                       [("element", np.dtype(object)),
+                                                        ("et", np.dtype(object)),
+                                                          ("cp0_eur", np.dtype("f8")),
+                                                          ("cp1_eur_per_mw", np.dtype("f8")),
+                                                          ("cp2_eur_per_mw2", np.dtype("f8")),
+                                                          ("cq0_eur", np.dtype("f8")),
+                                                          ("cq1_eur_per_kvar", np.dtype("f8")),
+                                                          ("cq2_eur_per_kvar2", np.dtype("f8"))
                                                           ]))
 
+        if "cost_per_kw" in net.gen:
+            if not "piecewise_linear_cost" in net:
+                for index, cost in net.gen.cost_per_kw.iteritems():
+                    if not np.isnan(cost):
+                        create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost*1e3)
 
-    if "poly_cost" not in net:
-        net["poly_cost"] = pd.DataFrame(np.zeros(0, dtype=
-                                                   [("element", np.dtype(object)),
-                                                    ("et", np.dtype(object)),
-                                                      ("cp0_eur", np.dtype("f8")),
-                                                      ("cp1_eur_per_mw", np.dtype("f8")),
-                                                      ("cp2_eur_per_mw2", np.dtype("f8")),
-                                                      ("cq0_eur", np.dtype("f8")),
-                                                      ("cq1_eur_per_kvar", np.dtype("f8")),
-                                                      ("cq2_eur_per_kvar2", np.dtype("f8"))
-                                                      ]))
+        if "cost_per_kw" in net.sgen:
+            if "min_p_kw" not in net.sgen:
+                net.sgen["min_p_kw"] = net.sgen.p_kw
+            if "max_p_kw" not in net.sgen:
+                net.sgen["max_p_kw"] = 0
 
-    if "cost_per_kw" in net.gen:
-        if not "piecewise_linear_cost" in net:
-            for index, cost in net.gen.cost_per_kw.iteritems():
-                if not np.isnan(cost):
-                    create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost*1e3)
-
-    if "cost_per_kw" in net.sgen:
-        if "min_p_kw" not in net.sgen:
-            net.sgen["min_p_kw"] = net.sgen.p_kw
-        if "max_p_kw" not in net.sgen:
-            net.sgen["max_p_kw"] = 0
-
-        if not "piecewise_linear_cost" in net:
-            for index, cost in net.sgen.cost_per_kw.iteritems():
-                if not np.isnan(cost):
-                    create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
+            if not "piecewise_linear_cost" in net:
+                for index, cost in net.sgen.cost_per_kw.iteritems():
+                    if not np.isnan(cost):
+                        create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
 
 
-    if "cost_per_kw" in net.ext_grid:
-        if "min_p_kw" not in net.ext_grid:
-            net.ext_grid["min_p_kw"] = -1e9
-        if "max_p_kw" not in net.ext_grid:
-            net.ext_grid["max_p_kw"] = 0
-        if not "piecewise_linear_cost" in net:
-            for index, cost in net.ext_grid.cost_per_kw.iteritems():
-                if not np.isnan(cost):
-                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
+        if "cost_per_kw" in net.ext_grid:
+            if "min_p_kw" not in net.ext_grid:
+                net.ext_grid["min_p_kw"] = -1e9
+            if "max_p_kw" not in net.ext_grid:
+                net.ext_grid["max_p_kw"] = 0
+            if not "piecewise_linear_cost" in net:
+                for index, cost in net.ext_grid.cost_per_kw.iteritems():
+                    if not np.isnan(cost):
+                        create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
 
 
-    if "cost_per_kvar" in net.gen:
-        if not "piecewise_linear_cost" in net:
-            for index, cost in net.gen.cost_per_kvar.iteritems():
-                if not np.isnan(cost):
-                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
+        if "cost_per_kvar" in net.gen:
+            if not "piecewise_linear_cost" in net:
+                for index, cost in net.gen.cost_per_kvar.iteritems():
+                    if not np.isnan(cost):
+                        create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
 
-    if "cost_per_kvar" in net.sgen:
-        if not "piecewise_linear_cost" in net:
-            for index, cost in net.sgen.cost_per_kvar.iteritems():
-                if not np.isnan(cost):
-                    create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
+        if "cost_per_kvar" in net.sgen:
+            if not "piecewise_linear_cost" in net:
+                for index, cost in net.sgen.cost_per_kvar.iteritems():
+                    if not np.isnan(cost):
+                        create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
 
-    if "cost_per_kvar" in net.ext_grid:
-        if not "piecewise_linear_cost" in net:
-            for index, cost in net.ext_grid.cost_per_kvar.iteritems():
-                if not np.isnan(cost):
-                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
+        if "cost_per_kvar" in net.ext_grid:
+            if not "piecewise_linear_cost" in net:
+                for index, cost in net.ext_grid.cost_per_kvar.iteritems():
+                    if not np.isnan(cost):
+                        create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
 
-    if "tp_st_degree" not in net.trafo:
-        net.trafo["tp_st_degree"] = np.nan
-    if "tp_st_degree" not in net.trafo3w:
-        net.trafo3w["tp_st_degree"] = np.nan
-    if "tap_at_star_point" not in net.trafo3w:
-        net.trafo3w["tap_at_star_point"] = False
-    if "_pd2ppc_lookups" not in net:
-        net._pd2ppc_lookups = {"bus": None,
-                               "ext_grid": None,
-                               "gen": None}
-    if "_is_elements" not in net and "__is_elements" in net:
-        net["_is_elements"] = copy.deepcopy(net["__is_elements"])
-        net.pop("__is_elements", None)
-    elif "_is_elements" not in net and "_is_elems" in net:
-        net["_is_elements"] = copy.deepcopy(net["_is_elems"])
-        net.pop("_is_elems", None)
+        if "tp_st_degree" not in net.trafo:
+            net.trafo["tp_st_degree"] = np.nan
+        if "tp_st_degree" not in net.trafo3w:
+            net.trafo3w["tp_st_degree"] = np.nan
+        if "tap_at_star_point" not in net.trafo3w:
+            net.trafo3w["tap_at_star_point"] = False
+        if "_pd2ppc_lookups" not in net:
+            net._pd2ppc_lookups = {"bus": None,
+                                   "ext_grid": None,
+                                   "gen": None}
+        if "_is_elements" not in net and "__is_elements" in net:
+            net["_is_elements"] = copy.deepcopy(net["__is_elements"])
+            net.pop("__is_elements", None)
+        elif "_is_elements" not in net and "_is_elems" in net:
+            net["_is_elements"] = copy.deepcopy(net["_is_elems"])
+            net.pop("_is_elems", None)
 
-    if "options" in net:
-        if "recycle" in net["options"]:
-            if "_is_elements" not in net["options"]["recycle"]:
-                net["options"]["recycle"]["_is_elements"] = copy.deepcopy(
-                    net["options"]["recycle"]["is_elems"])
-                net["options"]["recycle"].pop("is_elems", None)
+        if "options" in net:
+            if "recycle" in net["options"]:
+                if "_is_elements" not in net["options"]["recycle"]:
+                    net["options"]["recycle"]["_is_elements"] = copy.deepcopy(
+                        net["options"]["recycle"]["is_elems"])
+                    net["options"]["recycle"].pop("is_elems", None)
 
-    if "const_z_percent" not in net.load or "const_i_percent" not in net.load:
-        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
-        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+        if "const_z_percent" not in net.load or "const_i_percent" not in net.load:
+            net.load["const_z_percent"] = np.zeros(net.load.shape[0])
+            net.load["const_i_percent"] = np.zeros(net.load.shape[0])
 
-    if "vn_kv" not in net["shunt"]:
-        net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
-    if "step" not in net["shunt"]:
-        net.shunt["step"] = 1
-    if "max_step" not in net["shunt"]:
-        net.shunt["max_step"] = 1
-    if "_pd2ppc_lookups" not in net:
-        net["_pd2ppc_lookups"] = {"bus": None,
-                                  "gen": None,
-                                  "branch": None}
-    if "std_type" not in net.trafo3w:
-        net.trafo3w["std_type"] = None
+        if "vn_kv" not in net["shunt"]:
+            net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
+        if "step" not in net["shunt"]:
+            net.shunt["step"] = 1
+        if "max_step" not in net["shunt"]:
+            net.shunt["max_step"] = 1
+        if "_pd2ppc_lookups" not in net:
+            net["_pd2ppc_lookups"] = {"bus": None,
+                                      "gen": None,
+                                      "branch": None}
+        if "std_type" not in net.trafo3w:
+            net.trafo3w["std_type"] = None
 
-#    if "time_resolution" not in net:
-#        # for storages
-#        net.time_resolution = 1.0
+    #    if "time_resolution" not in net:
+    #        # for storages
+    #        net.time_resolution = 1.0
 
-    new_net = create_empty_network()
-    for key, item in net.items():
-        if isinstance(item, pd.DataFrame):
-            for col in item.columns:
-                if key in new_net and col in new_net[key].columns:
-                    if set(item.columns) == set(new_net[key]):
-                        try:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                        except TypeError:  # legacy for pandas <0.21
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                    if int(pd.__version__[2]) < 2:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
-    if not "g_us_per_km" in net.line:
-        net.line["g_us_per_km"] = 0.
-    if not "slack" in net.gen:
-        net.gen["slack"] = False
+        new_net = create_empty_network()
+        for key, item in net.items():
+            if isinstance(item, pd.DataFrame):
+                for col in item.columns:
+                    if key in new_net and col in new_net[key].columns:
+                        if set(item.columns) == set(new_net[key]):
+                            try:
+                                net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                            except TypeError:  # legacy for pandas <0.21
+                                net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                        if int(pd.__version__[2]) < 2:
+                            net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                                 raise_on_error=False)
+                        else:
+                            net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                                 errors="ignore")
+        if not "g_us_per_km" in net.line:
+            net.line["g_us_per_km"] = 0.
+        if not "slack" in net.gen:
+            net.gen["slack"] = False
 
-    if net.version < 2:
-        net.sgen.p_kw *= -1
-        net.sgen.q_kvar *= -1
-        net.gen.p_kw *= -1
-        for element in ["gen", "sgen", "ext_grid"]:
-            for suffix in ["p_kw", "q_kvar"]:
-                constraints = {}
-                if "min_%s"%suffix in net[element]:
-                    constraints["max_%s"%suffix] = net[element]["min_%s"%suffix] * -1
-                    del net[element]["min_%s"%suffix]
-                if "max_%s"%suffix in net[element]:
-                    constraints["min_%s"%suffix] = net[element]["max_%s"%suffix] * -1
-                    del net[element]["max_%s"%suffix]
-                for column, values in constraints.items():
-                    net[element][column] = values
-        if "polynomial_cost" in net:
-            for cost in net.polynomial_cost.itertuples():
-                values = cost.c[0]
-                if len(values) == 2:
-                    cp0 = values[1]
-                    cp1 = values[0]
-                    cp2 = 0
-                elif len(values) == 3:
-                    cp0 = values[2]
-                    cp1 = values[1]
-                    cp2 = values[0]
-                create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
-                                 cp1_eur_per_mw=cp1*1e3, cp2_eur_per_mw2=cp2*1e6)
-            del net.polynomial_cost
-        if "piecewise_linear_cost" in net:
-            if len(net.piecewise_linear_cost) > 0:
-                raise NotImplementedError
-            del net.piecewise_linear_cost
+        if net.version < 2:
+            net.sgen.p_kw *= -1
+            net.sgen.q_kvar *= -1
+            net.gen.p_kw *= -1
+            for element in ["gen", "sgen", "ext_grid"]:
+                for suffix in ["p_kw", "q_kvar"]:
+                    constraints = {}
+                    if "min_%s"%suffix in net[element]:
+                        constraints["max_%s"%suffix] = net[element]["min_%s"%suffix] * -1
+                        del net[element]["min_%s"%suffix]
+                    if "max_%s"%suffix in net[element]:
+                        constraints["min_%s"%suffix] = net[element]["max_%s"%suffix] * -1
+                        del net[element]["max_%s"%suffix]
+                    for column, values in constraints.items():
+                        net[element][column] = values
+            if "polynomial_cost" in net:
+                for cost in net.polynomial_cost.itertuples():
+                    values = cost.c[0]
+                    if len(values) == 2:
+                        cp0 = values[1]
+                        cp1 = values[0]
+                        cp2 = 0
+                    elif len(values) == 3:
+                        cp0 = values[2]
+                        cp1 = values[1]
+                        cp2 = values[0]
+                    create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
+                                     cp1_eur_per_mw=cp1*1e3, cp2_eur_per_mw2=cp2*1e6)
+                del net.polynomial_cost
+            if "piecewise_linear_cost" in net:
+                if len(net.piecewise_linear_cost) > 0:
+                    raise NotImplementedError
+                del net.piecewise_linear_cost
 
         _convert_to_mw(net)
-    if "sn_kva" in net.keys():
-        net.sn_mva = net.sn_kva*1e-3
-        del net.sn_kva
-    net.version = float(__version__[:3])
+        if "sn_kva" in net.keys():
+            net.sn_mva = net.sn_kva*1e-3
+            del net.sn_kva
+        net.version = float(__version__[:3])
     return net
 
 def _convert_to_mw(net):
@@ -734,6 +734,7 @@ def _convert_to_mw(net):
             for parameter, value in parameters.items():
                 for old, new in replace:
                     if old in parameter:
+                        print(parameter)
                         parameters[parameter.replace(old, new)] = value*1e-3
                         del parameters[parameter]
 #    else:
