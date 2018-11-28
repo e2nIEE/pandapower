@@ -968,8 +968,22 @@ def create_continuous_bus_index(net, start=0):
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
-    Creates a continuous index for alle the elements, starting at zero and replaces all references 
+    Creating a continuous index for all the elements, starting at zero and replaces all references 
     of old indices by the new ones.
+    
+    INPUT:
+      **net** - pandapower network with unodered indices 
+
+    OPTIONAL:
+      **start** - index begins with "start"  
+        
+      **add_df_to_reindex** - by default all useful pandapower elements for 
+                              power flow will be selected. Additionally elements,
+                              like line_geodata and bus_geodata, also can be here 
+                              considered. 
+    OUTPUT:
+      **net** - pandapower network with odered and continuous indices
+    
     """
   
     elements = pp_elements(res_elements=True)
