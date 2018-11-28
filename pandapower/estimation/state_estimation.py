@@ -365,9 +365,9 @@ class state_estimation(object):
         # additionally, write bus power injection results (these are not written in _extract_results)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
         self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
-                                                 mapping_table) * self.s_ref / 1e3
+                                                 mapping_table) * self.s_ref / 1e6
         self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
-                                                   mapping_table) * self.s_ref / 1e3
+                                                   mapping_table) * self.s_ref / 1e6
 
         # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()

@@ -84,9 +84,9 @@ def test_3bus():
 
     # Backwards check. Use state estimation results for power flow and check for equality
     net.ext_grid.vm_pu = net.res_bus_est.vm_pu.iloc[0]
-    pp.create_load(net, 0, net.res_bus_est.p_kw.iloc[0], net.res_bus_est.q_kvar.iloc[0])
-    pp.create_load(net, 1, net.res_bus_est.p_kw.iloc[1], net.res_bus_est.q_kvar.iloc[1])
-    pp.create_load(net, 2, net.res_bus_est.p_kw.iloc[2], net.res_bus_est.q_kvar.iloc[2])
+    pp.create_load(net, 0, net.res_bus_est.p_mw.iloc[0], net.res_bus_est.q_mvar.iloc[0])
+    pp.create_load(net, 1, net.res_bus_est.p_mw.iloc[1], net.res_bus_est.q_mvar.iloc[1])
+    pp.create_load(net, 2, net.res_bus_est.p_mw.iloc[2], net.res_bus_est.q_mvar.iloc[2])
     _compare_pf_and_se_results(net)
 
 
@@ -210,21 +210,21 @@ def test_3bus_with_transformer():
     pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[1], .004), .004, bus=1)
     pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[3], .004), .004, bus=3)
 
-    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_kw.iloc[1], 10), 10, bus=1)
-    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_kvar.iloc[1], 10), 10, bus=1)
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[1], 10), 10, bus=1)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[1], 10), 10, bus=1)
 
-    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_kw.iloc[2], 10), 10, bus=2)
-    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_kvar.iloc[2], 10), 10, bus=2)
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[2], 10), 10, bus=2)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[2], 10), 10, bus=2)
 
     pp.create_measurement(net, "p", "bus", 0., 1.0, bus=0)
     pp.create_measurement(net, "q", "bus", 0., 1.0, bus=0)
 
-    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_kw.iloc[0], 8), 8, 0, 0)
-    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_kw.iloc[1], 8), 8, 0, 1)
+    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[0], 8), 8, 0, 0)
+    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[1], 8), 8, 0, 1)
 
-    pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_kw.iloc[0], 10), 10,
+    pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], 10), 10,
                           bus=3, element=0)  # transformer meas.
-    pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_kvar.iloc[0], 10), 10,
+    pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], 10), 10,
                           bus=3, element=0)  # at hv side
 
 
@@ -243,9 +243,9 @@ def test_3bus_with_transformer():
     # Backwards check. Use state estimation results for power flow and check for equality
     net.load.drop(net.load.index, inplace=True)
     net.ext_grid.vm_pu = net.res_bus_est.vm_pu.iloc[net.ext_grid.bus.iloc[0]]
-    pp.create_load(net, 0, net.res_bus_est.p_kw.iloc[0], net.res_bus_est.q_kvar.iloc[0])
-    pp.create_load(net, 1, net.res_bus_est.p_kw.iloc[1], net.res_bus_est.q_kvar.iloc[1])
-    pp.create_load(net, 2, net.res_bus_est.p_kw.iloc[2], net.res_bus_est.q_kvar.iloc[2])
+    pp.create_load(net, 0, net.res_bus_est.p_mw.iloc[0], net.res_bus_est.q_mvar.iloc[0])
+    pp.create_load(net, 1, net.res_bus_est.p_mw.iloc[1], net.res_bus_est.q_mvar.iloc[1])
+    pp.create_load(net, 2, net.res_bus_est.p_mw.iloc[2], net.res_bus_est.q_mvar.iloc[2])
 
     _compare_pf_and_se_results(net)
 
@@ -297,23 +297,23 @@ def test_3bus_with_i_line_measurements():
     np.random.seed(1)
     net = load_3bus_network()
     net.measurement.drop(net.measurement.index, inplace=True)
-    pp.create_load(net, 1, p_kw=495.974966, q_kvar=297.749528)
-    pp.create_load(net, 2, p_kw=1514.220983, q_kvar=787.528929)
+    pp.create_load(net, 1, p_mw=495.974966, q_mvar=297.749528)
+    pp.create_load(net, 2, p_mw=1514.220983, q_mvar=787.528929)
     pp.runpp(net)
     pp.create_measurement(net, "v", "bus", net.res_bus.vm_pu[0] * r(0.01), 0.01, 0)
     pp.create_measurement(net, "v", "bus", net.res_bus.vm_pu[2] * r(0.01), 0.01, 1)
-    pp.create_measurement(net, "p", "bus", -net.res_bus.p_kw[0] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.p_kw[0])), 0)
-    pp.create_measurement(net, "q", "bus", -net.res_bus.q_kvar[0] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.q_kvar[0])), 0)
-    pp.create_measurement(net, "p", "bus", -net.res_bus.p_kw[2] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.p_kw[2])), 2)
-    pp.create_measurement(net, "q", "bus", -net.res_bus.q_kvar[2] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.q_kvar[2])), 2)
-    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[0] * r(),
-                          max(1.0, abs(0.03 * net.res_line.p_from_kw[0])), element=0, bus=0)
-    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[0] * r(),
-                          max(1.0, abs(0.03 * net.res_line.q_from_kvar[0])), element=0, bus=0)
+    pp.create_measurement(net, "p", "bus", -net.res_bus.p_mw[0] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.p_mw[0])), 0)
+    pp.create_measurement(net, "q", "bus", -net.res_bus.q_mvar[0] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.q_mvar[0])), 0)
+    pp.create_measurement(net, "p", "bus", -net.res_bus.p_mw[2] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.p_mw[2])), 2)
+    pp.create_measurement(net, "q", "bus", -net.res_bus.q_mvar[2] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.q_mvar[2])), 2)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[0] * r(),
+                          max(1.0, abs(0.03 * net.res_line.p_from_mw[0])), element=0, bus=0)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[0] * r(),
+                          max(1.0, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, bus=0)
     pp.create_measurement(net, "i", "line", net.res_line.i_from_ka[0] * 1e3 * r(),
                           max(1.0, abs(30 * net.res_line.i_from_ka[0])), element=0, bus=0)
     pp.create_measurement(net, "i", "line", net.res_line.i_from_ka[1] * 1e3 * r(),
@@ -329,27 +329,27 @@ def test_3bus_with_pq_line_from_to_measurements():
     np.random.seed(2017)
     net = load_3bus_network()
     net.measurement.drop(net.measurement.index, inplace=True)
-    pp.create_load(net, 1, p_kw=495.974966, q_kvar=297.749528)
-    pp.create_load(net, 2, p_kw=1514.220983, q_kvar=787.528929)
+    pp.create_load(net, 1, p_mw=495.974966, q_mvar=297.749528)
+    pp.create_load(net, 2, p_mw=1514.220983, q_mvar=787.528929)
     pp.runpp(net)
     pp.create_measurement(net, "v", "bus", net.res_bus.vm_pu[0] * r(0.01), 0.01, 0)
     pp.create_measurement(net, "v", "bus", net.res_bus.vm_pu[2] * r(0.01), 0.01, 1)
-    pp.create_measurement(net, "p", "bus", -net.res_bus.p_kw[0] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.p_kw[0])), 0)
-    pp.create_measurement(net, "q", "bus", -net.res_bus.q_kvar[0] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.q_kvar[0])), 0)
-    pp.create_measurement(net, "p", "bus", -net.res_bus.p_kw[2] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.p_kw[2])), 2)
-    pp.create_measurement(net, "q", "bus", -net.res_bus.q_kvar[2] * r(),
-                          max(1.0, abs(0.03 * net.res_bus.q_kvar[2])), 2)
-    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[0] * r(),
-                          max(1.0, abs(0.03 * net.res_line.p_from_kw[0])), element=0, bus=0)
-    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[0] * r(),
-                          max(1.0, abs(0.03 * net.res_line.q_from_kvar[0])), element=0, bus=0)
-    pp.create_measurement(net, "p", "line", net.res_line.p_to_kw[0] * r(),
-                          max(1.0, abs(0.03 * net.res_line.p_to_kw[0])), element=0, bus=1)
-    pp.create_measurement(net, "q", "line", net.res_line.q_to_kvar[0] * r(),
-                          max(1.0, abs(0.03 * net.res_line.q_to_kvar[0])), element=0, bus=1)
+    pp.create_measurement(net, "p", "bus", -net.res_bus.p_mw[0] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.p_mw[0])), 0)
+    pp.create_measurement(net, "q", "bus", -net.res_bus.q_mvar[0] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.q_mvar[0])), 0)
+    pp.create_measurement(net, "p", "bus", -net.res_bus.p_mw[2] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.p_mw[2])), 2)
+    pp.create_measurement(net, "q", "bus", -net.res_bus.q_mvar[2] * r(),
+                          max(1.0, abs(0.03 * net.res_bus.q_mvar[2])), 2)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[0] * r(),
+                          max(1.0, abs(0.03 * net.res_line.p_from_mw[0])), element=0, bus=0)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[0] * r(),
+                          max(1.0, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, bus=0)
+    pp.create_measurement(net, "p", "line", net.res_line.p_to_mw[0] * r(),
+                          max(1.0, abs(0.03 * net.res_line.p_to_mw[0])), element=0, bus=1)
+    pp.create_measurement(net, "q", "line", net.res_line.q_to_mvar[0] * r(),
+                          max(1.0, abs(0.03 * net.res_line.q_to_mvar[0])), element=0, bus=1)
 
     success = estimate(net, init='flat')
 
@@ -370,9 +370,9 @@ def test_cigre_network(init='flat'):
         pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
         # if np.random.randint(0, 4) == 0:
         #    continue
-        pp.create_measurement(net, "p", "bus", -row.p_kw * r(), max(1.0, abs(0.03 * row.p_kw)),
+        pp.create_measurement(net, "p", "bus", -row.p_mw * r(), max(1.0, abs(0.03 * row.p_mw)),
                               bus)
-        pp.create_measurement(net, "q", "bus", -row.q_kvar * r(), max(1.0, abs(0.03 * row.q_kvar)),
+        pp.create_measurement(net, "q", "bus", -row.q_mvar * r(), max(1.0, abs(0.03 * row.q_mvar)),
                               bus)
 
     # 2. Do state estimation
@@ -458,6 +458,7 @@ def test_IEEE_case_9_with_bad_data():
 
 def test_init_slack_with_multiple_transformers(angles=True):
     np.random.seed(123)
+    angles = True
     net = pp.create_empty_network()
     pp.create_bus(net, 220, index=0)
     pp.create_bus(net, 110, index=1)
@@ -474,32 +475,31 @@ def test_init_slack_with_multiple_transformers(angles=True):
     pp.create_line(net, 1, 3, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
     pp.create_line(net, 4, 5, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
     pp.create_line(net, 5, 6, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
-    pp.create_load(net, 2, 5000, 3300)
-    pp.create_load(net, 5, 900, 500)
-    pp.create_load(net, 6, 700, 300)
+    pp.create_load(net, 2, p_mw=5, q_mvar=3.3)
+    pp.create_load(net, 5, p_mw=0.9, q_mvar=0.5)
+    pp.create_load(net, bus=6, p_mw=0.7, q_mvar=0.3)
     pp.create_ext_grid(net, bus=0, vm_pu=1.04, va_degree=10., name="Slack 220 kV")
     pp.runpp(net, calculate_voltage_angles=angles)
     for bus, row in net.res_bus[net.bus.in_service == True].iterrows():
         pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
-        if row.p_kw != 0.:
+        if row.p_mw != 0.:
             continue
-        pp.create_measurement(net, "p", "bus", -row.p_kw * r(), max(1.0, abs(0.03 * row.p_kw)),
+        pp.create_measurement(net, "p", "bus", -row.p_mw * r(), max(1.0, abs(0.03 * row.p_mw)),
                               bus)
-        pp.create_measurement(net, "q", "bus", -row.q_kvar * r(), max(1.0, abs(0.03 * row.q_kvar)),
+        pp.create_measurement(net, "q", "bus", -row.q_mvar * r(), max(1.0, abs(0.03 * row.q_mvar)),
                               bus)
-    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[0], 10., bus=1, element=0)
-    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[0], 10., bus=1, element=0)
-    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[2], 10., bus=4, element=2)
-    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[2], 10., bus=4, element=2)
-    pp.create_measurement(net, "p", "line", net.res_line.p_from_kw[3], 10., bus=5, element=3)
-    pp.create_measurement(net, "q", "line", net.res_line.q_from_kvar[3], 10., bus=5, element=3)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[0], 10., bus=1, element=0)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[0], 10., bus=1, element=0)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[2], 10., bus=4, element=2)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[2], 10., bus=4, element=2)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[3], 10., bus=5, element=3)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[3], 10., bus=5, element=3)
     success = estimate(net, init='slack', calculate_voltage_angles=angles)
 
     # pretty high error for vm_pu (half percent!)
     assert success
     assert (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006)
-    assert (np.nanmax(np.abs(net.res_bus.va_degree.values
-                             - net.res_bus_est.va_degree.values)) < 0.006)
+    assert (np.nanmax(np.abs(net.res_bus.va_degree.values- net.res_bus_est.va_degree.values)) < 0.006)
 
 
 def test_init_slack_with_multiple_transformers_angles_off():
@@ -547,17 +547,61 @@ def r2(base, v):
 
 def _compare_pf_and_se_results(net):
     pp.runpp(net, calculate_voltage_angles=True)
-    assert (np.allclose(net.res_bus_est.p_kw.values, net.res_bus.p_kw.values, 1e-6))
-    assert (np.allclose(net.res_bus_est.q_kvar.values, net.res_bus.q_kvar.values, 1e-6))
-    assert (np.allclose(net.res_line_est.p_from_kw.values, net.res_line.p_from_kw.values, 1e-6))
-    assert (np.allclose(net.res_line_est.q_from_kvar.values, net.res_line.q_from_kvar.values, 1e-6))
-    assert (np.allclose(net.res_line_est.p_to_kw.values, net.res_line.p_to_kw.values, 1e-6))
-    assert (np.allclose(net.res_line_est.q_to_kvar.values, net.res_line.q_to_kvar.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.p_lv_kw.values, net.res_trafo.p_lv_kw.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.q_lv_kvar.values, net.res_trafo.q_lv_kvar.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.p_hv_kw.values, net.res_trafo.p_hv_kw.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.q_hv_kvar.values, net.res_trafo.q_hv_kvar.values, 1e-6))
+    assert (np.allclose(net.res_bus_est.p_mw.values, net.res_bus.p_mw.values, 1e-6))
+    assert (np.allclose(net.res_bus_est.q_mvar.values, net.res_bus.q_mvar.values, 1e-6))
+    assert (np.allclose(net.res_line_est.p_from_mw.values, net.res_line.p_from_mw.values, 1e-6))
+    assert (np.allclose(net.res_line_est.q_from_mvar.values, net.res_line.q_from_mvar.values, 1e-6))
+    assert (np.allclose(net.res_line_est.p_to_mw.values, net.res_line.p_to_mw.values, 1e-6))
+    assert (np.allclose(net.res_line_est.q_to_mvar.values, net.res_line.q_to_mvar.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.p_lv_mw.values, net.res_trafo.p_lv_mw.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.q_lv_mvar.values, net.res_trafo.q_lv_mvar.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.p_hv_mw.values, net.res_trafo.p_hv_mw.values, 1e-6))
+    assert (np.allclose(net.res_trafo_est.q_hv_mvar.values, net.res_trafo.q_hv_mvar.values, 1e-6))
 
 
 if __name__ == '__main__':
-    pytest.main(['-xs', __file__])
+#    test_init_slack_with_multiple_transformers()
+    np.random.seed(123)
+    angles = True
+    net = pp.create_empty_network()
+    pp.create_bus(net, 220, index=0)
+    pp.create_bus(net, 110, index=1)
+    pp.create_bus(net, 110, index=2)
+    pp.create_bus(net, 110, index=3)
+    pp.create_bus(net, 10, index=4)
+    pp.create_bus(net, 10, index=5)
+    pp.create_bus(net, 10, index=6)
+    pp.create_bus(net, 10, index=7, in_service=False)
+    pp.create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV v1.4.3 and older", in_service=False)
+    pp.create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV v1.4.3 and older")
+    pp.create_transformer(net, 0, 1, std_type="100 MVA 220/110 kV")
+    pp.create_line(net, 1, 2, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
+    pp.create_line(net, 1, 3, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
+    pp.create_line(net, 4, 5, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
+    pp.create_line(net, 5, 6, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
+    pp.create_load(net, 2, p_mw=5, q_mvar=3.3)
+    pp.create_load(net, 5, p_mw=0.9, q_mvar=0.5)
+    pp.create_load(net, bus=6, p_mw=0.7, q_mvar=0.3)
+    pp.create_ext_grid(net, bus=0, vm_pu=1.04, va_degree=10., name="Slack 220 kV")
+    pp.runpp(net, calculate_voltage_angles=angles)
+    for bus, row in net.res_bus[net.bus.in_service == True].iterrows():
+        pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
+        if row.p_mw != 0.:
+            continue
+        pp.create_measurement(net, "p", "bus", -row.p_mw * r(), max(1.0, abs(0.03 * row.p_mw)),
+                              bus)
+        pp.create_measurement(net, "q", "bus", -row.q_mvar * r(), max(1.0, abs(0.03 * row.q_mvar)),
+                              bus)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[0], 10., bus=1, element=0)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[0], 10., bus=1, element=0)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[2], 10., bus=4, element=2)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[2], 10., bus=4, element=2)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[3], 10., bus=5, element=3)
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[3], 10., bus=5, element=3)
+    success = estimate(net, init='slack', calculate_voltage_angles=angles)
+
+    # pretty high error for vm_pu (half percent!)
+    assert success
+    assert (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006)
+    assert (np.nanmax(np.abs(net.res_bus.va_degree.values- net.res_bus_est.va_degree.values)) < 0.006)
+#    pytest.main(['-xs', __file__])

@@ -31,7 +31,7 @@ def test_excel(net_in, tempdir):
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
 
-    pp.set_user_pf_options(net_in, tolerance_kva=1e3)
+    pp.set_user_pf_options(net_in, tolerance_mva=1e-3)
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
