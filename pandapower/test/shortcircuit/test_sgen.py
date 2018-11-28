@@ -24,9 +24,9 @@ def wind_park_example():
     pp.create_line_from_parameters(net, from_bus=b2, to_bus=b3, length_km=50, r_ohm_per_km=0.120, x_ohm_per_km=0.393, c_nf_per_km=0, max_i_ka=10)
     pp.create_line_from_parameters(net, from_bus=b3, to_bus=b4, length_km=25, r_ohm_per_km=0.120, x_ohm_per_km=0.393, c_nf_per_km=0, max_i_ka=10)
 
-    pp.create_sgen(net, b2, p_mw=0.1e3, sn_kva=100e3)
-    pp.create_sgen(net, b3, p_mw=0.050e3, sn_kva=50e3)
-    pp.create_sgen(net, b4, p_mw=0.050e3, sn_kva=50e3)
+    pp.create_sgen(net, b2, p_mw=0.1e3, sn_mva=100)
+    pp.create_sgen(net, b3, p_mw=0.050e3, sn_mva=50)
+    pp.create_sgen(net, b4, p_mw=0.050e3, sn_mva=50)
     net.sgen["k"] = 1.2
     return net
 
@@ -42,7 +42,7 @@ def three_bus_example():
     pp.create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV" , length_km=15.)
     net.line["endtemp_degree"] = 80
 
-    pp.create_sgen(net, b2, sn_kva=2000, p_kw=0, k=1.2)
+    pp.create_sgen(net, b2, sn_mva=2, p_mw=0, k=1.2)
     return net
 
 def test_max_branch_results(three_bus_example):

@@ -56,9 +56,9 @@ def _current_source_current(net, ppc):
                         (net.sgen.type != "motor")]
     if len(sgen) == 0:
         return
-    if any(pd.isnull(sgen.sn_kva)):
+    if any(pd.isnull(sgen.sn_mva)):
         raise UserWarning(
-            "sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
+            "sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
     baseI = ppc["internal"]["baseI"]
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]

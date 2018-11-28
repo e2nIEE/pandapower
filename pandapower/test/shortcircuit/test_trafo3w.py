@@ -21,11 +21,11 @@ def trafo3w_net():
     pp.create_load(net, b2, 10000, 2000)
     pp.create_load(net, b3, 10000, 4000)
     pp.create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=b3, vn_hv_kv=222,
-                                            vn_mv_kv=33, vn_lv_kv=11., sn_hv_kva=50000, 
-                                            sn_mv_kva=30000, sn_lv_kva=20000, vsc_hv_percent=11, 
-                                            vscr_hv_percent=1., vsc_mv_percent=11, 
+                                            vn_mv_kv=33, vn_lv_kv=11., sn_hv_mva=50,
+                                            sn_mv_mva=30, sn_lv_mva=20, vsc_hv_percent=11,
+                                            vscr_hv_percent=1., vsc_mv_percent=11,
                                             vscr_mv_percent=1., vsc_lv_percent=11.,
-                                            vscr_lv_percent=1., pfe_kw=10, i0_percent=0.2)
+                                            vscr_lv_percent=1., pfe_mw=0.01, i0_percent=0.2)
     return net
 
 def test_trafo3w_max(trafo3w_net):
@@ -42,5 +42,5 @@ def test_trafo3w_min(trafo3w_net):
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.25920083485, 1.3972274925, 3.9422963436])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.10674893166, 0.57473904595, 1.6208335668])
 
-if __name__ == '__main__':   
-    pytest.main(['test_trafo3w.py']) 
+if __name__ == '__main__':
+    pytest.main(['test_trafo3w.py'])

@@ -890,7 +890,6 @@ def _end_temperature_correction_factor(net):
 
 
 def _transformer_correction_factor(vsc, vscr, sn, cmax):
-    sn = sn / 1000.
     zt = vsc / 100 / sn
     rt = vscr / 100 / sn
     xt = np.sqrt(zt ** 2 - rt ** 2)

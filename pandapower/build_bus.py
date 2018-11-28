@@ -499,7 +499,7 @@ def _add_gen_sc_impedance(net, ppc):
     vn_gen = gen.vn_kv.values
     sn_gen = gen.sn_mva.values
 
-    z_r = vn_net ** 2 / sn_gen * 1e3
+    z_r = vn_net ** 2 / sn_gen
     x_gen = gen.xdss.values / 100 * z_r
     r_gen = gen.rdss.values / 100 * z_r
 

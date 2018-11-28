@@ -12,7 +12,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def net_transformer():
-    net = pp.create_empty_network(sn_kva=2e3)
+    net = pp.create_empty_network(sn_mva=2)
     b1a = pp.create_bus(net, vn_kv=10.)
     b1b = pp.create_bus(net, vn_kv=10.)
     b2 = pp.create_bus(net, vn_kv=.4)
@@ -20,9 +20,9 @@ def net_transformer():
     pp.create_ext_grid(net, b1a, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
     pp.create_switch(net, b1a, b1b, et="b")
     pp.create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vsc_percent=6.,
-                                          vscr_percent=0.5, pfe_kw=1.4, shift_degree=0.0,
+                                          vscr_percent=0.5, pfe_mw=0.014, shift_degree=0.0,
                                           tp_side="hv", tp_mid=0, tp_min=-2, tp_max=2, tp_pos=2,
-                                          tp_st_percent=2.5, parallel=2, sn_kva=400, i0_percent=0.5)
+                                          tp_st_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
     pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500) #adding a shunt shouldn't change the result
     return net
 

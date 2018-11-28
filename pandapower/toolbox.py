@@ -734,7 +734,6 @@ def _convert_to_mw(net):
             for parameter, value in parameters.items():
                 for old, new in replace:
                     if old in parameter:
-                        print(parameter)
                         parameters[parameter.replace(old, new)] = value*1e-3
                         del parameters[parameter]
 #    else:

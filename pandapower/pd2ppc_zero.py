@@ -20,7 +20,7 @@ def _pd2ppc_zero(net):
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
     lines and transformers, but no load or generation data.
-    
+
     For short-circuit calculation, the short-circuit impedance of external grids is also considered.
     """
     # select elements in service (time consuming, so we do it once)
@@ -100,7 +100,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         vsc_percent = trafos["vsc_percent"].values.astype(float)
         vscr_percent = trafos["vscr_percent"].values.astype(float)
-        sn_kva = trafos["sn_kva"].values.astype(float)
+        sn_mva = trafos["sn_mva"].values.astype(float)
         vsc0_percent = trafos["vsc0_percent"].values.astype(float)
         vscr0_percent = trafos["vscr0_percent"].values.astype(float)
         lv_buses = trafos["lv_bus"].values.astype(int)
@@ -124,9 +124,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][ppc_idx, SHIFT] = shift
 
         # zero seq. transformer impedance
-        tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_kva  # adjust for low voltage side voltage converter
-        z_sc = vsc0_percent / 100. / sn_kva * tap_lv
-        r_sc = vscr0_percent / 100. / sn_kva * tap_lv
+        tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_mva  # adjust for low voltage side voltage converter
+        z_sc = vsc0_percent / 100. / sn_mva * tap_lv
+        r_sc = vscr0_percent / 100. / sn_mva * tap_lv
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
@@ -134,11 +134,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         if mode == "sc":
             from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
-            kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_kva, cmax)
+            kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_mva, cmax)
             z0_k *= kt
         y0_k = 1 / z0_k
-        # zero sequence transformer magnetising impedance 
-        z_m = vsc0_percent * mag0_percent / 100. / sn_kva * tap_lv
+        # zero sequence transformer magnetising impedance
+        z_m = vsc0_percent * mag0_percent / 100. / sn_mva * tap_lv
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
         r_m = x_m * mag0_rx
         r0_trafo_mag = r_m / parallel
@@ -149,7 +149,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             gs_all = np.hstack([gs_all, y0_k.real*in_service])
             bs_all = np.hstack([bs_all, y0_k.imag*in_service])
-             
+
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             gs_all = np.hstack([gs_all, y0_k.real*in_service])
@@ -233,13 +233,13 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["r"] = r_grid
     eg["x"] = x_grid
 
-    # ext_grid zero sequence impedance 
+    # ext_grid zero sequence impedance
     if case == "max":
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
     elif case == "min":
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid       
+        r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid*1j)
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     ppc["bus"][buses, GS] = gs

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 16 10:59:36 2018
 
-@author: thurner
-"""
+# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import pytest
 import pandapower as pp
 from pandapower.test.consistency_checks import consistency_checks

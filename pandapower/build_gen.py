@@ -42,17 +42,16 @@ def _build_gen_ppc(net, ppc):
         p_lim_default = 1e9
 
         _init_ppc_gen(ppc, xw_end, 0)
-        if mode == "sc":
-            return
-        # add generator / pv data
-        if gen_end > eg_end:
-            _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_default)
+        if mode == "pf":
+            # add generator / pv data
+            if gen_end > eg_end:
+                _build_pp_gen(net, ppc, gen_is_mask, eg_end, gen_end, q_lim_default, p_lim_default)
 
-        _build_pp_ext_grid(net, ppc, eg_is_mask, eg_end)
+            _build_pp_ext_grid(net, ppc, eg_is_mask, eg_end)
 
-        # add extended ward pv node data
-        if xw_end > gen_end:
-            _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default)
+            # add extended ward pv node data
+            if xw_end > gen_end:
+                _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default)
 
     # if mode == optimal power flow...
     if mode == "opf":
