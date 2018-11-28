@@ -17,10 +17,9 @@ except ImportError:
 
 
 class wls_matrix_ops:
-    def __init__(self, ppc, slack_buses, non_slack_buses, s_ref):
+    def __init__(self, ppc, slack_buses, non_slack_buses):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppc = ppc
-        self.baseMVA = s_ref / 1e6
         self.slack_buses = slack_buses
         self.non_slack_buses = non_slack_buses
         self.Y_bus = None
@@ -46,7 +45,7 @@ class wls_matrix_ops:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            y_bus, y_f, y_t = makeYbus(self.baseMVA, self.ppc["bus"], self.ppc["branch"])
+            y_bus, y_f, y_t = makeYbus(self.ppc["baseMVA"], self.ppc["bus"], self.ppc["branch"])
 
         # create relevant matrices
         self.Y_bus = y_bus.toarray()

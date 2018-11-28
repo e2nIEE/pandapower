@@ -27,7 +27,7 @@ std_logger = logging.getLogger(__name__)
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, ref_power=1e6):
+             calculate_voltage_angles=True):
     """
     Wrapper function for WLS state estimation.
 
@@ -50,7 +50,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
+    wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -67,7 +67,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-                    calculate_voltage_angles=True, rn_max_threshold=3.0, ref_power=1e6):
+                    calculate_voltage_angles=True, rn_max_threshold=3.0):
     """
     Wrapper function for bad data removal.
 
@@ -97,7 +97,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
+    wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -115,7 +115,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
 
 def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-                  calculate_voltage_angles=True, chi2_prob_false=0.05, ref_power=1e6):
+                  calculate_voltage_angles=True, chi2_prob_false=0.05):
     """
     Wrapper function for the chi-squared test.
 
@@ -141,7 +141,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
-    wls = state_estimation(tolerance, maximum_iterations, net, ref_power=ref_power)
+    wls = state_estimation(tolerance, maximum_iterations, net)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -165,7 +165,7 @@ class state_estimation(object):
     system according to the users needs while one function is used for the actual estimation
     process.
     """
-    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None, ref_power=1e6):
+    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
@@ -173,7 +173,6 @@ class state_estimation(object):
         self.tolerance = tolerance
         self.max_iterations = maximum_iterations
         self.net = net
-        self.s_ref = ref_power
         self.s_node_powers = None
         # variables for chi^2 / rn_max tests
         self.hx = None
@@ -245,7 +244,7 @@ class state_estimation(object):
         ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
 
         # add measurements to ppci structure
-        ppci = _add_measurements_to_ppc(self.net, ppci, self.s_ref)
+        ppci = _add_measurements_to_ppc(self.net, ppci)
 
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
@@ -269,7 +268,7 @@ class state_estimation(object):
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
 
         # matrix calculation object
-        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses, self.s_ref)
+        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses)
 
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
@@ -364,10 +363,10 @@ class state_estimation(object):
 
         # additionally, write bus power injection results (these are not written in _extract_results)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
-        self.net.res_bus_est.p_kw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
-                                                 mapping_table) * self.s_ref / 1e6
-        self.net.res_bus_est.q_kvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
-                                                   mapping_table) * self.s_ref / 1e6
+        self.net.res_bus_est.p_mw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
+                                                 mapping_table)
+        self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
+                                                   mapping_table)
 
         # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()

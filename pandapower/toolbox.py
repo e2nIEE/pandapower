@@ -712,6 +712,9 @@ def convert_format(net):
                     raise NotImplementedError
                 del net.piecewise_linear_cost
 
+            pq_measurements = net.measurement[net.measurement.type.isin(["p", "q"])].index
+            net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
+
         _convert_to_mw(net)
         if "sn_kva" in net.keys():
             net.sn_mva = net.sn_kva*1e-3
