@@ -441,7 +441,7 @@ def _check_voltage_setpoints_at_same_bus(ppc):
         raise UserWarning("Generators with different voltage setpoints connected to the same bus")
 
 def _check_voltage_angles_at_same_bus(net, ppc):
-    if len(net.ext_grid) > 0:
+    if net._is_elements["ext_grid"].any():
         gen_va = net.ext_grid.va_degree[net._is_elements["ext_grid"]].values
         eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
         gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
@@ -452,7 +452,7 @@ def _check_for_reference_bus(ppc):
     ref, _, _ = bustypes(ppc["bus"], ppc["gen"])
     # throw an error since no reference bus is defined
     if len(ref) == 0:
-        raise KeyError("No reference bus is available. Either add an ext_grid or a gen with slack=True")
+        raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")
 
 
 def _different_values_at_one_bus(buses, values):

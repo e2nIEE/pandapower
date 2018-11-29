@@ -433,8 +433,13 @@ def test_generator_as_slack():
     res_bus = net.res_bus.vm_pu.values
 
     pp.create_gen(net, b1, p_mw=0.1, vm_pu=1.02, slack=True)
+    net.ext_grid.in_service.iloc[0] = False
     pp.runpp(net)
     assert np.allclose(res_bus, net.res_bus.vm_pu.values)
+
+    net.gen.slack.iloc[0] = False
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
 
 if __name__ == "__main__":
      pytest.main(["test_scenarios.py", "-xs"])
