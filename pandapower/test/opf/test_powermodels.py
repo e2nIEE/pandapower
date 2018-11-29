@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+import os
+from functools import partial
 import pandapower as pp
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection
@@ -62,7 +64,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     pp.create_pwl_cost(net, 0, 'gen', [(0, 30, 3), (30, 80, 3)])
     pp.create_pwl_cost(net, 1, 'gen', [(0, 100, 2)])
 
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
     consistency_checks(net)
 
     p_gen = net.res_gen.p_mw.values
@@ -76,7 +78,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=3)
     pp.create_poly_cost(net, 1, 'gen', cp1_eur_per_mw=2)
 
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
     consistency_checks(net)
 
     np.allclose(p_gen, net.res_gen.p_mw.values)
@@ -109,7 +111,7 @@ def test_pwl():
     pp.create_pwl_cost(net, g1, 'gen', [(0, 2, 2), (2, 80, 5)])
     pp.create_pwl_cost(net, g2, 'gen', [(0, 2, 2), (2, 80, 5)])
 
-#    pp.runpm(net)
+#    pp.runpm_ac_opf(net)
 #    consistency_checks(net, rtol=1e-3)
 #    assert np.isclose(net.res_gen.p_mw.iloc[0], net.res_gen.p_mw.iloc[1])
 #    assert np.isclose(net.res_gen.q_kvar.iloc[0], net.res_gen.q_kvar.iloc[1])
@@ -123,21 +125,21 @@ def test_pwl():
     pp.create_pwl_cost(net, g3, 'gen', [(0, 1, 3.), (1, 80, 10.)])
 
     net.load.p_mw = 1
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g2], 0)
     assert np.isclose(net.res_gen.p_mw.at[g3], 0)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1])
 
     net.load.p_mw = 3
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g3], 0)
     assert np.isclose(net.res_gen.p_mw.at[g1], 2)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2]*2)
 
     net.load.p_mw = 5
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g1], 2)
     assert np.isclose(net.res_gen.p_mw.at[g2], 3)
@@ -184,7 +186,7 @@ def test_without_ext_grid():
     g3 = pp.create_gen(net, bus4, p_mw=0.050, min_p_mw=0, max_q_mvar=0.020, vm_pu=1.01)
     pp.create_poly_cost(net, g3, 'gen', cp1_eur_per_mw=3000)
 
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
 
     consistency_checks(net, rtol=1e-3)
     assert np.isclose(net.res_gen.p_mw.at[g2], 0)
@@ -192,7 +194,7 @@ def test_without_ext_grid():
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1]*1e3)
 
     net.trafo3w["max_loading_percent"] = 50
-    pp.runpm(net)
+    pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
     assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1]*1e3 + net.res_gen.p_mw.at[g2]*2e3)
@@ -213,13 +215,16 @@ def test_voltage_angles():
     net.trafo3w.shift_lv_degree.at[tidx] = 120
     net.trafo3w.shift_mv_degree.at[tidx] = 80
 
-    pp.runpm(net)
-    consistency_checks(net)
-    assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] < 120
-    assert -280 < net.res_bus.va_degree.at[b1] -  net.res_bus.va_degree.at[b3] < -270
-    assert 120 < net.res_bus.va_degree.at[b1] -  net.res_bus.va_degree.at[b4] < 130
-    assert np.isnan(net.res_bus.va_degree.at[b5])
-
+    custom_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
+                               "test_files", "run_powermodels_custom.jl")
+    #TODO: pp.runpm_dc gives does not seem to consider the voltage angles. Is this intended behaviour?
+    for run in [pp.runpm_ac_opf, partial(pp.runpm, julia_file=custom_file)]:
+        run(net)
+        consistency_checks(net)
+        assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] <= 120
+        assert -280 < net.res_bus.va_degree.at[b1] -  net.res_bus.va_degree.at[b3] < -270
+        assert 120 < net.res_bus.va_degree.at[b1] -  net.res_bus.va_degree.at[b4] < 130
+        assert np.isnan(net.res_bus.va_degree.at[b5])
 
 if __name__ == '__main__':
     pytest.main([__file__])

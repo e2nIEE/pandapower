@@ -1,9 +1,8 @@
-using PowerModels
-using Ipopt
-import JSON
 
 module PP2PM
 export load_pm_from_json
+
+import JSON
 
 function load_pm_from_json(json_path)
     pm = Dict()
@@ -17,12 +16,6 @@ function load_pm_from_json(json_path)
         end
     end
     return pm
-end
-
-function run_powermodels(json_path, mode)
-    pm = load_pm_from_json(json_path)
-    result = PowerModels.run_ac_opf(pm, Ipopt.IpoptSolver(), setting = Dict("output" => Dict("branch_flows" => true)))
-    return result
 end
 
 end

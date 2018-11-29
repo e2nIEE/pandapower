@@ -4,11 +4,19 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+import numpy as np
+import tempfile
+import math
+import os
+import json
+
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.auxiliary import _clean_up
+import pandapower.opf
+opf_folder = os.path.abspath(os.path.dirname(pandapower.opf.__file__))
 
 try:
     import pplog as logging
@@ -17,19 +25,13 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-import numpy as np
-import tempfile
-import math
-import os
-import json
-
 from pandapower.idx_gen import  PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
 from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
 from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
                                 ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
 from pandapower.idx_cost import MODEL, COST, NCOST
 
-def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
+def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=0, trafo3w_losses="hv"):
     """
     Runs a power system optimization using PowerModels.jl.
@@ -77,10 +79,119 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                      r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True)
-    _runpm(net, julia_file, pp_to_pm_callback)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
 
-def _runpm(net, julia_file=None, pp_to_pm_callback=None):
+def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+          trafo_model="t", delta=0, trafo3w_losses="hv"):
+    """
+    Runs a power system optimization using PowerModels.jl.
+    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
+    flexibilities apply:
+        - net.sgen.min_p_kw / net.sgen.max_p_kw
+        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
+        - net.load.min_q_kvar / net.load.max_q_kvar
+        - net.gen.min_p_kw / net.gen.max_p_kw
+        - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
+        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
+
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        - net.bus.min_vm_pu / net.bus.max_vm_pu
+        - net.line.max_loading_percent
+        - net.trafo.max_loading_percent
+        - net.trafo3w.max_loading_percent
+
+    How these costs are combined into a cost function depends on the cost_function parameter.
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+     """
+    julia_file = os.path.join(opf_folder, 'run_powermodels_dc.jl')
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=False,
+                     mode="opf", copy_constraints_to_ppc=True,
+                     r_switch=0, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
+
+def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+          trafo_model="t", delta=0, trafo3w_losses="hv"):
+    """
+    Runs a power system optimization using PowerModels.jl.
+    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
+    flexibilities apply:
+        - net.sgen.min_p_kw / net.sgen.max_p_kw
+        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
+        - net.load.min_p_kw / net.load.max_p_kw
+        - net.load.min_q_kvar / net.load.max_q_kvar
+        - net.gen.min_p_kw / net.gen.max_p_kw
+        - net.gen.min_q_kvar / net.gen.max_q_kvar
+        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
+        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
+        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
+
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        - net.bus.min_vm_pu / net.bus.max_vm_pu
+        - net.line.max_loading_percent
+        - net.trafo.max_loading_percent
+        - net.trafo3w.max_loading_percent
+
+    How these costs are combined into a cost function depends on the cost_function parameter.
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+     """
+    julia_file = os.path.join(opf_folder, 'run_powermodels_ac.jl')
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=False,
+                     mode="opf", copy_constraints_to_ppc=True,
+                     r_switch=0, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
+
+def _runpm(net):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
@@ -89,9 +200,9 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     net._pm = pm
-    if pp_to_pm_callback is not None:
-        pp_to_pm_callback(net, ppci, pm)
-    result_pm = _call_powermodels(pm, julia_file)
+    if net._options["pp_to_pm_callback"] is not None:
+        net._options["pp_to_pm_callback"](net, ppci, pm)
+    result_pm = _call_powermodels(pm, net._options["julia_file"])
     net._pm_res = result_pm
     result = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net._pm_result = result_pm
@@ -101,16 +212,17 @@ def _runpm(net, julia_file=None, pp_to_pm_callback=None):
         _clean_up(net)
         net["OPF_converged"] = True
     else:
-#        _clean_up(net)
+        _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
 
-def _call_powermodels(pm, julia_file=None):
+def _call_powermodels(pm, julia_file):
     buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
     logger.debug("writing PowerModels data structure to %s"%buffer_file)
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     try:
         import julia
+        from julia import Main
     except ImportError:
         raise ImportError("Please install pyjulia to run pandapower with PowerModels.jl")
     try:
@@ -118,10 +230,7 @@ def _call_powermodels(pm, julia_file=None):
     except:
         raise UserWarning("Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
-    if julia_file is None:
-        import pandapower.opf
-        folder = os.path.abspath(os.path.dirname(pandapower.opf.__file__))
-        julia_file = os.path.join(folder, 'run_powermodels.jl')
+    Main.include(os.path.join(opf_folder, 'pp_2_pm.jl'))
     try:
         run_powermodels = j.include(julia_file)
     except:
