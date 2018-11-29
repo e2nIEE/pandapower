@@ -167,6 +167,4 @@ def makeYbus(baseMVA, bus, branch):
     Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, np.argsort(f), np.argsort(t), nb, nl,
                                np.arange(nl, dtype=np.int64))
     Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp))
-
-
     return Ybus, Yf, Yt

@@ -9,7 +9,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
-from pandapower.idx_bus import BASE_KV
+from pandapower.idx_bus import BASE_KV, VM
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
@@ -34,10 +34,10 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
 
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
-    u_ft = ppc["bus"][br_idx, 7] * ppc["bus"][br_idx, BASE_KV]
+    vm_ft = ppc["bus"][br_idx, VM] * ppc["bus"][br_idx, BASE_KV]
     s_ft = np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
-                    ppc["branch"][:, (QF, QT)].real ** 2)
-    i_ft = s_ft / u_ft / np.sqrt(3)
+                   ppc["branch"][:, (QF, QT)].real ** 2)
+    i_ft = s_ft / vm_ft / np.sqrt(3)
     return i_ft, s_ft
 
 

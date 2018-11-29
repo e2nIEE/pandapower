@@ -26,7 +26,7 @@ from pandapower.pf.pfsoln_pypower import _update_v, _update_q, _update_p
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, update_p=True):
+def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -42,8 +42,7 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
 
     _update_v(bus, V)
     _update_q(baseMVA, bus, gen, gbus, Sbus, on)
-    if update_p:
-        _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens)
+    _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens)
 
     ##----- update/compute branch power flows -----
 

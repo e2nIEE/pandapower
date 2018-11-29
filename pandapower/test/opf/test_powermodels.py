@@ -6,6 +6,7 @@
 import pytest
 import pandapower as pp
 from pandapower.test.consistency_checks import consistency_checks
+from pandapower.test.toolbox import add_grid_connection
 import numpy as np
 
 try:
@@ -196,5 +197,29 @@ def test_without_ext_grid():
     assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1]*1e3 + net.res_gen.p_mw.at[g2]*2e3)
 
+@pytest.mark.skipif(julia_installed==False, reason="requires julia installation")
+def test_voltage_angles():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    b3 = pp.create_bus(net, vn_kv=20.)
+    b4 = pp.create_bus(net, vn_kv=10.)
+    b5 = pp.create_bus(net, vn_kv=10., in_service=False)
+    tidx = pp.create_transformer3w(
+        net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV', max_loading_percent=120)
+    pp.create_load(net, b3, p_mw=5, controllable=False)
+    load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0, min_q_mvar=-1e6,
+                        max_q_mvar= 1e6)
+    pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
+    net.trafo3w.shift_lv_degree.at[tidx] = 120
+    net.trafo3w.shift_mv_degree.at[tidx] = 80
+
+    pp.runpm(net)
+    consistency_checks(net)
+    assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] < 120
+    assert -280 < net.res_bus.va_degree.at[b1] -  net.res_bus.va_degree.at[b3] < -270
+    assert 120 < net.res_bus.va_degree.at[b1] -  net.res_bus.va_degree.at[b4] < 130
+    assert np.isnan(net.res_bus.va_degree.at[b5])
+
+
 if __name__ == '__main__':
-    pytest.main([])
+    pytest.main([__file__])

@@ -6,8 +6,6 @@
 
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pf.run_newton_raphson_pf import _get_numba_functions
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.auxiliary import _clean_up
@@ -21,13 +19,14 @@ logger = logging.getLogger(__name__)
 
 import numpy as np
 import tempfile
+import math
 import os
 import json
 
 from pandapower.idx_gen import  PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
 from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
 from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
-                                ANGMIN, ANGMAX, TAP, SHIFT
+                                ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
 from pandapower.idx_cost import MODEL, COST, NCOST
 
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -71,7 +70,6 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
      """
-
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=False,
@@ -183,7 +181,7 @@ def ppc_to_pm(net, ppc):
         branch["angmin"] = row[ANGMIN].real
         branch["angmax"] = row[ANGMAX].real
         branch["tap"] = row[TAP].real
-        branch["shift"] = row[SHIFT].real
+        branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
 
     for idx, row in enumerate(ppc["gen"], start=1):
@@ -220,27 +218,27 @@ def ppc_to_pm(net, ppc):
     return pm
 
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
-    V = np.zeros(len(ppci["bus"]), dtype="complex")
-    for i, bus in result_pm["solution"]["bus"].items():
-        V[int(i)-1] = bus["vm"] * np.exp(1j*bus["va"])
+    options = net._options
+    sol = result_pm["solution"]
+    for i, bus in sol["bus"].items():
+        ppci["bus"][int(i)-1, VM] = bus["vm"]
+        ppci["bus"][int(i)-1, VA] = math.degrees(bus["va"])
 
-    for i, gen in result_pm["solution"]["gen"].items():
+    for i, gen in sol["gen"].items():
         ppci["gen"][int(i)-1, PG] = gen["pg"]
         ppci["gen"][int(i)-1, QG] = gen["qg"]
+
+    dc_results = np.isnan(sol["branch"]["1"]["qf"])
+    for i, branch in sol["branch"].items():
+        ppci["branch"][int(i)-1, PF] = branch["pf"]
+        ppci["branch"][int(i)-1, PT] = branch["pt"]
+        if not dc_results:
+            ppci["branch"][int(i)-1, QF] = branch["qf"]
+            ppci["branch"][int(i)-1, QT] = branch["qt"]
 
     ppc["obj"] = result_pm["objective"]
     ppci["success"] = result_pm["status"] == "LocalOptimal"
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
-
-    makeYbus, _ = _get_numba_functions(ppci, net._options)
-    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
-    Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-    from pandapower.pf.pfsoln import pfsoln
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, update_p=False)
-    ppc["bus"][:, VM] = np.nan
-    ppc["bus"][:, VA] = np.nan
-    result = _copy_results_ppci_to_ppc(ppci, ppc, net._options["mode"])
+    result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result
-
-
