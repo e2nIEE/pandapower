@@ -307,8 +307,8 @@ def _validate_diff_res(diff_res, max_diff_values):
 
 
 def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
-    "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-3, "branch_q_mvar": 1e-3,
-        "gen_p_mw": 1e-3, "gen_q_mvar": 1e-3}, run=True):
+    "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6, "branch_q_mvar": 1e-6,
+        "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}, run=True):
     """
     This function validates the pypower case files to pandapower net structure conversion via a \
     comparison of loadflow calculation results. (Hence the opf cost conversion is not validated.)
@@ -565,8 +565,8 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     diff_res = dict.fromkeys(ppc_elms)
     diff_res["bus"] = ppc_res["bus"] - pp_res["bus"]
     diff_res["bus"][:, 1] -= diff_res["bus"][0, 1]  # remove va_degree offset
-    diff_res["branch"] = ppc_res["branch"] - pp_res["branch"] * 1e-3
-    diff_res["gen"] = ppc_res["gen"] - pp_res["gen"] * 1e-3
+    diff_res["branch"] = ppc_res["branch"] - pp_res["branch"]
+    diff_res["gen"] = ppc_res["gen"] - pp_res["gen"]
     # comparison of buses with several generator units only as q sum
     for i in GEN_uniq.loc[GEN_uniq[0].isin(change_q_compare)].index:
         next_is = GEN_uniq.index[GEN_uniq.index > i]
@@ -584,13 +584,13 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
     logger.debug("Maximum branch flow active power difference between pypower and pandapower: "
                  "%.2e kW" % max_(abs(diff_res["branch"][:, [0, 2]] * 1e3)))
     logger.debug("Maximum branch flow reactive power difference between pypower and "
-                 "pandapower: %.2e kVAr" % max_(abs(diff_res["branch"][:, [1, 3]] * 1e3)))
+                 "pandapower: %.2e MVAr" % max_(abs(diff_res["branch"][:, [1, 3]])))
     logger.debug("Maximum active power generation difference between pypower and pandapower: "
-                 "%.2e kW" % max_(abs(diff_res["gen"][:, 0] * 1e3)))
+                 "%.2e MW" % max_(abs(diff_res["gen"][:, 0])))
     logger.debug("Maximum reactive power generation difference between pypower and pandapower: "
                  "%.2e kVAr" % max_(abs(diff_res["gen"][:, 1] * 1e3)))
-    if _validate_diff_res(diff_res, {"bus_vm_pu": 1e-3, "bus_va_degree": 1e-3, "branch_p_mw": 1e-3,
-                                     "branch_q_mvar": 1e-3}) and \
+    if _validate_diff_res(diff_res, {"bus_vm_pu": 1e-3, "bus_va_degree": 1e-3, "branch_p_mw": 1e-6,
+                                     "branch_q_mvar": 1e-6}) and \
             (max_(abs(diff_res["gen"])) > 1e-1).any():
         logger.debug("The active/reactive power generation difference possibly results "
                      "because of a pypower error. Please validate "
