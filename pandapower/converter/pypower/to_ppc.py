@@ -54,7 +54,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
 
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. \
         If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. \
-        net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
+        net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
         **init** (str, "results") - initialization method of the converter
         pandapower ppc converter supports two methods for initializing the converter:

@@ -20,8 +20,8 @@ except:
     import logging
 
 logger = logging.getLogger(__name__)
-max_diff_values1 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_kw": 1e-3,
-                    "branch_q_kvar": 1e-3, "gen_p_kw": 1e-3, "gen_q_kvar": 1e-3}
+max_diff_values1 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-3,
+                    "branch_q_mvar": 1e-3, "gen_p_mw": 1e-3, "gen_q_mvar": 1e-3}
 
 
 def get_testgrids(name, filename):
@@ -79,8 +79,8 @@ def test_pypower_cases():
         logger.debug('%s has been checked successfully.' % i)
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
-    max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_kw": 1e-3,
-                        "q_branch_kvar": 1e-3, "p_gen_kw": 1e3, "q_gen_kvar": 1e3}
+    max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_mw": 1e-3,
+                        "q_branch_mvar": 1e-3, "p_gen_mw": 1e3, "q_gen_mvar": 1e3}
     ppc = get_testgrids('case9', 'pypower_cases.p')
     net = from_ppc(ppc, f_hz=60)
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values2)

@@ -101,9 +101,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                           for fb, tb, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.impedance.from_bus, net.impedance.to_bus,
                                    net.impedance.index, net.impedance.in_service,
-                                   (net.impedance.rft_pu.abs() * net.bus.loc[net.impedance.from_bus].vn_kv.values ** 2 / (net.sn_kva/1000))
+                                   (net.impedance.rft_pu.abs() * net.bus.loc[net.impedance.from_bus].vn_kv.values ** 2 / (net.sn_mva))
                                    if calc_r_ohm else np.zeros(len(net.impedance.index)),
-                                   np.sqrt(net.impedance.rft_pu **2 + net.impedance.xft_pu ** 2) * (net.bus.loc[net.impedance.from_bus].vn_kv.values ** 2) / (net.sn_kva/1000)
+                                   np.sqrt(net.impedance.rft_pu **2 + net.impedance.xft_pu ** 2) * (net.bus.loc[net.impedance.from_bus].vn_kv.values ** 2) / (net.sn_mva)
                                    if calc_z_ohm else np.zeros(len(net.impedance.index))))
                           if inservice == 1)
 
@@ -114,9 +114,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                           for hvb, lvb, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.trafo.hv_bus, net.trafo.lv_bus,
                                    net.trafo.index, net.trafo.in_service,
-                                   ((net.trafo.vscr_percent/100) * (net.trafo.vn_hv_kv ** 2) / (net.trafo.sn_kva/1000))
+                                   ((net.trafo.vscr_percent/100) * (net.trafo.vn_hv_kv ** 2) / (net.trafo.sn_mva))
                                    if calc_r_ohm else np.zeros(len(net.trafo.index)),
-                                   ((net.trafo.vsc_percent/100)  * (net.trafo.vn_hv_kv ** 2) / (net.trafo.sn_kva/1000))
+                                   ((net.trafo.vsc_percent/100)  * (net.trafo.vn_hv_kv ** 2) / (net.trafo.sn_mva))
                                    if calc_z_ohm else np.zeros(len(net.trafo.index))))
                           if inservice == 1 and idx not in nogotrafos)
         #Three-winding transformers:
@@ -125,9 +125,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                           for bus1, bus2, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.trafo3w.hv_bus, net.trafo3w.mv_bus,
                                    net.trafo3w.index, net.trafo3w.in_service,
-                                   ((net.trafo3w.vscr_hv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_mv_kva']].min(axis=1)/1000))
+                                   ((net.trafo3w.vscr_hv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_mva', 'sn_mv_mva']].min(axis=1)))
                                    if calc_r_ohm else np.zeros(len(net.trafo3w.index)),
-                                   ((net.trafo3w.vsc_hv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_mv_kva']].min(axis=1)/1000))
+                                   ((net.trafo3w.vsc_hv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_mva', 'sn_mv_mva']].min(axis=1)))
                                    if calc_z_ohm else np.zeros(len(net.trafo3w.index))))
                           if inservice==1)
         #mv-lv
@@ -135,9 +135,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                           for bus1, bus2, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.trafo3w.mv_bus, net.trafo3w.lv_bus,
                                    net.trafo3w.index, net.trafo3w.in_service,
-                                   ((net.trafo3w.vscr_mv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_mv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   ((net.trafo3w.vscr_mv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_mv_mva', 'sn_lv_mva']].min(axis=1)))
                                    if calc_r_ohm else np.zeros(len(net.trafo3w.index)),
-                                   ((net.trafo3w.vsc_mv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_mv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   ((net.trafo3w.vsc_mv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_mv_mva', 'sn_lv_mva']].min(axis=1)))
                                    if calc_z_ohm else np.zeros(len(net.trafo3w.index))))
                           if inservice==1)
         #hv-lv
@@ -145,9 +145,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_trafo
                           for bus1, bus2, idx, inservice, r_ohm, z_ohm in
                           list(zip(net.trafo3w.hv_bus, net.trafo3w.lv_bus,
                                    net.trafo3w.index, net.trafo3w.in_service,
-                                   ((net.trafo3w.vscr_lv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   ((net.trafo3w.vscr_lv_percent/100) * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_mva', 'sn_mv_mva']].min(axis=1)))
                                    if calc_r_ohm else np.zeros(len(net.trafo3w.index)),
-                                   ((net.trafo3w.vsc_lv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_kva', 'sn_lv_kva']].min(axis=1)/1000))
+                                   ((net.trafo3w.vsc_lv_percent/100)  * (net.trafo3w.vn_hv_kv ** 2) / (net.trafo3w[['sn_hv_mva', 'sn_mv_mva']].min(axis=1)))
                                    if calc_z_ohm else np.zeros(len(net.trafo3w.index))))
                           if inservice==1)
 

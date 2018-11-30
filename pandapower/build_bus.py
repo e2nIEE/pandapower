@@ -336,7 +336,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
 
     stor = net["storage"]
     if len(stor) > 0:
-        # TODO: Limit p_mw according to SOC and max_e_kwh/min_e_kwh
+        # TODO: Limit p_mw according to SOC and max_e_mwh/min_e_mwh
         # Note: p_mw depends on the timestep resolution -> implement a resolution factor in options
         # Note: SOC during power flow not updated, time domain introduction would lead to \
         #   paradigm shift in pandapower

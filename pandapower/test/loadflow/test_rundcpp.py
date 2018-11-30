@@ -76,7 +76,7 @@ def get_isolated(net):
     return _check_connectivity(ppc)
 
 
-def test_test_sn_kva():
+def test_test_sn_mva():
     test_net_gen1 = result_test_network_generator_dcpp(sn_mva=1)
     test_net_gen2 = result_test_network_generator_dcpp(sn_mva=2)
     for net1, net2 in zip(test_net_gen1, test_net_gen2):
@@ -85,7 +85,7 @@ def test_test_sn_kva():
         try:
             assert_net_equal(net1, net2)
         except:
-            raise UserWarning("Result difference due to sn_kva after adding %s" % net1.last_added_case)
+            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
 
 if __name__ == "__main__":
