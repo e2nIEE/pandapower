@@ -168,7 +168,7 @@ def check_greater_equal_zero(element, element_index, column):
         return element_index
 
 
-def check_smaller_zero(element, element_index, column):
+def check_less_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
 
         if (element[column] >= 0):
@@ -178,7 +178,7 @@ def check_smaller_zero(element, element_index, column):
         return element_index
 
 
-def check_smaller_equal_zero(element, element_index, column):
+def check_less_equal_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
 
         if (element[column] > 0):
@@ -212,10 +212,10 @@ def check_number(element, element_index, column):
         return element_index
 
 
-def check_between_zero_and_one(element, element_index, column):
+def check_greater_zero_less_equal_one(element, element_index, column):
     if check_number(element, element_index, column) is None:
 
-        if not (0 <= element[column] <= 1):
+        if not (0 < element[column] <= 1):
             return element_index
 
     else:
@@ -258,7 +258,7 @@ def invalid_values(net):
                                  ('to_bus', 'positive_integer'),
                                  ('length_km', '>0'), ('r_ohm_per_km', '>=0'),
                                  ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
-                                 ('max_i_ka', '>0'), ('df', '0to1'), ('in_service', 'boolean')],
+                                 ('max_i_ka', '>0'), ('df', '0<x<=1'), ('in_service', 'boolean')],
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
                                   ('sn_kva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
                                   ('vscr_percent', '>=0'),
@@ -289,12 +289,12 @@ def invalid_values(net):
     # matches a check function to each single input type restriction
     type_checks = {'>0': check_greater_zero,
                    '>=0': check_greater_equal_zero,
-                   '<0': check_smaller_zero,
-                   '<=0': check_smaller_equal_zero,
+                   '<0': check_less_zero,
+                   '<=0': check_less_equal_zero,
                    'boolean': check_boolean,
                    'positive_integer': check_pos_int,
                    'number': check_number,
-                   '0to1': check_between_zero_and_one,
+                   '0<x<=1': check_greater_zero_less_equal_one,
                    'switch_type': check_switch_type
                    }
 

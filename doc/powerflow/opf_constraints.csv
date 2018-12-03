@@ -1,5 +1,0 @@
-**Constraint**;**Defined in**
-:math:`V_{min,j} \leq V_{g,i}  \leq V_{min,i}, j  \ \epsilon \ bus` ;net.bus.min_vm_pu / net.bus.max_vm_pu
-:math:`L_{k} \leq L_{max,k}, k \ \epsilon \ trafo` ;net.trafo.max_loading_percent
-:math:`L_{l} \leq L_{max,l}, l \ \epsilon \ line` ;net.line.max_loading_percent
-:math:`L_{l} \leq L_{max,l}, l \ \epsilon \ trafo_{3w}` ;net.trafo3w.max_loading_percent

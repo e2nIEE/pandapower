@@ -11,7 +11,7 @@ import pandapower.networks as pn
 
 
 def test_kb_extrem_landnetz_freileitung():
-    pd_net = pn.kb_extrem_landnetz_freileitung(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_landnetz_freileitung(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 0.312) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 52.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 26.) < 0.00000001
@@ -23,7 +23,7 @@ def test_kb_extrem_landnetz_freileitung():
 
 
 def test_kb_extrem_landnetz_kabel():
-    pd_net = pn.kb_extrem_landnetz_kabel(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_landnetz_kabel(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 1.339) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 52.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 26.) < 0.00000001
@@ -35,7 +35,7 @@ def test_kb_extrem_landnetz_kabel():
 
 
 def test_kb_extrem_landnetz_freileitung_trafo():
-    pd_net = pn.kb_extrem_landnetz_freileitung_trafo(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_landnetz_freileitung_trafo(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 0.348) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 54.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 27.) < 0.00000001
@@ -47,7 +47,7 @@ def test_kb_extrem_landnetz_freileitung_trafo():
 
 
 def test_kb_extrem_landnetz_kabel_trafo():
-    pd_net = pn.kb_extrem_landnetz_kabel_trafo(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_landnetz_kabel_trafo(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 1.435) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 54.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 27.) < 0.00000001
@@ -59,7 +59,7 @@ def test_kb_extrem_landnetz_kabel_trafo():
 
 
 def test_kb_extrem_dorfnetz():
-    pd_net = pn.kb_extrem_dorfnetz(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_dorfnetz(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 3.088) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 116.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 58.) < 0.00000001
@@ -71,7 +71,7 @@ def test_kb_extrem_dorfnetz():
 
 
 def test_kb_extrem_dorfnetz_trafo():
-    pd_net = pn.kb_extrem_dorfnetz_trafo(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_dorfnetz_trafo(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 6.094) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 234.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 117.) < 0.00000001
@@ -83,7 +83,7 @@ def test_kb_extrem_dorfnetz_trafo():
 
 
 def test_kb_extrem_vorstadtnetz_1():
-    pd_net = pn.kb_extrem_vorstadtnetz_1(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_vorstadtnetz_1(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 3.296) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 290.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 145.) < 0.00000001
@@ -95,7 +95,7 @@ def test_kb_extrem_vorstadtnetz_1():
 
 
 def test_kb_extrem_vorstadtnetz_2():
-    pd_net = pn.kb_extrem_vorstadtnetz_2(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_vorstadtnetz_2(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 4.019) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 290.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 145.) < 0.00000001
@@ -107,7 +107,7 @@ def test_kb_extrem_vorstadtnetz_2():
 
 
 def test_kb_extrem_vorstadtnetz_trafo_1():
-    pd_net = pn.kb_extrem_vorstadtnetz_trafo_1(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_vorstadtnetz_trafo_1(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 5.256) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 382.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 191.) < 0.00000001
@@ -119,7 +119,7 @@ def test_kb_extrem_vorstadtnetz_trafo_1():
 
 
 def test_kb_extrem_vorstadtnetz_trafo_2():
-    pd_net = pn.kb_extrem_vorstadtnetz_trafo_2(p_load_in_kw=2., q_load_in_kvar=1.)
+    pd_net = pn.kb_extrem_vorstadtnetz_trafo_2(p_load_kw=2., q_load_kvar=1.)
     assert abs(pd_net.line.length_km.sum() - 5.329) < 0.00000001
     assert abs(pd_net.load.p_kw.sum() - 384.) < 0.00000001
     assert abs(pd_net.load.q_kvar.sum() - 192.) < 0.00000001
@@ -131,4 +131,3 @@ def test_kb_extrem_vorstadtnetz_trafo_2():
 
 if __name__ == '__main__':
     pytest.main(['-x', "test_kerber_extreme_networks.py"])
-#    test_kb_extrem_landnetz_kabel()

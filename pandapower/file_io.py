@@ -9,6 +9,7 @@ import json
 import os
 import pickle
 import sys
+from warnings import warn
 
 try:
     from fiona.crs import from_epsg
@@ -362,7 +363,15 @@ def from_json_string(json_string, convert=True):
 
     """
     data = json.loads(json_string, cls=PPJSONDecoder)
-    return from_json_dict(data, convert=convert)
+    try:
+        pd_dicts = dicts_to_pandas(data)
+        net = from_dict_of_dfs(pd_dicts)
+        if convert:
+            convert_format(net)
+        return net
+    except UserWarning:
+        # Can be deleted in the future, maybe now
+        return from_json_dict(data, convert=convert)
 
 
 def from_json_dict(json_dict, convert=True):
@@ -384,6 +393,8 @@ def from_json_dict(json_dict, convert=True):
         >>> net = pp.pp.from_json_dict(json.loads(json_str))
 
     """
+    warn("This function is deprecated and will be removed in a future release.\r\n"
+         "Please resave your grid using the current pandapower version.", DeprecationWarning)
     net = create_empty_network(name=json_dict["name"], f_hz=json_dict["f_hz"])
 
     for key in sorted(json_dict.keys()):

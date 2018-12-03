@@ -8,7 +8,7 @@
 from setuptools import setup, find_packages
 
 with open('README.rst', 'rb') as f:
-    install = f.read().decode('utf-8').partition("Minimal Example")[0]
+    install = f.read().decode('utf-8')
 with open('CHANGELOG.rst', 'rb') as f:
     changelog = f.read().decode('utf-8')
 
@@ -16,7 +16,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='1.5.1',
+    version='1.6.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
@@ -28,6 +28,7 @@ setup(
                       "networkx",
                       "numpy",
                       "scipy"],
+    extras_require = {":python_version<'3.0'": ["future"]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=[

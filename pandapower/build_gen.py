@@ -105,15 +105,15 @@ def _build_gen_ppc(net, ppc):
             # set constraints for controllable sgens
             if "min_q_kvar" in sg_is.columns:
                 ppc["gen"][gen_end:sg_end, QMAX] = - (sg_is["min_q_kvar"].values * 1e-3 - delta)
-                max_q_kvar = ppc["gen"][gen_end:sg_end, [QMIN]]
+                max_q_kvar = ppc["gen"][gen_end:sg_end, [QMAX]]
                 ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-                ppc["gen"][gen_end:sg_end, [QMIN]] = max_q_kvar
+                ppc["gen"][gen_end:sg_end, [QMAX]] = max_q_kvar
 
             if "max_q_kvar" in sg_is.columns:
                 ppc["gen"][gen_end:sg_end, QMIN] = - (sg_is["max_q_kvar"].values * 1e-3 + delta)
-                min_q_kvar = ppc["gen"][gen_end:sg_end, [QMAX]]
+                min_q_kvar = ppc["gen"][gen_end:sg_end, [QMIN]]
                 ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-                ppc["gen"][gen_end:sg_end, [QMAX]] = min_q_kvar - 1e-10 # TODO Why this? (M.Scharf, 2018-02)
+                ppc["gen"][gen_end:sg_end, [QMIN]] = min_q_kvar
 
             if "max_p_kw" in sg_is.columns:
                 ppc["gen"][gen_end:sg_end, PMIN] = - (sg_is["max_p_kw"].values * 1e-3 + delta)
@@ -141,15 +141,15 @@ def _build_gen_ppc(net, ppc):
             # set constraints for controllable loads
             if "min_q_kvar" in l_is.columns:
                 ppc["gen"][sg_end:l_end, QMAX] = - (l_is["min_q_kvar"].values * 1e-3 - delta)
-                max_q_kvar = ppc["gen"][sg_end:l_end, [QMIN]]
+                max_q_kvar = ppc["gen"][sg_end:l_end, [QMAX]]
                 ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-                ppc["gen"][sg_end:l_end, [QMIN]] = max_q_kvar
+                ppc["gen"][sg_end:l_end, [QMAX]] = max_q_kvar
 
             if "max_q_kvar" in l_is.columns:
                 ppc["gen"][sg_end:l_end, QMIN] = - (l_is["max_q_kvar"].values * 1e-3 + delta)
-                min_q_kvar = ppc["gen"][sg_end:l_end, [QMAX]]
+                min_q_kvar = ppc["gen"][sg_end:l_end, [QMIN]]
                 ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-                ppc["gen"][sg_end:l_end, [QMAX]] = min_q_kvar
+                ppc["gen"][sg_end:l_end, [QMIN]] = min_q_kvar
 
             if "min_p_kw" in l_is.columns:
                 ppc["gen"][sg_end:l_end, PMIN] = - (l_is["max_p_kw"].values * 1e-3 + delta)
@@ -177,15 +177,15 @@ def _build_gen_ppc(net, ppc):
             # set constraints for controllable sgens
             if "min_q_kvar" in stor_is.columns:
                 ppc["gen"][l_end:stor_end, QMAX] = - (stor_is["min_q_kvar"].values * 1e-3 - delta)
-                max_q_kvar = ppc["gen"][l_end:stor_end, [QMIN]]
+                max_q_kvar = ppc["gen"][l_end:stor_end, [QMAX]]
                 ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
                 ppc["gen"][l_end:stor_end, [QMIN]] = max_q_kvar
 
             if "max_q_kvar" in stor_is.columns:
                 ppc["gen"][l_end:stor_end, QMIN] = - (stor_is["max_q_kvar"].values * 1e-3 + delta)
-                min_q_kvar = ppc["gen"][l_end:stor_end, [QMAX]]
+                min_q_kvar = ppc["gen"][l_end:stor_end, [QMIN]]
                 ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-                ppc["gen"][l_end:stor_end, [QMAX]] = min_q_kvar
+                ppc["gen"][l_end:stor_end, [QMIN]] = min_q_kvar
 
             if "max_p_kw" in stor_is.columns:
                 ppc["gen"][l_end:stor_end, PMIN] = - (stor_is["max_p_kw"].values * 1e-3 + delta)
@@ -217,15 +217,15 @@ def _build_gen_ppc(net, ppc):
 
         if "min_q_kvar" in eg_is.columns:
             ppc["gen"][:eg_end, QMAX] = - (eg_is["min_q_kvar"].values * 1e-3 - delta)
-            max_q_kvar = ppc["gen"][:eg_end, [QMIN]]
+            max_q_kvar = ppc["gen"][:eg_end, [QMAX]]
             ncn.copyto(max_q_kvar, -q_lim_default, where=isnan(max_q_kvar))
-            ppc["gen"][:eg_end, [QMIN]] = max_q_kvar
+            ppc["gen"][:eg_end, [QMAX]] = max_q_kvar
 
         if "max_q_kvar" in eg_is.columns:
             ppc["gen"][:eg_end, QMIN] = - (eg_is["max_q_kvar"].values * 1e-3 + delta)
-            min_q_kvar = ppc["gen"][:eg_end, [QMAX]]
+            min_q_kvar = ppc["gen"][:eg_end, [QMIN]]
             ncn.copyto(min_q_kvar, q_lim_default, where=isnan(min_q_kvar))
-            ppc["gen"][:eg_end, [QMAX]] = min_q_kvar - 1e-10
+            ppc["gen"][:eg_end, [QMIN]] = min_q_kvar
 
         # set bus values for external grid buses
         eg_buses = bus_lookup[eg_is["bus"].values]
