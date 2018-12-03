@@ -272,7 +272,7 @@ def _update_lookup_entries(net, lookup, e2i, element):
 def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, new_gen_pos, lookup_name=None):
     if lookup_name is None:
         lookup_name = element
-    pandapower_index = net[element].index.values[net[element]['in_service'].values]
+    pandapower_index = net[element].index.values[net._is_elements[lookup_name]]
     ppc_index = new_gen_pos[ppc_start_index: ppc_end_index]
 
     # init lookup

@@ -80,4 +80,4 @@ def test_some_sgens_not_controllable():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_opf_cigre.py", "-xs"])
+    pytest.main([__file__, "-xs"])

@@ -560,4 +560,4 @@ def test_open(result_test_network):
     assert net['res_line'].ix[lines.index].i_ka.iloc[1] == 0.
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main([__file__, "-xs"])
