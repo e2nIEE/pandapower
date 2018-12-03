@@ -212,7 +212,6 @@ def _build_bus_ppc(net, ppc):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
-    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     r_switch = net["_options"]["r_switch"]
     init_vm_pu = net["_options"]["init_vm_pu"]
     init_va_degree = net["_options"]["init_va_degree"]
@@ -264,7 +263,7 @@ def _build_bus_ppc(net, ppc):
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
 
-    if copy_constraints_to_ppc:
+    if net._options["mode"] == "opf":
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:

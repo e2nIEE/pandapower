@@ -795,4 +795,4 @@ def test_opf_no_controllables_vs_pf():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    pytest.main(["-xs"])

@@ -69,9 +69,8 @@ def get_isolated(net):
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
-                     mode="pf", copy_constraints_to_ppc=False,
-                     r_switch=0.0, init="flat", enforce_q_lims=False, recycle=None)
-
+                     mode="pf", r_switch=0.0, init="flat", 
+                     enforce_q_lims=False, recycle=None)
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)
 

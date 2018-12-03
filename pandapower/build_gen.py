@@ -23,83 +23,66 @@ def _build_gen_ppc(net, ppc):
 
     mode = net["_options"]["mode"]
 
-    # if mode == power flow or short circuit...
-    if mode in ["pf", "opf", "sc"]:
+    if mode == "estimate":
+        return
 
-        # get in service elements
-        _is_elements = net["_is_elements"]
-        eg_is_mask = _is_elements['ext_grid']
-        gen_is_mask = _is_elements['gen']
+    _is_elements = net["_is_elements"]
+    nr_gens = {element: np.sum(_is_elements[element])
+                for element in ["ext_grid", "gen"] if _is_elements[element].any()}
+    if len(net.xward) > 0:
+        nr_gens["xward"] = len(net.xward)
 
-#        nr_gens = {element: np.sum(net["_is_elements"][element]) for element in ["ext_grid", "gen"]}
+    if mode == "opf":
+        if len(net.dcline) > 0:
+            ppc["dcline"] = net.dcline[["loss_mw", "loss_percent"]].values
+        for element in ["load", "sgen", "storage"]:
+            if "controllable" in net[element]:
+                controllable = net[element].controllable.fillna(False).values.astype(bool)
+                controllable_is = controllable & _is_elements[element]
+                if controllable_is.any():
+                    _is_elements["%s_controllable"%element] = controllable_is
+                    nr_gens["%s_controllable"%element] = controllable_is.sum()
 
-        nr_eg = np.sum(eg_is_mask)
-        nr_gen = np.sum(gen_is_mask)
-        nr_xward = len(net.xward)
+    nr_generators = sum([i for _, i in nr_gens.items()])
+    _init_ppc_gen(net, ppc, nr_generators)
 
-        if mode == "opf":
-            if len(net.dcline) > 0:
-                ppc["dcline"] = net.dcline[["loss_mw", "loss_percent"]].values
-            nr_sgen_ctrl = 0
-            for element in ["load", "sgen", "storage"]:
-                if "controllable" in net[element]:
-                    controllable = net[element].controllable.fillna(False).values.astype(bool)
-                else:
-                    controllable = np.zeros(len(net[element])).astype(bool)
-                in_service = _is_elements[element]
-                _is_elements["%s_controllable"%element] = net[element][controllable & in_service]
-            nr_load_ctrl = len(_is_elements["load_controllable"])
-            nr_sgen_ctrl = len(_is_elements["sgen_controllable"])
-            nr_storage_ctrl = len(_is_elements["storage_controllable"])
-        else:
-            nr_sgen_ctrl = 0
-            nr_load_ctrl = 0
-            nr_storage_ctrl = 0
+    idx = 0
+    for element in element_order_in_gen():
+        if element in nr_gens:
+            i = nr_gens[element]
+            add_element_to_gen(net, ppc, element, idx, idx+i)
+            idx += i
 
-        nr_generators = nr_eg + nr_gen + nr_sgen_ctrl + nr_load_ctrl + nr_storage_ctrl + nr_xward
-        _init_ppc_gen(net, ppc, nr_generators)
-        idx = 0
-
-        if nr_eg > 0:
-            _build_pp_ext_grid(net, ppc, idx, idx+nr_eg)
-            idx += nr_eg
-
-        if nr_gen > 0:
-            _build_pp_gen(net, ppc, idx, idx+nr_gen)
-            idx += nr_gen
-
-        if nr_sgen_ctrl > 0:
-            _build_pp_pq_element(net, ppc, "sgen", idx, idx+nr_sgen_ctrl)
-            idx += nr_sgen_ctrl
-
-        if nr_load_ctrl > 0:
-            _build_pp_pq_element(net, ppc, "load", idx, idx+nr_load_ctrl,
-                                 inverted=True)
-            idx += nr_load_ctrl
-
-        if nr_storage_ctrl > 0:
-            _build_pp_pq_element(net, ppc, "storage", idx, idx+nr_storage_ctrl,
-                                 inverted=True)
-            idx += nr_storage_ctrl
-
-        if nr_xward > 0:
-            _build_pp_xward(net, ppc, idx, idx+nr_xward)
-            idx += nr_xward
-
-        _replace_nans_with_default_limits(net, ppc)
+    _replace_nans_with_default_limits(net, ppc)
+    net._nr_gens = nr_gens
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
     ppc["gen"] = np.zeros(shape=(nr_gens, 21), dtype=float)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-#    if net._options["copy_constraints_to_ppc"]:
     q_lim_default = net._options["p_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
     ppc["gen"][:, PMIN] = -p_lim_default
     ppc["gen"][:, QMAX] = q_lim_default
     ppc["gen"][:, QMIN] = -q_lim_default
+
+def add_element_to_gen(net, ppc, element, f, t):
+    if element == "ext_grid":
+        _build_pp_ext_grid(net, ppc, f, t)
+    elif element == "gen":
+        _build_pp_gen(net, ppc, f, t)
+    elif element == "sgen_controllable":
+        _build_pp_pq_element(net, ppc, "sgen", f, t)
+    elif element == "load_controllable":
+        _build_pp_pq_element(net, ppc, "load", f, t, inverted=True)
+    elif element == "storage_controllable":
+        _build_pp_pq_element(net, ppc, "storage", f, t, inverted=True)
+    elif element == "xward":
+        _build_pp_xward(net, ppc, f, t)
+    else:
+        raise ValueError("Unknown element %s"%element)
 
 def _build_pp_ext_grid(net, ppc, f, t):
     delta = net._options["delta"]
@@ -116,8 +99,6 @@ def _build_pp_ext_grid(net, ppc, f, t):
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
     ppc["bus"][eg_buses, BUS_TYPE] = REF
     ppc["bus"][eg_buses, VM] = eg_is["vm_pu"].values
-    # _build_gen_lookups(net, "ext_grid", 0, eg_end)
-#    if net["_options"]["copy_constraints_to_ppc"]:
     if net._options["mode"] == "opf":
         add_q_constraints(ppc, eg_is, f, t, delta)
         add_p_constraints(ppc, eg_is, f, t, delta)
@@ -126,9 +107,6 @@ def _build_pp_ext_grid(net, ppc, f, t):
     else:
         ppc["gen"][f:t, QMIN] = 0
         ppc["gen"][f:t, QMAX] = 0
-
-        # REF busses don't have flexible voltages by definition:
-
 
 def _build_pp_gen(net, ppc, f, t):
     delta = net["_options"]["delta"]
@@ -151,10 +129,6 @@ def _build_pp_gen(net, ppc, f, t):
     ppc["bus"][gen_buses, VM] = gen_is_vm
     add_q_constraints(ppc, gen_is, f, t, delta)
     add_p_constraints(ppc, gen_is, f, t, delta)
-#    else:
-#        q_lim_default = net._options["q_lim_default"]
-#        ppc["gen"][f:t, QMIN] = -q_lim_default
-#        ppc["gen"][f:t, QMAX] = q_lim_default
 
 
 def _build_pp_xward(net, ppc, f, t, update_lookup=True):
@@ -180,7 +154,7 @@ def _build_pp_xward(net, ppc, f, t, update_lookup=True):
 def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
     delta = net._options["delta"]
     sign = -1 if inverted else 1
-    tab = net._is_elements["%s_controllable"%element]
+    tab = net[element][net._is_elements["%s_controllable"%element]]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     buses = bus_lookup[tab["bus"].values]
 
@@ -218,6 +192,10 @@ def add_p_constraints(ppc, tab, f, t, delta, inverted=False):
         else:
             ppc["gen"][f:t, PMAX] = tab["max_p_mw"].values + delta
 
+
+def element_order_in_gen():
+    return ["ext_grid", "gen", "sgen_controllable", "load_controllable", "storage_controllable",
+            "xward"]
 
 def _update_gen_ppc(net, ppc):
     '''
@@ -263,6 +241,7 @@ def _update_gen_ppc(net, ppc):
         ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
 
         add_q_constraints(ppc, gen_is, gen_end, eg_end, net._options["delta"])
+        add_p_constraints(ppc, gen_is, gen_end, eg_end, net._options["delta"])
 
     # add extended ward pv node data
     if xw_end > gen_end:
@@ -277,7 +256,8 @@ def _replace_nans_with_default_limits(net, ppc):
     qlim = net._options["q_lim_default"]
     plim = net._options["p_lim_default"]
 
-    for ppc_column, default in [(QMAX, qlim), (QMIN, -qlim), (PMIN, -plim), (PMAX, plim)]:
+    for ppc_column, default in [(QMAX, qlim), (QMIN, -qlim), (PMIN, -plim), (PMAX, plim),
+                                (VMAX, 2.0), (VMIN, 0.0)]:
         limits = ppc["gen"][:, [ppc_column]]
         ncn.copyto(limits, default, where=np.isnan(limits))
         ppc["gen"][:, [ppc_column]] = limits
