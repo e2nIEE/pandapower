@@ -82,8 +82,6 @@ def _pd2ppc(net):
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc)
-    # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
-    _build_gen_ppc(net, ppc)
     # generate ppc['branch'] and directly generates branch values
     _build_branch_ppc(net, ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
@@ -110,6 +108,7 @@ def _pd2ppc(net):
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
 
+    _build_gen_ppc(net, ppc)
 
     if "pf" in mode:
         _check_for_reference_bus(ppc)
@@ -207,18 +206,18 @@ def _ppc2ppci(ppc, ppci, net):
     ppc['gen'] = ppc['gen'][sort_gens,]
 
     # update gen lookups
-#    _is_elements = net["_is_elements"]
     gen_idx = 0
     nr_gens = net._nr_gens
 
     gen_order = element_order_in_gen()
-    for lookup_name in gen_order:
-         if lookup_name == "xward" or not lookup_name in nr_gens:
+    for element in gen_order:
+         if not element in nr_gens:
             continue
-         element = lookup_name.split("_")[0] if "controllable" in lookup_name else lookup_name
-         i = net.gen.in_service.values.sum() if element == "gen" else nr_gens[lookup_name]
-         _build_gen_lookups(net, element, gen_idx, gen_idx+i, new_gen_positions,
-                            lookup_name=lookup_name)
+         i = nr_gens[element]
+         if "controllable" in element:
+             _build_gen_lookups_controllable(net, element, gen_idx, gen_idx+i, new_gen_positions)
+         else:
+             _build_gen_lookups(net, element, gen_idx, gen_idx+i, new_gen_positions)
          gen_idx += i
 
     # determine which buses, branches, gens are connected and
@@ -269,12 +268,20 @@ def _update_lookup_entries(net, lookup, e2i, element):
     aux._write_lookup_to_net(net, element, lookup)
 
 
-def _build_gen_lookups(net, element, f, t, new_gen_pos, lookup_name=None):
-    if lookup_name is None:
-        lookup_name = element
-    pandapower_index = net[element].index.values[net[element].in_service.values]
+def _build_gen_lookups_controllable(net, element_ctrl, f, t, new_gen_pos):
+    element = element_ctrl.split("_")[0]
+    pandapower_index = net[element].index.values[net._is_elements[element_ctrl]]
     ppc_index = new_gen_pos[f:t]
+    _init_lookup(net, element_ctrl, pandapower_index, ppc_index)
 
+def _build_gen_lookups(net, element, f, t, new_gen_pos):
+    pandapower_index = net[element].index.values[net._is_elements[element]]
+    ppc_index = new_gen_pos[f:t]
+    if len(pandapower_index) > 0:
+        _init_lookup(net, element, pandapower_index, ppc_index)
+
+
+def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup
     lookup = -np.ones(max(pandapower_index) + 1, dtype=int)
 

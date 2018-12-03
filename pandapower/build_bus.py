@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
-from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA, CID, CZD, bus_cols
+from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA,\
+                               CID, CZD, bus_cols, REF
 
 try:
     from numba import jit
@@ -251,7 +252,7 @@ def _build_bus_ppc(net, ppc):
     # set buses out of service (BUS_TYPE == 4)
     ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
                BUS_TYPE] = NONE
-
+    set_reference_buses(net, ppc, bus_lookup)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
@@ -274,6 +275,15 @@ def _build_bus_ppc(net, ppc):
             ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
 
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
+
+
+def set_reference_buses(net, ppc, bus_lookup):
+    eg_buses = bus_lookup[net.ext_grid.bus[net._is_elements["ext_grid"]].values]
+    ppc["bus"][eg_buses, BUS_TYPE] = REF
+    gen_is = net.gen[net._is_elements["gen"]]
+    if gen_is["slack"].any():
+        slack_buses = gen_is["bus"][gen_is["slack"]].values
+        ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
 
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc):

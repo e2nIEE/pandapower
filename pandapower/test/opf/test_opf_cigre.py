@@ -80,32 +80,4 @@ def test_some_sgens_not_controllable():
 
 
 if __name__ == "__main__":
-    net = nw.create_cigre_network_mv(with_der="pv_wind")
-
-    net.bus["max_vm_pu"] = 1.1
-    net.bus["min_vm_pu"] = 0.9
-    net.line["max_loading_percent"] = 200
-    net.trafo["max_loading_percent"] = 100
-    net.sgen["max_p_mw"] = net.sgen.sn_mva
-    net.sgen["min_p_mw"] = 0
-    net.sgen["max_q_mvar"] = 0.01
-    net.sgen["min_q_mvar"] = -0.01
-    net.sgen["controllable"] = True
-    net.load["controllable"] = False
-    net.sgen.controllable[net.sgen.bus == 4] = False
-    net.sgen.controllable[net.sgen.bus == 6] = False
-    net.sgen.controllable[net.sgen.bus == 8] = False
-    net.sgen.controllable[net.sgen.bus == 9] = False
-
-    for sgen_idx, row in net["sgen"].iterrows():
-        cost_sgen = pp.create_poly_cost(net, sgen_idx, 'sgen', cp1_eur_per_mw=1.)
-        net.poly_cost.cp1_eur_per_mw.at[cost_sgen] = 100
-
-    # run OPF
-    pp.runopp(net, verbose=False)
-    assert net["OPF_converged"]
-    # check if p_mw of non conrollable sgens are unchanged
-    assert np.allclose(net.res_sgen.p_mw[net.sgen.controllable == False], net.sgen.p_mw[net.sgen.controllable == False])
-    assert not np.allclose(net.res_sgen.p_mw[net.sgen.controllable == True],
-                           net.sgen.p_mw[net.sgen.controllable == True])
-#    pytest.main([__file__, "-xs"])
+    pytest.main(["-xs"])
