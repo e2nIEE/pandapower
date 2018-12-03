@@ -69,7 +69,7 @@ def get_isolated(net):
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
-                     mode="pf", r_switch=0.0, init="flat", 
+                     mode="pf", r_switch=0.0, init="flat",
                      enforce_q_lims=False, recycle=None)
     ppc, ppci = _pd2ppc(net)
     return _check_connectivity(ppc)
@@ -88,4 +88,4 @@ def test_test_sn_mva():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_rundcpp.py", "-xs"])
+    pytest.main([__file__, "-xs"])

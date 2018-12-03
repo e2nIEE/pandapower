@@ -442,4 +442,4 @@ def test_generator_as_slack():
         pp.runpp(net)
 
 if __name__ == "__main__":
-     pytest.main(["test_scenarios.py", "-xs"])
+    pytest.main([__file__, "-xs"])

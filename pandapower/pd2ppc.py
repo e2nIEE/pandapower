@@ -213,10 +213,10 @@ def _ppc2ppci(ppc, ppci, net):
 
     gen_order = element_order_in_gen()
     for lookup_name in gen_order:
-         if not lookup_name in nr_gens:
-             continue
+         if lookup_name == "xward" or not lookup_name in nr_gens:
+            continue
          element = lookup_name.split("_")[0] if "controllable" in lookup_name else lookup_name
-         i = nr_gens[lookup_name]
+         i = net.gen.in_service.sum() if element == "gen" else nr_gens[lookup_name]
          _build_gen_lookups(net, element, gen_idx, gen_idx+i, new_gen_positions,
                             lookup_name=lookup_name)
          gen_idx += i
@@ -269,11 +269,11 @@ def _update_lookup_entries(net, lookup, e2i, element):
     aux._write_lookup_to_net(net, element, lookup)
 
 
-def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, new_gen_pos, lookup_name=None):
+def _build_gen_lookups(net, element, f, t, new_gen_pos, lookup_name=None):
     if lookup_name is None:
         lookup_name = element
-    pandapower_index = net[element].index.values[net._is_elements[lookup_name]]
-    ppc_index = new_gen_pos[ppc_start_index: ppc_end_index]
+    pandapower_index = net[element].index.values[net[element].in_service]
+    ppc_index = new_gen_pos[f:t]
 
     # init lookup
     lookup = -np.ones(max(pandapower_index) + 1, dtype=int)

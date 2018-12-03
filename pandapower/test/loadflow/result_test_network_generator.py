@@ -439,6 +439,7 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 
 if __name__ == '__main__':
+#    pp.runpp(net)
     from pandapower.test.consistency_checks import runpp_with_consistency_checks
     from pandapower import LoadflowNotConverged
     for net in result_test_network_generator():
