@@ -36,4 +36,4 @@ def test_opf_oberrhein():
     assert net["OPF_converged"]
 
 if __name__ == "__main__":
-    pytest.main(["test_oberrhein.py", "-xs"])
+    pytest.main(["-xs"])

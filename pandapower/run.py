@@ -246,7 +246,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     ac = True
     mode = "pf"
-    copy_constraints_to_ppc = False
+    copy_constraints_to_ppc = enforce_q_lims
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
         is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]

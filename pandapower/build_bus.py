@@ -432,13 +432,6 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         ppc["bus"][b, BS] = -vq
 
 
-def _controllable_to_bool(ctrl):
-    ctrl_bool = []
-    for val in ctrl:
-        ctrl_bool.append(val if not np.isnan(val) else False)
-    return np.array(ctrl_bool, dtype=bool)
-
-
 def _add_gen_impedances_ppc(net, ppc):
     _add_ext_grid_sc_impedance(net, ppc)
     _add_gen_sc_impedance(net, ppc)
