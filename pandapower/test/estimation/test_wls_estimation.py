@@ -426,65 +426,44 @@ def test_cigre_network_with_slack_init():
     test_cigre_network(init='slack')
 
 
-# def test_IEEE_case_9_with_bad_data():
-#     # 1. Create network
-#     # test grid: IEEE case 9 (HV)
-#     # overall: 9 buses, 8 lines
-#
-#     net = pp.networks.case9()
-#
-#     pp.create_measurement(net, "v", "bus", 1.0, 0.01, element=1)   # V at bus 1
-#     pp.create_measurement(net, "v", "bus", 1.02, 0.01, element=2)   # V at bus 2
-#     pp.create_measurement(net, "v", "bus", 0.9822, 0.01, element=3)   # V at bus 3
-#     pp.create_measurement(net, "v", "bus", 0.979, 0.01, element=4)   # V at bus 4
-#     pp.create_measurement(net, "v", "bus", 1.005, 0.01, element=5)   # V at bus 5
-#     pp.create_measurement(net, "v", "bus", 0.997, 0.01, element=7)   # V at bus 7
-#     pp.create_measurement(net, "v", "bus", 0.953, 0.01, element=8)   # V at bus 8
-#
-#     pp.create_measurement(net, "p", "bus", 72000, 100., element=0)
-#     pp.create_measurement(net, "p", "bus", 162780, 100., element=1)
-#     pp.create_measurement(net, "p", "bus", 84958, 70., element=2)
-#     pp.create_measurement(net, "p", "bus", 0., 1., element=3)
-#     pp.create_measurement(net, "p", "bus", -89967., 20., element=4)
-#     pp.create_measurement(net, "p", "bus", 0., 10., element=5)
-#     pp.create_measurement(net, "p", "bus", -100059., 30., element=6)
-#     pp.create_measurement(net, "p", "bus", 0., 10., element=7)
-#     pp.create_measurement(net, "p", "bus", -125100, 50., element=8)
-#
-#     pp.create_measurement(net, "q", "bus", 24000, 100., element=0)
-#     pp.create_measurement(net, "q", "bus", 14500, 100., element=1)
-#     pp.create_measurement(net, "q", "bus", 3644, 70., element=2)
-#     pp.create_measurement(net, "q", "bus", 0., 1., element=3)
-#     pp.create_measurement(net, "q", "bus", -30041., 20., element=4)
-#     pp.create_measurement(net, "q", "bus", 0., 10., element=5)
-#     pp.create_measurement(net, "q", "bus", -35087, 30., element=6)
-#     pp.create_measurement(net, "q", "bus", 0., 10., element=7)
-#     pp.create_measurement(net, "q", "bus", -49900, 50., element=8)
-#
-#     # 2. Do state estimation
-#     success_SE = estimate(net, init='flat')
-#     v_est_SE = net.res_bus_est.vm_pu.values
-#     delta_SE = net.res_bus_est.va_degree.values
-#
-#     # 3. Create false measurement (very close to useful values)
-#     pp.create_measurement(net, "v", "bus", 0.2, 0.01, element=0)  # V at bus 0
-#
-#     # 4. Do chi2-test
-#     bad_data_detected = chi2_analysis(net, init='flat')
-#
-#     # 5. Perform rn_max_test
-#     success_rn_max = remove_bad_data(net, init='flat', rn_max_threshold=7.0)
-#     v_est_rn_max = net.res_bus_est.vm_pu.values
-#     delta_est_rn_max = net.res_bus_est.va_degree.values
-#
-#     diff_v = v_est_SE - v_est_rn_max
-#     diff_delta = delta_SE - delta_est_rn_max
-#
-#     assert success_SE
-#     assert bad_data_detected
-#     assert success_rn_max
-#     assert (np.nanmax(abs(diff_v)) < 1e-5)
-#     assert (np.nanmax(abs(diff_delta)) < 1e-5)
+def test_cigre_with_bad_data():
+    np.random.seed(123456)
+    net = nw.create_cigre_network_mv(with_der=False)
+    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(np.random.choice([0.95, 0.9, 0.97]))))
+    pp.runpp(net)
+
+    for bus, row in net.res_bus.iterrows():
+        if bus == 2:
+            continue
+        if bus != 6:
+            pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)  # skip our bad data measurement
+        pp.create_measurement(net, "p", "bus", -row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus)
+        pp.create_measurement(net, "q", "bus", -row.q_mvar * r(), max(0.001, abs(0.03 * row.q_mvar)), bus)
+
+    # 2. Do state estimation
+    success_SE = estimate(net, init='slack')
+    v_est_SE = net.res_bus_est.vm_pu.values
+    delta_SE = net.res_bus_est.va_degree.values
+
+    # 3. Create false measurement (very close to useful values)
+    pp.create_measurement(net, "v", "bus", 0.85, 0.01, element=6)
+
+    # 4. Do chi2-test
+    bad_data_detected = chi2_analysis(net, init='slack')
+
+    # 5. Perform rn_max_test
+    success_rn_max = remove_bad_data(net, init='slack')
+    v_est_rn_max = net.res_bus_est.vm_pu.values
+    delta_est_rn_max = net.res_bus_est.va_degree.values
+
+    diff_v = v_est_SE - v_est_rn_max
+    diff_delta = delta_SE - delta_est_rn_max
+
+    assert success_SE
+    assert bad_data_detected
+    assert success_rn_max
+    assert (np.nanmax(abs(diff_v)) < 1e-8)
+    assert (np.nanmax(abs(diff_delta)) < 1e-8)
 
 
 def test_init_slack_with_multiple_transformers(angles=True):
