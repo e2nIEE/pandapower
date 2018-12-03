@@ -205,12 +205,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                   ("vm_pu", "f8"),
                   ("in_service", "bool")],
         "measurement": [("name", dtype(object)),
-                        ("type", dtype(object)),
+                        ("measurement_type", dtype(object)),
                         ("element_type", dtype(object)),
-                        ("value", "f8"),
-                        ("std_dev", "f8"),
-                        ("bus", "u4"),
-                        ("element", dtype(object))],
+                        ("element", "uint32"),
+                        ("value", "float64"),
+                        ("std_dev", "float64"),
+                        ("side", dtype(object))],
         "pwl_cost": [("power_type", dtype(object)),
                      ("element", dtype(object)),
                      ("et", dtype(object)),
@@ -2300,107 +2300,103 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
     return index
 
 
-def create_measurement(net, meas_type, element_type, value, std_dev, bus, element=None,
+def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
                        check_existing=True, index=None, name=None):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i
 
     INPUT:
-        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible.
+        **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
-        "trafo" are possible.
+        "trafo" are possible
 
-        **value** (float) - Measurement value. Units are "kW" for P, "kVar" for Q, "p.u." for V,
-        "A" for I. Generation is a positive bus power injection, consumption negative.
+        **element** (int) - Index of the measured element (either bus index, line index, trafo index, trafo3w index)
 
-        **std_dev** (float) - Standard deviation in the same unit as the measurement.
+        **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
+        "kA" for I. Generation is a positive bus power injection, consumption negative
 
-        **bus** (int) - Index of bus. Determines the position of the measurement for
-        line/trafo measurements (bus == from_bus: measurement at from_bus;
-        same for to_bus). The bus can also be "from" or "to" if the element_type is "line"
-        or "hv"/"lv" if "trafo".
+        **std_dev** (float) - Standard deviation in the same unit as the measurement
 
-        **element** (int, None) - Index of measured element, if element_type is "line" or
-        "trafo".
+        **side** (int, string, default: None) - Only used for measured lines or transformers. Side defines at which end of the
+        branch the measurement is gathered. For lines this may be "from", "to" to denote the side with the from_bus
+        or to_bus. It can also the be index of the from_bus or to_bus. For transformers, it can be "hv" or "lv" or
+        the corresponding bus index, respectively
 
     OPTIONAL:
-        **check_existing** (bool) - Check for and replace existing measurements for this bus,
+        **check_existing** (bool, default: None) - Check for and replace existing measurements for this bus,
         type and element_type. Set it to false for performance improvements which can cause unsafe
-        behaviour.
+        behaviour
 
-        **name** (str, None) - name of measurement.
+        **name** (str, default: None) - name of measurement
 
     OUTPUT:
         (int) Index of measurement
 
-    EXAMPLE:
-        500 kW load measurement with 10 kW standard deviation on bus 0:
-        create_measurement(net, "p", "bus", -500., 10., 0)
+    EXAMPLES:
+        2 MW load measurement with 0.05 MW standard deviation on bus 0:
+        create_measurement(net, "p", "bus", 0, -2., 0.05.)
+
+        4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
+        create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
 
     if meas_type not in ("v", "p", "q", "i"):
-        raise UserWarning("Invalid measurement type (%s)" % meas_type)
+        raise UserWarning(f"Invalid measurement type ({meas_type})")
 
-    if element is None and element_type in ("line", "trafo"):
-        raise UserWarning("The element type %s requires a value in 'element'" % element_type)
+    if side is None and element_type in ("line", "trafo"):
+        raise UserWarning(f"The element type {element_type} requires a value in 'element'")
 
     if meas_type == "v":
         element_type = "bus"
 
     if element_type not in ("bus", "line", "trafo"):
-        raise UserWarning("Invalid element type (%s)" % element_type)
+        raise UserWarning(f"Invalid element type ({element_type})")
 
-    if element_type == "bus" and bus not in net["bus"].index.values:
-        raise UserWarning("Bus %s does not exist" % bus)
-
-    if bus in ("from", "to") and element_type == "line":
-        bus = net.line.from_bus.loc[element] if bus == "from" else net.line.to_bus.loc[element]
-
-    if bus in ("hv", "lv") and element_type == "trafo":
-        bus = net.trafo.hv_bus.loc[element] if bus == "hv" else net.trafo.lv_bus.loc[element]
+    if element_type == "bus" and element not in net["bus"].index.values:
+        raise UserWarning(f"Bus with index={element} does not exist")
 
     if element is not None and element_type == "line" and element not in net["line"].index.values:
-        raise UserWarning("Line %s does not exist" % element)
+        raise UserWarning(f"Line with index={element} does not exist")
 
     if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
-        raise UserWarning("Trafo %s does not exist" % element)
+        raise UserWarning(f"Trafo with index={element} does not exist")
 
     if index is None:
         index = get_free_id(net.measurement)
 
     if index in net["measurement"].index:
-        raise UserWarning("A measurement with index %s already exists" % index)
+        raise UserWarning(f"A measurement with index={index} already exists")
 
     if meas_type == "i" and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
     if meas_type == "v" and element_type in ("line", "trafo"):
-        raise UserWarning("Voltage measurements can only be placed at buses, not at %s"
-                          % element_type)
+        raise UserWarning(f"Voltage measurements can only be placed at buses, not at {element_type}")
 
     if check_existing:
-        if element is None:
-            existing = net.measurement[(net.measurement.type == meas_type) &
+        if side is None:
+            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
                                        (net.measurement.element_type == element_type) &
-                                       (net.measurement.bus == bus) &
-                                       (pd.isnull(net.measurement.element))].index
+                                       (net.measurement.element == element) &
+                                       (pd.isnull(net.measurement.side))].index
         else:
-            existing = net.measurement[(net.measurement.type == meas_type) &
+            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
                                        (net.measurement.element_type == element_type) &
-                                       (net.measurement.bus == bus) &
-                                       (net.measurement.element == element)].index
+                                       (net.measurement.element == element) &
+                                       (net.measurement.side == side)].index
         if len(existing) == 1:
             index = existing[0]
         elif len(existing) > 1:
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[index] = [name, meas_type.lower(), element_type, value, std_dev, bus, element]
+    net.measurement.loc[index] = [name, meas_type.lower(), element_type, element, value, std_dev, side]
     _preserve_dtypes(net.measurement, dtypes)
     return index
+
 
 def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     """
