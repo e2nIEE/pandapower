@@ -223,10 +223,9 @@ def test_3bus_with_transformer():
     pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[1], .008), .008, 1, 0)
 
     pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .01), .01,
-                          side=3, element=0)  # transformer meas.
+                          side="hv", element=0)  # transformer meas.
     pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .01), .01,
                           side=3, element=0)  # at hv side
-
 
     # 2. Do state estimation
     success = estimate(net, init='slack', tolerance=5e-5, maximum_iterations=10, calculate_voltage_angles=True)
@@ -350,6 +349,39 @@ def test_3bus_with_pq_line_from_to_measurements():
                           max(1.0e-3, abs(0.03 * net.res_line.p_to_mw[0])), element=0, side=1)
     pp.create_measurement(net, "q", "line", net.res_line.q_to_mvar[0] * r(),
                           max(1.0e-3, abs(0.03 * net.res_line.q_to_mvar[0])), element=0, side=1)
+
+    success = estimate(net, init='flat')
+
+    assert success
+    assert (np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.023)
+    assert (np.nanmax(abs(net.res_bus_est.va_degree.values - net.res_bus.va_degree.values)) < 0.12)
+
+
+def test_3bus_with_side_names():
+    np.random.seed(2017)
+    net = load_3bus_network()
+    net.measurement.drop(net.measurement.index, inplace=True)
+    pp.create_load(net, 1, p_mw=0.495974966, q_mvar=0.297749528)
+    pp.create_load(net, 2, p_mw=1.514220983, q_mvar=0.787528929)
+    pp.runpp(net)
+    pp.create_measurement(net, "v", "bus", net.res_bus.vm_pu[0] * r(0.01), 0.01, 0)
+    pp.create_measurement(net, "v", "bus", net.res_bus.vm_pu[2] * r(0.01), 0.01, 1)
+    pp.create_measurement(net, "p", "bus", -net.res_bus.p_mw[0] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_bus.p_mw[0])), 0)
+    pp.create_measurement(net, "q", "bus", -net.res_bus.q_mvar[0] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[0])), 0)
+    pp.create_measurement(net, "p", "bus", -net.res_bus.p_mw[2] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_bus.p_mw[2])), 2)
+    pp.create_measurement(net, "q", "bus", -net.res_bus.q_mvar[2] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[2])), 2)
+    pp.create_measurement(net, "p", "line", net.res_line.p_from_mw[0] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])), element=0, side="from")
+    pp.create_measurement(net, "q", "line", net.res_line.q_from_mvar[0] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, side="from")
+    pp.create_measurement(net, "p", "line", net.res_line.p_to_mw[0] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_line.p_to_mw[0])), element=0, side="to")
+    pp.create_measurement(net, "q", "line", net.res_line.q_to_mvar[0] * r(),
+                          max(1.0e-3, abs(0.03 * net.res_line.q_to_mvar[0])), element=0, side="to")
 
     success = estimate(net, init='flat')
 
@@ -533,8 +565,6 @@ def test_check_existing_measurements():
 def load_3bus_network():
     folder = os.path.abspath(os.path.dirname(pp.__file__))
     grid = pp.from_json(os.path.join(folder, "test", "estimation", "3bus_wls.json"))
-    # grid = pp.from_pickle(os.path.join(folder, "test", "estimation", "3bus_wls.p"))
-    # pp.to_json(grid, os.path.join(folder, "test", "estimation", "3bus_wls.json"))
     return grid
 
 

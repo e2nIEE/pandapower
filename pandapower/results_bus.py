@@ -26,6 +26,7 @@ def _get_bus_v_results(net, ppc):
     # voltage angles
     net["res_bus"]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
+
 def _get_bus_idx(net):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     ppi = net["bus"].index.values
