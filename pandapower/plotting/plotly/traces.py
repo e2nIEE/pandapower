@@ -19,7 +19,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from packaging import version
     from plotly import __version__
     from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
@@ -28,14 +27,19 @@ try:
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
 except ImportError:
-    logger.debug("Failed to import plotly - interactive plotting will not be available")
+    logger.info("Failed to import plotly - interactive plotting will not be available")
 
 
 def version_check():
-    if version.parse(__version__) < version.parse("3.1.1"):
-        raise UserWarning("Your plotly version {} is no longer supported.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly".format(__version__))
+    try:
+        from packaging import version
+        if version.parse(__version__) < version.parse("3.1.1"):
+            raise UserWarning("Your plotly version {} is no longer supported.\r\n"
+                              "Please upgrade your python-plotly installation, "
+                              "e.g., via pip install --upgrade plotly".format(__version__))
+    except ImportError:
+        logger.info("Failed to import packaging. Version check for plotly will not be possible. "
+                    "Make sure to have plotly 3.1.1 or higher installed")
 
 
 def _in_ipynb():
