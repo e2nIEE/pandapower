@@ -211,7 +211,7 @@ def _ppc2ppci(ppc, ppci, net):
 
     gen_order = element_order_in_gen()
     for element in gen_order:
-         if not element in nr_gens:
+         if not element in nr_gens or element == "xward":
             continue
          i = nr_gens[element]
          if "controllable" in element:

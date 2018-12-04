@@ -442,23 +442,4 @@ def test_generator_as_slack():
         pp.runpp(net)
 
 if __name__ == "__main__":
-#    net=pp.create_empty_network()
-#
-#    gen_bus=pp.create_bus(net,vn_kv=1., name='gen_bus')
-#    slack_bus=pp.create_bus(net,vn_kv=1., name='slack_bus')
-#    gen_iso_bus=pp.create_bus(net,vn_kv=1., name='iso_bus')
-#
-#    pp.create_line(net, from_bus=slack_bus, to_bus=gen_bus, length_km=1, std_type="48-AL1/8-ST1A 10.0")
-#
-#    pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)
-#
-#    pp.create_gen(net, bus=gen_iso_bus, p_mw=1, vm_pu=1., name='iso_gen', in_service=False)
-#    pp.create_gen(net, bus=gen_bus, p_mw=2, vm_pu=1., name='gen')
-#
-#    pp.rundcpp(net)
-#    assert net.res_gen.p_mw.values[1] == net.gen.p_mw.values[1]
-#
-#    pp.runpp(net)
-#    assert net.res_gen.p_mw.values[1] == net.gen.p_mw.values[1]
-
     pytest.main(["-xs"])

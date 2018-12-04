@@ -97,7 +97,6 @@ def _build_pp_ext_grid(net, ppc, f, t):
     # set bus values for external grid buses
     if calculate_voltage_angles:
         ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
-    ppc["bus"][eg_buses, BUS_TYPE] = REF
     ppc["bus"][eg_buses, VM] = eg_is["vm_pu"].values
     if net._options["mode"] == "opf":
         add_q_constraints(ppc, eg_is, f, t, delta)
@@ -121,11 +120,6 @@ def _build_pp_gen(net, ppc, f, t):
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
-
-    if any(gen_is["slack"].values):
-        slack_buses = gen_is["bus"][gen_is["slack"]].values
-        ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
-
     ppc["bus"][gen_buses, VM] = gen_is_vm
     add_q_constraints(ppc, gen_is, f, t, delta)
     add_p_constraints(ppc, gen_is, f, t, delta)
