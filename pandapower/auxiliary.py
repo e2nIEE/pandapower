@@ -358,17 +358,18 @@ def _select_is_elements_numba(net, isolated_nodes=None):
             element_df = net[element]
             set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
                              bus_in_service, element_in_service)
+        if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
+            if "controllable" in net[element]:
+               controllable = net[element].controllable.fillna(False).values.astype(bool)
+               controllable_is = controllable & element_in_service
+               if controllable_is.any():
+                   is_elements["%s_controllable"%element] = controllable_is
+                   element_in_service = element_in_service & ~controllable_is
         is_elements[element] = element_in_service
+
+
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
-
-    if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
-        if "load_controllable" in net._is_elements:
-            is_elements["load_controllable"] = net._is_elements["load_controllable"]
-        if "sgen_controllable" in net._is_elements:
-            is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
-        if "storage_controllable" in net._is_elements:
-            is_elements["storage_controllable"] = net._is_elements["storage_controllable"]
     return is_elements
 
 

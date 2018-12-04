@@ -9,6 +9,8 @@ import numpy.core.numeric as ncn
 from pandapower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
 from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pandapower.pf.ppci_variables import bustypes
+from collections import OrderedDict
+
 
 def _build_gen_ppc(net, ppc):
     '''
@@ -27,31 +29,27 @@ def _build_gen_ppc(net, ppc):
         return
 
     _is_elements = net["_is_elements"]
-    nr_gens = {element: np.sum(_is_elements[element])
-                for element in ["ext_grid", "gen"] if _is_elements[element].any()}
-    if len(net.xward) > 0:
-        nr_gens["xward"] = len(net.xward)
+    nr_gens = OrderedDict()
+    for element in ["ext_grid", "gen"]:
+        if _is_elements[element].any():
+            nr_gens[element] = np.sum(_is_elements[element])
 
     if mode == "opf":
         if len(net.dcline) > 0:
             ppc["dcline"] = net.dcline[["loss_mw", "loss_percent"]].values
-        for element in ["load", "sgen", "storage"]:
-            if "controllable" in net[element]:
-                controllable = net[element].controllable.fillna(False).values.astype(bool)
-                controllable_is = controllable & _is_elements[element]
-                if controllable_is.any():
-                    _is_elements["%s_controllable"%element] = controllable_is
-                    nr_gens["%s_controllable"%element] = controllable_is.sum()
-
+        for element in ["sgen", "load", "storage"]:
+            ctrl_ = "%s_controllable"%element
+            if ctrl_ in _is_elements:
+                nr_gens[ctrl_] = _is_elements[ctrl_].sum()
+    if len(net.xward) > 0:
+        nr_gens["xward"] = len(net.xward)
     nr_generators = sum([i for _, i in nr_gens.items()])
     _init_ppc_gen(net, ppc, nr_generators)
 
     idx = 0
-    for element in element_order_in_gen():
-        if element in nr_gens:
-            i = nr_gens[element]
-            add_element_to_gen(net, ppc, element, idx, idx+i)
-            idx += i
+    for element, i in nr_gens.items():
+        add_element_to_gen(net, ppc, element, idx, idx+i)
+        idx += i
 
     _replace_nans_with_default_limits(net, ppc)
     net._nr_gens = nr_gens
@@ -185,11 +183,6 @@ def add_p_constraints(ppc, tab, f, t, delta, inverted=False):
             ppc["gen"][f:t, PMIN] = - tab["max_p_mw"].values - delta
         else:
             ppc["gen"][f:t, PMAX] = tab["max_p_mw"].values + delta
-
-
-def element_order_in_gen():
-    return ["ext_grid", "gen", "sgen_controllable", "load_controllable", "storage_controllable",
-            "xward"]
 
 def _update_gen_ppc(net, ppc):
     '''

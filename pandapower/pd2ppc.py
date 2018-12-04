@@ -25,8 +25,7 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus, \
-                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus, \
-                                 element_order_in_gen
+                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
 
 
@@ -205,16 +204,12 @@ def _ppc2ppci(ppc, ppci, net):
     new_gen_positions[sort_gens] = np.arange(len(sort_gens))
     ppc['gen'] = ppc['gen'][sort_gens,]
 
-    # update gen lookups
+    # initialize gen lookups
     gen_idx = 0
-    nr_gens = net._nr_gens
-
-    gen_order = element_order_in_gen()
-    for element in gen_order:
-         if not element in nr_gens or element == "xward":
+    for element, i in net._nr_gens.items():
+         if element == "xward":
             continue
-         i = nr_gens[element]
-         if "controllable" in element:
+         elif "controllable" in element:
              _build_gen_lookups_controllable(net, element, gen_idx, gen_idx+i, new_gen_positions)
          else:
              _build_gen_lookups(net, element, gen_idx, gen_idx+i, new_gen_positions)

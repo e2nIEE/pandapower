@@ -293,10 +293,6 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # get in service elements
     # _is_elements = check if element is at a bus & if element is in service
     _is_elements = net["_is_elements"]
-
-    # distinguish calculation modes
-    mode = net["_options"]["mode"]
-
     l = net["load"]
     if len(l) > 0:
         voltage_depend_loads = net["_options"]["voltage_depend_loads"]
@@ -322,11 +318,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
 
             ppc["bus"][b_zip, CID] = ci_sum
             ppc["bus"][b_zip, CZD] = cz_sum
-
-        if mode == "opf" and "controllable" in l:
-            active = _is_elements["load"] & ~l["controllable"].fillna(False).values
-        else:
-            active = _is_elements["load"]
+        active = _is_elements["load"]
         vl = active * l["scaling"].values.T
         q = np.hstack([q, l["q_mvar"].values * vl])
         p = np.hstack([p, l["p_mw"].values * vl])
@@ -334,10 +326,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
 
     sgen = net["sgen"]
     if len(sgen) > 0:
-        if mode == "opf" and "controllable" in sgen:
-            active = _is_elements["sgen"]  & ~sgen["controllable"].fillna(False).values
-        else:
-            active = _is_elements["sgen"]
+        active = _is_elements["sgen"]
         vl = active * sgen["scaling"].values.T
         q = np.hstack([q, -sgen["q_mvar"].values * vl])
         p = np.hstack([p, -sgen["p_mw"].values * vl])
@@ -350,10 +339,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
         # Note: SOC during power flow not updated, time domain introduction would lead to \
         #   paradigm shift in pandapower
         #   --> energy content of storage is currently neglected!
-        if mode == "opf" and "controllable" in stor:
-            active = _is_elements["storage"] & ~stor["controllable"].fillna(False).values
-        else:
-            active = _is_elements["storage"]
+        active = _is_elements["storage"]
         vl = active * stor["scaling"].values.T
         q = np.hstack([q, stor["q_mvar"].values * vl])
         p = np.hstack([p, stor["p_mw"].values * vl])
