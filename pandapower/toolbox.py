@@ -1248,7 +1248,9 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].loc[i, "element"] = b1
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
-    net.measurement.loc[net.measurement.element.isin(b2), "element"] = b1
+    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+    bus_meas = bus_meas.loc[bus_meas.element.isin(b2)].index
+    net.measurement.loc[bus_meas, "element"] = b1
     net.measurement.loc[net.measurement.side.isin(b2), "side"] = b1
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
