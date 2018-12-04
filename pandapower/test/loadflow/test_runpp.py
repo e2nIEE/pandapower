@@ -243,8 +243,8 @@ def get_isolated(net):
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
-                     mode="pf", copy_constraints_to_ppc=False,
-                     r_switch=0.0, init_vm_pu="flat", init_va_degree="flat",
+                     mode="pf", r_switch=0.0, init_vm_pu="flat",
+                     init_va_degree="flat",
                      enforce_q_lims=False, recycle=None)
 
     ppc, ppci = _pd2ppc(net)
@@ -955,4 +955,37 @@ def test_init_results_without_results():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q = get_isolated(net)
+    assert len(iso_buses) == 0
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+
+    isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
+    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")
+    isolated_gen = pp.create_bus(net, vn_kv=20., name="isolated Gen")
+    isolated_pv_bus = pp.create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
+    pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLine")
+    pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+                   name="IsolatedLineToGen")
+    # with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q = get_isolated(net)
+
+    # assert len(iso_buses) == 0
+    # assert np.isclose(iso_p, 0)
+    # assert np.isclose(iso_q, 0)
+    #
+    # pp.create_load(net, isolated_bus1, p_mw=0.200., q_mvar=0.020)
+    # pp.create_sgen(net, isolated_bus2, p_mw=0.0150., q_mvar=-0.010)
+    #
+    # iso_buses, iso_p, iso_q = get_isolated(net)
+    # assert len(iso_buses) == 0
+    # assert np.isclose(iso_p, 0)
+    # assert np.isclose(iso_q, 0)
+
+    # with pytest.warns(UserWarning):
+    runpp_with_consistency_checks(net, check_connectivity=True)
+#    pytest.main([__file__, "-xs"])

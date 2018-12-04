@@ -122,12 +122,11 @@ def write_pq_results_to_element(net, ppc, element):
     ctrl_ = "%s_controllable"%element
 
     is_controllable = False
-    if ctrl_ in net._is_elements:
-        if len(net._is_elements[ctrl_]):
-            controlled_elements = net._is_elements[ctrl_].index
-            gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
-            gen_sign = 1 if element == "sgen" else -1
-            is_controllable = True
+    if ctrl_ in net._nr_gens:
+        controlled_elements = net[element][net._is_elements[ctrl_]].index
+        gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
+        gen_sign = 1 if element == "sgen" else -1
+        is_controllable = True
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"

@@ -439,23 +439,7 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 
 if __name__ == '__main__':
-#    import pandapower as pp
-#    net = pp.create_empty_network()
-#    b1, b2, ln = add_grid_connection(net, zone="test_trafo3w")
-#    b3 = pp.create_bus(net, vn_kv=0.6, zone="test_trafo3w")
-#    pp.create_load(net, b3, p_mw=0.2, q_mvar=0)
-#    b4 = pp.create_bus(net, vn_kv=0.4, zone="test_trafo3w")
-#    pp.create_load(net, b4, p_mw=0.1, q_mvar=0)
-#
-#    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=22,
-#                                            vn_mv_kv=.64, vn_lv_kv=.42, sn_hv_mva=1,
-#                                            sn_mv_mva=0.7, sn_lv_mva=0.3, vsc_hv_percent=1.,
-#                                            vscr_hv_percent=.03, vsc_mv_percent=.5,
-#                                            vscr_mv_percent=.02, vsc_lv_percent=.25,
-#                                            vscr_lv_percent=.01, pfe_mw=.0005, i0_percent=0.1,
-#                                            name="test", index=pp.get_free_id(net.trafo3w) + 1,
-#                                            tp_side="hv", tp_pos=2, tp_st_percent=1.25,
-#                                            tp_min=-5, tp_mid=0, tp_max=5)
+#    pp.runpp(net)
     from pandapower.test.consistency_checks import runpp_with_consistency_checks
     from pandapower import LoadflowNotConverged
     for net in result_test_network_generator():

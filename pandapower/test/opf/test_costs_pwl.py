@@ -246,4 +246,4 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    pytest.main(["-xs"])

@@ -90,7 +90,6 @@ def _initialize_branch_lookup(net):
 
 
 def _calc_trafo3w_parameter(net, ppc):
-    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     trafo_df = _trafo_df_from_trafo3w(net)
     net._equiv_trafo3w = trafo_df
@@ -100,7 +99,7 @@ def _calc_trafo3w_parameter(net, ppc):
     temp_para[:, 1] = bus_lookup[(trafo_df["lv_bus"].values).astype(int)]
     temp_para[:, 2:7] = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
     temp_para[:, 7] = trafo_df["in_service"].values
-    if copy_constraints_to_ppc:
+    if net["_options"]["mode"] == "opf":
         max_load = trafo_df.max_loading_percent if "max_loading_percent" in trafo_df else 0
         temp_para[:, 8] = max_load / 100. * trafo_df.sn_mva
     return temp_para
@@ -118,7 +117,6 @@ def _calc_line_parameter(net, ppc):
                 Nunmpy array. with the following order:
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
-    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     line = net["line"]
@@ -143,7 +141,7 @@ def _calc_line_parameter(net, ppc):
         g = line["g_us_per_km"].values * 1e-6 * baseR * length * parallel
         t[:, 4] = b - g * 1j
     t[:, 5] = line["in_service"].values
-    if copy_constraints_to_ppc:
+    if net._options["mode"] == "opf":
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
         vr = net.bus.vn_kv.loc[line["from_bus"].values].values * np.sqrt(3)
         t[:, 6] = max_load / 100. * line.max_i_ka.values * line.df.values * parallel * vr
@@ -163,7 +161,6 @@ def _calc_trafo_parameter(net, ppc):
         Numpy array. with the following order:
         0:hv_bus; 1:lv_bus; 2:r_pu; 3:x_pu; 4:b_pu; 5:tab, 6:shift
     '''
-    copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     temp_para = np.zeros(shape=(len(net["trafo"].index), 9), dtype=np.complex128)
@@ -176,7 +173,7 @@ def _calc_trafo_parameter(net, ppc):
     if any(trafo.df.values <= 0):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
-    if copy_constraints_to_ppc:
+    if net._options["mode"] == "opf":
         max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
         temp_para[:, 8] = max_load / 100. * trafo.sn_mva.values * trafo.df.values * parallel
     return temp_para

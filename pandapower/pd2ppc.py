@@ -25,7 +25,8 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus, \
-                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus
+                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus, \
+                                 element_order_in_gen
 from pandapower.opf.make_objective import _make_objective
 
 
@@ -81,8 +82,6 @@ def _pd2ppc(net):
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc)
-    # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
-    _build_gen_ppc(net, ppc)
     # generate ppc['branch'] and directly generates branch values
     _build_branch_ppc(net, ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
@@ -109,6 +108,7 @@ def _pd2ppc(net):
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
 
+    _build_gen_ppc(net, ppc)
 
     if "pf" in mode:
         _check_for_reference_bus(ppc)
@@ -206,23 +206,19 @@ def _ppc2ppci(ppc, ppci, net):
     ppc['gen'] = ppc['gen'][sort_gens,]
 
     # update gen lookups
-    _is_elements = net["_is_elements"]
-    eg_end = np.sum(_is_elements['ext_grid'])
-    gen_end = eg_end + np.sum(net['gen']['in_service'].values)
-    sgen_end = len(_is_elements["sgen_controllable"]) + gen_end if "sgen_controllable" in _is_elements else gen_end
-    load_end = len(_is_elements["load_controllable"]) + sgen_end if "load_controllable" in _is_elements else sgen_end
-    storage_end = len(_is_elements["storage_controllable"]) + load_end if "storage_controllable" in _is_elements else load_end
+    gen_idx = 0
+    nr_gens = net._nr_gens
 
-    if eg_end > 0:
-        _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions)
-    if gen_end > eg_end:
-        _build_gen_lookups(net, "gen", eg_end, gen_end, new_gen_positions)
-    if sgen_end > gen_end:
-        _build_gen_lookups(net, "sgen_controllable", gen_end, sgen_end, new_gen_positions)
-    if load_end > sgen_end:
-        _build_gen_lookups(net, "load_controllable", sgen_end, load_end, new_gen_positions)
-    if storage_end > load_end:
-        _build_gen_lookups(net, "storage_controllable", load_end, storage_end, new_gen_positions)
+    gen_order = element_order_in_gen()
+    for element in gen_order:
+         if not element in nr_gens:
+            continue
+         i = nr_gens[element]
+         if "controllable" in element:
+             _build_gen_lookups_controllable(net, element, gen_idx, gen_idx+i, new_gen_positions)
+         else:
+             _build_gen_lookups(net, element, gen_idx, gen_idx+i, new_gen_positions)
+         gen_idx += i
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -272,21 +268,26 @@ def _update_lookup_entries(net, lookup, e2i, element):
     aux._write_lookup_to_net(net, element, lookup)
 
 
-def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, new_gen_pos):
-    # get buses from pandapower and ppc
-    _is_elements = net["_is_elements"]
-    if element in ["sgen_controllable", "load_controllable", "storage_controllable"]:
-        pandapower_index = net["_is_elements"][element].index.values
-    else:
-        pandapower_index = net[element].index.values[net[element]['in_service'].values]
-    ppc_index = new_gen_pos[ppc_start_index: ppc_end_index]
+def _build_gen_lookups_controllable(net, element_ctrl, f, t, new_gen_pos):
+    element = element_ctrl.split("_")[0]
+    pandapower_index = net[element].index.values[net._is_elements[element_ctrl]]
+    ppc_index = new_gen_pos[f:t]
+    _init_lookup(net, element_ctrl, pandapower_index, ppc_index)
 
+def _build_gen_lookups(net, element, f, t, new_gen_pos):
+    pandapower_index = net[element].index.values[net._is_elements[element]]
+    ppc_index = new_gen_pos[f:t]
+    if len(pandapower_index) > 0:
+        _init_lookup(net, element, pandapower_index, ppc_index)
+
+
+def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup
     lookup = -np.ones(max(pandapower_index) + 1, dtype=int)
 
     # update lookup
     lookup[pandapower_index] = ppc_index
-    aux._write_lookup_to_net(net, element, lookup)
+    aux._write_lookup_to_net(net, lookup_name, lookup)
 
 
 def _update_ppc(net):
