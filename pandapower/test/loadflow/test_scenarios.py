@@ -170,6 +170,7 @@ def test_isolated_gen_lookup():
     pp.create_ext_grid(net, bus=slack_bus, vm_pu=1.)
 
     pp.create_gen(net, bus=gen_iso_bus, p_mw=1, vm_pu=1., name='iso_gen')
+    pp.create_gen(net, bus=gen_bus, p_mw=1, vm_pu=1., name='oos_gen', in_service=False)
     pp.create_gen(net, bus=gen_bus, p_mw=2, vm_pu=1., name='gen')
 
     pp.rundcpp(net)
@@ -178,6 +179,18 @@ def test_isolated_gen_lookup():
     pp.runpp(net)
     assert net.res_gen.p_mw.values[1] == net.gen.p_mw.values[1]
 
+    pp.create_xward(net, bus=gen_iso_bus, pz_mw=1., qz_mvar=1., ps_mw=1., qs_mvar=1.,
+                    vm_pu=1., x_ohm=1., r_ohm=.1)
+    pp.create_xward(net, bus=gen_iso_bus, pz_mw=1., qz_mvar=1., ps_mw=1., qs_mvar=1.,
+                    vm_pu=1., x_ohm=1., r_ohm=.1)
+    pp.create_xward(net, bus=gen_iso_bus, pz_mw=1., qz_mvar=1., ps_mw=1., qs_mvar=1.,
+                    vm_pu=1., x_ohm=1., r_ohm=.1, in_service=False)
+
+    pp.rundcpp(net)
+    assert net.res_gen.p_mw.values[1] == net.gen.p_mw.values[1]
+
+    pp.runpp(net)
+    assert net.res_gen.p_mw.values[1] == net.gen.p_mw.values[1]
 
 def test_transformer_phase_shift():
     net = pp.create_empty_network()
