@@ -219,7 +219,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
 
-
     kwargs.update(overrule_options)
 
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
@@ -233,13 +232,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     if "init" in overrule_options:
         init = overrule_options["init"]
 
-    ## check if numba is available and the corresponding flag
-    if numba == True:
+    # check if numba is available and the corresponding flag
+    if numba:
         numba = _check_if_numba_is_installed(numba)
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values) or
-                    np.any(net["load"]["const_i_percent"].values)):
+        if not (np.any(net["load"]["const_z_percent"].values) or np.any(net["load"]["const_i_percent"].values)):
             voltage_depend_loads = False
 
     if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
@@ -262,7 +260,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     if max_iteration == "auto":
         max_iteration = default_max_iteration[algorithm]
 
-    if init != "auto" and ((init_va_degree != None) or (init_vm_pu != None)) :
+    if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
 
     if init == "auto":
@@ -277,7 +275,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     else:
         init_vm_pu = init
         init_va_degree = init
-
 
     # init options
     net._options = {}
@@ -484,10 +481,10 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
             warnings are suppressed, too.
     """
 
-    if (not net.sgen.empty) & (not "controllable" in net.sgen.columns):
+    if (not net.sgen.empty) & ("controllable" not in net.sgen.columns):
         logger.warning('Warning: Please specify sgen["controllable"]\n')
 
-    if (not net.load.empty) & (not "controllable" in net.load.columns):
+    if (not net.load.empty) & ("controllable" not in net.load.columns):
         logger.warning('Warning: Please specify load["controllable"]\n')
 
     mode = "opf"
