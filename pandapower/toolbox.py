@@ -466,22 +466,26 @@ def convert_format(net):
             net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
             net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
         # initialize measurement dataframe
-        if "measurement" in net and "element_type" not in net.measurement:
+        if "measurement" in net and "type" in net.measurement:
             if net.measurement.empty:
                 del net["measurement"]
             else:
-                logger.warning("The measurement structure seems outdated. Please adjust it "
-                               "according to the documentation.")
+                net.measurement["side"] = None
+                bus_measurements = net.measurement.element_type == "bus"
+                net.measurement.loc[bus_measurements, "element"] = net.measurement.loc[bus_measurements, "bus"].values
+                net.measurement.loc[~bus_measurements, "side"] = net.measurement.loc[~bus_measurements, "bus"].values
+                net.measurement.rename(columns={'type': 'measurement_type'}, inplace=True)
+                net.measurement.drop(["bus"], axis=1, inplace=True)
         if "measurement" in net and "name" not in net.measurement:
             net.measurement.insert(0, "name", None)
         if "measurement" not in net:
             net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                                 ("type", np.dtype(object)),
+                                                                 ("measurement_type", np.dtype(object)),
                                                                  ("element_type", np.dtype(object)),
-                                                                 ("value", "f8"),
-                                                                 ("std_dev", "f8"),
-                                                                 ("bus", "u4"),
-                                                                 ("element", np.dtype(object))]))
+                                                                 ("element", "uint32"),
+                                                                 ("value", "float64"),
+                                                                 ("std_dev", "float64"),
+                                                                 ("side", np.dtype(object))]))
         if "dcline" not in net:
             net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                             ("from_bus", "u4"),
@@ -549,7 +553,6 @@ def convert_format(net):
                                                               ("points", np.dtype(object))
                                                               ]))
 
-
         if "poly_cost" not in net:
             net["poly_cost"] = pd.DataFrame(np.zeros(0, dtype=
                                                        [("element", np.dtype(object)),
@@ -579,7 +582,6 @@ def convert_format(net):
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
 
-
         if "cost_per_kw" in net.ext_grid:
             if "min_p_kw" not in net.ext_grid:
                 net.ext_grid["min_p_kw"] = -1e9
@@ -590,13 +592,11 @@ def convert_format(net):
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
 
-
         if "cost_per_kvar" in net.gen:
             if not "piecewise_linear_cost" in net:
                 for index, cost in net.gen.cost_per_kvar.iteritems():
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
-
 
         if "cost_per_kvar" in net.sgen:
             if not "piecewise_linear_cost" in net:
@@ -604,13 +604,11 @@ def convert_format(net):
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
-
         if "cost_per_kvar" in net.ext_grid:
             if not "piecewise_linear_cost" in net:
                 for index, cost in net.ext_grid.cost_per_kvar.iteritems():
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
-
 
         if "tp_st_degree" not in net.trafo:
             net.trafo["tp_st_degree"] = np.nan
@@ -712,7 +710,7 @@ def convert_format(net):
                     raise NotImplementedError
                 del net.piecewise_linear_cost
 
-            pq_measurements = net.measurement[net.measurement.type.isin(["p", "q"])].index
+            pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
             net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
 
         _convert_to_mw(net)
