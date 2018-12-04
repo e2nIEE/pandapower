@@ -122,7 +122,7 @@ def write_pq_results_to_element(net, ppc, element):
     ctrl_ = "%s_controllable"%element
 
     is_controllable = False
-    if ctrl_ in net._nr_gens:
+    if ctrl_ in _is_elements:
         controlled_elements = net[element][net._is_elements[ctrl_]].index
         gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
         gen_sign = 1 if element == "sgen" else -1

@@ -9,7 +9,6 @@ import numpy.core.numeric as ncn
 from pandapower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
 from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pandapower.pf.ppci_variables import bustypes
-from collections import OrderedDict
 
 
 def _build_gen_ppc(net, ppc):
@@ -29,30 +28,32 @@ def _build_gen_ppc(net, ppc):
         return
 
     _is_elements = net["_is_elements"]
-    nr_gens = OrderedDict()
+    gen_order = dict()
+    f = 0
     for element in ["ext_grid", "gen"]:
-        if _is_elements[element].any():
-            nr_gens[element] = np.sum(_is_elements[element])
+        f = add_gen_order(gen_order, element, _is_elements, f)
 
     if mode == "opf":
         if len(net.dcline) > 0:
             ppc["dcline"] = net.dcline[["loss_mw", "loss_percent"]].values
-        for element in ["sgen", "load", "storage"]:
-            ctrl_ = "%s_controllable"%element
-            if ctrl_ in _is_elements:
-                nr_gens[ctrl_] = _is_elements[ctrl_].sum()
-    if len(net.xward) > 0:
-        nr_gens["xward"] = len(net.xward)
-    nr_generators = sum([i for _, i in nr_gens.items()])
-    _init_ppc_gen(net, ppc, nr_generators)
+        for element in ["sgen_controllable", "load_controllable", "storage_controllable"]:
+            f = add_gen_order(gen_order, element, _is_elements, f)
 
-    idx = 0
-    for element, i in nr_gens.items():
-        add_element_to_gen(net, ppc, element, idx, idx+i)
-        idx += i
+    f = add_gen_order(gen_order, "xward", _is_elements, f)
+
+    _init_ppc_gen(net, ppc, f)
+    for element, (f,t) in gen_order.items():
+        add_element_to_gen(net, ppc, element, f, t)
 
     _replace_nans_with_default_limits(net, ppc)
-    net._nr_gens = nr_gens
+    net._gen_order = gen_order
+
+def add_gen_order(gen_order, element, _is_elements, f):
+    if element in _is_elements and _is_elements[element].any():
+        i = np.sum(_is_elements[element])
+        gen_order[element] = (f, f+i)
+        f += i
+    return f
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
@@ -130,9 +131,8 @@ def _build_pp_xward(net, ppc, f, t, update_lookup=True):
     xw = net["xward"]
     xw_is = net["_is_elements"]['xward']
     if update_lookup:
-        ppc["gen"][f:t, GEN_BUS] = bus_lookup[xw["ad_bus"].values]
-    ppc["gen"][f:t, VG] = xw["vm_pu"].values
-    ppc["gen"][f:t, GEN_STATUS] = xw_is
+        ppc["gen"][f:t, GEN_BUS] = bus_lookup[xw["ad_bus"][xw_is].values]
+    ppc["gen"][f:t, VG] = xw["vm_pu"][xw_is].values
     ppc["gen"][f:t, PMIN] = + delta
     ppc["gen"][f:t, PMAX] = - delta
     ppc["gen"][f:t, QMIN] = -q_lim_default

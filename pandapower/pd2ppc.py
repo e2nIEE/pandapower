@@ -205,15 +205,8 @@ def _ppc2ppci(ppc, ppci, net):
     ppc['gen'] = ppc['gen'][sort_gens,]
 
     # initialize gen lookups
-    gen_idx = 0
-    for element, i in net._nr_gens.items():
-         if element == "xward":
-            continue
-         elif "controllable" in element:
-             _build_gen_lookups_controllable(net, element, gen_idx, gen_idx+i, new_gen_positions)
-         else:
-             _build_gen_lookups(net, element, gen_idx, gen_idx+i, new_gen_positions)
-         gen_idx += i
+    for element, (f, t) in net._gen_order.items():
+        _build_gen_lookups(net, element, f, t, new_gen_positions)
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -262,17 +255,14 @@ def _update_lookup_entries(net, lookup, e2i, element):
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
     aux._write_lookup_to_net(net, element, lookup)
 
-
-def _build_gen_lookups_controllable(net, element_ctrl, f, t, new_gen_pos):
-    element = element_ctrl.split("_")[0]
-    pandapower_index = net[element].index.values[net._is_elements[element_ctrl]]
-    ppc_index = new_gen_pos[f:t]
-    _init_lookup(net, element_ctrl, pandapower_index, ppc_index)
-
 def _build_gen_lookups(net, element, f, t, new_gen_pos):
-    pandapower_index = net[element].index.values[net._is_elements[element]]
-    ppc_index = new_gen_pos[f:t]
-    if len(pandapower_index) > 0:
+     in_service = net._is_elements[element]
+     if "controllable" in element:
+         pandapower_index = net[element.split("_")[0]].index.values[in_service]
+     else:
+         pandapower_index = net[element].index.values[in_service]
+     ppc_index = new_gen_pos[f:t]
+     if len(pandapower_index) > 0:
         _init_lookup(net, element, pandapower_index, ppc_index)
 
 
