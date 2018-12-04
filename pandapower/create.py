@@ -2343,38 +2343,38 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     """
 
     if meas_type not in ("v", "p", "q", "i"):
-        raise UserWarning(f"Invalid measurement type ({meas_type})")
+        raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
     if side is None and element_type in ("line", "trafo"):
-        raise UserWarning(f"The element type {element_type} requires a value in 'element'")
+        raise UserWarning("The element type {} requires a value in 'element'".format(element_type))
 
     if meas_type == "v":
         element_type = "bus"
 
     if element_type not in ("bus", "line", "trafo"):
-        raise UserWarning(f"Invalid element type ({element_type})")
+        raise UserWarning("Invalid element type ({})".format(element_type))
 
     if element_type == "bus" and element not in net["bus"].index.values:
-        raise UserWarning(f"Bus with index={element} does not exist")
+        raise UserWarning("Bus with index={} does not exist".format(element))
 
     if element is not None and element_type == "line" and element not in net["line"].index.values:
-        raise UserWarning(f"Line with index={element} does not exist")
+        raise UserWarning("Line with index={} does not exist".format(element))
 
     if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
-        raise UserWarning(f"Trafo with index={element} does not exist")
+        raise UserWarning("Trafo with index={element} does not exist".format(element))
 
     if index is None:
         index = get_free_id(net.measurement)
 
     if index in net["measurement"].index:
-        raise UserWarning(f"A measurement with index={index} already exists")
+        raise UserWarning("A measurement with index={} already exists".format(index))
 
     if meas_type == "i" and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
     if meas_type == "v" and element_type in ("line", "trafo"):
-        raise UserWarning(f"Voltage measurements can only be placed at buses, not at {element_type}")
+        raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:
         if side is None:

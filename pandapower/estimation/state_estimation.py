@@ -308,7 +308,7 @@ class state_estimation(object):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: %.7f" % current_error)
+                self.logger.debug("Current error: {:.7f}".format(current_error))
 
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
@@ -318,11 +318,11 @@ class state_estimation(object):
         # print output for results
         if current_error <= self.tolerance:
             successful = True
-            self.logger.debug("WLS State Estimation successful (%d iterations)" % cur_it)
+            self.logger.debug("WLS State Estimation successful ({:d} iterations)".format(cur_it))
         else:
             successful = False
-            self.logger.debug("WLS State Estimation not successful (%d/%d iterations)" %
-                              (cur_it, self.max_iterations))
+            self.logger.debug("WLS State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
+                                                                                                  self.max_iterations))
 
         # store results for all elements
         # calculate bus power injections
