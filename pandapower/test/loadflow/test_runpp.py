@@ -987,5 +987,5 @@ if __name__ == "__main__":
     # assert np.isclose(iso_q, 0)
 
     # with pytest.warns(UserWarning):
-    runpp_with_consistency_checks(net, check_connectivity=True)
-#    pytest.main([__file__, "-xs"])
+#    runpp_with_consistency_checks(net, check_connectivity=True)
+    pytest.main([__file__, "-xs"])
