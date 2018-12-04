@@ -1016,6 +1016,10 @@ def create_continuous_bus_index(net, start=0):
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et == "b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+    bus_meas = net.measurement.element_type == "bus"
+    net.measurement.loc[bus_meas, "element"] = get_indices(net.measurement.loc[bus_meas, "element"], bus_lookup)
+    side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
+    net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"], bus_lookup)
     return net
 
 
@@ -1118,7 +1122,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     ebts = set()
     if bus_elements:
         ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
-                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus"),
+                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
                      ("storage", "bus")])
     if branch_elements:
         ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
@@ -1220,10 +1224,11 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     considered. """
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
-    analyzed_meas = net.measurement.loc[net.measurement.bus.isin(buses).fillna("nan")]
+    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+    analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
     # drop duplicates
     idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
-        "type", "element_type", "bus", "element"], keep=keep)]
+        "measurement_type", "element_type", "side", "element"], keep=keep)]
     net.measurement.drop(idx_to_drop, inplace=True)
 
 
@@ -1243,6 +1248,8 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].loc[i, "element"] = b1
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
+    net.measurement.loc[net.measurement.element.isin(b2), "element"] = b1
+    net.measurement.loc[net.measurement.side.isin(b2), "side"] = b1
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
         drop_buses(net, b2, drop_elements=False)
