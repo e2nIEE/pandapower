@@ -186,7 +186,7 @@ class pandapowerNet(ADict):
         par = []
         res = []
         for tb in list(self.keys()):
-            if isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
+            if not tb.startswith("_") and isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
                 if 'res_' in tb:
                     res.append(tb)
                 else:
@@ -381,10 +381,10 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     """
     if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
-    
+
     init_results = (isinstance(init_vm_pu, str)     and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
-                            
+
     options = {
         "calculate_voltage_angles": calculate_voltage_angles,
         "trafo_model": trafo_model,
@@ -411,6 +411,7 @@ def _check_bus_index_and_print_warning_if_high(net, n_max=1e7):
             "Maximum bus index is high (%i). You should avoid high bus indices because of perfomance reasons."
             " Try resetting the bus indices with the toolbox function "
             "create_continous_bus_index()" % max_bus)
+
 
 def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
     if net.gen.empty:
@@ -553,7 +554,6 @@ def _check_if_numba_is_installed(numba):
             logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
                            numba_warning_str)
             numba = False
-
     except:
         logger.warning(numba_warning_str)
         numba = False

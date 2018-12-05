@@ -1,39 +1,48 @@
-from numpy import roots
+from numpy import roots, conj, r_
 from numpy.core.umath import exp
 
-from pandapower.pf.create_jacobian import create_jacobian_matrix
 
-
-def _iwamoto_step(Ybus, J, F, dx, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba, dVa, dVm, Vm, Va, pv, j1, j2, j3, j4,
-                  j5, j6):
+def _iwamoto_step(Ybus, J, F, dx, pq, npv, npq, dVa, dVm, Vm, Va, pv, j1, j2, j3, j4, j5, j6):
     if npv:
         dVa[pv] = dx[j1:j2]
     if npq:
         dVa[pq] = dx[j3:j4]
         dVm[pq] = dx[j5:j6]
     dV = dVm * exp(1j * dVa)
-    if not (dV == 0.0).any():
-        iwa_multiplier = _get_iwamoto_multiplier(Ybus, J, F, dV, dx, pvpq, pq, createJ, pvpq_lookup, npv, npq,
-                                                 numba)
-    else:
-        iwa_multiplier = 1.0
+
+    iwa_multiplier = _get_iwamoto_multiplier(Ybus, J, F, dV, dx, pq, pv)
+
     Vm += iwa_multiplier * dVm
     Va += iwa_multiplier * dVa
     return Vm, Va
 
 
-def _get_iwamoto_multiplier(Ybus, J, F, dV, dx, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba):
+def _get_iwamoto_multiplier(Ybus, J, F, dV, dx, pq, pv):
     """
     Calculates the iwamato multiplier to increase convergence
     """
-    J_iwa = create_jacobian_matrix(Ybus, dV, pvpq, pq, createJ, pvpq_lookup, npv, npq, numba)
-    J_dx = J * dx
-    J_iwa_dx = 0.5 * dx * J_iwa * dx
 
-    g0 = -F.dot(J_dx)
-    g1 = J_dx.dot(J_dx) + 2 * F.dot(J_iwa_dx)
-    g2 = -3.0 * J_dx.dot(J_iwa_dx)
-    g3 = 2.0 * J_iwa_dx.dot(J_iwa_dx)
+    c0=-F                               # c0 = ys-y(x)= -F
+    c1=-J * dx                          # c1 = -Jdx
+    c2=-_evaluate_Yx(Ybus, dV, pv, pq)  # c2 = -y(dx)
+
+    g0 = c0.dot(c1)
+    g1 = c1.dot(c1) + 2 * c0.dot(c2)
+    g2 = 3.0 * c1.dot(c2)
+    g3 = 2.0 * c2.dot(c2)
 
     np_roots = roots([g3, g2, g1, g0])[2].real
+    print("iwamoto muliplier:", np_roots)
+    #print(g0,g1,g2,g3,np_roots)
+    #print(g0+ g1*a + g2*a**2 + g3*a**3)
+
     return np_roots
+
+
+def _evaluate_Yx(Ybus, V, pv, pq):
+    ## evaluate y(x)
+    Yx = V * conj(Ybus * V)
+    F = r_[Yx[pv].real,
+           Yx[pq].real,
+           Yx[pq].imag]
+    return F

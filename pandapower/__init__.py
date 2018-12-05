@@ -5,6 +5,7 @@ from pandapower.create import *
 from pandapower.diagnostic import *
 from pandapower.file_io import *
 from pandapower.run import *
+from pandapower.runpm import *
 from pandapower.std_types import *
 from pandapower.toolbox import *
 from pandapower.powerflow import *
