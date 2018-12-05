@@ -148,7 +148,7 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
         **customer** (str, 'single') - type of customers ('single' or 'multiple') supplied by the
             feeders
 
-        **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'bad')
+        **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'worse')
 
     EXAMPLE:
 
@@ -161,24 +161,25 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
     # --- paper data - TABLE III and IV
     parameters = {'short': {'cable': {'single': {'good': [60, 1, False, False, False],
                                                  'average': [120, 1, False, False, False],
-                                                 'bad': [80, 2, False, False, False]},
+                                                 'worse': [80, 2, False, False, False]},
                                       'multiple': {'good': [80, 3, True, False, False],
                                                    'average': [50, 6, True, False, False],
-                                                   'bad': [40, 10, True, False, False]}}},
+                                                   'worse': [40, 10, True, False, False]}}},
                   'middle': {'cable': {'multiple': {'good': [40, 15, True, True, False],
                                                     'average': [35, 20, True, True, False],
-                                                    'bad': [30, 25, True, True, False]}},
+                                                    'worse': [30, 25, True, True, False]}},
                              'C&OHL': {'multiple': {'good': [50, 10, True, True, False],
                                                     'average': [45, 13, True, True, False],
-                                                    'bad': [40, 16, True, True, False]}}},
+                                                    'worse': [40, 16, True, True, False]}}},
                   'long': {'cable': {'multiple': {'good': [30, 30, False, True, True],
                                                   'average': [30, 40, False, True, True],
-                                                  'bad': [30, 50, False, True, True]}},
+                                                  'worse': [30, 50, False, True, True]}},
                            'C&OHL': {'multiple': {'good': [40, 20, False, True, True],
                                                   'average': [40, 30, False, True, True],
-                                                  'bad': [40, 40, False, True, True]}}}}
+                                                  'worse': [40, 40, False, True, True]}}}}
     # process network choosing input data
     try:
+        case = case if case != "bad" else "worse"
         net_data = parameters[feeders_range][linetype][customer][case]
     except KeyError:
         raise ValueError("This combination of 'feeders_range', 'linetype', 'customer' and 'case' "
