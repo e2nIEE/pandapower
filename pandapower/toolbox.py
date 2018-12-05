@@ -89,12 +89,12 @@ def _check_plc_full_range(net, element_type):  # pragma: no cover
                 ].index
     if len(p_idx):
         logger.warning("At" + element_type + str(p_idx.values) +
-                    "the piecewise linear costs do not cover full active power range. " +
-                    "In OPF the costs will be extrapolated.")
+                       "the piecewise linear costs do not cover full active power range. " +
+                       "In OPF the costs will be extrapolated.")
     if len(q_idx):
         logger.warning("At" + element_type + str(q_idx.values) +
-                    "the piecewise linear costs do not cover full reactive power range." +
-                    "In OPF the costs will be extrapolated.")
+                       "the piecewise linear costs do not cover full reactive power range." +
+                       "In OPF the costs will be extrapolated.")
 
 
 def check_opf_data(net):  # pragma: no cover
@@ -220,11 +220,11 @@ def opf_task(net):  # pragma: no cover
                 constr[i] = np.nan
             if (constr.min_p_kw >= constr.max_p_kw).any():
                 logger.warning("The value of min_p_kw must be less than max_p_kw for all " +
-                            variable_names[j] + ". " + "Please observe the pandapower " +
-                            "signing system.")
+                               variable_names[j] + ". " + "Please observe the pandapower " +
+                               "signing system.")
             if (constr.min_q_kvar >= constr.max_q_kvar).any():
                 logger.warning("The value of min_q_kvar must be less than max_q_kvar for all " +
-                            variable_names[j] + ". Please observe the pandapower signing system.")
+                               variable_names[j] + ". Please observe the pandapower signing system.")
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
                           " [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " + \
@@ -575,6 +575,9 @@ def convert_format(net):
                     p = net.sgen.min_p_kw.at[index]
                     create_piecewise_linear_cost(net, index, "sgen",
                                                  np.array([[p, cost * p], [0, 0]]))
+
+    if "coords" not in net.bus_geodata:
+        net.bus_geodata["coords"] = None
 
     if "cost_per_kw" in net.ext_grid:
         if "min_p_kw" not in net.ext_grid:
@@ -1690,7 +1693,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
         switch_selection = np.full(len(net.switch), True, dtype=bool)
     else:
         logger.warning("Unknown switch status \"%s\" selected! "
-                    "Selecting all switches by default." % status)
+                       "Selecting all switches by default." % status)
 
     cs = set()
     if 'b' in consider:

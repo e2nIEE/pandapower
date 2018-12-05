@@ -105,7 +105,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if scale_size:
         # if scale_size -> calc size from distance between min and max geocoord
         mean_distance_between_buses = sum((net['bus_geodata'].max() - net[
-            'bus_geodata'].min()) / 200)
+            'bus_geodata'].min()).dropna() / 200)
         # set the bus / ext_grid sizes accordingly
         # Comment: This is implemented because if you would choose a fixed values
         # (e.g. bus_size = 0.2), the size
