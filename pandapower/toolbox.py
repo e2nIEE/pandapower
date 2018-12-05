@@ -556,7 +556,7 @@ def convert_format(net):
                                                                  ("c", np.dtype(object))]))
 
     if "cost_per_kw" in net.gen:
-        if not "piecewise_linear_cost" in net:
+        if "piecewise_linear_cost" not in net:
             for index, cost in net.gen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
                     p = net.gen.min_p_kw.at[index]
@@ -569,7 +569,7 @@ def convert_format(net):
         if "max_p_kw" not in net.sgen:
             net.sgen["max_p_kw"] = 0
 
-        if not "piecewise_linear_cost" in net:
+        if "piecewise_linear_cost" not in net:
             for index, cost in net.sgen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
                     p = net.sgen.min_p_kw.at[index]
@@ -584,7 +584,7 @@ def convert_format(net):
             net.ext_grid["min_p_kw"] = -1e9
         if "max_p_kw" not in net.ext_grid:
             net.ext_grid["max_p_kw"] = 0
-        if not "piecewise_linear_cost" in net:
+        if "piecewise_linear_cost" not in net:
             for index, cost in net.ext_grid.cost_per_kw.iteritems():
                 if not np.isnan(cost):
                     p = net.ext_grid.min_p_kw.at[index]
@@ -592,7 +592,7 @@ def convert_format(net):
                                                  np.array([[p, cost * p], [0, 0]]))
 
     if "cost_per_kvar" in net.gen:
-        if not "piecewise_linear_cost" in net:
+        if "piecewise_linear_cost" not in net:
             for index, cost in net.gen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
                     qmin = net.gen.min_q_kvar.at[index]
@@ -602,7 +602,7 @@ def convert_format(net):
                                                            [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.sgen:
-        if not "piecewise_linear_cost" in net:
+        if "piecewise_linear_cost" not in net:
             for index, cost in net.sgen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
                     qmin = net.sgen.min_q_kvar.at[index]
@@ -612,7 +612,7 @@ def convert_format(net):
                                                            [qmax, cost * qmax]]), type="q")
 
     if "cost_per_kvar" in net.ext_grid:
-        if not "piecewise_linear_cost" in net:
+        if "piecewise_linear_cost" not in net:
             for index, cost in net.ext_grid.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
                     qmin = net.ext_grid.min_q_kvar.at[index]
@@ -683,7 +683,7 @@ def convert_format(net):
                     else:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
                                                              errors="ignore")
-    if not "g_us_per_km" in net.line:
+    if "g_us_per_km" not in net.line:
         net.line["g_us_per_km"] = 0.
     return net
 
@@ -911,8 +911,8 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
     elements = elements if elements is not None else pp_elements(bus=False)
-    elements_to_replace = elements if replace else [el for el in elements if column not in
-                                                    net[el].columns]
+    elements_to_replace = elements if replace else [
+        el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]
     # bus elements
     for element, bus_type in element_bus_tuples(bus_elements=True, branch_elements=False):
         if element in elements_to_replace:
@@ -1036,9 +1036,9 @@ def drop_out_of_service_elements(net):
     drop_trafos(net, inactive_trafos3w, table='trafo3w')
 
     do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
-                    set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-                    set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
-                    set(net.trafo3w.lv_bus.values)
+        set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
+        set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
+        set(net.trafo3w.lv_bus.values)
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
@@ -1455,7 +1455,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     elif et == 'trafo':
         bc = ["hv_bus", "lv_bus"]
     elif et == "switch" and list(net[et].loc[element_id, ["et"]].values) == [
-        'b']:  # Raises error if switch is not a bus-bus switch
+            'b']:  # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
         raise Exception("unknown element type")
