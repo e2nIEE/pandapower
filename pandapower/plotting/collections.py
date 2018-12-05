@@ -262,7 +262,9 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     return lc
 
 
-def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None,
+                                       cmap=None, clim=None, norm=None, z=None,
+                                       cbar_title="Transformer Loading", **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -299,7 +301,17 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
 
     lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
     lc.info = info
+    if cmap is not None:
+        if z is None:
+            z = net.res_trafo.loading_percent.loc[trafos.index]
+        lc.set_cmap(cmap)
+        lc.set_norm(norm)
+        if clim is not None:
+            lc.set_clim(clim)
 
+        lc.set_array(np.ma.masked_invalid(z))
+        lc.has_colormap = True
+        lc.cbar_title = cbar_title
     return lc
 
 
