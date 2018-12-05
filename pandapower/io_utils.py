@@ -52,7 +52,7 @@ def coords_to_df(value, geotype="line"):
             for nr, (x, y) in enumerate(coords):
                 geo.loc[i, "x%u" % nr] = x
                 geo.loc[i, "y%u" % nr] = y
-        elif pd.isna(coords):
+        elif pd.isnull(coords):
             continue
         else:
             logger.error("unkown format for coords for value {}".format(value))
@@ -271,7 +271,7 @@ def pp_hook(d):
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)
-                valid_coords = ~pd.isna(df.coords)
+                valid_coords = ~pd.isnull(df.coords)
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=d['columns'])
             return df

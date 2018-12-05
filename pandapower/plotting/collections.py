@@ -13,7 +13,7 @@ from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
-from pandas import isna
+from pandas import isnull
 
 try:
     import pplog as logging
@@ -528,7 +528,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     """
 
     if buses is None:
-        buses = net.bus_geodata.loc[~isna(net.bus_geodata.coords)].index
+        buses = net.bus_geodata.loc[~isnull(net.bus_geodata.coords)].index
 
     if cmap is not None:
         # determine color of busbar by vm_pu
