@@ -12,7 +12,7 @@ from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, 
     _build_measurement_vectors, _init_ppc
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.auxiliary import _add_pf_options, get_values
+from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, \
     _store_results_from_pf_in_ppci
@@ -294,11 +294,13 @@ class state_estimation(object):
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T * (r_inv * H)
+                G_m = H.T @ (r_inv @ H)
+#                np.linalg.inv(G_m)
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T * (r_inv * r))
+#                d_E = np.linalg.inv(G_m) @ (H.T @ r_inv @ r)
+                d_E = spsolve(G_m, H.T @ (r_inv @ r))
                 E += d_E
 
                 # update V/delta
@@ -367,6 +369,8 @@ class state_estimation(object):
                                                  mapping_table)
         self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table)
+        
+        _clean_up(self.net, mode="se")
 
         # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()

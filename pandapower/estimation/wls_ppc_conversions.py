@@ -49,15 +49,17 @@ def _add_measurements_to_ppc(net, ppci):
     :return: ppc with added columns
     """
     meas = net.measurement.copy(deep=False)
-    meas["side"] = meas[["element", "side"]].apply(lambda row:
-                                                   net.line.from_bus.loc[row["element"]] if row["side"] == "from"
-                                                   else net.line.to_bus.loc[row["element"]] if row["side"] == "to"
-                                                   else net.trafo.hv_bus.loc[row["element"]] if row["side"] == "hv"
-                                                   else net.trafo.lv_bus.loc[row["element"]] if row["side"] == "lv"
-                                                   else row["side"], axis=1)
+    meas["side"] = meas.apply(lambda row:
+                               net['line'][row["side"]+"_bus"].loc[row["element"]] if row["side"] in ("from", "to")
+                               else net[row["element_type"]][row["side"]+'_bus'].loc[row["element"]]\
+                                   if row["side"] in ("hv", "mv", "lv")
+                               else row["side"], axis=1)
 
     map_bus = net["_pd2ppc_lookups"]["bus"]
-    map_line, map_trafo = None, None
+    meas_bus = meas[(meas['element_type']=='bus')]
+    meas_bus = meas_bus[map_bus[meas_bus['element']]<ppci["bus"].shape[0]]
+    
+    map_line, map_trafo, map_trafo3w = None, None, None
     # mapping to dict instead of np array ensures good performance for large indices
     # (e.g., 999999999 requires a large np array even if there are only 2 buses)
     # downside is loop comprehension to access the map
@@ -66,26 +68,31 @@ def _add_measurements_to_ppc(net, ppci):
     if "trafo" in net["_pd2ppc_lookups"]["branch"]:
         map_trafo = dict(zip(net.trafo.index, range(*net["_pd2ppc_lookups"]["branch"]["trafo"])))
 
+    if "trafo3w" in net["_pd2ppc_lookups"]["branch"]:
+        map_trafo3w = {ix:{'hv': br_ix,'mv': br_ix+1,'lv': br_ix+2} 
+            for ix, br_ix in zip(net.trafo3w.index, 
+                                 range(*net["_pd2ppc_lookups"]["branch"]["trafo3w"],3))}
+
     # set measurements for ppc format
     # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
     # pandapower measurement indices V, P, Q
     bus_append = np.full((ppci["bus"].shape[0], bus_cols_se), np.nan, dtype=ppci["bus"].dtype)
 
-    v_measurements = meas[(meas.measurement_type == "v") & (meas.element_type == "bus")]
+    v_measurements = meas_bus[(meas_bus.measurement_type == "v")]
     if len(v_measurements):
         bus_positions = map_bus[v_measurements.element.values.astype(int)]
         bus_append[bus_positions, VM] = v_measurements.value.values
         bus_append[bus_positions, VM_STD] = v_measurements.std_dev.values
         bus_append[bus_positions, VM_IDX] = v_measurements.index.values
 
-    p_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "bus")]
+    p_measurements = meas_bus[(meas_bus.measurement_type == "p")]
     if len(p_measurements):
         bus_positions = map_bus[p_measurements.element.values.astype(int)]
         bus_append[bus_positions, P] = p_measurements.value.values
         bus_append[bus_positions, P_STD] = p_measurements.std_dev.values
         bus_append[bus_positions, P_IDX] = p_measurements.index.values
 
-    q_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "bus")]
+    q_measurements = meas_bus[(meas_bus.measurement_type == "q")]
     if len(q_measurements):
         bus_positions = map_bus[q_measurements.element.values.astype(int)]
         bus_append[bus_positions, Q] = q_measurements.value.values
@@ -184,7 +191,6 @@ def _add_measurements_to_ppc(net, ppci):
         branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
 
     p_tr_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo")]
-
     if len(p_tr_measurements):
         meas_from = p_tr_measurements[(p_tr_measurements.side.values.astype(int) ==
                                        net.trafo.hv_bus[p_tr_measurements.element]).values]
@@ -213,6 +219,73 @@ def _add_measurements_to_ppc(net, ppci):
         branch_append[ix_to, Q_TO] = meas_to.value.values
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values
         branch_append[ix_to, Q_TO_IDX] = meas_to.index.values
+        
+    # Add measurements for trafo3w   
+    i_tr3w_measurements = meas[(meas.measurement_type == "i") & (meas.element_type == "trafo3w")]
+    if len(i_tr3w_measurements):
+        meas_hv = i_tr3w_measurements[(i_tr3w_measurements.side.values.astype(int) ==
+                                      net.trafo3w.hv_bus[i_tr3w_measurements.element]).values]
+        meas_mv = i_tr3w_measurements[(i_tr3w_measurements.side.values.astype(int) ==
+                                      net.trafo3w.mv_bus[i_tr3w_measurements.element]).values]
+        meas_lv = i_tr3w_measurements[(i_tr3w_measurements.side.values.astype(int) ==
+                                      net.trafo3w.lv_bus[i_tr3w_measurements.element]).values]
+        ix_hv = [map_trafo3w[t]['hv'] for t in meas_from.element.values.astype(int)]
+        ix_mv = [map_trafo3w[t]['mv'] for t in meas_from.element.values.astype(int)]
+        ix_lv = [map_trafo3w[t]['lv'] for t in meas_from.element.values.astype(int)]
+        i_a_to_pu_hv = (net.bus.vn_kv[meas_hv.side]).values
+        i_a_to_pu_mv = (net.bus.vn_kv[meas_mv.side]).values
+        i_a_to_pu_lv = (net.bus.vn_kv[meas_lv.side]).values
+        branch_append[ix_hv, IM_FROM] = meas_hv.value.values * i_a_to_pu_hv
+        branch_append[ix_hv, IM_FROM_STD] = meas_hv.std_dev.values * i_a_to_pu_hv
+        branch_append[ix_hv, IM_FROM_IDX] = meas_hv.index.values
+        branch_append[ix_mv, IM_TO] = meas_mv.value.values * i_a_to_pu_mv
+        branch_append[ix_mv, IM_TO_STD] = meas_mv.std_dev.values * i_a_to_pu_mv
+        branch_append[ix_mv, IM_TO_IDX] = meas_mv.index.values
+        branch_append[ix_lv, IM_TO] = meas_lv.value.values * i_a_to_pu_lv
+        branch_append[ix_lv, IM_TO_STD] = meas_lv.std_dev.values * i_a_to_pu_lv
+        branch_append[ix_lv, IM_TO_IDX] = meas_lv.index.values
+
+    p_tr3w_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo3w")]
+    if len(p_tr3w_measurements):
+        meas_hv = p_tr3w_measurements[(p_tr3w_measurements.side.values.astype(int) ==
+                                       net.trafo3w.hv_bus[p_tr3w_measurements.element]).values]
+        meas_mv = p_tr3w_measurements[(p_tr3w_measurements.side.values.astype(int) ==
+                                     net.trafo3w.mv_bus[p_tr3w_measurements.element]).values]
+        meas_lv = p_tr3w_measurements[(p_tr3w_measurements.side.values.astype(int) ==
+                                     net.trafo3w.lv_bus[p_tr3w_measurements.element]).values]
+        ix_hv = [map_trafo3w[t]['hv'] for t in meas_hv.element.values.astype(int)]
+        ix_mv = [map_trafo3w[t]['mv'] for t in meas_mv.element.values.astype(int)]
+        ix_lv = [map_trafo3w[t]['lv'] for t in meas_lv.element.values.astype(int)]
+        branch_append[ix_hv, P_FROM] = meas_hv.value.values
+        branch_append[ix_hv, P_FROM_STD] = meas_hv.std_dev.values
+        branch_append[ix_hv, P_FROM_IDX] = meas_hv.index.values
+        branch_append[ix_mv, P_TO] = meas_mv.value.values
+        branch_append[ix_mv, P_TO_STD] = meas_mv.std_dev.values
+        branch_append[ix_mv, P_TO_IDX] = meas_mv.index.values
+        branch_append[ix_lv, P_TO] = meas_lv.value.values
+        branch_append[ix_lv, P_TO_STD] = meas_lv.std_dev.values
+        branch_append[ix_lv, P_TO_IDX] = meas_lv.index.values
+
+    q_tr3w_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "trafo3w")]
+    if len(q_tr3w_measurements):
+        meas_hv = q_tr3w_measurements[(q_tr3w_measurements.side.values.astype(int) ==
+                                     net.trafo3w.hv_bus[q_tr3w_measurements.element]).values]
+        meas_mv = q_tr3w_measurements[(q_tr3w_measurements.side.values.astype(int) ==
+                                     net.trafo3w.mv_bus[q_tr3w_measurements.element]).values]
+        meas_lv = q_tr3w_measurements[(q_tr3w_measurements.side.values.astype(int) ==
+                                     net.trafo3w.lv_bus[q_tr3w_measurements.element]).values]
+        ix_hv = [map_trafo3w[t]['hv'] for t in meas_hv.element.values.astype(int)]
+        ix_mv = [map_trafo3w[t]['mv'] for t in meas_mv.element.values.astype(int)]
+        ix_lv = [map_trafo3w[t]['lv'] for t in meas_lv.element.values.astype(int)]
+        branch_append[ix_hv, Q_FROM] = meas_hv.value.values
+        branch_append[ix_hv, Q_FROM_STD] = meas_hv.std_dev.values
+        branch_append[ix_hv, Q_FROM_IDX] = meas_hv.index.values
+        branch_append[ix_mv, Q_TO] = meas_mv.value.values
+        branch_append[ix_mv, Q_TO_STD] = meas_mv.std_dev.values
+        branch_append[ix_mv, Q_TO_IDX] = meas_mv.index.values
+        branch_append[ix_lv, Q_TO] = meas_lv.value.values
+        branch_append[ix_lv, Q_TO_STD] = meas_lv.std_dev.values
+        branch_append[ix_lv, Q_TO_IDX] = meas_lv.index.values
 
     ppci["bus"] = np.hstack((ppci["bus"], bus_append))
     ppci["branch"] = np.hstack((ppci["branch"], branch_append))

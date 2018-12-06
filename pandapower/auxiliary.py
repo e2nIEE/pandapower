@@ -494,15 +494,16 @@ def _add_options(net, options):
     net._options.update(options)
 
 
-def _clean_up(net, res=True):
+def _clean_up(net, res=True, mode=None):
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
     # net._is_elements = None
 
-    mode = net._options["mode"]
+    mode = mode if mode is not None else net._options["mode"]
     if res:
         res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
+        res_bus = net["res_bus_est"] if mode == "se" else res_bus        
     if len(net["trafo3w"]) > 0:
         buses_3w = net.trafo3w["ad_bus"].values
         net["bus"].drop(buses_3w, inplace=True)
