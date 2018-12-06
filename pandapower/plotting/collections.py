@@ -3,13 +3,13 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
+import inspect
 from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.collections import LineCollection, PatchCollection
+from matplotlib.collections import LineCollection, PatchCollection, Collection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
@@ -885,7 +885,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     Draws matplotlib collections which can be created with the create collection functions.
 
     Input:
-        **collections** (list) - iterable of collection objects
+        **collections** (list) - iterable of collection objects, may include tuples of collections
 
     OPTIONAL:
         **figsize** (tuple, (10,8)) - figsize of the matplotlib figure
@@ -927,17 +927,27 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     return ax
 
 
+def add_single_collection(c, ax, plot_colorbars, copy_collections):
+    if copy_collections:
+        c = copy.copy(c)
+    ax.add_collection(c)
+    if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
+        extend = c.extend if hasattr(c, "extend") else "neither"
+        cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+        if hasattr(c, "cbar_title"):
+            cbar_load.ax.set_ylabel(c.cbar_title)
+
+
 def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
     for c in collections:
-        if c:
-            if copy_collections:
-                c = copy.copy(c)
-            ax.add_collection(c)
-            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
+        if Collection in inspect.getmro(c.__class__):
+            # if Collection is in one of the base classes of c
+            add_single_collection(c, ax, plot_colorbars, copy_collections)
+        elif isinstance(c, tuple) or isinstance(c, list):
+            # if c is a tuple or a list of collections
+            add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
+        else:
+            logger.warning("{} in collections is of unknown type. Skipping".format(c))
 
 
 if __name__ == "__main__":

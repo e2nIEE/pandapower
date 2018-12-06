@@ -147,8 +147,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if len(trafo_buses_with_geo_coordinates) > 0:
         tc = create_trafo_collection(net, trafo_buses_with_geo_coordinates,
                                             color=trafo_color, size=trafo_size)
-        collections.append(tc[0])
-        collections.append(tc[1])
+        collections.append(tc)
 
     # create trafo3w collection if trafo3w is available
     trafo3w_buses_with_geo_coordinates = [
@@ -157,8 +156,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     if len(trafo3w_buses_with_geo_coordinates) > 0:
         tc = create_trafo3w_collection(net, trafo3w_buses_with_geo_coordinates,
                                               color=trafo_color)
-        collections.append(tc[0])
-        collections.append(tc[1])
+        collections.append(tc)
 
     if plot_line_switches and len(net.switch):
         sc = create_line_switch_collection(
@@ -167,18 +165,15 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(sc)
 
     if plot_sgens and len(net.sgen):
-        sgc1, sgc2 = create_sgen_collection(net, size=sgen_size)
-        collections.append(sgc1)
-        collections.append(sgc2)
+        sgc = create_sgen_collection(net, size=sgen_size)
+        collections.append(sgc)
     if plot_loads and len(net.load):
-        lc1, lc2 = create_load_collection(net, size=load_size)
-        collections.append(lc1)
-        collections.append(lc2)
+        lc = create_load_collection(net, size=load_size)
+        collections.append(lc)
 
     if len(net.switch):
-        bsc1, bsc2 = create_bus_bus_switch_collection(net, size=switch_size)
-        collections.append(bsc2)
-        collections.append(bsc1)
+        bsc = create_bus_bus_switch_collection(net, size=switch_size)
+        collections.append(bsc)
 
     ax = draw_collections(collections, ax=ax)
     if show_plot:
