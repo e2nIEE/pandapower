@@ -137,10 +137,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=N
     if cmap is not None:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        if z is None and net is not None:
+        if z is None:
             z = net.res_bus.vm_pu.loc[buses]
-        else:
-            logger.warning("z is None and no net is provided")
         pc.set_array(np.ma.masked_invalid(z))
         pc.has_colormap = True
         pc.cbar_title = cbar_title
