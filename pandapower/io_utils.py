@@ -14,6 +14,7 @@ import copy
 import networkx
 from networkx.readwrite import json_graph
 import importlib
+from numpy import ndarray
 
 try:
     from functools import singledispatch
@@ -37,6 +38,28 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def coords_to_df(value, geotype="line"):
+    geo = pd.DataFrame()
+    for i in value.index:
+        # get bus x y to save
+        if geotype == "bus":
+            geo.loc[i, "x"] = value.at[i, 'x']
+            geo.loc[i, "y"] = value.at[i, 'y']
+        # get coords and convert them to x1, y1, x2, y2...
+        coords = value.at[i, 'coords']
+
+        if isinstance(coords, list) or isinstance(coords, ndarray):
+            for nr, (x, y) in enumerate(coords):
+                geo.loc[i, "x%u" % nr] = x
+                geo.loc[i, "y%u" % nr] = y
+        elif pd.isnull(coords):
+            continue
+        else:
+            logger.error("unkown format for coords for value {}".format(value))
+            raise ValueError("coords unkown format")
+    return geo
+
+
 def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
     dodfs = dict()
     dodfs["dtypes"] = collect_all_dtypes_df(net)
@@ -58,14 +81,10 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
                 (GEOPANDAS_INSTALLED and not isinstance(value, gpd.GeoDataFrame)):
             logger.warning("Could not serialize net.%s" % item)
         elif item == "bus_geodata":
-            dodfs[item] = pd.DataFrame(value[["x", "y"]])
+            geo = coords_to_df(value, geotype="bus")
+            dodfs[item] = geo
         elif item == "line_geodata":
-            geo = pd.DataFrame()
-            for i in value.index:
-                coords = value.get_value(i, 'coords')
-                for nr, (x, y) in enumerate(coords):
-                    geo.loc[i, "x%u" % nr] = x
-                    geo.loc[i, "y%u" % nr] = y
+            geo = coords_to_df(value)
             dodfs[item] = geo
         else:
             dodfs[item] = value
@@ -97,6 +116,24 @@ def dicts_to_pandas(json_dict):
     return pd_dict
 
 
+def df_to_coords(net, item, table):
+    # converts dataframe to coords in net
+    num_points = len(table.columns) // 2
+    net[item] = pd.DataFrame(index=table.index, columns=net[item].columns)
+    if item == "bus_geodata":
+        num_points -= 1
+        net[item].loc[:, ['x', 'y']] = table.loc[:, ['x', 'y']]
+
+    for i in table.index:
+        coords = table.loc[i]
+        # for i, coords in table.iterrows():
+        coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points)
+                 if pd.notnull(coords["x%u" % nr])]
+        if len(coord):
+            net[item].loc[i, "coords"] = coord
+    return net
+
+
 def from_dict_of_dfs(dodfs):
     net = create_empty_network()
     for p, v in dodfs["parameters"].iterrows():
@@ -105,13 +142,9 @@ def from_dict_of_dfs(dodfs):
         if item in ("parameters", "dtypes"):
             continue
         elif item == "line_geodata":
-            num_points = len(table.columns) // 2
-            for i in table.index:
-                coords = table.loc[i]
-                # for i, coords in table.iterrows():
-                coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points)
-                         if pd.notnull(coords["x%u" % nr])]
-                net.line_geodata.loc[i, "coords"] = coord
+            net = df_to_coords(net, item, table)
+        elif item == "bus_geodata":
+            net = df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             net["std_types"][item[:-10]] = table.T.to_dict()
             continue  # don't go into try..except
@@ -137,8 +170,10 @@ def restore_all_dtypes(net, dtypes):
         except KeyError:
             pass
 
+
 from json.encoder import _make_iterencode
 from json.encoder import *
+
 
 class PPJSONEncoder(json.JSONEncoder):
 
@@ -162,7 +197,7 @@ class PPJSONEncoder(json.JSONEncoder):
             _encoder = encode_basestring
 
         def floatstr(o, allow_nan=self.allow_nan,
-                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+                     _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
             # Check for specials.  Note that this type of test is processor
             # and/or platform-specific, so do tests which don't depend on the
             # internals.
@@ -183,11 +218,10 @@ class PPJSONEncoder(json.JSONEncoder):
 
             return text
 
-
         _iterencode = _make_iterencode(
-                markers, self.default, _encoder, self.indent, floatstr,
-                self.key_separator, self.item_separator, self.sort_keys,
-                self.skipkeys, _one_shot, isinstance=isinstance_partial)
+            markers, self.default, _encoder, self.indent, floatstr,
+            self.key_separator, self.item_separator, self.sort_keys,
+            self.skipkeys, _one_shot, isinstance=isinstance_partial)
         return _iterencode(o, 0)
 
     def default(self, o):
@@ -199,10 +233,12 @@ class PPJSONEncoder(json.JSONEncoder):
         else:
             return s
 
+
 def isinstance_partial(obj, cls):
     if isinstance(obj, (pandapowerNet, tuple)):
         return False
     return isinstance(obj, cls)
+
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
@@ -220,7 +256,7 @@ def pp_hook(d):
             if isinstance(d[key], dict):
                 d[key] = pp_hook(d[key])
 
-        if class_name  == 'Series':
+        if class_name == 'Series':
             return pd.read_json(obj, **d)
         elif class_name == "DataFrame":
             df = pd.read_json(obj, **d)
@@ -234,14 +270,16 @@ def pp_hook(d):
             df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
-                df['coords'] = df.coords.apply(json.loads)
+                # df['coords'] = df.coords.apply(json.loads)
+                valid_coords = ~pd.isnull(df.coords)
+                df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=d['columns'])
             return df
         elif class_name == "pandapowerNet":
             from pandapower import from_json_string
             return from_json_string(obj)
         elif module_name == "networkx":
-           return  json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
+            return json_graph.adjacency_graph(obj, attrs={'id': 'json_id', 'key': 'json_key'})
         else:
             module = importlib.import_module(module_name)
             class_ = getattr(module, class_name)
@@ -273,6 +311,7 @@ def json_net(obj):
     d = with_signature(obj, to_json_string(obj))
     return d
 
+
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
     logger.debug('DataFrame')
@@ -280,6 +319,7 @@ def json_dataframe(obj):
                                         default_handler=to_serializable, double_precision=14))
     d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
     return d
+
 
 try:
     @to_serializable.register(gpd.GeoDataFrame)
@@ -291,6 +331,7 @@ try:
         return d
 except NameError:
     pass
+
 
 @to_serializable.register(pd.Series)
 def json_series(obj):
@@ -356,6 +397,7 @@ def json_frozenset(obj):
     logger.debug("frozenset")
     d = with_signature(obj, list(obj), obj_module='builtins', obj_class='frozenset')
     return d
+
 
 @to_serializable.register(networkx.Graph)
 def json_networkx(obj):

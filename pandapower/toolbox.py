@@ -576,6 +576,9 @@ def convert_format(net):
                     create_piecewise_linear_cost(net, index, "sgen",
                                                  np.array([[p, cost * p], [0, 0]]))
 
+    if "coords" not in net.bus_geodata:
+        net.bus_geodata["coords"] = None
+
     if "cost_per_kw" in net.ext_grid:
         if "min_p_kw" not in net.ext_grid:
             net.ext_grid["min_p_kw"] = -1e9
