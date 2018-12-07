@@ -2351,7 +2351,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if meas_type == "v":
         element_type = "bus"
 
-    if element_type not in ("bus", "line", "trafo"):
+    if element_type not in ("bus", "line", "trafo", "trafo3w"):
         raise UserWarning("Invalid element type ({})".format(element_type))
 
     if element_type == "bus" and element not in net["bus"].index.values:
@@ -2363,6 +2363,10 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
         raise UserWarning("Trafo with index={element} does not exist".format(element))
+        
+    if element is not None and element_type == "trafo3w" and element not in \
+            net["trafo3w"].index.values:
+        raise UserWarning("Trafo3w with index={element} does not exist".format(element))
 
     if index is None:
         index = get_free_id(net.measurement)
@@ -2373,7 +2377,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if meas_type == "i" and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type == "v" and element_type in ("line", "trafo"):
+    if meas_type == "v" and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:

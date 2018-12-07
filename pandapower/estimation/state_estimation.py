@@ -12,7 +12,7 @@ from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, 
     _build_measurement_vectors, _init_ppc
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.auxiliary import _add_pf_options, get_values
+from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, \
     _store_results_from_pf_in_ppci
@@ -367,6 +367,8 @@ class state_estimation(object):
                                                  mapping_table)
         self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table)
+        
+        _clean_up(self.net, mode="se")
 
         # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()
