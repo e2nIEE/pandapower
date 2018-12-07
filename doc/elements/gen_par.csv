@@ -15,11 +15,8 @@ max_p_kw**;float;;Maximum active power
 min_p_kw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
-controllable**;bool;True/False;States if a gen is controllable or not. Currently gens must be controllable, because there is no method to respect uncontrollable gens yet.
-vn_kv***;float;;
-xdss***;float;:math:`>` 0;
-rdss***;float;:math:`>` 0;Rated voltage of the generator
-cos_phi***;float;:math:`0 \leq` 1;Subtransient generator reactance
-in_service*;boolean;True / False;Subtransient generator resistence
-;;;Rated generator cosine phi
-;;;specifies if the generator is in service.
+vn_kv***;float;;Rated voltage of the generator
+xdss***;float;:math:`>` 0;Subtransient generator reactance
+rdss***;float;:math:`>` 0;Subtransient generator resistence
+cos_phi***;float;:math:`0 \leq` 1;Rated generator cosine phi
+in_service*;boolean;True / False;specifies if the generator is in service.
