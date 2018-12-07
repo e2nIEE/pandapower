@@ -927,10 +927,10 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, scaling=1., type=None, slack=False,
-               controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True):
+               controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
     """create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan, \
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, scaling=1., type=None, \
-               controllable=nan, vn_kv=nan, xdss=nan, rdss=nan, cos_phi=nan, in_service=True)
+               controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True)
     Adds a generator to the network.
 
     Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
@@ -963,9 +963,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
-        **xdss** (float, NaN) - Subtransient generator reactance for short-circuit calculation
+        **xdss_pu** (float, NaN) - Subtransient generator reactance for short-circuit calculation
 
-        **rdss** (float, NaN) - Subtransient generator resistance for short-circuit calculation
+        **rdss_pu** (float, NaN) - Subtransient generator resistance for short-circuit calculation
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
@@ -1038,15 +1038,15 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
             net.gen.loc[:, "vn_kv"] = pd.Series()
         net.gen.loc[index, "vn_kv"] = float(vn_kv)
 
-    if not isnan(xdss):
-        if "xdss" not in net.gen.columns:
-            net.gen.loc[:, "xdss"] = pd.Series()
-        net.gen.loc[index, "xdss"] = float(xdss)
+    if not isnan(xdss_pu):
+        if "xdss_pu" not in net.gen.columns:
+            net.gen.loc[:, "xdss_pu"] = pd.Series()
+        net.gen.loc[index, "xdss_pu"] = float(xdss_pu)
 
-    if not isnan(rdss):
-        if "rdss" not in net.gen.columns:
-            net.gen.loc[:, "rdss"] = pd.Series()
-        net.gen.loc[index, "rdss"] = float(rdss)
+    if not isnan(rdss_pu):
+        if "rdss_pu" not in net.gen.columns:
+            net.gen.loc[:, "rdss_pu"] = pd.Series()
+        net.gen.loc[index, "rdss_pu"] = float(rdss_pu)
 
     if not isnan(cos_phi):
         if "cos_phi" not in net.gen.columns:

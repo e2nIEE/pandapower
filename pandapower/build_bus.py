@@ -488,10 +488,10 @@ def _add_gen_sc_impedance(net, ppc):
     sn_gen = gen.sn_mva.values
 
     z_r = vn_net ** 2 / sn_gen
-    x_gen = gen.xdss.values / 100 * z_r
-    r_gen = gen.rdss.values / 100 * z_r
+    x_gen = gen.xdss_pu.values / 100 * z_r
+    r_gen = gen.rdss_pu.values / 100 * z_r
 
-    kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss)
+    kg = _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, gen.xdss_pu)
     y_gen = 1 / ((r_gen + x_gen * 1j) * kg)
 
     buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen.real, y_gen.imag)
@@ -521,8 +521,8 @@ def _add_motor_impedances_ppc(net, ppc):
     ppc["bus"][buses, BS] = bs
 
 
-def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss):
-    kg = vn_gen / vn_net * cmax / (1 + xdss * np.sin(phi_gen))
+def _generator_correction_factor(vn_net, vn_gen, cmax, phi_gen, xdss_pu):
+    kg = vn_gen / vn_net * cmax / (1 + xdss_pu * np.sin(phi_gen))
     return kg
 
 

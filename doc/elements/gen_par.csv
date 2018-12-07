@@ -16,7 +16,7 @@ min_p_kw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
 vn_kv***;float;;Rated voltage of the generator
-xdss***;float;:math:`>` 0;Subtransient generator reactance
-rdss***;float;:math:`>` 0;Subtransient generator resistence
+xdss_pu***;float;:math:`>` 0;Subtransient generator reactance in per unit
+rdss_pu***;float;:math:`>` 0;Subtransient generator resistence in per unit
 cos_phi***;float;:math:`0 \leq` 1;Rated generator cosine phi
 in_service*;boolean;True / False;specifies if the generator is in service.
