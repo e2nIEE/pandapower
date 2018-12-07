@@ -294,13 +294,11 @@ class state_estimation(object):
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T @ (r_inv @ H)
-#                np.linalg.inv(G_m)
+                G_m = H.T * (r_inv * H)
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-#                d_E = np.linalg.inv(G_m) @ (H.T @ r_inv @ r)
-                d_E = spsolve(G_m, H.T @ (r_inv @ r))
+                d_E = spsolve(G_m, H.T * (r_inv * r))
                 E += d_E
 
                 # update V/delta

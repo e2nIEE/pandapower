@@ -546,7 +546,7 @@ def load_3bus_network():
     grid = pp.from_json(os.path.join(folder, "test", "estimation", "3bus_wls.json"))
     return grid
 
-def test_network_with_trafo3w():
+def test_network_with_trafo3w_pq():
     net = pp.create_empty_network()
     
     bus_slack = pp.create_bus(net, vn_kv=110)
