@@ -319,6 +319,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     add_basic_std_types(net)
+    net._empty_aux_trafo3w = net.trafo.copy()
     reset_results(net)
     net['user_pf_options'] = dict()
     return net
@@ -2363,7 +2364,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
         raise UserWarning("Trafo with index={element} does not exist".format(element))
-        
+
     if element is not None and element_type == "trafo3w" and element not in \
             net["trafo3w"].index.values:
         raise UserWarning("Trafo3w with index={element} does not exist".format(element))
