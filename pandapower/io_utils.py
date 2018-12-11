@@ -267,7 +267,8 @@ def pp_hook(d):
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
             df = gpd.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
-            df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+            if "id" in df:
+                df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
             if 'coords' in df:
                 # df['coords'] = df.coords.apply(json.loads)
