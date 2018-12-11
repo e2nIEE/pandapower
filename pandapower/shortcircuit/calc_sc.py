@@ -12,10 +12,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 #import time
 
-from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options
+from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
-from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc
 from pandapower.shortcircuit.currents import _calc_ikss, _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx

@@ -10,12 +10,11 @@ from pypower.add_userfcn import add_userfcn
 from pypower.ppoption import ppoption
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.auxiliary import ppException, _clean_up
+from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.idx_bus import VM
 from pandapower.opf.opf import opf
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
-from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc, reset_results, \
     _extract_results
 

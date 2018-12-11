@@ -63,7 +63,7 @@ def fill_bus_lookup(ar, bus_lookup, bus_index):
 
 
 def create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_idx, eg_is_idx):
-    max_bus_idx = np.max(net["bus"].index.values)
+    max_bus_idx = np.max(bus_index)
     # extract numpy arrays of switch table data
     switch = net["switch"]
     switch_bus = switch["bus"].values
@@ -105,9 +105,9 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def create_bus_lookup(net, n_bus, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_switch):
+def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_switch):
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
-    consec_buses = np.arange(n_bus)
+    consec_buses = np.arange(len(bus_index))
     # bus_lookup as dict:
     # bus_lookup = dict(zip(bus_index, consec_buses))
 
@@ -220,38 +220,58 @@ def _build_bus_ppc(net, ppc):
     numba = net["_options"]["numba"] if "numba" in net["_options"] else False
 
     # get bus indices
-    bus_index = net["bus"].index.values
-    n_bus = len(bus_index)
+    nr_xward = len(net.xward)
+    nr_trafo3w = len(net.trafo3w)
+    if nr_xward > 0 or nr_trafo3w > 0:
+        bus_indices = [net["bus"].index.values, np.array([], dtype=np.int64)]
+        max_idx = max(net["bus"].index) + 1
+        if nr_xward > 0:
+            aux_xward = np.arange(max_idx, max_idx+nr_xward, dtype=np.int64)
+            net.xward["ad_bus"] = aux_xward
+            bus_indices.append(aux_xward)
+        if nr_trafo3w:
+            aux_trafo3w = np.arange(max_idx+nr_xward, max_idx+nr_xward+nr_trafo3w)
+            net.trafo3w["ad_bus"] = aux_trafo3w
+            bus_indices.append(aux_trafo3w)
+        bus_index = np.concatenate(bus_indices)
+    else:
+        bus_index = net["bus"].index.values
     # get in service elements
     _is_elements = net["_is_elements"]
     eg_is_mask = _is_elements['ext_grid']
     gen_is_mask = _is_elements['gen']
+    bus_is_idx = _is_elements['bus_is_idx']
 
     if numba and not r_switch:
-        bus_is_idx = _is_elements['bus_is_idx']
         bus_lookup = create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_mask, eg_is_mask)
     else:
-        bus_lookup = create_bus_lookup(net, n_bus, bus_index, _is_elements['bus_is_idx'],
+        bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
                                        gen_is_mask, eg_is_mask, r_switch)
+    n_bus_ppc = len(bus_index)
     # init ppc with empty values
-
-    ppc["bus"] = np.zeros(shape=(n_bus, bus_cols), dtype=float)
+    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=float)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0., 0.])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
     if mode == "sc":
         from pandapower.shortcircuit.idx_bus import bus_cols_sc
-        bus_sc = np.empty(shape=(n_bus, bus_cols_sc), dtype=float)
+        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=float)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 
     # apply consecutive bus numbers
-    ppc["bus"][:, BUS_I] = np.arange(n_bus)
+    ppc["bus"][:, BUS_I] = np.arange(n_bus_ppc)
 
+    n_bus = len(net.bus.index)
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    ppc["bus"][bus_lookup[net["bus"].index.values[~net["bus"]["in_service"].values.astype(bool)]],
-               BUS_TYPE] = NONE
+    if nr_xward > 0 or nr_trafo3w > 0:
+        in_service = np.concatenate([net["bus"]["in_service"].values,
+                                    net["xward"]["in_service"].values,
+                                    net["trafo3w"]["in_service"].values])
+    else:
+        in_service = net["bus"]["in_service"].values
+    ppc["bus"][~in_service, BUS_TYPE] = NONE
     set_reference_buses(net, ppc, bus_lookup)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
     if vm_pu is not None:
@@ -274,9 +294,25 @@ def _build_bus_ppc(net, ppc):
         else:
             ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
 
+    if len(net.xward):
+        _fill_auxiliary_buses(net, ppc, bus_lookup, "xward", "bus")
+
+    if len(net.trafo3w):
+        _fill_auxiliary_buses(net, ppc, bus_lookup, "trafo3w", "hv_bus")
+
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
 
 
+def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column):
+    element_idx = bus_lookup[net[element][bus_column]]
+    aux_idx = bus_lookup[net[element]["ad_bus"].values]
+    ppc["bus"][aux_idx, BASE_KV] = ppc["bus"][element_idx, BASE_KV]
+    ppc["bus"][aux_idx, VM] = ppc["bus"][element_idx, VM]
+    ppc["bus"][aux_idx, VA] = ppc["bus"][element_idx, VA]
+    if net._options["mode"] == "opf":
+        ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_idx, VMIN]
+        ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_idx, VMAX]
+    
 def set_reference_buses(net, ppc, bus_lookup):
     eg_buses = bus_lookup[net.ext_grid.bus[net._is_elements["ext_grid"]].values]
     ppc["bus"][eg_buses, BUS_TYPE] = REF

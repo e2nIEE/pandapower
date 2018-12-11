@@ -13,8 +13,7 @@ import json
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
-from pandapower.powerflow import _add_auxiliary_elements
-from pandapower.auxiliary import _clean_up
+from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
 import pandapower.opf
 opf_folder = os.path.abspath(os.path.dirname(pandapower.opf.__file__))
 

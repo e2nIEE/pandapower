@@ -368,7 +368,7 @@ class state_estimation(object):
         self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table)
         
-        _clean_up(self.net, mode="se")
+        _clean_up(self.net)
 
         # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()

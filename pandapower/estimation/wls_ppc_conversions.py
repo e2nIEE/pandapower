@@ -5,8 +5,7 @@
 
 
 import numpy as np
-from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options
-from pandapower.powerflow import _add_auxiliary_elements
+from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *

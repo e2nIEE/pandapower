@@ -130,8 +130,7 @@ def _build_pp_xward(net, ppc, f, t, update_lookup=True):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     xw = net["xward"]
     xw_is = net["_is_elements"]['xward']
-    if update_lookup:
-        ppc["gen"][f:t, GEN_BUS] = bus_lookup[xw["ad_bus"][xw_is].values]
+    ppc["gen"][f:t, GEN_BUS] = bus_lookup[xw["ad_bus"][xw_is].values]
     ppc["gen"][f:t, VG] = xw["vm_pu"][xw_is].values
     ppc["gen"][f:t, PMIN] = + delta
     ppc["gen"][f:t, PMAX] = - delta

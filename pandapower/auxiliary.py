@@ -325,7 +325,7 @@ def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
 
 
 def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-    for k in range(len(bus_lookup)):
+    for k in range(len(bus_in_service)):
         if ppc_bus_isolated[bus_lookup[k]]:
             bus_in_service[k] = False
 
@@ -342,6 +342,7 @@ except RuntimeError:
 
 def _select_is_elements_numba(net, isolated_nodes=None):
     # is missing sgen_controllable and load_controllable
+
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
@@ -494,29 +495,12 @@ def _add_options(net, options):
     net._options.update(options)
 
 
-def _clean_up(net, res=True, mode=None):
-    # mode = net.__internal_options["mode"]
-
-    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
-    # net._is_elements = None
-
-    mode = mode if mode is not None else net._options["mode"]
-    if res:
-        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
-        res_bus = net["res_bus_est"] if mode == "se" else res_bus        
+def _clean_up(net, res=True):
     if len(net["trafo3w"]) > 0:
-        buses_3w = net.trafo3w["ad_bus"].values
-        net["bus"].drop(buses_3w, inplace=True)
         net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-        if res:
-            res_bus.drop(buses_3w, inplace=True)
 
     if len(net["xward"]) > 0:
-        xward_buses = net["xward"]["ad_bus"].values
-        net["bus"].drop(xward_buses, inplace=True)
         net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-        if res:
-            res_bus.drop(xward_buses, inplace=True)
 
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
@@ -562,3 +546,23 @@ def _check_if_numba_is_installed(numba):
         numba = False
 
     return numba
+
+
+def _add_auxiliary_elements(net):
+    if len(net.dcline) > 0:
+        _add_dcline_gens(net)
+
+def _add_dcline_gens(net):
+    from pandapower.create import create_gen
+    for dctab in net.dcline.itertuples():
+        pfrom = dctab.p_mw
+        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
+        pmax = dctab.max_p_mw
+        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=0, max_p_mw=pmax,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+                   in_service=dctab.in_service)
+        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-pmax, max_p_mw=0,
+                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+                   in_service=dctab.in_service)

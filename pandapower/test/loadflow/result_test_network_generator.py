@@ -415,6 +415,7 @@ def add_test_shunt(net):
     pp.create_shunt_as_capacitor(net, b2, q_mvar=1.2, loss_factor=0.1, vn_kv=22., step=2)
     # add out of service shunt shuold not change the result
     pp.create_shunt(net, b2, p_mw=pz, q_mvar=qz, in_service=False)
+    net.last_added_case = "test_shunt"
     return net
 
 
@@ -425,6 +426,7 @@ def add_test_shunt_split(net):
     # one shunt at a bus
     pp.create_shunt(net, b2, p_mw=pz / 2, q_mvar=qz / 2)
     pp.create_shunt(net, b2, p_mw=pz / 2, q_mvar=qz / 2)
+    net.last_added_case = "test_shunt_split"
     return net
 
 
@@ -435,16 +437,16 @@ def add_test_two_open_switches_on_deactive_line(net):
     create_test_line(net, b3, b1)
     pp.create_switch(net, b2, l2, et="l", closed=False)
     pp.create_switch(net, b3, l2, et="l", closed=False)
+    net.last_added_case = "test_two_open_switches_on_deactive_line"
     return net
 
 
 if __name__ == '__main__':
-#    pp.runpp(net)
     from pandapower.test.consistency_checks import runpp_with_consistency_checks
     from pandapower import LoadflowNotConverged
     for net in result_test_network_generator():
         try:
-            runpp_with_consistency_checks(net, enforce_q_lims=True)
+            runpp_with_consistency_checks(net, enforce_q_lims=True, numba=True)
         except (AssertionError):
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except(LoadflowNotConverged):
