@@ -55,15 +55,15 @@ def _add_measurements_to_ppc(net, ppci):
     """
     meas = net.measurement.copy(deep=False)
     meas["side"] = meas.apply(lambda row:
-                               net['line']["{}_bus".format(row["side"])].loc[row["element"]] if row["side"] in ("from", "to")
-                               else net[row["element_type"]][row["side"]+'_bus'].loc[row["element"]]\
-                                   if row["side"] in ("hv", "mv", "lv")
-                               else row["side"], axis=1)
+                              net['line']["{}_bus".format(row["side"])].loc[row["element"]] if
+                              row["side"] in ("from", "to") else
+                              net[row["element_type"]][row["side"]+'_bus'].loc[row["element"]] if
+                              row["side"] in ("hv", "mv", "lv") else row["side"], axis=1)
 
     map_bus = net["_pd2ppc_lookups"]["bus"]
     meas_bus = meas[(meas['element_type'] == 'bus')]
     if (map_bus[meas_bus['element']] >= ppci["bus"].shape[0]).any():
-        std_logger.warn("Measurement defined in pp-grid does not exist in ppci! Will be deleted!")
+        std_logger.warning("Measurement defined in pp-grid does not exist in ppci! Will be deleted!")
         meas_bus = meas_bus[map_bus[meas_bus['element']] < ppci["bus"].shape[0]]
 
     map_line, map_trafo, map_trafo3w = None, None, None
@@ -76,9 +76,9 @@ def _add_measurements_to_ppc(net, ppci):
         map_trafo = dict(zip(net.trafo.index, range(*net["_pd2ppc_lookups"]["branch"]["trafo"])))
 
     if "trafo3w" in net["_pd2ppc_lookups"]["branch"]:
-        map_trafo3w = {ix:{'hv': br_ix,'mv': br_ix+1,'lv': br_ix+2} 
-            for ix, br_ix in zip(net.trafo3w.index, 
-                                 range(*(net["_pd2ppc_lookups"]["branch"]["trafo3w"]+(3,))))}
+        map_trafo3w = {ix: {'hv': br_ix, 'mv': br_ix+1, 'lv': br_ix+2}
+                       for ix, br_ix in zip(net.trafo3w.index,
+                                            range(*(net["_pd2ppc_lookups"]["branch"]["trafo3w"]+(3,))))}
 
     # set measurements for ppc format
     # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
@@ -167,11 +167,12 @@ def _add_measurements_to_ppc(net, ppci):
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values
         branch_append[ix_to, Q_TO_IDX] = meas_to.index.values
 
+    # TODO review in 2019 -> is this a use case? create test with switches on lines
     # determine number of lines in ppci["branch"]
     # out of service lines and lines with open switches at both ends are not in the ppci
-    _is_elements = net["_is_elements"]
-    if "line" not in _is_elements:
-        get_is_lines(net)
+    # _is_elements = net["_is_elements"]
+    # if "line" not in _is_elements:
+    #     get_is_lines(net)
     # lines_is = _is_elements['line']
     # bus_is_idx = _is_elements['bus_is_idx']
     # slidx = (net["switch"]["closed"].values == 0) \

@@ -51,7 +51,8 @@ Measurements are defined via the pandapower *"create_measurement"* function. The
 
  - *"bus"* for bus measurements
  - *"line"* for line measurements
- - *"trafo"* for transformer measurements 
+ - *"trafo"* for transformer measurements
+ - *"trafo3w"* for three-winding-transformer measurements
 
    
 **Available Measurements per Element**
@@ -64,6 +65,8 @@ Measurements are defined via the pandapower *"create_measurement"* function. The
 | line          | i, p, q                      |
 +---------------+------------------------------+
 | trafo         | i, p, q                      |
++---------------+------------------------------+
+| trafo3w       | i, p, q                      |
 +---------------+------------------------------+
 
 The *"create_measurement"* function is defined as follows:
@@ -110,16 +113,18 @@ There are multiple measurements available, which have to be defined for the stat
 
 :: 
 
-	pp.create_measurement(net, "v", "bus", 1.006, .004, bus1)      # V at bus 1
-	pp.create_measurement(net, "v", "bus", 0.968, .004, bus2)      # V at bus 2
+    pp.create_measurement(net, "v", "bus", 1.006, .004, bus1)		# V at bus 1
+	pp.create_measurement(net, "v", "bus", 0.968, .004, bus2)	# V at bus 2
 
 	pp.create_measurement(net, "p", "bus", -501, 10, bus2)         # P at bus 2
 	pp.create_measurement(net, "q", "bus", -286, 10, bus2)         # Q at bus 2
 
-	pp.create_measurement(net, "p", "line", 888, 8, bus=bus1, element=line1)    # Pline (bus 1 -> bus 2) at bus 1
-	pp.create_measurement(net, "p", "line", 1173, 8, bus=bus1, element=line2)   # Pline (bus 1 -> bus 3) at bus 1
-	pp.create_measurement(net, "q", "line", 568, 8, bus=bus1, element=line1)    # Qline (bus 1 -> bus 2) at bus 1
-	pp.create_measurement(net, "q", "line", 663, 8, bus=bus1, element=line2)    # Qline (bus 1 -> bus 3) at bus 1
+	pp.create_measurement(net, "p", "line", 888, 8, element=line1, side="from")   # P_line (bus 1 -> bus 2) at bus 1
+	pp.create_measurement(net, "p", "line", 1173, 8, element=line2, side="from")  # P_line (bus 1 -> bus 3) at bus 1
+	# you can either define the side with a string ("from" / "to") or
+	# using the bus index where the line ends and the measurement is located
+	pp.create_measurement(net, "q", "line", 568, 8, element=line1, side=bus1)     # Q_line (bus 1 -> bus 2) at bus 1
+	pp.create_measurement(net, "q", "line", 663, 8, element=line2, side=bus1)     # Q_line (bus 1 -> bus 3) at bus 1
 
 Now that the data is ready, the state_estimation can be initialized and run. We want to use the flat start condition, in which all voltages are set to 1.0 p.u..
 

@@ -2311,26 +2311,28 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         **meas_type** (string) - Type of measurement. "v", "p", "q", "i" are possible
 
         **element_type** (string) - Clarifies which element is measured. "bus", "line",
-        "trafo" are possible
-
-        **element** (int) - Index of the measured element (either bus index, line index, trafo index, trafo3w index)
+        "trafo", and "trafo3w" are possible
 
         **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
         "kA" for I. Generation is a positive bus power injection, consumption negative
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
-        **side** (int, string, default: None) - Only used for measured lines or transformers. Side defines at which end of the
-        branch the measurement is gathered. For lines this may be "from", "to" to denote the side with the from_bus
-        or to_bus. It can also the be index of the from_bus or to_bus. For transformers, it can be "hv" or "lv" or
-        the corresponding bus index, respectively
+        **element** (int) - Index of the measured element (either bus index, line index, trafo index, trafo3w index)
+
+        **side** (int, string, default: None) - Only used for measured lines or transformers. Side defines at which end
+        of the branch the measurement is gathered. For lines this may be "from", "to" to denote the side with the
+        from_bus or to_bus. It can also the be index of the from_bus or to_bus. For transformers, it can be "hv", "mv"
+        or "lv" or the corresponding bus index, respectively
 
     OPTIONAL:
         **check_existing** (bool, default: None) - Check for and replace existing measurements for this bus,
         type and element_type. Set it to false for performance improvements which can cause unsafe
         behaviour
 
-        **name** (str, default: None) - name of measurement
+        **index** (int, default: None) - Index of the measurement in the measurement table. Should not exist already.
+
+        **name** (str, default: None) - Name of measurement
 
     OUTPUT:
         (int) Index of measurement
@@ -2363,11 +2365,11 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
-        raise UserWarning("Trafo with index={element} does not exist".format(element))
+        raise UserWarning("Trafo with index={} does not exist".format(element))
 
     if element is not None and element_type == "trafo3w" and element not in \
             net["trafo3w"].index.values:
-        raise UserWarning("Trafo3w with index={element} does not exist".format(element))
+        raise UserWarning("Trafo3w with index={} does not exist".format(element))
 
     if index is None:
         index = get_free_id(net.measurement)
@@ -2406,7 +2408,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
-     - Generator
+     - Generator{}
      - External Grid
      - Static Generator
      - Load
