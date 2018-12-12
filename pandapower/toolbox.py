@@ -1325,11 +1325,13 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         runpp(net1, **kwargs)
         runpp(net2, **kwargs)
 
-    def adapt_element_idx_references(net, element, et, offset=0):  # used for switch and measurement
-        et = et[0] if element == "switch" else et  # et[0] == "l" for "line", etc.
+    def adapt_element_idx_references(net, element, element_type, offset=0):
+        """ used for switch and measurement """
+        # element_type[0] == "l" for "line", etc.:
+        et = element_type[0] if element == "switch" else element_type
         et_col = "et" if element == "switch" else "element_type"
         elements = net[element][net[element][et_col] == et]
-        new_index = [net[element].index.get_loc(ix) + offset for ix in elements.element.values]
+        new_index = [net[element_type].index.get_loc(ix) + offset for ix in elements.element.values]
         if len(new_index):
             net[element].loc[elements.index, "element"] = new_index
 
