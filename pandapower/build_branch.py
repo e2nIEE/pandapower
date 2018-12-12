@@ -466,7 +466,7 @@ def _calc_xward_parameter(net, ppc):
     t = np.zeros(shape=(len(net["xward"].index), 5), dtype=np.complex128)
     xw_is = net["_is_elements"]["xward"]
     t[:, 0] = bus_lookup[net["xward"]["bus"].values]
-    t[:, 1] = bus_lookup[net["xward"]["ad_bus"].values]
+    t[:, 1] = bus_lookup[net._pd2ppc_lookups["aux"]["xward"]]
     t[:, 2] = net["xward"]["r_ohm"] / baseR
     t[:, 3] = net["xward"]["x_ohm"] / baseR
     t[:, 4] = xw_is
@@ -905,8 +905,9 @@ def _trafo_df_from_trafo3w(net):
     for column, values in tap_arrays.items():
         trafo2[column] = values
     zeros = np.zeros(len(net.trafo3w))
-    trafo2["hv_bus"] = np.concatenate([t3.hv_bus.values, t3.ad_bus.values, t3.ad_bus.values])
-    trafo2["lv_bus"] = np.concatenate([ t3.ad_bus.values, t3.mv_bus.values, t3.lv_bus.values])
+    aux_buses = net._pd2ppc_lookups["aux"]["trafo3w"]
+    trafo2["hv_bus"] = np.concatenate([t3.hv_bus.values, aux_buses, aux_buses])
+    trafo2["lv_bus"] = np.concatenate([aux_buses, t3.mv_bus.values, t3.lv_bus.values])
     trafo2["in_service"] = np.concatenate([t3.in_service.values for _ in range(3)])
     if loss_location == "hv":
         trafo2["i0_percent"] = np.concatenate([t3.i0_percent.values, zeros, zeros])
@@ -931,3 +932,7 @@ def _trafo_df_from_trafo3w(net):
     if net._options["mode"] == "opf" and "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = np.concatenate([net.trafo3w.max_loading_percent.values for _ in range(3)])
     return trafo2
+
+if __name__ == '__main__':
+    from pandapower.test.conftest import result_test_network
+    net = result_test_network()

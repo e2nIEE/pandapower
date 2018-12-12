@@ -496,12 +496,6 @@ def _add_options(net, options):
 
 
 def _clean_up(net, res=True):
-    if len(net["trafo3w"]) > 0:
-        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-
-    if len(net["xward"]) > 0:
-        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
