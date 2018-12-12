@@ -227,28 +227,4 @@ def test_voltage_angles():
         assert np.isnan(net.res_bus.va_degree.at[b5])
 
 if __name__ == '__main__':
-#    net = pp.create_empty_network()
-#
-#    #create buses
-#    bus1 = pp.create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)
-#    bus2 = pp.create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)
-#    bus3 = pp.create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)
-#
-#    #create 110 kV lines
-#    pp.create_line(net, bus1, bus2, length_km=50., std_type='149-AL1/24-ST1A 110.0')
-#    pp.create_line(net, bus2, bus3, length_km=50., std_type='149-AL1/24-ST1A 110.0')
-#
-#    #create loads
-#    pp.create_load(net, bus2, p_mw=80, controllable = False)
-#
-#    #create generators
-#    g1 = pp.create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01, slack=True)
-#    g2 = pp.create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
-##    net.gen["controllable"] = False
-#
-#    pp.create_pwl_cost(net, g1, 'gen', [(0, 2, 2), (2, 80, 5)])
-#    pp.create_pwl_cost(net, g2, 'gen', [(0, 2, 2), (2, 80, 5)])
-#
-#    pp.runpm_dc_opf(net)
-#    pp.runpm(net, julia_file="D:\\run_powermodels_custom.jl")
     pytest.main([__file__])

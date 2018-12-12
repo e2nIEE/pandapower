@@ -77,8 +77,6 @@ def create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_idx, eg_is_idx):
     bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_pv[net["ext_grid"]["bus"].values[eg_is_idx]] = True
     bus_is_pv[net["gen"]["bus"].values[gen_is_idx]] = True
-    if len(net["xward"]) > 0:
-        bus_is_pv[net["xward"][net["xward"].in_service == 1]["ad_bus"].values] = True
     # create array that represents the disjoint set
     ar = np.arange(max_bus_idx + 1)
     ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, bus_is_pv, bus_in_service)
@@ -131,8 +129,6 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_swi
 
         # Find PV / Slack nodes -> their bus must be kept when fused with a PQ node
         pv_list = [net["ext_grid"]["bus"].values[eg_is_mask], net["gen"]["bus"].values[gen_is_mask]]
-        if len(net["xward"]) > 0:
-            pv_list.append(net["xward"][net["xward"].in_service == 1]["ad_bus"].values)
         pv_ref = np.unique(np.hstack(pv_list))
         # get the pp-indices of the buses which are connected to a switch
         fbus = net["switch"]["bus"].values[slidx]
@@ -222,16 +218,17 @@ def _build_bus_ppc(net, ppc):
     # get bus indices
     nr_xward = len(net.xward)
     nr_trafo3w = len(net.trafo3w)
+    aux = dict()
     if nr_xward > 0 or nr_trafo3w > 0:
         bus_indices = [net["bus"].index.values, np.array([], dtype=np.int64)]
         max_idx = max(net["bus"].index) + 1
         if nr_xward > 0:
             aux_xward = np.arange(max_idx, max_idx+nr_xward, dtype=np.int64)
-            net.xward["ad_bus"] = aux_xward
+            aux["xward"] = aux_xward
             bus_indices.append(aux_xward)
         if nr_trafo3w:
             aux_trafo3w = np.arange(max_idx+nr_xward, max_idx+nr_xward+nr_trafo3w)
-            net.trafo3w["ad_bus"] = aux_trafo3w
+            aux["trafo3w"] = aux_trafo3w
             bus_indices.append(aux_trafo3w)
         bus_index = np.concatenate(bus_indices)
     else:
@@ -295,24 +292,25 @@ def _build_bus_ppc(net, ppc):
             ppc["bus"][:n_bus, VMIN] = 0  # changes of VMIN must be considered in check_opf_data
 
     if len(net.xward):
-        _fill_auxiliary_buses(net, ppc, bus_lookup, "xward", "bus")
+        _fill_auxiliary_buses(net, ppc, bus_lookup, "xward", "bus", aux)
 
     if len(net.trafo3w):
-        _fill_auxiliary_buses(net, ppc, bus_lookup, "trafo3w", "hv_bus")
+        _fill_auxiliary_buses(net, ppc, bus_lookup, "trafo3w", "hv_bus", aux)
 
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
+    net["_pd2ppc_lookups"]["aux"] = aux
 
 
-def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column):
+def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     element_idx = bus_lookup[net[element][bus_column]]
-    aux_idx = bus_lookup[net[element]["ad_bus"].values]
+    aux_idx = bus_lookup[aux[element]]
     ppc["bus"][aux_idx, BASE_KV] = ppc["bus"][element_idx, BASE_KV]
     ppc["bus"][aux_idx, VM] = ppc["bus"][element_idx, VM]
     ppc["bus"][aux_idx, VA] = ppc["bus"][element_idx, VA]
     if net._options["mode"] == "opf":
         ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_idx, VMIN]
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_idx, VMAX]
-    
+
 def set_reference_buses(net, ppc, bus_lookup):
     eg_buses = bus_lookup[net.ext_grid.bus[net._is_elements["ext_grid"]].values]
     ppc["bus"][eg_buses, BUS_TYPE] = REF
@@ -452,7 +450,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         q = np.hstack([q, q_mvar * v_ratio])
         p = np.hstack([p, pfe_mw * v_ratio])
-        b = np.hstack([b, trafo3w["ad_bus"].values])
+        b = np.hstack([b, net._pd2ppc_lookups["aux"]["trafo3w"]])
 
     # if array is not empty
     if b.size:
