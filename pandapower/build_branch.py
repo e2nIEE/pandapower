@@ -250,7 +250,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, sn_mva):
     r, x = _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva)
     if mode == "sc":
         y = 0
-        if trafo_df.equals(net.trafo):
+        if isinstance(trafo_df, pd.DataFrame): #2w trafo is dataframe, 3w trafo is dict
             from pandapower.shortcircuit.idx_bus import C_MAX
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = net._ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
@@ -851,10 +851,13 @@ def _trafo_df_from_trafo3w(net):
     sn = empty.copy()
     t3 = net["trafo3w"]
     t3_variables = ("vsc_hv_percent", "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
-                    "vscr_mv_percent", "vscr_lv_percent", "sn_hv_mva", "sn_mv_mva", "sn_lv_mva")
+                    "vscr_mv_percent", "vscr_lv_percent", "sn_hv_mva", "sn_mv_mva", "sn_lv_mva",
+                    "in_service")
     for i, (vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent,
-            vscr_lv_percent, sn_hv_mva, sn_mv_mva, sn_lv_mva) \
+            vscr_lv_percent, sn_hv_mva, sn_mv_mva, sn_lv_mva, in_service) \
             in enumerate(zip(*(t3[var].values for var in t3_variables))):
+        if not in_service:
+            continue
         vsc_3w = np.array([vsc_hv_percent, vsc_mv_percent, vsc_lv_percent], dtype=float)
         vscr_3w = np.array([vscr_hv_percent, vscr_mv_percent, vscr_lv_percent], dtype=float)
         sn_3w = np.array([sn_hv_mva, sn_mv_mva, sn_lv_mva])
