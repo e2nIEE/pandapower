@@ -119,19 +119,19 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     n_res_eg = len(net['ext_grid'])
     # indices of in service gens in the ppc
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
-    gen_idx_ppc = ext_grid_lookup[eg_is_idx]
+    eg_idx_ppc = ext_grid_lookup[eg_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
-    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(int)
+    eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
     # read results from ppc for these buses
     V012 = np.array(np.zeros((3, n_res_eg)))
-    V012[:, gen_idx_ppc] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
+    V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM]
+                                      * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
     S012 = np.array(np.zeros((3, n_res_eg)))
-    S012[:, gen_idx_ppc] = np.array([-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
+    S012[:, eg_idx_ppc] = np.array([-(ppc["gen"][eg_idx_ppc, PG] + 1j * ppc["gen"][eg_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=gen_idx_ppc)
+    Sabc, Vabc = SVabc_from_SV012(S012, V012, n_res=n_res_eg, idx=eg_idx_ppc)
     Sabc = Sabc * 1e3
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
@@ -191,17 +191,20 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
 
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
+    gen_idx_ppc = gen_lookup[gen_is_idx]
+    """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
+    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(int)
 
     V012 = np.array(np.zeros((3, n_res_gen)))
-    V012[:, gen_idx_ppc] = np.array([ppc["bus"][gen_idx_ppc, VM]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_idx_ppc, VA]))
+    V012[:, gen_is_idx] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
+                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
     S012 = np.array(np.zeros((3, n_res_gen)))
-    S012[:, gen_idx_ppc] = np.array(
+    S012[:, gen_is_idx] = np.array(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
     I012 = np.array(np.zeros((3, n_res_gen)))
-    I012[:, gen_idx_ppc] = I_from_SV_elementwise(S012[:, gen_idx_ppc], V012[:, gen_idx_ppc])
+    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx], V012[:, gen_is_idx])
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
@@ -245,16 +248,20 @@ def _get_v_gen_resuts(net, ppc):
 def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     # lookups for ppc
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-
+    gen_lookup = net["_pd2ppc_lookups"]["gen"]
+    
     # in service gens
     gen_is_mask = net["_is_elements"]['gen']
+    gen_is_idx = net["gen"].index[gen_is_mask]
     bus_idx_ppc = bus_lookup[net["gen"]["bus"].values[gen_is_mask]]
 
     n_res_gen = len(net['gen'])
-
+    gen_idx_ppc = gen_lookup[gen_is_idx]
+    """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
+    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(int)
     V012 = np.array(np.zeros((3, n_res_gen)))
-    V012[:, gen_is_mask] = np.array([ppc["bus"][gen_is_mask, VM]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_is_mask, VA]))
+    V012[:, gen_is_mask] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
+                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
     VABC = sequence_to_phase(V012)
 

@@ -456,11 +456,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
-
             # add a shunt element parallel to zb if the leakage impedance distribution is unequal
             # TODO: this only necessary if si0_hv_partial!=0.5 --> test
             for za_tr,zb_tr in zip(za,zb):
                 if za_tr==zb_tr:
+                    y = -1j / za_tr
+                    ppc["branch"][ppc_idx, BR_B] = y
                     ys = 0
                     buses_all = np.hstack([buses_all, lv_buses_ppc])
                     gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])

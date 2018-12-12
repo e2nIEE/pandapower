@@ -181,7 +181,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
-             for za_tr,zb_tr in zip(za,zb):
+            for za_tr,zb_tr in zip(za,zb):
                 if za_tr==zb_tr:
                     ys = 0
                     buses_all = np.hstack([buses_all, lv_buses_ppc])
@@ -204,8 +204,15 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
                     ys = 1/ zs.astype(complex)
                     buses_all = np.hstack([buses_all, lv_buses_ppc])
                     gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
-                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])        elif vector_group[-1].isdigit():
-            raise ValueError("Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree"%vector_group)
+                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
+        elif vector_group == "YNy":
+            buses_all = np.hstack([buses_all, hv_buses_ppc])
+            y = 1 / (z0_mag + z0_k).astype(complex) * int(ppc["baseMVA"])
+            gs_all = np.hstack([gs_all, y.real * in_service])
+            bs_all = np.hstack([bs_all, y.imag * in_service])
+        elif vector_group[-1].isdigit():
+            raise ValueError(
+                "Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree" % vector_group)
         else:
             raise ValueError("Transformer vector group %s is unknown / not implemented"%vector_group)
 
