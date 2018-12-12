@@ -860,6 +860,8 @@ def _trafo_df_from_trafo3w(net):
             offset = nr_trafos
         elif tp_side == "lv":
             offset = 2*nr_trafos
+        else:
+            continue
         tap_arrays["tp_side"][i+offset] = tp_side
         tap_arrays["tp_pos"][i+offset] = tp_pos
         tap_arrays["tp_mid"][i+offset] = tp_mid
