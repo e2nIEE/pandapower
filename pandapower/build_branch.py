@@ -851,13 +851,10 @@ def _trafo_df_from_trafo3w(net):
     sn = empty.copy()
     t3 = net["trafo3w"]
     t3_variables = ("vsc_hv_percent", "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
-                    "vscr_mv_percent", "vscr_lv_percent", "sn_hv_mva", "sn_mv_mva", "sn_lv_mva",
-                    "in_service")
+                    "vscr_mv_percent", "vscr_lv_percent", "sn_hv_mva", "sn_mv_mva", "sn_lv_mva")
     for i, (vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent,
-            vscr_lv_percent, sn_hv_mva, sn_mv_mva, sn_lv_mva, in_service) \
+            vscr_lv_percent, sn_hv_mva, sn_mv_mva, sn_lv_mva) \
             in enumerate(zip(*(t3[var].values for var in t3_variables))):
-        if not in_service:
-            continue
         vsc_3w = np.array([vsc_hv_percent, vsc_mv_percent, vsc_lv_percent], dtype=float)
         vscr_3w = np.array([vscr_hv_percent, vscr_mv_percent, vscr_lv_percent], dtype=float)
         sn_3w = np.array([sn_hv_mva, sn_mv_mva, sn_lv_mva])
