@@ -453,37 +453,46 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             za = z_temp / z2
             zb = z_temp / z1
             zc = z_temp / z3
-
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
+            y = 2/ za
+            ppc["branch"][ppc_idx, BR_B] = y.imag - y.real * 1j
+            
+
             # add a shunt element parallel to zb if the leakage impedance distribution is unequal
             # TODO: this only necessary if si0_hv_partial!=0.5 --> test
-            for za_tr,zb_tr in zip(za,zb):
-                if za_tr==zb_tr:
-                    y = -1j / za_tr
-                    ppc["branch"][ppc_idx, BR_B] = y
-                    ys = 0
-                    buses_all = np.hstack([buses_all, lv_buses_ppc])
-                    gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
-                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
-                elif za_tr > zb_tr :
-                    y = -1j / za_tr
-#                    ppc["branch"][ppc_idx, BR_B] = y.imag - y.real * 1j
-                    ppc["branch"][ppc_idx, BR_B] = y
-                    zs = (za_tr * zb_tr) / (za_tr - zb_tr)
-                    ys = 1/ zs.astype(complex)
-                    buses_all = np.hstack([buses_all, hv_buses_ppc])
-                    gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
-                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
-                elif za_tr < zb_tr :
-                    y = -1j/ zb_tr
-#                    ppc["branch"][ppc_idx, BR_B] = y.imag - y.real * 1j
-                    ppc["branch"][ppc_idx, BR_B] = y
-                    zs = (za_tr * zb_tr) / (zb_tr - za_tr)
-                    ys = 1/ zs.astype(complex)
-                    buses_all = np.hstack([buses_all, lv_buses_ppc])
-                    gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
-                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
+            
+            zs = (za * zb) / (za - zb)
+            ys = 1/ zs.astype(complex)
+            buses_all = np.hstack([buses_all, lv_buses_ppc])
+            gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
+            bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
+#            for za_tr,zb_tr in zip(za,zb):
+#                if za_tr==zb_tr:
+#                    y = -2j / za_tr
+#                    ppc["branch"][ppc_idx, BR_B] = y
+#                    ys = 0
+#                    buses_all = np.hstack([buses_all, lv_buses_ppc])
+#                    gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
+#                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
+#                elif za_tr > zb_tr :
+#                    y = -2j / za_tr
+##                    ppc["branch"][ppc_idx, BR_B] = y.imag - y.real * 1j
+#                    ppc["branch"][ppc_idx, BR_B] = y
+#                    zs = (za_tr * zb_tr) / (za_tr - zb_tr)
+#                    ys = 1/ zs.astype(complex)
+#                    buses_all = np.hstack([buses_all, hv_buses_ppc])
+#                    gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
+#                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
+#                elif za_tr < zb_tr :
+#                    y = -2j/ zb_tr
+##                    ppc["branch"][ppc_idx, BR_B] = y.imag - y.real * 1j
+#                    ppc["branch"][ppc_idx, BR_B] = y
+#                    zs = (za_tr * zb_tr) / (zb_tr - za_tr)
+#                    ys = 1/ zs.astype(complex)
+#                    buses_all = np.hstack([buses_all, lv_buses_ppc])
+#                    gs_all = np.hstack([gs_all, ys.real * in_service * int(ppc["baseMVA"])])
+#                    bs_all = np.hstack([bs_all, ys.imag * in_service * int(ppc["baseMVA"])])
         elif vector_group == "YNy":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             y = 1 / (z0_mag + z0_k).astype(complex) * int(ppc["baseMVA"])
