@@ -1325,22 +1325,25 @@ def merge_nets(net1, net2, validate=True, tol=1e-9, **kwargs):
         runpp(net1, **kwargs)
         runpp(net2, **kwargs)
 
-    def adapt_switches(net, element, offset=0):
-        switches = net.switch[net.switch.et == element[0]]  # element[0] == "l" for "line", ect.
-        new_index = [net[element].index.get_loc(ix) + offset
-                     for ix in switches.element.values]
+    def adapt_element_idx_references(net, element, element_type, offset=0):
+        """ used for switch and measurement """
+        # element_type[0] == "l" for "line", etc.:
+        et = element_type[0] if element == "switch" else element_type
+        et_col = "et" if element == "switch" else "element_type"
+        elements = net[element][net[element][et_col] == et]
+        new_index = [net[element_type].index.get_loc(ix) + offset for ix in elements.element.values]
         if len(new_index):
-            net.switch.loc[switches.index, "element"] = new_index
+            net[element].loc[elements.index, "element"] = new_index
 
     for element, table in net.items():
         if element.startswith("_") or element.startswith("res") or element == "dtypes":
             continue
         if type(table) == pd.DataFrame and (len(table) > 0 or len(net2[element]) > 0):
-            if element == "switch":
-                adapt_switches(net2, "line", offset=len(net1.line))
-                adapt_switches(net1, "line")
-                adapt_switches(net2, "trafo", offset=len(net1.trafo))
-                adapt_switches(net1, "trafo")
+            if element in ["switch", "measurement"]:
+                adapt_element_idx_references(net2, element, "line", offset=len(net1.line))
+                adapt_element_idx_references(net1, element, "line")
+                adapt_element_idx_references(net2, element, "trafo", offset=len(net1.trafo))
+                adapt_element_idx_references(net1, element, "trafo")
             if element == "line_geodata":
                 ni = [net1.line.index.get_loc(ix) for ix in net1["line_geodata"].index]
                 net1.line_geodata.set_index(np.array(ni), inplace=True)
