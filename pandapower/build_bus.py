@@ -324,77 +324,45 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
-    # get in service elements
-    # _is_elements = check if element is at a bus & if element is in service
     _is_elements = net["_is_elements"]
-    l = net["load"]
-    if len(l) > 0:
-        voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-        if voltage_depend_loads:
-            cz = l["const_z_percent"].values / 100.
-            ci = l["const_i_percent"].values / 100.
-            if ((cz + ci) > 1).any():
-                raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
-                                 "100%!")
+    voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+    for element in ["load", "sgen", "storage", "ward", "xward"]:
+        tab = net[element]
+        if len(tab):
+            if element == "load" and voltage_depend_loads:
+                cz = tab["const_z_percent"].values / 100.
+                ci = tab["const_i_percent"].values / 100.
+                if ((cz + ci) > 1).any():
+                    raise ValueError("const_z_percent + const_i_percent need to be less or equal to " +
+                                     "100%!")
 
-            # cumulative sum of constant-current loads
-            b_zip = l["bus"].values
-            load_counter = Counter(b_zip)
+                # cumulative sum of constant-current loads
+                b_zip = tab["bus"].values
+                load_counter = Counter(b_zip)
 
-            bus_lookup = net["_pd2ppc_lookups"]["bus"]
-            b_zip = bus_lookup[b_zip]
-            load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
-            b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
+                bus_lookup = net["_pd2ppc_lookups"]["bus"]
+                b_zip = bus_lookup[b_zip]
+                load_counter = {bus_lookup[k]: v for k, v in load_counter.items()}
+                b_zip, ci_sum, cz_sum = _sum_by_group(b_zip, ci, cz)
 
-            for bus, no_loads in load_counter.items():
-                ci_sum[b_zip == bus] /= no_loads
-                cz_sum[b_zip == bus] /= no_loads
+                for bus, no_loads in load_counter.items():
+                    ci_sum[b_zip == bus] /= no_loads
+                    cz_sum[b_zip == bus] /= no_loads
 
-            ppc["bus"][b_zip, CID] = ci_sum
-            ppc["bus"][b_zip, CZD] = cz_sum
-        active = _is_elements["load"]
-        vl = active * l["scaling"].values.T
-        q = np.hstack([q, l["q_mvar"].values * vl])
-        p = np.hstack([p, l["p_mw"].values * vl])
-        b = np.hstack([b, l["bus"].values])
-
-    sgen = net["sgen"]
-    if len(sgen) > 0:
-        active = _is_elements["sgen"]
-        vl = active * sgen["scaling"].values.T
-        q = np.hstack([q, -sgen["q_mvar"].values * vl])
-        p = np.hstack([p, -sgen["p_mw"].values * vl])
-        b = np.hstack([b, sgen["bus"].values])
-
-    stor = net["storage"]
-    if len(stor) > 0:
-        # TODO: Limit p_mw according to SOC and max_e_mwh/min_e_mwh
-        # Note: p_mw depends on the timestep resolution -> implement a resolution factor in options
-        # Note: SOC during power flow not updated, time domain introduction would lead to \
-        #   paradigm shift in pandapower
-        #   --> energy content of storage is currently neglected!
-        active = _is_elements["storage"]
-        vl = active * stor["scaling"].values.T
-        q = np.hstack([q, stor["q_mvar"].values * vl])
-        p = np.hstack([p, stor["p_mw"].values * vl])
-        b = np.hstack([b, stor["bus"].values])
-
-    w = net["ward"]
-    if len(w) > 0:
-        vl = _is_elements["ward"]
-        q = np.hstack([q, w["qs_mvar"].values * vl])
-        p = np.hstack([p, w["ps_mw"].values * vl])
-        b = np.hstack([b, w["bus"].values])
-
-    xw = net["xward"]
-    if len(xw) > 0:
-        vl = _is_elements["xward"]
-        q = np.hstack([q, xw["qs_mvar"].values * vl])
-        p = np.hstack([p, xw["ps_mw"].values * vl])
-        b = np.hstack([b, xw["bus"].values])
+                ppc["bus"][b_zip, CID] = ci_sum
+                ppc["bus"][b_zip, CZD] = cz_sum
+            active = _is_elements[element]
+            sign = -1 if element == "sgen" else 1
+            if element.endswith("ward"):
+                p = np.hstack([p, tab["ps_mw"].values * active * sign])
+                q = np.hstack([q, tab["qs_mvar"].values * active * sign])
+            else:
+                scaling = tab["scaling"].values.T
+                p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
+                q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
+            b = np.hstack([b, tab["bus"].values])
 
     # sum up p & q of bus elements
-    # if array is not empty
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         b = bus_lookup[b]
