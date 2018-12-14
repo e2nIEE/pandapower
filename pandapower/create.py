@@ -55,7 +55,8 @@ def create_empty_network(name="", f_hz=50., sn_kva=1e3):
                  ("sn_kva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
-                 ("type", dtype(object))],
+                 ("type", dtype(object)),
+                 ("current_source", "bool")],
         "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_kw", "f8"),
@@ -640,10 +641,12 @@ def create_load_from_cosphi(net, bus, sn_kva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan,
-                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan):
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan,
+                current_source=True):
     """create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None, \
                 scaling=1., type=None, in_service=True, max_p_kw=nan, min_p_kw=nan, \
-                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
+                max_q_kvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan,
+                current_source=False)
     Adds one static generator in table net["sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -664,18 +667,19 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
 
     OPTIONAL:
 
-        **q_kvar** (float, default 0) - The reactive power of the sgen
+        **q_kvar** (float, 0) - The reactive power of the sgen
 
-        **sn_kva** (float, default None) - Nominal power of the sgen
+        **sn_kva** (float, None) - Nominal power of the sgen
 
-        **name** (string, default None) - The name for this sgen
+        **name** (string, None) - The name for this sgen
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
-        **type** (string, None) -  type variable to classify the static generator
+        **type** (string, None) -  type variable to classify the static generator (no impact on \
+            calculations)
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -699,6 +703,10 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor
 
+        **current_source** (bool, True) - Model this sgen as a current source during short-\
+            circuit calculations; useful in some cases, for example the simulation of full-\
+            size converters per IEC 60909-0:2016.
+
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
@@ -718,9 +726,9 @@ def create_sgen(net, bus, p_kw, q_kvar=0, sn_kva=nan, name=None, index=None,
     # store dtypes
     dtypes = net.sgen.dtypes
 
-    net.sgen.loc[index, ["name", "bus", "p_kw", "scaling",
-                         "q_kvar", "sn_kva", "in_service", "type"]] = \
-        [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type]
+    net.sgen.loc[index, ["name", "bus", "p_kw", "scaling", "q_kvar", "sn_kva",
+                         "in_service", "type", "current_source"]] = \
+        [name, bus, p_kw, scaling, q_kvar, sn_kva, bool(in_service), type, current_source]
 
     # and preserve dtypes
     _preserve_dtypes(net.sgen, dtypes)
