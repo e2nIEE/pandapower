@@ -303,3 +303,133 @@ class wls_matrix_ops:
             h_mat = np.vstack((h_mat, h_))
 
         return h_mat[1:, :]  # delete dummy line
+
+    def create_zero_injections(self, v, delta, zero_inj):
+        n = len(self.ppc["bus"])
+        G = self.G
+        B = self.B
+
+        cx_11 = np.zeros(zero_inj, n - 1)
+        for i in range(zero_inj):
+            for j in range(n - 1):
+                k = zero_inj[i]
+                if j + 1 == k:
+                    cx_11[i, j] = -v[k]**2 * B[k, k]
+                    for l in range(delta):
+                        cx_11[i, j] = cx_11[i, j] + v[k] * v[l] * (-G[k, l] * np.sin(delta[k] - delta[l])
+                                                                   + B[k, l] * np.cos(delta[k] - delta[l]))
+                else:
+                    cx_11[i, j] = v[k] * v[j + 1] * (G[k, j + 1] * np.sin(delta[k] - delta[j + 1])
+                                                     + B[k, j + 1] * np.cos[delta[k] - delta[j + 1]])
+
+#
+# % % % ----------------------------------------------------- % % %
+# % % % Partiella
+# derivator
+# av
+# P_inj
+# med
+# avseende
+# på
+# spänning % % %
+# % % % ----------------------------------------------------- % % %
+# Cx_12 = zeros(length(Ninj), length(V));
+# for i = 1:length(Ninj)
+# k = Ninj(i);
+# for j=1:length(V)
+# if j == k
+#     Cx_12(i, j) = V(k) * G(k, k);
+#     for l = 1:length(Theta)
+#     Cx_12(i, j) = Cx_12(i, j) + V(l) * (G(k, l) * cos(Theta(k) - Theta(l)) + B(k, l) * sin(Theta(k) - Theta(l)));
+# end
+# else
+# Cx_12(i, j) = V(k) * (G(k, j) * cos(Theta(k) - Theta(j)) + B(k, j) * sin(Theta(k) - Theta(j)));
+# end
+# end
+# end
+#
+# % % % --------------------------------------------------- % % %
+# % % % Partiella
+# derivator
+# av
+# Qinj
+# med
+# avseende
+# på
+# vinkel % % %
+# % % % --------------------------------------------------- % % %
+# Cx_21 = zeros(length(Ninj), length(Theta) - 1);
+# for i = 1:length(Ninj)
+# k = Ninj(i);
+# for j=1:length(Theta) - 1
+# if j + 1 == k
+#     Cx_21(i, j) = -V(k) ^ 2 * G(k, k);
+#     for l = 1:length(Theta)
+#     Cx_21(i, j) = Cx_21(i, j) + V(k) * V(l) * (G(k, l) * cos(Theta(k) - Theta(l)) + B(k, l) * sin(Theta(k) - Theta(l)));
+# end
+# else
+# Cx_21(i, j) = V(k) * V(j + 1) * (
+#             -G(k, j + 1) * cos(Theta(k) - Theta(j + 1)) - B(k, j + 1) * sin(Theta(k) - Theta(j + 1)));
+# end
+# end
+# end
+#
+# % % % ---------------------------------------------------- % % %
+# % % % Partiella
+# derivator
+# av
+# Qinj
+# med
+# avseende
+# på
+# spänning % % %
+# % % % ---------------------------------------------------- % % %
+# Cx_22 = zeros(length(Ninj), length(V));
+# for i = 1:length(Ninj)
+# k = Ninj(i);
+# for j=1:length(V)
+# if j == k
+#     Cx_22(i, j) = -V(k) * B(k, k);
+#     for l = 1:length(Theta)
+#     Cx_22(i, j) = Cx_22(i, j) + V(l) * (G(k, l) * sin(Theta(k) - Theta(l)) - B(k, l) * cos(Theta(k) - Theta(l)));
+# end
+# else
+# Cx_22(i, j) = V(k) * (G(k, j) * sin(Theta(k) - Theta(j)) - B(k, j) * cos(Theta(k) - Theta(j)));
+# end
+# end
+# end
+#
+# % Extra
+# Tillståndsekvationer
+# för
+# P_inj
+# Crxh_1 = zeros(length(Ninj), 1);
+# for i = 1:length(Ninj)
+# k = Ninj(i);
+# for j=1:length(Theta)
+# Crxh_1(i) = Crxh_1(i);
+# Crxh_1(i) = Crxh_1(i) + V(k) * V(j) * (G(k, j) * cos(Theta(k) - Theta(j)) + B(k, j) * sin(Theta(k) - Theta(j)));
+# end
+# end
+#
+# % Extra
+# Tillståndsekvationer
+# för
+# Q_inj
+# Crxh_2 = zeros(length(Ninj), 1);
+# for i = 1:length(Ninj)
+# k = Ninj(i);
+# for j=1:length(Theta)
+# Crxh_2(i) = Crxh_2(i);
+# Crxh_2(i) = Crxh_2(i) + V(k) * V(j) * (G(k, j) * sin(Theta(k) - Theta(j)) - B(k, j) * cos(Theta(k) - Theta(j)));
+# end
+# end
+#
+# Crxh = [Crxh_1;
+# Crxh_2];
+#
+# % Sammanfogar
+# C - matrisen("tvångsmatrisen")
+# C = [Cx_11 Cx_12;
+# Cx_21
+# Cx_22];

@@ -248,6 +248,10 @@ class state_estimation(object):
 
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
+        zero_injection_buses = np.array(list(set(self.net.bus.index) - set(self.net.load.bus) - set(self.net.sgen.bus) -
+                                             set(self.net.shunt.bus) - set(self.net.gen.bus) -
+                                             set(self.net.ext_grid.bus) - set(self.net.ward.bus) -
+                                             set(self.net.xward.bus)))
 
         # number of nodes
         n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
