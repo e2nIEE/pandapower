@@ -357,7 +357,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
                 p = np.hstack([p, tab["ps_mw"].values * active * sign])
                 q = np.hstack([q, tab["qs_mvar"].values * active * sign])
             else:
-                scaling = tab["scaling"].values.T
+                scaling = tab["scaling"].values
                 p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])

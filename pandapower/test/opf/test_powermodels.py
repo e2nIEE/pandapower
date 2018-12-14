@@ -150,12 +150,15 @@ def test_pwl():
 def test_without_ext_grid():
     net = pp.create_empty_network()
 
+    min_vm_pu = 0.95
+    max_vm_pu = 1.05
+
     #create buses
     bus1 = pp.create_bus(net, vn_kv=220., geodata=(5,9))
-    bus2 = pp.create_bus(net, vn_kv=110., geodata=(6,10))
-    bus3 = pp.create_bus(net, vn_kv=110., geodata=(10,9))
-    bus4 = pp.create_bus(net, vn_kv=110., geodata=(8,8))
-    bus5 = pp.create_bus(net, vn_kv=110., geodata=(6,8))
+    bus2 = pp.create_bus(net, vn_kv=110., geodata=(6,10), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus3 = pp.create_bus(net, vn_kv=110., geodata=(10,9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus4 = pp.create_bus(net, vn_kv=110., geodata=(8,8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus5 = pp.create_bus(net, vn_kv=110., geodata=(6,8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
 
     #create 220/110/110 kV 3W-transformer
     pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
@@ -177,13 +180,13 @@ def test_without_ext_grid():
     pp.create_load(net, bus4, p_mw=10)
 
     #create generators
-    g1 = pp.create_gen(net, bus1, p_mw=40, min_p_mw=0, max_q_mvar=0.020, slack=True)
+    g1 = pp.create_gen(net, bus1, p_mw=40, min_p_mw=0, min_q_mvar=-20, max_q_mvar=20, slack=True)
     pp.create_poly_cost(net, g1, 'gen', cp1_eur_per_mw=1000)
 
-    g2 = pp.create_gen(net, bus3, p_mw=40, min_p_mw=0, max_q_mvar=0.020, vm_pu=1.01)
+    g2 = pp.create_gen(net, bus3, p_mw=40, min_p_mw=0, min_q_mvar=-20, max_q_mvar=20, vm_pu=1.01)
     pp.create_poly_cost(net, g2, 'gen', cp1_eur_per_mw=2000)
 
-    g3 = pp.create_gen(net, bus4, p_mw=0.050, min_p_mw=0, max_q_mvar=0.020, vm_pu=1.01)
+    g3 = pp.create_gen(net, bus4, p_mw=0.050, min_p_mw=0, min_q_mvar=-20, max_q_mvar=20, vm_pu=1.01)
     pp.create_poly_cost(net, g3, 'gen', cp1_eur_per_mw=3000)
 
     pp.runpm_ac_opf(net)
@@ -198,6 +201,7 @@ def test_without_ext_grid():
     consistency_checks(net, rtol=1e-3)
     assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1]*1e3 + net.res_gen.p_mw.at[g2]*2e3)
+
 
 @pytest.mark.skipif(julia_installed==False, reason="requires julia installation")
 def test_voltage_angles():

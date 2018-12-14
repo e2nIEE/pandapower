@@ -5,7 +5,6 @@
 
 
 import numpy as np
-import numpy.core.numeric as ncn
 from pandapower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
 from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pandapower.pf.ppci_variables import bustypes
@@ -44,8 +43,6 @@ def _build_gen_ppc(net, ppc):
     _init_ppc_gen(net, ppc, f)
     for element, (f,t) in gen_order.items():
         add_element_to_gen(net, ppc, element, f, t)
-
-    _replace_nans_with_default_limits(net, ppc)
     net._gen_order = gen_order
 
 def add_gen_order(gen_order, element, _is_elements, f):
@@ -237,17 +234,7 @@ def _update_gen_ppc(net, ppc):
         raise NotImplementedError("xwards in combination with recycle is not properly implemented")
         # _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default,
         #                           update_lookup=False)
-    _replace_nans_with_default_limits(net, ppc)
 
-def _replace_nans_with_default_limits(net, ppc):
-    qlim = net._options["q_lim_default"]
-    plim = net._options["p_lim_default"]
-
-    for ppc_column, default in [(QMAX, qlim), (QMIN, -qlim), (PMIN, -plim), (PMAX, plim),
-                                (VMAX, 2.0), (VMIN, 0.0)]:
-        limits = ppc["gen"][:, [ppc_column]]
-        ncn.copyto(limits, default, where=np.isnan(limits))
-        ppc["gen"][:, [ppc_column]] = limits
 
 def _check_voltage_setpoints_at_same_bus(ppc):
     # generator buses:
