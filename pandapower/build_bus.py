@@ -312,11 +312,11 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_idx, VMAX]
 
 def set_reference_buses(net, ppc, bus_lookup):
-    eg_buses = bus_lookup[net.ext_grid.bus[net._is_elements["ext_grid"]].values]
+    eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]
     ppc["bus"][eg_buses, BUS_TYPE] = REF
-    gen_is = net.gen[net._is_elements["gen"]]
-    if gen_is["slack"].any():
-        slack_buses = gen_is["bus"][gen_is["slack"]].values
+    gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
+    if gen_slacks.any():
+        slack_buses = net.gen["bus"].values[gen_slacks]
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
 
 

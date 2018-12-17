@@ -513,35 +513,35 @@ def _switch_branches(net, ppc):
             & (net["switch"]["et"].values == "l")
 
     # check if there are multiple opened switches at a line (-> set line out of service)
-    sw_elem = net['switch'][slidx]["element"].values
+    sw_elem = net['switch']["element"].values[slidx]
     m = np.zeros_like(sw_elem, dtype=bool)
     m[np.unique(sw_elem, return_index=True)[1]] = True
 
     # if non unique elements are in sw_elem (= multiple opened bus line switches)
-    if np.count_nonzero(m) < len(sw_elem):
+    if not connectivity_check and np.count_nonzero(m) < len(sw_elem):
         if 'line' not in _is_elements:
             get_is_lines(net)
         lines_is = _is_elements['line']
         lines_to_delete = [idx for idx in sw_elem[~m] if idx in lines_is.index]
+        if len(lines_to_delete) > 0:
+            from_bus = lines_is.from_bus.loc[lines_to_delete].values
+            to_bus = lines_is.to_bus.loc[lines_to_delete].values
+            # check if branch is already out of service -> ignore switch
+            from_bus = from_bus[~np.isnan(from_bus)].astype(int)
+            to_bus = to_bus[~np.isnan(to_bus)].astype(int)
 
-        from_bus = lines_is.loc[lines_to_delete].from_bus.values
-        to_bus = lines_is.loc[lines_to_delete].to_bus.values
-        # check if branch is already out of service -> ignore switch
-        from_bus = from_bus[~np.isnan(from_bus)].astype(int)
-        to_bus = to_bus[~np.isnan(to_bus)].astype(int)
+            # set branch in ppc out of service if from and to bus are at a line which is in service
+            if from_bus.size and to_bus.size:
+                # get from and to buses of these branches
+                ppc_from = bus_lookup[from_bus]
+                ppc_to = bus_lookup[to_bus]
+                ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from) \
+                          & np.in1d(ppc['branch'][:, 1], ppc_to)
+                ppc["branch"][ppc_idx, BR_STATUS] = 0
 
-        # set branch in ppc out of service if from and to bus are at a line which is in service
-        if not connectivity_check and from_bus.size and to_bus.size:
-            # get from and to buses of these branches
-            ppc_from = bus_lookup[from_bus]
-            ppc_to = bus_lookup[to_bus]
-            ppc_idx = np.in1d(ppc['branch'][:, 0], ppc_from) \
-                      & np.in1d(ppc['branch'][:, 1], ppc_to)
-            ppc["branch"][ppc_idx, BR_STATUS] = 0
-
-            # drop from in service lines as well
-            lines_is = lines_is.drop(lines_to_delete)
-            _is_elements["line_is_idx"] = lines_is.index
+                # drop from in service lines as well
+                lines_is = lines_is.drop(lines_to_delete)
+                _is_elements["line_is_idx"] = lines_is.index
 
     # opened switches at in service lines
     slidx = slidx \
@@ -549,22 +549,20 @@ def _switch_branches(net, ppc):
             & (np.in1d(net["switch"]["bus"].values, bus_is_idx))
     nlo = np.count_nonzero(slidx)
 
-    stidx = (net.switch["closed"].values == 0) & (net.switch["et"].values == "t")
-    st3idx = (net.switch["closed"].values == 0) & (net.switch["et"].values == "t3")
+    stidx = (net.switch["closed"].values == False) & (net.switch["et"].values == "t")
+    st3idx = (net.switch["closed"].values == False) & (net.switch["et"].values == "t3")
     nto =  np.count_nonzero(stidx) + np.count_nonzero(st3idx)
 
     if (nlo + nto) > 0:
         n_bus = len(ppc["bus"])
+        future_buses = [ppc["bus"]]
 
         if nlo:
-            future_buses = [ppc["bus"]]
-            line_switches = net["switch"].loc[slidx]
-
             # determine on which side the switch is located
             mapfunc = partial(_gather_branch_switch_info, branch_type="l", net=net)
             ls_info = list(map(mapfunc,
-                               line_switches["bus"].values,
-                               line_switches["element"].values))
+                               net["switch"]["bus"].values[slidx],
+                               net["switch"]["element"].values[slidx]))
             # we now have the following matrix
             # 0: 1 if switch is at to_bus, 0 else
             # 1: bus of the switch
@@ -606,19 +604,14 @@ def _switch_branches(net, ppc):
             ppc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0] = \
                 new_indices[np.logical_not(ls_info[:, 0])]
 
-            ppc["bus"] = np.vstack(future_buses)
-
         if nto:
-            future_buses = [ppc["bus"]]
-            trafo_switches = net["switch"].loc[stidx]
-            trafo3_switches = net["switch"].loc[st3idx]
             # determine on which side the switch is located
             t2s_info = list(map(partial(_gather_branch_switch_info, branch_type="t", net=net),
-                               trafo_switches["bus"].values,
-                               trafo_switches["element"].values))
+                               net.switch["bus"].values[stidx],
+                               net.switch["element"].values[stidx]))
             t3s_info = list(map(partial(_gather_branch_switch_info, branch_type="t3", net=net),
-                               trafo3_switches["bus"].values,
-                               trafo3_switches["element"].values))
+                               net.switch["bus"].values[st3idx],
+                               net.switch["element"].values[st3idx]))
             ts_info = t2s_info + t3s_info
             # we now have the following matrix
             # 0: 1 if switch is at lv_bus, 0 else
@@ -665,7 +658,7 @@ def _switch_branches(net, ppc):
             ppc["branch"][ts_info[at_lv_bus, 2], 1] = new_indices[at_lv_bus]
             ppc["branch"][ts_info[at_hv_bus, 2], 0] = new_indices[at_hv_bus]
 
-            ppc["bus"] = np.vstack(future_buses)
+        ppc["bus"] = np.vstack(future_buses)
 
 
 def _branches_with_oos_buses(net, ppc):
