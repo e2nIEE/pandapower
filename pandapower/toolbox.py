@@ -766,6 +766,8 @@ def _convert_to_mw(net):
             for old, new in replace:
                 diff = {column: column.replace(old, new) for column in tab.columns if old in column}
                 tab.rename(columns=diff, inplace=True)
+                if len(tab) == 0:
+                    continue
                 for old, new in diff.items():
                     tab[new] *= 1e-3
 
