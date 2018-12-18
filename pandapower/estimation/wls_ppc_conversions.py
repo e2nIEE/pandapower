@@ -66,29 +66,30 @@ def _add_measurements_to_ppc(net, ppci):
         std_logger.warning("Measurement defined in pp-grid does not exist in ppci! Will be deleted!")
         meas_bus = meas_bus[map_bus[meas_bus['element']] < ppci["bus"].shape[0]]
 
-    map_line, map_trafo, map_trafo3w = None, None, None
     # mapping to dict instead of np array ensures good performance for large indices
     # (e.g., 999999999 requires a large np array even if there are only 2 buses)
     # downside is loop comprehension to access the map
+    map_line, map_trafo, map_trafo3w = None, None, None
     branch_mask = ppci['internal']['branch_is']
     if "line" in net["_pd2ppc_lookups"]["branch"]:
-        map_line = {line_ix:br_ix for line_ix, br_ix in\
+        map_line = {line_ix: br_ix for line_ix, br_ix in
                     zip(net.line.index, range(*net["_pd2ppc_lookups"]["branch"]["line"])) if branch_mask[br_ix]}
-        
+
     if "trafo" in net["_pd2ppc_lookups"]["branch"]:
         trafo_ix_start, trafo_ix_end = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_ix_offset = np.sum(~branch_mask[:trafo_ix_start])
         trafo_ix_start, trafo_ix_end = trafo_ix_start - trafo_ix_offset, trafo_ix_end - trafo_ix_offset
-        map_trafo = {trafo_ix:br_ix for trafo_ix, br_ix in\
-                     zip(net.trafo.index, range(trafo_ix_start, trafo_ix_end)) if branch_mask[br_ix+trafo_ix_offset]}
+        map_trafo = {trafo_ix: br_ix for trafo_ix, br_ix in
+                     zip(net.trafo.index, range(trafo_ix_start, trafo_ix_end))
+                     if branch_mask[br_ix+trafo_ix_offset]}
 
     if "trafo3w" in net["_pd2ppc_lookups"]["branch"]:
         trafo3w_ix_start, trafo3w_ix_end = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
         trafo3w_ix_offset = np.sum(~branch_mask[:trafo3w_ix_start])
         trafo3w_ix_start, trafo3w_ix_end = trafo3w_ix_start - trafo3w_ix_offset, trafo3w_ix_end - trafo3w_ix_offset
-        map_trafo3w = {trafo3w_ix: {'hv': br_ix, 'mv': br_ix+1, 'lv': br_ix+2} for trafo3w_ix, br_ix in\
-                       zip(net.trafo3w.index, range(trafo3w_ix_start, trafo3w_ix_end, 3)) if branch_mask[br_ix+trafo3w_ix_offset]}
-
+        map_trafo3w = {trafo3w_ix: {'hv': br_ix, 'mv': br_ix+1, 'lv': br_ix+2} for trafo3w_ix, br_ix in
+                       zip(net.trafo3w.index, range(trafo3w_ix_start, trafo3w_ix_end, 3))
+                       if branch_mask[br_ix+trafo3w_ix_offset]}
 
     # set measurements for ppc format
     # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
@@ -149,7 +150,7 @@ def _add_measurements_to_ppc(net, ppci):
             branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values * i_ka_to_pu_to
             branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
     
-        p_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "line") &\
+        p_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "line") &
                               meas.element.isin(map_line)]
         if len(p_measurements):
             meas_from = p_measurements[(p_measurements.side.values.astype(int) ==
@@ -165,7 +166,7 @@ def _add_measurements_to_ppc(net, ppci):
             branch_append[ix_to, P_TO_STD] = meas_to.std_dev.values
             branch_append[ix_to, P_TO_IDX] = meas_to.index.values
     
-        q_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "line")&\
+        q_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "line") &
                               meas.element.isin(map_line)]
         if len(q_measurements):
             meas_from = q_measurements[(q_measurements.side.values.astype(int) ==
@@ -196,7 +197,7 @@ def _add_measurements_to_ppc(net, ppci):
     # ppci_lines = len(lines_is) - np.count_nonzero(slidx)
     
     if map_trafo is not None:
-        i_tr_measurements = meas[(meas.measurement_type == "i") & (meas.element_type == "trafo") &\
+        i_tr_measurements = meas[(meas.measurement_type == "i") & (meas.element_type == "trafo") &
                                  meas.element.isin(map_trafo)]
         if len(i_tr_measurements):
             meas_from = i_tr_measurements[(i_tr_measurements.side.values.astype(int) ==
@@ -214,7 +215,7 @@ def _add_measurements_to_ppc(net, ppci):
             branch_append[ix_to, IM_TO_STD] = meas_to.std_dev.values * i_ka_to_pu_to
             branch_append[ix_to, IM_TO_IDX] = meas_to.index.values
     
-        p_tr_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo")&\
+        p_tr_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo") &
                                  meas.element.isin(map_trafo)]
         if len(p_tr_measurements):
             meas_from = p_tr_measurements[(p_tr_measurements.side.values.astype(int) ==
@@ -230,7 +231,7 @@ def _add_measurements_to_ppc(net, ppci):
             branch_append[ix_to, P_TO_STD] = meas_to.std_dev.values
             branch_append[ix_to, P_TO_IDX] = meas_to.index.values
     
-        q_tr_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "trafo")&\
+        q_tr_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "trafo") &
                                  meas.element.isin(map_trafo)]
         if len(q_tr_measurements):
             meas_from = q_tr_measurements[(q_tr_measurements.side.values.astype(int) ==
@@ -248,7 +249,7 @@ def _add_measurements_to_ppc(net, ppci):
         
     # Add measurements for trafo3w
     if map_trafo3w is not None:
-        i_tr3w_measurements = meas[(meas.measurement_type == "i") & (meas.element_type == "trafo3w")&\
+        i_tr3w_measurements = meas[(meas.measurement_type == "i") & (meas.element_type == "trafo3w") &
                                    meas.element.isin(map_trafo3w)]
         if len(i_tr3w_measurements):
             meas_hv = i_tr3w_measurements[(i_tr3w_measurements.side.values.astype(int) ==
@@ -273,7 +274,7 @@ def _add_measurements_to_ppc(net, ppci):
             branch_append[ix_lv, IM_TO_STD] = meas_lv.std_dev.values * i_ka_to_pu_lv
             branch_append[ix_lv, IM_TO_IDX] = meas_lv.index.values
     
-        p_tr3w_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo3w")&\
+        p_tr3w_measurements = meas[(meas.measurement_type == "p") & (meas.element_type == "trafo3w") &
                                    meas.element.isin(map_trafo3w)]
         if len(p_tr3w_measurements):
             meas_hv = p_tr3w_measurements[(p_tr3w_measurements.side.values.astype(int) ==
@@ -295,7 +296,7 @@ def _add_measurements_to_ppc(net, ppci):
             branch_append[ix_lv, P_TO_STD] = meas_lv.std_dev.values
             branch_append[ix_lv, P_TO_IDX] = meas_lv.index.values
     
-        q_tr3w_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "trafo3w")&\
+        q_tr3w_measurements = meas[(meas.measurement_type == "q") & (meas.element_type == "trafo3w") &
                                    meas.element.isin(map_trafo3w)]
         if len(q_tr3w_measurements):
             meas_hv = q_tr3w_measurements[(q_tr3w_measurements.side.values.astype(int) ==
