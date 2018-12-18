@@ -314,10 +314,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     b_img[b_img < 0] = 0
     b_img = np.sqrt(b_img) * baseR / vnl_squared
     y = - b_real * 1j - b_img * np.sign(i0)
-    if "lv" in get_trafo_values(trafo_df, "tp_side"):
-        return y / np.square(vn_trafo_lv / vn_lv_kv)
-    else:
-        return y
+    return y / np.square(vn_trafo_lv / vn_lv_kv)
 
 def _calc_tap_from_dataframe(net, trafo_df):
     """
