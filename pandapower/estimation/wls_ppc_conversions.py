@@ -22,13 +22,9 @@ std_logger = logging.getLogger(__name__)
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
-    # initialize ppc voltages
-    net.res_bus.vm_pu = v_start
-    net.res_bus.vm_pu[net.bus.index[net.bus.in_service == False]] = np.nan
-    net.res_bus.va_degree = delta_start
     # select elements in service and convert pandapower ppc to ppc
     net._options = {}
-    _add_ppc_options(net, check_connectivity=False, init_vm_pu="results", init_va_degree="results",
+    _add_ppc_options(net, check_connectivity=False, init_vm_pu=v_start, init_va_degree=delta_start,
                      trafo_model="t", mode="pf", enforce_q_lims=False,
                      calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
@@ -227,8 +223,8 @@ def _add_measurements_to_ppc(net, ppci):
         branch_append[ix_to, Q_TO] = meas_to.value.values
         branch_append[ix_to, Q_TO_STD] = meas_to.std_dev.values
         branch_append[ix_to, Q_TO_IDX] = meas_to.index.values
-        
-    # Add measurements for trafo3w   
+
+    # Add measurements for trafo3w
     i_tr3w_measurements = meas[(meas.measurement_type == "i") & (meas.element_type == "trafo3w")]
     if len(i_tr3w_measurements):
         meas_hv = i_tr3w_measurements[(i_tr3w_measurements.side.values.astype(int) ==

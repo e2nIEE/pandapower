@@ -490,6 +490,7 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
 def _switch_branches(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    calculate_voltage_angles = net._options["calculate_voltage_angles"]
     mode = net._options["mode"]
     future_buses = [ppc["bus"]]
     open_switches = (net.switch.closed.values == False)
@@ -518,16 +519,30 @@ def _switch_branches(net, ppc):
         for location in np.unique(sw_sides):
             mask = sw_sides==location
             side = F_BUS if location == "hv" or location == "from" else T_BUS
-            buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
             for init, col in [(init_vm, VM),  (init_va, VA)]:
-                if init == "results":
+                if isinstance(init, str) and init == "results":
                     if col == VM:
-                        res_column =  net["res_%s"%element]["vm_%s_pu"%location]
+                        res_column = net["res_%s"%element]["vm_%s_pu"%location]
                     else:
-                        res_column =  net["res_%s"%element]["va_%s_degree"%location]
-                    new_buses[mask, col] = res_column.loc[switch_element].values[mask]
+                        res_column = net["res_%s"%element]["va_%s_degree"%location]
+                    init_values = res_column.loc[switch_element].values[mask]
                 else:
-                    new_buses[mask, col] = ppc["bus"][buses, col]
+                    if element == "line":
+                        buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
+                        init_values = ppc["bus"][buses, col]
+                    else:
+                        opposite_side = T_BUS if side == F_BUS else F_BUS
+                        opposite_buses = ppc["branch"][sw_branch_index[mask], opposite_side].real.astype(int)
+                        if col == VM:
+                            taps = ppc["branch"][sw_branch_index[mask], TAP].real
+                            init_values = ppc["bus"][opposite_buses, col] * taps
+                        else:
+                            if calculate_voltage_angles:
+                                shift = ppc["branch"][sw_branch_index[mask], SHIFT].real.astype(int)
+                                init_values = ppc["bus"][opposite_buses, col] + shift
+                            else:
+                                init_values = ppc["bus"][opposite_buses, col]
+                new_buses[mask, col] = init_values
             if mode == "sc":
                 new_buses[mask, C_MAX] = ppc["bus"][buses, C_MAX]
                 new_buses[mask, C_MIN] = ppc["bus"][buses, C_MIN]

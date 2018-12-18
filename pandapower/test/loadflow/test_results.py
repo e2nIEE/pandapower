@@ -5,7 +5,7 @@
 
 
 import pytest
-from numpy import in1d
+from numpy import in1d, isnan
 
 import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -555,7 +555,7 @@ def test_open(result_test_network):
     buses = net.bus[net.bus.zone == "two_open_switches_on_deactive_line"]
     lines = net['line'][in1d(net['line'].from_bus, buses.index) | in1d(net['line'].to_bus, buses.index)]
 
-    assert net['res_line'].ix[lines.index].i_ka.iloc[1] == 0.
+    assert isnan(net['res_line'].at[lines.index[1], "i_ka"])
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    pytest.main(["-xs"])
