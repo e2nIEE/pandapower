@@ -279,10 +279,10 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
         return
     f, t = net._pd2ppc_lookups["branch"]["xward"]
     p_branch_xward = ppc["branch"][f:t, PF].real
-    net["res_xward"]["p_mw"] += p_branch_xward
+    net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values + p_branch_xward
     if ac:
         q_branch_xward = ppc["branch"][f:t, QF].real
-        net["res_xward"]["q_mvar"] += q_branch_xward
+        net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_branch_xward
     else:
         q_branch_xward = np.zeros(len(p_branch_xward))
     b_pp, p, q = _sum_by_group(net["xward"]["bus"].values, p_branch_xward, q_branch_xward)
