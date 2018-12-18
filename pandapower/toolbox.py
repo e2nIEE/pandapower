@@ -529,6 +529,11 @@ def convert_format(net):
                                                              ("in_service", 'bool'),
                                                              ("type", np.dtype(object))]))
 
+        if not "vm_pu" in net._empty_res_gen:
+            net["_empty_res_gen"] = pd.DataFrame(np.zeros(0, dtype= [("p_mw", "f8"),
+                                                                     ("q_mvar", "f8"),
+                                                                     ("va_degree", "f8"),
+                                                                     ("vm_pu", "f8")]))
 
         if not "vm_from_pu" in net._empty_res_line:
             net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype= [("p_from_mw", "f8"),

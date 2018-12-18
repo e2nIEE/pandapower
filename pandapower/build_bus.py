@@ -391,8 +391,8 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     if len(s) > 0:
         vl = _is_elements["shunt"]
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2
-        q = np.hstack([q, s["q_mvar"].values * s["step"] * v_ratio * vl])
-        p = np.hstack([p, s["p_mw"].values * s["step"] * v_ratio * vl])
+        q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
+        p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]

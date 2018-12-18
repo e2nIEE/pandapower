@@ -361,18 +361,18 @@ def _calc_tap_from_dataframe(net, trafo_df):
         phase_shifters = tp_phase_shifter & (tp_side == side)
         tap_complex = np.isfinite(tp_st_percent) & np.isfinite(tp_pos) & (tp_side == side) & \
                        ~phase_shifters
-        if np.any(tap_complex):
+        if tap_complex.any():
             tp_steps = tp_st_percent[tap_complex] * tp_diff[tap_complex] / 100
-            tp_angles = np.nan_to_num(tp_st_degree[tap_complex])
+            tp_angles = _replace_nan(tp_st_degree[tap_complex])
             u1 = vn[tap_complex]
-            du = u1 * np.nan_to_num(tp_steps)
+            du = u1 * _replace_nan(tp_steps)
             vn[tap_complex] = np.sqrt((u1 + du * cos(tp_angles)) ** 2 + (du * sin(tp_angles)) ** 2)
             trafo_shift[tap_complex] += (arctan(direction * du * sin(tp_angles) /
                                                 (u1 + du * cos(tp_angles))))
-        if np.any(phase_shifters):
-            degree_is_set = np.nan_to_num(tp_st_degree[phase_shifters])!= 0
-            percent_is_set = np.nan_to_num(tp_st_percent[phase_shifters]) !=0
-            if any(degree_is_set & percent_is_set):
+        if phase_shifters.any():
+            degree_is_set = _replace_nan(tp_st_degree[phase_shifters])!= 0
+            percent_is_set = _replace_nan(tp_st_percent[phase_shifters]) !=0
+            if (degree_is_set & percent_is_set).any():
                 raise UserWarning("Both tp_st_degree and tp_st_percent set for ideal phase shifter")
             trafo_shift[phase_shifters] += np.where(
                 (degree_is_set),
@@ -382,6 +382,10 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 )
     return vnh, vnl, trafo_shift
 
+def _replace_nan(array, value=0):
+    mask = np.isnan(array)
+    array[mask] = value
+    return array
 
 def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
