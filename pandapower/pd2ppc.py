@@ -112,6 +112,8 @@ def _pd2ppc(net):
     if "pf" in mode:
         _check_for_reference_bus(ppc)
 
+    aux._replace_nans_with_default_limits(net, ppc)
+
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)

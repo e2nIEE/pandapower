@@ -27,6 +27,7 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 from collections import MutableMapping
+import numpy.core.numeric as ncn
 
 import numpy as np
 import pandas as pd
@@ -34,7 +35,8 @@ import scipy as sp
 import six
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX
+from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
     from numba import jit
@@ -496,12 +498,6 @@ def _add_options(net, options):
 
 
 def _clean_up(net, res=True):
-    if len(net["trafo3w"]) > 0:
-        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-
-    if len(net["xward"]) > 0:
-        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
@@ -566,3 +562,13 @@ def _add_dcline_gens(net):
                    min_p_mw=-pmax, max_p_mw=0,
                    max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
                    in_service=dctab.in_service)
+
+def _replace_nans_with_default_limits(net, ppc):
+    qlim = net._options["q_lim_default"]
+    plim = net._options["p_lim_default"]
+
+    for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
+                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
+        limits = ppc[matrix][:, [column]]
+        ncn.copyto(limits, default, where=np.isnan(limits))
+        ppc[matrix][:, [column]] = limits

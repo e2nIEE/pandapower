@@ -433,8 +433,6 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
 
 
-
-
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_impedance"]
