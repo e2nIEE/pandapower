@@ -300,9 +300,15 @@ class state_estimation(object):
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
 
+                # zero injection matrix C
+                C = sem.create_zero_injections(v_m, delta, zero_injection_buses)
+                A_1 = np.vstack((G_m, C))  # maybe hstack ?
+                C_ax = (C, np.zeros((len(zero_injection_buses) * 2, )))
+                M_tx = csr_matrix((A_1, C_ax.T))  # again use either np.hstack or np.vstack or np.concatenate?
+
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T * (r_inv * r))
+                d_E = spsolve(G_m, H.T * (r_inv * r))  # this should be different then, d_E = spsolve(M_tx, ...) ?
                 E += d_E
 
                 # update V/delta
