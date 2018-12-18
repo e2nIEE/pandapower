@@ -195,6 +195,10 @@ def get_voltage_init_vector(net, init_v, mode):
                 # No results available. Cannot init from results
                 return None
         if init_v == "flat":
+            if mode == "magnitude":
+                net["_options"]["init_vm_pu"] = 0.
+            else:
+                net["_options"]["init_va_degree"] = 0.
             return None
     elif isinstance(init_v, (float, np.ndarray, list)):
         return init_v
@@ -296,20 +300,25 @@ def _build_bus_ppc(net, ppc):
 
     if len(net.trafo3w):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "trafo3w", "hv_bus", aux)
-
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
     net["_pd2ppc_lookups"]["aux"] = aux
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
-    element_idx = bus_lookup[net[element][bus_column]]
+    element_bus_idx = bus_lookup[net[element][bus_column]]
     aux_idx = bus_lookup[aux[element]]
-    ppc["bus"][aux_idx, BASE_KV] = ppc["bus"][element_idx, BASE_KV]
-    ppc["bus"][aux_idx, VM] = ppc["bus"][element_idx, VM]
-    ppc["bus"][aux_idx, VA] = ppc["bus"][element_idx, VA]
+    ppc["bus"][aux_idx, BASE_KV] = ppc["bus"][element_bus_idx, BASE_KV]
     if net._options["mode"] == "opf":
-        ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_idx, VMIN]
-        ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_idx, VMAX]
+        ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_bus_idx, VMIN]
+        ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_bus_idx, VMAX]
+    if net._options["init_vm_pu"] == "results":
+        ppc["bus"][aux_idx, VM] = net["res_%s"%element]["vm_internal_pu"].values
+    else:
+        ppc["bus"][aux_idx, VM] = ppc["bus"][element_bus_idx, VM]
+    if net._options["init_va_degree"] == "results":
+        ppc["bus"][aux_idx, VA] = net["res_%s"%element]["va_internal_degree"].values
+    else:
+        ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 
 def set_reference_buses(net, ppc, bus_lookup):
     eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]

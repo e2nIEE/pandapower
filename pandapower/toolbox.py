@@ -516,17 +516,6 @@ def convert_format(net):
             net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
                                                                         ("q_kvar", "f8")]))
 
-        if len(net["_empty_res_line"]) < 10:
-            net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                     ("q_from_kvar", "f8"),
-                                                                     ("p_to_kw", "f8"),
-                                                                     ("q_to_kvar", "f8"),
-                                                                     ("pl_kw", "f8"),
-                                                                     ("ql_kvar", "f8"),
-                                                                     ("i_from_ka", "f8"),
-                                                                     ("i_to_ka", "f8"),
-                                                                     ("i_ka", "f8"),
-                                                                     ("loading_percent", "f8")]))
         if "storage" not in net:
             net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                              ("bus", "i8"),
@@ -539,6 +528,56 @@ def convert_format(net):
                                                              ("scaling", "f8"),
                                                              ("in_service", 'bool'),
                                                              ("type", np.dtype(object))]))
+
+
+        if not "vm_from_pu" in net._empty_res_line:
+            net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype= [("p_from_mw", "f8"),
+                                                                      ("q_from_mvar", "f8"),
+                                                                      ("p_to_mw", "f8"),
+                                                                      ("q_to_mvar", "f8"),
+                                                                      ("pl_mw", "f8"),
+                                                                      ("ql_mvar", "f8"),
+                                                                      ("i_from_ka", "f8"),
+                                                                      ("i_to_ka", "f8"),
+                                                                      ("i_ka", "f8"),
+                                                                      ("vm_from_pu", "f8"),
+                                                                      ("va_from_degree", "f8"),
+                                                                      ("vm_to_pu", "f8"),
+                                                                      ("va_to_degree", "f8"),
+                                                                      ("loading_percent", "f8")]))
+        if not "vm_hv_pu" in net._empty_res_trafo:
+            net["_empty_res_trafo"] = pd.DataFrame(np.zeros(0, dtype= [("p_hv_mw", "f8"),
+                                                                       ("q_hv_mvar", "f8"),
+                                                                       ("p_lv_mw", "f8"),
+                                                                       ("q_lv_mvar", "f8"),
+                                                                       ("pl_mw", "f8"),
+                                                                       ("ql_mvar", "f8"),
+                                                                       ("i_hv_ka", "f8"),
+                                                                       ("i_lv_ka", "f8"),
+                                                                       ("vm_hv_pu", "f8"),
+                                                                       ("va_hv_degree", "f8"),
+                                                                       ("vm_lv_pu", "f8"),
+                                                                       ("va_lv_degree", "f8"),
+                                                                       ("loading_percent", "f8")]))
+        if not "vm_hv_pu" in net._empty_res_trafo3w:
+            net["_empty_res_trafo3w"] = pd.DataFrame(np.zeros(0, dtype=   [("p_hv_mw", "f8"),
+                                                                           ("q_hv_mvar", "f8"),
+                                                                           ("p_mv_mw", "f8"),
+                                                                           ("q_mv_mvar", "f8"),
+                                                                           ("p_lv_mw", "f8"),
+                                                                           ("q_lv_mvar", "f8"),
+                                                                           ("pl_mw", "f8"),
+                                                                           ("ql_mvar", "f8"),
+                                                                           ("i_hv_ka", "f8"),
+                                                                           ("i_mv_ka", "f8"),
+                                                                           ("i_lv_ka", "f8"),
+                                                                           ("vm_hv_pu", "f8"),
+                                                                           ("va_hv_degree", "f8"),
+                                                                           ("vm_mv_pu", "f8"),
+                                                                           ("va_mv_degree", "f8"),
+                                                                           ("vm_lv_pu", "f8"),
+                                                                           ("va_lv_degree", "f8"),
+                                                                           ("loading_percent", "f8")]))
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
                 pmin = copy.copy(net.gen.min_p_kw.values)
