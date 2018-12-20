@@ -250,13 +250,13 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             ildon = find((bus[e2i[gen[:, GEN_BUS].astype(int)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & isload(gen))
             inzld = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, PD], bus[:, QD]))
             inzsh = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, GS], bus[:, BS]))
-            ibrch = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a))
-            in_tie = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] != a))
-            out_tie = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a))
+            ibrch = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a))
+            in_tie = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] != a))
+            out_tie = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a))
             if not any(xfmr + 1):
                 nxfmr = 0
             else:
-                nxfmr = len(find((bus[e2i[branch[xfmr, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[xfmr, T_BUS].astype(int)], BUS_AREA] == a)))
+                nxfmr = len(find((bus[e2i[branch[xfmr, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[xfmr, T_BUS].real.astype(int)], BUS_AREA] == a)))
             fd.write('\n%3d  %6d   %5d  %5d   %5d  %5d  %5d   %5d   %5d  %5d  %5d' %
                 (a, len(ib), len(ig), len(igon), \
                 len(inzld)+len(ildon), len(inzld), len(ildon), \
@@ -274,16 +274,16 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             a = s_areas[i]
             ig = find((bus[e2i[gen[:, GEN_BUS].astype(int)], BUS_AREA] == a) & ~isload(gen))
             igon = find((bus[e2i[gen[:, GEN_BUS].astype(int)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & ~isload(gen))
-            fd.write('\n%3d   %7.1f  %7.1f to %-7.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
+            fd.write('\n%3d   %7.1f  %7.1f to %-.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
                 (a, sum(gen[ig, PMAX]), sum(gen[ig, QMIN]), sum(gen[ig, QMAX]),
                 sum(gen[igon, PMAX]), sum(gen[igon, QMIN]), sum(gen[igon, QMAX]),
                 sum(gen[igon, PG]), sum(gen[igon, QG]) ))
 
         fd.write('\n----   ------  ------------------   ------  ------------------    ------  ------')
-        fd.write('\nTot:  %7.1f  %7.1f to %-7.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
-                (sum(gen[allg, PMAX]), sum(gen[allg, QMIN]), sum(gen[allg, QMAX]),
-                sum(gen[ong, PMAX]), sum(gen[ong, QMIN]), sum(gen[ong, QMAX]),
-                sum(gen[ong, PG]), sum(gen[ong, QG]) ))
+#        fd.write('\nTot:  %7.1f  %7.1f to %-7.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
+#                (sum(gen[allg, PMAX]), sum(gen[allg, QMIN]), sum(gen[allg, QMAX]),
+#                sum(gen[ong, PMAX]), sum(gen[ong, QMIN]), sum(gen[ong, QMAX]),
+#                sum(gen[ong, PG]), sum(gen[ong, QG]) ))
         fd.write('\n')
         fd.write('\nArea    Disp Load Cap       Disp Load         Fixed Load        Total Load')
         fd.write('\n Num      MW     MVAr       MW     MVAr       MW     MVAr       MW     MVAr')
@@ -316,9 +316,9 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
         for i in range(len(s_areas)):
             a = s_areas[i]
             inzsh   = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, GS], bus[:, BS]))
-            ibrch   = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
-            in_tie  = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
-            out_tie = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] != a) & branch[:, BR_STATUS].astype(bool))
+            ibrch   = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
+            in_tie  = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
+            out_tie = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] != a) & branch[:, BR_STATUS].astype(bool))
             fd.write('\n%3d    %7.1f %7.1f    %7.1f    %7.2f %7.2f   %7.1f %7.1f' %
                 (a, -sum(bus[inzsh, VM]**2 * bus[inzsh, GS]),
                  sum(bus[inzsh, VM]**2 * bus[inzsh, BS]),
