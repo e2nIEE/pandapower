@@ -49,11 +49,11 @@ def _current_source_current(net, ppc):
     ppc["bus"][:, IKCV] = 0
     ppc["bus"][:, IKSS2] = 0
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    if not "motor" in net.sgen.type.values:
+    if not False in net.sgen.current_source.values:
         sgen = net.sgen[net._is_elements["sgen"]]
     else:
-        sgen = net.sgen[(net._is_elements["sgen"]) &
-                        (net.sgen.type != "motor")]
+        sgen = net.sgen[net._is_elements["sgen"] &
+                        net.sgen.current_source]
     if len(sgen) == 0:
         return
     if any(pd.isnull(sgen.sn_mva)):
