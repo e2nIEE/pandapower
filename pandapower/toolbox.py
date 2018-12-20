@@ -695,6 +695,9 @@ def convert_format(net):
         if "std_type" not in net.trafo3w:
             net.trafo3w["std_type"] = None
 
+        if "current_source" not in net.sgen:
+            net.sgen["current_source"] = net.sgen["type"].apply(func=lambda x: False if x == "motor" else True)
+
     #    if "time_resolution" not in net:
     #        # for storages
     #        net.time_resolution = 1.0
