@@ -429,10 +429,13 @@ def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
         y_df.sort_index(axis=0, inplace=True)
     # eval if two DataFrames are equal, with regard to a tolerance
     if x_df.shape == y_df.shape:
-        # we use numpy.allclose to grant a tolerance on numerical values
-        numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
-                                      y_df.select_dtypes(include=[np.number]),
-                                      atol=tol, equal_nan=True)
+        if x_df.shape[0]:
+            # we use numpy.allclose to grant a tolerance on numerical values
+            numerical_equal = np.allclose(x_df.select_dtypes(include=[np.number]),
+                                          y_df.select_dtypes(include=[np.number]),
+                                          atol=tol, equal_nan=True)
+        else:
+            numerical_equal = True
 
         # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
         rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
@@ -1714,6 +1717,17 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     return cs
 
 
+def ensure_iterability(var, len_=None):
+    """ This function ensures iterability of a variable (and optional length). """
+    if hasattr(var, "__iter__") and not isinstance(var, str):
+        if isinstance(len_, int) and len(var) != len_:
+            raise ValueError("Length of variable differs from %i." % len_)
+    else:
+        len_ = len_ or 1
+        var = [var]*len_
+    return var
+
+
 def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
     Calculates P/Q values from rated apparent power and cosine(phi) values.
@@ -1727,27 +1741,36 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     power, that means that loads are positive and generation is negative. For reactive power,
     inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
     """
-    if qmode == "ind":
-        qsign = 1
-    elif qmode == "cap":
-        qsign = -1
-    elif qmode == "ohm":
-        qsign = 1
-        if cosphi != 1:
-            raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
-    else:
-        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
+    s = np.array(ensure_iterability(s))
+    cosphi = np.array(ensure_iterability(cosphi, len(s)))
+    qmode = np.array(ensure_iterability(qmode, len(s)))
+    pmode = np.array(ensure_iterability(pmode, len(s)))
 
-    if pmode == "load":
-        psign = 1
-    elif pmode == "gen":
-        psign = -1
-    else:
-        raise ValueError("Unknown mode %s - specify 'load' or 'gen'" % pmode)
+    # qmode consideration
+    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
+    if len(unknown_qmode):
+        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
+    qmode_is_ohm = qmode == "ohm"
+    if any(cosphi[qmode_is_ohm] != 1):
+        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
+    qsign = np.ones(qmode.shape)
+    qsign[qmode == "cap"] = -1
 
+    # pmode consideration
+    unknown_pmode = set(pmode) - set(["load", "gen"])
+    if len(unknown_pmode):
+        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
+    psign = np.ones(pmode.shape)
+    psign[pmode == "gen"] = -1
+
+    # calculate p and q
     p = psign * s * cosphi
     q = qsign * np.sqrt(s ** 2 - p ** 2)
-    return p, q
+
+    if len(p) > 1:
+        return p, q
+    else:
+        return p[0], q[0]
 
 
 def cosphi_from_pq(p, q):
@@ -1755,15 +1778,23 @@ def cosphi_from_pq(p, q):
     Analog to pq_from_cosphi, but other way around.
     In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
     """
-    if p == 0:
-        cosphi = np.nan
+    p = np.array(ensure_iterability(p))
+    q = np.array(ensure_iterability(q, len(p)))
+    if len(p) != len(q):
+        raise ValueError("p and q must have the same length.")
+    p_is_zero = np.array(p == 0)
+    cosphi = np.empty(p.shape)
+    if sum(p_is_zero):
+        cosphi[p_is_zero] = np.nan
         logger.warning("A cosphi from p=0 is undefined.")
-    else:
-        cosphi = np.cos(np.arctan(q / p))
+    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
     s = (p ** 2 + q ** 2) ** 0.5
-    pmode = ["undef", "load", "gen"][int(np.sign(p))]
-    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
-    return cosphi, s, qmode, pmode
+    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
+    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
+    if len(p) > 1:
+        return cosphi, s, qmode, pmode
+    else:
+        return cosphi[0], s[0], qmode[0], pmode[0]
 
 
 def create_replacement_switch_for_branch(net, element, idx):
