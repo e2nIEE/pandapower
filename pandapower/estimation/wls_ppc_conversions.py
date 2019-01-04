@@ -5,6 +5,7 @@
 
 
 import numpy as np
+import pandas as pd
 from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
@@ -13,12 +14,99 @@ from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.build_branch import get_is_lines
+from pandapower.create import create_buses, create_line_from_parameters
 
 try:
     import pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
+
+AUX_BUS_NAME, AUX_LINE_NAME, AUX_SWITCH_NAME =\
+    "Aux_bus_se", "Aux_line_se", "Aux_bbswitch_se"
+
+def _add_aux_elements_for_bb_switch(net):
+    """
+    Add auxiliary elements (bus, bb switch, line) to the pandapower net to avoid 
+    automatic fuse of buses connected with bb switch with elements on it
+    :param net: pandapower net
+    :return: None
+    """
+    def get_bus_branch_mapping(net):
+        bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
+                        set(net.shunt.bus)).union(set(net.gen.bus)).union(
+                        set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
+                        set(net.xward.bus))
+
+        bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
+        bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
+        bus_ppci['vn_kv'] = net.bus.loc[bus_ppci.index, 'vn_kv']
+        ppci_bus_with_elements = bus_ppci.groupby('bus_ppci')['bus_with_elements'].sum()
+        bus_ppci.loc[:, 'elements_in_cluster'] = ppci_bus_with_elements[bus_ppci['bus_ppci'].values].values 
+        return bus_ppci
+
+    # find the buses which was fused together in the pp2ppc conversion with elements on them
+    # the first one will be skipped
+    _pd2ppc(net)
+    bus_ppci_mapping = get_bus_branch_mapping(net)
+    bus_to_be_handled = bus_ppci_mapping[((bus_ppci_mapping ['elements_in_cluster']>=2)&\
+                                          (bus_ppci_mapping ['bus_with_elements']==True))]
+    bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')]
+
+    # create auxiliary buses for the buses need to be handled
+    aux_bus_index = create_buses(net, bus_to_be_handled.shape[0], bus_to_be_handled.vn_kv.values, 
+                                 name=AUX_BUS_NAME)
+    bus_aux_mapping = pd.Series(aux_bus_index, index=bus_to_be_handled.index.values)
+
+    # create auxiliary switched and disable original switches connected to the related buses
+    net.switch.loc[:, 'original_closed'] = net.switch.loc[:, 'closed']
+    switch_to_be_replaced_sel = ((net.switch.et == 'b') &
+                                 (net.switch.element.isin(bus_to_be_handled.index) | 
+                                  net.switch.bus.isin(bus_to_be_handled.index)))
+    net.switch.loc[switch_to_be_replaced_sel, 'closed'] = False
+
+    # create aux switches with selecting the existed switches
+    aux_switch = net.switch[switch_to_be_replaced_sel].loc[:, ['bus', 'closed', 'element', 
+                                                               'et', 'name', 'original_closed']]
+    aux_switch.loc[:,'name'] = AUX_SWITCH_NAME
+    
+    # replace the original bus with the correspondent auxiliary bus
+    bus_to_be_replaced = aux_switch.loc[aux_switch.bus.isin(bus_to_be_handled.index), 'bus']
+    element_to_be_replaced = aux_switch.loc[aux_switch.element.isin(bus_to_be_handled.index), 'element']
+    aux_switch.loc[bus_to_be_replaced.index, 'bus'] =\
+        bus_aux_mapping[bus_to_be_replaced].values
+    aux_switch.loc[element_to_be_replaced.index, 'element'] =\
+        bus_aux_mapping[element_to_be_replaced].values
+    aux_switch.loc[:, 'closed'] = aux_switch.loc[:, 'original_closed']
+    net.switch = pd.concat([net.switch, aux_switch], ignore_index=True, axis=0, sort=False)
+
+    # create auxiliary lines as small impedance
+    for bus_ori, bus_aux in bus_aux_mapping.iteritems():
+        create_line_from_parameters(net, bus_ori, bus_aux, length_km=0.01, name=AUX_LINE_NAME,
+                                    r_ohm_per_km=1, x_ohm_per_km=0.1, c_nf_per_km=1, max_i_ka=1)
+
+
+def _drop_aux_elements_for_bb_switch(net):
+    """
+    Remove auxiliary elements (bus, bb switch, line) added by
+    _add_aux_elements_for_bb_switch function
+    :param net: pandapower net
+    :return: None
+    """
+    # Remove auxiliary switches and restore switch status
+    net.switch = net.switch[net.switch.name!=AUX_SWITCH_NAME]
+    if 'original_closed' in net.switch.columns:
+        net.switch.loc[:, 'closed'] = net.switch.loc[:, 'original_closed']
+        net.switch.drop('original_closed', axis=1, inplace=True)
+    
+    # Remove auxiliary buses, lines in net and result
+    for key in net.keys():
+        if key.startswith('res_bus'):
+            net[key] = net[key].loc[net.bus.name != AUX_BUS_NAME, :]
+        if key.startswith('res_line'):
+            net[key] = net[key].loc[net.line.name != AUX_LINE_NAME, :]
+    net.bus = net.bus.loc[net.bus.name != AUX_BUS_NAME, :]
+    net.line = net.line.loc[net.line.name != AUX_LINE_NAME, :]
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
