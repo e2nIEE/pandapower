@@ -23,11 +23,11 @@ except ImportError:
 std_logger = logging.getLogger(__name__)
 
 AUX_BUS_NAME, AUX_LINE_NAME, AUX_SWITCH_NAME =\
-    "Aux_bus_se", "Aux_line_se", "Aux_bbswitch_se"
+    "aux_bus_se", "aux_line_se", "aux_bbswitch_se"
 
 def _add_aux_elements_for_bb_switch(net):
     """
-    Add auxiliary elements (bus, bb switch, line) to the pandapower net to avoid 
+    Add auxiliary elements (bus, bb switch, line) to the pandapower net to avoid
     automatic fuse of buses connected with bb switch with elements on it
     :param net: pandapower net
     :return: None
@@ -50,7 +50,7 @@ def _add_aux_elements_for_bb_switch(net):
     _pd2ppc(net)
     bus_ppci_mapping = get_bus_branch_mapping(net)
     bus_to_be_handled = bus_ppci_mapping[((bus_ppci_mapping ['elements_in_cluster']>=2)&\
-                                          (bus_ppci_mapping ['bus_with_elements']==True))]
+                                          bus_ppci_mapping ['bus_with_elements'])]
     bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')]
 
     # create auxiliary buses for the buses need to be handled
@@ -66,8 +66,8 @@ def _add_aux_elements_for_bb_switch(net):
     net.switch.loc[switch_to_be_replaced_sel, 'closed'] = False
 
     # create aux switches with selecting the existed switches
-    aux_switch = net.switch[switch_to_be_replaced_sel].loc[:, ['bus', 'closed', 'element', 
-                                                               'et', 'name', 'original_closed']]
+    aux_switch = net.switch.loc[switch_to_be_replaced_sel, ['bus', 'closed', 'element', 
+                                                            'et', 'name', 'original_closed']]
     aux_switch.loc[:,'name'] = AUX_SWITCH_NAME
     
     # replace the original bus with the correspondent auxiliary bus
@@ -77,13 +77,13 @@ def _add_aux_elements_for_bb_switch(net):
         bus_aux_mapping[bus_to_be_replaced].values
     aux_switch.loc[element_to_be_replaced.index, 'element'] =\
         bus_aux_mapping[element_to_be_replaced].values
-    aux_switch.loc[:, 'closed'] = aux_switch.loc[:, 'original_closed']
-    net.switch = pd.concat([net.switch, aux_switch], ignore_index=True, axis=0, sort=False)
+    aux_switch['closed'] = aux_switch['original_closed']
+    net.switch = net.switch.append(aux_switch, ignore_index=True)
 
     # create auxiliary lines as small impedance
     for bus_ori, bus_aux in bus_aux_mapping.iteritems():
-        create_line_from_parameters(net, bus_ori, bus_aux, length_km=0.01, name=AUX_LINE_NAME,
-                                    r_ohm_per_km=1, x_ohm_per_km=0.1, c_nf_per_km=1, max_i_ka=1)
+        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1e-5, name=AUX_LINE_NAME,
+                                    r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=10, max_i_ka=1)
 
 
 def _drop_aux_elements_for_bb_switch(net):
