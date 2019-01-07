@@ -32,7 +32,7 @@ def test_opf_oberrhein():
     net.sgen["controllable"] = 1
     net.load["controllable"] = 0
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
 if __name__ == "__main__":

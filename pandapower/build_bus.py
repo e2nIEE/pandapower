@@ -413,11 +413,11 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     trafo3w = net["trafo3w"]
     if loss_location == "star" and len(trafo3w) > 0:
 
-        pfe_mw = trafo3w["pfe_mw"].values
+        pfe_mw = trafo3w["pfe_kw"].values * 1e-3
         i0 = trafo3w["i0_percent"].values
         sn_mva = trafo3w["sn_hv_mva"].values
 
-        q_mvar= (sn_mva * i0 / 100.) ** 2 - pfe_mw **2
+        q_mvar = (sn_mva * i0 / 100.) ** 2 - pfe_mw **2
         q_mvar[q_mvar<0] = 0
         q_mvar= np.sqrt(q_mvar)
 

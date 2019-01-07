@@ -48,7 +48,7 @@ def test_convenience_create_functions():
 
     tid = pp.create_transformer_from_parameters(net, hv_bus=b2, lv_bus=b3, sn_mva=0.1, vn_hv_kv=110,
                                                 vn_lv_kv=20, vscr_percent=5, vsc_percent=20,
-                                                pfe_mw=0.001, i0_percent=1)
+                                                pfe_kw=1, i0_percent=1)
     pp.create_load(net, b3, 0.1)
     assert net.trafo.at[tid, 'df'] == 1
     pp.runpp(net)
@@ -85,14 +85,14 @@ def test_nonexistent_bus():
                         partial(pp.create_transformer3w, net=net, hv_bus=0, lv_bus=1, mv_bus=2,
                                 std_type="63/25/38 MVA 110/20/10 kV", index=0),
                         partial(pp.create_transformer3w_from_parameters, net=net, hv_bus=0,
-                                lv_bus=1, mv_bus=2, i0_percent=0.89, pfe_mw=0.0035,
+                                lv_bus=1, mv_bus=2, i0_percent=0.89, pfe_kw=3.5,
                                 vn_hv_kv=110, vn_lv_kv=10, vn_mv_kv=20, sn_hv_mva=63,
                                 sn_lv_mva=38, sn_mv_mva=25, vsc_hv_percent=10.4,
                                 vsc_lv_percent=10.4, vsc_mv_percent=10.4, vscr_hv_percent=0.28,
                                 vscr_lv_percent=0.35, vscr_mv_percent=0.32, index=1),
                         partial(pp.create_transformer_from_parameters, net=net, hv_bus=0, lv_bus=1,
                                 sn_mva=60, vn_hv_kv=20., vn_lv_kv=0.4, vsc_percent=10,
-                                vscr_percent=0.1, pfe_mw=0, i0_percent=0, index=1),
+                                vscr_percent=0.1, pfe_kw=0, i0_percent=0, index=1),
                         partial(pp.create_impedance, net=net, from_bus=0, to_bus=1,
                                 rft_pu=0.1, xft_pu=0.1, sn_mva=0.6, index=0),
                         partial(pp.create_switch, net, bus=0, element=1, et="b", index=0)]

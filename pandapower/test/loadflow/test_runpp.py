@@ -528,7 +528,7 @@ def test_zip_loads_gridcal():
     #
     # print('Ybus:\n', grid.circuits[0].power_flow_input.Ybus.todense())
     #
-    # options = PowerFlowOptions(SolverType.NR, verbose=False, robust=False)
+    # options = PowerFlowOptions(SolverType.NR, robust=False)
     # power_flow = PowerFlow(grid, options)
     # power_flow.run()
     #

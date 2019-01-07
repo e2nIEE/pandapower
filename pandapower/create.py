@@ -121,7 +121,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                   ("vn_lv_kv", "f8"),
                   ("vsc_percent", "f8"),
                   ("vscr_percent", "f8"),
-                  ("pfe_mw", "f8"),
+                  ("pfe_kw", "f8"),
                   ("i0_percent", "f8"),
                   ("shift_degree", "f8"),
                   ("tp_side", dtype(object)),
@@ -152,7 +152,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                     ("vscr_hv_percent", "f8"),
                     ("vscr_mv_percent", "f8"),
                     ("vscr_lv_percent", "f8"),
-                    ("pfe_mw", "f8"),
+                    ("pfe_kw", "f8"),
                     ("i0_percent", "f8"),
                     ("shift_mv_degree", "f8"),
                     ("shift_lv_degree", "f8"),
@@ -1474,7 +1474,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "vn_lv_kv": ti["vn_lv_kv"],
         "vsc_percent": ti["vsc_percent"],
         "vscr_percent": ti["vscr_percent"],
-        "pfe_mw": ti["pfe_mw"],
+        "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
         "df": df,
@@ -1512,14 +1512,14 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
 
 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv,
-                                       vscr_percent, vsc_percent, pfe_mw, i0_percent,
+                                       vscr_percent, vsc_percent, pfe_kw, i0_percent,
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
                                        tp_pos=nan, tp_phase_shifter=False, in_service=True,
                                        name=None, index=None, max_loading_percent=nan, parallel=1,
                                        df=1., **kwargs):
     """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv, \
-                                       vscr_percent, vsc_percent, pfe_mw, i0_percent, \
+                                       vscr_percent, vsc_percent, pfe_kw, i0_percent, \
                                        shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan, \
                                        tp_min=nan, tp_st_percent=nan, tp_st_degree=nan, \
                                        tp_pos=nan, tp_phase_shifter=False, in_service=True, \
@@ -1547,7 +1547,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **vsc_percent** (float) - relative short-circuit voltage
 
-        **pfe_mw** (float)  - iron losses in kW
+        **pfe_kw** (float)  - iron losses in kW
 
         **i0_percent** (float) - open loop losses in percent of rated current
 
@@ -1593,7 +1593,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     EXAMPLE:
         create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, \
-            vn_hv_kv=110, vn_lv_kv=10, vsc_percent=10, vscr_percent=0.3, pfe_mw=30, \
+            vn_hv_kv=110, vn_lv_kv=10, vsc_percent=10, vscr_percent=0.3, pfe_kw=30, \
             i0_percent=0.1, shift_degree=30)
     """
 
@@ -1617,7 +1617,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
         "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
-        "pfe_mw": pfe_mw, "i0_percent": i0_percent, "tp_mid": tp_mid,
+        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tp_mid": tp_mid,
         "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
         "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
         "tp_phase_shifter": tp_phase_shifter, "parallel": parallel, "df": df
@@ -1725,7 +1725,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         "vscr_hv_percent": ti["vscr_hv_percent"],
         "vscr_mv_percent": ti["vscr_mv_percent"],
         "vscr_lv_percent": ti["vscr_lv_percent"],
-        "pfe_mw": ti["pfe_mw"],
+        "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "shift_mv_degree": ti["shift_mv_degree"] if "shift_mv_degree" in ti else 0,
         "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0,
@@ -1760,7 +1760,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
                                          sn_hv_mva, sn_mv_mva, sn_lv_mva, vsc_hv_percent,
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent,
-                                         vscr_mv_percent, vscr_lv_percent, pfe_mw, i0_percent,
+                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent,
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None,
                                          tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
                                          tp_mid=nan, tp_max=nan,
@@ -1769,7 +1769,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
                                          sn_hv_mva, sn_mv_mva, sn_lv_mva, vsc_hv_percent, \
                                          vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
-                                         vscr_mv_percent, vscr_lv_percent, pfe_mw, i0_percent, \
+                                         vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, \
                                          shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
                                          tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan, \
                                          tp_mid=nan, tp_max=nan, \
@@ -1813,7 +1813,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **vscr_lv_percent** (float) - real part of short circuit voltage from high to low voltage
 
-        **pfe_mw** (float) - iron losses
+        **pfe_kw** (float) - iron losses in kW
 
         **i0_percent** (float) - open loop losses
 
@@ -1856,7 +1856,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
         create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
         sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
         vsc_hv_percent=10,vsc_mv_percent=11, vsc_lv_percent=12, vscr_hv_percent=0.3,
-        vscr_mv_percent=0.31, vscr_lv_percent=0.32, pfe_mw=30, i0_percent=0.1, shift_mv_degree=30,
+        vscr_mv_percent=0.31, vscr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
         shift_lv_degree=30)
 
     """
@@ -1881,14 +1881,14 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     net.trafo3w.loc[index, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
                             "sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vsc_hv_percent",
                             "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
-                            "vscr_mv_percent", "vscr_lv_percent", "pfe_mw", "i0_percent",
+                            "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent",
                             "shift_mv_degree", "shift_lv_degree", "tp_side", "tp_st_percent",
                             "tp_st_degree", "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service",
                             "name", "std_type", "tap_at_star_point" ]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
          sn_hv_mva, sn_mv_mva, sn_lv_mva, vsc_hv_percent, vsc_mv_percent,
          vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
-         pfe_mw, i0_percent, shift_mv_degree, shift_lv_degree,
+         pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
          tp_side, tp_st_percent, tp_st_degree, tp_pos, tp_mid, tp_max,
          tp_min, bool(in_service), name, None, tap_at_star_point]
 

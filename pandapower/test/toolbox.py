@@ -232,7 +232,7 @@ def create_test_network():
                                           vn_hv_kv=10.0, vscr_percent=2.8125,
                                           tp_pos=0, tp_side="hv", tp_min=-2,
                                           tp_st_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_mw=0.11*1e-3, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None)
     # 0.016 MVA 10/0.4 kV ET 16/23  SGB
 

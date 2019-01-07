@@ -104,7 +104,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     if network_class == "rural_1":
         data = net.std_types['trafo']['0.25 MVA 20/0.4 kV']
         data['sn_mva'] = 0.16
-        data['pfe_mw'] = 0.62e-3
+        data['pfe_kw'] = 0.62
         data['i0_percent'] = 0.31
         data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
         data['vsc_percent'] = 4

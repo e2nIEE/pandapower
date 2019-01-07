@@ -256,7 +256,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                 net, hv_bus=hv_bus, lv_bus=lv_bus, sn_mva=sn, vn_hv_kv=vn_hv_kv,
                 vn_lv_kv=vn_lv_kv, vsc_percent=sign(xk) * zk * sn * 100 / baseMVA,
                 vscr_percent=rk * sn * 100 / baseMVA, max_loading_percent=100,
-                pfe_mw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
+                pfe_kw=0, i0_percent=i0_percent, shift_degree=ppc['branch'][i, 9],
                 tp_st_percent=abs(ratio_1) if ratio_1 else nan,
                 tp_pos=sign(ratio_1) if ratio_1 else nan,
                 tp_side=tp_side if ratio_1 else None, tp_mid=0 if ratio_1 else nan)

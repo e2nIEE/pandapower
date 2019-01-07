@@ -132,12 +132,12 @@ class TestInvalidValues:
         net.line.loc[8, 'x_ohm_per_km'] = None
         net.line.loc[8, 'c_nf_per_km'] = '0'
         net.trafo.loc[0, 'vscr_percent'] = '-1'
-        net.trafo.loc[0, 'pfe_mw'] = -1.5
+        net.trafo.loc[0, 'pfe_kw'] = -1.5
         net.trafo.loc[0, 'i0_percent'] = -0.001
         net.trafo3w.loc[0, 'vscr_hv_percent'] = True
         net.trafo3w.loc[0, 'vscr_mv_percent'] = False
         net.trafo3w.loc[0, 'vscr_lv_percent'] = 1
-        net.trafo3w.loc[0, 'pfe_mw'] = '2'
+        net.trafo3w.loc[0, 'pfe_kw'] = '2'
         net.trafo3w.loc[0, 'i0_percent'] = 10
         net.load.loc[0, 'scaling'] = -0.1
         net.load.loc[1, 'scaling'] = 0
@@ -154,10 +154,10 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'), (8, 'x_ohm_per_km', 'nan', '>=0'),
                   (8, 'c_nf_per_km', '0', '>=0')],
-         'trafo': [(0, 'vscr_percent', '-1', '>=0'), (0, 'pfe_mw', -1.5, '>=0'),
+         'trafo': [(0, 'vscr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
                    (0, 'i0_percent', -0.001, '>=0')],
          'trafo3w': [(0, 'vscr_hv_percent', True, '>=0'), (0, 'vscr_mv_percent', False, '>=0'),
-                     (0, 'pfe_mw', '2', '>=0')],
+                     (0, 'pfe_kw', '2', '>=0')],
          'gen': [(0, 'scaling', 'nan', '>=0')],
          'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
          'sgen': [(0, 'scaling', False, '>=0')]}

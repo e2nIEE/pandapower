@@ -35,7 +35,7 @@ def net_3w_trafo_opf():
     pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
                                             vn_lv_kv=110, vsc_hv_percent=10., vsc_mv_percent=10.,
                                             vsc_lv_percent=10., vscr_hv_percent=0.5,
-                                            vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_mw=0.1,
+                                            vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_kw=100,
                                             i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
                                             sn_hv_mva=100, sn_mv_mva=50, sn_lv_mva=50)
 
@@ -164,7 +164,7 @@ def test_without_ext_grid():
     pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
                                             vn_lv_kv=110, vsc_hv_percent=10., vsc_mv_percent=10.,
                                             vsc_lv_percent=10., vscr_hv_percent=0.5,
-                                            vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_mw=0.1,
+                                            vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_kw=100,
                                             i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
                                             sn_hv_mva=100, sn_mv_mva=50, sn_lv_mva=50)
 

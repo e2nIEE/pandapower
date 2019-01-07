@@ -302,7 +302,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
     baseR = np.square(vn_lv) / sn_mva
     vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
-    pfe = get_trafo_values(trafo_df, "pfe_mw")
+    pfe = get_trafo_values(trafo_df, "pfe_kw") * 1e-3
 
     ### Calculate subsceptance ###
     vnl_squared = vn_lv_kv ** 2
@@ -719,7 +719,7 @@ def _trafo_df_from_trafo3w(net):
     trafo2["lv_bus"] = {"hv": aux_buses, "mv": t3.mv_bus.values, "lv": t3.lv_bus.values}
     trafo2["in_service"] = {side: t3.in_service.values for side in sides}
     trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side==side else zeros for side in sides}
-    trafo2["pfe_mw"] = {side: t3.pfe_mw.values if loss_side==side else zeros for side in sides}
+    trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side==side else zeros for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv"%side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,

@@ -20,8 +20,8 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
         - c_nf_per_km, r_ohm_per_km, x_ohm_per_km and max_i_ka (for lines)
-        - sn_mva, vn_hv_kv, vn_lv_kv, vsc_percent, vscr_percent, pfe_mw, i0_percent, shift_degree* (for transformers)
-        - sn_hv_mva, sn_mv_mva, sn_lv_mva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent, pfe_mw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
+        - sn_mva, vn_hv_kv, vn_lv_kv, vsc_percent, vscr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)
+        - sn_hv_mva, sn_mv_mva, sn_lv_mva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vsc_hv_percent, vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
     additional parameters can be added and later loaded into pandapower with the function
     "parameter_from_std_type".
 
@@ -52,11 +52,11 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
             required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
         elif element == "trafo":
             required = ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vsc_percent", "vscr_percent",
-                        "pfe_mw", "i0_percent", "shift_degree"]
+                        "pfe_kw", "i0_percent", "shift_degree"]
         elif element == "trafo3w":
             required = ["sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
                         "vsc_hv_percent", "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
-                        "vscr_mv_percent", "vscr_lv_percent", "pfe_mw", "i0_percent", "shift_mv_degree",
+                        "vscr_mv_percent", "vscr_lv_percent", "pfe_kw", "i0_percent", "shift_mv_degree",
                         "shift_lv_degree"]
         else:
             raise ValueError("Unkown element type %s" % element)
@@ -635,7 +635,7 @@ def add_basic_std_types(net):
         # Netzberechnung mit Erzeugungsprofilen
         "160 MVA 380/110 kV":
         {"i0_percent": 0.06,
-            "pfe_mw": 0.06,
+            "pfe_kw": 60,
             "vscr_percent": 0.25,
             "sn_mva": 160,
             "vn_lv_kv": 110.0,
@@ -652,7 +652,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         "100 MVA 220/110 kV":
         {"i0_percent": 0.06,
-            "pfe_mw": 0.055,
+            "pfe_kw": 55,
             "vscr_percent": 0.26,
             "sn_mva": 100,
             "vn_lv_kv": 110.0,
@@ -671,7 +671,7 @@ def add_basic_std_types(net):
         # compare to IFT Ingenieurbüro data and Schlabbach book
         "63 MVA 110/20 kV":
         {"i0_percent": 0.04,
-            "pfe_mw": 0.022,
+            "pfe_kw": 22,
             "vscr_percent": 0.32,
             "sn_mva": 63,
             "vn_lv_kv": 20.0,
@@ -688,7 +688,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         "40 MVA 110/20 kV":
         {"i0_percent": 0.05,
-            "pfe_mw": 0.018,
+            "pfe_kw": 18,
             "vscr_percent": 0.34,
             "sn_mva": 40,
             "vn_lv_kv": 20.0,
@@ -705,7 +705,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         "25 MVA 110/20 kV":
         {"i0_percent": 0.07,
-            "pfe_mw": 0.014,
+            "pfe_kw": 14,
             "vscr_percent": 0.41,
             "sn_mva": 25,
             "vn_lv_kv": 20.0,
@@ -726,7 +726,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 10,
             "vsc_percent": 18,
             "vscr_percent": 0.32,
-            "pfe_mw": 0.022,
+            "pfe_kw": 22,
             "i0_percent": 0.04,
             "shift_degree": 150,
             "vector_group": "YNd5",
@@ -743,7 +743,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 10,
             "vsc_percent": 16.2,
             "vscr_percent": 0.34,
-            "pfe_mw": 0.018,
+            "pfe_kw": 18,
             "i0_percent": 0.05,
             "shift_degree": 150,
             "vector_group": "YNd5",
@@ -760,7 +760,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 10,
             "vsc_percent": 12,
             "vscr_percent": 0.41,
-            "pfe_mw": 0.014,
+            "pfe_kw": 14,
             "i0_percent": 0.07,
             "shift_degree": 150,
             "vector_group": "YNd5",
@@ -774,7 +774,7 @@ def add_basic_std_types(net):
         # deprecated old parameter data
         "63 MVA 110/20 kV v1.4.3 and older":
         {"i0_percent": 0.086,
-            "pfe_mw": 0.033,
+            "pfe_kw": 33,
             "vscr_percent": 0.322,
             "sn_mva": 63,
             "vn_lv_kv": 20.0,
@@ -791,7 +791,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         "40 MVA 110/20 kV v1.4.3 and older":
         {"i0_percent": 0.08,
-            "pfe_mw": 0.031,
+            "pfe_kw": 31,
             "vscr_percent": 0.302,
             "sn_mva": 40,
             "vn_lv_kv": 20.0,
@@ -808,7 +808,7 @@ def add_basic_std_types(net):
             "tp_phase_shifter": False},
         "25 MVA 110/20 kV v1.4.3 and older":
         {"i0_percent": 0.071,
-            "pfe_mw": 0.029,
+            "pfe_kw": 29,
             "vscr_percent": 0.282,
             "sn_mva": 25,
             "vn_lv_kv": 20.0,
@@ -829,7 +829,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 10,
             "vsc_percent": 10.04,
             "vscr_percent": 0.31,
-            "pfe_mw": 0.03151,
+            "pfe_kw": 31.51,
             "i0_percent": 0.078,
             "shift_degree": 150,
             "vector_group": "YNd5",
@@ -846,7 +846,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 10,
             "vsc_percent": 10.04,
             "vscr_percent": 0.295,
-            "pfe_mw": 0.03045,
+            "pfe_kw": 30.45,
             "i0_percent": 0.076,
             "shift_degree": 150,
             "vector_group": "YNd5",
@@ -863,7 +863,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 10,
             "vsc_percent": 10.04,
             "vscr_percent": 0.276,
-            "pfe_mw": 0.02851,
+            "pfe_kw": 28.51,
             "i0_percent": 0.073,
             "shift_degree": 150,
             "vector_group": "YNd5",
@@ -882,7 +882,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 0.4,
             "vsc_percent": 6,
             "vscr_percent": 1.44,
-            "pfe_mw": 0.8e-3,
+            "pfe_kw": 0.8,
             "i0_percent": 0.32,
             "shift_degree": 150,
             "vector_group": "Yzn5",
@@ -898,7 +898,7 @@ def add_basic_std_types(net):
         {"sn_mva": 0.4, "vn_hv_kv": 20, "vn_lv_kv": 0.4,
             "vsc_percent": 6,
             "vscr_percent": 1.425,
-            "pfe_mw": 1.35e-3,
+            "pfe_kw": 1.35,
             "i0_percent": 0.3375,
             "shift_degree": 150,
             "vector_group": "Dyn5",
@@ -916,7 +916,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 0.4,
             "vsc_percent": 6,
             "vscr_percent": 1.206,
-            "pfe_mw": 1.65e-3,
+            "pfe_kw": 1.65,
             "i0_percent": 0.2619,
             "shift_degree": 150,
             "vector_group": "Dyn5",
@@ -935,7 +935,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 0.4,
             "vsc_percent": 4,
             "vscr_percent": 1.2,
-            "pfe_mw": 0.6e-3,
+            "pfe_kw": 0.6,
             "i0_percent": 0.24,
             "shift_degree": 150,
             "vector_group": "Dyn5",
@@ -953,7 +953,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 0.4,
             "vsc_percent": 4,
             "vscr_percent": 1.325,
-            "pfe_mw": 0.95e-3,
+            "pfe_kw": 0.95,
             "i0_percent": 0.2375,
             "shift_degree": 150,
             "vector_group": "Dyn5",
@@ -971,7 +971,7 @@ def add_basic_std_types(net):
             "vn_lv_kv": 0.4,
             "vsc_percent": 4,
             "vscr_percent": 1.0794,
-            "pfe_mw": 1.18e-3,
+            "pfe_kw": 1.18,
             "i0_percent": 0.1873,
             "shift_degree": 150,
             "vector_group": "Dyn5",
@@ -1000,7 +1000,7 @@ def add_basic_std_types(net):
             "vscr_hv_percent": 0.28,
             "vscr_mv_percent": 0.32,
             "vscr_lv_percent": 0.35,
-            "pfe_mw": 0.035,
+            "pfe_kw": 35,
             "i0_percent": 0.89,
             "shift_mv_degree": 0,
             "shift_lv_degree": 0,
@@ -1023,7 +1023,7 @@ def add_basic_std_types(net):
             "vscr_hv_percent": 0.28,
             "vscr_mv_percent": 0.32,
             "vscr_lv_percent": 0.35,
-            "pfe_mw": 0.035,
+            "pfe_kw": 35,
             "i0_percent": 0.89,
             "shift_mv_degree": 0,
             "shift_lv_degree": 0,

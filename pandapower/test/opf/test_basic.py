@@ -55,7 +55,7 @@ def test_convert_format():
     # run OPF
     convert_format(net)
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -89,7 +89,7 @@ def test_simplest_voltage():
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -100,7 +100,7 @@ def test_simplest_voltage():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
-    pp.runopp(net, verbose=False, check_connectivity=True)
+    pp.runopp(net, check_connectivity=True)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -133,7 +133,7 @@ def test_simplest_voltage():
 #                                   max_loading_percent=100)
 #    # run OPF
 #    for init in ["pf", "flat"]:
-#        pp.runopp(net, verbose=False, init=init)
+#        pp.runopp(net, init=init)
 #        assert net["OPF_converged"]
 #
 #    # check and assert result
@@ -167,7 +167,7 @@ def test_simplest_dispatch():
                                    max_loading_percent=100 * 690)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, cost_function="linear", verbose=False, init=init)
+        pp.runopp(net, cost_function="linear", init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -199,7 +199,7 @@ def test_opf_gen_voltage():
                                           vn_hv_kv=10.0, vscr_percent=2.8125,
                                           tp_pos=0, tp_side="hv", tp_min=-2,
                                           tp_st_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_mw=0.11e-3, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=200)
     pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5,
                   min_q_mvar=-0.5)
@@ -214,7 +214,7 @@ def test_opf_gen_voltage():
 
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -245,7 +245,7 @@ def test_opf_sgen_voltage():
                                           vn_hv_kv=10.0, vscr_percent=2.8125,
                                           tp_pos=0, tp_side="hv", tp_min=-2,
                                           tp_st_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_mw=0.11e-3, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=1000000)
     pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=-0.005, max_p_mw=0.015,
                    max_q_mvar=0.025, min_q_mvar=-0.025)
@@ -260,7 +260,7 @@ def test_opf_sgen_voltage():
 
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # assert and check result
@@ -292,7 +292,7 @@ def test_opf_gen_loading():
                                           vn_hv_kv=10.0, vscr_percent=2.8125,
                                           tp_pos=0, tp_side="hv", tp_min=-2,
                                           tp_st_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_mw=0.11e-3, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=145)
     pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=0.015,
                   max_q_mvar=0.05, min_q_mvar=-0.05)
@@ -308,7 +308,7 @@ def test_opf_gen_loading():
 
     # run OPF
 
-    pp.runopp(net, verbose=False, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
+    pp.runopp(net, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
               PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10)
     assert net["OPF_converged"]
 
@@ -343,7 +343,7 @@ def test_opf_sgen_loading():
                                           shift_degree=150, tp_mid=0, vn_hv_kv=10.0,
                                           vscr_percent=2.8125, tp_pos=0, tp_side="hv", tp_min=-2,
                                           tp_st_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
-                                          pfe_mw=0.11e-3, name=None, in_service=True, index=None,
+                                          pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
     pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=.015,
                    max_q_mvar=0.025, min_q_mvar=-0.025)
@@ -359,7 +359,7 @@ def test_opf_sgen_loading():
 
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # assert and check result
@@ -372,7 +372,7 @@ def test_opf_sgen_loading():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
     # check connectivity check
-    pp.runopp(net, verbose=False, check_connectivity=True)
+    pp.runopp(net, check_connectivity=True)
 
 def test_unconstrained_line():
     """ Testing a very simple network without transformer for voltage
@@ -395,7 +395,7 @@ def test_unconstrained_line():
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -424,7 +424,7 @@ def test_trafo3w_loading():
 
     # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
     for init in ["pf", "flat"]:
-        pp.runopp(net, calculate_voltage_angles=False, verbose=False, init=init)
+        pp.runopp(net, calculate_voltage_angles=False, init=init)
         assert net["OPF_converged"]
     assert abs(net.res_trafo3w.loading_percent.values - 120) < 1e-3
 
@@ -433,7 +433,7 @@ def test_dcopf_poly(simple_opf_test_net):
     net = simple_opf_test_net
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
-    pp.rundcopp(net, verbose=False)
+    pp.rundcopp(net, )
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -448,7 +448,7 @@ def test_opf_poly(simple_opf_test_net):
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -465,7 +465,7 @@ def test_opf_pwl(simple_opf_test_net):
     pp.create_pwl_cost(net, 0, "gen", [(0, 100, 100), (100, 200, 100)])
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, verbose=False, init=init)
+        pp.runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -483,7 +483,7 @@ def test_dcopf_pwl(simple_opf_test_net):
     pp.create_pwl_cost(net, 0, "gen"     , [(0, 100, 100), (100, 200, 100)])
     pp.create_pwl_cost(net, 0, "ext_grid", [(0, 100, 0), (100, 200, 0)])
     # run OPF
-    pp.rundcopp(net, verbose=False)
+    pp.rundcopp(net, )
     assert net["OPF_converged"]
 
     # check and assert result
@@ -513,7 +513,7 @@ def test_opf_varying_max_line_loading():
                                           shift_degree=150, tp_mid=0, vn_hv_kv=10.0,
                                           vscr_percent=2.8125, tp_pos=0, tp_side="hv", tp_min=-2,
                                           tp_st_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
-                                          pfe_mw=0.11e-3, name=None, in_service=True, index=None,
+                                          pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
 
 
@@ -534,7 +534,7 @@ def test_opf_varying_max_line_loading():
                                    max_loading_percent=10)
 
     # run OPF
-    pp.runopp(net, verbose=False, init="flat")
+    pp.runopp(net, init="flat")
     assert net["OPF_converged"]
 
     assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281+0.j,  0.00692820+0.j,  0.12800000+0.j]))
@@ -595,7 +595,7 @@ def test_storage_opf():
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
 
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
     res_stor_p_mw = net["res_storage"].p_mw.iloc[0]
@@ -607,7 +607,7 @@ def test_storage_opf():
     net["sgen"].in_service.iloc[1] = True
     net["load"].in_service.iloc[1] = False
 
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
     res_sgen_p_mw = net["res_sgen"].p_mw.iloc[1]
@@ -632,7 +632,7 @@ def test_storage_opf():
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
 
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
     res_stor_p_mw = net["res_storage"].p_mw.iloc[0]
@@ -644,7 +644,7 @@ def test_storage_opf():
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = True
 
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
     res_load_p_mw = net["res_load"].p_mw.iloc[1]
@@ -695,7 +695,7 @@ def test_in_service_controllables():
     net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
 
-    pp.runopp(net, verbose=True)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
 
@@ -744,7 +744,7 @@ def test_no_controllables(simple_opf_test_net):
     # pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0, 2, 0]))
     # pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0, 2, 0]))
 
-    pp.runopp(net, verbose=True)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
 def test_opf_no_controllables_vs_pf():
@@ -777,13 +777,13 @@ def test_opf_no_controllables_vs_pf():
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
 
     # do calculations
-    pp.runopp(net, verbose=True)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
     res_opf_line_loading = net.res_line.loading_percent
     res_opf_bus_voltages = net.res_bus.vm_pu
 
-    pp.runpp(net, verbose=True)
+    pp.runpp(net, )
     assert net["converged"]
 
     res_pf_line_loading = net.res_line.loading_percent

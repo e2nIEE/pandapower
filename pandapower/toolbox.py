@@ -765,14 +765,27 @@ def convert_format(net):
             net.sn_mva = net.sn_kva*1e-3
             del net.sn_kva
         net.version = float(__version__[:3])
+
+    _revert_pfe_mw(net)
     return net
+
+
+def _revert_pfe_mw(net):
+    for element in ["trafo", "trafo3w"]:
+        if "pfe_mw" in net[element]:
+            net[element]["pfe_kw"] =  net[element]["pfe_mw"]*1e3
+            del net[element]["pfe_mw"]
+            for std_type, parameters in net.std_types[element].items():
+                if "pfe_mw" in parameters:
+                    parameters["pfe_kw"] = parameters.pop("pfe_mw")*1e3
 
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
     for element, tab in net.items():
         if isinstance(tab, pd.DataFrame):
             for old, new in replace:
-                diff = {column: column.replace(old, new) for column in tab.columns if old in column}
+                diff = {column: column.replace(old, new) for column in tab.columns if old in column
+                        and column != "pfe_kw"}
                 tab.rename(columns=diff, inplace=True)
                 if len(tab) == 0:
                     continue
@@ -783,11 +796,9 @@ def _convert_to_mw(net):
         for std_type, parameters in std_types.items():
             for parameter, value in parameters.items():
                 for old, new in replace:
-                    if old in parameter:
+                    if old in parameter and parameter != "pfe_kw":
                         parameters[parameter.replace(old, new)] = value*1e-3
                         del parameters[parameter]
-#    else:
-#        net.sn_mva = 1.
 
 
 def _pre_release_changes(net):

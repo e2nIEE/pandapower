@@ -238,7 +238,7 @@ def test_transformer_phase_shift_complex():
         pp.create_load(net, b2, p_mw=10)
         pp.create_transformer_from_parameters(net, hv_bus=b1, lv_bus=b2, sn_mva=40, vn_hv_kv=110,
                                               vn_lv_kv=20, vscr_percent=0.1, vsc_percent=5,
-                                              pfe_mw=0, i0_percent=0.1, shift_degree=30,
+                                              pfe_kw=0, i0_percent=0.1, shift_degree=30,
                                               tp_side=side, tp_mid=0, tp_max=2, tp_min=-2,
                                               tp_st_percent=2, tp_st_degree=10, tp_pos=0)
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
@@ -281,7 +281,7 @@ def test_transformer3w_phase_shift():
                                                 sn_mv_mva=30, sn_lv_mva=10,
                                                 vsc_hv_percent=5, vsc_mv_percent=5,
                                                 vsc_lv_percent=5, vscr_hv_percent=0.1,
-                                                vscr_mv_percent=0.1, vscr_lv_percent=0.1, pfe_mw=0,
+                                                vscr_mv_percent=0.1, vscr_lv_percent=0.1, pfe_kw=0,
                                                 i0_percent=0.1, shift_mv_degree=30,
                                                 shift_lv_degree=60, tp_side=side, tp_st_percent=2,
                                                 tp_st_degree=10, tp_pos=0, tp_mid=0, tp_min=-2,
@@ -396,7 +396,7 @@ def test_trafo3w_switches():
                                                 sn_mv_mva=0.7, sn_lv_mva=0.3, vsc_hv_percent=1.,
                                                 vscr_hv_percent=.03, vsc_mv_percent=.5,
                                                 vscr_mv_percent=.02, vsc_lv_percent=.25,
-                                                vscr_lv_percent=.01, pfe_mw=.5e-3, i0_percent=0.1,
+                                                vscr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
                                                 name="test", index=pp.get_free_id(net.trafo3w) + 1,
                                                 tp_side="hv", tp_pos=2, tp_st_percent=1.25,
                                                 tp_min=-5, tp_mid=0, tp_max=5)

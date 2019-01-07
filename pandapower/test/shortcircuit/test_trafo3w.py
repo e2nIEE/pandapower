@@ -25,7 +25,7 @@ def trafo3w_net():
                                             sn_mv_mva=30, sn_lv_mva=20, vsc_hv_percent=11,
                                             vscr_hv_percent=1., vsc_mv_percent=11,
                                             vscr_mv_percent=1., vsc_lv_percent=11.,
-                                            vscr_lv_percent=1., pfe_mw=0.01, i0_percent=0.2)
+                                            vscr_lv_percent=1., pfe_kw=10, i0_percent=0.2)
     return net
 
 def test_trafo3w_max(trafo3w_net):
