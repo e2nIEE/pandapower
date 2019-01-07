@@ -38,7 +38,7 @@ def add_network(net, vector_group):
 
 
     transformer_type = copy.copy(pp.load_std_type(net, "25 MVA 110/20 kV v1.4.3 and older","trafo"))
-    transformer_type.update({"vsc0_percent": 5, "vscr0_percent": 0.4, "mag0_percent": 10,
+    transformer_type.update({"vk0_percent": 5, "vkr0_percent": 0.4, "mag0_percent": 10,
                              "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
                              "vector_group": vector_group})
     pp.create_std_type(net, transformer_type, vector_group, "trafo")

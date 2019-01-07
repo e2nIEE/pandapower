@@ -87,7 +87,7 @@ def test_sqlite(net_in, tempdir):
     assert_net_equal(net_in, net_out)
 
 
-def test_convert_format():  # TODO what is this thing testing ?
+def test_convert_format():
     folder = os.path.abspath(os.path.dirname(pp.__file__))
     net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
     pp.runpp(net)

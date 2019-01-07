@@ -45,7 +45,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 "name = " + net.trafo['name'].astype(str) + '<br />' +
                 'v_n hv = ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
                 'v_n lv = ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'tap = ' + net.trafo['tp_pos'].astype(str) + '<br />').tolist()
+                'tap = ' + net.trafo['tap_pos'].astype(str) + '<br />').tolist()
     elif element == "ext_grid":
         hoverinfo = (
                 "index = " + net.ext_grid.index.astype(str) + '<br />' +

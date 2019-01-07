@@ -171,18 +171,18 @@ def add_test_load_sgen_split(net):
 def add_test_trafo(net):
     b1, b2, ln = add_grid_connection(net, zone="test_trafo")
     b3 = pp.create_bus(net, vn_kv=0.4, zone="test_trafo")
-    pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
+    pp.create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                           i0_percent=.4, pfe_kw=2., sn_mva=0.4, vn_hv_kv=22,
-                                          vn_lv_kv=0.42, tp_max=10, tp_mid=5, tp_min=0,
-                                          tp_st_percent=1.25, tp_pos=3, shift_degree=150,
-                                          tp_side="hv", parallel=2)
-    t2 = pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
+                                          vn_lv_kv=0.42, tap_max=10, tap_neutral=5, tap_min=0,
+                                          tap_step_percent=1.25, tap_pos=3, shift_degree=150,
+                                          tap_side="hv", parallel=2)
+    t2 = pp.create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                                i0_percent=.4, pfe_kw=2, sn_mva=0.4, vn_hv_kv=22,
-                                               vn_lv_kv=0.42, tp_max=10, tp_mid=5, tp_min=0,
-                                               tp_st_percent=1.25, tp_pos=3, tp_side="hv",
+                                               vn_lv_kv=0.42, tap_max=10, tap_neutral=5, tap_min=0,
+                                               tap_step_percent=1.25, tap_pos=3, tap_side="hv",
                                                shift_degree=150, index=pp.get_free_id(net.trafo) + 1)
     pp.create_switch(net, b3, t2, et="t", closed=False)
-    pp.create_transformer_from_parameters(net, b2, b3, vsc_percent=5., vscr_percent=2.,
+    pp.create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                           i0_percent=1., pfe_kw=20, sn_mva=0.4, vn_hv_kv=20,
                                           vn_lv_kv=0.4, in_service=False)
     pp.create_load(net, b3, p_mw=0.2, q_mvar=0.05)
@@ -319,19 +319,19 @@ def add_test_trafo3w(net):
 
     pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=22,
                                             vn_mv_kv=.64, vn_lv_kv=.42, sn_hv_mva=1,
-                                            sn_mv_mva=0.7, sn_lv_mva=0.3, vsc_hv_percent=1.,
-                                            vscr_hv_percent=.03, vsc_mv_percent=.5,
-                                            vscr_mv_percent=.02, vsc_lv_percent=.25,
-                                            vscr_lv_percent=.01, pfe_kw=0.5, i0_percent=0.1,
+                                            sn_mv_mva=0.7, sn_lv_mva=0.3, vk_hv_percent=1.,
+                                            vkr_hv_percent=.03, vk_mv_percent=.5,
+                                            vkr_mv_percent=.02, vk_lv_percent=.25,
+                                            vkr_lv_percent=.01, pfe_kw=0.5, i0_percent=0.1,
                                             name="test", index=pp.get_free_id(net.trafo3w) + 1,
-                                            tp_side="hv", tp_pos=2, tp_st_percent=1.25,
-                                            tp_min=-5, tp_mid=0, tp_max=5)
+                                            tap_side="hv", tap_pos=2, tap_step_percent=1.25,
+                                            tap_min=-5, tap_neutral=0, tap_max=5)
     # adding out of service 3w trafo should not change results
     pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=20,
                                             vn_mv_kv=.6, vn_lv_kv=.4, sn_hv_mva=1, sn_mv_mva=0.7,
-                                            sn_lv_mva=0.3, vsc_hv_percent=2., vscr_hv_percent=.3,
-                                            vsc_mv_percent=1., vscr_mv_percent=.2,
-                                            vsc_lv_percent=.5, vscr_lv_percent=.1, pfe_kw=50,
+                                            sn_lv_mva=0.3, vk_hv_percent=2., vkr_hv_percent=.3,
+                                            vk_mv_percent=1., vkr_mv_percent=.2,
+                                            vk_lv_percent=.5, vkr_lv_percent=.1, pfe_kw=50,
                                             i0_percent=1., name="test", in_service=False,
                                             index=pp.get_free_id(net.trafo3w) + 1)
     net.last_added_case = "test_trafo3w"

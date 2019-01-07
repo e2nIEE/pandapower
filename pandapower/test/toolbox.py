@@ -226,12 +226,12 @@ def create_test_network():
     b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
     b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4, index=7)
     b4 = pp.create_bus(net, name="bus4", vn_kv=10.)
-    pp.create_transformer_from_parameters(net, b4, b2, vsc_percent=3.75,
-                                          tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0,
-                                          vn_hv_kv=10.0, vscr_percent=2.8125,
-                                          tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751,
+    pp.create_transformer_from_parameters(net, b4, b2, vk_percent=3.75,
+                                          tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0,
+                                          vn_hv_kv=10.0, vkr_percent=2.8125,
+                                          tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751,
                                           sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None)
     # 0.016 MVA 10/0.4 kV ET 16/23  SGB

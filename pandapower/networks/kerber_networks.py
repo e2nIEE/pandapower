@@ -35,11 +35,11 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
     pp.create_std_type(net=pd_net, data=NAYY4x150, name="NAYY 4x150", element="line")
     pp.create_std_type(net=pd_net, data=NAYY4x185, name="NAYY 4x185", element="line")
     pp.create_std_type(net=pd_net, data=NYY4x35, name="NYY 4x35", element="line")
-    T100kVA = {"sn_mva": 0.100, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vsc_percent": 4,
-               "vscr_percent": 1.2, "pfe_kw": 0.45, "i0_percent": 0.25, "shift_degree": 150,
+    T100kVA = {"sn_mva": 0.100, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vk_percent": 4,
+               "vkr_percent": 1.2, "pfe_kw": 0.45, "i0_percent": 0.25, "shift_degree": 150,
                "vector_group": "Dyn5"}
-    T160kVA = {"sn_mva": 0.160, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vsc_percent": 4,
-               "vscr_percent": 1.2, "pfe_kw": 0.38, "i0_percent": 0.26, "shift_degree": 150,
+    T160kVA = {"sn_mva": 0.160, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vk_percent": 4,
+               "vkr_percent": 1.2, "pfe_kw": 0.38, "i0_percent": 0.26, "shift_degree": 150,
                "vector_group": "Dyn5"}
     pp.create_std_type(net=pd_net, data=T100kVA, name="0.1 MVA 10/0.4 kV", element="trafo")
     pp.create_std_type(net=pd_net, data=T160kVA, name="0.16 MVA 10/0.4 kV", element="trafo")

@@ -449,8 +449,9 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    if "version" not in net or net.version < 2:
+    if "version" not in net:
         _pre_release_changes(net)
+    if net.version < 2:
         if net.name is None:
             net.name = ""
         if "sn_kva" not in net:
@@ -461,10 +462,17 @@ def convert_format(net):
         for typ, data in net.std_types["line"].items():
             if "imax_ka" in data:
                 net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
+        if "tap_phase_shifter" not in net.trafo3w:
+            net.trafo3w["tap_phase_shifter"] = False
+        if "tap_phase_shifter" not in net.trafo:
+            net.trafo["tap_phase_shifter"] = False
         # unsymmetric impedance
         if "r_pu" in net.impedance:
             net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
             net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+        for element in ["trafo", "line", "trafo3w"]:
+            if not "df" in net[element]:
+                net[element]["df"] = 1.0
         # initialize measurement dataframe
         if "measurement" in net and "type" in net.measurement:
             if net.measurement.empty:
@@ -654,12 +662,6 @@ def convert_format(net):
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
-        if "tp_st_degree" not in net.trafo:
-            net.trafo["tp_st_degree"] = np.nan
-        if "tp_st_degree" not in net.trafo3w:
-            net.trafo3w["tp_st_degree"] = np.nan
-        if "tap_at_star_point" not in net.trafo3w:
-            net.trafo3w["tap_at_star_point"] = False
         if "_pd2ppc_lookups" not in net:
             net._pd2ppc_lookups = {"bus": None,
                                    "ext_grid": None,
@@ -766,9 +768,22 @@ def convert_format(net):
             del net.sn_kva
         net.version = float(__version__[:3])
 
+    _update_trafo_parameter_names(net)
     _revert_pfe_mw(net)
     return net
 
+def _update_trafo_parameter_names(net):
+    for element in ["trafo", "trafo3w"]:
+        replace_cols = {col: _update_column(col) for col in net[element].columns if
+                col.startswith("tp") or col.startswith("vsc")}
+        net[element].rename(columns=replace_cols, inplace=True)
+
+def _update_column(column):
+    column = column.replace("tp_", "tap_")
+    column = column.replace("_st_", "_step_")
+    column = column.replace("_mid", "_neutral")
+    column = column.replace("vsc", "vk")
+    return column
 
 def _revert_pfe_mw(net):
     for element in ["trafo", "trafo3w"]:
@@ -804,6 +819,12 @@ def _convert_to_mw(net):
 def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
     from pandapower.powerflow import reset_results
+    if "tp_st_degree" not in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
+    if "tp_at_star_point" not in net.trafo3w:
+        net.trafo3w["tp_at_star_point"] = False
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
         add_basic_std_types(net)
@@ -864,17 +885,17 @@ def _pre_release_changes(net):
                                                 "un1_kv": "vn_hv_kv", "un2_kv": "vn_lv_kv",
                                                 'vfe_kw': 'pfe_kw', "unh_kv": "vn_hv_kv",
                                                 "unl_kv": "vn_lv_kv", "type": "std_type",
-                                                'vfe_kw': 'pfe_kw', "uk_percent": "vsc_percent",
-                                                "ur_percent": "vscr_percent",
+                                                'vfe_kw': 'pfe_kw', "uk_percent": "vk_percent",
+                                                "ur_percent": "vkr_percent",
                                                 "vnh_kv": "vn_hv_kv", "vnl_kv": "vn_lv_kv"})
     net["trafo3w"] = net["trafo3w"].rename(columns={"unh_kv": "vn_hv_kv", "unm_kv": "vn_mv_kv",
                                                     "unl_kv": "vn_lv_kv",
-                                                    "ukh_percent": "vsc_hv_percent",
-                                                    "ukm_percent": "vsc_mv_percent",
-                                                    "ukl_percent": "vsc_lv_percent",
-                                                    "urh_percent": "vscr_hv_percent",
-                                                    "urm_percent": "vscr_mv_percent",
-                                                    "url_percent": "vscr_lv_percent",
+                                                    "ukh_percent": "vk_hv_percent",
+                                                    "ukm_percent": "vk_mv_percent",
+                                                    "ukl_percent": "vk_lv_percent",
+                                                    "urh_percent": "vkr_hv_percent",
+                                                    "urm_percent": "vkr_mv_percent",
+                                                    "url_percent": "vkr_lv_percent",
                                                     'vfe_kw': 'pfe_kw',
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
@@ -969,13 +990,14 @@ def _pre_release_changes(net):
         reset_results(net)
 
     for attribute in ['tp_st_percent', 'tp_pos', 'tp_mid', 'tp_min', 'tp_max']:
-        if net.trafo[attribute].dtype == 'O':
-            net.trafo[attribute] = pd.to_numeric(net.trafo[attribute])
+        if attribute in net.trafo:
+            if net.trafo[attribute].dtype == 'O':
+                net.trafo[attribute] = pd.to_numeric(net.trafo[attribute])
     net["gen"] = net["gen"].rename(columns={"u_pu": "vm_pu"})
     for element, old, new in [("trafo", "unh_kv", "vn_hv_kv"),
                               ("trafo", "unl_kv", "vn_lv_kv"),
-                              ("trafo", "uk_percent", "vsc_percent"),
-                              ("trafo", "ur_percent", "vscr_percent"),
+                              ("trafo", "uk_percent", "vk_percent"),
+                              ("trafo", "ur_percent", "vkr_percent"),
                               ("trafo3w", "unh_kv", "vn_hv_kv"),
                               ("trafo3w", "unm_kv", "vn_mv_kv"),
                               ("trafo3w", "unl_kv", "vn_lv_kv")]:
@@ -994,6 +1016,7 @@ def _pre_release_changes(net):
     if "in_service" not in net["ward"]:
         net.ward["in_service"] = True
     net.switch.closed = net.switch.closed.astype(bool)
+    net.version = 1.0
 
 
 def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,

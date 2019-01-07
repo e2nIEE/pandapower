@@ -74,8 +74,8 @@ def test_create_and_load_std_type_trafo():
     sn_mva = 40
     vn_hv_kv = 110
     vn_lv_kv =  20
-    vsc_percent = 5.
-    vscr_percent = 2.
+    vk_percent = 5.
+    vkr_percent = 2.
     pfe_kw=50
     i0_percent = 0.1
     shift_degree = 30
@@ -93,26 +93,26 @@ def test_create_and_load_std_type_trafo():
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo")
 
-    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent}
+    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo")
 
-    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent,
-               "vscr_percent": vscr_percent}
+    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
+               "vkr_percent": vkr_percent}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo")
 
-    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent,
-               "vscr_percent": vscr_percent, "pfe_kw": pfe_kw}
+    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
+               "vkr_percent": vkr_percent, "pfe_kw": pfe_kw}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo")
 
-    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent,
-               "vscr_percent": vscr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent}
+    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
+               "vkr_percent": vkr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo")
-    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent,
-               "vscr_percent": vscr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
+               "vkr_percent": vkr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
                "shift_degree": shift_degree}
     pp.create_std_type(net, name=name, data=typdata, element="trafo")
     assert net.std_types["trafo"][name] == typdata
@@ -124,8 +124,8 @@ def test_create_and_load_std_type_trafo3w():
     net = pp.create_empty_network()
     sn_hv_mva = 40; sn_mv_mva = 20; sn_lv_mva = 20
     vn_hv_kv = 110; vn_mv_kv = 50; vn_lv_kv = 20
-    vsc_hv_percent = 5.; vsc_mv_percent = 5.; vsc_lv_percent = 5.
-    vscr_hv_percent = 2.; vscr_mv_percent = 2.; vscr_lv_percent = 2.
+    vk_hv_percent = 5.; vk_mv_percent = 5.; vk_lv_percent = 5.
+    vkr_hv_percent = 2.; vkr_mv_percent = 2.; vkr_lv_percent = 2.
     pfe_kw=50
     i0_percent = 0.1
     shift_mv_degree = 30; shift_lv_degree = 30
@@ -143,33 +143,33 @@ def test_create_and_load_std_type_trafo3w():
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
 
-    typdata = {"sn_mv_mva": sn_mv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_hv_percent": vsc_hv_percent}
+    typdata = {"sn_mv_mva": sn_mv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_hv_percent": vk_hv_percent}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
 
-    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_mv_percent": vsc_mv_percent,
-               "vscr_hv_percent": vscr_hv_percent}
+    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_mv_percent": vk_mv_percent,
+               "vkr_hv_percent": vkr_hv_percent}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
 
-    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_lv_percent": vsc_lv_percent,
-               "vscr_mv_percent": vscr_mv_percent, "pfe_kw": pfe_kw}
+    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_lv_percent": vk_lv_percent,
+               "vkr_mv_percent": vkr_mv_percent, "pfe_kw": pfe_kw}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
 
-    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_hv_percent": vsc_hv_percent,
-               "vscr_lv_percent": vscr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent}
+    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_hv_percent": vk_hv_percent,
+               "vkr_lv_percent": vkr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
-    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_hv_percent": vsc_hv_percent,
-               "vscr_hv_percent": vscr_hv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+    typdata = {"sn_hv_mva": sn_hv_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_hv_percent": vk_hv_percent,
+               "vkr_hv_percent": vkr_hv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
                "shift_mv_degree": shift_mv_degree}
     with pytest.raises(UserWarning):
         pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
     typdata = {"vn_hv_kv": vn_hv_kv, "vn_mv_kv": vn_mv_kv, "vn_lv_kv": vn_lv_kv, "sn_hv_mva": sn_hv_mva,
-          "sn_mv_mva": sn_mv_mva, "sn_lv_mva": sn_lv_mva, "vsc_hv_percent": vsc_hv_percent, "vsc_mv_percent": vsc_mv_percent,
-          "vsc_lv_percent": vsc_lv_percent, "vscr_hv_percent": vscr_hv_percent, "vscr_mv_percent": vscr_mv_percent,
-          "vscr_lv_percent": vscr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+          "sn_mv_mva": sn_mv_mva, "sn_lv_mva": sn_lv_mva, "vk_hv_percent": vk_hv_percent, "vk_mv_percent": vk_mv_percent,
+          "vk_lv_percent": vk_lv_percent, "vkr_hv_percent": vkr_hv_percent, "vkr_mv_percent": vkr_mv_percent,
+          "vkr_lv_percent": vkr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
           "shift_mv_degree":shift_mv_degree, "shift_lv_degree": shift_lv_degree}
     pp.create_std_type(net, name=name, data=typdata, element="trafo3w")
     assert net.std_types["trafo3w"][name] == typdata
@@ -182,14 +182,14 @@ def test_create_std_types_trafo():
     sn_mva = 40
     vn_hv_kv = 110
     vn_lv_kv =  20
-    vsc_percent = 5.
-    vscr_percent = 2.
+    vk_percent = 5.
+    vkr_percent = 2.
     pfe_kw=50
     i0_percent = 0.1
     shift_degree = 30
 
-    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent,
-               "vscr_percent": vscr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+    typdata = {"sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
+               "vkr_percent": vkr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
                "shift_degree": shift_degree}
     typdatas = {"typ1": typdata, "typ2": typdata}
     pp.create_std_types(net, data=typdatas, element="trafo")
@@ -200,16 +200,16 @@ def test_create_std_types_trafo3w():
     net = pp.create_empty_network()
     sn_hv_mva = 40; sn_mv_mva = 20; sn_lv_mva = 20
     vn_hv_kv = 110; vn_mv_kv = 50; vn_lv_kv = 20
-    vsc_hv_percent = 5.; vsc_mv_percent = 5.; vsc_lv_percent = 5.
-    vscr_hv_percent = 2.; vscr_mv_percent = 2.; vscr_lv_percent = 2.
+    vk_hv_percent = 5.; vk_mv_percent = 5.; vk_lv_percent = 5.
+    vkr_hv_percent = 2.; vkr_mv_percent = 2.; vkr_lv_percent = 2.
     pfe_kw=50
     i0_percent = 0.1
     shift_mv_degree = 30; shift_lv_degree = 30
 
     typdata = {"vn_hv_kv": vn_hv_kv, "vn_mv_kv": vn_mv_kv, "vn_lv_kv": vn_lv_kv, "sn_hv_mva": sn_hv_mva,
-          "sn_mv_mva": sn_mv_mva, "sn_lv_mva": sn_lv_mva, "vsc_hv_percent": vsc_hv_percent, "vsc_mv_percent": vsc_mv_percent,
-          "vsc_lv_percent": vsc_lv_percent, "vscr_hv_percent": vscr_hv_percent, "vscr_mv_percent": vscr_mv_percent,
-          "vscr_lv_percent": vscr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
+          "sn_mv_mva": sn_mv_mva, "sn_lv_mva": sn_lv_mva, "vk_hv_percent": vk_hv_percent, "vk_mv_percent": vk_mv_percent,
+          "vk_lv_percent": vk_lv_percent, "vkr_hv_percent": vkr_hv_percent, "vkr_mv_percent": vkr_mv_percent,
+          "vkr_lv_percent": vkr_lv_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
           "shift_mv_degree":shift_mv_degree, "shift_lv_degree": shift_lv_degree}
 
     typdatas = {"typ1": typdata, "typ2": typdata}

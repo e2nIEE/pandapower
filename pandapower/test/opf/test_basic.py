@@ -193,12 +193,12 @@ def test_opf_gen_voltage():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75,
-                                          tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0,
-                                          vn_hv_kv=10.0, vscr_percent=2.8125,
-                                          tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751,
+    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
+                                          tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0,
+                                          vn_hv_kv=10.0, vkr_percent=2.8125,
+                                          tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751,
                                           sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=200)
     pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5,
@@ -239,12 +239,12 @@ def test_opf_sgen_voltage():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75,
-                                          tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0,
-                                          vn_hv_kv=10.0, vscr_percent=2.8125,
-                                          tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751,
+    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
+                                          tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0,
+                                          vn_hv_kv=10.0, vkr_percent=2.8125,
+                                          tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751,
                                           sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=1000000)
     pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=-0.005, max_p_mw=0.015,
@@ -286,12 +286,12 @@ def test_opf_gen_loading():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75,
-                                          tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0,
-                                          vn_hv_kv=10.0, vscr_percent=2.8125,
-                                          tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751,
+    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
+                                          tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0,
+                                          vn_hv_kv=10.0, vkr_percent=2.8125,
+                                          tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751,
                                           sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None, max_loading_percent=145)
     pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=0.015,
@@ -339,10 +339,10 @@ def test_opf_sgen_loading():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75, tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0, vn_hv_kv=10.0,
-                                          vscr_percent=2.8125, tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
+    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
+                                          vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
     pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=.015,
@@ -509,10 +509,10 @@ def test_opf_varying_max_line_loading():
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vsc_percent=3.75, tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0, vn_hv_kv=10.0,
-                                          vscr_percent=2.8125, tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
+    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
+                                          vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
                                           max_loading_percent=max_trafo_loading)
 

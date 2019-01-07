@@ -191,18 +191,18 @@ def example_multivoltage():
     lv_bus = pp.get_element_index(net, "bus", "Bus SB 1")
     pp.create_transformer_from_parameters(net, hv_bus, lv_bus,
                                           sn_mva=300, vn_hv_kv=380, vn_lv_kv=110,
-                                          vscr_percent=0.06, vsc_percent=8, pfe_kw=0,
-                                          i0_percent=0, tp_pos=0, shift_degree=0,
+                                          vkr_percent=0.06, vk_percent=8, pfe_kw=0,
+                                          i0_percent=0, tap_pos=0, shift_degree=0,
                                           name='EHV-HV-Trafo')
 
     hv_bus = pp.get_element_index(net, "bus", "Bus MV4")
     lv_bus = pp.get_element_index(net, "bus", "Bus LV0")
     pp.create_transformer_from_parameters(net, hv_bus, lv_bus,
                                           sn_mva=0.4, vn_hv_kv=10, vn_lv_kv=0.4,
-                                          vscr_percent=1.325, vsc_percent=4,
-                                          pfe_kw=0.95, i0_percent=0.2375, tp_side="hv",
-                                          tp_mid=0, tp_min=-2, tp_max=2,
-                                          tp_st_percent=2.5, tp_pos=0,
+                                          vkr_percent=1.325, vk_percent=4,
+                                          pfe_kw=0.95, i0_percent=0.2375, tap_side="hv",
+                                          tap_neutral=0, tap_min=-2, tap_max=2,
+                                          tap_step_percent=2.5, tap_pos=0,
                                           shift_degree=150, name='MV-LV-Trafo')
 
     # Trafo3w
@@ -212,13 +212,13 @@ def example_multivoltage():
     pp.create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus,
                                             vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
                                             sn_hv_mva=40, sn_mv_mva=15, sn_lv_mva=25,
-                                            vsc_hv_percent=10.1, vsc_mv_percent=10.1,
-                                            vsc_lv_percent=10.1, vscr_hv_percent=0.266667,
-                                            vscr_mv_percent=0.033333, vscr_lv_percent=0.04,
+                                            vk_hv_percent=10.1, vk_mv_percent=10.1,
+                                            vk_lv_percent=10.1, vkr_hv_percent=0.266667,
+                                            vkr_mv_percent=0.033333, vkr_lv_percent=0.04,
                                             pfe_kw=0, i0_percent=0, shift_mv_degree=30,
-                                            shift_lv_degree=30, tp_side="hv", tp_mid=0,
-                                            tp_min=-8, tp_max=8, tp_st_percent=1.25,
-                                            tp_pos=0, name='HV-MV-MV-Trafo')
+                                            shift_lv_degree=30, tap_side="hv", tap_neutral=0,
+                                            tap_min=-8, tap_max=8, tap_step_percent=1.25,
+                                            tap_pos=0, name='HV-MV-MV-Trafo')
 
     # --- Static generators
 

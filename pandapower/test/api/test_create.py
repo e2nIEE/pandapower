@@ -47,7 +47,7 @@ def test_convenience_create_functions():
     assert net.impedance.at[sind, 'xft_pu'] - 0.001653 < tol
 
     tid = pp.create_transformer_from_parameters(net, hv_bus=b2, lv_bus=b3, sn_mva=0.1, vn_hv_kv=110,
-                                                vn_lv_kv=20, vscr_percent=5, vsc_percent=20,
+                                                vn_lv_kv=20, vkr_percent=5, vk_percent=20,
                                                 pfe_kw=1, i0_percent=1)
     pp.create_load(net, b3, 0.1)
     assert net.trafo.at[tid, 'df'] == 1
@@ -87,12 +87,12 @@ def test_nonexistent_bus():
                         partial(pp.create_transformer3w_from_parameters, net=net, hv_bus=0,
                                 lv_bus=1, mv_bus=2, i0_percent=0.89, pfe_kw=3.5,
                                 vn_hv_kv=110, vn_lv_kv=10, vn_mv_kv=20, sn_hv_mva=63,
-                                sn_lv_mva=38, sn_mv_mva=25, vsc_hv_percent=10.4,
-                                vsc_lv_percent=10.4, vsc_mv_percent=10.4, vscr_hv_percent=0.28,
-                                vscr_lv_percent=0.35, vscr_mv_percent=0.32, index=1),
+                                sn_lv_mva=38, sn_mv_mva=25, vk_hv_percent=10.4,
+                                vk_lv_percent=10.4, vk_mv_percent=10.4, vkr_hv_percent=0.28,
+                                vkr_lv_percent=0.35, vkr_mv_percent=0.32, index=1),
                         partial(pp.create_transformer_from_parameters, net=net, hv_bus=0, lv_bus=1,
-                                sn_mva=60, vn_hv_kv=20., vn_lv_kv=0.4, vsc_percent=10,
-                                vscr_percent=0.1, pfe_kw=0, i0_percent=0, index=1),
+                                sn_mva=60, vn_hv_kv=20., vn_lv_kv=0.4, vk_percent=10,
+                                vkr_percent=0.1, pfe_kw=0, i0_percent=0, index=1),
                         partial(pp.create_impedance, net=net, from_bus=0, to_bus=1,
                                 rft_pu=0.1, xft_pu=0.1, sn_mva=0.6, index=0),
                         partial(pp.create_switch, net, bus=0, element=1, et="b", index=0)]
@@ -108,18 +108,18 @@ def test_nonexistent_bus():
             func()
 
 
-def test_tp_phase_shifter_default():
+def test_tap_phase_shifter_default():
     expected_default = False
     net = pp.create_empty_network()
     pp.create_bus(net, 110)
     pp.create_bus(net, 20)
     data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
-    if "tp_phase_shifter" in data:
-        del data["tp_phase_shifter"]
-    pp.create_std_type(net, data, "without_tp_shifter_info", "trafo")
+    if "tap_phase_shifter" in data:
+        del data["tap_phase_shifter"]
+    pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
     pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
-    pp.create_transformer(net, 0, 1, "without_tp_shifter_info")
-    assert (net.trafo.tp_phase_shifter == expected_default).all()
+    pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
+    assert (net.trafo.tap_phase_shifter == expected_default).all()
 
 
 def test_create_line_conductance():
@@ -159,4 +159,15 @@ def test_create_buses():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_create.py"])
+    expected_default = False
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
+    if "tap_phase_shifter" in data:
+        del data["tap_phase_shifter"]
+    pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
+    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
+    pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
+    assert (net.trafo.tap_phase_shifter == expected_default).all()
+#    pytest.main(["test_create.py"])
