@@ -628,6 +628,55 @@ def test_network_with_trafo3w_with_disabled_branch():
     assert success
     assert (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006)
     assert (np.nanmax(np.abs(net.res_bus.va_degree.values- net.res_bus_est.va_degree.values)) < 0.006)
+    
+
+def test_net_with_bb_switch():
+    net = pp.create_empty_network()
+    pp.create_bus(net, name="bus1", vn_kv=10.)
+    pp.create_bus(net, name="bus2", vn_kv=10.)
+    pp.create_bus(net, name="bus3", vn_kv=10.)
+    pp.create_bus(net, name="bus4", vn_kv=110.)
+    pp.create_ext_grid(net, bus=3, vm_pu=1.0)
+    pp.create_line_from_parameters(net, 0, 1, 10, r_ohm_per_km=.59, x_ohm_per_km=.35, c_nf_per_km=10.1,
+                                   max_i_ka=1)
+    pp.create_transformer(net, 3, 0, std_type="40 MVA 110/10 kV")
+
+    pp.create_load(net, 0, p_mw=.350, q_mvar=.100)
+    pp.create_load(net, 1, p_mw=.450, q_mvar=.100)
+    pp.create_load(net, 2, p_mw=.250, q_mvar=.100)
+
+    # Created bb switch
+    pp.create_switch(net, 1, element=2, et='b')
+    pp.runpp(net, calculate_voltage_angles=True)
+
+    pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[0], .002), .002, element=0)
+    pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[1], .002), .002, element=1)
+    pp.create_measurement(net, "v", "bus", r2(net.res_bus.vm_pu.iloc[3], .002), .002, element=3)
+
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[3], .002), .002, element=3)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[3], .002), .002, element=3)
+
+    # If measurement on the bus with bb-switch activated, it will incluence the results of the merged bus
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[2], .001), .001, element=2)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[2], .001), .001, element=2)
+    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[1], .001), .001, element=1)
+    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[1], .001), .001, element=1)
+
+    pp.create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[0], .002), .002, 0, side='from')
+    pp.create_measurement(net, "q", "line", r2(net.res_line.q_from_mvar.iloc[0], .002), .002, 0, side='from')
+
+    pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .001), .01,
+                          side="hv", element=0)  
+    pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .001), .01,
+                          side="hv", element=0)  
+
+    success = estimate(net, tolerance=1e-5, fuse_all_bb_switches=False)
+    assert success
+    assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-2)
+    assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-2)
+    # asserting with more tolerance since the added impedance will cause some inaccuracy
+    assert np.allclose(net.res_bus.p_mw.values,net.res_bus_est.p_mw.values, atol=1e-2)
+    assert np.allclose(net.res_bus.q_mvar.values,net.res_bus_est.q_mvar.values, atol=1e-2)
 
 
 def r(v=0.03):
