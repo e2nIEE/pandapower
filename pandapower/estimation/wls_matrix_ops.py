@@ -70,7 +70,7 @@ class wls_matrix_ops:
         return self.G, self.B
 
     # Creates h(x), depending on the current U and delta and the static topology data
-    def create_hx(self, v, delta):
+    def create_hx(self, v, delta, p_zero_inj, q_zero_inj):
         deltas = delta[:, np.newaxis] - delta
         cos_delta = np.cos(deltas)
         sin_delta = np.sin(deltas)
@@ -91,7 +91,7 @@ class wls_matrix_ops:
         p_i = np.sum(vi_vj * (self.G * cos_delta + self.B * sin_delta), axis=1)
         q_i = np.sum(vi_vj * (self.G * sin_delta - self.B * cos_delta), axis=1)
         self.i_ij = np.divide(np.sqrt(np.float64(s_ij.real ** 2 + s_ij.imag ** 2)).T, v).T
-
+        
         # Build h(x) from measurements
         # [p_i p_ij q_i q_ij U i_ij]
 
@@ -122,15 +122,18 @@ class wls_matrix_ops:
         v_bus_not_nan = ~np.isnan(self.ppc["bus"][:, bus_cols + VM])
         p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, bus_cols + P])
         q_bus_not_nan = ~np.isnan(self.ppc["bus"][:, bus_cols + Q])
-
+        
         hx = np.hstack((p_i[p_bus_not_nan],
                         s_ij.real[p_first_ix, p_second_ix],
                         q_i[q_bus_not_nan],
                         s_ij.imag[q_first_ix, q_second_ix],
                         v[v_bus_not_nan],
                         self.i_ij[i_first_ix, i_second_ix]))
+        
+        cx = np.hstack((p_i[p_zero_inj],
+                        q_i[q_zero_inj]))
 
-        return hx
+        return hx, cx
 
     # Create Jacobian matrix
     def create_jacobian(self, v, delta):
@@ -213,12 +216,13 @@ class wls_matrix_ops:
             H_dIij_dU_j = np.divide(G_series ** 2 + B_series ** 2, self.i_ij) * \
                           (v - np.multiply(cos_delta.T, v).T)
 
-        # Build H dynamically from submatrices and measurements
+        # Build H and C dynamically from submatrices and measurements
         columns = 2 * n - len(self.slack_buses)
         range_theta = self.non_slack_buses
         range_v = list(range(n))
 
-        h_mat = np.zeros((1, columns))  # create matrix with dummy line so that we can append to it
+        h_mat = np.zeros((1, columns))      # create matrix with dummy line so that we can append to it
+        c_mat = np.zeros((1, columns))      # create C matrix with dummy line so that we can append to it
 
         # if P bus measurements exist
         p_bus_not_nan = ~np.isnan(self.ppc["bus"][:, bus_cols + 2])
@@ -230,7 +234,18 @@ class wls_matrix_ops:
                 .reshape(len(range_v), len(nodes)).T
             h_ = np.hstack((h_t, h__u))
             h_mat = np.vstack((h_mat, h_))
-
+            
+        p_bus_nan = np.isnan(self.ppc["bus"][:, bus_cols + 2])  # if P bus measurements not exists => zero injections
+        if True in p_bus_nan:
+            nodes = np.arange(n)[p_bus_nan]
+            c_t = H_dPinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
+                .reshape(len(range_theta), len(nodes)).T
+            c__u = H_dPinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
+                .reshape(len(range_v), len(nodes)).T
+            c_ = np.hstack((c_t, c__u))
+            c_mat = np.vstack((c_mat, c_))
+        
+        
         # if P line measurements exist
         # and so on ..
         p_line_not_nan = ~np.isnan(self.ppc["branch"][:, branch_cols + 4])
@@ -258,6 +273,17 @@ class wls_matrix_ops:
                 .reshape(len(range_v), len(nodes)).T
             h_ = np.hstack((h_t, h__u))
             h_mat = np.vstack((h_mat, h_))
+        
+        
+        q_bus_nan = np.isnan(self.ppc["bus"][:, bus_cols + 4])  # if Q bus measurements not exists => zero injections
+        if True in q_bus_nan:
+            nodes = np.arange(n)[q_bus_nan]
+            c_t = H_dQinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
+                .reshape(len(range_theta), len(nodes)).T
+            c__u = H_dQinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
+                .reshape(len(range_v), len(nodes)).T
+            c_ = np.hstack((c_t, c__u))
+            c_mat = np.vstack((c_mat, c_))
 
         q_line_not_nan = ~np.isnan(self.ppc["branch"][:, branch_cols + 8])
         node1 = self.ppc["branch"][q_line_not_nan, 0].real.astype(int)
@@ -301,137 +327,7 @@ class wls_matrix_ops:
                 h_[nr, n+node2] = H_dIij_dU_j[node1, node2]
             h_ = np.delete(h_, self.slack_buses, 1)
             h_mat = np.vstack((h_mat, h_))
+            
 
-        return h_mat[1:, :]  # delete dummy line
-
-    def create_zero_injections(self, v, delta, zero_inj):
-        n = len(self.ppc["bus"])
-        G = self.G
-        B = self.B
-
-        cx_11 = np.zeros(zero_inj, n - 1)
-        for i in range(zero_inj):
-            for j in range(n - 1):
-                k = zero_inj[i]
-                if j + 1 == k:
-                    cx_11[i, j] = -v[k]**2 * B[k, k]
-                    for l in range(delta):
-                        cx_11[i, j] = cx_11[i, j] + v[k] * v[l] * (-G[k, l] * np.sin(delta[k] - delta[l])
-                                                                   + B[k, l] * np.cos(delta[k] - delta[l]))
-                else:
-                    cx_11[i, j] = v[k] * v[j + 1] * (G[k, j + 1] * np.sin(delta[k] - delta[j + 1])
-                                                     + B[k, j + 1] * np.cos[delta[k] - delta[j + 1]])
-
-        #
-        # % % % ----------------------------------------------------- % % %
-        # % % % Partiella
-        # derivator
-        # av
-        # P_inj
-        # med
-        # avseende
-        # på
-        # spänning % % %
-        # % % % ----------------------------------------------------- % % %
-        # Cx_12 = zeros(length(Ninj), length(V));
-        # for i = 1:length(Ninj)
-        # k = Ninj(i);
-        # for j=1:length(V)
-        # if j == k
-        #     Cx_12(i, j) = V(k) * G(k, k);
-        #     for l = 1:length(Theta)
-        #     Cx_12(i, j) = Cx_12(i, j) + V(l) * (G(k, l) * cos(Theta(k) - Theta(l)) + B(k, l) * sin(Theta(k) - Theta(l)));
-        # end
-        # else
-        # Cx_12(i, j) = V(k) * (G(k, j) * cos(Theta(k) - Theta(j)) + B(k, j) * sin(Theta(k) - Theta(j)));
-        # end
-        # end
-        # end
-        #
-        # % % % --------------------------------------------------- % % %
-        # % % % Partiella
-        # derivator
-        # av
-        # Qinj
-        # med
-        # avseende
-        # på
-        # vinkel % % %
-        # % % % --------------------------------------------------- % % %
-        # Cx_21 = zeros(length(Ninj), length(Theta) - 1);
-        # for i = 1:length(Ninj)
-        # k = Ninj(i);
-        # for j=1:length(Theta) - 1
-        # if j + 1 == k
-        #     Cx_21(i, j) = -V(k) ^ 2 * G(k, k);
-        #     for l = 1:length(Theta)
-        #     Cx_21(i, j) = Cx_21(i, j) + V(k) * V(l) * (G(k, l) * cos(Theta(k) - Theta(l)) + B(k, l) * sin(Theta(k) - Theta(l)));
-        # end
-        # else
-        # Cx_21(i, j) = V(k) * V(j + 1) * (
-        #             -G(k, j + 1) * cos(Theta(k) - Theta(j + 1)) - B(k, j + 1) * sin(Theta(k) - Theta(j + 1)));
-        # end
-        # end
-        # end
-        #
-        # % % % ---------------------------------------------------- % % %
-        # % % % Partiella
-        # derivator
-        # av
-        # Qinj
-        # med
-        # avseende
-        # på
-        # spänning % % %
-        # % % % ---------------------------------------------------- % % %
-        # Cx_22 = zeros(length(Ninj), length(V));
-        # for i = 1:length(Ninj)
-        # k = Ninj(i);
-        # for j=1:length(V)
-        # if j == k
-        #     Cx_22(i, j) = -V(k) * B(k, k);
-        #     for l = 1:length(Theta)
-        #     Cx_22(i, j) = Cx_22(i, j) + V(l) * (G(k, l) * sin(Theta(k) - Theta(l)) - B(k, l) * cos(Theta(k) - Theta(l)));
-        # end
-        # else
-        # Cx_22(i, j) = V(k) * (G(k, j) * sin(Theta(k) - Theta(j)) - B(k, j) * cos(Theta(k) - Theta(j)));
-        # end
-        # end
-        # end
-        #
-        # % Extra
-        # Tillståndsekvationer
-        # för
-        # P_inj
-        # Crxh_1 = zeros(length(Ninj), 1);
-        # for i = 1:length(Ninj)
-        # k = Ninj(i);
-        # for j=1:length(Theta)
-        # Crxh_1(i) = Crxh_1(i);
-        # Crxh_1(i) = Crxh_1(i) + V(k) * V(j) * (G(k, j) * cos(Theta(k) - Theta(j)) + B(k, j) * sin(Theta(k) - Theta(j)));
-        # end
-        # end
-        #
-        # % Extra
-        # Tillståndsekvationer
-        # för
-        # Q_inj
-        # Crxh_2 = zeros(length(Ninj), 1);
-        # for i = 1:length(Ninj)
-        # k = Ninj(i);
-        # for j=1:length(Theta)
-        # Crxh_2(i) = Crxh_2(i);
-        # Crxh_2(i) = Crxh_2(i) + V(k) * V(j) * (G(k, j) * sin(Theta(k) - Theta(j)) - B(k, j) * cos(Theta(k) - Theta(j)));
-        # end
-        # end
-        #
-        # Crxh = [Crxh_1;
-        # Crxh_2];
-        #
-        # % Sammanfogar
-        # C - matrisen("tvångsmatrisen")
-        # C = [Cx_11 Cx_12;
-        # Cx_21
-        # Cx_22];
-        C = None
-        return C
+        return h_mat[1:, :], c_mat[1:, :]  # delete dummy lines
+   

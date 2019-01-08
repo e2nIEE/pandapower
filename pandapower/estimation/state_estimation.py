@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
 
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, hstack, vstack
 from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
@@ -248,10 +248,6 @@ class state_estimation(object):
 
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
-        zero_injection_buses = np.array(list(set(self.net.bus.index) - set(self.net.load.bus) - set(self.net.sgen.bus) -
-                                             set(self.net.shunt.bus) - set(self.net.gen.bus) -
-                                             set(self.net.ext_grid.bus) - set(self.net.ward.bus) -
-                                             set(self.net.xward.bus)))
 
         # number of nodes
         n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
@@ -270,12 +266,20 @@ class state_estimation(object):
         delta_masked = np.ma.array(delta, mask=False)
         delta_masked.mask[slack_buses] = True
         non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
-
+        
         # matrix calculation object
         sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses)
 
-        # state vector
-        E = np.concatenate((delta_masked.compressed(), v_m))
+        # state vector built from delta, |V| and zero injections
+        zero_injections = set(self.net.bus.index) - set(self.net.load.bus) - set(self.net.sgen.bus) - \
+                          set(self.net.shunt.bus) - set(self.net.gen.bus) - set(self.net.ext_grid.bus) - \
+                          set(self.net.ward.bus) - set(self.net.xward.bus)
+        bus_p_measurements = set(self.net.measurement.loc[(self.net.measurement.measurement_type == "p") & (self.net.measurement.element_type == "bus"), "element"])
+        bus_q_measurements = set(self.net.measurement.loc[(self.net.measurement.measurement_type == "q") & (self.net.measurement.element_type == "bus"), "element"])
+        p_zero_injections = self.net["_pd2ppc_lookups"]["bus"][np.array(list(zero_injections - bus_p_measurements))]
+        q_zero_injections = self.net["_pd2ppc_lookups"]["bus"][np.array(list(zero_injections - bus_q_measurements))]
+        new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
+        E = np.concatenate((delta_masked.compressed(), v_m, new_states))
 
         # invert covariance matrix
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
@@ -288,36 +292,43 @@ class state_estimation(object):
             self.logger.debug(" Starting iteration %d" % (1 + cur_it))
             try:
                 # create h(x) for the current iteration
-                h_x = sem.create_hx(v_m, delta)
-
+                h_x, c_x = sem.create_hx(v_m, delta, p_zero_injections, q_zero_injections)            #expanded to also get c_x
+                
                 # residual r
                 r = csr_matrix(z - h_x).T
+                C_rxh=csr_matrix(c_x).T                         #New entry to get "residuals" for C
 
                 # jacobian matrix H
-                H = csr_matrix(sem.create_jacobian(v_m, delta))
+                Htemp, Ctemp = sem.create_jacobian(v_m, delta)   #Expanded to get C jacobian also
+                H = csr_matrix(Htemp)
+                C = csr_matrix(Ctemp)
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T * (r_inv * H)
-
-                # zero injection matrix C
-                C = sem.create_zero_injections(v_m, delta, zero_injection_buses)
-                A_1 = np.vstack((G_m, C))  # maybe hstack ?
-                C_ax = (C, np.zeros((len(zero_injection_buses) * 2, )))
-                M_tx = csr_matrix((A_1, C_ax.T))  # again use either np.hstack or np.vstack or np.concatenate?
-
+                G_m = H.T * (r_inv * H)             
+                
+                # building a new gain matrix for new constraints.
+                A_1 = vstack([G_m, C])
+                Crow = C.shape[0]
+                TMP = np.zeros((Crow, Crow)) 
+                C_ax = hstack([C, TMP])
+                C_xT = C_ax.T
+                M_tx = csr_matrix(hstack((A_1, C_xT)))  # again adding to the new gain matrix
+                RHS = H.T * (r_inv * r)  # original right hand side
+                C_rhs = vstack((RHS, -C_rxh))  # creating the righ hand side with new constraints
+                
                 # state vector difference d_E
-                # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T * (r_inv * r))  # this should be different then, d_E = spsolve(M_tx, ...) ?
+                d_E = spsolve(M_tx, C_rhs)
                 E += d_E
 
                 # update V/delta
                 delta[non_slack_buses] = E[:len(non_slack_buses)]
-                v_m = np.squeeze(E[len(non_slack_buses):])
+                #v_m = np.squeeze(E[len(non_slack_buses):])         #Original
+                v_m = np.squeeze(E[len(non_slack_buses):len(non_slack_buses) + n_active])
 
                 # prepare next iteration
                 cur_it += 1
-                current_error = np.max(np.abs(d_E))
+                current_error = np.max(np.abs(d_E[:len(non_slack_buses) + n_active]))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
 
             except np.linalg.linalg.LinAlgError:
