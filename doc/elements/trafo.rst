@@ -108,8 +108,8 @@ The short-circuit impedance is calculated as:
    :nowrap:
 
    \begin{align*}
-   z_k &= \frac{vsc\_percent}{100} \cdot \frac{1000}{sn\_kva} \\
-   r_k &= \frac{vscr\_percent}{100} \cdot \frac{1000}{sn\_kva} \\
+   z_k &= \frac{vk\_percent}{100} \cdot \frac{1000}{sn\_kva} \\
+   r_k &= \frac{vkr\_percent}{100} \cdot \frac{1000}{sn\_kva} \\
    x_k &= \sqrt{z^2 - r^2} \\
    \underline{z}_k &= r_k + j \cdot x_k
    \end{align*}    
@@ -145,7 +145,7 @@ Tap Changer
 
 **Longitudinal regulator**
 
-A longitudinal regulator can be modeled by setting tp_phase_shifter to False and defining the tap changer voltage step with tp_st_percent.
+A longitudinal regulator can be modeled by setting tap_phase_shifter to False and defining the tap changer voltage step with tap_step_percent.
 
 The reference voltage is then multiplied with the tap factor:
 
@@ -153,7 +153,7 @@ The reference voltage is then multiplied with the tap factor:
    :nowrap:
    
    \begin{align*}
-    n_{tap} = 1 + (tp\_pos - tp\_mid) \cdot \frac{tp\_st\_percent}{100}
+    n_{tap} = 1 + (tp\_pos - tp\_neutral) \cdot \frac{tp\_st\_percent}{100}
     \end{align*}
     
 On which side the reference voltage is adapted depends on the :math:`tp\_side` variable:
@@ -165,17 +165,17 @@ On which side the reference voltage is adapted depends on the :math:`tp\_side` v
    :widths: 20, 15, 15
 
 .. note::
-    The variables tp_min and tp_max are not considered in the power flow. The user is responsible to ensure that tp_min < tp_pos < tp_max!
+    The variables tap_min and tap_max are not considered in the power flow. The user is responsible to ensure that tap_min < tap_pos < tap_max!
 
 **Cross regulator**
 
-In addition to tp_st_percent a value for tp_st_degree can be defined to model an angle shift for each tap, resulting in a cross
+In addition to tap_step_percent a value for tap_step_degree can be defined to model an angle shift for each tap, resulting in a cross
 regulator that affects the magnitude as well as the angle of the transformer ratio.
 
 
 **Ideal phase shifter**
 
-If tp_phase_shifter is set to True, the tap changer is modeled as an ideal phase shifter, meaning that a constant
+If tap_phase_shifter is set to True, the tap changer is modeled as an ideal phase shifter, meaning that a constant
 angle shift is added with each tap step:
 
 .. math::
@@ -186,22 +186,22 @@ angle shift is added with each tap step:
    \theta &= shift\_degree 
    \end{align*}
    
-The angle shift can be directly defined in tp_st_degree, in which case:
+The angle shift can be directly defined in tap_step_degree, in which case:
 
 .. math::
    :nowrap:
    
    \begin{align*}
-   \theta_{tp} = tp\_st\_degree \cdot (tp\_pos - tp\_mid)
+   \theta_{tp} = tp\_st\_degree \cdot (tp\_pos - tp\_neutral)
    \end{align*}
 
-or it can be given as a constant voltage step in tp_st_percent, in which case the angle is calculated as:
+or it can be given as a constant voltage step in tap_step_percent, in which case the angle is calculated as:
 
 .. math::
    :nowrap:
    
    \begin{align*}
-   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tp\_st\_percent}{100})  \cdot (tp\_pos - tp\_mid)
+   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tp\_st\_percent}{100})  \cdot (tp\_pos - tp\_neutral)
    \end{align*}
 
 If both values are given for an ideal phase shift transformer, the power flow will raise an error.

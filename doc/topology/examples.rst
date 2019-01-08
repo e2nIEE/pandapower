@@ -33,8 +33,8 @@ Here are a few examples of what you can do:
 	pp.create_line(net, name = "line 5", from_bus = 6, to_bus = 1, length_km = 1, std_type = "NAYY 150")
 
 	pp.create_transformer_from_parameters(net, hv_bus = 0, lv_bus = 1, i0_percent= 0.038, pfe_kw = 11.6, 
-		vscr_percent = 0.322, sn_kva = 40000.0, vn_lv_kv = 22.0,
-		vn_hv_kv = 110.0, vsc_percent = 17.8)
+		vkr_percent = 0.322, sn_kva = 40000.0, vn_lv_kv = 22.0,
+		vn_hv_kv = 110.0, vk_percent = 17.8)
 
 	pp.create_load(net, 2, p_kw = 1000, q_kvar = 200, name = "load 0")
 	pp.create_load(net, 3, p_kw = 1000, q_kvar = 200, name = "load 1")
