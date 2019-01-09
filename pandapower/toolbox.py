@@ -462,17 +462,21 @@ def convert_format(net):
         for typ, data in net.std_types["line"].items():
             if "imax_ka" in data:
                 net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
-        if "tap_phase_shifter" not in net.trafo3w:
+
+        # "tap_phase_shifter" is now required for the calculation
+        if "tap_phase_shifter" not in net.trafo3w and "tp_phase_shifter"not in net.trafo3w:
             net.trafo3w["tap_phase_shifter"] = False
-        if "tap_phase_shifter" not in net.trafo:
+        if "tap_phase_shifter" not in net.trafo and "tp_phase_shifter"not in net.trafo:
             net.trafo["tap_phase_shifter"] = False
+
         # unsymmetric impedance
         if "r_pu" in net.impedance:
             net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
             net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
         for element in ["trafo", "line", "trafo3w"]:
-            if not "df" in net[element]:
+            if "df" not in net[element]:
                 net[element]["df"] = 1.0
+
         # initialize measurement dataframe
         if "measurement" in net and "type" in net.measurement:
             if net.measurement.empty:
@@ -494,6 +498,8 @@ def convert_format(net):
                                                                  ("value", "float64"),
                                                                  ("std_dev", "float64"),
                                                                  ("side", np.dtype(object))]))
+
+        # initialize dcline dataframe in net if not exist
         if "dcline" not in net:
             net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                             ("from_bus", "u4"),
@@ -510,20 +516,7 @@ def convert_format(net):
                                                             ("max_q_to_kvar", "f8"),
                                                             ("cost_per_kw", 'f8'),
                                                             ("in_service", 'bool')]))
-        if "_empty_res_dcline" not in net:
-            net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                       ("q_from_kvar", "f8"),
-                                                                       ("p_to_kw", "f8"),
-                                                                       ("q_to_kvar", "f8"),
-                                                                       ("pl_kw", "f8"),
-                                                                       ("vm_from_pu", "f8"),
-                                                                       ("va_from_degree", "f8"),
-                                                                       ("vm_to_pu", "f8"),
-                                                                       ("va_to_degree", "f8")]))
-        if "_empty_res_storage" not in net:
-            net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
-                                                                        ("q_kvar", "f8")]))
-
+        # initialize storage dataframe in net if not exist
         if "storage" not in net:
             net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                              ("bus", "i8"),
@@ -537,6 +530,19 @@ def convert_format(net):
                                                              ("in_service", 'bool'),
                                                              ("type", np.dtype(object))]))
 
+        if "_empty_res_dcline" not in net:
+            net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
+                                                                       ("q_from_kvar", "f8"),
+                                                                       ("p_to_kw", "f8"),
+                                                                       ("q_to_kvar", "f8"),
+                                                                       ("pl_kw", "f8"),
+                                                                       ("vm_from_pu", "f8"),
+                                                                       ("va_from_degree", "f8"),
+                                                                       ("vm_to_pu", "f8"),
+                                                                       ("va_to_degree", "f8")]))
+        if "_empty_res_storage" not in net:
+            net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
+                                                                        ("q_kvar", "f8")]))
         if not "vm_pu" in net._empty_res_gen:
             net["_empty_res_gen"] = pd.DataFrame(np.zeros(0, dtype= [("p_mw", "f8"),
                                                                      ("q_mvar", "f8"),
@@ -591,6 +597,7 @@ def convert_format(net):
                                                                            ("vm_lv_pu", "f8"),
                                                                            ("va_lv_degree", "f8"),
                                                                            ("loading_percent", "f8")]))
+        # update required values for OPF
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
                 pmin = copy.copy(net.gen.min_p_kw.values)
@@ -665,7 +672,9 @@ def convert_format(net):
         if "_pd2ppc_lookups" not in net:
             net._pd2ppc_lookups = {"bus": None,
                                    "ext_grid": None,
-                                   "gen": None}
+                                   "gen": None,
+                                   "branch": None,
+                                   "aux": None}
         if "_is_elements" not in net and "__is_elements" in net:
             net["_is_elements"] = copy.deepcopy(net["__is_elements"])
             net.pop("__is_elements", None)
@@ -690,10 +699,6 @@ def convert_format(net):
             net.shunt["step"] = 1
         if "max_step" not in net["shunt"]:
             net.shunt["max_step"] = 1
-        if "_pd2ppc_lookups" not in net:
-            net["_pd2ppc_lookups"] = {"bus": None,
-                                      "gen": None,
-                                      "branch": None}
         if "std_type" not in net.trafo3w:
             net.trafo3w["std_type"] = None
 
