@@ -59,8 +59,8 @@ def _build_branch_ppc(net, ppc):
             _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
         f, t = lookup["impedance"]
-        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_R_ASYM, BR_X_ASYM, BR_STATUS]] = \
-            _calc_impedance_parameter(net)
+        ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, TAP, BR_R_ASYM, BR_X_ASYM, BR_STATUS]] = \
+            _calc_impedance_parameter(net, ppc)
     if "xward" in lookup:
         f, t = lookup["xward"]
         ppc["branch"][f:t, [F_BUS, T_BUS, BR_R, BR_X, BR_STATUS]] = _calc_xward_parameter(net, ppc)
@@ -428,22 +428,42 @@ def _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lo
     return tap_rat / nom_rat
 
 
-def _calc_impedance_parameter(net):
+def _calc_impedance_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    t = np.zeros(shape=(len(net["impedance"].index), 7), dtype=np.complex128)
+    t = np.zeros(shape=(len(net["impedance"].index), 8), dtype=np.complex128)
     sn_impedance = net["impedance"]["sn_mva"].values
     sn_net = net.sn_mva
     rij = net["impedance"]["rft_pu"].values
     xij = net["impedance"]["xft_pu"].values
     rji = net["impedance"]["rtf_pu"].values
     xji = net["impedance"]["xtf_pu"].values
+
+    # Calculating tap (ideal trasformer off nominal turns ratio)
+    ratio=np.ones(len(net["impedance"].index))
+    if any(np.isfinite(net["impedance"]["ur1_kv"].values)) or any(np.isfinite(net["impedance"]["ur2_kv"].values)):
+        hv_bus = get_trafo_values(net["impedance"], "from_bus")
+        lv_bus = get_trafo_values(net["impedance"], "to_bus")
+        vn_bus1_kv = get_values(ppc["bus"][:, BASE_KV], hv_bus, bus_lookup)
+        vn_bus2_kv = get_values(ppc["bus"][:, BASE_KV], lv_bus, bus_lookup)
+
+        ur1=net["impedance"]["ur1_kv"].values
+        ur1[np.isnan(ur1)]=vn_bus1_kv[np.isnan(ur1)]
+        ur2=net["impedance"]["ur2_kv"].values
+        ur2[np.isnan(ur2)]=vn_bus2_kv[np.isnan(ur2)]
+
+        tap_rat = ur1 / ur2
+        nom_rat = vn_bus1_kv / vn_bus2_kv
+        ratio= tap_rat / nom_rat
+
     t[:, 0] = bus_lookup[net["impedance"]["from_bus"].values]
     t[:, 1] = bus_lookup[net["impedance"]["to_bus"].values]
     t[:, 2] = rij / sn_impedance * sn_net
     t[:, 3] = xij / sn_impedance * sn_net
-    t[:, 4] = (rji - rij) / sn_impedance * sn_net
-    t[:, 5] = (xji - xij) / sn_impedance * sn_net
-    t[:, 6] = net["impedance"]["in_service"].values
+    t[:, 4] = ratio
+    t[:, 5] = (rji - rij) / sn_impedance * sn_net
+    t[:, 6] = (xji - xij) / sn_impedance * sn_net
+    t[:, 7] = net["impedance"]["in_service"].values
+
     return t
 
 
