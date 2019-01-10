@@ -353,6 +353,18 @@ def add_test_impedance(net):
     pp.create_impedance(net, b2, b3, rft_pu=rij, xft_pu=xij, rtf_pu=rji, xtf_pu=xji,
                         sn_mva=s, index=pp.get_free_id(net.impedance) + 1)
     pp.create_load(net, b3, p_mw=pl, q_mvar=ql)
+
+    #Add second impedance to test off nominal tap changer
+    b1, b2, ln = add_grid_connection(net, zone="test_impedance")
+    b3 = pp.create_bus(net, vn_kv=110., zone="test_impedance")
+
+    ur1 = 22.
+    ur2 = 100.
+
+    pp.create_impedance(net, b2, b3, rft_pu=rij, xft_pu=xij, ur1_kv=ur1, ur2_kv=ur2,
+                        sn_mva=s, index=pp.get_free_id(net.impedance) + 1)
+    pp.create_load(net, b3, p_mw=pl, q_mvar=ql)
+
     net.last_added_case = "test_impedance"
     return net
 

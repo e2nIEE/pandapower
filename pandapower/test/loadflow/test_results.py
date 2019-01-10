@@ -444,7 +444,10 @@ def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
     runpp_with_consistency_checks(net, trafo_model="t", numba=True)
     b2 = buses.index[1]
     b3 = buses.index[2]
+    b4 = buses.index[4]
+    b5 = buses.index[5]
     imp1 = impedances[0]
+    imp2 = impedances[1]
 
     # powerfactory results
     ifrom = 0.0444417
@@ -468,6 +471,29 @@ def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
 
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
+
+    # Integral results for second impedance
+    ifrom = 0.0326669582
+    ito = 0.0071867308
+
+    pfrom = 1.0187486231
+    qfrom = 0.5093743116
+
+    pto = -1.000
+    qto = -0.500
+
+    u4 = 1.006520726
+    u5 = 0.816526562
+
+    assert abs(net.res_impedance.p_from_mw.at[imp2] - pfrom) < s_tol
+    assert abs(net.res_impedance.p_to_mw.at[imp2] - pto) < s_tol
+    assert abs(net.res_impedance.q_from_mvar.at[imp2] - qfrom) < s_tol
+    assert abs(net.res_impedance.q_to_mvar.at[imp2] - qto) < s_tol
+    assert abs(net.res_impedance.i_from_ka.at[imp2] - ifrom) < i_tol
+    assert abs(net.res_impedance.i_to_ka.at[imp2] - ito) < i_tol
+
+    assert abs(net.res_bus.vm_pu.at[b4] - u4) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b5] - u5) < v_tol
 
 
 def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
