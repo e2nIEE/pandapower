@@ -464,9 +464,9 @@ def convert_format(net):
                 net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
 
         # "tap_phase_shifter" is now required for the calculation
-        if "tap_phase_shifter" not in net.trafo3w and "tp_phase_shifter"not in net.trafo3w:
+        if "tap_phase_shifter" not in net.trafo3w and "tp_phase_shifter" not in net.trafo3w:
             net.trafo3w["tap_phase_shifter"] = False
-        if "tap_phase_shifter" not in net.trafo and "tp_phase_shifter"not in net.trafo:
+        if "tap_phase_shifter" not in net.trafo and "tp_phase_shifter" not in net.trafo:
             net.trafo["tap_phase_shifter"] = False
 
         # unsymmetric impedance
@@ -772,6 +772,10 @@ def convert_format(net):
             net.sn_mva = net.sn_kva*1e-3
             del net.sn_kva
         net.version = float(__version__[:3])
+
+    # Update the switch table with 'r_ohm'
+    if 'r_ohm' not in net.switch:
+        net.switch['r_ohm'] = 0
 
     _update_trafo_parameter_names(net)
     _revert_pfe_mw(net)

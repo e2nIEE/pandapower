@@ -195,7 +195,7 @@ def r_switch_net():
         pp.create_bus(net, vn_kv=.4)
         pp.create_load(net, i, p_mw=0.1)
     pp.create_ext_grid(net, 0, vm_pu=1.0)
-    pp.create_line_from_parameters(net, 0, 1, 0.1, r_ohm_per_km=0.1, x_ohm_per_km=0,
+    pp.create_line_from_parameters(net, 0, 1, 0.1, r_ohm_per_km=0.1, x_ohm_per_km=0.1,
                                    c_nf_per_km=0, max_i_ka=.2)
     pp.create_switch(net, 0, 2, et="b")
     return net

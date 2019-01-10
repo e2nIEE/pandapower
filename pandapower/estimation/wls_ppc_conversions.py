@@ -66,8 +66,7 @@ def _add_aux_elements_for_bb_switch(net):
     net.switch.loc[switch_to_be_replaced_sel, 'closed'] = False
 
     # create aux switches with selecting the existed switches
-    aux_switch = net.switch.loc[switch_to_be_replaced_sel, ['bus', 'closed', 'element', 
-                                                            'et', 'name', 'original_closed']]
+    aux_switch = net.switch.loc[switch_to_be_replaced_sel, :]
     aux_switch.loc[:,'name'] = AUX_SWITCH_NAME
     
     # replace the original bus with the correspondent auxiliary bus
