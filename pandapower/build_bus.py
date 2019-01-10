@@ -314,11 +314,13 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     if net._options["init_vm_pu"] == "results":
         has_results=np.isfinite(net["res_%s"%element]["vm_internal_pu"].values)
         ppc["bus"][aux_idx[has_results], VM] = net["res_%s"%element]["vm_internal_pu"].values[has_results]
+        ppc["bus"][aux_idx[~has_results], VM] = ppc["bus"][element_bus_idx, VM][~has_results]
     else:
         ppc["bus"][aux_idx, VM] = ppc["bus"][element_bus_idx, VM]
     if net._options["init_va_degree"] == "results":
         has_results=np.isfinite(net["res_%s"%element]["va_internal_degree"].values)
         ppc["bus"][aux_idx[has_results], VA] = net["res_%s"%element]["va_internal_degree"].values[has_results]
+        ppc["bus"][aux_idx[~has_results], VA] = ppc["bus"][element_bus_idx, VA][~has_results]
     else:
         ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 
