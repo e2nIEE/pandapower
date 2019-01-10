@@ -311,12 +311,14 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     if net._options["mode"] == "opf":
         ppc["bus"][aux_idx, VMIN] = ppc["bus"][element_bus_idx, VMIN]
         ppc["bus"][aux_idx, VMAX] = ppc["bus"][element_bus_idx, VMAX]
-    if net._options["init_vm_pu"] == "results" and all(np.isfinite(net["res_%s"%element]["vm_internal_pu"].values)):
-        ppc["bus"][aux_idx, VM] = net["res_%s"%element]["vm_internal_pu"].values
+    if net._options["init_vm_pu"] == "results":
+        has_results=np.isfinite(net["res_%s"%element]["vm_internal_pu"].values)
+        ppc["bus"][aux_idx[has_results], VM] = net["res_%s"%element]["vm_internal_pu"].values[has_results]
     else:
         ppc["bus"][aux_idx, VM] = ppc["bus"][element_bus_idx, VM]
-    if net._options["init_va_degree"] == "results" and all(np.isfinite(net["res_%s"%element]["va_internal_degree"].values)):
-        ppc["bus"][aux_idx, VA] = net["res_%s"%element]["va_internal_degree"].values
+    if net._options["init_va_degree"] == "results":
+        has_results=np.isfinite(net["res_%s"%element]["va_internal_degree"].values)
+        ppc["bus"][aux_idx[has_results], VA] = net["res_%s"%element]["va_internal_degree"].values[has_results]
     else:
         ppc["bus"][aux_idx, VA] = ppc["bus"][element_bus_idx, VA]
 
