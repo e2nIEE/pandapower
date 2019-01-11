@@ -43,7 +43,7 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
 
 
 @jit(nopython=True, cache=True)
-def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_r_ohm, 
+def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_r_ohm,
               bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
         if not switch_closed[i] or not switch_et_bus[i] or switch_r_ohm[i]>0:
@@ -69,7 +69,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
     switch = net["switch"]
     switch_bus = switch["bus"].values
     switch_elm = switch["element"].values
-    switch_et_bus = switch["et"].values == "b" 
+    switch_et_bus = switch["et"].values == "b"
     switch_closed = switch["closed"].values
     switch_r_ohm = switch['r_ohm'].values
     # create array for fast checking if a bus is in_service
@@ -113,7 +113,7 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
              (net["switch"]["element"].isin(bus_is_idx).values))
     net._fused_bb_switches = slidx & (net["switch"]["r_ohm"].values<=0)
     net._impedance_bb_switches = slidx & (net["switch"]["r_ohm"].values>0)
-    
+
     # if numba activated, use numba version to create the lookup
     if numba:
         return create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
@@ -250,7 +250,7 @@ def _build_bus_ppc(net, ppc):
     gen_is_mask = _is_elements['gen']
     bus_is_idx = _is_elements['bus_is_idx']
 
-    bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx, 
+    bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
                                    gen_is_mask, eg_is_mask, numba=numba)
 
     n_bus_ppc = len(bus_index)
