@@ -26,7 +26,7 @@ def _add_kappa_to_ppc(net, ppc):
     elif kappa_method in ["B", "b"]:
         kappa = _kappa_method_b(net, ppc)
     else:
-        raise ValueError("Unkown kappa method %s - specify B or C"%kappa_method)
+        raise ValueError("Unknown kappa method %s - specify B or C"%kappa_method)
     ppc["bus"][:, KAPPA] = kappa
 
 def _kappa_method_c(net, ppc):

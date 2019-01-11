@@ -3,16 +3,17 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
+import inspect
 from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.collections import LineCollection, PatchCollection
+from matplotlib.collections import LineCollection, PatchCollection, Collection
 from matplotlib.patches import Circle, Ellipse, Rectangle, RegularPolygon, Arc, PathPatch
 from matplotlib.textpath import TextPath
 from matplotlib.transforms import Affine2D
+from pandas import isnull
 
 try:
     import pplog as logging
@@ -51,7 +52,7 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
     return PatchCollection(tp, **kwargs)
 
 
-def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circle", colors=None,
+def create_bus_collection(net, buses=None, size=5, patch_type="circle", colors=None,
                           z=None, cmap=None, norm=None, infofunc=None, picker=False,
                           bus_geodata=None, cbar_title="Bus Voltage [pu]", **kwargs):
     """
@@ -65,8 +66,6 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             If None, all buses in the network are considered.
 
         **size** (int, 5) - patch size
-
-        **marker** (str, "o") - patch marker
 
         **patch_type** (str, "circle") - patch type, can be
 
@@ -125,6 +124,7 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
             fig = RegularPolygon([x, y], numVertices=edges, radius=size, **kwargs)
         else:
             logger.error("Wrong patchtype. Please choose a correct patch type.")
+            raise ValueError("Wrong patchtype")
         if infofunc:
             infos.append(infofunc(buses[i]))
         return fig
@@ -137,10 +137,8 @@ def create_bus_collection(net, buses=None, size=5, marker="o", patch_type="circl
     if cmap is not None:
         pc.set_cmap(cmap)
         pc.set_norm(norm)
-        if z is None and net is not None:
+        if z is None:
             z = net.res_bus.vm_pu.loc[buses]
-        else:
-            logger.warning("z is None and no net is provided")
         pc.set_array(np.ma.masked_invalid(z))
         pc.has_colormap = True
         pc.cbar_title = cbar_title
@@ -205,13 +203,14 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         return None
     if line_geodata is None:
         line_geodata = net["line_geodata"]
-    if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+
     if len(lines) == 0:
         return None
 
     lines_with_geo = []
     if use_bus_geodata:
+        if bus_geodata is None:
+            bus_geodata = net["bus_geodata"]
         data = []
         buses_with_geodata = bus_geodata.index.values
         bg_dict = bus_geodata.to_dict()  # transforming to dict to make lookup faster
@@ -346,11 +345,6 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
             for x in tr]
 
     lc = LineCollection(tg, **kwargs)
-    # from matplotlib.colors import ListedColormap, BoundaryNorm
-    # cmap = ListedColormap(['r', 'g', 'b'])
-    # norm = BoundaryNorm([-3, -1, 1, 3], cmap.N)
-    # lc = LineCollection(tg, cmap=cmap, norm=norm, **kwargs)
-    # lc.set_array(np.tile([-2, 0, 2], len(trafos)))
     lc.info = info
 
     return lc
@@ -495,8 +489,58 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, *
     return lc, pc
 
 
+def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=None, picker=False, z=None,
+                             cbar_title="Bus Voltage [p.u.]", clim=None, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower buses plotted as busbars
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **buses** (list, None) - The buses for which the collections are created. If None, all buses
+            which have the entry coords in bus_geodata are considered.
+
+        **line_geodata** (DataFrame, None) - coordinates to use for plotting. If None,
+            net["line_geodata"] is used
+
+        **infofunc** (function, None) - infofunction for the line element
+
+        **cmap** - colormap for the line colors
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **z** (array, None) - array of line loading magnitudes for colormap. Used in case of given
+            cmap. If None net.res_line.loading_percent is used.
+
+        **cbar_title** (str, "Line Loading [%]") - colormap bar title in case of given cmap
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **bbc** - busbar collection
+    """
+
+    if buses is None:
+        buses = net.bus_geodata.loc[~isnull(net.bus_geodata.coords)].index
+
+    if cmap is not None:
+        # determine color of busbar by vm_pu
+        if z is None and net is not None:
+            z = net.res_bus.vm_pu.loc[buses]
+        else:
+            logger.warning("z is None and no net is provided")
+
+    # the busbar is just a line collection with coords from net.bus_geodata
+    return create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None, norm=norm,
+                                  infofunc=infofunc, picker=picker, z=z, cbar_title=cbar_title, clim=clim, **kwargs)
+
+
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
-    load_table = net.load if loads is None else net.load.loc[loads]
     """
     Creates a matplotlib patch collection of pandapower loads.
 
@@ -518,6 +562,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
 
         **load2** - patch collection
     """
+    load_table = net.load if loads is None else net.load.loc[loads]
     lines = []
     polys = []
     infos = []
@@ -581,7 +626,6 @@ def create_gen_collection(net, size=1., infofunc=None, **kwargs):
 
 
 def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=np.pi, **kwargs):
-    sgen_table = net.sgen if sgens is None else net.sgen.loc[sgens]
     """
     Creates a matplotlib patch collection of pandapower sgen.
 
@@ -603,6 +647,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
 
         **sgen2** - patch collection
     """
+    sgen_table = net.sgen if sgens is None else net.sgen.loc[sgens]
     lines = []
     polys = []
     infos = []
@@ -840,7 +885,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     Draws matplotlib collections which can be created with the create collection functions.
 
     Input:
-        **collections** (list) - iterable of collection objects
+        **collections** (list) - iterable of collection objects, may include tuples of collections
 
     OPTIONAL:
         **figsize** (tuple, (10,8)) - figsize of the matplotlib figure
@@ -882,17 +927,27 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
     return ax
 
 
+def add_single_collection(c, ax, plot_colorbars, copy_collections):
+    if copy_collections:
+        c = copy.copy(c)
+    ax.add_collection(c)
+    if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
+        extend = c.extend if hasattr(c, "extend") else "neither"
+        cbar_load = plt.colorbar(c, extend=extend, ax=ax)
+        if hasattr(c, "cbar_title"):
+            cbar_load.ax.set_ylabel(c.cbar_title)
+
+
 def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collections=True):
     for c in collections:
-        if c:
-            if copy_collections:
-                c = copy.copy(c)
-            ax.add_collection(c)
-            if plot_colorbars and hasattr(c, "has_colormap") and c.has_colormap:
-                extend = c.extend if hasattr(c, "extend") else "neither"
-                cbar_load = plt.colorbar(c, extend=extend, ax=ax)
-                if hasattr(c, "cbar_title"):
-                    cbar_load.ax.set_ylabel(c.cbar_title)
+        if Collection in inspect.getmro(c.__class__):
+            # if Collection is in one of the base classes of c
+            add_single_collection(c, ax, plot_colorbars, copy_collections)
+        elif isinstance(c, tuple) or isinstance(c, list):
+            # if c is a tuple or a list of collections
+            add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
+        else:
+            logger.warning("{} in collections is of unknown type. Skipping".format(c))
 
 
 if __name__ == "__main__":
