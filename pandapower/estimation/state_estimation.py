@@ -292,16 +292,16 @@ class state_estimation(object):
             self.logger.debug(" Starting iteration %d" % (1 + cur_it))
             try:
                 # create h(x) for the current iteration
-                h_x, c_x = sem.create_hx(v_m, delta, p_zero_injections, q_zero_injections)            #expanded to also get c_x
+                h_x, c_x = sem.create_hx(v_m, delta, p_zero_injections, q_zero_injections)
                 
                 # residual r
                 r = csr_matrix(z - h_x).T
-                C_rxh=csr_matrix(c_x).T                         #New entry to get "residuals" for C
+                c_rxh = csr_matrix(c_x).T
 
                 # jacobian matrix H
-                Htemp, Ctemp = sem.create_jacobian(v_m, delta)   #Expanded to get C jacobian also
-                H = csr_matrix(Htemp)
-                C = csr_matrix(Ctemp)
+                H_temp, C_temp = sem.create_jacobian(v_m, delta, p_zero_injections, q_zero_injections)
+                H = csr_matrix(H_temp)
+                C = csr_matrix(C_temp)
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
@@ -309,13 +309,11 @@ class state_estimation(object):
                 
                 # building a new gain matrix for new constraints.
                 A_1 = vstack([G_m, C])
-                Crow = C.shape[0]
-                TMP = np.zeros((Crow, Crow)) 
-                C_ax = hstack([C, TMP])
-                C_xT = C_ax.T
-                M_tx = csr_matrix(hstack((A_1, C_xT)))  # again adding to the new gain matrix
-                RHS = H.T * (r_inv * r)  # original right hand side
-                C_rhs = vstack((RHS, -C_rxh))  # creating the righ hand side with new constraints
+                c_ax = hstack([C, np.zeros((C.shape[0], C.shape[0]))])
+                c_xT = c_ax.T
+                M_tx = csr_matrix(hstack((A_1, c_xT)))  # again adding to the new gain matrix
+                rhs = H.T * (r_inv * r)  # original right hand side
+                C_rhs = vstack((rhs, -c_rxh))  # creating the righ hand side with new constraints
                 
                 # state vector difference d_E
                 d_E = spsolve(M_tx, C_rhs)
@@ -323,7 +321,6 @@ class state_estimation(object):
 
                 # update V/delta
                 delta[non_slack_buses] = E[:len(non_slack_buses)]
-                #v_m = np.squeeze(E[len(non_slack_buses):])         #Original
                 v_m = np.squeeze(E[len(non_slack_buses):len(non_slack_buses) + n_active])
 
                 # prepare next iteration

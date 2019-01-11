@@ -136,7 +136,7 @@ class wls_matrix_ops:
         return hx, cx
 
     # Create Jacobian matrix
-    def create_jacobian(self, v, delta):
+    def create_jacobian(self, v, delta, p_zero_inj, q_zero_inj):
         n = len(self.ppc["bus"])
         G = self.G
         B = self.B
@@ -235,16 +235,14 @@ class wls_matrix_ops:
             h_ = np.hstack((h_t, h__u))
             h_mat = np.vstack((h_mat, h_))
             
-        p_bus_nan = np.isnan(self.ppc["bus"][:, bus_cols + 2])  # if P bus measurements not exists => zero injections
-        if True in p_bus_nan:
-            nodes = np.arange(n)[p_bus_nan]
+        if len(p_zero_inj) > 0:
+            nodes = np.arange(n)[p_zero_inj]
             c_t = H_dPinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
                 .reshape(len(range_theta), len(nodes)).T
             c__u = H_dPinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
                 .reshape(len(range_v), len(nodes)).T
             c_ = np.hstack((c_t, c__u))
             c_mat = np.vstack((c_mat, c_))
-        
         
         # if P line measurements exist
         # and so on ..
@@ -274,10 +272,8 @@ class wls_matrix_ops:
             h_ = np.hstack((h_t, h__u))
             h_mat = np.vstack((h_mat, h_))
         
-        
-        q_bus_nan = np.isnan(self.ppc["bus"][:, bus_cols + 4])  # if Q bus measurements not exists => zero injections
-        if True in q_bus_nan:
-            nodes = np.arange(n)[q_bus_nan]
+        if len(q_zero_inj) > 0:
+            nodes = np.arange(n)[q_zero_inj]
             c_t = H_dQinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
                 .reshape(len(range_theta), len(nodes)).T
             c__u = H_dQinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
