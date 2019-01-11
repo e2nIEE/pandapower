@@ -138,10 +138,10 @@ def to_json(net, filename=None):
 
     """
     if hasattr(filename, 'write'):
-        json.dump(net, fp=filename, cls=PPJSONEncoder)
+        json.dump(net, fp=filename, cls=PPJSONEncoder, indent=4)
     else:
         with open(filename, "w") as fp:
-            json.dump(net, fp=fp, cls=PPJSONEncoder)
+            json.dump(net, fp=fp, cls=PPJSONEncoder, indent=4)
 
 
 def to_sql(net, con, include_results=True):
