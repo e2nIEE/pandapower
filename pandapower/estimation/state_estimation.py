@@ -287,13 +287,11 @@ class state_estimation(object):
         sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses)
 
         # state vector built from delta, |V| and zero injections
-        zero_injections = set(self.net.bus.index) - set(self.net.load.bus) - set(self.net.sgen.bus) - \
-                          set(self.net.shunt.bus) - set(self.net.gen.bus) - set(self.net.ext_grid.bus) - \
-                          set(self.net.ward.bus) - set(self.net.xward.bus)
-        bus_p_measurements = set(self.net.measurement.loc[(self.net.measurement.measurement_type == "p") & (self.net.measurement.element_type == "bus"), "element"])
-        bus_q_measurements = set(self.net.measurement.loc[(self.net.measurement.measurement_type == "q") & (self.net.measurement.element_type == "bus"), "element"])
-        p_zero_injections = self.net["_pd2ppc_lookups"]["bus"][np.array(list(zero_injections - bus_p_measurements))]
-        q_zero_injections = self.net["_pd2ppc_lookups"]["bus"][np.array(list(zero_injections - bus_q_measurements))]
+        # Find pq bus with zero p,q and shunt admittance
+        zero_injection_bus_sel = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1)
+        # Withn pq buses with zero injection identify those who have also no p or q measurement
+        p_zero_injections = np.where(zero_injection_bus_sel & np.isnan(ppci["bus"][:, 15+2]))[0]
+        q_zero_injections = np.where(zero_injection_bus_sel & np.isnan(ppci["bus"][:, 15+4]))[0]
         new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
         E = np.concatenate((delta_masked.compressed(), v_m, new_states))
 
