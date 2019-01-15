@@ -44,7 +44,7 @@ The power values are given at :math:`v = 1` pu and are scaled linearly with the 
    :nowrap:
    
    \begin{align*}
-   \underline{S}_{shunt, ref} &= (p\_kw + j \cdot q\_kvar) \cdot step
+   \underline{S}_{shunt, ref} &= (p\_mw + j \cdot q\_kvar) \cdot step
    \end{align*}
    
 Since :math:`\underline{S}_{shunt, ref}` is the apparent power at the nominal voltage, we know that:
@@ -83,7 +83,7 @@ Result Parameters
    :nowrap:
    
    \begin{align*}
-    p\_kw &= Re(\underline{v}_{bus} \cdot \underline{i}_{shunt}) \\    
+    p\_mw &= Re(\underline{v}_{bus} \cdot \underline{i}_{shunt}) \\    
     q\_kvar &= Im(\underline{v}_{bus} \cdot \underline{i}_{shunt}) \\    
     vm\_pu &= v_{bus}
     \end{align*}

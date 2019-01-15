@@ -16,7 +16,7 @@ vk_lv_percent*;float;:math:`>` 0;short circuit voltage from high to low voltage 
 vkr_hv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from high to medium voltage [%]
 vkr_mv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from medium to low voltage [%]
 vkr_lv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from high to low voltage [%]
-pfe_kw*;float;:math:`\geq` 0;iron losses [kW]
+pfe_mw*;float;:math:`\geq` 0;iron losses [MW]
 i0_percent*;float;:math:`\geq` 0;open loop losses [%]
 shift_mv_degree;float;;transformer phase shift angle at the MV side
 shift_lv_degree;float;;transformer phase shift angle at the LV side

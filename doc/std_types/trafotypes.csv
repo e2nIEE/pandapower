@@ -1,4 +1,4 @@
-;sn_kva;vn_hv_kv;vn_lv_kv;vk_percent;vkr_percent;pfe_kw;i0_percent;shift_degree;tap_side;tap_neutral;tap_min;tap_max;tap_step_percent;tap_step_degree
+;sn_kva;vn_hv_kv;vn_lv_kv;vk_percent;vkr_percent;pfe_mw;i0_percent;shift_degree;tap_side;tap_neutral;tap_min;tap_max;tap_step_percent;tap_step_degree
 0.25 MVA 10/0.4 kV;250;10;0.4;4;1.2;0.6;0.24;150;hv;0;-2;2;2.5;0
 0.25 MVA 20/0.4 kV;250;20;0.4;6;1.44;0.8;0.32;150;hv;0;-2;2;2.5;0
 0.4 MVA 10/0.4 kV;400;10;0.4;4;1.325;0.95;0.2375;150;hv;0;-2;2;2.5;0

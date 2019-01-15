@@ -121,7 +121,7 @@ The magnetising admittance is calculated as:
 
    \begin{align*}
    y_m &= \frac{i0\_percent}{100} \\
-   g_m &= \frac{pfe\_kw}{sn\_kva \cdot 1000} \cdot \frac{1000}{sn\_kva} \\
+   g_m &= \frac{pfe\_mw}{sn\_kva \cdot 1000} \cdot \frac{1000}{sn\_kva} \\
    b_m &= \sqrt{y_m^2 - g_m^2} \\
    \underline{y_m} &= g_m - j \cdot b_m
    \end{align*}    
@@ -230,11 +230,11 @@ Result Parameters
    :nowrap:
    
    \begin{align*}
-    p\_hv\_kw &= Re(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\    
+    p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\    
     q\_hv\_kvar &= Im(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\
-    p\_lv\_kw &= Re(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
+    p\_lv\_mw &= Re(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
     q\_lv\_kvar &= Im(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
-	pl\_kw &= p\_hv\_kw + p\_lv\_kw \\
+	pl\_mw &= p\_hv\_mw + p\_lv\_mw \\
 	ql\_kvar &= q\_hv\_kvar + q\_lv\_kvar \\
     i\_hv\_ka &= i_{hv} \\
     i\_lv\_ka &= i_{lv}

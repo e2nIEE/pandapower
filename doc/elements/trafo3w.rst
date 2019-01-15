@@ -155,13 +155,13 @@ Result Parameters
    :nowrap:
    
    \begin{align*}
-    p\_hv\_kw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    
+    p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    
     q\_hv\_kvar &= Im(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\
-    p\_mv\_kw &= Re(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\    
+    p\_mv\_mw &= Re(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\    
     q\_mv\_kvar &= Im(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\
-    p\_lv\_kw &= Re(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
+    p\_lv\_mw &= Re(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
     q\_lv\_kvar &= Im(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
-	pl\_kw &= p\_hv\_kw + p\_lv\_kw \\
+	pl\_mw &= p\_hv\_mw + p\_lv\_mw \\
 	ql\_kvar &= q\_hv\_kvar + q\_lv\_kvar \\
     i\_hv\_ka &= i_{hv} \\
     i\_mv\_ka &= i_{mv} \\
