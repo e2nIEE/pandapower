@@ -45,9 +45,9 @@ def _get_bus_results(net, ppc, bus_pq):
     mode = net["_options"]["mode"]
 
     # write sum of p and q values to bus
-    net["res_bus"]["p_mw"] = bus_pq[:, 0]
+    net["res_bus"]["p_mw"].values[:] = bus_pq[:, 0]
     if ac:
-        net["res_bus"]["q_mvar"] = bus_pq[:, 1]
+        net["res_bus"]["q_mvar"].values[:] = bus_pq[:, 1]
 
     # opf variables
     if mode == "opf":
@@ -97,8 +97,6 @@ def write_voltage_dependend_load_results(net, p, q, b):
             q = np.hstack([q, ql])
 
             b = np.hstack([b, l["bus"].values])
-
-        net["res_load"].index = net["load"].index
         return p, q, b
 
 
@@ -136,17 +134,15 @@ def write_pq_results_to_element(net, ppc, element):
     element_in_service = _is_elements[element]
 
     # P result in kw to element
-    net[res_]["p_mw"] = el_data[p_mw].values * scaling * element_in_service
+    net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
     if is_controllable:
         net[res_]["p_mw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign
 
     if ac:
         # Q result in kvar to element
-        net[res_]["q_mvar"] = el_data[q_mvar].values * scaling * element_in_service
+        net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
             net[res_]["q_mvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign
-    # update index of result table
-    net[res_].index = net[element].index
     return net
 
 def get_p_q_b(net, element):
@@ -212,15 +208,14 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values) ** 2
         u_shunt = np.nan_to_num(u_shunt)
         p_shunt = u_shunt ** 2 * net["shunt"]["p_mw"].values * shunt_is * v_ratio * step
-        net["res_shunt"]["p_mw"] = p_shunt
+        net["res_shunt"]["p_mw"].values[:] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
-            net["res_shunt"]["vm_pu"] = u_shunt
+            net["res_shunt"]["vm_pu"].values[:] = u_shunt
             q_shunt = u_shunt ** 2 * net["shunt"]["q_mvar"].values * shunt_is * v_ratio * step
-            net["res_shunt"]["q_mvar"] = q_shunt
+            net["res_shunt"]["q_mvar"].values[:] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])
-        net["res_shunt"].index = net["shunt"].index
 
     w = net["ward"]
     if len(w) > 0:
@@ -229,15 +224,14 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
         p_ward = u_ward ** 2 * net["ward"]["pz_mw"].values * ward_is
-        net["res_ward"]["p_mw"] += p_ward
+        net["res_ward"]["p_mw"].values[:] = net["res_ward"]["p_mw"].values + p_ward
         p = np.hstack([p, p_ward])
         if ac:
-            net["res_ward"]["vm_pu"] = u_ward
+            net["res_ward"]["vm_pu"].values[:] = u_ward
             q_ward = u_ward ** 2 * net["ward"]["qz_mvar"].values * ward_is
-            net["res_ward"]["q_mvar"] += q_ward
+            net["res_ward"]["q_mvar"].values[:] = net["res_ward"]["q_mvar"].values + q_ward
             q = np.hstack([q, q_ward])
         b = np.hstack([b, w["bus"].values])
-        net["res_ward"].index = net["ward"].index
 
     xw = net["xward"]
     if len(xw) > 0:
@@ -246,15 +240,14 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward ** 2 * net["xward"]["pz_mw"].values * xward_is
-        net["res_xward"]["p_mw"] += p_xward
+        net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values  + p_xward
         p = np.hstack([p, p_xward])
         if ac:
-            net["res_xward"]["vm_pu"] = u_xward
+            net["res_xward"]["vm_pu"].values[:] = u_xward
             q_xward = u_xward ** 2 * net["xward"]["qz_mvar"].values * xward_is
-            net["res_xward"]["q_mvar"] += q_xward
+            net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_xward
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
-        net["res_xward"].index = net["xward"].index
 
     if not ac:
         q = np.zeros(len(p))

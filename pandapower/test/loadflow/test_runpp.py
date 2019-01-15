@@ -20,8 +20,8 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import \
-    add_test_oos_bus_with_is_element, result_test_network_generator
+from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w,\
+    add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
 from pandapower.toolbox import nets_equal
 
@@ -528,7 +528,7 @@ def test_zip_loads_gridcal():
     #
     # print('Ybus:\n', grid.circuits[0].power_flow_input.Ybus.todense())
     #
-    # options = PowerFlowOptions(SolverType.NR, verbose=False, robust=False)
+    # options = PowerFlowOptions(SolverType.NR, robust=False)
     # power_flow = PowerFlow(grid, options)
     # power_flow.run()
     #
@@ -954,38 +954,36 @@ def test_init_results_without_results():
     pp.runpp(net, init="results")
 
 
+def test_init_results():
+    net = pp.create_empty_network()
+    add_test_line(net) #line network with switch at to bus
+    assert_init_results(net)
+    net.switch.at[0, "bus"] = 0 #switch at from bus
+    assert_init_results(net)
+
+    add_test_trafo(net) #trafo network with switch at lv bus
+    assert_init_results(net)
+    net.switch.at[0, "bus"] = 7 #switch at hv bus
+    assert_init_results(net)
+
+    add_test_xward(net) #xward with internal node
+    assert_init_results(net)
+    add_test_trafo3w(net) #trafo3w with internal node
+    assert_init_results(net)
+    t3idx = net.trafo3w.index[0]
+    t3_switch = pp.create_switch(net, bus=net.trafo3w.hv_bus.at[t3idx],
+                                 element=t3idx, et="t3", closed=False) #trafo3w switch at hv side
+    assert_init_results(net)
+    net.switch.bus.at[t3_switch] = net.trafo3w.mv_bus.at[t3idx] #trafo3w switch at mv side
+    assert_init_results(net)
+    net.switch.bus.at[t3_switch] = net.trafo3w.lv_bus.at[t3idx] #trafo3w switch at lv side
+    assert_init_results(net)
+
+def assert_init_results(net):
+    pp.runpp(net, init="auto")
+    assert net._ppc["iterations"] > 0
+    pp.runpp(net, init="results")
+    assert net._ppc["iterations"] == 0
+
 if __name__ == "__main__":
-    net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
-    assert len(iso_buses) == 0
-    assert np.isclose(iso_p, 0)
-    assert np.isclose(iso_q, 0)
-
-    isolated_bus1 = pp.create_bus(net, vn_kv=20., name="isolated Bus1")
-    isolated_bus2 = pp.create_bus(net, vn_kv=20., name="isolated Bus2")
-    isolated_gen = pp.create_bus(net, vn_kv=20., name="isolated Gen")
-    isolated_pv_bus = pp.create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
-    pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
-                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                   name="IsolatedLine")
-    pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
-                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                   name="IsolatedLineToGen")
-    # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
-
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
-    #
-    # pp.create_load(net, isolated_bus1, p_mw=0.200., q_mvar=0.020)
-    # pp.create_sgen(net, isolated_bus2, p_mw=0.0150., q_mvar=-0.010)
-    #
-    # iso_buses, iso_p, iso_q = get_isolated(net)
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
-
-    # with pytest.warns(UserWarning):
-#    runpp_with_consistency_checks(net, check_connectivity=True)
     pytest.main([__file__, "-xs"])

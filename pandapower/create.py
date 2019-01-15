@@ -55,7 +55,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
-                 ("type", dtype(object))],
+                 ("type", dtype(object)),
+                 ("current_source", "bool")],
         "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_mw", "f8"),
@@ -118,19 +119,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                   ("sn_mva", "f8"),
                   ("vn_hv_kv", "f8"),
                   ("vn_lv_kv", "f8"),
-                  ("vsc_percent", "f8"),
-                  ("vscr_percent", "f8"),
-                  ("pfe_mw", "f8"),
+                  ("vk_percent", "f8"),
+                  ("vkr_percent", "f8"),
+                  ("pfe_kw", "f8"),
                   ("i0_percent", "f8"),
                   ("shift_degree", "f8"),
-                  ("tp_side", dtype(object)),
-                  ("tp_mid", "i4"),
-                  ("tp_min", "i4"),
-                  ("tp_max", "i4"),
-                  ("tp_st_percent", "f8"),
-                  ("tp_st_degree", "f8"),
-                  ("tp_pos", "i4"),
-                  ("tp_phase_shifter", 'bool'),
+                  ("tap_side", dtype(object)),
+                  ("tap_neutral", "i4"),
+                  ("tap_min", "i4"),
+                  ("tap_max", "i4"),
+                  ("tap_step_percent", "f8"),
+                  ("tap_step_degree", "f8"),
+                  ("tap_pos", "i4"),
+                  ("tap_phase_shifter", 'bool'),
                   ("parallel", "u4"),
                   ("df", "f8"),
                   ("in_service", 'bool')],
@@ -145,23 +146,23 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                     ("vn_hv_kv", "f8"),
                     ("vn_mv_kv", "f8"),
                     ("vn_lv_kv", "f8"),
-                    ("vsc_hv_percent", "f8"),
-                    ("vsc_mv_percent", "f8"),
-                    ("vsc_lv_percent", "f8"),
-                    ("vscr_hv_percent", "f8"),
-                    ("vscr_mv_percent", "f8"),
-                    ("vscr_lv_percent", "f8"),
-                    ("pfe_mw", "f8"),
+                    ("vk_hv_percent", "f8"),
+                    ("vk_mv_percent", "f8"),
+                    ("vk_lv_percent", "f8"),
+                    ("vkr_hv_percent", "f8"),
+                    ("vkr_mv_percent", "f8"),
+                    ("vkr_lv_percent", "f8"),
+                    ("pfe_kw", "f8"),
                     ("i0_percent", "f8"),
                     ("shift_mv_degree", "f8"),
                     ("shift_lv_degree", "f8"),
-                    ("tp_side", dtype(object)),
-                    ("tp_mid", "i4"),
-                    ("tp_min", "i4"),
-                    ("tp_max", "i4"),
-                    ("tp_st_percent", "f8"),
-                    ("tp_st_degree", "f8"),
-                    ("tp_pos", "i4"),
+                    ("tap_side", dtype(object)),
+                    ("tap_neutral", "i4"),
+                    ("tap_min", "i4"),
+                    ("tap_max", "i4"),
+                    ("tap_step_percent", "f8"),
+                    ("tap_step_degree", "f8"),
+                    ("tap_pos", "i4"),
                     ("tap_at_star_point", 'bool'),
                     ("in_service", 'bool')],
         "impedance": [("name", dtype(object)),
@@ -244,6 +245,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                             ("i_from_ka", "f8"),
                             ("i_to_ka", "f8"),
                             ("i_ka", "f8"),
+                            ("vm_from_pu", "f8"),
+                            ("va_from_degree", "f8"),
+                            ("vm_to_pu", "f8"),
+                            ("va_to_degree", "f8"),
                             ("loading_percent", "f8")],
         "_empty_res_trafo": [("p_hv_mw", "f8"),
                              ("q_hv_mvar", "f8"),
@@ -253,6 +258,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                              ("ql_mvar", "f8"),
                              ("i_hv_ka", "f8"),
                              ("i_lv_ka", "f8"),
+                             ("vm_hv_pu", "f8"),
+                             ("va_hv_degree", "f8"),
+                             ("vm_lv_pu", "f8"),
+                             ("va_lv_degree", "f8"),
                              ("loading_percent", "f8")],
         "_empty_res_trafo3w": [("p_hv_mw", "f8"),
                                ("q_hv_mvar", "f8"),
@@ -265,6 +274,14 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                                ("i_hv_ka", "f8"),
                                ("i_mv_ka", "f8"),
                                ("i_lv_ka", "f8"),
+                               ("vm_hv_pu", "f8"),
+                               ("va_hv_degree", "f8"),
+                               ("vm_mv_pu", "f8"),
+                               ("va_mv_degree", "f8"),
+                               ("vm_lv_pu", "f8"),
+                               ("va_lv_degree", "f8"),
+                               ("va_internal_degree", "f8"),
+                               ("vm_internal_pu", "f8"),
                                ("loading_percent", "f8")],
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
@@ -301,7 +318,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                             ("vm_pu", "f8")],
         "_empty_res_xward": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
-                             ("vm_pu", "f8")],
+                             ("vm_pu", "f8"),
+                             ("va_internal_degree", "f8"),
+                             ("vm_internal_pu", "f8")],
 
         # internal
         "_ppc": None,
@@ -319,6 +338,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
     add_basic_std_types(net)
+    net._empty_aux_trafo3w = net.trafo.copy()
     reset_results(net)
     net['user_pf_options'] = dict()
     return net
@@ -634,10 +654,12 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan):
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                current_source=True):
     """create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None, \
                 scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_mw=nan, \
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan)
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, \
+                current_source=True)
     Adds one static generator in table net["sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -658,18 +680,19 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     OPTIONAL:
 
-        **q_mvar** (float, default 0) - The reactive power of the sgen
+        **q_mvar** (float, 0) - The reactive power of the sgen
 
-        **sn_mva** (float, default None) - Nominal power of the sgen
+        **sn_mva** (float, None) - Nominal power of the sgen
 
-        **name** (string, default None) - The name for this sgen
+        **name** (string, None) - The name for this sgen
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
 
-        **type** (string, None) -  type variable to classify the static generator
+        **type** (string, None) -  type variable to classify the static generator (no impact on \
+            calculations)
 
         **in_service** (boolean) - True for in_service or False for out of service
 
@@ -693,6 +716,10 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor
 
+        **current_source** (bool, True) - Model this sgen as a current source during short-\
+            circuit calculations; useful in some cases, for example the simulation of full-\
+            size converters per IEC 60909-0:2016.
+
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
@@ -713,8 +740,9 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     dtypes = net.sgen.dtypes
 
     net.sgen.loc[index, ["name", "bus", "p_mw", "scaling",
-                         "q_mvar", "sn_mva", "in_service", "type"]] = \
-        [name, bus, p_mw, scaling, q_mvar, sn_mva, bool(in_service), type]
+                         "q_mvar", "sn_mva", "in_service", "type",
+                         "current_source"]] = \
+        [name, bus, p_mw, scaling, q_mvar, sn_mva, bool(in_service), type, current_source]
 
     # and preserve dtypes
     _preserve_dtypes(net.sgen, dtypes)
@@ -1376,9 +1404,9 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     return index
 
 
-def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True,
+def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.):
-    """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_service=True, \
+    """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True, \
                        index=None, max_loading_percent=nan, parallel=1, df=1.)
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -1397,8 +1425,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
     OPTIONAL:
         **name** (string, None) - A custom name for this transformer
 
-        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tp_mid)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
+            position (tap_neutral)
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
@@ -1444,25 +1472,25 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
         "sn_mva": ti["sn_mva"],
         "vn_hv_kv": ti["vn_hv_kv"],
         "vn_lv_kv": ti["vn_lv_kv"],
-        "vsc_percent": ti["vsc_percent"],
-        "vscr_percent": ti["vscr_percent"],
-        "pfe_mw": ti["pfe_mw"],
+        "vk_percent": ti["vk_percent"],
+        "vkr_percent": ti["vkr_percent"],
+        "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0,
-        "tp_phase_shifter": ti["tp_phase_shifter"] if "tp_phase_shifter" in ti
-                            and pd.notnull(ti["tp_phase_shifter"]) else False
+        "tap_phase_shifter": ti["tap_phase_shifter"] if "tap_phase_shifter" in ti
+                            and pd.notnull(ti["tap_phase_shifter"]) else False
     })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
+    for tp in ("tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
-    if ("tp_mid" in v) and (tp_pos is nan):
-        v["tp_pos"] = v["tp_mid"]
+    if ("tap_neutral" in v) and (tap_pos is nan):
+        v["tap_pos"] = v["tap_neutral"]
     else:
-        v["tp_pos"] = tp_pos
-        if isinstance(tp_pos, float):
-            net.trafo.tp_pos = net.trafo.tp_pos.astype(float)
+        v["tap_pos"] = tap_pos
+        if isinstance(tap_pos, float):
+            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
     # store dtypes
     dtypes = net.trafo.dtypes
 
@@ -1474,8 +1502,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
 
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
-    # tp_phase_shifter default False
-    net.trafo.tp_phase_shifter.fillna(False, inplace=True)
+    # tap_phase_shifter default False
+    net.trafo.tap_phase_shifter.fillna(False, inplace=True)
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
@@ -1484,17 +1512,17 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tp_pos=nan, in_
 
 
 def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv,
-                                       vscr_percent, vsc_percent, pfe_mw, i0_percent,
-                                       shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan,
-                                       tp_min=nan, tp_st_percent=nan, tp_st_degree=nan,
-                                       tp_pos=nan, tp_phase_shifter=False, in_service=True,
+                                       vkr_percent, vk_percent, pfe_kw, i0_percent,
+                                       shift_degree=0, tap_side=None, tap_neutral=nan, tap_max=nan,
+                                       tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
+                                       tap_pos=nan, tap_phase_shifter=False, in_service=True,
                                        name=None, index=None, max_loading_percent=nan, parallel=1,
                                        df=1., **kwargs):
     """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv, \
-                                       vscr_percent, vsc_percent, pfe_mw, i0_percent, \
-                                       shift_degree=0, tp_side=None, tp_mid=nan, tp_max=nan, \
-                                       tp_min=nan, tp_st_percent=nan, tp_st_degree=nan, \
-                                       tp_pos=nan, tp_phase_shifter=False, in_service=True, \
+                                       vkr_percent, vk_percent, pfe_kw, i0_percent, \
+                                       shift_degree=0, tap_side=None, tap_neutral=nan, tap_max=nan, \
+                                       tap_min=nan, tap_step_percent=nan, tap_step_degree=nan, \
+                                       tap_pos=nan, tap_phase_shifter=False, in_service=True, \
                                        name=None, index=None, max_loading_percent=nan, parallel=1, \
                                        df=1., **kwargs)
     Creates a two-winding transformer in table net["trafo"].
@@ -1515,11 +1543,11 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **vn_lv_kv** (float) - rated voltage on low voltage side
 
-        **vscr_percent** (float) - real part of relative short-circuit voltage
+        **vkr_percent** (float) - real part of relative short-circuit voltage
 
-        **vsc_percent** (float) - relative short-circuit voltage
+        **vk_percent** (float) - relative short-circuit voltage
 
-        **pfe_mw** (float)  - iron losses in kW
+        **pfe_kw** (float)  - iron losses in kW
 
         **i0_percent** (float) - open loop losses in percent of rated current
 
@@ -1532,23 +1560,23 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **shift_degree** (float) - Angle shift over the transformer*
 
-        **tp_side** (string) - position of tap changer ("hv", "lv")
+        **tap_side** (string) - position of tap changer ("hv", "lv")
 
-        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tp_mid)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
+            position (tap_neutral)
 
-        **tp_mid** (int, nan) - tap position where the transformer ratio is equal to the ration of \
+        **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the ration of \
             the rated voltages
 
-        **tp_max** (int, nan) - maximal allowed tap position
+        **tap_max** (int, nan) - maximal allowed tap position
 
-        **tp_min** (int, nan):  minimal allowed tap position
+        **tap_min** (int, nan):  minimal allowed tap position
 
-        **tp_st_percent** (float) - tap step size for voltage magnitude in percent
+        **tap_step_percent** (float) - tap step size for voltage magnitude in percent
 
-        **tp_st_degree** (float) - tap step size for voltage angle in degree*
+        **tap_step_degree** (float) - tap step size for voltage angle in degree*
 
-        **tp_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+        **tap_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -1565,7 +1593,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     EXAMPLE:
         create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, \
-            vn_hv_kv=110, vn_lv_kv=10, vsc_percent=10, vscr_percent=0.3, pfe_mw=30, \
+            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
             i0_percent=0.1, shift_degree=30)
     """
 
@@ -1583,24 +1611,24 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     if index in net["trafo"].index:
         raise UserWarning("A transformer with index %s already exists" % index)
 
-    if tp_pos is nan:
-        tp_pos = tp_mid
+    if tap_pos is nan:
+        tap_pos = tap_neutral
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": None, "sn_mva": sn_mva, "vn_hv_kv": vn_hv_kv,
-        "vn_lv_kv": vn_lv_kv, "vsc_percent": vsc_percent, "vscr_percent": vscr_percent,
-        "pfe_mw": pfe_mw, "i0_percent": i0_percent, "tp_mid": tp_mid,
-        "tp_max": tp_max, "tp_min": tp_min, "shift_degree": shift_degree,
-        "tp_side": tp_side, "tp_st_percent": tp_st_percent, "tp_st_degree": tp_st_degree,
-        "tp_phase_shifter": tp_phase_shifter, "parallel": parallel, "df": df
+        "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent, "vkr_percent": vkr_percent,
+        "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
+        "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
+        "tap_side": tap_side, "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df
     }
 
-    if ("tp_mid" in v) and (tp_pos is nan):
-        v["tp_pos"] = v["tp_mid"]
+    if ("tap_neutral" in v) and (tap_pos is nan):
+        v["tap_pos"] = v["tap_neutral"]
     else:
-        v["tp_pos"] = tp_pos
-        if type(tp_pos) == float:
-            net.trafo.tp_pos = net.trafo.tp_pos.astype(float)
+        v["tap_pos"] = tap_pos
+        if type(tap_pos) == float:
+            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
 
     # store dtypes
     dtypes = net.trafo.dtypes
@@ -1619,10 +1647,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     return index
 
 
-def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan,
+def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan,
                          tap_at_star_point=False):
-    """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_pos=nan, \
+    """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan, \
                          in_service=True, index=None, max_loading_percent=nan, \
                          tap_at_star_point=False)
     Creates a three-winding transformer in table net["trafo3w"].
@@ -1644,8 +1672,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
     OPTIONAL:
         **name** (string) - A custom name for this transformer
 
-        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tp_mid)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
+            position (tap_neutral)
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -1691,28 +1719,28 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
         "vn_hv_kv": ti["vn_hv_kv"],
         "vn_mv_kv": ti["vn_mv_kv"],
         "vn_lv_kv": ti["vn_lv_kv"],
-        "vsc_hv_percent": ti["vsc_hv_percent"],
-        "vsc_mv_percent": ti["vsc_mv_percent"],
-        "vsc_lv_percent": ti["vsc_lv_percent"],
-        "vscr_hv_percent": ti["vscr_hv_percent"],
-        "vscr_mv_percent": ti["vscr_mv_percent"],
-        "vscr_lv_percent": ti["vscr_lv_percent"],
-        "pfe_mw": ti["pfe_mw"],
+        "vk_hv_percent": ti["vk_hv_percent"],
+        "vk_mv_percent": ti["vk_mv_percent"],
+        "vk_lv_percent": ti["vk_lv_percent"],
+        "vkr_hv_percent": ti["vkr_hv_percent"],
+        "vkr_mv_percent": ti["vkr_mv_percent"],
+        "vkr_lv_percent": ti["vkr_lv_percent"],
+        "pfe_kw": ti["pfe_kw"],
         "i0_percent": ti["i0_percent"],
         "shift_mv_degree": ti["shift_mv_degree"] if "shift_mv_degree" in ti else 0,
         "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0,
         "tap_at_star_point": tap_at_star_point
     })
-    for tp in ("tp_mid", "tp_max", "tp_min", "tp_side", "tp_st_percent", "tp_st_degree"):
+    for tp in ("tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
-    if ("tp_mid" in v) and (tp_pos is nan):
-        v["tp_pos"] = v["tp_mid"]
+    if ("tap_neutral" in v) and (tap_pos is nan):
+        v["tap_pos"] = v["tap_neutral"]
     else:
-        v["tp_pos"] = tp_pos
-        if type(tp_pos) == float:
-            net.trafo3w.tp_pos = net.trafo3w.tp_pos.astype(float)
+        v["tap_pos"] = tap_pos
+        if type(tap_pos) == float:
+            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
     try:
@@ -1730,22 +1758,22 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
 
 def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
-                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vsc_hv_percent,
-                                         vsc_mv_percent, vsc_lv_percent, vscr_hv_percent,
-                                         vscr_mv_percent, vscr_lv_percent, pfe_mw, i0_percent,
-                                         shift_mv_degree=0., shift_lv_degree=0., tp_side=None,
-                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan,
-                                         tp_mid=nan, tp_max=nan,
-                                         tp_min=nan, name=None, in_service=True, index=None,
+                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
+                                         vk_mv_percent, vk_lv_percent, vkr_hv_percent,
+                                         vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
+                                         shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
+                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
+                                         tap_neutral=nan, tap_max=nan,
+                                         tap_min=nan, name=None, in_service=True, index=None,
                                          max_loading_percent=nan, tap_at_star_point=False):
     """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
-                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vsc_hv_percent, \
-                                         vsc_mv_percent, vsc_lv_percent, vscr_hv_percent, \
-                                         vscr_mv_percent, vscr_lv_percent, pfe_mw, i0_percent, \
-                                         shift_mv_degree=0., shift_lv_degree=0., tp_side=None, \
-                                         tp_st_percent=nan, tp_st_degree=nan, tp_pos=nan, \
-                                         tp_mid=nan, tp_max=nan, \
-                                         tp_min=nan, name=None, in_service=True, index=None, \
+                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent, \
+                                         vk_mv_percent, vk_lv_percent, vkr_hv_percent, \
+                                         vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent, \
+                                         shift_mv_degree=0., shift_lv_degree=0., tap_side=None, \
+                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan, \
+                                         tap_neutral=nan, tap_max=nan, \
+                                         tap_min=nan, name=None, in_service=True, index=None, \
                                          max_loading_percent=nan, tap_at_star_point=False)
     Adds a three-winding transformer in table net["trafo3w"].
 
@@ -1773,19 +1801,19 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **sn_lv_mva** (float) - rated apparent power on low voltage side
 
-        **vsc_hv_percent** (float) - short circuit voltage from high to medium voltage
+        **vk_hv_percent** (float) - short circuit voltage from high to medium voltage
 
-        **vsc_mv_percent** (float) - short circuit voltage from medium to low voltage
+        **vk_mv_percent** (float) - short circuit voltage from medium to low voltage
 
-        **vsc_lv_percent** (float) - short circuit voltage from high to low voltage
+        **vk_lv_percent** (float) - short circuit voltage from high to low voltage
 
-        **vscr_hv_percent** (float) - real part of short circuit voltage from high to medium voltage
+        **vkr_hv_percent** (float) - real part of short circuit voltage from high to medium voltage
 
-        **vscr_mv_percent** (float) - real part of short circuit voltage from medium to low voltage
+        **vkr_mv_percent** (float) - real part of short circuit voltage from medium to low voltage
 
-        **vscr_lv_percent** (float) - real part of short circuit voltage from high to low voltage
+        **vkr_lv_percent** (float) - real part of short circuit voltage from high to low voltage
 
-        **pfe_mw** (float) - iron losses
+        **pfe_kw** (float) - iron losses in kW
 
         **i0_percent** (float) - open loop losses
 
@@ -1794,20 +1822,20 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
 
         **shift_lv_degree** (float, 0) - angle shift to low voltage side*
 
-        **tp_st_percent** (float) - Tap step in percent
+        **tap_step_percent** (float) - Tap step in percent
 
-        **tp_st_degree** (float) - Tap phase shift angle in degrees
+        **tap_step_degree** (float) - Tap phase shift angle in degrees
 
-        **tp_side** (string, None) - "hv", "mv", "lv"
+        **tap_side** (string, None) - "hv", "mv", "lv"
 
-        **tp_mid** (int, nan) - default tap position
+        **tap_neutral** (int, nan) - default tap position
 
-        **tp_min** (int, nan) - Minimum tap position
+        **tap_min** (int, nan) - Minimum tap position
 
-        **tp_max** (int, nan) - Maximum tap position
+        **tap_max** (int, nan) - Maximum tap position
 
-        **tp_pos** (int, nan) - current tap position of the transformer. Defaults to the \
-            medium position (tp_mid)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
+            medium position (tap_neutral)
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -1827,8 +1855,8 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     Example:
         create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
         sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
-        vsc_hv_percent=10,vsc_mv_percent=11, vsc_lv_percent=12, vscr_hv_percent=0.3,
-        vscr_mv_percent=0.31, vscr_lv_percent=0.32, pfe_mw=30, i0_percent=0.1, shift_mv_degree=30,
+        vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3,
+        vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
         shift_lv_degree=30)
 
     """
@@ -1844,25 +1872,25 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     if index in net["trafo3w"].index:
         raise UserWarning("A three winding transformer with index %s already exists" % index)
 
-    if tp_pos is nan:
-        tp_pos = tp_mid
+    if tap_pos is nan:
+        tap_pos = tap_neutral
 
     # store dtypes
     dtypes = net.trafo3w.dtypes
 
     net.trafo3w.loc[index, ["lv_bus", "mv_bus", "hv_bus", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                            "sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vsc_hv_percent",
-                            "vsc_mv_percent", "vsc_lv_percent", "vscr_hv_percent",
-                            "vscr_mv_percent", "vscr_lv_percent", "pfe_mw", "i0_percent",
-                            "shift_mv_degree", "shift_lv_degree", "tp_side", "tp_st_percent",
-                            "tp_st_degree", "tp_pos", "tp_mid", "tp_max", "tp_min", "in_service",
+                            "sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vk_hv_percent",
+                            "vk_mv_percent", "vk_lv_percent", "vkr_hv_percent",
+                            "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent",
+                            "shift_mv_degree", "shift_lv_degree", "tap_side", "tap_step_percent",
+                            "tap_step_degree", "tap_pos", "tap_neutral", "tap_max", "tap_min", "in_service",
                             "name", "std_type", "tap_at_star_point" ]] = \
         [lv_bus, mv_bus, hv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv,
-         sn_hv_mva, sn_mv_mva, sn_lv_mva, vsc_hv_percent, vsc_mv_percent,
-         vsc_lv_percent, vscr_hv_percent, vscr_mv_percent, vscr_lv_percent,
-         pfe_mw, i0_percent, shift_mv_degree, shift_lv_degree,
-         tp_side, tp_st_percent, tp_st_degree, tp_pos, tp_mid, tp_max,
-         tp_min, bool(in_service), name, None, tap_at_star_point]
+         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent, vk_mv_percent,
+         vk_lv_percent, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent,
+         pfe_kw, i0_percent, shift_mv_degree, shift_lv_degree,
+         tap_side, tap_step_percent, tap_step_degree, tap_pos, tap_neutral, tap_max,
+         tap_min, bool(in_service), name, None, tap_at_star_point]
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
@@ -2365,7 +2393,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if element is not None and element_type == "trafo" and element not in \
             net["trafo"].index.values:
         raise UserWarning("Trafo with index={} does not exist".format(element))
-        
+
     if element is not None and element_type == "trafo3w" and element not in \
             net["trafo3w"].index.values:
         raise UserWarning("Trafo3w with index={} does not exist".format(element))
@@ -2407,7 +2435,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
-     - Generator
+     - Generator{}
      - External Grid
      - Static Generator
      - Load

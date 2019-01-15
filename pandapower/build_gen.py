@@ -5,7 +5,6 @@
 
 
 import numpy as np
-import numpy.core.numeric as ncn
 from pandapower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
 from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
 from pandapower.pf.ppci_variables import bustypes
@@ -44,8 +43,6 @@ def _build_gen_ppc(net, ppc):
     _init_ppc_gen(net, ppc, f)
     for element, (f,t) in gen_order.items():
         add_element_to_gen(net, ppc, element, f, t)
-
-    _replace_nans_with_default_limits(net, ppc)
     net._gen_order = gen_order
 
 def add_gen_order(gen_order, element, _is_elements, f):
@@ -85,21 +82,21 @@ def add_element_to_gen(net, ppc, element, f, t):
 
 def _build_pp_ext_grid(net, ppc, f, t):
     delta = net._options["delta"]
-    eg_is = net.ext_grid[net._is_elements["ext_grid"]]
+    eg_is = net._is_elements["ext_grid"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # add ext grid / slack data
-    eg_buses = bus_lookup[eg_is["bus"].values]
+    eg_buses = bus_lookup[net["ext_grid"]["bus"].values[eg_is]]
     ppc["gen"][f:t, GEN_BUS] = eg_buses
-    ppc["gen"][f:t, VG] = eg_is["vm_pu"].values
+    ppc["gen"][f:t, VG] = net["ext_grid"]["vm_pu"].values[eg_is]
 
     # set bus values for external grid buses
     if calculate_voltage_angles:
-        ppc["bus"][eg_buses, VA] = eg_is["va_degree"].values
-    ppc["bus"][eg_buses, VM] = eg_is["vm_pu"].values
+        ppc["bus"][eg_buses, VA] = net["ext_grid"]["va_degree"].values[eg_is]
+    ppc["bus"][eg_buses, VM] = net["ext_grid"]["vm_pu"].values[eg_is]
     if net._options["mode"] == "opf":
-        add_q_constraints(ppc, eg_is, f, t, delta)
-        add_p_constraints(ppc, eg_is, f, t, delta)
+        add_q_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
+        add_p_constraints(net, "ext_grid", eg_is, ppc, f, t, delta)
         ppc["bus"][eg_buses, VMAX] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
         ppc["bus"][eg_buses, VMIN] = ppc["bus"][ppc["bus"][:, BUS_TYPE] == REF, VM]
     else:
@@ -108,36 +105,37 @@ def _build_pp_ext_grid(net, ppc, f, t):
 
 def _build_pp_gen(net, ppc, f, t):
     delta = net["_options"]["delta"]
-    gen_is = net.gen[net._is_elements["gen"]]
+    gen_is = net._is_elements["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
-    gen_buses = bus_lookup[gen_is["bus"].values]
-    gen_is_vm = gen_is["vm_pu"].values
+    gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
+    gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
     ppc["gen"][f:t, GEN_BUS] = gen_buses
-    ppc["gen"][f:t, PG] = (gen_is["p_mw"].values* gen_is["scaling"].values)
+    ppc["gen"][f:t, PG] = (net["gen"]["p_mw"].values[gen_is]* net["gen"]["scaling"].values[gen_is])
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
     ppc["bus"][gen_buses, VM] = gen_is_vm
-    add_q_constraints(ppc, gen_is, f, t, delta)
-    add_p_constraints(ppc, gen_is, f, t, delta)
+    add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
+    add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)
 
 
 def _build_pp_xward(net, ppc, f, t, update_lookup=True):
     delta = net["_options"]["delta"]
     q_lim_default = net._options["q_lim_default"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    aux_buses = net["_pd2ppc_lookups"]["aux"]["xward"]
     xw = net["xward"]
     xw_is = net["_is_elements"]['xward']
-    ppc["gen"][f:t, GEN_BUS] = bus_lookup[xw["ad_bus"][xw_is].values]
+    ppc["gen"][f:t, GEN_BUS] = bus_lookup[aux_buses[xw_is]]
     ppc["gen"][f:t, VG] = xw["vm_pu"][xw_is].values
     ppc["gen"][f:t, PMIN] = + delta
     ppc["gen"][f:t, PMAX] = - delta
     ppc["gen"][f:t, QMIN] = -q_lim_default
     ppc["gen"][f:t, QMAX] = q_lim_default
 
-    xward_buses = bus_lookup[net["xward"]["ad_bus"].values]
+    xward_buses = bus_lookup[aux_buses]
     ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
     ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
     ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
@@ -145,43 +143,46 @@ def _build_pp_xward(net, ppc, f, t, update_lookup=True):
 def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
     delta = net._options["delta"]
     sign = -1 if inverted else 1
-    tab = net[element][net._is_elements["%s_controllable"%element]]
+    is_element = net._is_elements["%s_controllable"%element]
+    tab = net[element]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    buses = bus_lookup[tab["bus"].values]
+    buses = bus_lookup[tab["bus"].values[is_element]]
 
     ppc["gen"][f:t, GEN_BUS] = buses
-    ppc["gen"][f:t, PG] = sign * tab["p_mw"].values * tab["scaling"].values
-    ppc["gen"][f:t, QG] = sign * tab["q_mvar"].values * tab["scaling"].values
+    ppc["gen"][f:t, PG] = sign * tab["p_mw"].values[is_element] * tab["scaling"].values[is_element]
+    ppc["gen"][f:t, QG] = sign * tab["q_mvar"].values[is_element] * tab["scaling"].values[is_element]
 
     # set bus values for controllable loads
 #    ppc["bus"][buses, BUS_TYPE] = PQ
-    add_q_constraints(ppc, tab, f, t, delta, inverted)
-    add_p_constraints(ppc, tab, f, t, delta, inverted)
+    add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted)
+    add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted)
 
 
-def add_q_constraints(ppc, tab, f, t, delta, inverted=False):
+def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
+    tab = net[element]
     if "min_q_mvar" in tab.columns:
         if inverted:
-            ppc["gen"][f:t, QMAX] = -tab["min_q_mvar"].values + delta
+            ppc["gen"][f:t, QMAX] = -tab["min_q_mvar"].values[is_element] + delta
         else:
-            ppc["gen"][f:t, QMIN] = tab["min_q_mvar"].values - delta
+            ppc["gen"][f:t, QMIN] = tab["min_q_mvar"].values[is_element] - delta
     if "max_q_mvar" in tab.columns:
         if inverted:
-            ppc["gen"][f:t, QMIN] = -tab["max_q_mvar"].values - delta
+            ppc["gen"][f:t, QMIN] = -tab["max_q_mvar"].values[is_element] - delta
         else:
-            ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values + delta
+            ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
 
-def add_p_constraints(ppc, tab, f, t, delta, inverted=False):
+def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
+    tab = net[element]
     if "min_p_mw" in tab.columns:
         if inverted:
-            ppc["gen"][f:t, PMAX] = - tab["min_p_mw"].values + delta
+            ppc["gen"][f:t, PMAX] = - tab["min_p_mw"].values[is_element] + delta
         else:
-            ppc["gen"][f:t, PMIN] = tab["min_p_mw"].values - delta
+            ppc["gen"][f:t, PMIN] = tab["min_p_mw"].values[is_element] - delta
     if "max_p_mw" in tab.columns:
         if inverted:
-            ppc["gen"][f:t, PMIN] = - tab["max_p_mw"].values - delta
+            ppc["gen"][f:t, PMIN] = - tab["max_p_mw"].values[is_element] - delta
         else:
-            ppc["gen"][f:t, PMAX] = tab["max_p_mw"].values + delta
+            ppc["gen"][f:t, PMAX] = tab["max_p_mw"].values[is_element] + delta
 
 def _update_gen_ppc(net, ppc):
     '''
@@ -197,37 +198,37 @@ def _update_gen_ppc(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     # get in service elements
     _is_elements = net["_is_elements"]
-    eg_is = net["ext_grid"][_is_elements['ext_grid']]
-    gen_is = net["gen"][_is_elements['gen']]
+    eg_is = _is_elements['ext_grid']
+    gen_is = _is_elements['gen']
 
     eg_end = len(eg_is)
-    gen_end = eg_end + len(gen_is)
+    gen_end = eg_end + np.count_nonzero(gen_is)
     xw_end = gen_end + len(net["xward"])
 
     # add ext grid / slack data
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
-    ext_grid_idx_ppc = ext_grid_lookup[eg_is.index]
-    ppc["gen"][ext_grid_idx_ppc, VG] = eg_is["vm_pu"].values
-    ppc["gen"][ext_grid_idx_ppc, GEN_STATUS] = eg_is["in_service"].values
+    ext_grid_idx_ppc = ext_grid_lookup[net.ext_grid.index[eg_is]]
+    ppc["gen"][ext_grid_idx_ppc, VG] = net["ext_grid"]["vm_pu"].values[eg_is]
+    ppc["gen"][ext_grid_idx_ppc, GEN_STATUS] = eg_is.astype(int)
 
     # set bus values for external grid buses
     if calculate_voltage_angles:
         # eg_buses = bus_lookup[eg_is["bus"].values]
-        ppc["bus"][ext_grid_idx_ppc, VA] = eg_is["va_degree"].values
+        ppc["bus"][ext_grid_idx_ppc, VA] = net["ext_grid"]["va_degree"].values[eg_is]
 
     # add generator / pv data
     if gen_end > eg_end:
         gen_lookup = net["_pd2ppc_lookups"]["gen"]
-        gen_idx_ppc = gen_lookup[gen_is.index]
-        ppc["gen"][gen_idx_ppc, PG] = gen_is["p_mw"].values * gen_is["scaling"].values
-        ppc["gen"][gen_idx_ppc, VG] = gen_is["vm_pu"].values
+        gen_idx_ppc = gen_lookup[net["gen"].index[gen_is]]
+        ppc["gen"][gen_idx_ppc, PG] = net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is]
+        ppc["gen"][gen_idx_ppc, VG] = net["gen"]["vm_pu"].values[gen_is]
 
         # set bus values for generator buses
-        gen_buses = bus_lookup[gen_is["bus"].values]
-        ppc["bus"][gen_buses, VM] = gen_is["vm_pu"].values
+        gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
+        ppc["bus"][gen_buses, VM] = net["gen"]["vm_pu"].values[gen_is]
 
-        add_q_constraints(ppc, gen_is, gen_end, eg_end, net._options["delta"])
-        add_p_constraints(ppc, gen_is, gen_end, eg_end, net._options["delta"])
+        add_q_constraints(net, "gen", gen_is, ppc, gen_end, eg_end, net._options["delta"])
+        add_p_constraints(net, "gen", gen_is, ppc, gen_end, eg_end, net._options["delta"])
 
     # add extended ward pv node data
     if xw_end > gen_end:
@@ -236,17 +237,7 @@ def _update_gen_ppc(net, ppc):
         raise NotImplementedError("xwards in combination with recycle is not properly implemented")
         # _build_pp_xward(net, ppc, gen_end, xw_end, q_lim_default,
         #                           update_lookup=False)
-    _replace_nans_with_default_limits(net, ppc)
 
-def _replace_nans_with_default_limits(net, ppc):
-    qlim = net._options["q_lim_default"]
-    plim = net._options["p_lim_default"]
-
-    for ppc_column, default in [(QMAX, qlim), (QMIN, -qlim), (PMIN, -plim), (PMAX, plim),
-                                (VMAX, 2.0), (VMIN, 0.0)]:
-        limits = ppc["gen"][:, [ppc_column]]
-        ncn.copyto(limits, default, where=np.isnan(limits))
-        ppc["gen"][:, [ppc_column]] = limits
 
 def _check_voltage_setpoints_at_same_bus(ppc):
     # generator buses:
@@ -258,7 +249,7 @@ def _check_voltage_setpoints_at_same_bus(ppc):
 
 def _check_voltage_angles_at_same_bus(net, ppc):
     if net._is_elements["ext_grid"].any():
-        gen_va = net.ext_grid.va_degree[net._is_elements["ext_grid"]].values
+        gen_va = net.ext_grid.va_degree.values[net._is_elements["ext_grid"]]
         eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
         gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
         if _different_values_at_one_bus(gen_bus, gen_va):

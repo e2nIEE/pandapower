@@ -22,10 +22,10 @@ def trafo3w_net():
     pp.create_load(net, b3, 10000, 4000)
     pp.create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=b3, vn_hv_kv=222,
                                             vn_mv_kv=33, vn_lv_kv=11., sn_hv_mva=50,
-                                            sn_mv_mva=30, sn_lv_mva=20, vsc_hv_percent=11,
-                                            vscr_hv_percent=1., vsc_mv_percent=11,
-                                            vscr_mv_percent=1., vsc_lv_percent=11.,
-                                            vscr_lv_percent=1., pfe_mw=0.01, i0_percent=0.2)
+                                            sn_mv_mva=30, sn_lv_mva=20, vk_hv_percent=11,
+                                            vkr_hv_percent=1., vk_mv_percent=11,
+                                            vkr_mv_percent=1., vk_lv_percent=11.,
+                                            vkr_lv_percent=1., pfe_kw=10, i0_percent=0.2)
     return net
 
 def test_trafo3w_max(trafo3w_net):

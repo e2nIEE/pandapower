@@ -9,7 +9,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
-from pandapower.idx_bus import BASE_KV, VM
+from pandapower.idx_bus import BASE_KV, VM, VA
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
@@ -69,6 +69,8 @@ def _get_line_results(net, ppc, i_ft):
     i_to_ka = i_ft[f:t][:, 1]
     line_df = net["line"]
     i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    from_buses = ppc["branch"][f:t, F_BUS].real.astype(int)
+    to_buses = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write to line
     res_line_df = net["res_line"]
@@ -81,6 +83,10 @@ def _get_line_results(net, ppc, i_ft):
     res_line_df["i_from_ka"].values[:] = i_from_ka
     res_line_df["i_to_ka"].values[:] = i_to_ka
     res_line_df["i_ka"].values[:] = i_ka
+    res_line_df["vm_from_pu"].values[:] = ppc["bus"][from_buses, VM]
+    res_line_df["va_from_degree"].values[:] = ppc["bus"][from_buses, VA]
+    res_line_df["vm_to_pu"].values[:] = ppc["bus"][to_buses, VM]
+    res_line_df["va_to_degree"].values[:] = ppc["bus"][to_buses, VA]
     res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
 
 
@@ -124,6 +130,9 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     loading_percent = \
         ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
 
+    hv_buses = ppc["branch"][f:t, F_BUS].real.astype(int)
+    lv_buses = ppc["branch"][f:t, T_BUS].real.astype(int)
+
     # write results to trafo dataframe
     res_trafo_df = net["res_trafo"]
     res_trafo_df["p_hv_mw"].values[:] = p_hv_mw
@@ -134,6 +143,10 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     res_trafo_df["ql_mvar"].values[:] = ql_mvar
     res_trafo_df["i_hv_ka"].values[:] = i_hv_ka
     res_trafo_df["i_lv_ka"].values[:] = i_lv_ka
+    res_trafo_df["vm_hv_pu"].values[:] = ppc["bus"][hv_buses, VM]
+    res_trafo_df["va_hv_degree"].values[:] = ppc["bus"][hv_buses, VA]
+    res_trafo_df["vm_lv_pu"].values[:] = ppc["bus"][lv_buses, VM]
+    res_trafo_df["va_lv_degree"].values[:] = ppc["bus"][lv_buses, VA]
     res_trafo_df["loading_percent"].values[:] = loading_percent
 
 
@@ -190,6 +203,10 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
     loading_percent = ld_trafo
+    hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(int)
+    aux_buses = ppc["branch"][f:hv, T_BUS].real.astype(int)
+    mv_buses = ppc["branch"][hv:mv, T_BUS].real.astype(int)
+    lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(int)
 
     # write results to trafo3w dataframe
     res_trafo3w_df = net["res_trafo3w"]
@@ -204,6 +221,14 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft):
     res_trafo3w_df["i_hv_ka"].values[:] = i_h
     res_trafo3w_df["i_mv_ka"].values[:] = i_m
     res_trafo3w_df["i_lv_ka"].values[:] = i_l
+    res_trafo3w_df["vm_hv_pu"].values[:] = ppc["bus"][hv_buses, VM]
+    res_trafo3w_df["va_hv_degree"].values[:] = ppc["bus"][hv_buses, VA]
+    res_trafo3w_df["vm_mv_pu"].values[:] = ppc["bus"][mv_buses, VM]
+    res_trafo3w_df["va_mv_degree"].values[:] = ppc["bus"][mv_buses, VA]
+    res_trafo3w_df["vm_lv_pu"].values[:] = ppc["bus"][lv_buses, VM]
+    res_trafo3w_df["va_lv_degree"].values[:] = ppc["bus"][lv_buses, VA]
+    res_trafo3w_df["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
+    res_trafo3w_df["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
     res_trafo3w_df["loading_percent"].values[:] = loading_percent
 
 
@@ -254,10 +279,10 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
         return
     f, t = net._pd2ppc_lookups["branch"]["xward"]
     p_branch_xward = ppc["branch"][f:t, PF].real
-    net["res_xward"]["p_mw"] += p_branch_xward
+    net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values + p_branch_xward
     if ac:
         q_branch_xward = ppc["branch"][f:t, QF].real
-        net["res_xward"]["q_mvar"] += q_branch_xward
+        net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_branch_xward
     else:
         q_branch_xward = np.zeros(len(p_branch_xward))
     b_pp, p, q = _sum_by_group(net["xward"]["bus"].values, p_branch_xward, q_branch_xward)
@@ -265,6 +290,9 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
 
     pq_buses[b_ppc, 0] += p
     pq_buses[b_ppc, 1] += q
+    aux_buses = net["_pd2ppc_lookups"]["bus"][net["_pd2ppc_lookups"]["aux"]["xward"]]
+    net["res_xward"]["va_internal_degree"].values[:] = ppc["bus"][aux_buses, VA]
+    net["res_xward"]["vm_internal_pu"].values[:] = ppc["bus"][aux_buses, VM]
     net["res_xward"].index = net["xward"].index
 
 

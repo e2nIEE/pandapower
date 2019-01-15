@@ -81,29 +81,29 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
 
     # Trafos
     pp.create_transformer_from_parameters(net_cigre_hv, bus7, bus1, sn_mva=1000,
-                                          vn_hv_kv=380, vn_lv_kv=220, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_mw=0, i0_percent=0,
+                                          vn_hv_kv=380, vn_lv_kv=220, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=0.0, name='Trafo 1-7')
     pp.create_transformer_from_parameters(net_cigre_hv, bus8, bus3, sn_mva=1000,
-                                          vn_hv_kv=380, vn_lv_kv=220, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_mw=0, i0_percent=0,
+                                          vn_hv_kv=380, vn_lv_kv=220, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=0.0, name='Trafo 3-8')
 
     pp.create_transformer_from_parameters(net_cigre_hv, bus1, bus9, sn_mva=1000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_mw=0, i0_percent=0,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 9-1')
     pp.create_transformer_from_parameters(net_cigre_hv, bus2, bus10, sn_mva=1000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_mw=0, i0_percent=0,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 10-2')
     pp.create_transformer_from_parameters(net_cigre_hv, bus3, bus11, sn_mva=1000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_mw=0, i0_percent=0,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 11-3')
     pp.create_transformer_from_parameters(net_cigre_hv, bus6b, bus12, sn_mva=500,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_mw=0, i0_percent=0,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 12-6b')
 
     # Loads
@@ -211,12 +211,12 @@ def create_cigre_network_mv(with_der=False):
 
     # Trafos
     trafo0 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, buses[0], sn_mva=25,
-                                                   vn_hv_kv=110, vn_lv_kv=20, vscr_percent=0.16,
-                                                   vsc_percent=12.00107, pfe_mw=0, i0_percent=0,
+                                                   vn_hv_kv=110, vn_lv_kv=20, vkr_percent=0.16,
+                                                   vk_percent=12.00107, pfe_kw=0, i0_percent=0,
                                                    shift_degree=30.0, name='Trafo 0-1')
     trafo1 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, buses[11], sn_mva=25,
-                                                   vn_hv_kv=110, vn_lv_kv=20, vscr_percent=0.16,
-                                                   vsc_percent=12.00107, pfe_mw=0, i0_percent=0,
+                                                   vn_hv_kv=110, vn_lv_kv=20, vkr_percent=0.16,
+                                                   vk_percent=12.00107, pfe_kw=0, i0_percent=0,
                                                    shift_degree=30.0, name='Trafo 0-12')
 
     # Switches
@@ -467,19 +467,19 @@ def create_cigre_network_lv():
 
     # Trafos
     pp.create_transformer_from_parameters(net_cigre_lv, busR0, busR1, sn_mva=0.5, vn_hv_kv=20.0,
-                                          vn_lv_kv=0.4, vscr_percent=1.0, vsc_percent=4.123106,
-                                          pfe_mw=0.0, i0_percent=0.0, shift_degree=30.0,
-                                          tp_pos=0.0, name='Trafo R0-R1')
+                                          vn_lv_kv=0.4, vkr_percent=1.0, vk_percent=4.123106,
+                                          pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
+                                          tap_pos=0.0, name='Trafo R0-R1')
 
     pp.create_transformer_from_parameters(net_cigre_lv, busI0, busI1, sn_mva=0.15, vn_hv_kv=20.0,
-                                          vn_lv_kv=0.4, vscr_percent=1.003125, vsc_percent=4.126896,
-                                          pfe_mw=0.0, i0_percent=0.0, shift_degree=30.0,
-                                          tp_pos=0.0, name='Trafo I0-I1')
+                                          vn_lv_kv=0.4, vkr_percent=1.003125, vk_percent=4.126896,
+                                          pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
+                                          tap_pos=0.0, name='Trafo I0-I1')
 
     pp.create_transformer_from_parameters(net_cigre_lv, busC0, busC1, sn_mva=0.3, vn_hv_kv=20.0,
-                                          vn_lv_kv=0.4, vscr_percent=0.993750, vsc_percent=4.115529,
-                                          pfe_mw=0.0, i0_percent=0.0, shift_degree=30.0,
-                                          tp_pos=0.0, name='Trafo C0-C1')
+                                          vn_lv_kv=0.4, vkr_percent=0.993750, vk_percent=4.115529,
+                                          pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
+                                          tap_pos=0.0, name='Trafo C0-C1')
 
     # External grid
     pp.create_ext_grid(net_cigre_lv, bus0, vm_pu=1.0, va_degree=0.0, s_sc_max_mva=100.0,

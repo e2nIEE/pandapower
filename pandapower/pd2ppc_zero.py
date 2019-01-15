@@ -98,11 +98,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
             continue
 
-        vsc_percent = trafos["vsc_percent"].values.astype(float)
-        vscr_percent = trafos["vscr_percent"].values.astype(float)
+        vk_percent = trafos["vk_percent"].values.astype(float)
+        vkr_percent = trafos["vkr_percent"].values.astype(float)
         sn_mva = trafos["sn_mva"].values.astype(float)
-        vsc0_percent = trafos["vsc0_percent"].values.astype(float)
-        vscr0_percent = trafos["vscr0_percent"].values.astype(float)
+        vk0_percent = trafos["vk0_percent"].values.astype(float)
+        vkr0_percent = trafos["vkr0_percent"].values.astype(float)
         lv_buses = trafos["lv_bus"].values.astype(int)
         hv_buses = trafos["hv_bus"].values.astype(int)
         lv_buses_ppc = bus_lookup[lv_buses]
@@ -125,8 +125,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         # zero seq. transformer impedance
         tap_lv = np.square(vn_trafo_lv / vn_lv) * net.sn_mva  # adjust for low voltage side voltage converter
-        z_sc = vsc0_percent / 100. / sn_mva * tap_lv
-        r_sc = vscr0_percent / 100. / sn_mva * tap_lv
+        z_sc = vk0_percent / 100. / sn_mva * tap_lv
+        r_sc = vkr0_percent / 100. / sn_mva * tap_lv
         z_sc = z_sc.astype(float)
         r_sc = r_sc.astype(float)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc**2 - r_sc**2)
@@ -134,11 +134,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         if mode == "sc":
             from pandapower.shortcircuit.idx_bus import C_MAX
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
-            kt = _transformer_correction_factor(vsc_percent, vscr_percent, sn_mva, cmax)
+            kt = _transformer_correction_factor(vk_percent, vkr_percent, sn_mva, cmax)
             z0_k *= kt
         y0_k = 1 / z0_k
         # zero sequence transformer magnetising impedance
-        z_m = vsc0_percent * mag0_percent / 100. / sn_mva * tap_lv
+        z_m = vk0_percent * mag0_percent / 100. / sn_mva * tap_lv
         x_m = z_m / np.sqrt(mag0_rx**2 + 1)
         r_m = x_m * mag0_rx
         r0_trafo_mag = r_m / parallel

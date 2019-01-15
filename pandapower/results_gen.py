@@ -72,13 +72,12 @@ def _get_ext_grid_results(net, ppc):
     return b, p, q
 
 
-def _get_p_q_gen_resuts(net, ppc):
-    _is_elements = net["_is_elements"]
-    gen_is_mask = _is_elements['gen']
+def _get_p_q_gen_results(net, ppc):
+    gen_is = net["_is_elements"]["gen"]
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
-    gen_is_idx = net["gen"].index[gen_is_mask]
+    gen_is_idx = np.array(net["gen"].index)[gen_is]
     # indices of in service gens in the ppc
-    if np.any(_is_elements["gen"]):
+    if np.any(gen_is):
         gen_idx_ppc = gen_lookup[gen_is_idx]
     else:
         gen_idx_ppc = []
@@ -86,14 +85,14 @@ def _get_p_q_gen_resuts(net, ppc):
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
     p_gen = np.zeros(n_res_gen)
-    p_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, PG]
+    p_gen[gen_is] = ppc["gen"][gen_idx_ppc, PG]
     q_gen = None
     if net["_options"]["ac"]:
         q_gen = np.zeros(n_res_gen)
-        q_gen[gen_is_mask] = ppc["gen"][gen_idx_ppc, QG]
-        net["res_gen"]["q_mvar"] = q_gen
+        q_gen[gen_is] = ppc["gen"][gen_idx_ppc, QG]
+        net["res_gen"]["q_mvar"].values[:] = q_gen
 
-    net["res_gen"]["p_mw"] = p_gen
+    net["res_gen"]["p_mw"].values[:] = p_gen
     return p_gen, q_gen
 
 
@@ -102,29 +101,28 @@ def _get_v_gen_resuts(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     # in service gens
-    gen_is_mask = net["_is_elements"]['gen']
-    bus_idx_ppc = bus_lookup[net["gen"]["bus"].values[gen_is_mask]]
+    gen_is = net["_is_elements"]['gen']
+    bus_idx_ppc = bus_lookup[net["gen"]["bus"].values[gen_is]]
 
     n_res_gen = len(net['gen'])
 
     # voltage magnitudes
     v_pu = np.zeros(n_res_gen)
-    v_pu[gen_is_mask] = ppc["bus"][bus_idx_ppc][:, VM]
+    v_pu[gen_is] = ppc["bus"][bus_idx_ppc][:, VM]
 
     # voltage angles
     v_a = np.zeros(n_res_gen)
-    v_a[gen_is_mask] = ppc["bus"][bus_idx_ppc][:, VA]
+    v_a[gen_is] = ppc["bus"][bus_idx_ppc][:, VA]
 
-    net["res_gen"]["vm_pu"] = v_pu
-    net["res_gen"]["va_degree"] = v_a
+    net["res_gen"]["vm_pu"].values[:] = v_pu
+    net["res_gen"]["va_degree"].values[:] = v_a
     return v_pu, v_a
 
 
 def _get_pp_gen_results(net, ppc, b, p, q):
-    p_gen, q_gen = _get_p_q_gen_resuts(net, ppc)
+    p_gen, q_gen = _get_p_q_gen_results(net, ppc)
     _get_v_gen_resuts(net, ppc)
 
-    net["res_gen"].index = net['gen'].index
     b = np.hstack([b, net['gen'].bus.values])
 
     p = np.hstack([p, p_gen])

@@ -61,6 +61,9 @@ def verify_results(net):
                 empty_res_element(net, res_element)
             else:
                 init_element(net, element)
+                if element == "bus":
+                    net._options["init_vm_pu"] = "auto"
+                    net._options["init_va_degree"] = "auto"
 
 
 def empty_res_element(net, res_element):
@@ -80,11 +83,11 @@ def init_element(net, element):
 
 
 def get_elements_to_empty():
-    return ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
+    return ["bus"] # ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
 
 
 def get_elements_to_init():
-    return ["line", "trafo", "trafo3w", "impedance"]
+    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
 
 
 def reset_results(net):

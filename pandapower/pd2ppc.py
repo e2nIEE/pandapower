@@ -112,6 +112,8 @@ def _pd2ppc(net):
     if "pf" in mode:
         _check_for_reference_bus(ppc)
 
+    aux._replace_nans_with_default_limits(net, ppc)
+
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
@@ -242,8 +244,8 @@ def _ppc2ppci(ppc, ppci, net):
         ref_gens = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
     else:
         ref_gens = np.array([])
-    if net.gen[net._is_elements["gen"]].slack.any():
-        slack_gens = net.gen.index[net._is_elements["gen"] & net.gen["slack"]]
+    if np.any(net.gen.slack.values[net._is_elements["gen"]]):
+        slack_gens = np.array(net.gen.index)[net._is_elements["gen"] & net.gen["slack"].values]
         ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
     ppci["internal"]["ref_gens"] = ref_gens.astype(int)
     return ppci

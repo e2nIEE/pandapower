@@ -39,23 +39,23 @@ def test_cost_mixed():
 
     # testing some combinations
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_mw.values[0]
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 0
     net.poly_cost.cp2_eur_per_mw2.at[0] = 1
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2)
 
     net.poly_cost.cp0_eur.at[0] = 1
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2 + 1)
 
     net.load.controllable.at[0] = True
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values ** 2 + 1)
 
     net.load.controllable.at[0] = False
@@ -64,7 +64,7 @@ def test_cost_mixed():
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 1000
     net.poly_cost.cp2_eur_per_mw2.at[0] = 0
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert np.isclose(net.res_ext_grid.p_mw.values[0], 0, atol=1e-4)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values[0]*1000, atol=1e-3)
 
@@ -88,7 +88,7 @@ def test_mixed_p_q_pol():
 
     # testing some combinations
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1, cq1_eur_per_mvar=1)
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, (net.res_gen.p_mw.values + net.res_gen.q_mvar.values))
 
@@ -113,7 +113,7 @@ def test_mixed_p_q_pwl():
     # testing some combinations
     pp.create_pwl_cost(net, 0, "gen", [(-150, 150, 1)])
     pp.create_pwl_cost(net, 0, "gen", [(-150, 150, 1)], power_type="q")
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_mw.values + net.res_gen.q_mvar.values
 
@@ -136,23 +136,23 @@ if __name__ == "__main__":
 
     # testing some combinations
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_mw.values[0]
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 0
     net.poly_cost.cp2_eur_per_mw2.at[0] = 1
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2)
 
     net.poly_cost.cp0_eur.at[0] = 1
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2 + 1)
 
     net.load.controllable.at[0] = True
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values ** 2 + 1)
 
     net.load.controllable.at[0] = False
@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 1000
     net.poly_cost.cp2_eur_per_mw2.at[0] = 0
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert np.isclose(net.res_ext_grid.p_mw.values[0], 0, atol=1e-4)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values[0]*1000, atol=1e-3)
 

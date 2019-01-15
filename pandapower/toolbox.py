@@ -449,8 +449,9 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    if "version" not in net or net.version < 2:
+    if "version" not in net:
         _pre_release_changes(net)
+    if net.version < 2:
         if net.name is None:
             net.name = ""
         if "sn_kva" not in net:
@@ -461,10 +462,21 @@ def convert_format(net):
         for typ, data in net.std_types["line"].items():
             if "imax_ka" in data:
                 net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
+
+        # "tap_phase_shifter" is now required for the calculation
+        if "tap_phase_shifter" not in net.trafo3w and "tp_phase_shifter"not in net.trafo3w:
+            net.trafo3w["tap_phase_shifter"] = False
+        if "tap_phase_shifter" not in net.trafo and "tp_phase_shifter"not in net.trafo:
+            net.trafo["tap_phase_shifter"] = False
+
         # unsymmetric impedance
         if "r_pu" in net.impedance:
             net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
             net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+        for element in ["trafo", "line", "trafo3w"]:
+            if "df" not in net[element]:
+                net[element]["df"] = 1.0
+
         # initialize measurement dataframe
         if "measurement" in net and "type" in net.measurement:
             if net.measurement.empty:
@@ -486,6 +498,8 @@ def convert_format(net):
                                                                  ("value", "float64"),
                                                                  ("std_dev", "float64"),
                                                                  ("side", np.dtype(object))]))
+
+        # initialize dcline dataframe in net if not exist
         if "dcline" not in net:
             net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                             ("from_bus", "u4"),
@@ -502,6 +516,20 @@ def convert_format(net):
                                                             ("max_q_to_kvar", "f8"),
                                                             ("cost_per_kw", 'f8'),
                                                             ("in_service", 'bool')]))
+        # initialize storage dataframe in net if not exist
+        if "storage" not in net:
+            net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                             ("bus", "i8"),
+                                                             ("p_kw", "f8"),
+                                                             ("q_kvar", "f8"),
+                                                             ("sn_kva", "f8"),
+                                                             ("soc_percent", "f8"),
+                                                             ("min_e_kwh", "f8"),
+                                                             ("max_e_kwh", "f8"),
+                                                             ("scaling", "f8"),
+                                                             ("in_service", 'bool'),
+                                                             ("type", np.dtype(object))]))
+
         if "_empty_res_dcline" not in net:
             net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
                                                                        ("q_from_kvar", "f8"),
@@ -515,30 +543,61 @@ def convert_format(net):
         if "_empty_res_storage" not in net:
             net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
                                                                         ("q_kvar", "f8")]))
+        if not "vm_pu" in net._empty_res_gen:
+            net["_empty_res_gen"] = pd.DataFrame(np.zeros(0, dtype= [("p_mw", "f8"),
+                                                                     ("q_mvar", "f8"),
+                                                                     ("va_degree", "f8"),
+                                                                     ("vm_pu", "f8")]))
 
-        if len(net["_empty_res_line"]) < 10:
-            net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                     ("q_from_kvar", "f8"),
-                                                                     ("p_to_kw", "f8"),
-                                                                     ("q_to_kvar", "f8"),
-                                                                     ("pl_kw", "f8"),
-                                                                     ("ql_kvar", "f8"),
-                                                                     ("i_from_ka", "f8"),
-                                                                     ("i_to_ka", "f8"),
-                                                                     ("i_ka", "f8"),
-                                                                     ("loading_percent", "f8")]))
-        if "storage" not in net:
-            net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                             ("bus", "i8"),
-                                                             ("p_kw", "f8"),
-                                                             ("q_kvar", "f8"),
-                                                             ("sn_kva", "f8"),
-                                                             ("soc_percent", "f8"),
-                                                             ("min_e_kwh", "f8"),
-                                                             ("max_e_kwh", "f8"),
-                                                             ("scaling", "f8"),
-                                                             ("in_service", 'bool'),
-                                                             ("type", np.dtype(object))]))
+        if not "vm_from_pu" in net._empty_res_line:
+            net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype= [("p_from_mw", "f8"),
+                                                                      ("q_from_mvar", "f8"),
+                                                                      ("p_to_mw", "f8"),
+                                                                      ("q_to_mvar", "f8"),
+                                                                      ("pl_mw", "f8"),
+                                                                      ("ql_mvar", "f8"),
+                                                                      ("i_from_ka", "f8"),
+                                                                      ("i_to_ka", "f8"),
+                                                                      ("i_ka", "f8"),
+                                                                      ("vm_from_pu", "f8"),
+                                                                      ("va_from_degree", "f8"),
+                                                                      ("vm_to_pu", "f8"),
+                                                                      ("va_to_degree", "f8"),
+                                                                      ("loading_percent", "f8")]))
+        if not "vm_hv_pu" in net._empty_res_trafo:
+            net["_empty_res_trafo"] = pd.DataFrame(np.zeros(0, dtype= [("p_hv_mw", "f8"),
+                                                                       ("q_hv_mvar", "f8"),
+                                                                       ("p_lv_mw", "f8"),
+                                                                       ("q_lv_mvar", "f8"),
+                                                                       ("pl_mw", "f8"),
+                                                                       ("ql_mvar", "f8"),
+                                                                       ("i_hv_ka", "f8"),
+                                                                       ("i_lv_ka", "f8"),
+                                                                       ("vm_hv_pu", "f8"),
+                                                                       ("va_hv_degree", "f8"),
+                                                                       ("vm_lv_pu", "f8"),
+                                                                       ("va_lv_degree", "f8"),
+                                                                       ("loading_percent", "f8")]))
+        if not "vm_hv_pu" in net._empty_res_trafo3w:
+            net["_empty_res_trafo3w"] = pd.DataFrame(np.zeros(0, dtype=   [("p_hv_mw", "f8"),
+                                                                           ("q_hv_mvar", "f8"),
+                                                                           ("p_mv_mw", "f8"),
+                                                                           ("q_mv_mvar", "f8"),
+                                                                           ("p_lv_mw", "f8"),
+                                                                           ("q_lv_mvar", "f8"),
+                                                                           ("pl_mw", "f8"),
+                                                                           ("ql_mvar", "f8"),
+                                                                           ("i_hv_ka", "f8"),
+                                                                           ("i_mv_ka", "f8"),
+                                                                           ("i_lv_ka", "f8"),
+                                                                           ("vm_hv_pu", "f8"),
+                                                                           ("va_hv_degree", "f8"),
+                                                                           ("vm_mv_pu", "f8"),
+                                                                           ("va_mv_degree", "f8"),
+                                                                           ("vm_lv_pu", "f8"),
+                                                                           ("va_lv_degree", "f8"),
+                                                                           ("loading_percent", "f8")]))
+        # update required values for OPF
         if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
             if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
                 pmin = copy.copy(net.gen.min_p_kw.values)
@@ -610,16 +669,12 @@ def convert_format(net):
                     if not np.isnan(cost):
                         create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
-        if "tp_st_degree" not in net.trafo:
-            net.trafo["tp_st_degree"] = np.nan
-        if "tp_st_degree" not in net.trafo3w:
-            net.trafo3w["tp_st_degree"] = np.nan
-        if "tap_at_star_point" not in net.trafo3w:
-            net.trafo3w["tap_at_star_point"] = False
         if "_pd2ppc_lookups" not in net:
             net._pd2ppc_lookups = {"bus": None,
                                    "ext_grid": None,
-                                   "gen": None}
+                                   "gen": None,
+                                   "branch": None,
+                                   "aux": None}
         if "_is_elements" not in net and "__is_elements" in net:
             net["_is_elements"] = copy.deepcopy(net["__is_elements"])
             net.pop("__is_elements", None)
@@ -644,12 +699,11 @@ def convert_format(net):
             net.shunt["step"] = 1
         if "max_step" not in net["shunt"]:
             net.shunt["max_step"] = 1
-        if "_pd2ppc_lookups" not in net:
-            net["_pd2ppc_lookups"] = {"bus": None,
-                                      "gen": None,
-                                      "branch": None}
         if "std_type" not in net.trafo3w:
             net.trafo3w["std_type"] = None
+
+        if "current_source" not in net.sgen:
+            net.sgen["current_source"] = net.sgen["type"].apply(func=lambda x: False if x == "motor" else True)
 
     #    if "time_resolution" not in net:
     #        # for storages
@@ -718,14 +772,40 @@ def convert_format(net):
             net.sn_mva = net.sn_kva*1e-3
             del net.sn_kva
         net.version = float(__version__[:3])
+
+    _update_trafo_parameter_names(net)
+    _revert_pfe_mw(net)
     return net
+
+def _update_trafo_parameter_names(net):
+    for element in ["trafo", "trafo3w"]:
+        replace_cols = {col: _update_column(col) for col in net[element].columns if
+                col.startswith("tp") or col.startswith("vsc")}
+        net[element].rename(columns=replace_cols, inplace=True)
+
+def _update_column(column):
+    column = column.replace("tp_", "tap_")
+    column = column.replace("_st_", "_step_")
+    column = column.replace("_mid", "_neutral")
+    column = column.replace("vsc", "vk")
+    return column
+
+def _revert_pfe_mw(net):
+    for element in ["trafo", "trafo3w"]:
+        if "pfe_mw" in net[element]:
+            net[element]["pfe_kw"] =  net[element]["pfe_mw"]*1e3
+            del net[element]["pfe_mw"]
+            for std_type, parameters in net.std_types[element].items():
+                if "pfe_mw" in parameters:
+                    parameters["pfe_kw"] = parameters.pop("pfe_mw")*1e3
 
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
     for element, tab in net.items():
         if isinstance(tab, pd.DataFrame):
             for old, new in replace:
-                diff = {column: column.replace(old, new) for column in tab.columns if old in column}
+                diff = {column: column.replace(old, new) for column in tab.columns if old in column
+                        and column != "pfe_kw"}
                 tab.rename(columns=diff, inplace=True)
                 if len(tab) == 0:
                     continue
@@ -736,16 +816,20 @@ def _convert_to_mw(net):
         for std_type, parameters in std_types.items():
             for parameter, value in parameters.items():
                 for old, new in replace:
-                    if old in parameter:
+                    if old in parameter and parameter != "pfe_kw":
                         parameters[parameter.replace(old, new)] = value*1e-3
                         del parameters[parameter]
-#    else:
-#        net.sn_mva = 1.
 
 
 def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
     from pandapower.powerflow import reset_results
+    if "tp_st_degree" not in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
+    if "tp_at_star_point" not in net.trafo3w:
+        net.trafo3w["tp_at_star_point"] = False
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
         add_basic_std_types(net)
@@ -806,17 +890,17 @@ def _pre_release_changes(net):
                                                 "un1_kv": "vn_hv_kv", "un2_kv": "vn_lv_kv",
                                                 'vfe_kw': 'pfe_kw', "unh_kv": "vn_hv_kv",
                                                 "unl_kv": "vn_lv_kv", "type": "std_type",
-                                                'vfe_kw': 'pfe_kw', "uk_percent": "vsc_percent",
-                                                "ur_percent": "vscr_percent",
+                                                'vfe_kw': 'pfe_kw', "uk_percent": "vk_percent",
+                                                "ur_percent": "vkr_percent",
                                                 "vnh_kv": "vn_hv_kv", "vnl_kv": "vn_lv_kv"})
     net["trafo3w"] = net["trafo3w"].rename(columns={"unh_kv": "vn_hv_kv", "unm_kv": "vn_mv_kv",
                                                     "unl_kv": "vn_lv_kv",
-                                                    "ukh_percent": "vsc_hv_percent",
-                                                    "ukm_percent": "vsc_mv_percent",
-                                                    "ukl_percent": "vsc_lv_percent",
-                                                    "urh_percent": "vscr_hv_percent",
-                                                    "urm_percent": "vscr_mv_percent",
-                                                    "url_percent": "vscr_lv_percent",
+                                                    "ukh_percent": "vk_hv_percent",
+                                                    "ukm_percent": "vk_mv_percent",
+                                                    "ukl_percent": "vk_lv_percent",
+                                                    "urh_percent": "vkr_hv_percent",
+                                                    "urm_percent": "vkr_mv_percent",
+                                                    "url_percent": "vkr_lv_percent",
                                                     'vfe_kw': 'pfe_kw',
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
@@ -911,13 +995,14 @@ def _pre_release_changes(net):
         reset_results(net)
 
     for attribute in ['tp_st_percent', 'tp_pos', 'tp_mid', 'tp_min', 'tp_max']:
-        if net.trafo[attribute].dtype == 'O':
-            net.trafo[attribute] = pd.to_numeric(net.trafo[attribute])
+        if attribute in net.trafo:
+            if net.trafo[attribute].dtype == 'O':
+                net.trafo[attribute] = pd.to_numeric(net.trafo[attribute])
     net["gen"] = net["gen"].rename(columns={"u_pu": "vm_pu"})
     for element, old, new in [("trafo", "unh_kv", "vn_hv_kv"),
                               ("trafo", "unl_kv", "vn_lv_kv"),
-                              ("trafo", "uk_percent", "vsc_percent"),
-                              ("trafo", "ur_percent", "vscr_percent"),
+                              ("trafo", "uk_percent", "vk_percent"),
+                              ("trafo", "ur_percent", "vkr_percent"),
                               ("trafo3w", "unh_kv", "vn_hv_kv"),
                               ("trafo3w", "unm_kv", "vn_mv_kv"),
                               ("trafo3w", "unl_kv", "vn_lv_kv")]:
@@ -936,6 +1021,7 @@ def _pre_release_changes(net):
     if "in_service" not in net["ward"]:
         net.ward["in_service"] = True
     net.switch.closed = net.switch.closed.astype(bool)
+    net.version = 1.0
 
 
 def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,

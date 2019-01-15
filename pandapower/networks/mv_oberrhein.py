@@ -59,11 +59,11 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     if scenario == "load":
         net.load.scaling = 0.6
         net.sgen.scaling = 0.0
-        net.trafo.tp_pos.loc[hv_trafos] = [-2, -3]
+        net.trafo.tap_pos.loc[hv_trafos] = [-2, -3]
     elif scenario == "generation":
         net.load.scaling = 0.1
         net.sgen.scaling = 0.8
-        net.trafo.tp_pos.loc[hv_trafos] = [0, 0]
+        net.trafo.tap_pos.loc[hv_trafos] = [0, 0]
     else:
         raise ValueError("Unknown scenario %s - chose 'load' or 'generation'" % scenario)
 

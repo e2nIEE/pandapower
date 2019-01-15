@@ -39,7 +39,7 @@ def test_cost_pol_gen():
 
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
 
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
 
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_mw.values
@@ -47,7 +47,7 @@ def test_cost_pol_gen():
     net.poly_cost.cp1_eur_per_mw.at[0] = 0
     net.poly_cost.cp2_eur_per_mw2.at[0] = 1
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2)
@@ -77,7 +77,7 @@ def test_cost_pol_all_elements():
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=1)
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
 
     assert net["OPF_converged"]
     assert abs(net.res_cost - (net.res_gen.p_mw.values + net.res_sgen.p_mw.values)) < 1e-2
@@ -85,7 +85,7 @@ def test_cost_pol_all_elements():
     net.poly_cost.cp1_eur_per_mw.at[0] = 0
     net.poly_cost.cp2_eur_per_mw2.at[0] = 1
 
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2 + net.res_sgen.p_mw.values)
@@ -111,7 +111,7 @@ def test_cost_pol_q():
 
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=-1)
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
 
     assert net["OPF_converged"]
     assert abs(net.res_cost + (net.res_sgen.q_mvar.values)) < 1e-2
@@ -120,7 +120,7 @@ def test_cost_pol_q():
     net.poly_cost.cq2_eur_per_mvar2.at[0] = 1
 #    net.poly_cost.c.at[0] = np.array([[1, 0, 0]])
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_sgen.q_mvar.values**2)

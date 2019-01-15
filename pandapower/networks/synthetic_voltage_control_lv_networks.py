@@ -21,7 +21,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     According to Lindner the household loads are 5.1 mw and the special loads are 7.9 kW. \
     The user is suggested to assume load distribution and load profile generation. The line
     parameters according to the given types are received from pandapower standard types and
-    literatur (as stated in the code). Transformer parameters, except the given 'vsc_percent',
+    literatur (as stated in the code). Transformer parameters, except the given 'vk_percent',
     'sn_mva' and voltage levels, are based the pandapower standard type data.
 
     OPTIONAL:
@@ -104,20 +104,20 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     if network_class == "rural_1":
         data = net.std_types['trafo']['0.25 MVA 20/0.4 kV']
         data['sn_mva'] = 0.16
-        data['pfe_mw'] = 0.62e-3
+        data['pfe_kw'] = 0.62
         data['i0_percent'] = 0.31
-        data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
-        data['vsc_percent'] = 4
+        data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
+        data['vk_percent'] = 4
         pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
     elif network_class in ["rural_2", "village_1"]:
         data = net.std_types['trafo']['0.25 MVA 20/0.4 kV']
-        data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
-        data['vsc_percent'] = 4
+        data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
+        data['vk_percent'] = 4
         pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
     elif network_class in ["suburb_1", "village_2"]:
         data = net.std_types['trafo']['0.4 MVA 20/0.4 kV']
-        data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
-        data['vsc_percent'] = 4
+        data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
+        data['vk_percent'] = 4
         pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
 
     # create mv connection

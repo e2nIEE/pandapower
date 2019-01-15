@@ -9,7 +9,7 @@ from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
 from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors, _init_ppc
+    _build_measurement_vectors, _init_ppc, _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
@@ -27,7 +27,7 @@ std_logger = logging.getLogger(__name__)
 
 
 def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True):
+             calculate_voltage_angles=True, fuse_all_bb_switches=True):
     """
     Wrapper function for WLS state estimation.
 
@@ -46,6 +46,11 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True.
+        
+        **fuse_all_bb_switches** - (bool) - if true when considering bus-bus-switches the buses
+        will fused (Default behaviour) otherwise auxiliary lines will be added between those buses 
+        where an element is connected to them in order to clear the p,q results on each buses 
+        instead of fusing them all together
 
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
@@ -63,7 +68,7 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
             delta_start = res_bus.va_degree.values
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
-    return wls.estimate(v_start, delta_start, calculate_voltage_angles)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles, fuse_all_bb_switches)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -186,7 +191,7 @@ class state_estimation(object):
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True):
+    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True, fuse_all_bb_switches=True):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -214,6 +219,11 @@ class state_estimation(object):
         OPTIONAL:
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
             phase shifts in transformers Default is True.
+            
+            **fuse_all_bb_switches** - (bool) - if true when considering bus-bus-switches the buses
+            will fused (Default behaviour) otherwise auxiliary lines will be added between those buses 
+            where an element is connected to them in order to clear the p,q results on each buses 
+            instead of fusing them all together
 
         OUTPUT:
             **successful** (boolean) - True if the estimation process was successful
@@ -229,6 +239,12 @@ class state_estimation(object):
         if self.net is None:
             raise UserWarning("Component was not initialized with a network.")
         t0 = time()
+        
+        # change the configuration of the pp net to avoid auto fusing of buses connected
+        # through bb switch with elements on each bus if this feature enabled
+        if not fuse_all_bb_switches and not self.net.switch.empty:
+            _add_aux_elements_for_bb_switch(self.net)
+        
         # add initial values for V and delta
         # node voltages
         # V<delta
@@ -387,6 +403,9 @@ class state_estimation(object):
                                                    mapping_table)
         
         _clean_up(self.net)
+        # clear the aux elements and calculation results created for the substitution of bb switches
+        if not fuse_all_bb_switches and not self.net.switch.empty:
+            _drop_aux_elements_for_bb_switch(self.net)
 
         # store variables required for chi^2 and r_N_max test:
         self.R_inv = r_inv.toarray()

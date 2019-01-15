@@ -84,13 +84,13 @@ class TestInvalidValues:
         net.bus.loc[42, 'vn_kv'] = '-1'
         net.line.loc[7, 'length_km'] = -1
         net.line.loc[8, 'max_i_ka'] = 0
-        net.trafo.loc[0, 'vsc_percent'] = 0.0
+        net.trafo.loc[0, 'vk_percent'] = 0.0
         net.trafo.loc[0, 'sn_mva'] = None
         net.trafo.loc[0, 'vn_hv_kv'] = -1.5
         net.trafo.loc[0, 'vn_lv_kv'] = False
-        net.trafo3w.loc[0, 'vsc_hv_percent'] = 2.3
-        net.trafo3w.loc[0, 'vsc_mv_percent'] = np.nan
-        net.trafo3w.loc[0, 'vsc_lv_percent'] = 0.0
+        net.trafo3w.loc[0, 'vk_hv_percent'] = 2.3
+        net.trafo3w.loc[0, 'vk_mv_percent'] = np.nan
+        net.trafo3w.loc[0, 'vk_lv_percent'] = 0.0
         net.trafo3w.loc[0, 'sn_hv_mva'] = 11
         net.trafo3w.loc[0, 'sn_mv_mva'] = 'a'
         net.trafo3w.loc[0, 'vn_hv_kv'] = -1.5
@@ -109,10 +109,10 @@ class TestInvalidValues:
          'ext_grid': [(0, 'vm_pu', True, '>0')],
          'line': [(7, 'length_km', -1.0, '>0'), (8, 'max_i_ka', 0.0, '>0')],
          'trafo': [(0, 'sn_mva', 'nan', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
-                   (0, 'vn_lv_kv', False, '>0'), (0, 'vsc_percent', 0.0, '>0')],
+                   (0, 'vn_lv_kv', False, '>0'), (0, 'vk_percent', 0.0, '>0')],
          'trafo3w': [(0, 'sn_mv_mva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
                      (0, 'vn_mv_kv', -1.5, '>0'), (0, 'vn_lv_kv', False, '>0'),
-                     (0, 'vsc_mv_percent', 'nan', '>0'), (0, 'vsc_lv_percent', 0.0, '>0')]}
+                     (0, 'vk_mv_percent', 'nan', '>0'), (0, 'vk_lv_percent', 0.0, '>0')]}
 
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
@@ -131,13 +131,13 @@ class TestInvalidValues:
         net.line.loc[7, 'r_ohm_per_km'] = -1
         net.line.loc[8, 'x_ohm_per_km'] = None
         net.line.loc[8, 'c_nf_per_km'] = '0'
-        net.trafo.loc[0, 'vscr_percent'] = '-1'
-        net.trafo.loc[0, 'pfe_mw'] = -1.5
+        net.trafo.loc[0, 'vkr_percent'] = '-1'
+        net.trafo.loc[0, 'pfe_kw'] = -1.5
         net.trafo.loc[0, 'i0_percent'] = -0.001
-        net.trafo3w.loc[0, 'vscr_hv_percent'] = True
-        net.trafo3w.loc[0, 'vscr_mv_percent'] = False
-        net.trafo3w.loc[0, 'vscr_lv_percent'] = 1
-        net.trafo3w.loc[0, 'pfe_mw'] = '2'
+        net.trafo3w.loc[0, 'vkr_hv_percent'] = True
+        net.trafo3w.loc[0, 'vkr_mv_percent'] = False
+        net.trafo3w.loc[0, 'vkr_lv_percent'] = 1
+        net.trafo3w.loc[0, 'pfe_kw'] = '2'
         net.trafo3w.loc[0, 'i0_percent'] = 10
         net.load.loc[0, 'scaling'] = -0.1
         net.load.loc[1, 'scaling'] = 0
@@ -154,10 +154,10 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'), (8, 'x_ohm_per_km', 'nan', '>=0'),
                   (8, 'c_nf_per_km', '0', '>=0')],
-         'trafo': [(0, 'vscr_percent', '-1', '>=0'), (0, 'pfe_mw', -1.5, '>=0'),
+         'trafo': [(0, 'vkr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
                    (0, 'i0_percent', -0.001, '>=0')],
-         'trafo3w': [(0, 'vscr_hv_percent', True, '>=0'), (0, 'vscr_mv_percent', False, '>=0'),
-                     (0, 'pfe_mw', '2', '>=0')],
+         'trafo3w': [(0, 'vkr_hv_percent', True, '>=0'), (0, 'vkr_mv_percent', False, '>=0'),
+                     (0, 'pfe_kw', '2', '>=0')],
          'gen': [(0, 'scaling', 'nan', '>=0')],
          'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
          'sgen': [(0, 'scaling', False, '>=0')]}
@@ -975,7 +975,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
     net.line.c_nf_per_km.loc[14] *= -1
     net.line.max_i_ka.loc[21] = '5'
     pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
-    net.trafo.vsc_percent.loc[0] *= 2
+    net.trafo.vk_percent.loc[0] *= 2
     check_result = pp.deviation_from_std_type(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -990,7 +990,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
                    'std_type_value': 264},
               21: {'e_value': '5', 'param': 'max_i_ka', 'std_type_in_lib': True,
                    'std_type_value': 0.105}},
-    'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
+    'trafo': {0: {'e_value': 24.4, 'param': 'vk_percent', 'std_type_in_lib': True,
                   'std_type_value': 12.2}}
     }
 
