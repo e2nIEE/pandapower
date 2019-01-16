@@ -677,40 +677,6 @@ def test_net_with_bb_switch():
     # asserting with more tolerance since the added impedance will cause some inaccuracy
     assert np.allclose(net.res_bus.p_mw.values,net.res_bus_est.p_mw.values, atol=1e-2)
     assert np.allclose(net.res_bus.q_mvar.values,net.res_bus_est.q_mvar.values, atol=1e-2)
-    
-def test_net_with_zero_injection():
-    # Created on Mon Dec 10 10:20:09 2018
-    # @author: AndersLi
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, name="Bus 1", vn_kv=220, index=1)
-    b2 = pp.create_bus(net, name="Bus 2", vn_kv=220, index=2)
-    b3 = pp.create_bus(net, name="Bus 3", vn_kv=220, index=3)
-    b4 = pp.create_bus(net, name="Bus 4", vn_kv=220, index=4)
-    
-    pp.create_ext_grid(net, 1)  # set the slack bus to bus 1
-    factor=48.4*2*np.pi*50*1e-9
-    l1 = pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.0221*48.4, x_ohm_per_km=.1603*48.4, c_nf_per_km=0.00274/factor, max_i_ka=1)
-    l2 = pp.create_line_from_parameters(net, 2, 3, 1, r_ohm_per_km=.0428*48.4, x_ohm_per_km=.242*48.4, c_nf_per_km=0.00384/factor, max_i_ka=1)
-    l3 = pp.create_line_from_parameters(net, 2, 4, 1, r_ohm_per_km=.002*48.4, x_ohm_per_km=.0111*48.4, c_nf_per_km=0.00018/factor, max_i_ka=1)
-    
-    pp.create_measurement(net, "v", "bus", 1.063548, .001, b1)      # V at bus 1 
-    pp.create_measurement(net, "v", "bus", 1.068342, .001, b3)      # V at bus 3 
-    pp.create_measurement(net, "v", "bus", 1.069861, .001, b4)      # V at bus 4 
-    pp.create_measurement(net, "p", "bus", -40.0, 1, b1)          # P at bus 1 
-    pp.create_measurement(net, "q", "bus", -9.2, 1, b1)           # Q at bus 1
-    #pp.create_measurement(net, "p", "bus", 0, 0.01, b2)             # P at bus 2
-    #pp.create_measurement(net, "q", "bus", 0, 0.01, b2)             # Q at bus 2 
-    pp.create_measurement(net, "p", "bus", 10.0, 1, b3)           # P at bus 3 
-    pp.create_measurement(net, "q", "bus", 1.0, 1, b3)            # Q at bus 3
-    pp.create_measurement(net, "p", "bus", 30.0, 1, b4)           # P at bus 4 
-    pp.create_measurement(net, "q", "bus", -0.100, 1, b4)         # Q at bus 4 
-    pp.create_measurement(net, "p", "line", 30.100, 1, l3, side="to")     # Pline (bus 2 -> bus 4) at bus 4 
-    pp.create_measurement(net, "q", "line", -0.099, 1, l3, side="to")     # Qline (bus 2 -> bus 4) at bus 4
-
-    success = estimate(net, init='flat', tolerance=1e-10)
-    assert success
-    assert net.res_bus_est.at[1, 'p_mw'] < 1e-8
-    assert net.res_bus_est.at[1, 'q_mvar'] < 1e-8
 
 def test_net_with_zero_injection():
     # Created on Mon Dec 10 10:20:09 2018
@@ -723,9 +689,12 @@ def test_net_with_zero_injection():
     
     pp.create_ext_grid(net, 1)  # set the slack bus to bus 1
     factor=48.4*2*np.pi*50*1e-9
-    l1 = pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.0221*48.4, x_ohm_per_km=.1603*48.4, c_nf_per_km=0.00274/factor, max_i_ka=1)
-    l2 = pp.create_line_from_parameters(net, 2, 3, 1, r_ohm_per_km=.0428*48.4, x_ohm_per_km=.242*48.4, c_nf_per_km=0.00384/factor, max_i_ka=1)
-    l3 = pp.create_line_from_parameters(net, 2, 4, 1, r_ohm_per_km=.002*48.4, x_ohm_per_km=.0111*48.4, c_nf_per_km=0.00018/factor, max_i_ka=1)
+    l1 = pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.0221*48.4, 
+                                        x_ohm_per_km=.1603*48.4, c_nf_per_km=0.00274/factor, max_i_ka=1)
+    l2 = pp.create_line_from_parameters(net, 2, 3, 1, r_ohm_per_km=.0428*48.4, 
+                                        x_ohm_per_km=.242*48.4, c_nf_per_km=0.00384/factor, max_i_ka=1)
+    l3 = pp.create_line_from_parameters(net, 2, 4, 1, r_ohm_per_km=.002*48.4, 
+                                        x_ohm_per_km=.0111*48.4, c_nf_per_km=0.00018/factor, max_i_ka=1)
     
     pp.create_measurement(net, "v", "bus", 1.063548, .001, b1)      # V at bus 1 
     pp.create_measurement(net, "v", "bus", 1.068342, .001, b3)      # V at bus 3 

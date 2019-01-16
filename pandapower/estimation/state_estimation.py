@@ -13,10 +13,11 @@ from pandapower.topology import estimate_voltage_vector
 from time import time
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors, _init_ppc, _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
+    _build_measurement_vectors, _init_ppc,\
+    _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-from pandapower.estimation.estimator.wls_matrix_ops import wls_matrix_ops
-from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorwithConstriants
+#from pandapower.estimation.estimator.wls_matrix_ops import wls_matrix_ops
+from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
 
 try:
     import pplog as logging
@@ -24,8 +25,8 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-ESTIMATOR_MAPPING = {'wls': WLSEstimator, 
-                     'wls_with_zero_constraint': WLSEstimatorwithConstriants}
+ESTIMATOR_MAPPING = {'wls': WLSEstimator,
+                     'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints}
 
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -49,7 +50,11 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True.
         
-        **fuse_all_bb_switches** - (bool) - if true when considering bus-bus-switches the buses
+        **zero_injection_detection** - (boolean) - Find out the bus with zero injection (Bus without p,q 
+        measurement and p,q injection from elements) and using the wls with constraints estimator to do
+        constraint state estimation        
+        
+        **fuse_all_bb_switches** - (boolean) - if true when considering bus-bus-switches the buses
         will fused (Default behaviour) otherwise auxiliary lines will be added between those buses 
         where an element is connected to them in order to clear the p,q results on each buses 
         instead of fusing them all together
@@ -59,11 +64,11 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     """
     if zero_injection_detection:
         algorithm = 'wls_with_zero_constraint'
-    
+
     if algorithm not in ESTIMATOR_MAPPING:
-        raise UserWarning("State Estimator undefined")
-    
-    wls = state_estimation(net, tolerance, maximum_iterations, algorithm=algorithm)
+        raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
+
+    wls = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -110,7 +115,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(net, tolerance, maximum_iterations, algorithm="wls")
+    wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start = None
     delta_start = None
     if init == 'results':
@@ -154,7 +159,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
-    wls = state_estimation(net, tolerance, maximum_iterations, algorithm="wls")
+    wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start = None
     delta_start = None
     if init == 'results':
@@ -171,7 +176,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
                                  chi2_prob_false)
 
 
-class state_estimation(object):
+class StateEstimation(object):
     """
     Any user of the estimation module only needs to use the class state_estimation. It contains all
     relevant functions to control and operator the module. Two functions are used to configure the
@@ -186,7 +191,6 @@ class state_estimation(object):
         self.net = net
         self.estimator = ESTIMATOR_MAPPING[algorithm](self.net, tolerance, maximum_iterations, self.logger)
 
-        self.s_node_powers = None
         # variables for chi^2 / rn_max tests
         self.delta = None
         self.bad_data_present = None
@@ -263,7 +267,7 @@ class state_estimation(object):
         ppci = _add_measurements_to_ppc(self.net, ppci)
 
         # Finished converting pandapower network to ppci
-        # Estimation the voltage magnitude and angle with the given estimator
+        # Estimate voltage magnitude and angle with the given estimator
         delta, v_m = self.estimator.estimate(ppci)
 
         # store results for all elements
@@ -310,7 +314,6 @@ class state_estimation(object):
                                                  mapping_table)
         self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table)
-        
         _clean_up(self.net)
         # clear the aux elements and calculation results created for the substitution of bb switches
         if not fuse_all_bb_switches and not self.net.switch.empty:
@@ -440,7 +443,7 @@ class state_estimation(object):
             v_in_out = np.ones(self.net.bus.shape[0])
         if delta_in_out is None:
             delta_in_out = np.zeros(self.net.bus.shape[0])
-        
+
         num_iterations = 0
         v_in = v_in_out
         delta_in = delta_in_out
@@ -448,7 +451,7 @@ class state_estimation(object):
         while num_iterations <= 10:
             # Estimate the state with bad data identified in previous iteration
             # removed from set of measurements:
-            _ = self.estimate(v_in, delta_in, calculate_voltage_angles)
+            self.estimate(v_in, delta_in, calculate_voltage_angles)
 
             # Try to remove the bad data
             try:
