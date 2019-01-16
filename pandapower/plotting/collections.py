@@ -213,7 +213,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
             bus_geodata = net["bus_geodata"]
         data = []
         buses_with_geodata = bus_geodata.index.values
-        bg_dict = bus_geodata.to_dict()  # transforming to dict to make lookup faster
+        bg_dict = bus_geodata.to_dict()  # transforming to dict to make access faster
         for line, fb, tb in zip(linetab.index, linetab.from_bus.values, linetab.to_bus.values):
             if fb in buses_with_geodata and tb in buses_with_geodata:
                 lines_with_geo.append(line)
@@ -226,10 +226,11 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                            % lines_without_geo)
     else:
         data = []
+        coords_dict = line_geodata.coords.to_dict() # transforming to dict to make access faster
         for line in lines:
-            if line in line_geodata.index.values:
+            if line in line_geodata.index:
                 lines_with_geo.append(line)
-                data.append((line_geodata.loc[line, "coords"], infofunc(line) if infofunc else []))
+                data.append((coords_dict[line], infofunc(line) if infofunc else []))
 
         lines_without_geo = set(lines) - set(lines_with_geo)
         if len(lines_without_geo) > 0:
