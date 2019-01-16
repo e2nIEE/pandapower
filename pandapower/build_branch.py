@@ -745,7 +745,6 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
         vkr_2w_delta *= kt
     vki_2w_delta = np.sqrt(vk_2w_delta ** 2 - vkr_2w_delta ** 2)
     vkr_2w = wye_delta_vector(vkr_2w_delta, sn)
-    vkr_2w = wye_delta_vector(vkr_2w_delta, sn)
     vki_2w = wye_delta_vector(vki_2w_delta, sn)
     vk_2w = np.sign(vki_2w) * np.sqrt(vki_2w ** 2 + vkr_2w ** 2)
     if np.any(vk_2w==0):
