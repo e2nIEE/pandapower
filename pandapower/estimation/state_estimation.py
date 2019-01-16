@@ -3,31 +3,33 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
-
-from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import spsolve
 from scipy.stats import chi2
 
-from pandapower.estimation.wls_ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors, _init_ppc, _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
-from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
-from pandapower.estimation.wls_matrix_ops import wls_matrix_ops
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, \
-    _store_results_from_pf_in_ppci
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
 from pandapower.topology import estimate_voltage_vector
 from time import time
+
+from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
+    _build_measurement_vectors, _init_ppc, _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
+from pandapower.estimation.results import _copy_power_flow_results, _rename_results
+from pandapower.estimation.estimator.wls_matrix_ops import wls_matrix_ops
+from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorwithConstriants
+
 try:
     import pplog as logging
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
+ESTIMATOR_MAPPING = {'wls': WLSEstimator, 
+                     'wls_with_zero_constraint': WLSEstimatorwithConstriants}
 
-def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, fuse_all_bb_switches=True):
+
+def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
+             calculate_voltage_angles=True, zero_injection_detection=False, fuse_all_bb_switches=True):
     """
     Wrapper function for WLS state estimation.
 
@@ -55,7 +57,13 @@ def estimate(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    if zero_injection_detection:
+        algorithm = 'wls_with_zero_constraint'
+    
+    if algorithm not in ESTIMATOR_MAPPING:
+        raise UserWarning("State Estimator undefined")
+    
+    wls = state_estimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start = None
     delta_start = None
     if init == 'results':
@@ -102,7 +110,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    wls = state_estimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start = None
     delta_start = None
     if init == 'results':
@@ -146,7 +154,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
-    wls = state_estimation(tolerance, maximum_iterations, net)
+    wls = state_estimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start = None
     delta_start = None
     if init == 'results':
@@ -170,24 +178,16 @@ class state_estimation(object):
     system according to the users needs while one function is used for the actual estimation
     process.
     """
-    def __init__(self, tolerance=1e-6, maximum_iterations=10, net=None, logger=None):
+    def __init__(self, net, tolerance=1e-6, maximum_iterations=10, algorithm='wls', logger=None):
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
             # self.logger.setLevel(logging.DEBUG)
-        self.tolerance = tolerance
-        self.max_iterations = maximum_iterations
         self.net = net
+        self.estimator = ESTIMATOR_MAPPING[algorithm](self.net, tolerance, maximum_iterations, self.logger)
+
         self.s_node_powers = None
         # variables for chi^2 / rn_max tests
-        self.hx = None
-        self.R_inv = None
-        self.H = None
-        self.Ht = None
-        self.Gm = None
-        self.r = None
-        self.V = None
-        self.pp_meas_indices = None
         self.delta = None
         self.bad_data_present = None
 
@@ -262,90 +262,16 @@ class state_estimation(object):
         # add measurements to ppci structure
         ppci = _add_measurements_to_ppc(self.net, ppci)
 
-        # calculate relevant vectors from ppci measurements
-        z, self.pp_meas_indices, r_cov = _build_measurement_vectors(ppci)
-
-        # number of nodes
-        n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
-        slack_buses = np.where(ppci["bus"][:, 1] == 3)[0]
-
-        # Check if observability criterion is fulfilled and the state estimation is possible
-        if len(z) < 2 * n_active - 1:
-            self.logger.error("System is not observable (cancelling)")
-            self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * n_active - 1))
-            return False
-
-        # set the starting values for all active buses
-        v_m = ppci["bus"][:, 7]
-        delta = ppci["bus"][:, 8] * np.pi / 180  # convert to rad
-        delta_masked = np.ma.array(delta, mask=False)
-        delta_masked.mask[slack_buses] = True
-        non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
-
-        # matrix calculation object
-        sem = wls_matrix_ops(ppci, slack_buses, non_slack_buses)
-
-        # state vector
-        E = np.concatenate((delta_masked.compressed(), v_m))
-
-        # invert covariance matrix
-        r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
-
-        current_error = 100.
-        cur_it = 0
-        G_m, r, H, h_x = None, None, None, None
-
-        while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug(" Starting iteration %d" % (1 + cur_it))
-            try:
-                # create h(x) for the current iteration
-                h_x = sem.create_hx(v_m, delta)
-
-                # residual r
-                r = csr_matrix(z - h_x).T
-
-                # jacobian matrix H
-                H = csr_matrix(sem.create_jacobian(v_m, delta))
-
-                # gain matrix G_m
-                # G_m = H^t * R^-1 * H
-                G_m = H.T * (r_inv * H)
-
-                # state vector difference d_E
-                # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T * (r_inv * r))
-                E += d_E
-
-                # update V/delta
-                delta[non_slack_buses] = E[:len(non_slack_buses)]
-                v_m = np.squeeze(E[len(non_slack_buses):])
-
-                # prepare next iteration
-                cur_it += 1
-                current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
-
-            except np.linalg.linalg.LinAlgError:
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
-                return False
-
-        # print output for results
-        if current_error <= self.tolerance:
-            successful = True
-            self.logger.debug("WLS State Estimation successful ({:d} iterations)".format(cur_it))
-        else:
-            successful = False
-            self.logger.debug("WLS State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
-                                                                                                  self.max_iterations))
+        # Finished converting pandapower network to ppci
+        # Estimation the voltage magnitude and angle with the given estimator
+        delta, v_m = self.estimator.estimate(ppci)
 
         # store results for all elements
         # calculate bus power injections
         v_cpx = v_m * np.exp(1j * delta)
         bus_powers_conj = np.zeros(len(v_cpx), dtype=np.complex128)
         for i in range(len(v_cpx)):
-            bus_powers_conj[i] = np.dot(sem.Y_bus[i, :], v_cpx) * np.conjugate(v_cpx[i])
+            bus_powers_conj[i] = np.dot(ppci['internal']['Y_bus'][i, :], v_cpx) * np.conjugate(v_cpx[i])
 
         ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
         ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
@@ -357,13 +283,14 @@ class state_estimation(object):
         out = np.flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
         br = np.flatnonzero(branch[:, BR_STATUS]).astype(int)  # in-service branches
         # complex power at "from" bus
-        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(sem.Yf[br, :] * v_cpx) * s_ref
+        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(ppci['internal']['Yf'][br, :] * v_cpx) * s_ref
         # complex power injected at "to" bus
-        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(sem.Yt[br, :] * v_cpx) * s_ref
+        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(ppci['internal']['Yt'][br, :] * v_cpx) * s_ref
         branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
         branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
         et = time() - t0
-        ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, successful, cur_it, et)
+        ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, 
+                                              self.estimator.successful, self.estimator.iterations, et)
 
         # convert to pandapower indices
         ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
@@ -389,23 +316,13 @@ class state_estimation(object):
         if not fuse_all_bb_switches and not self.net.switch.empty:
             _drop_aux_elements_for_bb_switch(self.net)
 
-        # store variables required for chi^2 and r_N_max test:
-        self.R_inv = r_inv.toarray()
-        self.Gm = G_m.toarray()
-        self.r = r.toarray()
-        self.H = H.toarray()
-        self.Ht = self.H.T
-        self.hx = h_x
-        self.V = v_m
-        self.delta = delta
-
         # delete results which are not correctly calculated
         for k in list(self.net.keys()):
             if k.startswith("res_") and k.endswith("_est") and \
                     k not in ("res_bus_est", "res_line_est", "res_trafo_est", "res_trafo3w_est"):
                 del self.net[k]
 
-        return successful
+        return self.estimator.successful
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
                           calculate_voltage_angles=True, chi2_prob_false=0.05):
@@ -451,13 +368,13 @@ class state_estimation(object):
         self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
         # Performance index J(hx)
-        J = np.dot(self.r.T, np.dot(self.R_inv, self.r))
+        J = np.dot(self.estimator.r.T, np.dot(self.estimator.R_inv, self.estimator.r))
 
         # Number of measurements
         m = len(self.net.measurement)
 
         # Number of state variables (the -1 is due to the reference bus)
-        n = len(self.V) + len(self.delta) - 1
+        n = len(self.estimator.V) + len(self.estimator.delta) - 1
 
         # Chi^2 test threshold
         test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
@@ -478,6 +395,7 @@ class state_estimation(object):
 
         if (v_in_out is not None) and (delta_in_out is not None):
             return self.bad_data_present
+
 
     def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
                             calculate_voltage_angles=True, rn_max_threshold=3.0):
@@ -522,9 +440,8 @@ class state_estimation(object):
             v_in_out = np.ones(self.net.bus.shape[0])
         if delta_in_out is None:
             delta_in_out = np.zeros(self.net.bus.shape[0])
-
+        
         num_iterations = 0
-
         v_in = v_in_out
         delta_in = delta_in_out
 
@@ -536,7 +453,7 @@ class state_estimation(object):
             # Try to remove the bad data
             try:
                 # Error covariance matrix:
-                R = np.linalg.inv(self.R_inv)
+                R = np.linalg.inv(self.estimator.R_inv)
 
                 # for future debugging: this line's results have changed with the ppc
                 # overhaul in April 2017 after commit 9ae5b8f42f69ae39f8c8cf (which still works)
@@ -546,7 +463,7 @@ class state_estimation(object):
                 # was removed which caused this issue
                 # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
                 # (S is the sensitivity matrix: r = S*e):
-                Omega = R - np.dot(self.H, np.dot(np.linalg.inv(self.Gm), self.Ht))
+                Omega = R - np.dot(self.estimator.H, np.dot(np.linalg.inv(self.estimator.Gm), self.estimator.Ht))
 
                 # Diagonalize \Omega:
                 Omega = np.diag(np.diag(Omega))
@@ -557,7 +474,7 @@ class state_estimation(object):
                 OmegaInv = np.linalg.inv(Omega)
 
                 # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
-                rN = np.dot(OmegaInv, np.absolute(self.r))
+                rN = np.dot(OmegaInv, np.absolute(self.estimator.r))
 
                 if max(rN) <= rn_max_threshold:
                     self.logger.debug("Largest normalized residual test passed. "
@@ -572,7 +489,7 @@ class state_estimation(object):
                     idx_rN = np.argsort(rN, axis=0)[-1]
 
                     # Determine pandapower index of measurement to be removed:
-                    meas_idx = self.pp_meas_indices[idx_rN]
+                    meas_idx = self.estimator.pp_meas_indices[idx_rN]
 
                     # Remove bad measurement:
                     self.logger.debug("Removing measurement: %s"
