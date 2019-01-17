@@ -102,11 +102,11 @@ def _drop_aux_elements_for_bb_switch(net):
     # Remove auxiliary buses, lines in net and result
     for key in net.keys():
         if key.startswith('res_bus'):
-            net[key] = net[key].loc[net.bus.name != AUX_BUS_NAME, :]
+            net[key] = net[key].loc[(net.bus.name != AUX_BUS_NAME).values, :]
         if key.startswith('res_line'):
-            net[key] = net[key].loc[net.line.name != AUX_LINE_NAME, :]
-    net.bus = net.bus.loc[net.bus.name != AUX_BUS_NAME, :]
-    net.line = net.line.loc[net.line.name != AUX_LINE_NAME, :]
+            net[key] = net[key].loc[(net.line.name != AUX_LINE_NAME).values, :]
+    net.bus = net.bus.loc[(net.bus.name != AUX_BUS_NAME).values, :]
+    net.line = net.line.loc[(net.line.name != AUX_LINE_NAME).values, :]
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):

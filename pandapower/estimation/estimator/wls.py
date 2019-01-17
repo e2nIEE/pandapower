@@ -56,7 +56,7 @@ class WLSEstimator:
 
         # invert covariance matrix
         r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
-        return slack_buses, non_slack_buses,  n_active, r_inv, v_m, delta_masked, delta, z
+        return slack_buses, non_slack_buses, n_active, r_inv, v_m, delta_masked, delta, z
 
     def check_result(self, current_error, cur_it):
         # print output for results
