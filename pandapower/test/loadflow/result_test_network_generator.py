@@ -358,10 +358,8 @@ def add_test_impedance(net):
     b1, b2, ln = add_grid_connection(net, zone="test_impedance")
     b3 = pp.create_bus(net, vn_kv=110., zone="test_impedance")
 
-    ur1 = 22.
-    ur2 = 100.
-
-    pp.create_impedance(net, b2, b3, rft_pu=rij, xft_pu=xij, ur1_kv=ur1, ur2_kv=ur2,
+    tap_ratio=1.21
+    pp.create_impedance(net, b2, b3, rft_pu=rij, xft_pu=xij, tap_ratio=tap_ratio,
                         sn_mva=s, index=pp.get_free_id(net.impedance) + 1)
     pp.create_load(net, b3, p_mw=pl, q_mvar=ql)
 

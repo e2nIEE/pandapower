@@ -173,8 +173,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                       ("rtf_pu", "f8"),
                       ("xtf_pu", "f8"),
                       ("sn_mva", "f8"),
-                      ("ur1_kv", "f8"),
-                      ("ur2_kv", "f8"),
+                      ("tap_ratio", "f8"),
                       ("in_service", 'bool')],
         "dcline": [("name", dtype(object)),
                    ("from_bus", "u4"),
@@ -2080,7 +2079,7 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                     ur1_kv=None, ur2_kv=None, name=None, in_service=True, index=None):
+                     tap_ratio=None, name=None, in_service=True, index=None):
     """
     Creates an per unit impedance element
 
@@ -2095,9 +2094,7 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
 
         **x_pu** (float) - imaginary part of the impedance in per unit
 
-        **ur1_kv** (float) - high voltage rating of the ideal voltage converter
-
-        **ur2_kv** (float) - low voltage rating of the ideal voltage converter
+        **tap_ratio** (float) - off nominal tap ratio of voltage converter
 
         **sn_mva** (float) - rated power of the impedance in kVA
 
@@ -2122,8 +2119,8 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     if xtf_pu is None:
         xtf_pu = xft_pu
     net.impedance.loc[index, ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu",
-                              "ur1_kv", "ur2_kv", "name", "sn_mva", "in_service"]] = \
-        [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, ur1_kv, ur2_kv, name, sn_mva, in_service]
+                              "tap_ratio", "name", "sn_mva", "in_service"]] = \
+        [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, tap_ratio, name, sn_mva, in_service]
 
     # and preserve dtypes
     _preserve_dtypes(net.impedance, dtypes)

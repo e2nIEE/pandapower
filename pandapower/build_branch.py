@@ -437,29 +437,16 @@ def _calc_impedance_parameter(net, ppc):
     xij = net["impedance"]["xft_pu"].values
     rji = net["impedance"]["rtf_pu"].values
     xji = net["impedance"]["xtf_pu"].values
+    ratio=net["impedance"]["tap_ratio"].values
 
-    # Calculating tap (ideal trasformer off nominal turns ratio)
-    ratio=np.ones(len(net["impedance"].index))
-    if any(np.isfinite(net["impedance"]["ur1_kv"].values)) or any(np.isfinite(net["impedance"]["ur2_kv"].values)):
-        hv_bus = get_trafo_values(net["impedance"], "from_bus")
-        lv_bus = get_trafo_values(net["impedance"], "to_bus")
-        vn_bus1_kv = get_values(ppc["bus"][:, BASE_KV], hv_bus, bus_lookup)
-        vn_bus2_kv = get_values(ppc["bus"][:, BASE_KV], lv_bus, bus_lookup)
-
-        ur1=net["impedance"]["ur1_kv"].values
-        ur1[np.isnan(ur1)]=vn_bus1_kv[np.isnan(ur1)]
-        ur2=net["impedance"]["ur2_kv"].values
-        ur2[np.isnan(ur2)]=vn_bus2_kv[np.isnan(ur2)]
-
-        tap_rat = ur1 / ur2
-        nom_rat = vn_bus1_kv / vn_bus2_kv
-        ratio= tap_rat / nom_rat
+    #indices with defined tap ratios:
+    idx_ratio=np.isfinite(ratio)
 
     t[:, 0] = bus_lookup[net["impedance"]["from_bus"].values]
     t[:, 1] = bus_lookup[net["impedance"]["to_bus"].values]
     t[:, 2] = rij / sn_impedance * sn_net
     t[:, 3] = xij / sn_impedance * sn_net
-    t[:, 4] = ratio
+    t[idx_ratio, 4] = ratio[idx_ratio]
     t[:, 5] = (rji - rij) / sn_impedance * sn_net
     t[:, 6] = (xji - xij) / sn_impedance * sn_net
     t[:, 7] = net["impedance"]["in_service"].values
