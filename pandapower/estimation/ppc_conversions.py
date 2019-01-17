@@ -82,8 +82,8 @@ def _add_aux_elements_for_bb_switch(net):
 
     # create auxiliary lines as small impedance
     for bus_ori, bus_aux in bus_aux_mapping.iteritems():
-        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1e-5, name=AUX_LINE_NAME,
-                                    r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=10, max_i_ka=1)
+        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1, name=AUX_LINE_NAME,
+                                    r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1)
 
 
 def _drop_aux_elements_for_bb_switch(net):
@@ -102,11 +102,11 @@ def _drop_aux_elements_for_bb_switch(net):
     # Remove auxiliary buses, lines in net and result
     for key in net.keys():
         if key.startswith('res_bus'):
-            net[key] = net[key].loc[net.bus.name != AUX_BUS_NAME, :]
+            net[key] = net[key].loc[(net.bus.name != AUX_BUS_NAME).values, :]
         if key.startswith('res_line'):
-            net[key] = net[key].loc[net.line.name != AUX_LINE_NAME, :]
-    net.bus = net.bus.loc[net.bus.name != AUX_BUS_NAME, :]
-    net.line = net.line.loc[net.line.name != AUX_LINE_NAME, :]
+            net[key] = net[key].loc[(net.line.name != AUX_LINE_NAME).values, :]
+    net.bus = net.bus.loc[(net.bus.name != AUX_BUS_NAME).values, :]
+    net.line = net.line.loc[(net.line.name != AUX_LINE_NAME).values, :]
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
@@ -457,4 +457,13 @@ def _build_measurement_vectors(ppci):
                             ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
                             ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD]
                             )).real.astype(np.float64)
-    return z, pp_meas_indices, r_cov
+    meas_mask = np.concatenate([p_bus_not_nan, 
+                           p_line_f_not_nan,
+                           p_line_t_not_nan,
+                           q_bus_not_nan, 
+                           q_line_f_not_nan,
+                           q_line_t_not_nan,
+                           v_bus_not_nan,
+                           i_line_f_not_nan,
+                           i_line_f_not_nan])
+    return z, pp_meas_indices, r_cov, meas_mask
