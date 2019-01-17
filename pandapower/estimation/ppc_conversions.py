@@ -82,7 +82,7 @@ def _add_aux_elements_for_bb_switch(net):
 
     # create auxiliary lines as small impedance
     for bus_ori, bus_aux in bus_aux_mapping.iteritems():
-        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1e-5, name=AUX_LINE_NAME,
+        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1, name=AUX_LINE_NAME,
                                     r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=10, max_i_ka=1)
 
 
