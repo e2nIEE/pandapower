@@ -15,6 +15,7 @@ import networkx
 from networkx.readwrite import json_graph
 import importlib
 from numpy import ndarray
+from warnings import warn
 
 try:
     from functools import singledispatch
@@ -102,6 +103,8 @@ def collect_all_dtypes_df(net):
 
 
 def dicts_to_pandas(json_dict):
+    warn("This function is deprecated and will be removed in a future release.\r\n"
+         "Please resave your grid using the current pandapower version.", DeprecationWarning)
     pd_dict = dict()
     for k in sorted(json_dict.keys()):
         if isinstance(json_dict[k], dict):
