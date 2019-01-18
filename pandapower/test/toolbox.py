@@ -281,4 +281,4 @@ def create_test_line(net, b1, b2, in_service=True):
 
 
 if __name__ == "__main__":
-    create_test_network2()
+    run_all_tests()
