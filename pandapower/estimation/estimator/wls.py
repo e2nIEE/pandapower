@@ -88,18 +88,18 @@ class WLSEstimator:
                 h_x = sem.create_hx(v_m, delta, meas_mask)
 
                 # residual r
-                r = (z - h_x)
+                r = (z - h_x)[np.newaxis].T
 
                 # jacobian matrix H
                 H = sem.create_h_jacobian(v_m, delta, meas_mask)
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T * (r_inv @ H)
+                G_m = H.T @ (r_inv @ H)
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T * (r_inv * r))
+                d_E = spsolve(G_m, H.T @ (r_inv @ r))
                 E += d_E
 
                 # update V/delta
@@ -119,15 +119,16 @@ class WLSEstimator:
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         if self.successful:
+            pass
             # store variables required for chi^2 and r_N_max test:
-            self.R_inv = r_inv.toarray()
-            self.Gm = G_m.toarray()
-            self.r = r.toarray()
-            self.H = H.toarray()
-            self.Ht = self.H.T
-            self.hx = h_x
-            self.V = v_m
-            self.delta = delta
+#            self.R_inv = r_inv.toarray()
+#            self.Gm = G_m.toarray()
+#            self.r = r.toarray()
+#            self.H = H.toarray()
+#            self.Ht = self.H.T
+#            self.hx = h_x
+#            self.V = v_m
+#            self.delta = delta
         return delta, v_m
 
 

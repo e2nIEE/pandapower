@@ -287,9 +287,9 @@ class StateEstimation(object):
         out = np.flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
         br = np.flatnonzero(branch[:, BR_STATUS]).astype(int)  # in-service branches
         # complex power at "from" bus
-        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] * np.conj(ppci['internal']['Yf'][br, :] * v_cpx) * s_ref
+        Sf = v_cpx[np.real(branch[br, F_BUS]).astype(int)] @ np.conj(ppci['internal']['Yf'][br, :] @ v_cpx) * s_ref
         # complex power injected at "to" bus
-        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] * np.conj(ppci['internal']['Yt'][br, :] * v_cpx) * s_ref
+        St = v_cpx[np.real(branch[br, T_BUS]).astype(int)] @ np.conj(ppci['internal']['Yt'][br, :] @ v_cpx) * s_ref
         branch[np.ix_(br, [PF, QF, PT, QT])] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
         branch[np.ix_(out, [PF, QF, PT, QT])] = np.zeros((len(out), 4))
         et = time() - t0

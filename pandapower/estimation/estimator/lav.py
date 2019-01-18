@@ -50,7 +50,7 @@ class WLSAlgebraNew:
             warnings.simplefilter("ignore")
             y_bus, y_f, y_t = makeYbus(self.ppci["baseMVA"], self.ppci["bus"], self.ppci["branch"])
             self.ppci['internal']['Yf'], self.ppci['internal']['Yt'],\
-            self.ppci['internal']['Ybus'] = y_f.toarray(), y_t.toarray(), y_bus.toarray()
+            self.ppci['internal']['Y_bus'] = y_f.toarray(), y_t.toarray(), y_bus.toarray()
 
         # create relevant matrices
         self.Ybus = y_bus.toarray()
@@ -106,13 +106,13 @@ class WLSAlgebraNew:
         f_bus, t_bus = self.fb, self.tb
         If, It = np.dot(self.Yf, V), np.dot(self.Yt, V)
         Vnorm = V/np.abs(V)
-        diagIf, diagIt = np.diag(If), np.diag(It)
+        diagIf, diagIt = np.diagflat(If), np.diagflat(It)
         diagVf, diagVt = np.diag(V[f_bus]), np.diag(V[t_bus]), 
 
-        dSf_dth = 1j * (np.conj(diagIf) * np.tile(V[f_bus], n_bus) - diagVf * np.conj(np.dot(self.Yf, diagV)))
-        dSf_dv = diagVf * np.conj(np.dot(self.Yf, diagVnorm)) + np.conj(diagIf) * np.tile(Vnorm[f_bus], n_bus)
-        dSt_dth = 1j * (np.conj(diagIt) * np.tile(V[t_bus], n_bus) - diagVt * np.conj(np.dot(self.Yt, diagV)))
-        dSt_dv = diagVt * np.conj(np.dot(self.Yt, diagVnorm)) + np.conj(diagIt) * np.tile(V[t_bus], n_bus)
+        dSf_dth = 1j * (np.conj(diagIf) @ np.tile(V[f_bus][np.newaxis].T, n_bus) - diagVf * np.conj(np.dot(self.Yf, diagV)))
+        dSf_dv = diagVf * np.conj(np.dot(self.Yf, diagVnorm)) + np.conj(diagIf) @ np.tile(Vnorm[f_bus][np.newaxis].T, n_bus)
+        dSt_dth = 1j * (np.conj(diagIt) @ np.tile(V[t_bus][np.newaxis].T, n_bus) - diagVt * np.conj(np.dot(self.Yt, diagV)))
+        dSt_dv = diagVt * np.conj(np.dot(self.Yt, diagVnorm)) + np.conj(diagIt) @ np.tile(V[t_bus][np.newaxis].T, n_bus)
         return dSf_dth, dSt_dth, dSf_dv, dSt_dv
     
     def _dVbus_dv(self, V):
@@ -154,7 +154,7 @@ class WLSAlgebraNew:
                                   dif_dv,
                                   dit_dv])
         h_jac = np.concatenate([h_jac_th, h_jac_v], axis=1)
-        return h_jac[meas_mask, :]
+        return h_jac[meas_mask, 1:]
 
 
 #class MAlgebra(WLSAlgebra):

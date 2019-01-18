@@ -41,8 +41,8 @@ def test_2bus():
     diff_delta = target_delta - delta_result
 
     assert success
-    assert (np.nanmax(abs(diff_v)) < 1e-6)
-    assert (np.nanmax(abs(diff_delta)) < 1e-6)
+    assert (np.nanmax(abs(diff_v)) < 1e-4)
+    assert (np.nanmax(abs(diff_delta)) < 1e-4)
 
 
 def test_3bus():
