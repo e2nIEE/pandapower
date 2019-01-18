@@ -250,7 +250,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         calculate_voltage_angles = False
         is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
         if any(is_hv_bus) > 0:
-            line_buses = set(net.line[["from_bus", "to_bus"]].values.flatten())
+            line_buses = set(net.line.from_bus.values) & set(net.line.to_bus.values)
             hv_buses = net.bus.index[is_hv_bus]
             if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
@@ -266,8 +266,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
-                          (len(net.ext_grid.vm_pu) + len(net.gen.vm_pu))
+            init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
+                          (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"
