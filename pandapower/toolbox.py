@@ -887,6 +887,16 @@ def _pre_release_changes(net):
     net.switch.closed = net.switch.closed.astype(bool)
 
 
+def compare_arrays(x, y):
+    """ Returns an array of bools whether array x is equal to array y. Strings are allowed in x
+        or y. NaN values are assumed as equal. """
+    if x.shape == y.shape:
+        # (x != x) is like np.isnan(x) - but works also for strings
+        return np.equal(x, y) | ((x != x) & (y != y))
+    else:
+        raise ValueError("x and y needs to have the same shape.")
+
+
 def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,
                                      verbose=True):
     """
@@ -933,7 +943,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     for element, bus_type in element_bus_tuples(bus_elements=False, branch_elements=True):
         if (element in elements_to_replace) & (element not in already_validated):
             already_validated += [element]
-            crossing = sum(net[element][column].values != to_validate[element])
+            crossing = sum(~compare_arrays(net[element][column].values, to_validate[element]))
             if crossing > 0:
                 if verbose:
                     logger.warning("There have been %i %ss with different " % (crossing, element) +
@@ -1018,12 +1028,12 @@ def close_switch_at_line_with_two_open_switches(net):
             len(closed_switches), closed_switches))
 
 
-def drop_inactive_elements(net):
+def drop_inactive_elements(net, respect_switches=True):
     """
-    Drops any elements not in service AND any elements connected to inactive
-    buses.
+    Drops any elements not in service AND any elements connected to inactive buses.
+    'respect_switches' to set whether switches should be considered to determine unsupplied buses.
     """
-    set_isolated_areas_out_of_service(net)
+    set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
     drop_out_of_service_elements(net)
 
 
@@ -1218,12 +1228,12 @@ def set_element_status(net, buses, in_service):
                 pass
 
 
-def set_isolated_areas_out_of_service(net):
+def set_isolated_areas_out_of_service(net, respect_switches=True):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
     closed_switches = set()
-    unsupplied = unsupplied_buses(net)
+    unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
         len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
     set_element_status(net, unsupplied, False)
