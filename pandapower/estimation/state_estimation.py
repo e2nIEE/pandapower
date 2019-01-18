@@ -314,6 +314,7 @@ class StateEstimation(object):
                                                  mapping_table)
         self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table)
+        self.net.res_bus_est.index = self.net.bus.index
         _clean_up(self.net)
         # clear the aux elements and calculation results created for the substitution of bb switches
         if not fuse_all_bb_switches and not self.net.switch.empty:
