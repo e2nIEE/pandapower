@@ -465,5 +465,5 @@ def _build_measurement_vectors(ppci):
                            q_line_t_not_nan,
                            v_bus_not_nan,
                            i_line_f_not_nan,
-                           i_line_f_not_nan])
+                           i_line_t_not_nan])
     return z, pp_meas_indices, r_cov, meas_mask

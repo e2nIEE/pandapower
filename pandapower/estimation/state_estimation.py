@@ -8,17 +8,17 @@ from scipy.stats import chi2
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pf.pfsoln_pypower import pfsoln
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
 from pandapower.topology import estimate_voltage_vector
-from time import time
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
     _build_measurement_vectors, _init_ppc,\
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-#from pandapower.estimation.estimator.wls_matrix_ops import wls_matrix_ops
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
-from pandapower.pf.pfsoln_pypower import pfsoln
+
+
 
 try:
     import pplog as logging
@@ -243,7 +243,6 @@ class StateEstimation(object):
         """
         if self.net is None:
             raise UserWarning("Component was not initialized with a network.")
-        t0 = time()
         
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
@@ -272,22 +271,19 @@ class StateEstimation(object):
         V = self.estimator.estimate(ppci)
 
         # store results for all elements
-        # calculate line results (in ppc_i)
-        baseMVA, bus, gen, branch, ref, _, _, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
+        # calculate branch results (in ppc_i)
+        baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
         Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
         ppci['bus'], ppci['gen'], ppci['branch'] = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
-        
+
         # calculate bus power injections
-        bus_powers_conj = np.zeros(len(V), dtype=np.complex128)
-        Ybus = ppci['internal']['Ybus'].toarray()
-        for i in range(len(V)):
-            bus_powers_conj[i] = np.dot(Ybus[i, :], V) * np.conjugate(V[i])
-        ppci["bus"][:, 2] = bus_powers_conj.real  # saved in per unit
-        ppci["bus"][:, 3] = - bus_powers_conj.imag  # saved in per unit
+        # TODO: TEST!!
+        Sbus = np.multiply(V, np.conj(Ybus * V))
+        ppci["bus"][:, 2] = Sbus.real  # saved in per unit
+        ppci["bus"][:, 3] = Sbus.imag  # saved in per unit
 
         # convert to pandapower indices
-#        ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
-        ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="pf")
+        ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
         # extract results from ppc
         _add_pf_options(self.net, tolerance_mva=1e-8, trafo_loading="current",
@@ -300,11 +296,12 @@ class StateEstimation(object):
 
         # additionally, write bus power injection results (these are not written in _extract_results)
         mapping_table = self.net["_pd2ppc_lookups"]["bus"]
-        self.net.res_bus_est.p_mw = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
+        self.net.res_bus_est.p_mw   = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
                                                  mapping_table)
         self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
                                                    mapping_table)
         self.net.res_bus_est.index = self.net.bus.index
+
         _clean_up(self.net)
         # clear the aux elements and calculation results created for the substitution of bb switches
         if not fuse_all_bb_switches and not self.net.switch.empty:

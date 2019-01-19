@@ -8,8 +8,7 @@ from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
-#from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
-from pandapower.estimation.estimator.lav import WLSAlgebraNew
+from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
 
 
 class WLSEstimator:
@@ -75,7 +74,7 @@ class WLSEstimator:
         # state vector
         E = np.concatenate((delta_masked.compressed(), v_m))
         # matrix calculation object
-        sem = WLSAlgebraNew(ppci, slack_buses, non_slack_buses)
+        sem = WLSAlgebra(ppci, slack_buses, non_slack_buses)
 
         current_error = 100.
         cur_it = 0
@@ -88,18 +87,18 @@ class WLSEstimator:
                 h_x = sem.create_hx(v_m, delta, meas_mask)
 
                 # residual r
-                r = (z - h_x)[np.newaxis].T
+                r = csr_matrix(z - h_x).T
 
                 # jacobian matrix H
-                H = sem.create_h_jacobian(v_m, delta, meas_mask)
+                H = csr_matrix(sem.create_h_jacobian(v_m, delta, meas_mask))
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T @ (r_inv @ H)
+                G_m = H.T * (r_inv * H)
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T @ (r_inv @ r))
+                d_E = spsolve(G_m, H.T * (r_inv * r))
                 E += d_E
 
                 # update V/delta
@@ -119,19 +118,16 @@ class WLSEstimator:
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         V = v_m * np.exp(1j * delta)
-        if self.successful:
-            ppci['success'] = True
-            ppci['et'] = True
-            
+        if self.successful:           
             # store variables required for chi^2 and r_N_max test:
-#            self.R_inv = r_inv.toarray()
-#            self.Gm = G_m.toarray()
-#            self.r = r.toarray()
-#            self.H = H.toarray()
-#            self.Ht = self.H.T
-#            self.hx = h_x
-#            self.V = v_m
-#            self.delta = delta
+            self.R_inv = r_inv.toarray()
+            self.Gm = G_m.toarray()
+            self.r = r.toarray()
+            self.H = H.toarray()
+            self.Ht = self.H.T
+            self.hx = h_x
+            self.V = v_m
+            self.delta = delta
         return V
 
 
