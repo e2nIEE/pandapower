@@ -113,7 +113,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     # select elements in service and convert pandapower ppc to ppc
     net._options = {}
     _add_ppc_options(net, check_connectivity=False, init_vm_pu=v_start, init_va_degree=delta_start,
-                     trafo_model="t", mode="pf", enforce_q_lims=False,
+                     trafo_model="pi", mode="pf", enforce_q_lims=False,
                      calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
     net["_is_elements"] = _select_is_elements_numba(net)
@@ -457,13 +457,13 @@ def _build_measurement_vectors(ppci):
                             ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
                             ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD]
                             )).real.astype(np.float64)
-    meas_mask = np.concatenate([p_bus_not_nan, 
-                           p_line_f_not_nan,
-                           p_line_t_not_nan,
-                           q_bus_not_nan, 
-                           q_line_f_not_nan,
-                           q_line_t_not_nan,
-                           v_bus_not_nan,
-                           i_line_f_not_nan,
-                           i_line_t_not_nan])
+    meas_mask = np.concatenate([p_bus_not_nan,
+                                p_line_f_not_nan,
+                                p_line_t_not_nan,
+                                q_bus_not_nan,
+                                q_line_f_not_nan,
+                                q_line_t_not_nan,
+                                v_bus_not_nan,
+                                i_line_f_not_nan,
+                                i_line_t_not_nan])
     return z, pp_meas_indices, r_cov, meas_mask

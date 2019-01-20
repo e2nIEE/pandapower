@@ -10,10 +10,10 @@ from scipy.sparse import csr_matrix, vstack, hstack, diags
 from pandapower.idx_brch import F_BUS, T_BUS
 from pandapower.idx_bus import BUS_TYPE
 
-try:
-    from pandapower.pf.makeYbus import makeYbus
-except ImportError:
-    from pandapower.pf.makeYbus_pypower import makeYbus
+#try:
+#from pandapower.pf.makeYbus import makeYbus
+#except ImportError:
+from pandapower.pf.makeYbus_pypower import makeYbus
 
 
 class WLSAlgebra:
@@ -22,6 +22,8 @@ class WLSAlgebra:
         self.ppci = ppci
         self.fb = self.ppci["branch"][:, F_BUS].real.astype(int)
         self.tb = self.ppci["branch"][:, T_BUS].real.astype(int)
+        self.n_bus = self.ppci['bus'].shape[0]
+        self.n_branch = self.ppci['branch'].shape[0]
         self.Y_bus = None
         self.Yf = None
         self.Yt = None
@@ -48,6 +50,8 @@ class WLSAlgebra:
         self.Ybus, self.Yf, self.Yt = Ybus, Yf, Yt
         self.G = self.Ybus.real
         self.B = self.Ybus.imag
+        self.Gshunt = None
+        self.Bshunt = None
 
     # Get Y as tuple (real, imaginary)
     def get_y(self):
@@ -75,10 +79,11 @@ class WLSAlgebra:
     def create_hx_jacobian(self, v, delta):
         # Using sparse matrix in creation sub-jacobian matrix
         V = v * np.exp(1j * delta)
-        diagV, diagVnorm = diags(V).tocsr(), diags(V/np.abs(V)).tocsr()
+        Vnorm = V / np.abs(V)
+        diagV, diagVnorm = diags(V).tocsr(), diags(Vnorm).tocsr()
 
         dSbus_dth, dSbus_dv = self._dSbus_dv(V, diagV, diagVnorm)
-        dSf_dth, dSt_dth, dSf_dv, dSt_dv = self._dSbr_dv(V, diagV, diagVnorm)
+        dSf_dth, dSt_dth, dSf_dv, dSt_dv = self._dSbr_dv(V, Vnorm, diagV, diagVnorm)
         dif_dth, dit_dth, dif_dv, dit_dv = self._dibr_dv(diagV, diagVnorm)
         dv_dth, dv_dv = self._dVbus_dv(V)
 
@@ -104,30 +109,33 @@ class WLSAlgebra:
         return h_jac.todense()[self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
 
     def _dSbus_dv(self, V, diagV, diagVnorm):
-        diagIbus = csr_matrix(np.diagflat(self.Ybus * V))
+        diagIbus = csr_matrix((self.Ybus * V, (range(self.n_bus), range(self.n_bus))))
         dSbus_dth = 1j * diagV * np.conj(diagIbus - self.Ybus * diagV)
         dSbus_dv = diagV * np.conj(self.Ybus * diagVnorm) + np.conj(diagIbus) * diagVnorm
         return dSbus_dth, dSbus_dv
 
-    def _dSbr_dv(self, V, diagV, diagVnorm):
-        n_bus, n_branch = self.ppci['bus'].shape[0], self.ppci['branch'].shape[0]
+    def _dSbr_dv(self, V, Vnorm, diagV, diagVnorm):
+        n_bus, n_branch = self.n_bus, self.n_branch
+        shape_diag_ft = (range(n_branch), range(n_branch))
         f_bus, t_bus = self.fb, self.tb
         If, It = self.Yf * V, self.Yt * V
-        diagIf, diagIt = np.diagflat(If), np.diagflat(It)
-        diagVf, diagVt = np.diagflat(V[f_bus]), np.diagflat(V[t_bus])
+        diagIf, diagIt = (csr_matrix((If, shape_diag_ft)),
+                          csr_matrix((It, shape_diag_ft)))
+        diagVf, diagVt = (csr_matrix((V[f_bus], shape_diag_ft)),
+                          csr_matrix((V[t_bus], shape_diag_ft)))
 
         dSf_dth = 1j * (np.conj(diagIf) * csr_matrix((V[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)) -
                         diagVf * np.conj(self.Yf * diagV))
-        dSf_dv = (diagVf * np.conj(self.Yf * diagVnorm) + np.conj(diagIf) *
-                  csr_matrix((V[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)))
         dSt_dth = 1j * (np.conj(diagIt) * csr_matrix((V[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)) -
                         diagVt * np.conj(self.Yt * diagV))
+        dSf_dv = (diagVf * np.conj(self.Yf * diagVnorm) + np.conj(diagIf) *
+                  csr_matrix((Vnorm[f_bus], (range(n_branch), f_bus)), shape=(n_branch, n_bus)))
         dSt_dv = (diagVt * np.conj(self.Yt * diagVnorm) + np.conj(diagIt) *
-                  csr_matrix((V[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)))
+                  csr_matrix((Vnorm[t_bus], (range(n_branch), t_bus)), shape=(n_branch, n_bus)))
         return dSf_dth, dSt_dth, dSf_dv, dSt_dv
 
     def _dVbus_dv(self, V):
-        dv_dth, dv_dv = np.diagflat(np.zeros(V.shape)), np.diagflat(np.ones(V.shape))
+        dv_dth, dv_dv = np.zeros((V.shape[0], V.shape[0])), np.eye(V.shape[0], V.shape[0])
         return dv_dth, dv_dv
 
     def _dibr_dv(self, diagV, diagVnorm):

@@ -58,7 +58,7 @@ class WLSEstimator:
         # calculate relevant vectors from ppci measurements
         z, self.pp_meas_indices, r_cov, non_nan_meas_mask = _build_measurement_vectors(ppci)
         # invert covariance matrix
-        r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
+        r_inv = csr_matrix((np.diagflat(1/r_cov) ** 2))
 
         # check whether or not is the grid observed
         self.check_observability(ppci, z)
@@ -111,6 +111,7 @@ class WLSEstimator:
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
+#                print(cur_it, current_error)
                 self.logger.debug("Current error: {:.7f}".format(current_error))
 
             except np.linalg.linalg.LinAlgError:
