@@ -238,7 +238,7 @@ def test_3bus_with_transformer():
     assert success
     assert (np.nanmax(abs(diff_v)) < 6e-4)
     # TODO
-#    assert (np.nanmax(abs(diff_delta)) < 1.4e-4)
+    assert (np.nanmax(abs(diff_delta)) < 1.4e-4)
 
     # Backwards check. Use state estimation results for power flow and check for equality
     net.load.drop(net.load.index, inplace=True)

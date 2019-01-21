@@ -106,7 +106,7 @@ class WLSAlgebra:
                           dif_dv,
                           dit_dv])
         h_jac = hstack([h_jac_th, h_jac_v])
-        return h_jac.todense()[self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
+        return h_jac.toarray()[self.non_nan_meas_mask, :][:, self.delta_v_bus_mask]
 
     def _dSbus_dv(self, V, diagV, diagVnorm):
         diagIbus = csr_matrix((self.Ybus * V, (range(self.n_bus), range(self.n_bus))))
@@ -164,3 +164,39 @@ class WLSAlgebraZeroInjectionConstraints(WLSAlgebra):
                         np.imag(dSbus_dv.todense())[q_zero_inj]]
         c_jac = np.c_[c_jac_th, c_jac_v]
         return c_jac[:, self.delta_v_bus_mask]
+
+
+class WLSAlgebraOptimization(WLSAlgebra):
+    def __init__(self, ppci, non_nan_meas_mask, z, sigma):
+        super(WLSAlgebraOptimization, self).__init__(ppci, non_nan_meas_mask)
+        self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
+        self.non_slack_buses = np.argwhere(self.non_slack_bus_mask).ravel()
+        self.delta = np.zeros(self.n_bus)
+        self.v = np.zeros(self.n_bus)
+        self.z = z
+        self.sigma = sigma
+        
+    def object_func(self, E):
+#        return np.max(self.cost_function(E))
+        hx = self.create_hx(self.v, self.delta)
+        return hx.reshape(-1,1).T * np.diag(1/self.sigma) @ hx
+
+    def cost_function(self, E):
+        rx = self.create_rx(E) 
+        cost = (1/self.sigma) * (rx**2)
+        return cost
+    
+    def create_jac(self, E):
+        self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
+        self.v = E[self.num_non_slack_bus:]
+        rx = self.create_rx(E)
+        hx_jac = self.create_hx_jacobian(self.v, self.delta)
+        jac = - hx_jac.T @ np.diag(1/self.sigma) @ rx
+        return jac
+
+    def create_rx(self, E):
+        self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
+        self.v = E[self.num_non_slack_bus:]
+        hx = self.create_hx(self.v, self.delta)
+        return (self.z - hx).ravel()
+

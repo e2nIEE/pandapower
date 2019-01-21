@@ -17,6 +17,7 @@ from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
+from pandapower.estimation.estimator.robust import QCEstimator
 
 
 
@@ -27,11 +28,13 @@ except ImportError:
 std_logger = logging.getLogger(__name__)
 
 ESTIMATOR_MAPPING = {'wls': WLSEstimator,
-                     'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints}
+                     'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints,
+                     'qc': QCEstimator}
 
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, zero_injection_detection=False, fuse_all_bb_switches=True):
+             calculate_voltage_angles=True, zero_injection_detection=False, fuse_all_bb_switches=True,
+             **hyperparameter):
     """
     Wrapper function for WLS state estimation.
 
@@ -82,7 +85,7 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
             delta_start = res_bus.va_degree.values
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
-    return wls.estimate(v_start, delta_start, calculate_voltage_angles, fuse_all_bb_switches)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles, fuse_all_bb_switches, **hyperparameter)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -196,7 +199,8 @@ class StateEstimation(object):
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True, fuse_all_bb_switches=True):
+    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True, fuse_all_bb_switches=True,
+                 **hyperparameter):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -268,7 +272,7 @@ class StateEstimation(object):
 
         # Finished converting pandapower network to ppci
         # Estimate voltage magnitude and angle with the given estimator
-        V = self.estimator.estimate(ppci)
+        V = self.estimator.estimate(ppci, **hyperparameter)
 
         # store results for all elements
         # calculate branch results (in ppc_i)

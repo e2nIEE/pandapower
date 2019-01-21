@@ -72,10 +72,10 @@ class WLSEstimator:
         delta = ppci["bus"][:, VA] * np.pi / 180  # convert to rad
         delta_masked = delta[non_slack_bus_mask]
         E = np.r_[delta_masked, v_m]
-        return non_slack_buses, v_m, delta, delta_masked, E, r_inv, z, non_nan_meas_mask
+        return non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask
 
     def estimate(self, ppci):
-        non_slack_buses, v_m, delta, delta_masked, E, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
+        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
 
         # matrix calculation object
         sem = WLSAlgebra(ppci, non_nan_meas_mask)
@@ -91,7 +91,7 @@ class WLSEstimator:
 
                 # residual r
                 r = csr_matrix(z - h_x).T
-
+                
                 # jacobian matrix H
                 H = csr_matrix(sem.create_hx_jacobian(v_m, delta))
 
@@ -137,7 +137,7 @@ class WLSEstimator:
 
 class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
     def estimate(self, ppci):
-        non_slack_buses, v_m, delta, delta_masked, E, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
+        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
         num_bus = ppci["bus"].shape[0]
 
         # state vector built from delta, |V| and zero injections
