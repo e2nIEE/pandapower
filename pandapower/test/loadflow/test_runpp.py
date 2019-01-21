@@ -41,6 +41,7 @@ def test_minimal_net():
     pp.create_sgen(net, b2, p_mw=0.2)
     runpp_with_consistency_checks(net)
 
+
 def test_set_user_pf_options():
     net = example_simple()
     pp.runpp(net)
@@ -77,6 +78,7 @@ def test_set_user_pf_options():
     assert net.user_pf_options['tolerance_mva'] == 1e-6
     assert net._options['tolerance_mva'] == 1e-2
     assert net._options['max_iteration'] == 20
+
 
 def test_kwargs_with_user_options():
     net = example_simple()
@@ -157,7 +159,7 @@ def test_bus_bus_switches(bus_bus_net):
     net = bus_bus_net
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
-           net.res_bus.vm_pu.at[6]
+        net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.in_service.at[5] = False
@@ -176,7 +178,7 @@ def test_bus_bus_switches_merges_two_gens(bus_bus_net):
     pp.create_gen(net, 4, 10)
     net.bus.in_service.at[5] = True
     pp.runpp(net)
-    assert net.converged == True
+    assert net.converged
 
 
 def test_bus_bus_switches_throws_exception_for_two_gen_with_diff_vm(bus_bus_net):
@@ -294,11 +296,9 @@ def test_connectivity_check_island_with_one_pv_bus():
     isolated_gen = pp.create_bus(net, vn_kv=20., name="isolated Gen")
     isolated_pv_bus = pp.create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
-                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                   name="IsolatedLine")
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine")
     pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
-                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                   name="IsolatedLineToGen")
+                   std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
     # with pytest.warns(UserWarning):
     iso_buses, iso_p, iso_q = get_isolated(net)
 
@@ -836,6 +836,7 @@ def test_equal_indices_res():
     except LoadflowNotConverged:
         assert False
 
+
 def test_ext_grid_and_gen_at_one_bus():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=110)
@@ -890,6 +891,7 @@ def test_ext_grid_and_gen_at_one_bus():
     assert net.res_ext_grid.q_mvar.values[0] > net.ext_grid.max_q_mvar.values[0]
     assert np.allclose(net.res_gen.q_mvar.values, net.gen.max_q_mvar.values)
 
+
 def two_ext_grids_at_one_bus():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, vn_kv=110, index=3)
@@ -903,7 +905,7 @@ def two_ext_grids_at_one_bus():
 
     # connect second ext_grid to b1 with different angle but out of service
     eg2 = pp.create_ext_grid(net, b1, vm_pu=1.01, va_degree=20, index=5, in_service=False)
-    runpp_with_consistency_checks(net) #power flow still converges since eg2 is out of service
+    runpp_with_consistency_checks(net)  # power flow still converges since eg2 is out of service
     assert net.converged
 
     # error is raised after eg2 is set in service

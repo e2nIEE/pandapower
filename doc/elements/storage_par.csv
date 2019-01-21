@@ -9,6 +9,7 @@ max_e_mwh ;float;;The maximum energy content of the storage (maximum charge leve
 min_e_mwh ;float;;The minimum energy content of the storage (minimum charge level)
 max_p_mw**;float;;Maximum active power
 min_p_mw**;float;;Minimum active power
+soc_percent;float;0 :math:`\leq` soc_percent :math:`\leq` 100;The state of charge of the storage
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
 controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable

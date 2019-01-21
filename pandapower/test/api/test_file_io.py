@@ -18,6 +18,7 @@ from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 import json
 import numpy as np
 
+
 def test_pickle(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.p")
     pp.to_pickle(net_in, filename)
@@ -36,6 +37,19 @@ def test_excel(net_in, tempdir):
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
     assert net_out.user_pf_options == net_in.user_pf_options
+
+
+def test_json_basic(net_in, tempdir):
+    # tests the basic json functionality with the encoder/decoder classes
+    filename = os.path.join(tempdir, "testfile.json")
+    with open(filename, 'w') as fp:
+        json.dump(net_in, fp, cls=PPJSONEncoder)
+
+    with open(filename) as fp:
+        net_out = json.load(fp, cls=PPJSONDecoder)
+        pp.convert_format(net_out)
+
+    assert_net_equal(net_in, net_out)
 
 
 def test_json(net_in, tempdir):
@@ -65,8 +79,7 @@ def test_json(net_in, tempdir):
 
     # check if restore_all_dtypes works properly:
     net_in.line['test'] = 123
-    # this will not work:
-    # net_in.res_line['test'] = 123
+    net_in.res_line['test'] = 123
     pp.to_json(net_in, filename)
     net_out = pp.from_json(filename)
     assert_net_equal(net_in, net_out)
@@ -123,6 +136,7 @@ def test_to_json_dtypes(tempdir):
     net1 = pp.from_json(filename)
     assert_net_equal(net, net1)
 
+
 def test_json_encoding_decoding():
     net = nw.mv_oberrhein()
     net.tuple = (1, "4")
@@ -141,7 +155,7 @@ def test_json_encoding_decoding():
     assert net.tuple == net1.tuple
     assert np.allclose(a, a1)
 
-    #TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists (see test_json_tuple_in_dataframe)
+    # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists (see test_json_tuple_in_dataframe)
     assert pp.nets_equal(net, net1, exclude_elms=["line_geodata"])
     assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata"])
     assert d["b"] == d1["b"]
@@ -160,13 +174,20 @@ def assert_graphs_equal(mg1, mg2):
             del data1["json_key"]
         assert data == data1
 
+
 @pytest.mark.xfail
 def test_json_tuple_in_pandas():
     s = pd.Series()
-    s["test"] = [(1,2), (3,4)]
+    s["test"] = [(1, 2), (3, 4)]
     json_string = json.dumps(s, cls=PPJSONEncoder)
     s1 = json.loads(json_string, cls=PPJSONDecoder)
     assert (type(s["test"][0]) == type(s1["test"][0]))
 
+
 if __name__ == "__main__":
-    pytest.main([__file__])
+#    net_in = net_in(tempdir())
+#    filename = os.path.join(tempdir, "testfile.p")
+#    pp.to_pickle(net_in, filename)
+#    net_out = pp.from_pickle(filename)
+#    assert_net_equal(net_in, net_out)
+    pytest.main([__file__, "-xs"])

@@ -6,6 +6,7 @@
 
 import networkx as nx
 import pandas as pd
+from collections import deque
 
 from pandapower.topology.create_graph import create_nxgraph
 
@@ -35,21 +36,16 @@ def connected_component(mg, bus, notravbuses=[]):
          cc = top.connected_component(mg, 5)
 
     """
-
     yield bus
     visited = {bus}
-    stack = [(bus, iter(mg[bus]))]
+    stack = deque([iter(mg[bus])])
     while stack:
-        _, children = stack[-1]
-        try:
-            child = next(children)
+        for child in stack.pop():
             if child not in visited:
                 yield child
                 visited.add(child)
                 if child not in notravbuses:
-                    stack.append((child, iter(mg[child])))
-        except StopIteration:
-            stack.pop()
+                    stack.append(iter(mg[child]))
 
 
 def connected_components(mg, notravbuses=set()):
@@ -84,7 +80,7 @@ def connected_components(mg, notravbuses=set()):
         nodes -= cc
     # the above does not work if two notravbuses are directly connected
     if len(notravbuses) > 0:
-        for f, t in mg.edges():
+        for f, t in mg.edges(notravbuses):
             if f in notravbuses and t in notravbuses:
                 yield set([f, t])
 
@@ -471,7 +467,7 @@ def estimate_voltage_vector(net):
     trafo_index = trafos.index.tolist()
     while len(trafo_index):
         for tix in trafo_index:
-            trafo = trafos.loc[tix]
+            trafo = trafos.ix[tix]
             if pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]) \
                     and pd.isnull(res_bus.vm_pu.at[trafo.lv_bus]):
                 try:

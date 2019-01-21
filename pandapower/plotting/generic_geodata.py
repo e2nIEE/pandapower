@@ -117,7 +117,7 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         else:
             nxg = copy.deepcopy(mg)
         # workaround for bug in agraph
-        for u, v in nxg.edges_iter(data=False, keys=False):
+        for u, v in nxg.edges(data=False, keys=False):
             if 'key' in nxg[int(u)][int(v)]:
                 del nxg[int(u)][int(v)]['key']
             if 'key' in nxg[int(u)][int(v)][0]:
