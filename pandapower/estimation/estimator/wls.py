@@ -7,9 +7,12 @@ import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
 
+from pandapower.idx_bus import BUS_TYPE, VA, VM
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
-#from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
-from pandapower.estimation.estimator.lav import WLSAlgebraNew
+
+from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
+#from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra
+#from pandapower.estimation.estimator.wls_matrix_ops_old import WLSAlgebraZeroInjectionConstraints
 
 
 class WLSEstimator:
@@ -32,32 +35,14 @@ class WLSEstimator:
 
         self.pp_meas_indices = None
 
-    def wls_preprocessing(self, ppci):
-        # calculate relevant vectors from ppci measurements
-        z, self.pp_meas_indices, r_cov, meas_mask = _build_measurement_vectors(ppci)
-
-        # number of nodes
-        n_active = len(np.where(ppci["bus"][:, 1] != 4)[0])
-        slack_buses = np.where(ppci["bus"][:, 1] == 3)[0]
-
+    def check_observability(self, ppci, z):
         # Check if observability criterion is fulfilled and the state estimation is possible
-        if len(z) < 2 * n_active - 1:
+        if len(z) < 2 * ppci["bus"].shape[0] - 1:
             self.logger.error("System is not observable (cancelling)")
             self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * n_active - 1))
+                              (len(z), 2 * ppci["bus"].shape[0] - 1))
             raise UserWarning("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * n_active - 1))
-
-        # set the starting values for all active buses
-        v_m = ppci["bus"][:, 7]
-        delta = ppci["bus"][:, 8] * np.pi / 180  # convert to rad
-        delta_masked = np.ma.array(delta, mask=False)
-        delta_masked.mask[slack_buses] = True
-        non_slack_buses = np.arange(len(delta))[~delta_masked.mask]
-
-        # invert covariance matrix
-        r_inv = csr_matrix(np.linalg.inv(np.diagflat(r_cov) ** 2))
-        return slack_buses, non_slack_buses, n_active, r_inv, v_m, delta_masked, delta, z, meas_mask
+                              (len(z), 2 * ppci["bus"].shape[0] - 1))
 
     def check_result(self, current_error, cur_it):
         # print output for results
@@ -69,46 +54,64 @@ class WLSEstimator:
             self.logger.debug("WLS State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
                                                                                                   self.max_iterations))
 
+    def wls_preprocessing(self, ppci):
+        # calculate relevant vectors from ppci measurements
+        z, self.pp_meas_indices, r_cov, non_nan_meas_mask = _build_measurement_vectors(ppci)
+        # invert covariance matrix
+        r_inv = csr_matrix((np.diagflat(1/r_cov) ** 2))
+
+        # check whether or not is the grid observed
+        self.check_observability(ppci, z)
+
+        # number of nodes
+        non_slack_buses = np.argwhere(ppci["bus"][:, BUS_TYPE] != 3).ravel()
+        non_slack_bus_mask = (ppci["bus"][:, BUS_TYPE] != 3)
+
+        # set the starting values for all active buses
+        v_m = ppci["bus"][:, VM]
+        delta = ppci["bus"][:, VA] * np.pi / 180  # convert to rad
+        delta_masked = delta[non_slack_bus_mask]
+        E = np.r_[delta_masked, v_m]
+        return non_slack_buses, v_m, delta, delta_masked, E, r_inv, z, non_nan_meas_mask
+
     def estimate(self, ppci):
-        slack_buses, non_slack_buses, n_active, r_inv, v_m, delta_masked, delta, z, meas_mask = self.wls_preprocessing(ppci)
+        non_slack_buses, v_m, delta, delta_masked, E, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
 
-        # state vector
-        E = np.concatenate((delta_masked.compressed(), v_m))
         # matrix calculation object
-        sem = WLSAlgebraNew(ppci, slack_buses, non_slack_buses)
+        sem = WLSAlgebra(ppci, non_nan_meas_mask)
 
-        current_error = 100.
-        cur_it = 0
+        current_error, cur_it = 100., 0
         G_m, r, H, h_x = None, None, None, None
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # create h(x) for the current iteration
-                h_x = sem.create_hx(v_m, delta, meas_mask)
+                h_x = sem.create_hx(v_m, delta)
 
                 # residual r
-                r = (z - h_x)[np.newaxis].T
+                r = csr_matrix(z - h_x).T
 
                 # jacobian matrix H
-                H = sem.create_h_jacobian(v_m, delta, meas_mask)
+                H = csr_matrix(sem.create_hx_jacobian(v_m, delta))
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T @ (r_inv @ H)
+                G_m = H.T * (r_inv * H)
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = spsolve(G_m, H.T @ (r_inv @ r))
-                E += d_E
+                d_E = spsolve(G_m, H.T * (r_inv * r))
+                E += d_E.ravel()
 
                 # update V/delta
                 delta[non_slack_buses] = E[:len(non_slack_buses)]
-                v_m = np.squeeze(E[len(non_slack_buses):])
+                v_m = E[len(non_slack_buses):]
 
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
+#                print(cur_it, current_error)
                 self.logger.debug("Current error: {:.7f}".format(current_error))
 
             except np.linalg.linalg.LinAlgError:
@@ -118,57 +121,60 @@ class WLSEstimator:
 
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
+        V = v_m * np.exp(1j * delta)
         if self.successful:
-            pass
             # store variables required for chi^2 and r_N_max test:
-#            self.R_inv = r_inv.toarray()
-#            self.Gm = G_m.toarray()
-#            self.r = r.toarray()
-#            self.H = H.toarray()
-#            self.Ht = self.H.T
-#            self.hx = h_x
-#            self.V = v_m
-#            self.delta = delta
-        return delta, v_m
+            self.R_inv = r_inv.toarray()
+            self.Gm = G_m.toarray()
+            self.r = r.toarray()
+            self.H = H.toarray()
+            self.Ht = self.H.T
+            self.hx = h_x
+            self.V = v_m
+            self.delta = delta
+        return V
 
 
 class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
     def estimate(self, ppci):
-        slack_buses, non_slack_buses, n_active, r_inv, v_m, delta_masked, delta, z = self.wls_preprocessing(ppci)
+        non_slack_buses, v_m, delta, delta_masked, E, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
+        num_bus = ppci["bus"].shape[0]
 
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
-        zero_injection_bus_sel = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1)
+        zero_injection_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1)
         # Withn pq buses with zero injection identify those who have also no p or q measurement
-        p_zero_injections = np.where(zero_injection_bus_sel & np.isnan(ppci["bus"][:, 15+0]))[0]
-        q_zero_injections = np.where(zero_injection_bus_sel & np.isnan(ppci["bus"][:, 15+0]))[0]
+        p_zero_injections = np.where(zero_injection_bus_mask & np.isnan(ppci["bus"][:, 15+2]))[0]
+        q_zero_injections = np.where(zero_injection_bus_mask & np.isnan(ppci["bus"][:, 15+4]))[0]
         new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
-        E = np.concatenate((delta_masked.compressed(), v_m, new_states))
-        # matrix calculation object
-        sem = WLSAlgebraZeroInjectionConstraints(ppci, slack_buses, non_slack_buses)
+        # update the E matrix
+        E = np.r_[E, new_states]
 
-        current_error = 100.
-        cur_it = 0
+        # matrix calculation object
+        sem = WLSAlgebraZeroInjectionConstraints(ppci, non_nan_meas_mask)
+
+        current_error, cur_it = 100., 0
         G_m, r, H, h_x = None, None, None, None
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # create h(x) for the current iteration
-                h_x, c_x = sem.create_hx_cx(v_m, delta, p_zero_injections, q_zero_injections)
+                h_x = sem.create_hx(v_m, delta)
+                c_x = sem.create_cx(v_m, delta, p_zero_injections, q_zero_injections)
 
                 # residual r
                 r = csr_matrix(z - h_x).T
                 c_rxh = csr_matrix(c_x).T
 
                 # jacobian matrix H
-                H_temp, C_temp = sem.create_jacobian(v_m, delta, p_zero_injections, q_zero_injections)
-                H = csr_matrix(H_temp)
-                C = csr_matrix(C_temp)
+                H_temp = sem.create_hx_jacobian(v_m, delta)
+                C_temp = sem.create_cx_jacobian(v_m, delta, p_zero_injections, q_zero_injections)
+                H, C = csr_matrix(H_temp), csr_matrix(C_temp)
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
-                G_m = H.T * (r_inv * H)             
+                G_m = H.T * (r_inv * H)
 
                 # building a new gain matrix for new constraints.
                 A_1 = vstack([G_m, C])
@@ -180,15 +186,15 @@ class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
 
                 # state vector difference d_E
                 d_E = spsolve(M_tx, C_rhs)
-                E += d_E
+                E += d_E.ravel()
 
                 # update V/delta
                 delta[non_slack_buses] = E[:len(non_slack_buses)]
-                v_m = np.squeeze(E[len(non_slack_buses):len(non_slack_buses) + n_active])
+                v_m = np.squeeze(E[len(non_slack_buses):len(non_slack_buses) + num_bus])
 
                 # prepare next iteration
                 cur_it += 1
-                current_error = np.max(np.abs(d_E[:len(non_slack_buses) + n_active]))
+                current_error = np.max(np.abs(d_E[:len(non_slack_buses) + num_bus]))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
 
             except np.linalg.linalg.LinAlgError:
@@ -198,4 +204,4 @@ class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
 
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
-        return delta, v_m
+        return v_m * np.exp(1j * delta)
