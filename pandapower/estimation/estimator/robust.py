@@ -37,6 +37,9 @@ class QCEstimator(WLSEstimator):
         v_m = E[len(non_slack_buses):]
         V = v_m * np.exp(1j * delta)
         return V
+    
+class SHGMEstimator(WLSEstimator):
+    pass
 
 #class QCEstimator(WLSEstimator):
 #    def estimate(self, ppci, **hyperparameter):

@@ -32,6 +32,23 @@ ESTIMATOR_MAPPING = {'wls': WLSEstimator,
                      'qc': QCEstimator}
 
 
+def initialize_voltage(net, init):
+    v_start = None
+    delta_start = None
+    if init == 'results':
+        v_start = net.res_bus_est.vm_pu
+        delta_start = net.res_bus_est.va_degree
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return v_start, delta_start
+    
+
+
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
              calculate_voltage_angles=True, zero_injection_detection=False, fuse_all_bb_switches=True,
              **hyperparameter):
@@ -73,18 +90,7 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
     wls = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
-    v_start = None
-    delta_start = None
-    if init == 'results':
-        v_start = net.res_bus_est.vm_pu
-        delta_start = net.res_bus_est.va_degree
-    elif init == 'slack':
-        res_bus = estimate_voltage_vector(net)
-        v_start = res_bus.vm_pu.values
-        if calculate_voltage_angles:
-            delta_start = res_bus.va_degree.values
-    elif init != 'flat':
-        raise UserWarning("Unsupported init value. Using flat initialization.")
+    v_start, delta_start = initialize_voltage(net, init)
     return wls.estimate(v_start, delta_start, calculate_voltage_angles, fuse_all_bb_switches, **hyperparameter)
 
 
@@ -120,18 +126,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **successful** (boolean) - Was the state estimation successful?
     """
     wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-    v_start = None
-    delta_start = None
-    if init == 'results':
-        v_start = net.res_bus_est.vm_pu
-        delta_start = net.res_bus_est.va_degree
-    elif init == 'slack':
-        res_bus = estimate_voltage_vector(net)
-        v_start = res_bus.vm_pu.values
-        if calculate_voltage_angles:
-            delta_start = res_bus.va_degree.values
-    elif init != 'flat':
-        raise UserWarning("Unsupported init value. Using flat initialization.")
+    v_start, delta_start = initialize_voltage(net, init)
     return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
                                    rn_max_threshold)
 
@@ -164,18 +159,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
     wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-    v_start = None
-    delta_start = None
-    if init == 'results':
-        v_start = net.res_bus_est.vm_pu
-        delta_start = net.res_bus_est.va_degree
-    elif init == 'slack':
-        res_bus = estimate_voltage_vector(net)
-        v_start = res_bus.vm_pu.values
-        if calculate_voltage_angles:
-            delta_start = res_bus.va_degree.values
-    elif init != 'flat':
-        raise UserWarning("Unsupported init value. Using flat initialization.")
+    v_start, delta_start = initialize_voltage(net, init)
     return wls.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
                                  chi2_prob_false)
 

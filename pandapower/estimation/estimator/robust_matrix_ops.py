@@ -21,11 +21,24 @@ class RobustAlgebra(WLSAlgebra):
     def create_rhox(self, ):
         pass
 
-    def create_ypsilon(self, ):
+    def create_upsilon(self, ):
         pass
 
-    def create_ypsilon_jacobian(self, ):
+    def create_upsilon_jacobian(self, ):
         pass
+    
+
+class SHGMAlgebra(RobustAlgebra):
+    def create_rhox(self, r, sigma, omega):
+        pass
+    
+    
+    def create_upsilon(self, r, sigma, w):
+        upsilon = r / (sigma**2)
+        
+        otherwise_mask = np.abs(r/(sigma * w)) > self.a
+        upsilon[otherwise_mask] = ((self.a * w / sigma) * np.sign(r))[otherwise_mask]
+        return upsilon
 
 
 class QCRobustAlgebra(RobustAlgebra):   
@@ -36,19 +49,19 @@ class QCRobustAlgebra(RobustAlgebra):
         rhox[otherwise_mask] = (self.a)**2/(sigma**2)
         return rhox
     
-    def create_ypsilon(self, r, sigma):
-        ypsilon = (2*r)/(sigma**2)
+    def create_upsilon(self, r, sigma):
+        upsilon = (2*r)/(sigma**2)
         
         otherwise_mask = (np.abs(r/sigma) > self.a)
-        ypsilon[otherwise_mask] = 0
-        return ypsilon
+        upsilon[otherwise_mask] = 0
+        return upsilon
     
-    def create_ypsilon_jacobian(self, r, sigma):
-        ypsilon = (2*r)/(sigma**2)
+    def create_upsilon_jacobian(self, r, sigma):
+        upsilon = (2*r)/(sigma**2)
         
         otherwise_mask = (np.abs(r/sigma) > self.a)
-        ypsilon[otherwise_mask] = 0
-        return ypsilon
+        upsilon[otherwise_mask] = 0
+        return upsilon
 
 
 class QCRobustAlgebraOptimization(WLSAlgebraOptimization, RobustAlgebra):
