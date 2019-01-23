@@ -1441,6 +1441,14 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                              (net.trafo3w.lv_bus.isin(buses))]
     p2.impedance = net.impedance[(net.impedance.from_bus.isin(buses)) &
                                  (net.impedance.to_bus.isin(buses))]
+    p2.measurement = net.measurement[((net.measurement.element_type == "bus") &
+                                      (net.measurement.element.isin(buses))) |
+                                     ((net.measurement.element_type == "line") &
+                                      (net.measurement.element.isin(p2.line.index))) |
+                                     ((net.measurement.element_type == "trafo") &
+                                      (net.measurement.element.isin(p2.trafo.index))) |
+                                     ((net.measurement.element_type == "trafo3w") &
+                                      (net.measurement.element.isin(p2.trafo3w.index)))]
 
     if include_results:
         for table in net.keys():
