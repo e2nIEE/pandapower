@@ -467,7 +467,7 @@ def estimate_voltage_vector(net):
     trafo_index = trafos.index.tolist()
     while len(trafo_index):
         for tix in trafo_index:
-            trafo = trafos.ix[tix]
+            trafo = trafos.loc[tix]
             if pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]) \
                     and pd.isnull(res_bus.vm_pu.at[trafo.lv_bus]):
                 try:
