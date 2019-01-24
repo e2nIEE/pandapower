@@ -31,6 +31,14 @@ try:
 except ImportError:
     GEOPANDAS_INSTALLED = False
 
+
+try:
+    import shapely.geometry
+    SHAPELY_INSTALLED = True
+except ImportError:
+    SHAPELY_INSTALLED = False
+    
+
 try:
     import pplog as logging
 except ImportError:
@@ -279,6 +287,8 @@ def pp_hook(d):
                 df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=d['columns'])
             return df
+        elif SHAPELY_INSTALLED and module_name == "shapely":
+            return shapely.geometry.shape(obj)
         elif class_name == "pandapowerNet":
             from pandapower import from_json_string
             return from_json_string(obj)
@@ -325,7 +335,7 @@ def json_dataframe(obj):
     return d
 
 
-try:
+if GEOPANDAS_INSTALLED:
     @to_serializable.register(gpd.GeoDataFrame)
     def json_geodataframe(obj):
         logger.debug('GeoDataFrame')
@@ -333,8 +343,6 @@ try:
         d.update({'dtype': obj.dtypes.astype('str').to_dict(),
                   'crs': obj.crs, 'columns': obj.columns})
         return d
-except NameError:
-    pass
 
 
 @to_serializable.register(pd.Series)
@@ -409,3 +417,26 @@ def json_networkx(obj):
     json_string = json_graph.adjacency_data(obj, attrs={'id': 'json_id', 'key': 'json_key'})
     d = with_signature(obj, json_string, obj_module="networkx")
     return d
+
+
+if SHAPELY_INSTALLED:
+    @to_serializable.register(shapely.geometry.LineString)
+    def json_linestring(obj):
+        logger.debug("shapely linestring")
+        json_string = shapely.geometry.mapping(obj)
+        d = with_signature(obj, json_string, obj_module="shapely")
+        return d
+    
+    @to_serializable.register(shapely.geometry.Point)
+    def json_point(obj):
+        logger.debug("shapely Point")
+        json_string = shapely.geometry.mapping(obj)
+        d = with_signature(obj, json_string, obj_module="shapely")
+        return d
+
+    @to_serializable.register(shapely.geometry.Polygon)
+    def json_polygon(obj):
+        logger.debug("shapely Polygon")
+        json_string = shapely.geometry.mapping(obj)
+        d = with_signature(obj, json_string, obj_module="shapely")
+        return d
