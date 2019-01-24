@@ -199,10 +199,16 @@ def test_3bus_with_transformer():
                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
                                    max_i_ka=1)
+    
+    pp.create_std_type(net, {"sn_mva": 25, "vn_hv_kv": 110, "vn_lv_kv": 10, "vk_percent": 10.04,
+            "vkr_percent": 0.276, "pfe_kw": 28.51, "i0_percent": 0.073, "shift_degree": 150,
+            "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
+            "tap_step_percent": 1.5, "tap_phase_shifter": False},
+            "25 MVA 110/10 kV v1.4.3 and older", element="trafo")
     pp.create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV v1.4.3 and older")
 
-    pp.create_load(net, 1, .450, .300)
-    pp.create_load(net, 2, .350, .200)
+    pp.create_load(net, bus=1, p_mw=0.45, q_mvar=0.3)
+    pp.create_load(net, bus=2, p_mw=0.35, q_mvar=0.2)
 
     pp.runpp(net, calculate_voltage_angles=True)
 
@@ -477,6 +483,12 @@ def test_init_slack_with_multiple_transformers(angles=True):
     pp.create_bus(net, 10, index=5)
     pp.create_bus(net, 10, index=6)
     pp.create_bus(net, 10, index=7, in_service=False)
+    pp.create_std_type(net, {"sn_mva": 63, "vn_hv_kv": 110, "vn_lv_kv": 10, "vk_percent": 10.04,
+            "vkr_percent": 0.31, "pfe_kw": 31.51, "i0_percent": 0.078, "shift_degree": 150,
+            "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
+            "tap_step_percent": 1.5, "tap_phase_shifter": False},
+            "63 MVA 110/10 kV v1.4.3 and older", element="trafo")
+            
     pp.create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV v1.4.3 and older", in_service=False)
     pp.create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV v1.4.3 and older")
     pp.create_transformer(net, 0, 1, std_type="100 MVA 220/110 kV")
