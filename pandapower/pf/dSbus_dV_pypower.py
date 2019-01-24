@@ -12,7 +12,7 @@
 """Computes partial derivatives of power injection w.r.t. voltage.
 """
 
-from numpy import conj, diag, asmatrix, asarray, zeros
+from numpy import conj, diag, asarray
 from scipy.sparse import issparse, csr_matrix as sparse
 
 
@@ -39,11 +39,11 @@ def dSbus_dV_sparse(Ybus, V):
 
 def dSbus_dV_dense(Ybus, V):
     # standard code from Pypower (slower than above)
-    Ibus = Ybus * asmatrix(V).T
+    Ibus = Ybus * asarray(V).T
 
-    diagV = asmatrix(diag(V))
-    diagIbus = asmatrix(diag(asarray(Ibus).flatten()))
-    diagVnorm = asmatrix(diag(V / abs(V)))
+    diagV = asarray(diag(V))
+    diagIbus = asarray(diag(asarray(Ibus).flatten()))
+    diagVnorm = asarray(diag(V / abs(V)))
 
     dS_dVm = diagV * conj(Ybus * diagVnorm) + conj(diagIbus) * diagVnorm
     dS_dVa = 1j * diagV * conj(diagIbus - Ybus * diagV)
