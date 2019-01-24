@@ -253,9 +253,9 @@ class StateEstimation(object):
         # node voltages
         # V<delta
         if v_start is None:
-            v_start = np.ones(self.net.bus.shape[0])
+            v_start = "flat"
         if delta_start is None:
-            delta_start = np.zeros(self.net.bus.shape[0])
+            delta_start = "flat"
 
         # initialize result tables if not existent
         _copy_power_flow_results(self.net)
