@@ -6,6 +6,6 @@ vn_hv_kv;vn_hv_kv;vn_hv_kv;vn_hv_kv
 vn_lv_kv;vn_hv_kv;vn_mv_kv;vn_lv_kv
 vk_percent;:math:`v_{k, t1}`;:math:`v_{k, t2}`;:math:`v_{k, t3}`
 vkr_percent;:math:`v_{r, t1}`;:math:`v_{r, t2}`;:math:`v_{r, t3}`
-pfe_mw;pfe_mw;0;0
+pfe_kw;pfe_kw;0;0
 i0_percent;i0_percent;0;0
 shift_degree;shift_degree;0;0

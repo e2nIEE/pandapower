@@ -67,25 +67,25 @@ def _check_plc_full_range(net, element_type):  # pragma: no cover
         if plc_el_p.shape[0]:
             p_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_p.element_type)) &
-                ((net[element_type].min_p_kw < plc_el_p.p[plc_el_p.index.values[0]].min()) |
-                 (net[element_type].max_p_kw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
+                ((net[element_type].min_p_mw < plc_el_p.p[plc_el_p.index.values[0]].min()) |
+                 (net[element_type].max_p_mw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
         if plc_el_q.shape[0]:
             q_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_q.element_type)) &
-                ((net[element_type].min_p_kw < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].max_p_kw > plc_el_q.p[plc_el_q.index.values[0]].max()))].index
+                ((net[element_type].min_p_mw < plc_el_q.p[plc_el_q.index.values[0]].min()) |
+                 (net[element_type].max_p_mw > plc_el_q.p[plc_el_q.index.values[0]].max()))].index
     else:  # element_type == 'dcline'
         if plc_el_p.shape[0]:
             p_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_p.element_type)) &
-                ((net[element_type].max_p_kw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
+                ((net[element_type].max_p_mw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
         if plc_el_q.shape[0]:
             q_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_q.element_type)) &
-                ((net[element_type].min_q_to_kvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].min_q_from_kvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].max_q_to_kvar > plc_el_q.p[plc_el_q.index.values[0]].max()) |
-                 (net[element_type].max_q_from_kvar > plc_el_q.p[plc_el_q.index.values[0]].max()))
+                ((net[element_type].min_q_to_mvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
+                 (net[element_type].min_q_from_mvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
+                 (net[element_type].max_q_to_mvar > plc_el_q.p[plc_el_q.index.values[0]].max()) |
+                 (net[element_type].max_q_from_mvar > plc_el_q.p[plc_el_q.index.values[0]].max()))
                 ].index
     if len(p_idx):
         logger.warning("At" + element_type + str(p_idx.values) +
@@ -209,7 +209,7 @@ def opf_task(net):  # pragma: no cover
     variable_names = ['Ext_Grid', 'Gen', 'SGen', 'Load']
     variable_long_names = ['External Grid', 'Generator', 'Static Generator', 'Load']
     for j, variable in enumerate(variables):
-        constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
+        constr_col = pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar'])
         constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
         constr = net[variable][constr_col_exist]
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
@@ -219,19 +219,19 @@ def opf_task(net):  # pragma: no cover
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
             for i in constr_col[~constr_col.isin(net[variable].columns)]:
                 constr[i] = np.nan
-            if (constr.min_p_kw >= constr.max_p_kw).any():
-                logger.warning("The value of min_p_kw must be less than max_p_kw for all " +
+            if (constr.min_p_mw >= constr.max_p_mw).any():
+                logger.warning("The value of min_p_mw must be less than max_p_mw for all " +
                             variable_names[j] + ". " + "Please observe the pandapower " +
                             "signing system.")
-            if (constr.min_q_kvar >= constr.max_q_kvar).any():
-                logger.warning("The value of min_q_kvar must be less than max_q_kvar for all " +
+            if (constr.min_q_mvar >= constr.max_q_mvar).any():
+                logger.warning("The value of min_q_mvar must be less than max_q_mvar for all " +
                             variable_names[j] + ". Please observe the pandapower signing system.")
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
-                          " [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " + \
+                          " [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is " + \
                           "[%s, %s, %s, %s]" % (
-                              constr.min_p_kw.values[0], constr.max_p_kw.values[0],
-                              constr.min_q_kvar.values[0], constr.max_q_kvar.values[0])
+                              constr.min_p_mw.values[0], constr.max_p_mw.values[0],
+                              constr.min_q_mvar.values[0], constr.max_q_mvar.values[0])
             else:  # different constraints exist
                 unique_rows = ~constr.duplicated()
                 duplicated_rows = constr.duplicated()
@@ -242,12 +242,12 @@ def opf_task(net):  # pragma: no cover
                             same_data.append(i2)
                     to_log += '\n' + '    at ' + variable_names[j] + ' ' + \
                               ', '.join(map(str, same_data)) + \
-                              ' [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is ' + \
-                              '[%s, %s, %s, %s]' % (constr.min_p_kw[i], constr.max_p_kw[i],
-                                                    constr.min_q_kvar[i], constr.max_q_kvar[i])
+                              ' [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is ' + \
+                              '[%s, %s, %s, %s]' % (constr.min_p_mw[i], constr.max_p_mw[i],
+                                                    constr.min_q_mvar[i], constr.max_q_mvar[i])
     # --- DC Line constraints
-    constr_col = pd.Series(['max_p_kw', 'min_q_from_kvar', 'max_q_from_kvar', 'min_q_to_kvar',
-                            'max_q_to_kvar'])
+    constr_col = pd.Series(['max_p_mw', 'min_q_from_mvar', 'max_q_from_mvar', 'min_q_to_mvar',
+                            'max_q_to_mvar'])
     constr_col_exist = constr_col[constr_col.isin(net['dcline'].columns)]
     constr = net['dcline'][constr_col_exist].dropna(how='all')
     if (constr.shape[1] > 0) & (constr.shape[0] > 0):
@@ -255,18 +255,18 @@ def opf_task(net):  # pragma: no cover
         to_log += '\n' + "  DC Line Constraints"
         for i in constr_col[~constr_col.isin(net['dcline'].columns)]:
             constr[i] = np.nan
-        if (constr.min_q_from_kvar >= constr.max_q_from_kvar).any():
-            logger.warning("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
+        if (constr.min_q_from_mvar >= constr.max_q_from_mvar).any():
+            logger.warning("The value of min_q_from_mvar must be less than max_q_from_mvar for " +
                            "all DC Line. Please observe the pandapower signing system.")
-        if (constr.min_q_to_kvar >= constr.max_q_to_kvar).any():
-            logger.warning("The value of min_q_to_kvar must be less than min_q_to_kvar for " +
+        if (constr.min_q_to_mvar >= constr.max_q_to_mvar).any():
+            logger.warning("The value of min_q_to_mvar must be less than min_q_to_mvar for " +
                            "all DC Line. Please observe the pandapower signing system.")
         if constr.duplicated()[1:].all():  # all with the same constraints
-            to_log += '\n' + "    at all DC Line [max_p_kw, min_q_from_kvar, max_q_from_kvar, " + \
-                      "min_q_to_kvar, max_q_to_kvar] is [%s, %s, %s, %s, %s]" % \
-                      (constr.max_p_kw.values[0], constr.min_q_from_kvar.values[0],
-                       constr.max_q_from_kvar.values[0], constr.min_q_to_kvar.values[0],
-                       constr.max_q_to_kvar.values[0])
+            to_log += '\n' + "    at all DC Line [max_p_mw, min_q_from_mvar, max_q_from_mvar, " + \
+                      "min_q_to_mvar, max_q_to_mvar] is [%s, %s, %s, %s, %s]" % \
+                      (constr.max_p_mw.values[0], constr.min_q_from_mvar.values[0],
+                       constr.max_q_from_mvar.values[0], constr.min_q_to_mvar.values[0],
+                       constr.max_q_to_mvar.values[0])
         else:  # different constraints exist
             unique_rows = ~constr.duplicated()
             duplicated_rows = constr.duplicated()
@@ -276,11 +276,11 @@ def opf_task(net):  # pragma: no cover
                     if (constr.iloc[i] == constr.iloc[i2]).all():
                         same_data.append(i2)
                 to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
-                          ' [max_p_kw, min_q_from_kvar, max_q_from_kvar, min_q_to_kvar, ' + \
-                          'max_q_to_kvar] is [%s, %s, %s, %s, %s]' % (
-                              constr.max_p_kw.values[0], constr.min_q_from_kvar.values[0],
-                              constr.max_q_from_kvar.values[0],
-                              constr.min_q_to_kvar.values[0], constr.max_q_to_kvar.values[0])
+                          ' [max_p_mw, min_q_from_mvar, max_q_from_mvar, min_q_to_mvar, ' + \
+                          'max_q_to_mvar] is [%s, %s, %s, %s, %s]' % (
+                              constr.max_p_mw.values[0], constr.min_q_from_mvar.values[0],
+                              constr.max_q_from_mvar.values[0],
+                              constr.min_q_to_mvar.values[0], constr.max_q_to_mvar.values[0])
     # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
