@@ -17,7 +17,7 @@ from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
-from pandapower.estimation.estimator.robust import QCEstimator
+from pandapower.estimation.estimator.robust import SHGMEstimator
 
 
 
@@ -29,7 +29,21 @@ std_logger = logging.getLogger(__name__)
 
 ESTIMATOR_MAPPING = {'wls': WLSEstimator,
                      'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints,
-                     'qc': QCEstimator}
+                     'shgm': SHGMEstimator}
+
+
+def _initialize_voltage(net, init, calculate_voltage_angles):
+    v_start, delta_start = None, None
+    if init == 'results':
+        v_start, delta_start = 'results', 'results'
+    elif init == 'slack':
+        res_bus = estimate_voltage_vector(net)
+        v_start = res_bus.vm_pu.values
+        if calculate_voltage_angles:
+            delta_start = res_bus.va_degree.values
+    elif init != 'flat':
+        raise UserWarning("Unsupported init value. Using flat initialization.")
+    return v_start, delta_start
 
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -73,8 +87,8 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
     wls = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
-#    v_start, delta_start = initialize_voltage(net, init, calculate_voltage_angles)
-    return wls.estimate(init, init, calculate_voltage_angles, fuse_all_bb_switches, **hyperparameter)
+    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles, fuse_all_bb_switches, **hyperparameter)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -109,8 +123,8 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **successful** (boolean) - Was the state estimation successful?
     """
     wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-#    v_start, delta_start = initialize_voltage(net, init, calculate_voltage_angles)
-    return wls.perform_rn_max_test(init, init, calculate_voltage_angles,
+    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
                                    rn_max_threshold)
 
 
@@ -142,8 +156,8 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
     wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-#    v_start, delta_start = initialize_voltage(net, init, calculate_voltage_angles)
-    return wls.perform_chi2_test(init, init, calculate_voltage_angles,
+    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    return wls.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
                                  chi2_prob_false)
 
 
@@ -223,10 +237,10 @@ class StateEstimation(object):
         # add initial values for V and delta
         # node voltages
         # V<delta
-#        if v_start is None:
-#            v_start = np.ones(self.net.bus.shape[0])
-#        if delta_start is None:
-#            delta_start = np.zeros(self.net.bus.shape[0])
+        if v_start is None:
+            v_start = 'flat'
+        if delta_start is None:
+            delta_start = 'flat'
 
         # initialize result tables if not existent
         _copy_power_flow_results(self.net)
@@ -237,11 +251,11 @@ class StateEstimation(object):
         # add measurements to ppci structure
         ppci = _add_measurements_to_ppc(self.net, ppci)
         
-        aux_bus_trafo3w = np.arange(self.net.bus.shape[0], ppc['bus'].shape[0] - self.net.bus.shape[0])
-        ppci['bus'][aux_bus_trafo3w, 17] = 0
-        ppci['bus'][aux_bus_trafo3w, 18] = 0.001
-        ppci['bus'][aux_bus_trafo3w, 19] = 0
-        ppci['bus'][aux_bus_trafo3w, 20] = 0.001
+        aux_bus_trafo3w = self.net.trafo3w.shape[0]
+        ppci['bus'][-aux_bus_trafo3w:, 17] = 0
+        ppci['bus'][-aux_bus_trafo3w:, 18] = 0.1
+        ppci['bus'][-aux_bus_trafo3w:, 19] = 0
+        ppci['bus'][-aux_bus_trafo3w:, 20] = 0.1
         
 
         # Finished converting pandapower network to ppci
@@ -327,12 +341,6 @@ class StateEstimation(object):
             perform_chi2_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 0.97)
 
         """
-        # 'flat'-start conditions
-        if v_in_out is None:
-            v_in_out = np.ones(self.net.bus.shape[0])
-        if delta_in_out is None:
-            delta_in_out = np.zeros(self.net.bus.shape[0])
-
         # perform SE
         self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
@@ -362,7 +370,7 @@ class StateEstimation(object):
             self.bad_data_present = True
             self.logger.debug("Chi^2 test failed. Bad data or topology error detected.")
 
-        if (v_in_out is not None) and (delta_in_out is not None):
+        if self.estimator.successful:
             return self.bad_data_present
 
 
@@ -404,20 +412,12 @@ class StateEstimation(object):
             perform_rn_max_test(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]), 5.0, 0.05)
 
         """
-        # 'flat'-start conditions
-        if v_in_out is None:
-            v_in_out = np.ones(self.net.bus.shape[0])
-        if delta_in_out is None:
-            delta_in_out = np.zeros(self.net.bus.shape[0])
-
         num_iterations = 0
-        v_in = v_in_out
-        delta_in = delta_in_out
 
         while num_iterations <= 10:
             # Estimate the state with bad data identified in previous iteration
             # removed from set of measurements:
-            self.estimate(v_in, delta_in, calculate_voltage_angles)
+            self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
             # Try to remove the bad data
             try:

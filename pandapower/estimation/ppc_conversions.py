@@ -146,9 +146,9 @@ def _add_measurements_to_ppc(net, ppci):
 
     map_bus = net["_pd2ppc_lookups"]["bus"]
     meas_bus = meas[(meas['element_type'] == 'bus')]
-    if (map_bus[meas_bus['element']] >= ppci["bus"].shape[0]).any():
+    if (map_bus[meas_bus['element'].values.astype(int)] >= ppci["bus"].shape[0]).any():
         std_logger.warning("Measurement defined in pp-grid does not exist in ppci! Will be deleted!")
-        meas_bus = meas_bus[map_bus[meas_bus['element']] < ppci["bus"].shape[0]]
+        meas_bus = meas_bus[map_bus[meas_bus['element'].values.astype(int)] < ppci["bus"].shape[0]]
 
     # mapping to dict instead of np array ensures good performance for large indices
     # (e.g., 999999999 requires a large np array even if there are only 2 buses)

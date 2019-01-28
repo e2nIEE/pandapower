@@ -14,29 +14,29 @@ from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebraOptimization
 from pandapower.estimation.estimator.wls import WLSEstimator
-from pandapower.estimation.estimator.robust_matrix_ops import QCRobustAlgebraOptimization
+from pandapower.estimation.estimator.robust_matrix_ops import QCRobustAlgebraOptimization, SHGMAlgebra
 
-class QCEstimator(WLSEstimator):
-    def estimate(self, ppci, **hyperparameter):
-        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
-        sigma = r_cov
-
-        # matrix calculation object
-#        sem = WLSAlgebraOptimization(ppci, non_nan_meas_mask, z, sigma)
-        sem = QCRobustAlgebraOptimization(ppci, non_nan_meas_mask, z, sigma)
-        sem.initialize(a = 3)
-
-#        current_error, cur_it = 100., 0
-#        G_m, r, H, h_x = None, None, None, None
-        
-#        res = minimize(sem.object_func, E, jac=sem.create_jac, tol=1e-8, method='Newton-CG')
-        res = minimize(sem.object_func, E, jac=sem.create_jac, tol=1e-8, method='Nelder-Mead')
-#        print(res)
-        E = res.x
-        delta[non_slack_buses] = E[:len(non_slack_buses)]
-        v_m = E[len(non_slack_buses):]
-        V = v_m * np.exp(1j * delta)
-        return V
+#class QCEstimator(WLSEstimator):
+#    def estimate(self, ppci, **hyperparameter):
+#        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
+#        sigma = r_cov
+#
+#        # matrix calculation object
+##        sem = WLSAlgebraOptimization(ppci, non_nan_meas_mask, z, sigma)
+#        sem = QCRobustAlgebraOptimization(ppci, non_nan_meas_mask, z, sigma)
+#        sem.initialize(a = 3)
+#
+##        current_error, cur_it = 100., 0
+##        G_m, r, H, h_x = None, None, None, None
+#        
+##        res = minimize(sem.object_func, E, jac=sem.create_jac, tol=1e-8, method='Newton-CG')
+#        res = minimize(sem.object_func, E, jac=sem.create_jac, tol=1e-8, method='Nelder-Mead')
+##        print(res)
+#        E = res.x
+#        delta[non_slack_buses] = E[:len(non_slack_buses)]
+#        v_m = E[len(non_slack_buses):]
+#        V = v_m * np.exp(1j * delta)
+#        return V
     
 class SHGMEstimator(WLSEstimator):
     pass
