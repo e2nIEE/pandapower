@@ -460,4 +460,4 @@ def _different_values_at_one_bus(buses, values):
     # have the voltage of the first generator at that bus
     values_equal = first_values[buses]
 
-    return not np.array_equal(values, values_equal)
+    return not np.allclose(values, values_equal)
