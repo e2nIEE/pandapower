@@ -18,6 +18,7 @@ from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
 from pandapower.estimation.estimator.robust import SHGMEstimator
+from pandapower.estimation.estimator.lav import LAVEstimator
 
 
 
@@ -29,7 +30,8 @@ std_logger = logging.getLogger(__name__)
 
 ESTIMATOR_MAPPING = {'wls': WLSEstimator,
                      'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints,
-                     'shgm': SHGMEstimator}
+                     'shgm': SHGMEstimator,
+                     'lav': LAVEstimator}
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):

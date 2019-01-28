@@ -14,7 +14,7 @@ from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebraOptimization
 from pandapower.estimation.estimator.wls import WLSEstimator
-from pandapower.estimation.estimator.robust_matrix_ops import QCRobustAlgebraOptimization, SHGMAlgebra
+#from pandapower.estimation.estimator.robust_matrix_ops import QCRobustAlgebraOptimization, SHGMAlgebra
 
 #class QCEstimator(WLSEstimator):
 #    def estimate(self, ppci, **hyperparameter):
