@@ -12,6 +12,7 @@ from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
 from pandapower.estimation.estimator.wls import WLSEstimator
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
+#from pandapower.estimation.estimator.wls_matrix_ops_ori import WLSAlgebra
 from scipy.optimize import minimize, linprog
 
 
@@ -36,7 +37,6 @@ class LAVEstimator(WLSEstimator):
                 
                 # jacobian matrix H
                 H = sem.create_hx_jacobian(v_m, delta)
-
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
@@ -72,14 +72,20 @@ def new_X(H, x, delta_z):
     c_T = np.r_[zero_n, zero_n, one_m, one_m]
     A = np.c_[H, -H, Im, -Im]
     
-    res = linprog(c_T.ravel(), A_eq=A, b_eq=delta_z ,bounds=[(0, None) for _ in range(A.shape[1])])
-    d_x = res.x[:n].ravel() - res.x[n:2*n].ravel()
-    return d_x
+#    res = linprog(c_T.ravel(), A_eq=A, b_eq=delta_z ,bounds=[(0, None) for _ in range(A.shape[1])],
+#                  method="interior-point")
+    res = linprog(c_T.ravel(), A_eq=A, b_eq=delta_z ,bounds=[(0, None) for _ in range(A.shape[1])],
+                  method="simplex")
+    if res.success:
+        d_x = res.x[:n].ravel() - res.x[n:2*n].ravel()
+        return d_x
+    else:
+        raise np.linalg.linalg.LinAlgError
 
 if __name__ == "__main__":
     from pandapower.estimation import estimate
     import pandapower as pp
-    # 1. Create network
+    
     net = pp.create_empty_network()
     pp.create_bus(net, name="bus1", vn_kv=1.)
     pp.create_bus(net, name="bus2", vn_kv=1.)
@@ -93,13 +99,16 @@ if __name__ == "__main__":
                                    max_i_ka=1)
 
     pp.create_measurement(net, "p", "line", -0.0011, 0.01, 0, 0)  # p12
-    pp.create_measurement(net, "q", "line", 0.024, 0.01, 0, 0)    # q12
+    pp.create_measurement(net, "q", "line", 0.024, 0.01, 0, 0)  # q12
 
     pp.create_measurement(net, "p", "bus", 0.018, 0.01, 2)  # p3
-    pp.create_measurement(net, "q", "bus", -0.1, 0.01, 2)   # q3
+    pp.create_measurement(net, "q", "bus", -0.1, 0.01, 2)  # q3
 
-    pp.create_measurement(net, "v", "bus", 1.08, 0.05, 0)   # u1
+    pp.create_measurement(net, "v", "bus", 1.08, 0.05, 0)  # u1
     pp.create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
+
+    # 1. Create false voltage measurement for testing bad data detection (-> should be removed)
+    pp.create_measurement(net, "v", "bus", 1.3, 0.01, 1)   # V at bus 2
 
     # 2. Do state estimation
 #    success = estimate(net, init='flat')
