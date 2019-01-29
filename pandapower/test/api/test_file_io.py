@@ -185,4 +185,5 @@ def test_json_tuple_in_pandas():
 
 
 if __name__ == "__main__":
+#    test_excel(net_in([1]), tempdir())
     pytest.main(["test_file_io.py", "-x"])
