@@ -1182,10 +1182,11 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
     analyzed_meas = net.measurement.loc[net.measurement.bus.isin(buses).fillna("nan")]
-    # drop duplicates
-    idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
-        "type", "element_type", "bus", "element"], keep=keep)]
-    net.measurement.drop(idx_to_drop, inplace=True)
+    if len(analyzed_meas) > 0:
+        # drop duplicates
+        idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
+            "type", "element_type", "bus", "element"], keep=keep)]
+        net.measurement.drop(idx_to_drop, inplace=True)
 
 
 def fuse_buses(net, b1, b2, drop=True):
