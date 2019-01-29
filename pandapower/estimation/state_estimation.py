@@ -35,29 +35,29 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     Wrapper function for WLS state estimation.
 
     INPUT:
-        **net** - The net within this line should be created.
+        **net** - The net within this line should be created
 
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
-        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
 
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
-        tolerance, the process stops. Default is 1e-6.
+        tolerance, the process stops. Default is 1e-6
 
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True.
+        shifts in transformers, if init is 'slack'. Default is True
         
-        **zero_injection_detection** - (boolean) - Find out the bus with zero injection (Bus without p,q 
-        measurement and p,q injection from elements) and using the wls with constraints estimator to do
-        constraint state estimation        
-        
-        **fuse_all_bb_switches** - (boolean) - if true when considering bus-bus-switches the buses
-        will fused (Default behaviour) otherwise auxiliary lines will be added between those buses 
-        where an element is connected to them in order to clear the p,q results on each buses 
-        instead of fusing them all together
+        **zero_injection_detection** - (boolean) - Detect buses with zero injections (buses without p, q
+        measurements and p, q injections from elements) automatically and extend the WLS SE with those zero-injection
+        constraints
+
+        **fuse_all_bb_switches** - (bool) - If True: when considering bus-bus-switches, the buses
+        will fused into one (default behaviour), otherwise auxiliary lines will be added between those buses
+        where an element is connected to them in order to keep the p, q results on all buses
+        instead of fusing them
 
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
@@ -90,20 +90,20 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     Wrapper function for bad data removal.
 
     INPUT:
-        **net** - The net within this line should be created.
+        **net** - The net within this line should be created
 
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
-        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
 
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
-        tolerance, the process stops. Default is 1e-6.
+        tolerance, the process stops. Default is 1e-6
 
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True.
+        shifts in transformers, if init is 'slack'. Default is True
 
         **rn_max_threshold** (float) - Identification threshold to determine
         if the largest normalized residual reflects a bad measurement
@@ -142,16 +142,16 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
 
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
-        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'.
+        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
 
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
-        tolerance, the process stops. Default is 1e-6.
+        tolerance, the process stops. Default is 1e-6
 
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10.
+        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True.
+        shifts in transformers, if init is 'slack'. Default is True
 
         **chi2_prob_false** (float) - probability of error / false alarms
         (default value: 0.05)
@@ -222,12 +222,12 @@ class StateEstimation(object):
 
         OPTIONAL:
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
-            phase shifts in transformers Default is True.
+            phase shifts in transformers Default is True
             
-            **fuse_all_bb_switches** - (bool) - if true when considering bus-bus-switches the buses
-            will fused (Default behaviour) otherwise auxiliary lines will be added between those buses 
-            where an element is connected to them in order to clear the p,q results on each buses 
-            instead of fusing them all together
+            **fuse_all_bb_switches** - (bool) - If True: when considering bus-bus-switches, the buses
+            will fused into one (default behaviour), otherwise auxiliary lines will be added between those buses
+            where an element is connected to them in order to keep the p, q results on all buses
+            instead of fusing them
 
         OUTPUT:
             **successful** (boolean) - True if the estimation process was successful
@@ -350,7 +350,7 @@ class StateEstimation(object):
 
         OPTIONAL:
             **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-            shifts in transformers, if init is 'slack'. Default is True.
+            shifts in transformers, if init is 'slack'. Default is True
 
             **chi2_prob_false** (float) - probability of error / false alarms (standard value: 0.05)
 
@@ -399,7 +399,6 @@ class StateEstimation(object):
         if (v_in_out is not None) and (delta_in_out is not None):
             return self.bad_data_present
 
-
     def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
                             calculate_voltage_angles=True, rn_max_threshold=3.0):
         """
@@ -422,7 +421,7 @@ class StateEstimation(object):
 
         OPTIONAL:
             **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-            shifts in transformers, if init is 'slack'. Default is True.
+            shifts in transformers, if init is 'slack'. Default is True
 
             **rn_max_threshold** (float) - Identification threshold to determine
             if the largest normalized residual reflects a bad measurement

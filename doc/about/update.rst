@@ -120,3 +120,14 @@ Update Cost Functions
 | :code:`pp.create_polynomial_costs(net, "gen", 3, [0, 0, -100])`     | :code:`pp.create_poly_costs(net, "gen", 3, c_per_mw=0.1)`   |
 +---------------------------------------------------------------------+-------------------------------------------------------------+
 
+
+Update Measurements
+===========================
+
+There have been changes in the measurement table of pandapower grids.
+*element* is set to the pandapower index of the measured element, *bus* is not a column amymore.
+The new column *side* defines the side of the element at which the measurement is placed.
+It can be "from" / "to" for lines, "hv" / "mv" / "lv" for trafo/trafo3w elements and is None for bus measurements.
+Explicitly setting a bus index for *side* is still possible.
+*type* is renamed to *measurement_type* for additional clarity.
+Power measurements are set in MW or MVar now, consistent with the other pandapower tables.
