@@ -265,13 +265,14 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    try:
-        # pandas < 0.21
+    pd_version = float(pd.__version__[:4])
+    if pd_version < 0.21:
         xls = pd.ExcelFile(filename).parse(sheetname=None)
-    except TypeError:
-        # pandas 0.21
+    elif pd_version < 0.24:
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
-
+    else:
+        xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
+        
     try:
         net = from_dict_of_dfs(xls)
     except:

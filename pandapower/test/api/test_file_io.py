@@ -32,7 +32,7 @@ def test_excel(net_in, tempdir):
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
 
-    pp.set_user_pf_options(net_in, tolerance_mva=1e-3)
+    pp.set_user_pf_options(net_in, tolerance_kva=1e3)
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
@@ -87,7 +87,7 @@ def test_json(net_in, tempdir):
 
 def test_type_casting_json(net_in, tempdir):
     filename = os.path.join(tempdir, "testfile.json")
-    net_in.sn_mva = 1
+    net_in.sn_kva = 1000
     pp.to_json(net_in, filename)
     net = pp.from_json(filename)
     assert_net_equal(net_in, net)
@@ -100,7 +100,7 @@ def test_sqlite(net_in, tempdir):
     assert_net_equal(net_in, net_out)
 
 
-def test_convert_format():
+def test_convert_format():  # TODO what is this thing testing ?
     folder = os.path.abspath(os.path.dirname(pp.__file__))
     net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
     pp.runpp(net)
@@ -185,9 +185,5 @@ def test_json_tuple_in_pandas():
 
 
 if __name__ == "__main__":
-#    net_in = net_in(tempdir())
-#    filename = os.path.join(tempdir, "testfile.p")
-#    pp.to_pickle(net_in, filename)
-#    net_out = pp.from_pickle(filename)
-#    assert_net_equal(net_in, net_out)
-    pytest.main([__file__, "-xs"])
+#    test_excel(net_in([1]), tempdir())
+    pytest.main(["test_file_io.py", "-x"])
