@@ -1129,6 +1129,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     
     INPUT:
       **net** - pandapower network with unodered indices 
+      
     OPTIONAL:
       **start** - index begins with "start"  
         
@@ -1136,6 +1137,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
                               power flow will be selected. Additionally elements,
                               like line_geodata and bus_geodata, also can be here 
                               considered. 
+                              
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
     
