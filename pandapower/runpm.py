@@ -11,6 +11,7 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.results import _extract_results_opf, reset_results, _copy_results_ppci_to_ppc
 from pandapower.powerflow import _add_auxiliary_elements
 from pandapower.auxiliary import _clean_up
+from pandapower import pp_dir
 
 try:
     import pplog as logging
@@ -118,8 +119,7 @@ def _call_powermodels(pm, julia_file=None):
         raise UserWarning("Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
     if julia_file is None:
-        import pandapower.opf
-        folder = os.path.abspath(os.path.dirname(pandapower.opf.__file__))
+        folder = os.path.join(pp_dir, "opf")
         julia_file = os.path.join(folder, 'run_powermodels.jl')
     try:
         run_powermodels = j.include(julia_file)
