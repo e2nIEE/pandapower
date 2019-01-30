@@ -30,7 +30,7 @@ def test_2bus():
     pp.create_measurement(net, "v", "bus", 1.04, 0.01, 1)   # u2
 
     # 2. Do state estimation
-    success = estimate(net, init='flat')
+    success = estimate(net, init='flat', algorithm='lav')
 
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values

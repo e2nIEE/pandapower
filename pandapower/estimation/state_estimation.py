@@ -254,10 +254,11 @@ class StateEstimation(object):
         ppci = _add_measurements_to_ppc(self.net, ppci)
         
         aux_bus_trafo3w = self.net.trafo3w.shape[0]
-        ppci['bus'][-aux_bus_trafo3w:, 17] = 0
-        ppci['bus'][-aux_bus_trafo3w:, 18] = 0.1
-        ppci['bus'][-aux_bus_trafo3w:, 19] = 0
-        ppci['bus'][-aux_bus_trafo3w:, 20] = 0.1
+        if aux_bus_trafo3w > 0:
+            ppci['bus'][-aux_bus_trafo3w:, 17] = 0
+            ppci['bus'][-aux_bus_trafo3w:, 18] = 0.1
+            ppci['bus'][-aux_bus_trafo3w:, 19] = 0
+            ppci['bus'][-aux_bus_trafo3w:, 20] = 0.1
         
 
         # Finished converting pandapower network to ppci
