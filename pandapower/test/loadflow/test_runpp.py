@@ -556,8 +556,7 @@ def test_zip_loads_gridcal():
 
     losses_gridcal = 4.69773448916 - 2.710430515j
 
-    abs_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                            'networks', 'power_system_test_case_jsons', 'case5_demo_gridcal.json')
+    abs_path = os.path.join(pp.pp_dir, 'networks', 'power_system_test_case_jsons', 'case5_demo_gridcal.json')
     net = pp.from_json(abs_path)
 
     pp.runpp(net, voltage_depend_loads=True,

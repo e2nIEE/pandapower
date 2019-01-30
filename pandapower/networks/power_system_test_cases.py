@@ -7,17 +7,14 @@
 import os
 
 import pandapower as pp
-
-
-def get_pp_networks_path():
-    return os.path.abspath(os.path.dirname(pp.networks.__file__))
+from pandapower import pp_dir
 
 
 def _get_cases_path(filename=None):
     if filename:
-        return os.path.join(get_pp_networks_path(), "power_system_test_case_jsons", filename)
+        return os.path.join(pp_dir, "networks", "power_system_test_case_jsons", filename)
     else:
-        return os.path.join(get_pp_networks_path(), "power_system_test_case_jsons")
+        return os.path.join(pp_dir, "networks", "power_system_test_case_jsons")
 
 
 def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
