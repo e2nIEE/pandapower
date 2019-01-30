@@ -268,9 +268,9 @@ def pp_hook(d):
                 d[key] = pp_hook(d[key])
 
         if class_name == 'Series':
-            return pd.read_json(obj, **d)
+            return pd.read_json(obj, precise_float=True, **d)
         elif class_name == "DataFrame":
-            df = pd.read_json(obj, **d)
+            df = pd.read_json(obj, precise_float=True, **d)
             try:
                 df.set_index(df.index.astype(numpy.int64), inplace=True)
             except (ValueError, TypeError, AttributeError):
@@ -330,7 +330,7 @@ def json_net(obj):
 def json_dataframe(obj):
     logger.debug('DataFrame')
     d = with_signature(obj, obj.to_json(orient='split',
-                                        default_handler=to_serializable, double_precision=14))
+                                        default_handler=to_serializable, double_precision=15))
     d.update({'dtype': obj.dtypes.astype('str').to_dict(), 'orient': 'split'})
     return d
 
