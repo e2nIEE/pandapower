@@ -101,8 +101,7 @@ def test_sqlite(net_in, tempdir):
 
 
 def test_convert_format():  # TODO what is this thing testing ?
-    folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "api", "old_net.p"))
     pp.runpp(net)
     assert net.converged
 

@@ -533,8 +533,7 @@ def test_check_existing_measurements():
 
 
 def load_3bus_network():
-    folder = os.path.abspath(os.path.dirname(pp.__file__))
-    return pp.from_pickle(os.path.join(folder, "test", "estimation", "3bus_wls.p"))
+    return pp.from_pickle(os.path.join(pp.pp_dir, "test", "estimation", "3bus_wls.p"))
 
 
 def r(v=0.03):

@@ -9,17 +9,13 @@ import os
 import numpy as np
 
 import pandapower as pp
-from pandapower.networks.power_system_test_cases import get_pp_networks_path
+from pandapower import pp_dir
 
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False):
     """
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer
-<<<<<<< HEAD
     stations. The network supplies 141 MV/LV substations and 6 MV loads through four MV feeders.
-=======
-    stations. The network supplies 141 HV/LV substations and 6 MV loads through four MV feeders.
->>>>>>> 106398035c32f569d31309331bef23d8b5c3dc9e
     The network layout is meshed, but the network is operated as a radial network with 6 open
     sectioning points.
 
@@ -53,9 +49,9 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     net = pandapower.networks.mv_oberrhein("generation")
     """
     if include_substations:
-        net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein_substations.json"))
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"))
     else:
-        net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein.json"))
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"))
     net.load.q_kvar = np.tan(np.arccos(cosphi_load)) * net.load.p_kw
     net.sgen.q_kvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_kw
 

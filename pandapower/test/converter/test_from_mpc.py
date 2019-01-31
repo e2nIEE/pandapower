@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 def test_from_mpc():
     case24 = pn.case24_ieee_rts()
     pp.set_user_pf_options(case24)
-    this_file_path = os.path.dirname(os.path.realpath(__file__))
-    mat_case_path = os.path.join(this_file_path, 'case24_ieee_rts.mat')
+    this_folder = os.path.join(pp.pp_dir, "test", "converter")
+    mat_case_path = os.path.join(this_folder, 'case24_ieee_rts.mat')
     case24_from_mpc = from_mpc(mat_case_path, f_hz=60, casename_mpc_file='mpc')
 
     pp.runpp(case24)
