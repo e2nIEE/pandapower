@@ -3,6 +3,7 @@ Change Log
 [develop]
 ----------------------
 - [CHANGED] Patch size in create_bus_collection is not duplicated for rectangles anymore #181
+- [ADDED] Load flow and OPF for user-defined temperature of lines, with the optional columns in line table "alpha" and "temperature_degree_celsius"
 
 [1.6.0] - 2018-09-18
 ----------------------

@@ -158,7 +158,7 @@ def test_bus_bus_switches(bus_bus_net):
     net = bus_bus_net
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
-        net.res_bus.vm_pu.at[6]
+           net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.in_service.at[5] = False
@@ -556,7 +556,8 @@ def test_zip_loads_gridcal():
 
     losses_gridcal = 4.69773448916 - 2.710430515j
 
-    abs_path = os.path.join(pp.pp_dir, 'networks', 'power_system_test_case_jsons', 'case5_demo_gridcal.json')
+    abs_path = os.path.join(pp.pp_dir, 'networks', 'power_system_test_case_jsons',
+                            'case5_demo_gridcal.json')
     net = pp.from_json(abs_path)
 
     pp.runpp(net, voltage_depend_loads=True,
@@ -854,7 +855,7 @@ def test_ext_grid_and_gen_at_one_bus():
     # all the reactive power previously provided by the ext_grid is now provided by the generators
     assert np.isclose(net.res_ext_grid.q_kvar.values, 0)
     assert np.isclose(net.res_gen.q_kvar.sum(), q)
-    #since no Q-limits were set, reactive power is distributed equally to both generators
+    # since no Q-limits were set, reactive power is distributed equally to both generators
     assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2])
 
     # set reactive power limits at the generators
@@ -862,7 +863,7 @@ def test_ext_grid_and_gen_at_one_bus():
     net.gen["max_q_kvar"] = [100, 10]
     runpp_with_consistency_checks(net)
     # g1 now has 10 times the reactive power of g2 in accordance with the different Q ranges
-    assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2]*10)
+    assert np.isclose(net.res_gen.q_kvar.at[g1], net.res_gen.q_kvar.at[g2] * 10)
     # all the reactive power is still provided by the generators, because Q-lims are not enforced
     assert np.allclose(net.res_ext_grid.q_kvar.values, [0])
     assert np.isclose(net.res_gen.q_kvar.sum(), q)
@@ -952,6 +953,58 @@ def test_init_results_without_results():
     net = four_loads_with_branches_out()
     pp.reset_results(net)
     pp.runpp(net, init="results")
+
+
+def test_line_temperature():
+    net = four_loads_with_branches_out()
+    r_init = net.line.r_ohm_per_km.values.copy()
+
+    # r_ohm_per_km is not in line results by default
+    pp.runpp(net)
+    v_init = net.res_bus.vm_pu.values.copy()
+    va_init = net.res_bus.va_degree.values.copy()
+    assert "r_ohm_per_km" not in net.res_line.columns
+
+    # no temperature adjustment performed if not explicitly set in options/arguments to runpp
+    net.line["temperature_degree_celsius"] = 20
+    pp.runpp(net)
+    assert "r_ohm_per_km" not in net.res_line.columns
+    assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+
+    # argument in runpp is considered
+    pp.runpp(net, consider_line_temperature=True)
+    assert "r_ohm_per_km" in net.res_line.columns
+    assert np.allclose(net.res_line.r_ohm_per_km, r_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+
+    # check results of r adjustment, check that user_pf_options works, alpha is 4e-3 by default
+    t = np.arange(0, 80, 10)
+    net.line.temperature_degree_celsius = t
+    pp.set_user_pf_options(net, consider_line_temperature=True)
+    pp.runpp(net)
+    alpha = 4e-3
+    r_temp = r_init * (1 + alpha * (t - 20))
+    assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)
+    assert not np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-4)
+    assert not np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-2)
+
+    # check reults with user-defined alpha
+    alpha = np.arange(3e-3, 5e-3, 2.5e-4)
+    net.line['alpha'] = alpha
+    pp.runpp(net)
+    r_temp = r_init * (1 + alpha * (t - 20))
+    assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)
+    assert not np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-4)
+    assert not np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-2)
+
+    # not anymore in net if not considered
+    pp.set_user_pf_options(net, overwrite=True)
+    pp.runpp(net)
+    assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+    assert "r_ohm_per_km" not in net.res_line.columns
 
 
 if __name__ == "__main__":

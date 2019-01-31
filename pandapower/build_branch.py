@@ -111,37 +111,45 @@ def _calc_line_parameter(net, ppc):
     calculates the line parameter in per unit.
 
     **INPUT**:
-        **net** -The pandapower format network
+        **net** - The pandapower format network
+
+        **ppc** - the ppc array
 
     **RETURN**:
-        **t** - Temporary line parameter. Which is a complex128
-                Nunmpy array. with the following order:
-                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
+        **t** - Temporary line parameter, a complex128 Nunmpy array with the following order:
+                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu; 5: in_service; 6: max rating A
     """
     copy_constraints_to_ppc = net["_options"]["copy_constraints_to_ppc"]
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     line = net["line"]
-    fb = bus_lookup[line["from_bus"].values]
-    tb = bus_lookup[line["to_bus"].values]
-    length = line["length_km"].values
+    from_bus = bus_lookup[line["from_bus"].values]
+    to_bus = bus_lookup[line["to_bus"].values]
+    length_km = line["length_km"].values
     parallel = line["parallel"].values
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_kva * 1e3
+    base_kv = ppc["bus"][from_bus, BASE_KV]
+    baseR = np.square(base_kv) / net.sn_kva * 1e3
     t = np.zeros(shape=(len(line.index), 7), dtype=np.complex128)
 
-    t[:, 0] = fb
-    t[:, 1] = tb
+    t[:, 0] = from_bus
+    t[:, 1] = to_bus
 
-    t[:, 2] = line["r_ohm_per_km"].values * length / baseR / parallel
-    t[:, 3] = line["x_ohm_per_km"].values * length / baseR / parallel
+    t[:, 2] = line["r_ohm_per_km"].values * length_km / baseR / parallel
+    t[:, 3] = line["x_ohm_per_km"].values * length_km / baseR / parallel
+
     if mode == "sc":
+        # temperature correction
         if net["_options"]["case"] == "min":
-            t[:, 2] *= _end_temperature_correction_factor(net)
+            t[:, 2] *= _end_temperature_correction_factor(net, short_circuit=True)
     else:
-        b = (2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR *
-             length * parallel)
-        g = line["g_us_per_km"].values * 1e-6 * baseR * length * parallel
+        # temperature correction
+        if net["_options"]["consider_line_temperature"]:
+            t[:, 2] *= _end_temperature_correction_factor(net)
+
+        b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
+        g = line["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
         t[:, 4] = b - g * 1j
+    # in service of lines
     t[:, 5] = line["in_service"].values
     if copy_constraints_to_ppc:
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
@@ -883,13 +891,80 @@ def _calc_switch_parameter(net, ppc):
     return t
 
 
-def _end_temperature_correction_factor(net):
-    if "endtemp_degree" not in net.line:
-        raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
-    return (1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20))  # formula from standard
+def _end_temperature_correction_factor(net, short_circuit=False):
+    """
+    Function to calculate resistance correction factor for the given temperature ("endtemp_degree").
+    When multiplied by the factor, the value of r_ohm_per_km will correspond to the resistance at
+    the given temperature.
+
+    In case of short circuit calculation, the relevant value for the temperature is
+    "endtemp_degree", which stands for the final temperature of a line after the short circuit.
+    The temperature coefficient "alpha" is a constant value of 0.004 in the short circuit
+    calculation standard IEC 60909-0:2016.
+
+    In case of a load flow calculation, the relelvant parameter is "temperature_degree_celsius",
+    which is specified by the user and allows calculating load flow for a given operating
+    temperature.
+
+    The alpha value can be provided according to the used material for the purpose of load flow
+    calculation, e.g. 0.0039 for copper or 0.00403 for aluminum. If alpha is not provided in the
+    net.line table, the default value of 0.004 is used.
+
+    The calculation of the electrical resistance is based on the formula R = R20(1+alpha*(T-20°C)),
+    where R is the calculated resistance, R20 is the resistance at 20 °C, alpha is the temperature
+    coefficient of resistance of the conducting material and T is the line temperature in °C.
+    Accordingly, the resulting correction factor is (1+alpha*(T-20°C)).
+
+    Args:
+        net: pandapowerNet
+        short_circuit: whether the factor is calculated in the scope of a short circuit calculation
+
+    Returns:
+        correction factor for line R, by which the line parameter should be multiplied to
+                obtain the value of resistance at line temperature "endtemp_degree"
+
+    """
+
+    if short_circuit:
+        # endtemp_degree is line temperature that is reached as the result of a short circuit
+        # this value is the property of the lines
+        if "endtemp_degree" not in net.line.columns:
+            raise UserWarning("Specify end temperature for lines in net.line.endtemp_degree")
+
+        delta_t_degree_celsius = net.line.endtemp_degree.values.astype(np.float64) - 20
+        # alpha is the temperature correction factor for the electric resistance of the material
+        # formula from standard, used this way in short-circuit calculation
+        alpha = 4e-3
+    else:
+        # temperature_degree_celsius is line temperature for load flow calculation
+        if "temperature_degree_celsius" not in net.line.columns:
+            raise UserWarning("Specify line temperature in net.line.temperature_degree_celsius")
+
+        delta_t_degree_celsius = net.line.temperature_degree_celsius.values.astype(np.float64) - 20
+
+        if 'alpha' in net.line.columns:
+            alpha = net.line.alpha.values.astype(np.float64)
+        else:
+            alpha = 4e-3
+
+    r_correction_for_temperature = 1 + alpha * delta_t_degree_celsius
+
+    return r_correction_for_temperature
 
 
 def _transformer_correction_factor(vsc, vscr, sn, cmax):
+    """
+    2W-Transformer impedance correction factor in short circuit calculations,
+    based on the IEC 60909-0:2016 standard.
+    Args:
+        vsc: transformer short-circuit voltage, percent
+        vscr: real-part of transformer short-circuit voltage, percent
+        sn: transformer rating, kVA
+        cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+
+    Returns:
+        kt: transformer impedance correction factor for short-circuit calculations
+    """
     sn = sn / 1000.
     zt = vsc / 100 / sn
     rt = vscr / 100 / sn
@@ -899,5 +974,8 @@ def _transformer_correction_factor(vsc, vscr, sn, cmax):
 
 
 def get_is_lines(net):
+    """
+    get indices of lines that are in service and save that information in net
+    """
     _is_elements = net["_is_elements"]
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]

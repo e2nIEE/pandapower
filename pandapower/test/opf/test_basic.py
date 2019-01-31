@@ -18,6 +18,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
+def simplest_grid():
+    # boundaries:
+    vm_max = 1.05
+    vm_min = 0.95
+
+    # create net
+    net = pp.create_empty_network()
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
+                  min_q_kvar=-50)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, p_kw=20, controllable=False)
+    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                   max_loading_percent=100)
+    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+
+    return net
+
 @pytest.fixture
 def simple_opf_test_net():
     net = pp.create_empty_network()
@@ -75,18 +96,7 @@ def test_simplest_voltage():
     vm_max = 1.05
     vm_min = 0.95
 
-    # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_kw=-100, controllable=True, max_p_kw=-5, min_p_kw=-150, max_q_kvar=50,
-                  min_q_kvar=-50)
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_kw=20, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100)
-    pp.create_polynomial_cost(net, 0, "gen", np.array([100, 0]))
+    net = simplest_grid()
     # run OPF
     for init in ["pf", "flat"]:
         pp.runopp(net, verbose=False, init=init)
@@ -552,27 +562,27 @@ def test_opf_varying_max_line_loading():
 def test_storage_opf():
     """ Testing a simple network with storage to ensure the correct behaviour
     of the storage OPF-Functions """
-    
+
     # boundaries
     vm_max = 1.1
     vm_min = 0.9
     max_line_loading_percent = 100
-    
+
     # create network
     net = pp.create_empty_network()
-    
+
     b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
     b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    
-    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE", 
+
+    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
                    max_loading_percent=max_line_loading_percent)
-    
+
     # test elements static
     pp.create_ext_grid(net, b2)
     pp.create_load(net, b1, p_kw=7.5, controllable=False)
     pp.create_sgen(net, b1, p_kw=-25, controllable=True, max_p_kw=-10, min_p_kw=-25,
                    max_q_kvar=25, min_q_kvar=-25)
-    
+
     # test elements 
     pp.create_storage(net, b1, p_kw=-25, max_e_kwh=50, controllable=True, max_p_kw=0,
                       min_p_kw=-25, max_q_kvar=25, min_q_kvar=-25)
@@ -592,12 +602,12 @@ def test_storage_opf():
     # test storage generator behaviour
     net["storage"].in_service.iloc[0] = True
     net["storage"].p_kw.iloc[0] = -25
-    net["sgen"].in_service.iloc[1] = False    
+    net["sgen"].in_service.iloc[1] = False
     net["load"].in_service.iloc[1] = False
-    
+
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    
+
     res_stor_p_kw = net["res_storage"].p_kw.iloc[0]
     res_stor_q_kvar = net["res_storage"].q_kvar.iloc[0]
     res_cost_stor = net["res_cost"]
@@ -605,20 +615,20 @@ def test_storage_opf():
     net["storage"].in_service.iloc[0] = False
     net["storage"].p_kw.iloc[0] = -25
     net["sgen"].in_service.iloc[1] = True
-    net["load"].in_service.iloc[1] = False    
-    
+    net["load"].in_service.iloc[1] = False
+
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    
+
     res_sgen_p_kw = net["res_sgen"].p_kw.iloc[1]
     res_sgen_q_kvar = net["res_sgen"].q_kvar.iloc[1]
     res_cost_sgen = net["res_cost"]
-    
+
     # assert storage generator behaviour
     assert np.isclose(res_stor_p_kw, res_sgen_p_kw)
     assert np.isclose(res_stor_q_kvar, res_sgen_q_kvar)
     assert np.isclose(res_cost_stor, res_cost_sgen)
-    
+
     # test storage load behaviour
     net["storage"].in_service.iloc[0] = True
     net["storage"].p_kw.iloc[0] = 25
@@ -630,27 +640,27 @@ def test_storage_opf():
     # --> storage gencosts are similar to sgen gencosts (make_objective.py, l.128ff. and l.185ff.)
     net["polynomial_cost"].c.iloc[2] = net["polynomial_cost"].c.iloc[4]
     net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False 
-    
+    net["load"].in_service.iloc[1] = False
+
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    
+
     res_stor_p_kw = net["res_storage"].p_kw.iloc[0]
     res_stor_q_kvar = net["res_storage"].q_kvar.iloc[0]
     res_cost_stor = net["res_cost"]
-    
+
     net["storage"].in_service.iloc[0] = False
     net["storage"].p_kw.iloc[0] = 25
     net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = True 
-    
+    net["load"].in_service.iloc[1] = True
+
     pp.runopp(net, verbose=False)
     assert net["OPF_converged"]
-    
+
     res_load_p_kw = net["res_load"].p_kw.iloc[1]
     res_load_q_kvar = net["res_load"].q_kvar.iloc[1]
     res_cost_load = net["res_cost"]
-    
+
     # assert storage load behaviour
     assert np.isclose(res_stor_p_kw, res_load_p_kw)
     assert np.isclose(res_stor_q_kvar, res_load_q_kvar)
@@ -792,6 +802,29 @@ def test_opf_no_controllables_vs_pf():
     # assert calculation behaviour
     assert np.isclose(res_opf_line_loading, res_pf_line_loading).all()
     assert np.isclose(res_opf_bus_voltages, res_pf_bus_voltages).all()
+
+
+def test_line_temperature():
+    net = simplest_grid()
+    r_init = net.line.r_ohm_per_km.copy()
+
+    # run OPF
+    pp.runopp(net, verbose=False)
+    va_init = net.res_bus.va_degree
+    assert "r_ohm_per_km" not in net.res_line.columns
+
+    # check results of r adjustment, check that user_pf_options works, alpha
+    net.line["temperature_degree_celsius"] = 80
+    alpha = 4.03e-3
+    net.line['alpha'] = alpha
+    pp.runopp(net, verbose=False, consider_line_temperature=True)
+    r_temp = r_init * (1 + alpha * (80 - 20))
+    assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)
+    assert not np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-2)
+
+    pp.runopp(net, verbose=False, consider_line_temperature=False)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+    assert "r_ohm_per_km" not in net.res_line.columns
 
 
 if __name__ == "__main__":

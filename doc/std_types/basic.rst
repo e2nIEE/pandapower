@@ -10,11 +10,11 @@ Every pandapower network comes with a default set of standard types.
 Lines
 --------
 
-.. tabularcolumns:: |l|l|l|l|l|l|l|
+.. tabularcolumns:: |l|l|l|l|l|l|l|l|
 .. csv-table:: 
    :file: linetypes.csv
    :delim: ;
-   :widths: 60, 15, 15, 15, 15, 15, 15
+   :widths: 60, 15, 15, 15, 15, 15, 15, 15
 
 
 Transformers

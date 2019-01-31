@@ -294,14 +294,27 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "x0_ohm_per_km")
 
 
+def add_temperature_coefficient(net, fill=None):
+    """
+    Adds alpha paarameter for calculations of line temperature
+    Args:
+        fill: fill value for when the parameter in std_type is missing, e.g. 4.03e-3 for aluminum
+                or  3.93e-3 for copper
+
+    """
+    parameter_from_std_type(net, "alpha", fill=fill)
+
+
 def add_basic_std_types(net):
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
 
+    alpha_al = 4.03e-3
+    alpha_cu = 3.93e-3
+
     linetypes = {
         # Cables, all from S.744, Heuck: Elektrische Energieversorgung - Vierweg+Teubner 2013
         # additional MV cables from Werth: Netzberechnung mit Erzeugungsporfilen (Dreiecksverlegung)
-
         # Low Voltage
         "NAYY 4x50 SE":
         {"c_nf_per_km": 210,
@@ -309,21 +322,24 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.083,
             "max_i_ka": 0.142,
             "type": "cs",
-            "q_mm2": 50},
+            "q_mm2": 50,
+            "alpha": alpha_al},
         "NAYY 4x120 SE":
         {"c_nf_per_km": 264,
             "r_ohm_per_km": 0.225,
             "x_ohm_per_km": 0.080,
             "max_i_ka": 0.242,
             "type": "cs",
-            "q_mm2": 120},
+            "q_mm2": 120,
+            "alpha": alpha_al},
         "NAYY 4x150 SE":
         {"c_nf_per_km": 261,
             "r_ohm_per_km": 0.208,
             "x_ohm_per_km": 0.080,
             "max_i_ka": 0.270,
             "type": "cs",
-            "q_mm2": 150},
+            "q_mm2": 150,
+            "alpha": alpha_al},
 
         # Medium Voltage
         "NA2XS2Y 1x95 RM/25 12/20 kV":
@@ -332,42 +348,48 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.132,
             "max_i_ka": 0.252,
             "type": "cs",
-            "q_mm2": 95},
+            "q_mm2": 95,
+            "alpha": alpha_al},
         "NA2XS2Y 1x185 RM/25 12/20 kV":
         {"c_nf_per_km": 273,
             "r_ohm_per_km": 0.161,
             "x_ohm_per_km": 0.117,
             "max_i_ka": 0.362,
             "type": "cs",
-            "q_mm2": 185},
+            "q_mm2": 185,
+            "alpha": alpha_al},
         "NA2XS2Y 1x240 RM/25 12/20 kV":
         {"c_nf_per_km": 304,
             "r_ohm_per_km": 0.122,
             "x_ohm_per_km": 0.112,
             "max_i_ka": 0.421,
             "type": "cs",
-            "q_mm2": 240},
+            "q_mm2": 240,
+            "alpha": alpha_al},
         "NA2XS2Y 1x95 RM/25 6/10 kV":
         {"c_nf_per_km": 315,
             "r_ohm_per_km": 0.313,
             "x_ohm_per_km": 0.123,
             "max_i_ka": 0.249,
             "type": "cs",
-            "q_mm2": 95},
+            "q_mm2": 95,
+            "alpha": alpha_al},
         "NA2XS2Y 1x185 RM/25 6/10 kV":
         {"c_nf_per_km": 406,
             "r_ohm_per_km": 0.161,
             "x_ohm_per_km": 0.110,
             "max_i_ka": 0.358,
             "type": "cs",
-            "q_mm2": 185},
+            "q_mm2": 185,
+            "alpha": alpha_al},
         "NA2XS2Y 1x240 RM/25 6/10 kV":
         {"c_nf_per_km": 456,
             "r_ohm_per_km": 0.122,
             "x_ohm_per_km": 0.105,
             "max_i_ka": 0.416,
             "type": "cs",
-            "q_mm2": 240},
+            "q_mm2": 240,
+            "alpha": alpha_al},
         # additional MV cables
         "NA2XS2Y 1x150 RM/25 12/20 kV":
         {"c_nf_per_km": 250,
@@ -375,42 +397,48 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.116,
             "max_i_ka": 0.319,
             "type": "cs",
-            "q_mm2": 150},
+            "q_mm2": 150,
+            "alpha": alpha_al},
         "NA2XS2Y 1x120 RM/25 12/20 kV":
         {"c_nf_per_km": 230,
             "r_ohm_per_km": 0.253,
             "x_ohm_per_km": 0.119,
             "max_i_ka": 0.283,
             "type": "cs",
-            "q_mm2": 120},
+            "q_mm2": 120,
+            "alpha": alpha_al},
         "NA2XS2Y 1x70 RM/25 12/20 kV":
         {"c_nf_per_km": 190,
             "r_ohm_per_km": 0.443,
             "x_ohm_per_km": 0.132,
             "max_i_ka": 0.220,
             "type": "cs",
-            "q_mm2": 70},
+            "q_mm2": 70,
+            "alpha": alpha_al},
         "NA2XS2Y 1x150 RM/25 6/10 kV":
         {"c_nf_per_km": 360,
             "r_ohm_per_km": 0.206,
             "x_ohm_per_km": 0.110,
             "max_i_ka": 0.315,
             "type": "cs",
-            "q_mm2": 150},
+            "q_mm2": 150,
+            "alpha": alpha_al},
         "NA2XS2Y 1x120 RM/25 6/10 kV":
         {"c_nf_per_km": 340,
             "r_ohm_per_km": 0.253,
             "x_ohm_per_km": 0.113,
             "max_i_ka": 0.280,
             "type": "cs",
-            "q_mm2": 120},
+            "q_mm2": 120,
+            "alpha": alpha_al},
         "NA2XS2Y 1x70 RM/25 6/10 kV":
         {"c_nf_per_km": 280,
             "r_ohm_per_km": 0.443,
             "x_ohm_per_km": 0.123,
             "max_i_ka": 0.217,
             "type": "cs",
-            "q_mm2": 70},
+            "q_mm2": 70,
+            "alpha": alpha_al},
 
         # High Voltage
         "N2XS(FL)2Y 1x120 RM/35 64/110 kV":
@@ -419,28 +447,32 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.166,
             "max_i_ka": 0.366,
             "type": "cs",
-            "q_mm2": 120},
+            "q_mm2": 120,
+            "alpha": alpha_cu},
         "N2XS(FL)2Y 1x185 RM/35 64/110 kV":
         {"c_nf_per_km": 125,
             "r_ohm_per_km": 0.099,
             "x_ohm_per_km": 0.156,
             "max_i_ka": 0.457,
             "type": "cs",
-            "q_mm2": 185},
+            "q_mm2": 185,
+            "alpha": alpha_cu},
         "N2XS(FL)2Y 1x240 RM/35 64/110 kV":
         {"c_nf_per_km": 135,
             "r_ohm_per_km": 0.075,
             "x_ohm_per_km": 0.149,
             "max_i_ka": 0.526,
             "type": "cs",
-            "q_mm2": 240},
+            "q_mm2": 240,
+            "alpha": alpha_cu},
         "N2XS(FL)2Y 1x300 RM/35 64/110 kV":
         {"c_nf_per_km": 144,
             "r_ohm_per_km": 0.060,
             "x_ohm_per_km": 0.144,
             "max_i_ka": 0.588,
             "type": "cs",
-            "q_mm2": 300},
+            "q_mm2": 300,
+            "alpha": alpha_cu},
 
         # Overhead Lines, all from S.742f, Heuck: Elektrische Energieversorgung -
         # Vierweg+Teubner 2013
@@ -452,28 +484,32 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.35,
             "max_i_ka": 0.105,
             "type": "ol",
-            "q_mm2": 16},
+            "q_mm2": 16,
+            "alpha": alpha_al},
         "24-AL1/4-ST1A 0.4":
         {"c_nf_per_km": 11.25,
             "r_ohm_per_km": 1.2012,
             "x_ohm_per_km": 0.335,
             "max_i_ka": 0.140,
             "type": "ol",
-            "q_mm2": 24},
+            "q_mm2": 24,
+            "alpha": alpha_al},
         "48-AL1/8-ST1A 0.4":
         {"c_nf_per_km": 12.2,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.3,
             "max_i_ka": .210,
             "type": "ol",
-            "q_mm2": 48},
+            "q_mm2": 48,
+            "alpha": alpha_al},
         "94-AL1/15-ST1A 0.4":
         {"c_nf_per_km": 13.2,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.29,
             "max_i_ka": 0.350,
             "type": "ol",
-            "q_mm2": 94},
+            "q_mm2": 94,
+            "alpha": alpha_al},
 
         # Medium Voltage
         "34-AL1/6-ST1A 10.0":
@@ -482,98 +518,112 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.36,
             "max_i_ka": 0.170,
             "type": "ol",
-            "q_mm2": 34},
+            "q_mm2": 34,
+            "alpha": alpha_al},
         "48-AL1/8-ST1A 10.0":
         {"c_nf_per_km": 10.1,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.35,
             "max_i_ka": 0.210,
             "type": "ol",
-            "q_mm2": 48},
+            "q_mm2": 48,
+            "alpha": alpha_al},
         "70-AL1/11-ST1A 10.0":
         {"c_nf_per_km": 10.4,
             "r_ohm_per_km": 0.4132,
             "x_ohm_per_km": 0.339,
             "max_i_ka": 0.290,
             "type": "ol",
-            "q_mm2": 70},
+            "q_mm2": 70,
+            "alpha": alpha_al},
         "94-AL1/15-ST1A 10.0":
         {"c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.33,
             "max_i_ka": 0.350,
             "type": "ol",
-            "q_mm2": 94},
+            "q_mm2": 94,
+            "alpha": alpha_al},
         "122-AL1/20-ST1A 10.0":
         {"c_nf_per_km": 11.1,
             "r_ohm_per_km": 0.2376,
             "x_ohm_per_km": 0.323,
             "max_i_ka": 0.410,
             "type": "ol",
-            "q_mm2": 122},
+            "q_mm2": 122,
+            "alpha": alpha_al},
         "149-AL1/24-ST1A 10.0":
         {"c_nf_per_km": 11.25,
             "r_ohm_per_km": 0.1940,
             "x_ohm_per_km": 0.315,
             "max_i_ka": 0.470,
             "type": "ol",
-            "q_mm2": 149},
+            "q_mm2": 149,
+            "alpha": alpha_al},
         "34-AL1/6-ST1A 20.0":
         {"c_nf_per_km": 9.15,
             "r_ohm_per_km": 0.8342,
             "x_ohm_per_km": 0.382,
             "max_i_ka": 0.170,
             "type": "ol",
-            "q_mm2": 34},
+            "q_mm2": 34,
+            "alpha": alpha_al},
         "48-AL1/8-ST1A 20.0":
         {"c_nf_per_km": 9.5,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.372,
             "max_i_ka": 0.210,
             "type": "ol",
-            "q_mm2": 48},
+            "q_mm2": 48,
+            "alpha": alpha_al},
         "70-AL1/11-ST1A 20.0":
         {"c_nf_per_km": 9.7,
             "r_ohm_per_km": 0.4132,
             "x_ohm_per_km": 0.36,
             "max_i_ka": 0.290,
             "type": "ol",
-            "q_mm2": 70},
+            "q_mm2": 70,
+            "alpha": alpha_al},
         "94-AL1/15-ST1A 20.0":
         {"c_nf_per_km": 10,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.35,
             "max_i_ka": 0.350,
             "type": "ol",
-            "q_mm2": 94},
+            "q_mm2": 94,
+            "alpha": alpha_al},
         "122-AL1/20-ST1A 20.0":
         {"c_nf_per_km": 10.3,
             "r_ohm_per_km": 0.2376,
             "x_ohm_per_km": 0.344,
             "max_i_ka": 0.410,
             "type": "ol",
-            "q_mm2": 122},
+            "q_mm2": 122,
+            "alpha": alpha_al},
         "149-AL1/24-ST1A 20.0":
         {"c_nf_per_km": 10.5,
             "r_ohm_per_km": 0.1940,
             "x_ohm_per_km": 0.337,
             "max_i_ka": 0.470,
             "type": "ol",
-            "q_mm2": 149},
+            "q_mm2": 149,
+            "alpha": alpha_al},
         "184-AL1/30-ST1A 20.0":
         {"c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.1571,
             "x_ohm_per_km": 0.33,
             "max_i_ka": 0.535,
             "type": "ol",
-            "q_mm2": 184},
+            "q_mm2": 184,
+            "alpha": alpha_al},
         "243-AL1/39-ST1A 20.0":
         {"c_nf_per_km": 11,
             "r_ohm_per_km": 0.1188,
             "x_ohm_per_km": 0.32,
             "max_i_ka": 0.645,
             "type": "ol",
-            "q_mm2": 243},
+            "q_mm2": 243,
+            "alpha": alpha_al},
 
         # High Voltage
         "149-AL1/24-ST1A 110.0":
@@ -582,28 +632,32 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.41,
             "max_i_ka": 0.470,
             "type": "ol",
-            "q_mm2": 149},
+            "q_mm2": 149,
+            "alpha": alpha_al},
         "184-AL1/30-ST1A 110.0":
         {"c_nf_per_km": 8.8,
             "r_ohm_per_km": 0.1571,
             "x_ohm_per_km": 0.4,
             "max_i_ka": 0.535,
             "type": "ol",
-            "q_mm2": 184},
+            "q_mm2": 184,
+            "alpha": alpha_al},
         "243-AL1/39-ST1A 110.0":
         {"c_nf_per_km": 9,
             "r_ohm_per_km": 0.1188,
             "x_ohm_per_km": 0.39,
             "max_i_ka": 0.645,
             "type": "ol",
-            "q_mm2": 243},
+            "q_mm2": 243,
+            "alpha": alpha_al},
         "305-AL1/39-ST1A 110.0":
         {"c_nf_per_km": 9.2,
             "r_ohm_per_km": 0.0949,
             "x_ohm_per_km": 0.38,
             "max_i_ka": 0.74,
             "type": "ol",
-            "q_mm2": 305},
+            "q_mm2": 305,
+            "alpha": alpha_al},
 
         # Transmission System
         # The following values of c and x are depend on the geometries of the  overhead line
@@ -615,14 +669,16 @@ def add_basic_std_types(net):
             "x_ohm_per_km": 0.285,
             "max_i_ka": 0.96,
             "type": "ol",
-            "q_mm2": 490},
+            "q_mm2": 490,
+            "alpha": alpha_al},
         "490-AL1/64-ST1A 380.0":
         {"c_nf_per_km": 11,
             "r_ohm_per_km": 0.059,
             "x_ohm_per_km": 0.253,
             "max_i_ka": 0.96,
             "type": "ol",
-            "q_mm2": 490}
+            "q_mm2": 490,
+            "alpha": alpha_al}
     }
     create_std_types(net, data=linetypes, element="line")
 
