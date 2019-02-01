@@ -157,5 +157,23 @@ def test_create_buses():
         pp.create_buses(net, 2, 110, geodata=geodata)
 
 
+def test_create_line_alpha_temperature():
+    net=pp.create_empty_network()
+    b = pp.create_buses(net, 5, 110)
+
+    l1=pp.create_line(net,0,1, 10, "48-AL1/8-ST1A 10.0")
+    l2=pp.create_line(net,1,2, 10, "48-AL1/8-ST1A 10.0", alpha=4.03e-3, temperature_degree_celsius=80)
+    l3=pp.create_line(net,2,3, 10, "48-AL1/8-ST1A 10.0")
+    l4=pp.create_line_from_parameters(net, 3,4,10, 1,1,1,100)
+    l5=pp.create_line_from_parameters(net, 3,4,10, 1,1,1,100, alpha=4.03e-3)
+
+    assert 'alpha' in net.line.columns
+    assert all(net.line.loc[[l2,l3,l5], 'alpha'] == 4.03e-3)
+    assert all(net.line.loc[[l1,l4], 'alpha'].isnull())
+    assert net.line.loc[l2, 'temperature_degree_celsius'] == 80
+    assert all(net.line.loc[[l1,l3,l4,l5], 'temperature_degree_celsius'].isnull())
+
+
+
 if __name__ == '__main__':
     pytest.main(["test_create.py"])
