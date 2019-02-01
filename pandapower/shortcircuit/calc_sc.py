@@ -78,7 +78,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
         **x_fault_ohm** (float, 0) fault reactance in Ohm
 
-        **consider_sgens** (bool, True) defines if short-circuit contribution of static generators should be considered or not
+        **branch_results** (bool, False) defines if short-circuit results should also be generated for branches
 
 
     OUTPUT:
@@ -116,7 +116,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
                     topology=topology, r_fault_ohm=r_fault_ohm, kappa_method=kappa_method,
                     x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    consider_sgens=False, branch_results=branch_results)
+                    branch_results=branch_results)
     if fault == "3ph":
         _calc_sc(net)
     if fault == "2ph":

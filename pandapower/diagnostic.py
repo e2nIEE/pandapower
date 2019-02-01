@@ -884,7 +884,12 @@ def deviation_from_std_type(net):
                         if param == "tap_pos":
                             continue
                         if param in net[key].columns:
-                            if not element[param] == std_type_values[param]:
+                            try:
+                                isclose = np.isclose(element[param], std_type_values[param],
+                                                     equal_nan=True)
+                            except TypeError:
+                                isclose = element[param] == std_type_values[param]
+                            if not isclose:
                                 if key not in check_results.keys():
                                     check_results[key] = {}
                                 check_results[key][i] = {'param': param, 'e_value': element[param],

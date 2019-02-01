@@ -9,7 +9,7 @@ vn_lv_kv*;float;:math:`>` 0;rated voltage at low voltage bus [kV]
 vk_percent*;float;:math:`>` 0;short circuit voltage [%]
 vkr_percent*;float;:math:`\geq`  0;"real component of
 short circuit voltage [%]"
-pfe_mw*;float;:math:`\geq` 0;iron losses [MW]
+pfe_kw*;float;:math:`\geq` 0;iron losses [kW]
 i0_percent*;float;:math:`\geq` 0;open loop losses in [%]
 shift_degree*;float;;transformer phase shift angle
 tap_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side

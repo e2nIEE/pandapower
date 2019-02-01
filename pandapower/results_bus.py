@@ -157,7 +157,6 @@ def get_p_q_b(net, element):
 
 
 def _get_p_q_results(net, ppc, bus_lookup_aranged):
-    # results to be filled (bus, p in kw, q in kvar)
     bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
     b, p, q = np.array([]), np.array([]), np.array([])
 

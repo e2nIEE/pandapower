@@ -143,7 +143,7 @@ def simple_four_bus_system():
     pp.create_sgen(net, busnr4, p_mw=0.015, q_mvar=-0.002, name="pv2", sn_mva=0.02)
 
     n = busnr4 + 1
-    net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])
+    net.bus_geodata.loc[:, ['x', 'y']] = array([[0]*n, range(0, -n, -1)]).T
 
     return net
 
