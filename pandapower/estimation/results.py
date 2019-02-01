@@ -3,9 +3,56 @@
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import numpy as np
+
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pf.pfsoln_pypower import pfsoln
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, reset_results
+from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
+
+def _calc_power_flow(ppci, V):
+    # store results for all elements
+    # calculate branch results (in ppc_i)
+    baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
+    Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
+    ppci['bus'], ppci['gen'], ppci['branch'] = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
+    
+    # calculate bus power injections
+    # TODO: TEST!!
+    Sbus = np.multiply(V, np.conj(Ybus * V))
+    ppci["bus"][:, 2] = Sbus.real  # saved in per unit
+    ppci["bus"][:, 3] = Sbus.imag  # saved in per unit
+    return ppci
 
 
-from pandapower.results import reset_results
+def _extract_result_ppci_to_pp(net, ppc, ppci):
+    # convert to pandapower indices
+    ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
+
+    # extract results from ppc
+    _add_pf_options(net, tolerance_mva=1e-8, trafo_loading="current",
+                    numba=True, ac=True, algorithm='nr', max_iteration="auto")
+    # writes res_bus.vm_pu / va_degree and res_line
+    _extract_results_se(net, ppc)
+
+    # restore backup of previous results
+    _rename_results(net)
+
+    # additionally, write bus power injection results (these are not written in _extract_results)
+    mapping_table = net["_pd2ppc_lookups"]["bus"]
+    net.res_bus_est.p_mw   = - get_values(ppc["bus"][:, 2], net.bus.index.values,
+                                               mapping_table)
+    net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], net.bus.index.values,
+                                               mapping_table)
+    net.res_bus_est.index = net.bus.index
+
+    _clean_up(net)
+    # delete results which are not correctly calculated
+    for k in list(net.keys()):
+        if k.startswith("res_") and k.endswith("_est") and \
+                k not in ("res_bus_est", "res_line_est", "res_trafo_est", "res_trafo3w_est"):
+            del net[k]
+    return net
 
     
 def _copy_power_flow_results(net):

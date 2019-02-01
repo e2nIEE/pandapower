@@ -6,20 +6,15 @@ import numpy as np
 from scipy.stats import chi2
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
-from pandapower.pf.pfsoln_pypower import pfsoln
-from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
 from pandapower.topology import estimate_voltage_vector
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
     _build_measurement_vectors, _init_ppc,\
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
-from pandapower.estimation.results import _copy_power_flow_results, _rename_results
+from pandapower.estimation.results import _copy_power_flow_results, _rename_results, _calc_power_flow, _extract_result_ppci_to_pp
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
 from pandapower.estimation.estimator.robust import SHGMEstimator
 from pandapower.estimation.estimator.lav import LAVEstimator
-
 
 
 try:
@@ -235,7 +230,7 @@ class StateEstimation(object):
         # through bb switch with elements on each bus if this feature enabled
         if not fuse_all_bb_switches and not self.net.switch.empty:
             _add_aux_elements_for_bb_switch(self.net)
-        
+                  
         # add initial values for V and delta
         # node voltages
         # V<delta
@@ -252,61 +247,20 @@ class StateEstimation(object):
 
         # add measurements to ppci structure
         ppci = _add_measurements_to_ppc(self.net, ppci)
-        
-        aux_bus_trafo3w = self.net.trafo3w.shape[0]
-        if aux_bus_trafo3w > 0:
-            ppci['bus'][-aux_bus_trafo3w:, 17] = 0
-            ppci['bus'][-aux_bus_trafo3w:, 18] = 0.1
-            ppci['bus'][-aux_bus_trafo3w:, 19] = 0
-            ppci['bus'][-aux_bus_trafo3w:, 20] = 0.1
-        
 
         # Finished converting pandapower network to ppci
         # Estimate voltage magnitude and angle with the given estimator
         V = self.estimator.estimate(ppci, **hyperparameter)
 
-        # store results for all elements
-        # calculate branch results (in ppc_i)
-        baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
-        Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
-        ppci['bus'], ppci['gen'], ppci['branch'] = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
+        # calculate the branch power flow and bus power injection based on the estimated voltage vector
+        ppci = _calc_power_flow(ppci, V)
 
-        # calculate bus power injections
-        # TODO: TEST!!
-        Sbus = np.multiply(V, np.conj(Ybus * V))
-        ppci["bus"][:, 2] = Sbus.real  # saved in per unit
-        ppci["bus"][:, 3] = Sbus.imag  # saved in per unit
+        # extract the result from ppci to ppc and pandpower network
+        self.net = _extract_result_ppci_to_pp(self.net, ppc, ppci)
 
-        # convert to pandapower indices
-        ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
-
-        # extract results from ppc
-        _add_pf_options(self.net, tolerance_mva=1e-8, trafo_loading="current",
-                        numba=True, ac=True, algorithm='nr', max_iteration="auto")
-        # writes res_bus.vm_pu / va_degree and res_line
-        _extract_results_se(self.net, ppc)
-
-        # restore backup of previous results
-        _rename_results(self.net)
-
-        # additionally, write bus power injection results (these are not written in _extract_results)
-        mapping_table = self.net["_pd2ppc_lookups"]["bus"]
-        self.net.res_bus_est.p_mw   = - get_values(ppc["bus"][:, 2], self.net.bus.index.values,
-                                                   mapping_table)
-        self.net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], self.net.bus.index.values,
-                                                   mapping_table)
-        self.net.res_bus_est.index = self.net.bus.index
-
-        _clean_up(self.net)
         # clear the aux elements and calculation results created for the substitution of bb switches
         if not fuse_all_bb_switches and not self.net.switch.empty:
             _drop_aux_elements_for_bb_switch(self.net)
-
-        # delete results which are not correctly calculated
-        for k in list(self.net.keys()):
-            if k.startswith("res_") and k.endswith("_est") and \
-                    k not in ("res_bus_est", "res_line_est", "res_trafo_est", "res_trafo3w_est"):
-                del self.net[k]
 
         return self.estimator.successful
 
