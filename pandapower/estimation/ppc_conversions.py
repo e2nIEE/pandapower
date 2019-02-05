@@ -13,6 +13,7 @@ from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
+from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
 
@@ -37,20 +38,20 @@ def _add_aux_elements_for_bb_switch(net):
                         set(net.shunt.bus)).union(set(net.gen.bus)).union(
                         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
                         set(net.xward.bus))
-
         bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
         bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
-        bus_ppci['vn_kv'] = net.bus.loc[bus_ppci.index, 'vn_kv']
+        existed_bus = bus_ppci[bus_ppci.index.isin(net.bus.index)]
+        bus_ppci['vn_kv'] = net.bus.loc[existed_bus.index, 'vn_kv']
         ppci_bus_with_elements = bus_ppci.groupby('bus_ppci')['bus_with_elements'].sum()
         bus_ppci.loc[:, 'elements_in_cluster'] = ppci_bus_with_elements[bus_ppci['bus_ppci'].values].values 
         return bus_ppci
 
     # find the buses which was fused together in the pp2ppc conversion with elements on them
     # the first one will be skipped
-    _pd2ppc(net)
+    rundcpp(net)
     bus_ppci_mapping = get_bus_branch_mapping(net)
-    bus_to_be_handled = bus_ppci_mapping[((bus_ppci_mapping ['elements_in_cluster']>=2)&\
-                                          bus_ppci_mapping ['bus_with_elements'])]
+    bus_to_be_handled = bus_ppci_mapping[(bus_ppci_mapping ['elements_in_cluster']>=2)&\
+                                          bus_ppci_mapping ['bus_with_elements']]
     bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')]
 
     # create auxiliary buses for the buses need to be handled
@@ -74,16 +75,16 @@ def _add_aux_elements_for_bb_switch(net):
     bus_to_be_replaced = aux_switch.loc[aux_switch.bus.isin(bus_to_be_handled.index), 'bus']
     element_to_be_replaced = aux_switch.loc[aux_switch.element.isin(bus_to_be_handled.index), 'element']
     aux_switch.loc[bus_to_be_replaced.index, 'bus'] =\
-        bus_aux_mapping[bus_to_be_replaced].values
+        bus_aux_mapping[bus_to_be_replaced].values.astype(int)
     aux_switch.loc[element_to_be_replaced.index, 'element'] =\
-        bus_aux_mapping[element_to_be_replaced].values
+        bus_aux_mapping[element_to_be_replaced].values.astype(int)
     aux_switch['closed'] = aux_switch['original_closed']
-    net.switch = net.switch.append(aux_switch, ignore_index=True)
+    net.switch = net.switch.append(aux_switch, ignore_index=True, sort=False)
 
     # create auxiliary lines as small impedance
     for bus_ori, bus_aux in bus_aux_mapping.iteritems():
-        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1e-5, name=AUX_LINE_NAME,
-                                    r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=10, max_i_ka=1)
+        create_line_from_parameters(net, bus_ori, bus_aux, length_km=1, name=AUX_LINE_NAME,
+                                    r_ohm_per_km=0.15, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1)
 
 
 def _drop_aux_elements_for_bb_switch(net):
@@ -98,15 +99,15 @@ def _drop_aux_elements_for_bb_switch(net):
     if 'original_closed' in net.switch.columns:
         net.switch.loc[:, 'closed'] = net.switch.loc[:, 'original_closed']
         net.switch.drop('original_closed', axis=1, inplace=True)
-    
+
     # Remove auxiliary buses, lines in net and result
     for key in net.keys():
         if key.startswith('res_bus'):
-            net[key] = net[key].loc[net.bus.name != AUX_BUS_NAME, :]
+            net[key] = net[key].loc[(net.bus.name != AUX_BUS_NAME).values, :]
         if key.startswith('res_line'):
-            net[key] = net[key].loc[net.line.name != AUX_LINE_NAME, :]
-    net.bus = net.bus.loc[net.bus.name != AUX_BUS_NAME, :]
-    net.line = net.line.loc[net.line.name != AUX_LINE_NAME, :]
+            net[key] = net[key].loc[(net.line.name != AUX_LINE_NAME).values, :]
+    net.bus = net.bus.loc[(net.bus.name != AUX_BUS_NAME).values, :]
+    net.line = net.line.loc[(net.line.name != AUX_LINE_NAME).values, :]
 
 
 def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
@@ -146,9 +147,9 @@ def _add_measurements_to_ppc(net, ppci):
 
     map_bus = net["_pd2ppc_lookups"]["bus"]
     meas_bus = meas[(meas['element_type'] == 'bus')]
-    if (map_bus[meas_bus['element']] >= ppci["bus"].shape[0]).any():
+    if (map_bus[meas_bus['element'].values.astype(int)] >= ppci["bus"].shape[0]).any():
         std_logger.warning("Measurement defined in pp-grid does not exist in ppci! Will be deleted!")
-        meas_bus = meas_bus[map_bus[meas_bus['element']] < ppci["bus"].shape[0]]
+        meas_bus = meas_bus[map_bus[meas_bus['element'].values.astype(int)] < ppci["bus"].shape[0]]
 
     # mapping to dict instead of np array ensures good performance for large indices
     # (e.g., 999999999 requires a large np array even if there are only 2 buses)
@@ -170,9 +171,11 @@ def _add_measurements_to_ppc(net, ppci):
     if "trafo3w" in net["_pd2ppc_lookups"]["branch"]:
         trafo3w_ix_start, trafo3w_ix_end = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
         trafo3w_ix_offset = np.sum(~branch_mask[:trafo3w_ix_start])
+        num_trafo3w = net.trafo3w.shape[0]
         trafo3w_ix_start, trafo3w_ix_end = trafo3w_ix_start - trafo3w_ix_offset, trafo3w_ix_end - trafo3w_ix_offset
-        map_trafo3w = {trafo3w_ix: {'hv': br_ix, 'mv': br_ix+1, 'lv': br_ix+2} for trafo3w_ix, br_ix in
-                       zip(net.trafo3w.index, range(trafo3w_ix_start, trafo3w_ix_end, 3))
+        map_trafo3w = {trafo3w_ix: {'hv': br_ix, 'mv': br_ix+num_trafo3w, 'lv': br_ix+2*num_trafo3w}
+                       for trafo3w_ix, br_ix in
+                       zip(net.trafo3w.index, range(trafo3w_ix_start, trafo3w_ix_start+num_trafo3w))
                        if branch_mask[br_ix+trafo3w_ix_offset]}
 
     # set measurements for ppc format
@@ -190,16 +193,35 @@ def _add_measurements_to_ppc(net, ppci):
     p_measurements = meas_bus[(meas_bus.measurement_type == "p")]
     if len(p_measurements):
         bus_positions = map_bus[p_measurements.element.values.astype(int)]
-        bus_append[bus_positions, P] = p_measurements.value.values
-        bus_append[bus_positions, P_STD] = p_measurements.std_dev.values
-        bus_append[bus_positions, P_IDX] = p_measurements.index.values
+        unique_bus_positions = np.unique(bus_positions)
+        if len(unique_bus_positions) < len(bus_positions):
+            std_logger.warning("P Measurement duplication will be automatically added together!")
+            for bus in unique_bus_positions:
+                p_meas_on_bus = p_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
+                bus_append[bus, P] = p_meas_on_bus.value.sum()
+                bus_append[bus, P_STD] = p_meas_on_bus.std_dev.max()
+                bus_append[bus, P_IDX] = p_meas_on_bus.index[0]
+        else:
+            bus_append[bus_positions, P] = p_measurements.value.values
+            bus_append[bus_positions, P_STD] = p_measurements.std_dev.values
+            bus_append[bus_positions, P_IDX] = p_measurements.index.values
 
     q_measurements = meas_bus[(meas_bus.measurement_type == "q")]
     if len(q_measurements):
         bus_positions = map_bus[q_measurements.element.values.astype(int)]
-        bus_append[bus_positions, Q] = q_measurements.value.values
-        bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values
-        bus_append[bus_positions, Q_IDX] = q_measurements.index.values
+        unique_bus_positions = np.unique(bus_positions)
+        if len(unique_bus_positions) < len(bus_positions):
+            std_logger.warning("Q Measurement duplication will be automatically added together!")
+            for bus in unique_bus_positions:
+                q_meas_on_bus = q_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
+                bus_append[bus, Q] = q_meas_on_bus.value.sum()
+                bus_append[bus, Q_STD] = q_meas_on_bus.std_dev.max()
+                bus_append[bus, Q_IDX] = q_meas_on_bus.index[0]
+        else:
+            bus_positions = map_bus[q_measurements.element.values.astype(int)]
+            bus_append[bus_positions, Q] = q_measurements.value.values
+            bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values
+            bus_append[bus_positions, Q_IDX] = q_measurements.index.values
 
     # add virtual measurements for artificial buses, which were created because
     # of an open line switch. p/q are 0. and std dev is 1. (small value)
