@@ -689,16 +689,16 @@ def test_net_with_bb_switch_no_fusing():
     assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-2)
     assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-2)
     # asserting with more tolerance since the added impedance will cause some inaccuracy
-    assert np.allclose(net.res_bus.p_mw.values,net.res_bus_est.p_mw.values, atol=1e-1)
-    assert np.allclose(net.res_bus.q_mvar.values,net.res_bus_est.q_mvar.values, atol=1e-1)
+    assert np.allclose(net.res_bus.p_mw.values,net.res_bus_est.p_mw.values, 1e-1)
+    assert np.allclose(net.res_bus.q_mvar.values,net.res_bus_est.q_mvar.values, 1e-1)
 
 
 def test_net_with_bb_switch_fusing():
     net = create_net_with_bb_switch()
     success = estimate(net, tolerance=1e-5, fuse_all_bb_switches=True)
     assert success
-    assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-1)
-    assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-1)
+    assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 5e-2)
+    assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 5e-2)
     # Test on p,q injctions on bus will be skipped because on fused buses
     # the difference can no longer be told
 
