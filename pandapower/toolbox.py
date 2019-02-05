@@ -211,10 +211,10 @@ def opf_task(net):  # pragma: no cover
         constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
         constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
         constr = net[variable][constr_col_exist]
+        if variable != 'ext_grid' and "controllable" in net[variable].columns:
+            constr = constr.loc[net[variable].loc[net[variable].controllable].index]
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
             constr_exist = True
-            if variable != 'ext_grid':
-                constr = constr.loc[net[variable].loc[net[variable].controllable].index]
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
             for i in constr_col[~constr_col.isin(net[variable].columns)]:
                 constr[i] = np.nan
@@ -964,7 +964,7 @@ def create_continuous_bus_index(net, start=0):
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
-	
+
     net.bus.sort_index(inplace=True)
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
@@ -984,55 +984,55 @@ def create_continuous_bus_index(net, start=0):
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
-    Creating a continuous index for all the elements, starting at zero and replaces all references 
+    Creating a continuous index for all the elements, starting at zero and replaces all references
     of old indices by the new ones.
-    
+
     INPUT:
-      **net** - pandapower network with unodered indices 
+      **net** - pandapower network with unodered indices
 
     OPTIONAL:
-      **start** - index begins with "start"  
-        
-      **add_df_to_reindex** - by default all useful pandapower elements for 
+      **start** - index begins with "start"
+
+      **add_df_to_reindex** - by default all useful pandapower elements for
                               power flow will be selected. Additionally elements,
-                              like line_geodata and bus_geodata, also can be here 
-                              considered. 
+                              like line_geodata and bus_geodata, also can be here
+                              considered.
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
-    
+
     """
-  
+
     elements = pp_elements(res_elements=True)
-    
+
     # create continous bus index
     create_continuous_bus_index(net, start=start)
     elements -= {"bus", "bus_geodata", "res_bus"}
-    
+
     elements |= add_df_to_reindex
-    
+
     for elm in list(elements):
         net[elm].sort_index(inplace=True)
         new_index = list(np.arange(start, len(net[elm]) + start))
-            
+
         if elm == "line":
             line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
-            
+
         elif elm == "trafo":
             trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
-        
+
         elif elm == "line_geodata" and "line_geodata" in net:
             line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
             net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
                                           inplace=True)
-    
-        net[elm].index = new_index 
-        
+
+        net[elm].index = new_index
+
     line_switches = net.switch[net.switch.et == "l"]
     net.switch.loc[line_switches.index, "element"] = get_indices(line_switches.element, line_lookup)
-  
+
     trafo_switches = net.switch[net.switch.et == "t"]
     net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element, trafo_lookup)
-       
+
     return net
 
 
