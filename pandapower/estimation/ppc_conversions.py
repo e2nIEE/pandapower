@@ -13,6 +13,7 @@ from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
+from padnapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
 
@@ -50,12 +51,7 @@ def _add_aux_elements_for_bb_switch(net):
 
     # find the buses which was fused together in the pp2ppc conversion with elements on them
     # the first one will be skipped
-#    net._options = {}
-#    _add_ppc_options(net, check_connectivity=False, init_vm_pu='flat', init_va_degree='flat',
-#                     trafo_model="pi", mode="pf", enforce_q_lims=False,
-#                     calculate_voltage_angles=True, r_switch=0.0,
-#                     recycle=dict(_is_elements=False, ppc=False, Ybus=False))
-    _pd2ppc(net)
+    rundcpp(net)
     bus_ppci_mapping = get_bus_branch_mapping(net)
     bus_to_be_handled = bus_ppci_mapping[(bus_ppci_mapping ['elements_in_cluster']>=2)&\
                                           bus_ppci_mapping ['bus_with_elements']]
@@ -200,22 +196,35 @@ def _add_measurements_to_ppc(net, ppci):
     p_measurements = meas_bus[(meas_bus.measurement_type == "p")]
     if len(p_measurements):
         bus_positions = map_bus[p_measurements.element.values.astype(int)]
-        bus_append[bus_positions, P] = p_measurements.value.values
-        bus_append[bus_positions, P_STD] = p_measurements.std_dev.values
-        bus_append[bus_positions, P_IDX] = p_measurements.index.values
-        
-        p_sign = np.sign(ppci['bus'][:, 2])
-        bus_append[:, P] = -np.abs(bus_append[:, P]) * p_sign
+        unique_bus_positions = np.unique(bus_positions)
+        if len(unique_bus_positions) < len(bus_positions):
+            std_logger.warning("P Measurement duplication will be automatically merged!")
+            for bus in unique_bus_positions:
+                p_meas_on_bus = p_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
+                bus_append[bus, P] = p_meas_on_bus.value.sum()
+                bus_append[bus, P_STD] = p_meas_on_bus.std_dev.max()
+                bus_append[bus, P_IDX] = p_meas_on_bus.index[0]
+        else:
+            bus_append[bus_positions, P] = p_measurements.value.values
+            bus_append[bus_positions, P_STD] = p_measurements.std_dev.values
+            bus_append[bus_positions, P_IDX] = p_measurements.index.values
 
     q_measurements = meas_bus[(meas_bus.measurement_type == "q")]
     if len(q_measurements):
         bus_positions = map_bus[q_measurements.element.values.astype(int)]
-        bus_append[bus_positions, Q] = q_measurements.value.values
-        bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values
-        bus_append[bus_positions, Q_IDX] = q_measurements.index.values
-        
-        q_sign = np.sign(ppci['bus'][:, 3])
-        bus_append[:, Q] = -np.abs(bus_append[:, Q]) * q_sign
+        unique_bus_positions = np.unique(bus_positions)
+        if len(unique_bus_positions) < len(bus_positions):
+            std_logger.warning("Q Measurement duplication will be automatically merged!")
+            for bus in unique_bus_positions:
+                q_meas_on_bus = q_measurements.iloc[np.argwhere(bus_positions==bus).ravel(), :]
+                bus_append[bus, Q] = q_meas_on_bus.value.sum()
+                bus_append[bus, Q_STD] = q_meas_on_bus.std_dev.max()
+                bus_append[bus, Q_IDX] = q_meas_on_bus.index[0]
+        else:
+            bus_positions = map_bus[q_measurements.element.values.astype(int)]
+            bus_append[bus_positions, Q] = q_measurements.value.values
+            bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values
+            bus_append[bus_positions, Q_IDX] = q_measurements.index.values
 
     # add virtual measurements for artificial buses, which were created because
     # of an open line switch. p/q are 0. and std dev is 1. (small value)
