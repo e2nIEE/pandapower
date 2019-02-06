@@ -14,5 +14,6 @@ Q_STD = 5
 VM_IDX = 6
 P_IDX = 7
 Q_IDX = 8
+ZERO_INJ_FLAG = 9
 
-bus_cols_se = 9
+bus_cols_se = 10

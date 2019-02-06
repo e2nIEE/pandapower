@@ -684,7 +684,7 @@ def create_net_with_bb_switch():
 
 def test_net_with_bb_switch_no_fusing():
     net = create_net_with_bb_switch()
-    success = estimate(net, tolerance=1e-5, fuse_all_bb_switches=False)
+    success = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=None)
     assert success
     assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-2)
     assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-2)
@@ -695,7 +695,7 @@ def test_net_with_bb_switch_no_fusing():
 
 def test_net_with_bb_switch_fusing():
     net = create_net_with_bb_switch()
-    success = estimate(net, tolerance=1e-5, fuse_all_bb_switches=True)
+    success = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch='all')
     assert success
     assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 5e-2)
     assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 5e-2)
@@ -734,7 +734,7 @@ def test_net_with_zero_injection():
     pp.create_measurement(net, "p", "line", 30.100, 1, l3, side="to")     # Pline (bus 2 -> bus 4) at bus 4 
     pp.create_measurement(net, "q", "line", -0.099, 1, l3, side="to")     # Qline (bus 2 -> bus 4) at bus 4
 
-    success = estimate(net, init='flat', tolerance=1e-10, zero_injection_detection=True)
+    success = estimate(net, tolerance=1e-10, zero_injection='auto', algorithm='wls_with_zero_constraint')
     assert success
     assert np.abs(net.res_bus_est.at[1, 'p_mw']) < 1e-8
     assert np.abs(net.res_bus_est.at[1, 'q_mvar']) < 1e-8
