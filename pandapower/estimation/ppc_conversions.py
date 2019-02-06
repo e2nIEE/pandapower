@@ -13,7 +13,7 @@ from pandapower.estimation.idx_brch import *
 from pandapower.idx_brch import branch_cols
 from pandapower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
-from padnapower.run import rundcpp
+from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
 from pandapower.create import create_buses, create_line_from_parameters
 
@@ -26,14 +26,14 @@ std_logger = logging.getLogger(__name__)
 AUX_BUS_NAME, AUX_LINE_NAME, AUX_SWITCH_NAME =\
     "aux_bus_se", "aux_line_se", "aux_bbswitch_se"
 
-def _add_aux_elements_for_bb_switch(net):
+def _add_aux_elements_for_bb_switch(net, bus_to_be_fused):
     """
     Add auxiliary elements (bus, bb switch, line) to the pandapower net to avoid
     automatic fuse of buses connected with bb switch with elements on it
     :param net: pandapower net
     :return: None
     """
-    def get_bus_branch_mapping(net):
+    def get_bus_branch_mapping(net, bus_to_be_fused):
         bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
                         set(net.shunt.bus)).union(set(net.gen.bus)).union(
                         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
@@ -47,14 +47,20 @@ def _add_aux_elements_for_bb_switch(net):
         bus_ppci['vn_kv'] = net.bus.loc[existed_bus.index, 'vn_kv']
         ppci_bus_with_elements = bus_ppci.groupby('bus_ppci')['bus_with_elements'].sum()
         bus_ppci.loc[:, 'elements_in_cluster'] = ppci_bus_with_elements[bus_ppci['bus_ppci'].values].values 
+        bus_ppci['bus_to_be_fused'] = False
+        if bus_to_be_fused is not None:
+            bus_ppci.loc[bus_to_be_fused, 'bus_to_be_fused'] = True
+            bus_cluster_to_be_fused_mask = bus_ppci.groupby('bus_ppci')['bus_to_be_fused'].any()
+            bus_ppci.loc[bus_cluster_to_be_fused_mask[bus_ppci['bus_ppci'].values].values, 'bus_to_be_fused'] = True    
         return bus_ppci
 
     # find the buses which was fused together in the pp2ppc conversion with elements on them
     # the first one will be skipped
     rundcpp(net)
-    bus_ppci_mapping = get_bus_branch_mapping(net)
+    bus_ppci_mapping = get_bus_branch_mapping(net, bus_to_be_fused)
     bus_to_be_handled = bus_ppci_mapping[(bus_ppci_mapping ['elements_in_cluster']>=2)&\
-                                          bus_ppci_mapping ['bus_with_elements']]
+                                          bus_ppci_mapping ['bus_with_elements']&\
+                                          (~bus_ppci_mapping ['bus_to_be_fused'])]
     bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')]
 
     # create auxiliary buses for the buses need to be handled
@@ -134,7 +140,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     return ppc, ppci
 
 
-def _add_measurements_to_ppc(net, ppci):
+def _add_measurements_to_ppc(net, ppci, zero_injection):
     """
     Add pandapower measurements to the ppci structure by adding new columns
     :param net: pandapower net
@@ -185,7 +191,7 @@ def _add_measurements_to_ppc(net, ppci):
     # add 9 columns to ppc[bus] for Vm, Vm std dev, P, P std dev, Q, Q std dev,
     # pandapower measurement indices V, P, Q
     bus_append = np.full((ppci["bus"].shape[0], bus_cols_se), np.nan, dtype=ppci["bus"].dtype)
-
+    
     v_measurements = meas_bus[(meas_bus.measurement_type == "v")]
     if len(v_measurements):
         bus_positions = map_bus[v_measurements.element.values.astype(int)]
@@ -226,6 +232,8 @@ def _add_measurements_to_ppc(net, ppci):
             bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values
             bus_append[bus_positions, Q_IDX] = q_measurements.index.values
 
+    #add zero injection measurement and labels defined in parameter zero_injection
+    bus_append = _add_zero_injection(net, ppci, bus_append, zero_injection)
     # add virtual measurements for artificial buses, which were created because
     # of an open line switch. p/q are 0. and std dev is 1. (small value)
     new_in_line_buses = np.setdiff1d(np.arange(ppci["bus"].shape[0]), map_bus[map_bus >= 0])
@@ -430,6 +438,41 @@ def _add_measurements_to_ppc(net, ppci):
     ppci["bus"] = np.hstack((ppci["bus"], bus_append))
     ppci["branch"] = np.hstack((ppci["branch"], branch_append))
     return ppci
+
+
+def _add_zero_injection(net, ppci, bus_append, zero_injection): 
+    """
+    Add zero injection labels to the ppci structure and add virtual measurements to those buses
+    :param net: pandapower net
+    :param ppci: generated ppci
+    :param bus_append: added columns to the ppci bus with zero injection label
+    :param zero_injection: parameter to control which bus to be identified as zero injection
+    :return bus_append: added columns
+    """
+    bus_append[:, ZERO_INJ_FLAG] = False
+    if zero_injection is not None:
+        if net._pd2ppc_lookups['aux']:
+            aux_bus_lookup = np.concatenate([v for k,v in net._pd2ppc_lookups['aux'].items() if k != 'xward'])
+            aux_bus = net._pd2ppc_lookups['bus'][aux_bus_lookup]
+            bus_append[aux_bus, ZERO_INJ_FLAG] = True
+        
+        if isinstance(zero_injection, str):
+            if zero_injection == 'all':
+                zero_inj_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1) &\
+                    np.isnan(bus_append[:, P:(Q_STD+1)]).all(axis=1)
+                bus_append[zero_inj_bus_mask, ZERO_INJ_FLAG] = True
+        elif hasattr(zero_injection, '__iter__'):
+            zero_inj_bus = net._pd2ppc_lookups['bus'][zero_injection]
+            bus_append[zero_inj_bus, ZERO_INJ_FLAG] = True
+        
+        zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
+        bus_append[zero_inj_bus, P] = 0
+        bus_append[zero_inj_bus, P_STD] = 1
+        bus_append[zero_inj_bus, Q] = 0
+        bus_append[zero_inj_bus, Q_STD] = 1
+    
+    return bus_append
+    
 
 
 def _build_measurement_vectors(ppci):

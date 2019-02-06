@@ -5,6 +5,7 @@
 
 import numpy as np
 
+from pandapower.idx_bus import PD, QD
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.pfsoln_pypower import pfsoln
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, reset_results
@@ -20,8 +21,8 @@ def _calc_power_flow(ppci, V):
     # calculate bus power injections
     # TODO: TEST!!
     Sbus = np.multiply(V, np.conj(Ybus * V))
-    ppci["bus"][:, 2] = Sbus.real  # saved in per unit
-    ppci["bus"][:, 3] = Sbus.imag  # saved in per unit
+    ppci["bus"][:, PD] = -Sbus.real  # saved in per unit, injection -> demand
+    ppci["bus"][:, QD] = -Sbus.imag  # saved in per unit, injection -> demand
     return ppci
 
 
@@ -38,13 +39,13 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     # restore backup of previous results
     _rename_results(net)
 
-    # additionally, write bus power injection results (these are not written in _extract_results)
+    # additionally, write bus power demand results (these are not written in _extract_results)
     mapping_table = net["_pd2ppc_lookups"]["bus"]
-    net.res_bus_est.p_mw   = - get_values(ppc["bus"][:, 2], net.bus.index.values,
-                                               mapping_table)
-    net.res_bus_est.q_mvar = - get_values(ppc["bus"][:, 3], net.bus.index.values,
-                                               mapping_table)
     net.res_bus_est.index = net.bus.index
+    net.res_bus_est.p_mw = get_values(ppc["bus"][:, 2], net.bus.index.values,
+                                      mapping_table)
+    net.res_bus_est.q_mvar = get_values(ppc["bus"][:, 3], net.bus.index.values,
+                                        mapping_table)
 
     _clean_up(net)
     # delete results which are not correctly calculated
@@ -54,7 +55,7 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
             del net[k]
     return net
 
-    
+
 def _copy_power_flow_results(net):
     """
     copy old power flow results (if they exist) into res_*_power_flow tables for backup

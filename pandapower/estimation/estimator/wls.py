@@ -7,7 +7,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
 
-from pandapower.idx_bus import BUS_TYPE, VA, VM
+from pandapower.idx_bus import BUS_TYPE, VA, VM, bus_cols
+from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
@@ -137,16 +138,21 @@ class WLSEstimator:
 
 class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
     def estimate(self, ppci):
+        # state vector built from delta, |V| and zero injections
+        # Find pq bus with zero p,q and shunt admittance
+        zero_injection_bus = np.argwhere(ppci["bus"][:, bus_cols+ZERO_INJ_FLAG] == True).ravel()
+        ppci["bus"][zero_injection_bus, [bus_cols+P, bus_cols+P_STD, bus_cols+Q, bus_cols+Q_STD]] = np.NaN
+        
+        
+        # Withn pq buses with zero injection identify those who have also no p or q measurement
+        p_zero_injections = zero_injection_bus
+        q_zero_injections = zero_injection_bus
+        new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
+        
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
         num_bus = ppci["bus"].shape[0]
 
-        # state vector built from delta, |V| and zero injections
-        # Find pq bus with zero p,q and shunt admittance
-        zero_injection_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1)
-        # Withn pq buses with zero injection identify those who have also no p or q measurement
-        p_zero_injections = np.where(zero_injection_bus_mask & np.isnan(ppci["bus"][:, 15+2]))[0]
-        q_zero_injections = np.where(zero_injection_bus_mask & np.isnan(ppci["bus"][:, 15+4]))[0]
-        new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
+
         # update the E matrix
         E = np.r_[E, new_states]
 
