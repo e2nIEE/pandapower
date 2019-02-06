@@ -2438,7 +2438,9 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[index] = [name, meas_type.lower(), element_type, element, value, std_dev, side]
+    columns = ["name", "measurement_type", "element_type", "element", "value", "std_dev", "side"]
+    net.measurement.loc[index, columns] =\
+        [name, meas_type.lower(), element_type, element, value, std_dev, side]
     _preserve_dtypes(net.measurement, dtypes)
     return index
 
