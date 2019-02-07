@@ -379,7 +379,7 @@ def _select_is_elements_numba(net, isolated_nodes=None):
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
                      r_switch, enforce_q_lims, recycle, delta=1e-10,
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
-                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9):
+                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9, neglect_open_switch_branches=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -404,7 +404,8 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "init_va_degree": init_va_degree,
         "init_results": init_results,
         "p_lim_default": p_lim_default,
-        "q_lim_default": q_lim_default
+        "q_lim_default": q_lim_default,
+        "neglect_open_switch_branches": neglect_open_switch_branches
     }
     _add_options(net, options)
 

@@ -209,6 +209,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             ppc: If True the ppc is taken from net["_ppc"] and gets updated instead of reconstructed entirely
             Ybus: If True the admittance matrix (Ybus, Yf, Yt) is taken from ppc["internal"] and not reconstructed
 
+        **neglect_open_switch_branches** (bool, False) - If True no auxiliary buses are created for branches when switches are opened at the branch. Instead branches are set out of service
+
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
@@ -229,6 +231,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     init_vm_pu = kwargs.get("init_vm_pu", None)
     init_va_degree = kwargs.get("init_va_degree", None)
     recycle = kwargs.get("recycle", None)
+    neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
     if "init" in overrule_options:
         init = overrule_options["init"]
 
@@ -282,7 +285,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                      mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=voltage_depend_loads, delta=delta_q,
-                     trafo3w_losses=trafo3w_losses)
+                     trafo3w_losses=trafo3w_losses, neglect_open_switch_branches=neglect_open_switch_branches)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug)
