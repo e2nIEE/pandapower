@@ -7,8 +7,7 @@ import JSON
 function load_pm_from_json(json_path)
     pm = Dict()
     open(json_path, "r") do f
-        dicttxt = JSON.readstring(f)  # file information to string
-        pm=JSON.parse(dicttxt)  # parse and transform data
+        pm=JSON.parse(f)  # parse and transform data
     end
     for (idx, gen) in pm["gen"]
         if gen["model"] == 1
