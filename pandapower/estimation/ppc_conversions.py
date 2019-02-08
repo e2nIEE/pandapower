@@ -88,7 +88,10 @@ def _add_aux_elements_for_bb_switch(net, bus_to_be_fused):
     aux_switch.loc[element_to_be_replaced.index, 'element'] =\
         bus_aux_mapping[element_to_be_replaced].values.astype(int)
     aux_switch['closed'] = aux_switch['original_closed']
-    net.switch = net.switch.append(aux_switch, ignore_index=True, sort=False)
+
+    net.switch = net.switch.append(aux_switch, ignore_index=True)
+    # PY34 compatibility
+#    net.switch = net.switch.append(aux_switch, ignore_index=True, sort=False)
 
     # create auxiliary lines as small impedance
     for bus_ori, bus_aux in bus_aux_mapping.iteritems():
