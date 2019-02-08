@@ -449,13 +449,17 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
     :param zero_injection: parameter to control which bus to be identified as zero injection
     :return bus_append: added columns
     """
-    bus_append[:, ZERO_INJ_FLAG] = False
+    if isinstance(zero_injection, str):
+        if zero_injection.lower() == 'none':
+            zero_injection = None
+    
+    bus_append[:, ZERO_INJ_FLAG] = False   
     if zero_injection is not None:
         if net._pd2ppc_lookups['aux']:
             aux_bus_lookup = np.concatenate([v for k,v in net._pd2ppc_lookups['aux'].items() if k != 'xward'])
             aux_bus = net._pd2ppc_lookups['bus'][aux_bus_lookup]
             bus_append[aux_bus, ZERO_INJ_FLAG] = True
-        
+
         if isinstance(zero_injection, str):
             if zero_injection == 'auto':
                 zero_inj_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1) &\
@@ -464,15 +468,13 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
         elif hasattr(zero_injection, '__iter__'):
             zero_inj_bus = net._pd2ppc_lookups['bus'][zero_injection]
             bus_append[zero_inj_bus, ZERO_INJ_FLAG] = True
-        
+
         zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
         bus_append[zero_inj_bus, P] = 0
         bus_append[zero_inj_bus, P_STD] = 1
         bus_append[zero_inj_bus, Q] = 0
         bus_append[zero_inj_bus, Q_STD] = 1
-    
     return bus_append
-    
 
 
 def _build_measurement_vectors(ppci):
