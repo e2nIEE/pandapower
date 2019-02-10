@@ -692,8 +692,10 @@ def create_net_with_bb_switch():
 
 def test_net_with_bb_switch_no_fusing():
     net = create_net_with_bb_switch()
-    success = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=None)
-    assert success
+    success_none = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=None)
+    success_none_str = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch='None')
+
+    assert success_none and success_none_str
     assert np.allclose(net.res_bus.va_degree.values,net.res_bus_est.va_degree.values, 1e-2)
     assert np.allclose(net.res_bus.vm_pu.values,net.res_bus_est.vm_pu.values, 1e-2)
     # asserting with more tolerance since the added impedance will cause some inaccuracy
@@ -818,11 +820,12 @@ def test_zero_injection_aux_bus():
     net_aux = deepcopy(net)
     
     success_none = estimate(net, tolerance=1e-5, zero_injection=None)
+    success_none_str = estimate(net, tolerance=1e-5, zero_injection='None')
     
     # In this case zero_injection in mode "aux_bus" and "auto" should be exact the same
     success_aux = estimate(net_aux, tolerance=1e-5, zero_injection='aux_bus')
     success_auto = estimate(net_auto, tolerance=1e-5, zero_injection='auto')
-    assert success_none and success_aux and success_auto
+    assert success_none and success_none_str and success_aux and success_auto
     assert np.allclose(net_auto.res_bus_est.va_degree.values,net_aux.res_bus_est.va_degree.values, 1e-4, equal_nan=True)
     assert np.allclose(net_auto.res_bus_est.vm_pu.values,net_aux.res_bus_est.vm_pu.values, 1e-4, equal_nan=True)
     

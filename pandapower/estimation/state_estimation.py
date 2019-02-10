@@ -276,7 +276,7 @@ class StateEstimation(object):
         bus_to_be_fused = None
         if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
             if isinstance(fuse_buses_with_bb_switch, str):
-                if not fuse_buses_with_bb_switch.lower() != 'none':
+                if fuse_buses_with_bb_switch.lower() != 'none':
                     raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
             elif hasattr(fuse_buses_with_bb_switch, '__iter__'):
                 bus_to_be_fused = fuse_buses_with_bb_switch      
