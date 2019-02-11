@@ -1720,9 +1720,9 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tp_po
 
     dd = pd.DataFrame(v, index=[index])
     try:
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
+        net["trafo3w"] = net["trafo3w"].append(dd, sort=False).reindex(net["trafo3w"].columns, axis=1)
     except TypeError:  # legacy for pandas <0.21
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
+        net["trafo3w"] = net["trafo3w"].append(dd, sort=False).reindex_axis(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
