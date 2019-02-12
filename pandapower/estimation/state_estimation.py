@@ -48,34 +48,37 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
              **hyperparameter):
     """
     Wrapper function for WLS state estimation.
-
     INPUT:
         **net** - The net within this line should be created
-
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
         buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
-
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
         tolerance, the process stops. Default is 1e-6
-
         **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
-
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True
         
-        **zero_injection** - (str, container, None) - 'all', 'aux_bus', None, container of bus
-        Detect buses with zero injections (buses without p, q
-        measurements and p, q injections from elements) automatically and extend the WLS SE with those zero-injection
-        constraints
-
-        **fuse_buses_with_bb_switch** - (str, container, None) - If 'all': all the buses with bb-switches will be
-        fused as default behaviour, if container of bus indexes (pd dataframe index, set, list usw.) the mentioned 
-        buses will be fused the other buese with bb switches will be substituted with auxiliary lines between those 
-        buses where an element is connected to them in order to keep the p, q results on all buses instead of 
-        fusing them, if none then all the buses with bb switches will be substituted with line
-
+        **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
+        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+        'wls_estimator with zero constraints' the buses will be handled as constraints
+        "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
+            identified as zero injection bus  
+        "aux_bus": only aux bus will be identified as zero injection bus
+        None: no bus will be identified as zero injection bus
+        iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
+            as zero-injection bus
+        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+        auxiliary line will be automatically added to the network to make the buses with different p,q injection
+        measurements identifieble
+        "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
+        None: buses with bb-switches and individual p,q measurements will be reconfigurated
+            by auxiliary elements
+        iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
+            if one of the bus among the buses connected through bb switch is given, then all of them will still
+            be fused
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
@@ -193,36 +196,43 @@ class StateEstimation(object):
         boolean value, which is true after a successful estimation and false otherwise.
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
-
         INPUT:
             **net** - The net within this line should be created
-
             **v_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage magnitudes in p.u. (sorted by bus index)
-
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
-
         OPTIONAL:
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
             phase shifts in transformers Default is True
             
-            **fuse_buses_with_bb_switch** - (str, container, None) - If 'all': all the buses with bb-switches will be
-            fused as default behaviour, if container of bus indexes (pd dataframe index, set, list usw.) the mentioned 
-            buses will be fused the other buese with bb switches will be substituted with auxiliary lines between those 
-            buses where an element is connected to them in order to keep the p, q results on all buses instead of 
-            fusing them, if none then all the buses with bb switches will be substituted with line
-
+            **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
+            to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+            'wls_estimator with zero constraints' the buses will be handled as constraints
+            "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
+                identified as zero injection bus  
+            "aux_bus": only aux bus will be identified as zero injection bus
+            None: no bus will be identified as zero injection bus
+            iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
+                as zero-injection bus
+    
+            **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+            be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+            auxiliary line will be automatically added to the network to make the buses with different p,q injection
+            measurements identifieble
+            "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
+            None: buses with bb-switches and individual p,q measurements will be reconfigurated
+                by auxiliary elements
+            iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
+                if one of the bus among the buses connected through bb switch is given, then all of them will still
+                be fused
         OUTPUT:
             **successful** (boolean) - True if the estimation process was successful
-
         Optional estimation variables:
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
-
         EXAMPLE:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
-
         """
         if self.net is None:
             raise UserWarning("SE Component was not initialized with a network.")
