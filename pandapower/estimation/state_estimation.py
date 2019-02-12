@@ -51,12 +51,12 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         shifts in transformers, if init is 'slack'. Default is True
         
         **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
-        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 'wls_es
-        -timator with zero constriants' the buses will be handled as constraints
+        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+        'wls_estimator with zero constraints' the buses will be handled as constraints
         "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
             identified as zero injection bus  
         "aux_bus": only aux bus will be identified as zero injection bus
-        "none", "None", None: no bus will be identified as zero injection bus
+        None: no bus will be identified as zero injection bus
         iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
             as zero-injection bus
 
@@ -65,9 +65,9 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         auxiliary line will be automatically added to the network to make the buses with different p,q injection
         measurements identifieble
         "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
-        "none", "None", None: buses with bb-switches and individual p,q measurements will be reconfigurated
+        None: buses with bb-switches and individual p,q measurements will be reconfigurated
             by auxiliary elements
-        iterable: the iterable should contain the index of bus to be fused, the behaviour is contigous e.g.
+        iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
             if one of the bus among the buses connected through bb switch is given, then all of them will still
             be fused
 
@@ -237,12 +237,12 @@ class StateEstimation(object):
             phase shifts in transformers Default is True
             
             **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
-            to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 'wls_es
-            -timator with zero constriants' the buses will be handled as constraints
+            to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+            'wls_estimator with zero constraints' the buses will be handled as constraints
             "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
                 identified as zero injection bus  
             "aux_bus": only aux bus will be identified as zero injection bus
-            "none", "None", None: no bus will be identified as zero injection bus
+            None: no bus will be identified as zero injection bus
             iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
                 as zero-injection bus
     
@@ -251,9 +251,9 @@ class StateEstimation(object):
             auxiliary line will be automatically added to the network to make the buses with different p,q injection
             measurements identifieble
             "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
-            "none", "None", None: buses with bb-switches and individual p,q measurements will be reconfigurated
+            None: buses with bb-switches and individual p,q measurements will be reconfigurated
                 by auxiliary elements
-            iterable: the iterable should contain the index of bus to be fused, the behaviour is contigous e.g.
+            iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
                 if one of the bus among the buses connected through bb switch is given, then all of them will still
                 be fused
         OUTPUT:
@@ -270,18 +270,17 @@ class StateEstimation(object):
         if self.net is None:
             raise UserWarning("Component was not initialized with a network.")
         t0 = time()
-        
+
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
         bus_to_be_fused = None
         if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
             if isinstance(fuse_buses_with_bb_switch, str):
-                if fuse_buses_with_bb_switch.lower() != 'none':
-                    raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
+                raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
             elif hasattr(fuse_buses_with_bb_switch, '__iter__'):
                 bus_to_be_fused = fuse_buses_with_bb_switch      
             _add_aux_elements_for_bb_switch(self.net, bus_to_be_fused)
-        
+
         # add initial values for V and delta
         # node voltages
         # V<delta
