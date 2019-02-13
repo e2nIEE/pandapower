@@ -72,8 +72,7 @@ def test_1ph_shortcircuit():
         check_results(net, vc, result)
 
 def test_iec60909_example_4():
-    file = os.path.join(os.path.dirname(pandapower.test.__file__), "test_files",
-                        "IEC60909-4_example.json")
+    file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
     sc.calc_sc(net, fault="1ph")
     assert np.isclose(net.res_bus_sc[net.bus.name=="Q"].ikss_ka.values[0], 10.05957231)

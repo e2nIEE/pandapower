@@ -964,6 +964,8 @@ def create_continuous_bus_index(net, start=0):
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
+	
+    net.bus.sort_index(inplace=True)
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -977,6 +979,60 @@ def create_continuous_bus_index(net, start=0):
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et == "b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+    return net
+
+
+def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
+    """
+    Creating a continuous index for all the elements, starting at zero and replaces all references 
+    of old indices by the new ones.
+    
+    INPUT:
+      **net** - pandapower network with unodered indices 
+
+    OPTIONAL:
+      **start** - index begins with "start"  
+        
+      **add_df_to_reindex** - by default all useful pandapower elements for 
+                              power flow will be selected. Additionally elements,
+                              like line_geodata and bus_geodata, also can be here 
+                              considered. 
+    OUTPUT:
+      **net** - pandapower network with odered and continuous indices
+    
+    """
+  
+    elements = pp_elements(res_elements=True)
+    
+    # create continous bus index
+    create_continuous_bus_index(net, start=start)
+    elements -= {"bus", "bus_geodata", "res_bus"}
+    
+    elements |= add_df_to_reindex
+    
+    for elm in list(elements):
+        net[elm].sort_index(inplace=True)
+        new_index = list(np.arange(start, len(net[elm]) + start))
+            
+        if elm == "line":
+            line_lookup = dict(zip(copy.deepcopy(net["line"].index.values), new_index))
+            
+        elif elm == "trafo":
+            trafo_lookup = dict(zip(copy.deepcopy(net["trafo"].index.values), new_index))
+        
+        elif elm == "line_geodata" and "line_geodata" in net:
+            line_geo_lookup = dict(zip(copy.deepcopy(net["line_geodata"].index.values), new_index))
+            net["line_geodata"].set_index(get_indices(net["line_geodata"].index, line_geo_lookup),
+                                          inplace=True)
+    
+        net[elm].index = new_index 
+        
+    line_switches = net.switch[net.switch.et == "l"]
+    net.switch.loc[line_switches.index, "element"] = get_indices(line_switches.element, line_lookup)
+  
+    trafo_switches = net.switch[net.switch.et == "t"]
+    net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element, trafo_lookup)
+       
     return net
 
 
@@ -1182,10 +1238,11 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
     analyzed_meas = net.measurement.loc[net.measurement.bus.isin(buses).fillna("nan")]
-    # drop duplicates
-    idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
-        "type", "element_type", "bus", "element"], keep=keep)]
-    net.measurement.drop(idx_to_drop, inplace=True)
+    if len(analyzed_meas) > 0:
+        # drop duplicates
+        idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
+            "type", "element_type", "bus", "element"], keep=keep)]
+        net.measurement.drop(idx_to_drop, inplace=True)
 
 
 def fuse_buses(net, b1, b2, drop=True):

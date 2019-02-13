@@ -1,5 +1,8 @@
 __version__ = "1.6.1"
 
+import os
+pp_dir = os.path.dirname(os.path.realpath(__file__))
+
 from pandapower.auxiliary import *
 from pandapower.create import *
 from pandapower.diagnostic import *

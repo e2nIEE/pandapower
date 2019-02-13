@@ -29,7 +29,7 @@ def run_all_tests():
     """
     logger = logging.getLogger()
     logger.setLevel(logging.CRITICAL)
-    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
+    pytest.main([os.path.abspath(os.path.join(pp.pp_dir, "test")), "-s"])
     logger.setLevel(logging.INFO)
 
 
@@ -66,7 +66,7 @@ def assert_mpc_equal(mpc1, mpc2):
             mpc2['version'], mpc1['version']))
 
 
-def assert_net_equal(a_net, b_net):
+def assert_net_equal(a_net, b_net, **kwargs):
     """Returns True if the given pandapower networks are equal.
     Raises AssertionError if grids are not equal.
     """
@@ -80,7 +80,7 @@ def assert_net_equal(a_net, b_net):
                 try:
                     df1 = a_net[name].sort_index().sort_index(axis=1)  # workaround for bug in
                     df2 = b_net[name].sort_index().sort_index(axis=1)  # pandas, dont use
-                    pdt.assert_frame_equal(df1, df2, check_dtype=True)  # check_like here
+                    pdt.assert_frame_equal(df1, df2, check_dtype=True, **kwargs)  # check_like here
                 except AssertionError:
                     pytest.fail("Tables are not equal: %s" % name)
                     status = False
@@ -88,7 +88,7 @@ def assert_net_equal(a_net, b_net):
     return status
 
 
-def assert_res_equal(a, b):
+def assert_res_equal(a, b, **kwargs):
     """Returns True if the result tables of the given pandapower networks are equal.
     Raises AssertionError if results are not equal.
     """
@@ -99,7 +99,7 @@ def assert_res_equal(a, b):
         if name in a or name in b:
             if not (a[name] is None and b[name] is None):
                 try:
-                    pdt.assert_frame_equal(a[name], b[name])
+                    pdt.assert_frame_equal(a[name], b[name], **kwargs)
                 except AssertionError:
                     pytest.fail("Result tables are not equal: %s" % name)
                     raise
@@ -256,8 +256,7 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    folder = os.path.abspath(os.path.dirname(pandapower.test.__file__))
-    net = pp.from_pickle(os.path.join(folder, "loadflow", "testgrid.p"))
+    net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "loadflow", "testgrid.p"))
     #    net = pp.file_io.from_pickle("testgrid.p")
 
     return net
