@@ -13,6 +13,7 @@ Change Log
 - [CHANGED] draw_collections also supports tuples of collections
 - [ADDED] OPF logging output for verbose=True
 - [ADDED] compatibility for pandas 0.24
+- [FIXED] bug for single bus networks in DC PF #288
 
 [1.6.0] - 2018-09-18
 ----------------------
