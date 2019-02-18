@@ -21,7 +21,7 @@ setup(
     author_email='leon.thurner@uni-kassel.de, alexander.scheidler@iee.fraunhofer.de',
     description='Convenient Power System Modelling and Analysis based on PYPOWER and pandas',
     long_description=long_description,
-    url='www.pandapower.org',
+    url='http://www.pandapower.org',
     license='BSD',
     install_requires=["pypower>=5.0.1",
                       "pandas>=0.17.0",
