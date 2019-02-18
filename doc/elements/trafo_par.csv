@@ -6,20 +6,20 @@ lv_bus*;integer;;low voltage bus index of the transformer
 sn_kva*;float;:math:`>` 0;rated apparent power of the transformer [kVA]
 vn_hv_kv*;float;:math:`>` 0;rated voltage at high voltage bus [kV]
 vn_lv_kv*;float;:math:`>` 0;rated voltage at low voltage bus [kV]
-vsc_percent*;float;:math:`>` 0;short circuit voltage [%]
-vscr_percent*;float;:math:`\geq`  0;"real component of
+vk_percent*;float;:math:`>` 0;short circuit voltage [%]
+vkr_percent*;float;:math:`\geq`  0;"real component of
 short circuit voltage [%]"
 pfe_kw*;float;:math:`\geq` 0;iron losses [kW]
 i0_percent*;float;:math:`\geq` 0;open loop losses in [%]
 shift_degree*;float;;transformer phase shift angle
-tp_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
-tp_mid;integer;;rated tap position
-tp_min;integer;;minimum tap position
-tp_max;integer;;maximum tap position
-tp_st_percent;float;:math:`>` 0;tap step size for voltage magnitude [%]
-tp_st_degree;float;:math:`\geq` 0;tap step size for voltage angle
-tp_pos;integer;;current position of tap changer
-tp_phase_shifter;bool;;defines whether the transformer is an ideal phase shifter
+tap_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
+tap_neutral;integer;;rated tap position
+tap_min;integer;;minimum tap position
+tap_max;integer;;maximum tap position
+tap_step_percent;float;:math:`>` 0;tap step size for voltage magnitude [%]
+tap_step_degree;float;:math:`\geq` 0;tap step size for voltage angle
+tap_pos;integer;;current position of tap changer
+tap_phase_shifter;bool;;defines whether the transformer is an ideal phase shifter
 parallel;int;:math:`>` 0;number of parallel transformers
 max_loading_percent**;float;:math:`>` 0;Maximum loading of the transformer with respect to sn_kva and its corresponding current at 1.0 p.u.
 df;float;1 :math:`\geq` df :math:`>`0;derating factor: maximal current of transformer in relation to nominal current of transformer (from 0 to 1)

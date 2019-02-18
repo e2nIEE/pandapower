@@ -1,5 +1,5 @@
 **Parameter**;**read as**
 min_vm_pu;:math:`v_m^{min}  [pu]`
 max_loading_percent;:math:`loading^{max} [\%]`
-max_p_kw;:math:`p^{max}  [kw]`
+max_p_mw;:math:`p^{max}  [mw]`
 min_q_kvar;:math:`q^{min}  [kvar]`

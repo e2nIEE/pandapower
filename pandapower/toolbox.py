@@ -11,8 +11,8 @@ import pandas as pd
 
 from pandapower import __version__
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
-from pandapower.create import create_empty_network, create_piecewise_linear_cost, create_switch, \
-    create_line_from_parameters, create_impedance
+from pandapower.create import create_empty_network, create_switch, \
+    create_line_from_parameters, create_impedance, create_poly_cost
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
@@ -67,34 +67,34 @@ def _check_plc_full_range(net, element_type):  # pragma: no cover
         if plc_el_p.shape[0]:
             p_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_p.element_type)) &
-                ((net[element_type].min_p_kw < plc_el_p.p[plc_el_p.index.values[0]].min()) |
-                 (net[element_type].max_p_kw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
+                ((net[element_type].min_p_mw < plc_el_p.p[plc_el_p.index.values[0]].min()) |
+                 (net[element_type].max_p_mw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
         if plc_el_q.shape[0]:
             q_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_q.element_type)) &
-                ((net[element_type].min_p_kw < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].max_p_kw > plc_el_q.p[plc_el_q.index.values[0]].max()))].index
+                ((net[element_type].min_p_mw < plc_el_q.p[plc_el_q.index.values[0]].min()) |
+                 (net[element_type].max_p_mw > plc_el_q.p[plc_el_q.index.values[0]].max()))].index
     else:  # element_type == 'dcline'
         if plc_el_p.shape[0]:
             p_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_p.element_type)) &
-                ((net[element_type].max_p_kw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
+                ((net[element_type].max_p_mw > plc_el_p.p[plc_el_p.index.values[0]].max()))].index
         if plc_el_q.shape[0]:
             q_idx = net[element_type].loc[
                 (net[element_type].index.isin(plc_el_q.element_type)) &
-                ((net[element_type].min_q_to_kvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].min_q_from_kvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
-                 (net[element_type].max_q_to_kvar > plc_el_q.p[plc_el_q.index.values[0]].max()) |
-                 (net[element_type].max_q_from_kvar > plc_el_q.p[plc_el_q.index.values[0]].max()))
+                ((net[element_type].min_q_to_mvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
+                 (net[element_type].min_q_from_mvar < plc_el_q.p[plc_el_q.index.values[0]].min()) |
+                 (net[element_type].max_q_to_mvar > plc_el_q.p[plc_el_q.index.values[0]].max()) |
+                 (net[element_type].max_q_from_mvar > plc_el_q.p[plc_el_q.index.values[0]].max()))
                 ].index
     if len(p_idx):
         logger.warning("At" + element_type + str(p_idx.values) +
-                       "the piecewise linear costs do not cover full active power range. " +
-                       "In OPF the costs will be extrapolated.")
+                    "the piecewise linear costs do not cover full active power range. " +
+                    "In OPF the costs will be extrapolated.")
     if len(q_idx):
         logger.warning("At" + element_type + str(q_idx.values) +
-                       "the piecewise linear costs do not cover full reactive power range." +
-                       "In OPF the costs will be extrapolated.")
+                    "the piecewise linear costs do not cover full reactive power range." +
+                    "In OPF the costs will be extrapolated.")
 
 
 def check_opf_data(net):  # pragma: no cover
@@ -107,6 +107,7 @@ def check_opf_data(net):  # pragma: no cover
     _check_necessary_opf_parameters(net, logger)
 
     # --- Determine duplicated cost data
+    raise NotImplementedError
     all_costs = net.piecewise_linear_cost[['type', 'element', 'element_type']].append(
         net.polynomial_cost[['type', 'element', 'element_type']]).reset_index(drop=True)
     duplicates = all_costs.loc[all_costs.duplicated()]
@@ -208,7 +209,7 @@ def opf_task(net):  # pragma: no cover
     variable_names = ['Ext_Grid', 'Gen', 'SGen', 'Load']
     variable_long_names = ['External Grid', 'Generator', 'Static Generator', 'Load']
     for j, variable in enumerate(variables):
-        constr_col = pd.Series(['min_p_kw', 'max_p_kw', 'min_q_kvar', 'max_q_kvar'])
+        constr_col = pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar'])
         constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
         constr = net[variable][constr_col_exist]
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
@@ -218,19 +219,19 @@ def opf_task(net):  # pragma: no cover
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
             for i in constr_col[~constr_col.isin(net[variable].columns)]:
                 constr[i] = np.nan
-            if (constr.min_p_kw >= constr.max_p_kw).any():
-                logger.warning("The value of min_p_kw must be less than max_p_kw for all " +
-                               variable_names[j] + ". " + "Please observe the pandapower " +
-                               "signing system.")
-            if (constr.min_q_kvar >= constr.max_q_kvar).any():
-                logger.warning("The value of min_q_kvar must be less than max_q_kvar for all " +
-                               variable_names[j] + ". Please observe the pandapower signing system.")
+            if (constr.min_p_mw >= constr.max_p_mw).any():
+                logger.warning("The value of min_p_mw must be less than max_p_mw for all " +
+                            variable_names[j] + ". " + "Please observe the pandapower " +
+                            "signing system.")
+            if (constr.min_q_mvar >= constr.max_q_mvar).any():
+                logger.warning("The value of min_q_mvar must be less than max_q_mvar for all " +
+                            variable_names[j] + ". Please observe the pandapower signing system.")
             if constr.duplicated()[1:].all():  # all with the same constraints
                 to_log += '\n' + "    at all " + variable_names[j] + \
-                          " [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is " + \
+                          " [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is " + \
                           "[%s, %s, %s, %s]" % (
-                              constr.min_p_kw.values[0], constr.max_p_kw.values[0],
-                              constr.min_q_kvar.values[0], constr.max_q_kvar.values[0])
+                              constr.min_p_mw.values[0], constr.max_p_mw.values[0],
+                              constr.min_q_mvar.values[0], constr.max_q_mvar.values[0])
             else:  # different constraints exist
                 unique_rows = ~constr.duplicated()
                 duplicated_rows = constr.duplicated()
@@ -241,12 +242,12 @@ def opf_task(net):  # pragma: no cover
                             same_data.append(i2)
                     to_log += '\n' + '    at ' + variable_names[j] + ' ' + \
                               ', '.join(map(str, same_data)) + \
-                              ' [min_p_kw, max_p_kw, min_q_kvar, max_q_kvar] is ' + \
-                              '[%s, %s, %s, %s]' % (constr.min_p_kw[i], constr.max_p_kw[i],
-                                                    constr.min_q_kvar[i], constr.max_q_kvar[i])
+                              ' [min_p_mw, max_p_mw, min_q_mvar, max_q_mvar] is ' + \
+                              '[%s, %s, %s, %s]' % (constr.min_p_mw[i], constr.max_p_mw[i],
+                                                    constr.min_q_mvar[i], constr.max_q_mvar[i])
     # --- DC Line constraints
-    constr_col = pd.Series(['max_p_kw', 'min_q_from_kvar', 'max_q_from_kvar', 'min_q_to_kvar',
-                            'max_q_to_kvar'])
+    constr_col = pd.Series(['max_p_mw', 'min_q_from_mvar', 'max_q_from_mvar', 'min_q_to_mvar',
+                            'max_q_to_mvar'])
     constr_col_exist = constr_col[constr_col.isin(net['dcline'].columns)]
     constr = net['dcline'][constr_col_exist].dropna(how='all')
     if (constr.shape[1] > 0) & (constr.shape[0] > 0):
@@ -254,18 +255,18 @@ def opf_task(net):  # pragma: no cover
         to_log += '\n' + "  DC Line Constraints"
         for i in constr_col[~constr_col.isin(net['dcline'].columns)]:
             constr[i] = np.nan
-        if (constr.min_q_from_kvar >= constr.max_q_from_kvar).any():
-            logger.warning("The value of min_q_from_kvar must be less than max_q_from_kvar for " +
+        if (constr.min_q_from_mvar >= constr.max_q_from_mvar).any():
+            logger.warning("The value of min_q_from_mvar must be less than max_q_from_mvar for " +
                            "all DC Line. Please observe the pandapower signing system.")
-        if (constr.min_q_to_kvar >= constr.max_q_to_kvar).any():
-            logger.warning("The value of min_q_to_kvar must be less than min_q_to_kvar for " +
+        if (constr.min_q_to_mvar >= constr.max_q_to_mvar).any():
+            logger.warning("The value of min_q_to_mvar must be less than min_q_to_mvar for " +
                            "all DC Line. Please observe the pandapower signing system.")
         if constr.duplicated()[1:].all():  # all with the same constraints
-            to_log += '\n' + "    at all DC Line [max_p_kw, min_q_from_kvar, max_q_from_kvar, " + \
-                      "min_q_to_kvar, max_q_to_kvar] is [%s, %s, %s, %s, %s]" % \
-                      (constr.max_p_kw.values[0], constr.min_q_from_kvar.values[0],
-                       constr.max_q_from_kvar.values[0], constr.min_q_to_kvar.values[0],
-                       constr.max_q_to_kvar.values[0])
+            to_log += '\n' + "    at all DC Line [max_p_mw, min_q_from_mvar, max_q_from_mvar, " + \
+                      "min_q_to_mvar, max_q_to_mvar] is [%s, %s, %s, %s, %s]" % \
+                      (constr.max_p_mw.values[0], constr.min_q_from_mvar.values[0],
+                       constr.max_q_from_mvar.values[0], constr.min_q_to_mvar.values[0],
+                       constr.max_q_to_mvar.values[0])
         else:  # different constraints exist
             unique_rows = ~constr.duplicated()
             duplicated_rows = constr.duplicated()
@@ -275,11 +276,11 @@ def opf_task(net):  # pragma: no cover
                     if (constr.iloc[i] == constr.iloc[i2]).all():
                         same_data.append(i2)
                 to_log += '\n' + '    at DC Line ' + ', '.join(map(str, same_data)) + \
-                          ' [max_p_kw, min_q_from_kvar, max_q_from_kvar, min_q_to_kvar, ' + \
-                          'max_q_to_kvar] is [%s, %s, %s, %s, %s]' % (
-                              constr.max_p_kw.values[0], constr.min_q_from_kvar.values[0],
-                              constr.max_q_from_kvar.values[0],
-                              constr.min_q_to_kvar.values[0], constr.max_q_to_kvar.values[0])
+                          ' [max_p_mw, min_q_from_mvar, max_q_from_mvar, min_q_to_mvar, ' + \
+                          'max_q_to_mvar] is [%s, %s, %s, %s, %s]' % (
+                              constr.max_p_mw.values[0], constr.min_q_from_mvar.values[0],
+                              constr.max_q_from_mvar.values[0],
+                              constr.min_q_to_mvar.values[0], constr.max_q_to_mvar.values[0])
     # --- Voltage constraints
     if pd.Series(['min_vm_pu', 'max_vm_pu']).isin(net.bus.columns).any():
         c_bus = net.bus[['min_vm_pu', 'max_vm_pu']].dropna(how='all')
@@ -436,7 +437,6 @@ def dataframes_equal(x_df, y_df, tol=1.e-14, ignore_index_order=True):
                                           atol=tol, equal_nan=True)
         else:
             numerical_equal = True
-
         # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
         rest_equal = x_df.select_dtypes(exclude=[np.number]).equals(
             y_df.select_dtypes(exclude=[np.number]))
@@ -451,7 +451,8 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    _pre_release_changes(net)
+    if "version" not in net:
+        _pre_release_changes(net)
     if net.name is None:
         net.name = ""
     if "sn_kva" not in net:
@@ -462,27 +463,42 @@ def convert_format(net):
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
+
+    # "tap_phase_shifter" is now required for the calculation
+    if "tap_phase_shifter" not in net.trafo and "tp_phase_shifter"not in net.trafo:
+        net.trafo["tap_phase_shifter"] = False
+
     # unsymmetric impedance
     if "r_pu" in net.impedance:
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+    for element in ["trafo", "line"]:
+        if "df" not in net[element]:
+            net[element]["df"] = 1.0
+
     # initialize measurement dataframe
-    if "measurement" in net and "element_type" not in net.measurement:
+    if "measurement" in net and "type" in net.measurement:
         if net.measurement.empty:
             del net["measurement"]
         else:
-            logger.warning("The measurement structure seems outdated. Please adjust it "
-                           "according to the documentation.")
+            net.measurement["side"] = None
+            bus_measurements = net.measurement.element_type == "bus"
+            net.measurement.loc[bus_measurements, "element"] = net.measurement.loc[bus_measurements, "bus"].values
+            net.measurement.loc[~bus_measurements, "side"] = net.measurement.loc[~bus_measurements, "bus"].values
+            net.measurement.rename(columns={'type': 'measurement_type'}, inplace=True)
+            net.measurement.drop(["bus"], axis=1, inplace=True)
     if "measurement" in net and "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
     if "measurement" not in net:
         net["measurement"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                             ("type", np.dtype(object)),
+                                                             ("measurement_type", np.dtype(object)),
                                                              ("element_type", np.dtype(object)),
-                                                             ("value", "f8"),
-                                                             ("std_dev", "f8"),
-                                                             ("bus", "u4"),
-                                                             ("element", np.dtype(object))]))
+                                                             ("element", "uint32"),
+                                                             ("value", "float64"),
+                                                             ("std_dev", "float64"),
+                                                             ("side", np.dtype(object))]))
+
+    # initialize dcline dataframe in net if not exist
     if "dcline" not in net:
         net["dcline"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
                                                         ("from_bus", "u4"),
@@ -499,6 +515,20 @@ def convert_format(net):
                                                         ("max_q_to_kvar", "f8"),
                                                         ("cost_per_kw", 'f8'),
                                                         ("in_service", 'bool')]))
+    # initialize storage dataframe in net if not exist
+    if "storage" not in net:
+        net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+                                                         ("bus", "i8"),
+                                                         ("p_kw", "f8"),
+                                                         ("q_kvar", "f8"),
+                                                         ("sn_kva", "f8"),
+                                                         ("soc_percent", "f8"),
+                                                         ("min_e_kwh", "f8"),
+                                                         ("max_e_kwh", "f8"),
+                                                         ("scaling", "f8"),
+                                                         ("in_service", 'bool'),
+                                                         ("type", np.dtype(object))]))
+
     if "_empty_res_dcline" not in net:
         net["_empty_res_dcline"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
                                                                    ("q_from_kvar", "f8"),
@@ -512,59 +542,95 @@ def convert_format(net):
     if "_empty_res_storage" not in net:
         net["_empty_res_storage"] = pd.DataFrame(np.zeros(0, dtype=[("p_kw", "f8"),
                                                                     ("q_kvar", "f8")]))
+    if not "vm_pu" in net._empty_res_gen:
+        net["_empty_res_gen"] = pd.DataFrame(np.zeros(0, dtype= [("p_mw", "f8"),
+                                                                 ("q_mvar", "f8"),
+                                                                 ("va_degree", "f8"),
+                                                                 ("vm_pu", "f8")]))
 
-    if len(net["_empty_res_line"]) < 10:
-        net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype=[("p_from_kw", "f8"),
-                                                                 ("q_from_kvar", "f8"),
-                                                                 ("p_to_kw", "f8"),
-                                                                 ("q_to_kvar", "f8"),
-                                                                 ("pl_kw", "f8"),
-                                                                 ("ql_kvar", "f8"),
-                                                                 ("i_from_ka", "f8"),
-                                                                 ("i_to_ka", "f8"),
-                                                                 ("i_ka", "f8"),
-                                                                 ("loading_percent", "f8")]))
-    if "storage" not in net:
-        net["storage"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
-                                                         ("bus", "i8"),
-                                                         ("p_kw", "f8"),
-                                                         ("q_kvar", "f8"),
-                                                         ("sn_kva", "f8"),
-                                                         ("soc_percent", "f8"),
-                                                         ("min_e_kwh", "f8"),
-                                                         ("max_e_kwh", "f8"),
-                                                         ("scaling", "f8"),
-                                                         ("in_service", 'bool'),
-                                                         ("type", np.dtype(object))]))
-    if "version" not in net or net.version < 1.1:
-        if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
-            if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
-                pmin = copy.copy(net.gen.min_p_kw.values)
-                pmax = copy.copy(net.gen.max_p_kw.values)
-                net.gen["min_p_kw"] = pmax
-                net.gen["max_p_kw"] = pmin
-    if "piecewise_linear_cost" not in net:
-        net["piecewise_linear_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
-                                                                       ("element",
-                                                                        np.dtype(object)),
-                                                                       ("element_type",
-                                                                        np.dtype(object)),
-                                                                       ("p", np.dtype(object)),
-                                                                       ("f", np.dtype(object))]))
+    if not "vm_from_pu" in net._empty_res_line:
+        net["_empty_res_line"] = pd.DataFrame(np.zeros(0, dtype= [("p_from_mw", "f8"),
+                                                                  ("q_from_mvar", "f8"),
+                                                                  ("p_to_mw", "f8"),
+                                                                  ("q_to_mvar", "f8"),
+                                                                  ("pl_mw", "f8"),
+                                                                  ("ql_mvar", "f8"),
+                                                                  ("i_from_ka", "f8"),
+                                                                  ("i_to_ka", "f8"),
+                                                                  ("i_ka", "f8"),
+                                                                  ("vm_from_pu", "f8"),
+                                                                  ("va_from_degree", "f8"),
+                                                                  ("vm_to_pu", "f8"),
+                                                                  ("va_to_degree", "f8"),
+                                                                  ("loading_percent", "f8")]))
+    if not "vm_hv_pu" in net._empty_res_trafo:
+        net["_empty_res_trafo"] = pd.DataFrame(np.zeros(0, dtype= [("p_hv_mw", "f8"),
+                                                                   ("q_hv_mvar", "f8"),
+                                                                   ("p_lv_mw", "f8"),
+                                                                   ("q_lv_mvar", "f8"),
+                                                                   ("pl_mw", "f8"),
+                                                                   ("ql_mvar", "f8"),
+                                                                   ("i_hv_ka", "f8"),
+                                                                   ("i_lv_ka", "f8"),
+                                                                   ("vm_hv_pu", "f8"),
+                                                                   ("va_hv_degree", "f8"),
+                                                                   ("vm_lv_pu", "f8"),
+                                                                   ("va_lv_degree", "f8"),
+                                                                   ("loading_percent", "f8")]))
+    if not "vm_hv_pu" in net._empty_res_trafo3w:
+        net["_empty_res_trafo3w"] = pd.DataFrame(np.zeros(0, dtype=   [("p_hv_mw", "f8"),
+                                                                       ("q_hv_mvar", "f8"),
+                                                                       ("p_mv_mw", "f8"),
+                                                                       ("q_mv_mvar", "f8"),
+                                                                       ("p_lv_mw", "f8"),
+                                                                       ("q_lv_mvar", "f8"),
+                                                                       ("pl_mw", "f8"),
+                                                                       ("ql_mvar", "f8"),
+                                                                       ("i_hv_ka", "f8"),
+                                                                       ("i_mv_ka", "f8"),
+                                                                       ("i_lv_ka", "f8"),
+                                                                       ("vm_hv_pu", "f8"),
+                                                                       ("va_hv_degree", "f8"),
+                                                                       ("vm_mv_pu", "f8"),
+                                                                       ("va_mv_degree", "f8"),
+                                                                       ("vm_lv_pu", "f8"),
+                                                                       ("va_lv_degree", "f8"),
+                                                                       ("loading_percent", "f8")]))
+    # update required values for OPF
+    if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
+        if np.any(net.gen.min_p_kw > net.gen.max_p_kw):
+            pmin = copy.copy(net.gen.min_p_kw.values)
+            pmax = copy.copy(net.gen.max_p_kw.values)
+            net.gen["min_p_kw"] = pmax
+            net.gen["max_p_kw"] = pmin
+    if "pwl_cost" not in net:
+        net["pwl_cost"] = pd.DataFrame(np.zeros(0, dtype=
+                                                         [("power_type", np.dtype(object)),
+                                                          ("element", np.dtype(object)),
+                                                          ("et", np.dtype(object)),
+                                                          ("points", np.dtype(object))
+                                                          ]))
 
-    if "polynomial_cost" not in net:
-        net["polynomial_cost"] = pd.DataFrame(np.zeros(0, dtype=[("type", np.dtype(object)),
-                                                                 ("element", np.dtype(object)),
-                                                                 ("element_type", np.dtype(object)),
-                                                                 ("c", np.dtype(object))]))
-
+    if "poly_cost" not in net:
+        net["poly_cost"] = pd.DataFrame(np.zeros(0, dtype=
+                                                   [("element", np.dtype(object)),
+                                                    ("et", np.dtype(object)),
+                                                      ("cp0_eur", np.dtype("f8")),
+                                                      ("cp1_eur_per_mw", np.dtype("f8")),
+                                                      ("cp2_eur_per_mw2", np.dtype("f8")),
+                                                      ("cq0_eur", np.dtype("f8")),
+                                                      ("cq1_eur_per_kvar", np.dtype("f8")),
+                                                      ("cq2_eur_per_kvar2", np.dtype("f8"))
+                                                      ]))
+        
+    if "coords" not in net.bus_geodata:
+        net.bus_geodata["coords"] = None
+                                                      
     if "cost_per_kw" in net.gen:
-        if "piecewise_linear_cost" not in net:
+        if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    p = net.gen.min_p_kw.at[index]
-                    create_piecewise_linear_cost(net, index, "gen",
-                                                 np.array([[p, cost * p], [0, 0]]))
+                    create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost*1e3)
 
     if "cost_per_kw" in net.sgen:
         if "min_p_kw" not in net.sgen:
@@ -572,68 +638,45 @@ def convert_format(net):
         if "max_p_kw" not in net.sgen:
             net.sgen["max_p_kw"] = 0
 
-        if "piecewise_linear_cost" not in net:
+        if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    p = net.sgen.min_p_kw.at[index]
-                    create_piecewise_linear_cost(net, index, "sgen",
-                                                 np.array([[p, cost * p], [0, 0]]))
-
-    if "coords" not in net.bus_geodata:
-        net.bus_geodata["coords"] = None
+                    create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
 
     if "cost_per_kw" in net.ext_grid:
         if "min_p_kw" not in net.ext_grid:
             net.ext_grid["min_p_kw"] = -1e9
         if "max_p_kw" not in net.ext_grid:
             net.ext_grid["max_p_kw"] = 0
-        if "piecewise_linear_cost" not in net:
+        if not "piecewise_linear_cost" in net:
             for index, cost in net.ext_grid.cost_per_kw.iteritems():
                 if not np.isnan(cost):
-                    p = net.ext_grid.min_p_kw.at[index]
-                    create_piecewise_linear_cost(net, index, "ext_grid",
-                                                 np.array([[p, cost * p], [0, 0]]))
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
 
     if "cost_per_kvar" in net.gen:
-        if "piecewise_linear_cost" not in net:
+        if not "piecewise_linear_cost" in net:
             for index, cost in net.gen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    qmin = net.gen.min_q_kvar.at[index]
-                    qmax = net.gen.max_q_kvar.at[index]
-                    create_piecewise_linear_cost(net, index, "gen",
-                                                 np.array([[qmin, cost * qmin], [0, 0],
-                                                           [qmax, cost * qmax]]), type="q")
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
     if "cost_per_kvar" in net.sgen:
-        if "piecewise_linear_cost" not in net:
+        if not "piecewise_linear_cost" in net:
             for index, cost in net.sgen.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    qmin = net.sgen.min_q_kvar.at[index]
-                    qmax = net.sgen.max_q_kvar.at[index]
-                    create_piecewise_linear_cost(net, index, "sgen",
-                                                 np.array([[qmin, cost * qmin], [0, 0],
-                                                           [qmax, cost * qmax]]), type="q")
+                    create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
     if "cost_per_kvar" in net.ext_grid:
-        if "piecewise_linear_cost" not in net:
+        if not "piecewise_linear_cost" in net:
             for index, cost in net.ext_grid.cost_per_kvar.iteritems():
                 if not np.isnan(cost):
-                    qmin = net.ext_grid.min_q_kvar.at[index]
-                    qmax = net.ext_grid.max_q_kvar.at[index]
-                    create_piecewise_linear_cost(net, index, "ext_grid",
-                                                 np.array([[qmin, cost * qmin], [0, 0],
-                                                           [qmax, cost * qmax]]), type="q")
+                    create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost*1e3)
 
-    if "tp_st_degree" not in net.trafo:
-        net.trafo["tp_st_degree"] = np.nan
-    if "tp_st_degree" not in net.trafo3w:
-        net.trafo3w["tp_st_degree"] = np.nan
-    if "tap_at_star_point" not in net.trafo3w:
-        net.trafo3w["tap_at_star_point"] = False
     if "_pd2ppc_lookups" not in net:
         net._pd2ppc_lookups = {"bus": None,
                                "ext_grid": None,
-                               "gen": None}
+                               "gen": None,
+                               "branch": None,
+                               "aux": None}
     if "_is_elements" not in net and "__is_elements" in net:
         net["_is_elements"] = copy.deepcopy(net["__is_elements"])
         net.pop("__is_elements", None)
@@ -658,17 +701,15 @@ def convert_format(net):
         net.shunt["step"] = 1
     if "max_step" not in net["shunt"]:
         net.shunt["max_step"] = 1
-    if "_pd2ppc_lookups" not in net:
-        net["_pd2ppc_lookups"] = {"bus": None,
-                                  "gen": None,
-                                  "branch": None}
-    net.version = float(__version__[:3])
     if "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
 
-    if "time_resolution" not in net:
-        # for storages
-        time_resolution = 1.0
+    if "current_source" not in net.sgen:
+        net.sgen["current_source"] = net.sgen["type"].apply(func=lambda x: False if x == "motor" else True)
+
+#    if "time_resolution" not in net:
+#        # for storages
+#        net.time_resolution = 1.0
 
     new_net = create_empty_network()
     for key, item in net.items():
@@ -686,14 +727,111 @@ def convert_format(net):
                     else:
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
                                                              errors="ignore")
-    if "g_us_per_km" not in net.line:
+    if not "g_us_per_km" in net.line:
         net.line["g_us_per_km"] = 0.
+    if not "slack" in net.gen:
+        net.gen["slack"] = False
+
+    if net.version < 2:
+        net.sgen.p_kw *= -1
+        net.sgen.q_kvar *= -1
+        net.gen.p_kw *= -1
+        for element in ["gen", "sgen", "ext_grid"]:
+            for suffix in ["p_kw", "q_kvar"]:
+                constraints = {}
+                if "min_%s"%suffix in net[element]:
+                    constraints["max_%s"%suffix] = net[element]["min_%s"%suffix] * -1
+                    del net[element]["min_%s"%suffix]
+                if "max_%s"%suffix in net[element]:
+                    constraints["min_%s"%suffix] = net[element]["max_%s"%suffix] * -1
+                    del net[element]["max_%s"%suffix]
+                for column, values in constraints.items():
+                    net[element][column] = values
+        if "polynomial_cost" in net:
+            for cost in net.polynomial_cost.itertuples():
+                values = cost.c[0]
+                if len(values) == 2:
+                    cp0 = values[1]
+                    cp1 = values[0]
+                    cp2 = 0
+                elif len(values) == 3:
+                    cp0 = values[2]
+                    cp1 = values[1]
+                    cp2 = values[0]
+                create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
+                                 cp1_eur_per_mw=cp1*1e3, cp2_eur_per_mw2=cp2*1e6)
+            del net.polynomial_cost
+        if "piecewise_linear_cost" in net:
+            if len(net.piecewise_linear_cost) > 0:
+                raise NotImplementedError
+            del net.piecewise_linear_cost
+
+        pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
+        net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
+
+    _convert_to_mw(net)
+    _revert_pfe_mw(net)
+    if "sn_kva" in net.keys():
+        net.sn_mva = net.sn_kva*1e-3
+        del net.sn_kva
+    net.version = float(__version__[:3])
+
+    _update_trafo_parameter_names(net)
     return net
+
+def _update_trafo_parameter_names(net):
+    for element in ["trafo", "trafo3w"]:
+        replace_cols = {col: _update_column(col) for col in net[element].columns if
+                col.startswith("tp") or col.startswith("vsc")}
+        net[element].rename(columns=replace_cols, inplace=True)
+
+def _update_column(column):
+    column = column.replace("tp_", "tap_")
+    column = column.replace("_st_", "_step_")
+    column = column.replace("_mid", "_neutral")
+    column = column.replace("vsc", "vk")
+    return column
+
+def _revert_pfe_mw(net):
+    for element in ["trafo", "trafo3w"]:
+        if "pfe_mw" in net[element]:
+            net[element]["pfe_kw"] =  net[element]["pfe_mw"]*1e3
+            del net[element]["pfe_mw"]
+            for std_type, parameters in net.std_types[element].items():
+                if "pfe_mw" in parameters:
+                    parameters["pfe_kw"] = parameters.pop("pfe_mw")*1e3
+
+def _convert_to_mw(net):
+    replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
+    for element, tab in net.items():
+        if isinstance(tab, pd.DataFrame):
+            for old, new in replace:
+                diff = {column: column.replace(old, new) for column in tab.columns if old in column
+                        and column != "pfe_kw"}
+                tab.rename(columns=diff, inplace=True)
+                if len(tab) == 0:
+                    continue
+                for old, new in diff.items():
+                    tab[new] *= 1e-3
+
+    for element, std_types in net.std_types.items():
+        for std_type, parameters in std_types.items():
+            for parameter, value in parameters.items():
+                for old, new in replace:
+                    if old in parameter and parameter != "pfe_kw":
+                        parameters[parameter.replace(old, new)] = value*1e-3
+                        del parameters[parameter]
 
 
 def _pre_release_changes(net):
     from pandapower.std_types import add_basic_std_types, create_std_type, parameter_from_std_type
     from pandapower.powerflow import reset_results
+    if "tp_st_degree" not in net.trafo:
+        net.trafo["tp_st_degree"] = np.nan
+    if "tp_st_degree" not in net.trafo3w:
+        net.trafo3w["tp_st_degree"] = np.nan
+    if "tp_at_star_point" not in net.trafo3w:
+        net.trafo3w["tp_at_star_point"] = False
     if "std_types" not in net:
         net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
         add_basic_std_types(net)
@@ -754,17 +892,17 @@ def _pre_release_changes(net):
                                                 "un1_kv": "vn_hv_kv", "un2_kv": "vn_lv_kv",
                                                 'vfe_kw': 'pfe_kw', "unh_kv": "vn_hv_kv",
                                                 "unl_kv": "vn_lv_kv", "type": "std_type",
-                                                'vfe_kw': 'pfe_kw', "uk_percent": "vsc_percent",
-                                                "ur_percent": "vscr_percent",
+                                                'vfe_kw': 'pfe_kw', "uk_percent": "vk_percent",
+                                                "ur_percent": "vkr_percent",
                                                 "vnh_kv": "vn_hv_kv", "vnl_kv": "vn_lv_kv"})
     net["trafo3w"] = net["trafo3w"].rename(columns={"unh_kv": "vn_hv_kv", "unm_kv": "vn_mv_kv",
                                                     "unl_kv": "vn_lv_kv",
-                                                    "ukh_percent": "vsc_hv_percent",
-                                                    "ukm_percent": "vsc_mv_percent",
-                                                    "ukl_percent": "vsc_lv_percent",
-                                                    "urh_percent": "vscr_hv_percent",
-                                                    "urm_percent": "vscr_mv_percent",
-                                                    "url_percent": "vscr_lv_percent",
+                                                    "ukh_percent": "vk_hv_percent",
+                                                    "ukm_percent": "vk_mv_percent",
+                                                    "ukl_percent": "vk_lv_percent",
+                                                    "urh_percent": "vkr_hv_percent",
+                                                    "urm_percent": "vkr_mv_percent",
+                                                    "url_percent": "vkr_lv_percent",
                                                     'vfe_kw': 'pfe_kw',
                                                     "vnh_kv": "vn_hv_kv", "vnm_kv": "vn_mv_kv",
                                                     "vnl_kv": "vn_lv_kv", "snh_kva": "sn_hv_kva",
@@ -859,20 +997,20 @@ def _pre_release_changes(net):
         reset_results(net)
 
     for attribute in ['tp_st_percent', 'tp_pos', 'tp_mid', 'tp_min', 'tp_max']:
-        if net.trafo[attribute].dtype == 'O':
-            net.trafo[attribute] = pd.to_numeric(net.trafo[attribute])
+        if attribute in net.trafo:
+            if net.trafo[attribute].dtype == 'O':
+                net.trafo[attribute] = pd.to_numeric(net.trafo[attribute])
     net["gen"] = net["gen"].rename(columns={"u_pu": "vm_pu"})
     for element, old, new in [("trafo", "unh_kv", "vn_hv_kv"),
                               ("trafo", "unl_kv", "vn_lv_kv"),
-                              ("trafo", "uk_percent", "vsc_percent"),
-                              ("trafo", "ur_percent", "vscr_percent"),
+                              ("trafo", "uk_percent", "vk_percent"),
+                              ("trafo", "ur_percent", "vkr_percent"),
                               ("trafo3w", "unh_kv", "vn_hv_kv"),
                               ("trafo3w", "unm_kv", "vn_mv_kv"),
                               ("trafo3w", "unl_kv", "vn_lv_kv")]:
         for std_type, parameters in net.std_types[element].items():
             if old in parameters:
                 net.std_types[element][std_type][new] = net.std_types[element][std_type].pop(old)
-    net.version = 1.0
     if "f_hz" not in net:
         net["f_hz"] = 50.
 
@@ -885,7 +1023,7 @@ def _pre_release_changes(net):
     if "in_service" not in net["ward"]:
         net.ward["in_service"] = True
     net.switch.closed = net.switch.closed.astype(bool)
-
+    net.version = 1.0
 
 def compare_arrays(x, y):
     """ Returns an array of bools whether array x is equal to array y. Strings are allowed in x
@@ -924,8 +1062,8 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
     elements = elements if elements is not None else pp_elements(bus=False)
-    elements_to_replace = elements if replace else [
-        el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]
+    elements_to_replace = elements if replace else [el for el in elements if column not in 
+                                                  net[el].columns or net[el][column].isnull().all()]
     # bus elements
     for element, bus_type in element_bus_tuples(bus_elements=True, branch_elements=False):
         if element in elements_to_replace:
@@ -964,8 +1102,6 @@ def create_continuous_bus_index(net, start=0):
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
-	
-    net.bus.sort_index(inplace=True)
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -979,9 +1115,13 @@ def create_continuous_bus_index(net, start=0):
     net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
     bb_switches = net.switch[net.switch.et == "b"]
     net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+    bus_meas = net.measurement.element_type == "bus"
+    net.measurement.loc[bus_meas, "element"] = get_indices(net.measurement.loc[bus_meas, "element"], bus_lookup)
+    side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
+    net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"], bus_lookup)
     return net
 
-
+    
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
     Creating a continuous index for all the elements, starting at zero and replaces all references 
@@ -989,7 +1129,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     
     INPUT:
       **net** - pandapower network with unodered indices 
-
+      
     OPTIONAL:
       **start** - index begins with "start"  
         
@@ -997,6 +1137,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
                               power flow will be selected. Additionally elements,
                               like line_geodata and bus_geodata, also can be here 
                               considered. 
+                              
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
     
@@ -1034,8 +1175,8 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     net.switch.loc[trafo_switches.index, "element"] = get_indices(trafo_switches.element, trafo_lookup)
        
     return net
-
-
+    
+    
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
     """
     Sets scaling of loads and/or sgens according to a dictionary
@@ -1086,8 +1227,8 @@ def close_switch_at_line_with_two_open_switches(net):
 
 def drop_inactive_elements(net, respect_switches=True):
     """
-    Drops any elements not in service AND any elements connected to inactive buses.
-    'respect_switches' to set whether switches should be considered to determine unsupplied buses.
+    Drops any elements not in service AND any elements connected to inactive
+    buses.
     """
     set_isolated_areas_out_of_service(net, respect_switches=respect_switches)
     drop_out_of_service_elements(net)
@@ -1105,9 +1246,9 @@ def drop_out_of_service_elements(net):
     drop_trafos(net, inactive_trafos3w, table='trafo3w')
 
     do_not_delete = set(net.line.from_bus.values) | set(net.line.to_bus.values) | \
-        set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
-        set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
-        set(net.trafo3w.lv_bus.values)
+                    set(net.trafo.hv_bus.values) | set(net.trafo.lv_bus.values) | \
+                    set(net.trafo3w.hv_bus.values) | set(net.trafo3w.mv_bus.values) | \
+                    set(net.trafo3w.lv_bus.values)
 
     # removes inactive buses safely
     inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
@@ -1135,7 +1276,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     ebts = set()
     if bus_elements:
         ebts.update([("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
-                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"), ("measurement", "bus"),
+                     ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
                      ("storage", "bus")])
     if branch_elements:
         ebts.update([("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
@@ -1237,11 +1378,13 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     considered. """
     buses = buses if buses is not None else net.bus.index
     # only analyze measurements at given buses
-    analyzed_meas = net.measurement.loc[net.measurement.bus.isin(buses).fillna("nan")]
-    if len(analyzed_meas) > 0:
-        # drop duplicates
+    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+    analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
+    # drop duplicates
+    if not analyzed_meas.duplicated(subset=[
+        "measurement_type", "element_type", "side", "element"], keep=keep).empty:
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
-            "type", "element_type", "bus", "element"], keep=keep)]
+            "measurement_type", "element_type", "side", "element"], keep=keep)]
         net.measurement.drop(idx_to_drop, inplace=True)
 
 
@@ -1261,6 +1404,10 @@ def fuse_buses(net, b1, b2, drop=True):
     net["switch"].loc[i, "element"] = b1
     net["switch"].drop(net["switch"][(net["switch"]["bus"] == net["switch"]["element"]) &
                                      (net["switch"]["et"] == "b")].index, inplace=True)
+    bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
+    bus_meas = bus_meas.loc[bus_meas.element.isin(b2)].index
+    net.measurement.loc[bus_meas, "element"] = b1
+    net.measurement.loc[net.measurement.side.isin(b2), "side"] = b1
     if drop:
         # drop_elements=False because the elements must be connected to new buses now
         drop_buses(net, b2, drop_elements=False)
@@ -1351,6 +1498,14 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                              (net.trafo3w.lv_bus.isin(buses))]
     p2.impedance = net.impedance[(net.impedance.from_bus.isin(buses)) &
                                  (net.impedance.to_bus.isin(buses))]
+    p2.measurement = net.measurement[((net.measurement.element_type == "bus") &
+                                      (net.measurement.element.isin(buses))) |
+                                     ((net.measurement.element_type == "line") &
+                                      (net.measurement.element.isin(p2.line.index))) |
+                                     ((net.measurement.element_type == "trafo") &
+                                      (net.measurement.element.isin(p2.trafo.index))) |
+                                     ((net.measurement.element_type == "trafo3w") &
+                                      (net.measurement.element.isin(p2.trafo3w.index)))]
 
     if include_results:
         for table in net.keys():
@@ -1528,7 +1683,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
     elif et == 'trafo':
         bc = ["hv_bus", "lv_bus"]
     elif et == "switch" and list(net[et].loc[element_id, ["et"]].values) == [
-            'b']:  # Raises error if switch is not a bus-bus switch
+        'b']:  # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
         raise Exception("unknown element type")
@@ -1766,7 +1921,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
         switch_selection = np.full(len(net.switch), True, dtype=bool)
     else:
         logger.warning("Unknown switch status \"%s\" selected! "
-                       "Selecting all switches by default." % status)
+                    "Selecting all switches by default." % status)
 
     cs = set()
     if 'b' in consider:
@@ -1784,6 +1939,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't'), status="all"):
     return cs
 
 
+
 def ensure_iterability(var, len_=None):
     """ This function ensures iterability of a variable (and optional length). """
     if hasattr(var, "__iter__") and not isinstance(var, str):
@@ -1794,6 +1950,47 @@ def ensure_iterability(var, len_=None):
         var = [var]*len_
     return var
 
+#def pq_from_cosphi(s, cosphi, qmode, pmode):
+#    """
+#    Calculates P/Q values from rated apparent power and cosine(phi) values.
+#       - s: rated apparent power
+#       - cosphi: cosine phi of the
+#       - qmode: "ind" for inductive or "cap" for capacitive behaviour
+#       - pmode: "load" for load or "gen" for generation
+#    As all other pandapower functions this function is based on the consumer viewpoint. For active
+#    power, that means that loads are positive and generation is negative. For reactive power,
+#    inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
+#    """
+#    s = np.array(ensure_iterability(s))
+#    cosphi = np.array(ensure_iterability(cosphi, len(s)))
+#    qmode = np.array(ensure_iterability(qmode, len(s)))
+#    pmode = np.array(ensure_iterability(pmode, len(s)))
+#
+#    # qmode consideration
+#    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
+#    if len(unknown_qmode):
+#        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
+#    qmode_is_ohm = qmode == "ohm"
+#    if any(cosphi[qmode_is_ohm] != 1):
+#        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
+#    qsign = np.ones(qmode.shape)
+#    qsign[qmode == "cap"] = -1
+#
+#    # pmode consideration
+#    unknown_pmode = set(pmode) - set(["load", "gen"])
+#    if len(unknown_pmode):
+#        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
+#    psign = np.ones(pmode.shape)
+#    psign[pmode == "gen"] = -1
+#
+#    # calculate p and q
+#    p = psign * s * cosphi
+#    q = qsign * np.sqrt(s ** 2 - p ** 2)
+#
+#    if len(p) > 1:
+#        return p, q
+#    else:
+#        return p[0], q[0]
 
 def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
@@ -1808,60 +2005,85 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     power, that means that loads are positive and generation is negative. For reactive power,
     inductive behaviour is modeled with positive values, capacitive behaviour with negative values.
     """
-    s = np.array(ensure_iterability(s))
-    cosphi = np.array(ensure_iterability(cosphi, len(s)))
-    qmode = np.array(ensure_iterability(qmode, len(s)))
-    pmode = np.array(ensure_iterability(pmode, len(s)))
-
-    # qmode consideration
-    unknown_qmode = set(qmode) - set(["ind", "cap", "ohm"])
-    if len(unknown_qmode):
-        raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
-    qmode_is_ohm = qmode == "ohm"
-    if any(cosphi[qmode_is_ohm] != 1):
-        raise ValueError("qmode cannot be 'ohm' if cosphi is not 1.")
-    qsign = np.ones(qmode.shape)
-    qsign[qmode == "cap"] = -1
-
-    # pmode consideration
-    unknown_pmode = set(pmode) - set(["load", "gen"])
-    if len(unknown_pmode):
-        raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
-    psign = np.ones(pmode.shape)
-    psign[pmode == "gen"] = -1
-
-    # calculate p and q
-    p = psign * s * cosphi
-    q = qsign * np.sqrt(s ** 2 - p ** 2)
-
-    if len(p) > 1:
-        return p, q
+    if hasattr(s, "__iter__"):
+        s = ensure_iterability(s)
+        cosphi = ensure_iterability(cosphi, len(s))
+        qmode = ensure_iterability(qmode, len(s))
+        pmode = ensure_iterability(pmode, len(s))
+        p, q = [], []
+        for s_, cosphi_, qmode_, pmode_ in zip(s, cosphi, qmode, pmode):
+            p_, q_ = _pq_from_cosphi(s_, cosphi_, qmode_, pmode_)
+            p.append(p_)
+            q.append(q_)
+        return np.array(p), np.array(q)
     else:
-        return p[0], q[0]
+        return _pq_from_cosphi(s, cosphi, qmode, pmode)
+
+
+def _pq_from_cosphi(s, cosphi, qmode, pmode):
+    if qmode == "ind":
+        qsign = 1 if pmode == "load" else -1
+    elif qmode == "cap":
+        qsign = -1 if pmode == "load" else 1
+    else:
+        raise ValueError("Unknown mode %s - specify 'ind' or 'cap'" % qmode)
+
+    p = s * cosphi
+    q = qsign * np.sqrt(s ** 2 - p ** 2)   
+    return p, q
+        
+#def cosphi_from_pq(p, q):
+#    """
+#    Analog to pq_from_cosphi, but other way around.
+#    In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
+#    """
+#    p = np.array(ensure_iterability(p))
+#    q = np.array(ensure_iterability(q, len(p)))
+#    if len(p) != len(q):
+#        raise ValueError("p and q must have the same length.")
+#    p_is_zero = np.array(p == 0)
+#    cosphi = np.empty(p.shape)
+#    if sum(p_is_zero):
+#        cosphi[p_is_zero] = np.nan
+#        logger.warning("A cosphi from p=0 is undefined.")
+#    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
+#    s = (p ** 2 + q ** 2) ** 0.5
+#    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
+#    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
+#    if len(p) > 1:
+#        return cosphi, s, qmode, pmode
+#    else:
+#        return cosphi[0], s[0], qmode[0], pmode[0]
 
 
 def cosphi_from_pq(p, q):
+    if hasattr(p, "__iter__"):
+        assert len(p) == len(q)
+        s, cosphi, qmode, pmode = [], [], [], []
+        for p_, q_ in zip(p, q):
+            cosphi_, s_, qmode_, pmode_ = _cosphi_from_pq(p_, q_)
+            s.append(s_)
+            cosphi.append(cosphi_)
+            qmode.append(qmode_)
+            pmode.append(pmode_)
+        return np.array(cosphi), np.array(s), np.array(qmode), np.array(pmode)
+    else:
+        return _cosphi_from_pq(p, q)
+    
+def _cosphi_from_pq(p, q):
     """
     Analog to pq_from_cosphi, but other way around.
     In consumer viewpoint (pandapower): cap=overexcited and ind=underexcited
     """
-    p = np.array(ensure_iterability(p))
-    q = np.array(ensure_iterability(q, len(p)))
-    if len(p) != len(q):
-        raise ValueError("p and q must have the same length.")
-    p_is_zero = np.array(p == 0)
-    cosphi = np.empty(p.shape)
-    if sum(p_is_zero):
-        cosphi[p_is_zero] = np.nan
+    if p == 0:
+        cosphi = np.nan
         logger.warning("A cosphi from p=0 is undefined.")
-    cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
-    s = (p ** 2 + q ** 2) ** 0.5
-    pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(int)]
-    qmode = np.array(["ohm", "ind", "cap"])[np.sign(q).astype(int)]
-    if len(p) > 1:
-        return cosphi, s, qmode, pmode
     else:
-        return cosphi[0], s[0], qmode[0], pmode[0]
+        cosphi = np.cos(np.arctan(q / p))
+    s = (p ** 2 + q ** 2) ** 0.5
+    pmode = ["undef", "load", "gen"][int(np.sign(p))]
+    qmode = ["ohm", "ind", "cap"][int(np.sign(q))]
+    return cosphi, s, qmode, pmode
 
 
 def create_replacement_switch_for_branch(net, element, idx):
@@ -1987,15 +2209,15 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, sn_as_ma
                          "parameters always pertain in both direction. only from_bus to " +
                          "to_bus parameters are considered.")
         vn = net.bus.vn_kv.at[imp.from_bus]
-        Zni = vn ** 2 / imp.sn_kva * 1e3
-        max_i_ka = imp.sn_kva / vn / np.sqrt(3) * 1e-3 if sn_as_max else np.nan
+        Zni = vn ** 2 / imp.sn_mva
+        max_i_ka = imp.sn_kva / vn / np.sqrt(3) if sn_as_max else np.nan
         create_line_from_parameters(net, imp.from_bus, imp.to_bus, 1, imp.rft_pu * Zni,
                                     imp.xft_pu * Zni, 0, max_i_ka, name=imp.name,
                                     in_service=imp.in_service)
     net.impedance.drop(index, inplace=True)
 
 
-def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=True):
+def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
     Creates impedances by given lines data, while the lines are dropped.
     INPUT:
@@ -2013,11 +2235,11 @@ def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=T
             be neglected.
     """
     index = index or net.line.index
-    sn_kva = sn_kva or net.sn_kva
-    sn_kva = sn_kva if sn_kva != "max_i_ka" else net.line.max_i_ka.loc[index]
-    sn_kva = sn_kva if hasattr(sn_kva, "__iter__") else [sn_kva] * len(index)
-    if len(sn_kva) != len(index):
-        raise ValueError("index and sn_kva must have the same length.")
+    sn_mva = sn_mva or net.sn_mva
+    sn_mva = sn_mva if sn_mva != "max_i_ka" else net.line.max_i_ka.loc[index]
+    sn_mva = sn_mva if hasattr(sn_mva, "__iter__") else [sn_mva] * len(index)
+    if len(sn_mva) != len(index):
+        raise ValueError("index and sn_mva must have the same length.")
     i = 0
     for idx, line_ in net.line.loc[index].iterrows():
         if line_.c_nf_per_km or line_.g_us_per_km:
@@ -2026,10 +2248,10 @@ def replace_line_by_impedance(net, index=None, sn_kva=None, only_valid_replace=T
             logger.error("Capacitance and dielectric conductance of line %i cannot be " % idx +
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
-        Zni = vn ** 2 / sn_kva[i] * 1e3
+        Zni = vn ** 2 / sn_mva[i]
         create_impedance(net, line_.from_bus, line_.to_bus,
                          line_.r_ohm_per_km * line_.length_km / Zni,
-                         line_.x_ohm_per_km * line_.length_km / Zni, sn_kva[i], name=line_.name,
+                         line_.x_ohm_per_km * line_.length_km / Zni, sn_mva[i], name=line_.name,
                          in_service=line_.in_service)
         i += 1
     net.line.drop(index, inplace=True)

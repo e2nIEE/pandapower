@@ -32,12 +32,12 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     :param net: pandaPower network
     :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e. g. tolerance_kva = 1e-3
+    :param kwargs: load flow options, e. g. tolerance_mva = 1e-3
     :return: None
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
-                           'copy_constraints_to_ppc', 'r_switch', 'init', 'enforce_q_lims',
-                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_kva',
+                           'r_switch', 'init', 'enforce_q_lims',
+                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_mva',
                            'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree']
 
@@ -80,7 +80,7 @@ def _passed_runpp_parameters(local_parameters):
 
 
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
-          max_iteration="auto", tolerance_kva=1e-5, trafo_model="t",
+          max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, **kwargs):
     """
@@ -135,7 +135,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - 30 for "fdbx"
                 - 30 for "fdxb"
 
-        **tolerance_kva** (float, 1e-5) - loadflow termination condition referring to P / Q mismatch of node power in kva
+        **tolerance_mva** (float, 1e-8) - loadflow termination condition referring to P / Q mismatch of node power in MVA
 
         **trafo_model** (str, "t")  - transformer equivalent circuit model
         pandapower provides two equivalent circuit models for the transformer:
@@ -152,7 +152,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
         **enforce_q_lims** (bool, False) - respect generator reactive power limits
 
-            If True, the reactive power limits in net.gen.max_q_kvar/min_q_kvar are respected in the
+            If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar are respected in the
             loadflow. This is done by running a second loadflow if reactive power limits are
             violated at any generator, so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
@@ -165,7 +165,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are set out of service in the ppc
 
-        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
+        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
 
         **KWARGS:
@@ -246,12 +246,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     ac = True
     mode = "pf"
-    copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
         is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
         if any(is_hv_bus) > 0:
-            line_buses = set(net.line[["from_bus", "to_bus"]].values.flatten())
+            line_buses = set(net.line.from_bus.values) & set(net.line.to_bus.values)
             hv_buses = net.bus.index[is_hv_bus]
             if any(a in line_buses for a in hv_buses):
                 calculate_voltage_angles = True
@@ -267,8 +266,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (net.ext_grid.vm_pu.sum() + net.gen.vm_pu.sum()) / \
-                          (len(net.ext_grid.vm_pu) + len(net.gen.vm_pu))
+            init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
+                          (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"
@@ -280,12 +279,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses)
-    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug)
     net._options.update(overrule_options)
@@ -341,21 +339,18 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
-    copy_constraints_to_ppc = False
     enforce_q_lims = False
     algorithm = None
     max_iteration = None
-    tolerance_kva = None
+    tolerance_mva = None
 
-    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
-    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -373,15 +368,15 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     net.sgen.controllable if a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
-        - net.sgen.min_p_kw / net.sgen.max_p_kw
-        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
-        - net.load.min_p_kw / net.load.max_p_kw
-        - net.load.min_q_kvar / net.load.max_q_kvar
-        - net.gen.min_p_kw / net.gen.max_p_kw
-        - net.gen.min_q_kvar / net.gen.max_q_kvar
-        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
-        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
-        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
+        - net.load.min_p_mw / net.load.max_p_mw
+        - net.load.min_q_mvar / net.load.max_q_mvar
+        - net.gen.min_p_mw / net.gen.max_p_mw
+        - net.gen.min_q_mvar / net.gen.max_q_mvar
+        - net.ext_grid.min_p_mw / net.ext_grid.max_p_mw
+        - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
+        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
@@ -429,7 +424,6 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
     ac = True
-    copy_constraints_to_ppc = True
     trafo_model = "t"
     trafo_loading = 'current'
     enforce_q_lims = True
@@ -438,8 +432,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
@@ -458,9 +451,9 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     net.sgen.controllable / net.gen.controllable signals if a generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If yes, the following
     flexibilities apply:
-        - net.sgen.min_p_kw / net.sgen.max_p_kw
-        - net.gen.min_p_kw / net.gen.max_p_kw
-        - net.load.min_p_kw / net.load.max_p_kw
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.gen.min_p_mw / net.gen.max_p_mw
+        - net.load.min_p_mw / net.load.max_p_mw
 
         Network constraints can be defined for buses, lines and transformers the elements in the following columns:
         - net.line.max_loading_percent
@@ -490,7 +483,6 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     mode = "opf"
     ac = False
     init = "flat"
-    copy_constraints_to_ppc = True
     trafo_model = "t"
     trafo_loading = 'current'
     calculate_voltage_angles = True
@@ -501,8 +493,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)

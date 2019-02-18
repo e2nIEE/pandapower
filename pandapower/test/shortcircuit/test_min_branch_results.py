@@ -27,7 +27,7 @@ def feeder_network():
     pp.create_line(net, b4, b5, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV" , length_km=8.)
     net.line["endtemp_degree"] = 80
     for b in [b2, b3, b4, b5]:
-        pp.create_sgen(net, b, sn_kva=2000, p_kw=0)
+        pp.create_sgen(net, b, sn_mva=2000, p_mw=0)
     net.sgen["k"] = 1.2
     return net
 

@@ -21,7 +21,8 @@ from pandapower.idx_gen import GEN_BUS, VG
 from pypower.ipoptopf_solver import ipoptopf_solver
 from pypower.makeYbus import makeYbus
 from pypower.opf_consfcn import opf_consfcn
-from pypower.opf_costfcn import opf_costfcn
+from pandapower.opf.opf_costfcn import opf_costfcn
+
 from pypower.ppver import ppver
 from pypower.update_mupq import update_mupq
 

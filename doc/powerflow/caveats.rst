@@ -18,7 +18,7 @@ Zero impedance branches occur for:
 
     - lines with length_km = 0
     - lines with r_ohm_per_km = 0 and x_ohm_per_km = 0
-    - transformers with vsc_percent=0
+    - transformers with vk_percent=0
     
 If you want to directly connect to buses without voltage drop, use a :ref:`bus-bus switch<switch_model>`.
 

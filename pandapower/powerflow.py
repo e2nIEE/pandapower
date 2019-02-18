@@ -4,8 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.idx_bus import VM
-from pandapower.auxiliary import ppException, _clean_up
-from pandapower.create import create_gen
+from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
@@ -15,7 +14,6 @@ from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, rese
 from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
 from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-import pandas as pd
 
 
 class AlgorithmUnknown(ppException):
@@ -122,58 +120,3 @@ def _pf_without_branches(ppci, options):
     ppci["iterations"] = 1
     ppci["et"] = 0
     return ppci
-
-
-def _add_auxiliary_elements(net):
-    # TODO: include directly in pd2ppc so that buses are only in ppc, not in pandapower
-    if len(net["trafo3w"]) > 0:
-        _create_trafo3w_buses(net)
-    if len(net.dcline) > 0:
-        _add_dcline_gens(net)
-    if len(net["xward"]) > 0:
-        _create_xward_buses(net)
-
-
-def _create_xward_buses(net):
-    from pandapower.create import create_buses
-    init_results = net["_options"]["init_results"]
-
-    main_buses = net.bus.loc[net.xward.bus.values]
-    bid = create_buses(net, nr_buses=len(main_buses),
-                       vn_kv=main_buses.vn_kv.values,
-                       in_service=net["xward"]["in_service"].values)
-    net.xward["ad_bus"] = bid
-    if init_results and len(net.res_bus) > 0:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        net.res_bus = net.res_bus.append(pd.DataFrame(index=bid, data=net.res_bus.loc[main_buses.index].values, columns=net.res_bus.columns))
-
-
-def _create_trafo3w_buses(net):
-    from pandapower.create import create_buses
-    init_results = net["_options"]["init_results"]
-
-    hv_buses = net.bus.loc[net.trafo3w.hv_bus.values]
-    bid = create_buses(net, nr_buses=len(net["trafo3w"]),
-                       vn_kv=hv_buses.vn_kv.values,
-                       in_service=net.trafo3w.in_service.values)
-    net.trafo3w["ad_bus"] = bid
-    if init_results and len(net.res_bus) > 0:
-        # TODO: this is probably slow, but the whole auxiliary bus creation should be included in
-        #      pd2ppc anyways. LT
-        net.res_bus = net.res_bus.append(pd.DataFrame(index=bid, data=net.res_bus.loc[hv_buses.index].values, columns=net.res_bus.columns))
-
-
-def _add_dcline_gens(net):
-    for _, dctab in net.dcline.iterrows():
-        pfrom = dctab.p_kw
-        pto = - (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_kw)
-        pmax = dctab.max_p_kw
-        create_gen(net, bus=dctab.to_bus, p_kw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_kw=-pmax, max_p_kw=0.,
-                   max_q_kvar=dctab.max_q_to_kvar, min_q_kvar=dctab.min_q_to_kvar,
-                   in_service=dctab.in_service)
-        create_gen(net, bus=dctab.from_bus, p_kw=pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_kw=0, max_p_kw=pmax,
-                   max_q_kvar=dctab.max_q_from_kvar, min_q_kvar=dctab.min_q_from_kvar,
-                   in_service=dctab.in_service)

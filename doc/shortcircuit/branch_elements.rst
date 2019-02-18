@@ -41,8 +41,8 @@ The short-circuit impedance is calculated as:
    :nowrap:
 
    \begin{align*}
-   z_k &= \frac{vsc\_percent}{100} \cdot \frac{1000}{sn\_kva} \cdot K_T \\
-   r_k &= \frac{vscr\_percent}{100} \cdot \frac{1000}{sn\_kva} \cdot K_T \\
+   z_k &= \frac{vk\_percent}{100} \cdot \frac{1000}{sn\_kva} \cdot K_T \\
+   r_k &= \frac{vkr\_percent}{100} \cdot \frac{1000}{sn\_kva} \cdot K_T \\
    x_k &= \sqrt{z^2 - r^2} \\
    \end{align*}    
 

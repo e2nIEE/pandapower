@@ -87,7 +87,7 @@ Kerber Landnetze
 
  '''
  This pandapower network includes the following parameter tables:
-   - load (13 elements) p_load_in_kw=8,  q_load_in_kw=0
+   - load (13 elements) p_load_in_mw=8,  q_load_in_mw=0
    - bus (15 elements)
    - line (13 elements) std_type="Al 120", l_lines_in_km=0.021
    - trafo (1 elements)  std_type="0.125 MVA 10/0.4 kV Dyn5 ASEA"
@@ -98,7 +98,7 @@ Kerber Landnetze
 
  '''
  This pandapower network includes the following parameter tables:
-   - load (8 elements) p_load_in_kw=8,  q_load_in_kw=0
+   - load (8 elements) p_load_in_mw=8,  q_load_in_mw=0
    - bus (10 elements)
    - line (8 elements)  std_type="AL 50", l_lines_1_in_km=0.038, l_lines_2_in_km=0.081
    - trafo (1 elements)  std_type="0.125 MVA 10/0.4 kV Dyn5 ASEA"
@@ -127,7 +127,7 @@ Kerber Landnetze
 
  '''
  This pandapower network includes the following parameter tables:
-   - load (8 elements)  p_load_in_kw=8,  q_load_in_kw=0
+   - load (8 elements)  p_load_in_mw=8,  q_load_in_mw=0
    - bus (18 elements)
    - line (16 elements)  std_type="NAYY 150", std_type_branchout_line="NAYY 50"
    - trafo (1 elements)  std_type = "0.125 MVA 10/0.4 kV Dyn5 ASEA"
@@ -138,7 +138,7 @@ Kerber Landnetze
 
  '''
  This pandapower network includes the following parameter tables:
-  - load (14 elements)  p_load_in_kw=8,  q_load_in_kw=0
+  - load (14 elements)  p_load_in_mw=8,  q_load_in_mw=0
   - bus (30 elements)
   - line (28 elements)  std_type="NAYY 150", std_type_branchout_line="NAYY 50"
   - trafo (1 elements)  std_type="0.125 MVA 10/0.4 kV Dyn5 ASEA"
@@ -167,7 +167,7 @@ Kerber Dorfnetz
 
  '''
  This pandapower network includes the following parameter tables:
-   - load (57 elements) p_load_in_kw=6,  q_load_in_kw=0
+   - load (57 elements) p_load_in_mw=6,  q_load_in_mw=0
    - bus (116 elements)
    - line (114 elements) std_type="NAYY 150"; std_type_branchout_line="NAYY 50"
    - trafo (1 elements) std_type="0.4 MVA 10/0.4 kV Yyn6 4 ASEA"
@@ -198,7 +198,7 @@ Kerber Vorstadtnetze
 
  '''
  This pandapower network includes the following parameter tables:
-   - load (146 elements) p_load_in_kw=2,  q_load_in_kw=0
+   - load (146 elements) p_load_in_mw=2,  q_load_in_mw=0
    - bus (294 elements)
    - line (292 elements) std_type="NAYY 150", std_type_branchout_line_1="NAYY 50", std_type_branchout_line_2="NYY 35"
    - trafo (1 elements) std_type="0.63 MVA 20/0.4 kV Yyn6 wnr ASEA"
@@ -226,7 +226,7 @@ Kerber Vorstadtnetze
 
  '''
  This pandapower network includes the following parameter tables:
-   - load (144 elements) p_load_in_kw=2,  q_load_in_kw=0
+   - load (144 elements) p_load_in_mw=2,  q_load_in_mw=0
    - bus (290 elements)
    - line (288 elements) std_type="NAYY 150", std_type_branchout_line_1="NAYY 50", std_type_branchout_line_2="NYY 35"
    - trafo (1 elements) "std_type=0.63 MVA 20/0.4 kV Yyn6 wnr ASEA"

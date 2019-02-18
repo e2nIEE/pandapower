@@ -262,7 +262,9 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     return lc
 
 
-def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None,
+                                       cmap=None, clim=None, norm=None, z=None,
+                                       cbar_title="Transformer Loading", **kwargs):
     """
     Creates a matplotlib line collection of pandapower transformers.
 
@@ -299,7 +301,17 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
 
     lc = LineCollection([(tgd[0], tgd[1]) for tgd in tg], **kwargs)
     lc.info = info
+    if cmap is not None:
+        if z is None:
+            z = net.res_trafo.loading_percent.loc[trafos.index]
+        lc.set_cmap(cmap)
+        lc.set_norm(norm)
+        if clim is not None:
+            lc.set_clim(clim)
 
+        lc.set_array(np.ma.masked_invalid(z))
+        lc.has_colormap = True
+        lc.cbar_title = cbar_title
     return lc
 
 
@@ -960,8 +972,8 @@ if __name__ == "__main__":
         b2 = pp.create_bus(net, 0.4, geodata=(5, 15))
         b3 = pp.create_bus(net, 0.4, geodata=(0, 22))
         b4 = pp.create_bus(net, 0.4, geodata=(8, 20))
-        pp.create_gen(net, b1, p_kw=100)
-        pp.create_load(net, b3, p_kw=100)
+        pp.create_gen(net, b1, p_mw=0.1)
+        pp.create_load(net, b3, p_mw=0.1)
         pp.create_ext_grid(net, b4)
 
         pp.create_line(net, b2, b3, 2.0, std_type="NAYY 4x50 SE")

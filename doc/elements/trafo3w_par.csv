@@ -10,22 +10,22 @@ vn_lv_kv*;float;:math:`>` 0;rated voltage at low voltage bus [kV]
 sn_hv_kva*;float;:math:`>` 0;rated apparent power on high voltage side [kVA]
 sn_mv_kva*;float;:math:`>` 0;rated apparent power on medium voltage side [kVA]
 sn_lv_kva*;float;:math:`>` 0;rated apparent power on low voltage side [kVA]
-vsc_hv_percent*;float;:math:`>` 0;short circuit voltage from high to medium voltage [%]
-vsc_mv_percent*;float;:math:`>` 0;short circuit voltage from medium to low voltage [%]
-vsc_lv_percent*;float;:math:`>` 0;short circuit voltage from high to low voltage [%]
-vscr_hv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from high to medium voltage [%]
-vscr_mv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from medium to low voltage [%]
-vscr_lv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from high to low voltage [%]
+vk_hv_percent*;float;:math:`>` 0;short circuit voltage from high to medium voltage [%]
+vk_mv_percent*;float;:math:`>` 0;short circuit voltage from medium to low voltage [%]
+vk_lv_percent*;float;:math:`>` 0;short circuit voltage from high to low voltage [%]
+vkr_hv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from high to medium voltage [%]
+vkr_mv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from medium to low voltage [%]
+vkr_lv_percent*;float;:math:`\geq`  0;real part of short circuit voltage from high to low voltage [%]
 pfe_kw*;float;:math:`\geq` 0;iron losses [kW]
 i0_percent*;float;:math:`\geq` 0;open loop losses [%]
 shift_mv_degree;float;;transformer phase shift angle at the MV side
 shift_lv_degree;float;;transformer phase shift angle at the LV side
-tp_side;string;"""hv"", ""mv"", ""lv""";defines if tap changer is positioned on high- medium- or low voltage side
-tp_mid;integer;;
-tp_min;integer;;minimum tap position
-tp_max;integer;;maximum tap position
-tp_st_percent;float;:math:`>` 0;tap step size [%]
-tp_st_degree;float;;tap step size for voltage angle
-tp_at_star_point;bool;;whether the tap changer is modelled at terminal or at star point
-tp_pos;integer;;current position of tap changer
+tap_side;string;"""hv"", ""mv"", ""lv""";defines if tap changer is positioned on high- medium- or low voltage side
+tap_neutral;integer;;
+tap_min;integer;;minimum tap position
+tap_max;integer;;maximum tap position
+tap_step_percent;float;:math:`>` 0;tap step size [%]
+tap_step_degree;float;;tap step size for voltage angle
+tap_at_star_point;bool;;whether the tap changer is modelled at terminal or at star point
+tap_pos;integer;;current position of tap changer
 in_service*;boolean;True/False;specifies if the transformer is in service.

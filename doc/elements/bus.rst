@@ -68,8 +68,8 @@ The power flow bus results are defined as:
    \begin{align*}
     vm\_pu &= \lvert \underline{V}_{bus} \rvert \\
     va\_degree &= \angle \underline{V}_{bus} \\
-    p\_kw &= Re(\sum_{n=1}^N  \underline{S}_{bus, n}) \\
-    q\_kvar &= Im(\sum_{n=1}^N  \underline{S}_{bus, n}) 
+    p\_mw &= Re(\sum_{n=1}^N  \underline{S}_{bus, n}) \\
+    q\_mvar &= Im(\sum_{n=1}^N  \underline{S}_{bus, n}) 
    \end{align*}
 
 
@@ -86,4 +86,4 @@ The state estimation results are put into *net.res_bus_est* with the same defini
 
 .. note::
 
-   All power values are given in the consumer system. Therefore a bus with positive p_kw value consumes power while a bus with negative active power supplies power.
+   Bus power values are given in the consumer system. Therefore a bus with positive p_mw value consumes power while a bus with negative active power supplies power.

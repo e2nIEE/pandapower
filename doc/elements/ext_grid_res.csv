@@ -1,3 +1,3 @@
 **Parameter**;**Datatype**;**Explanation**
-p_kw;float;active power supply at the external grid [kW]
+p_mw;float;active power supply at the external grid [MW]
 q_kvar;float;reactive power supply at the external grid [kVar]
