@@ -1381,9 +1381,11 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
     bus_meas = net.measurement.loc[net.measurement.element_type == "bus"]
     analyzed_meas = bus_meas.loc[net.measurement.element.isin(buses).fillna("nan")]
     # drop duplicates
-    idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
-        "measurement_type", "element_type", "side", "element"], keep=keep)]
-    net.measurement.drop(idx_to_drop, inplace=True)
+    if not analyzed_meas.duplicated(subset=[
+        "measurement_type", "element_type", "side", "element"], keep=keep).empty:
+        idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
+            "measurement_type", "element_type", "side", "element"], keep=keep)]
+        net.measurement.drop(idx_to_drop, inplace=True)
 
 
 def fuse_buses(net, b1, b2, drop=True):

@@ -30,7 +30,7 @@ ESTIMATOR_MAPPING = {'wls': WLSEstimator,
 
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True, zero_injection_detection=False, fuse_all_bb_switches=True):
+             calculate_voltage_angles=True, zero_injection='aux_bus', fuse_buses_with_bb_switch='all'):
     """
     Wrapper function for WLS state estimation.
 
@@ -50,20 +50,30 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True
         
-        **zero_injection_detection** - (boolean) - Detect buses with zero injections (buses without p, q
-        measurements and p, q injections from elements) automatically and extend the WLS SE with those zero-injection
-        constraints
+        **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
+        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+        'wls_estimator with zero constraints' the buses will be handled as constraints
+        "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
+            identified as zero injection bus  
+        "aux_bus": only aux bus will be identified as zero injection bus
+        None: no bus will be identified as zero injection bus
+        iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
+            as zero-injection bus
 
-        **fuse_all_bb_switches** - (bool) - If True: when considering bus-bus-switches, the buses
-        will fused into one (default behaviour), otherwise auxiliary lines will be added between those buses
-        where an element is connected to them in order to keep the p, q results on all buses
-        instead of fusing them
+        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+        auxiliary line will be automatically added to the network to make the buses with different p,q injection
+        measurements identifieble
+        "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
+        None: buses with bb-switches and individual p,q measurements will be reconfigurated
+            by auxiliary elements
+        iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
+            if one of the bus among the buses connected through bb switch is given, then all of them will still
+            be fused
 
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    if zero_injection_detection:
-        algorithm = 'wls_with_zero_constraint'
 
     if algorithm not in ESTIMATOR_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
@@ -81,7 +91,8 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
             delta_start = res_bus.va_degree.values
     elif init != 'flat':
         raise UserWarning("Unsupported init value. Using flat initialization.")
-    return wls.estimate(v_start, delta_start, calculate_voltage_angles, fuse_all_bb_switches)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
+                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -195,7 +206,8 @@ class StateEstimation(object):
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start=None, delta_start=None, calculate_voltage_angles=True, fuse_all_bb_switches=True):
+    def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True, zero_injection=None, 
+                 fuse_buses_with_bb_switch='all'):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -224,11 +236,26 @@ class StateEstimation(object):
             **calculate_voltage_angles** - (bool) - Take into account absolute voltage angles and
             phase shifts in transformers Default is True
             
-            **fuse_all_bb_switches** - (bool) - If True: when considering bus-bus-switches, the buses
-            will fused into one (default behaviour), otherwise auxiliary lines will be added between those buses
-            where an element is connected to them in order to keep the p, q results on all buses
-            instead of fusing them
-
+            **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
+            to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+            'wls_estimator with zero constraints' the buses will be handled as constraints
+            "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
+                identified as zero injection bus  
+            "aux_bus": only aux bus will be identified as zero injection bus
+            None: no bus will be identified as zero injection bus
+            iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
+                as zero-injection bus
+    
+            **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+            be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+            auxiliary line will be automatically added to the network to make the buses with different p,q injection
+            measurements identifieble
+            "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
+            None: buses with bb-switches and individual p,q measurements will be reconfigurated
+                by auxiliary elements
+            iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
+                if one of the bus among the buses connected through bb switch is given, then all of them will still
+                be fused
         OUTPUT:
             **successful** (boolean) - True if the estimation process was successful
 
@@ -243,12 +270,17 @@ class StateEstimation(object):
         if self.net is None:
             raise UserWarning("Component was not initialized with a network.")
         t0 = time()
-        
+
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
-        if not fuse_all_bb_switches and not self.net.switch.empty:
-            _add_aux_elements_for_bb_switch(self.net)
-        
+        bus_to_be_fused = None
+        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
+            if isinstance(fuse_buses_with_bb_switch, str):
+                raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
+            elif hasattr(fuse_buses_with_bb_switch, '__iter__'):
+                bus_to_be_fused = fuse_buses_with_bb_switch      
+            _add_aux_elements_for_bb_switch(self.net, bus_to_be_fused)
+
         # add initial values for V and delta
         # node voltages
         # V<delta
@@ -264,7 +296,7 @@ class StateEstimation(object):
         ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
 
         # add measurements to ppci structure
-        ppci = _add_measurements_to_ppc(self.net, ppci)
+        ppci = _add_measurements_to_ppc(self.net, ppci, zero_injection)
 
         # Finished converting pandapower network to ppci
         # Estimate voltage magnitude and angle with the given estimator
@@ -316,7 +348,7 @@ class StateEstimation(object):
                                                    mapping_table)
         _clean_up(self.net)
         # clear the aux elements and calculation results created for the substitution of bb switches
-        if not fuse_all_bb_switches and not self.net.switch.empty:
+        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
             _drop_aux_elements_for_bb_switch(self.net)
 
         # delete results which are not correctly calculated
