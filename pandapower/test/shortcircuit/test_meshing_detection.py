@@ -14,8 +14,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def meshed_grid():
-    folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net = pp.from_pickle(os.path.join(folder, "test", "shortcircuit", "sc_test_meshed_grid.p"))
+    net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.p"))
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
     net.ext_grid.bus.iloc[0] = bid

@@ -14,8 +14,7 @@ from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
 from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
-import pandapower.opf
-opf_folder = os.path.abspath(os.path.dirname(pandapower.opf.__file__))
+from pandapower import pp_dir
 
 try:
     import pplog as logging
@@ -122,7 +121,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
      """
-    julia_file = os.path.join(opf_folder, 'run_powermodels_dc.jl')
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_dc.jl')
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -175,7 +174,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
      """
-    julia_file = os.path.join(opf_folder, 'run_powermodels_ac.jl')
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ac.jl')
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -226,7 +225,7 @@ def _call_powermodels(pm, julia_file):
     except:
         raise UserWarning("Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
-    Main.include(os.path.join(opf_folder, 'pp_2_pm.jl'))
+    Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
         run_powermodels = j.include(julia_file)
     except:

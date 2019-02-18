@@ -554,9 +554,7 @@ def test_check_existing_measurements():
 
 
 def load_3bus_network():
-    folder = os.path.abspath(os.path.dirname(pp.__file__))
-    grid = pp.from_json(os.path.join(folder, "test", "estimation", "3bus_wls.json"))
-    return grid
+    return pp.from_json(os.path.join(pp.pp_dir, "test", "estimation", "3bus_wls.json"))
 
 def test_network_with_trafo3w_pq():
     net = pp.create_empty_network()
