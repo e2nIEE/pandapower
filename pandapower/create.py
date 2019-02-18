@@ -48,6 +48,20 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
+        "asymmetric_load": [("name", dtype(object)),
+                 ("bus", "u4"),
+                 ("p_A_mw", "f8"),
+                 ("q_A_mvar", "f8"),
+                 ("p_B_mw", "f8"),
+                 ("q_B_mvar", "f8"),
+                 ("p_C_mw", "f8"),
+                 ("q_C_mvar", "f8"),
+                 ("const_z_percent", "f8"),
+                 ("const_i_percent", "f8"),
+                 ("sn_kva", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("type", dtype(object))],
         "sgen": [("name", dtype(object)),
                  ("bus", "i8"),
                  ("p_mw", "f8"),
@@ -57,6 +71,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
+        "asymmetric_sgen": [("name", dtype(object)),
+                 ("bus", "i8"),
+                 ("p_A_mw", "f8"),
+                 ("p_B_mw", "f8"),
+                 ("p_C_mw", "f8"),
+                 ("q_A_mvar", "f8"),
+                 ("q_B_mvar", "f8"),
+                 ("q_C_mvar", "f8"),
+                 ("sn_mva", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("type", dtype(object)),
+                 ("current_source", "bool")],                                            
         "storage": [("name", dtype(object)),
                     ("bus", "i8"),
                     ("p_mw", "f8"),
@@ -250,6 +277,53 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                             ("vm_to_pu", "f8"),
                             ("va_to_degree", "f8"),
                             ("loading_percent", "f8")],
+        "_empty_res_bus_3ph": [("vm_A_pu", "f8"),
+                           ("va_A_degree", "f8"),
+                           ("vm_B_pu", "f8"),
+                           ("va_B_degree", "f8"),
+                           ("vm_C_pu", "f8"),
+                           ("va_C_degree", "f8"),
+                           ("p_A_mw", "f8"),
+                           ("q_A_mvar", "f8"),
+                           ("p_B_mw", "f8"),
+                           ("q_B_mvar", "f8"),
+                           ("p_C_mw", "f8"),
+                           ("q_C_mvar", "f8")],
+        "_empty_res_ext_grid_3ph": [("p_A_mw", "f8"),
+                                ("q_A_mvar", "f8"),
+                                ("p_B_mw", "f8"),
+                                ("q_B_mvar", "f8"),
+                                ("p_C_mw", "f8"),
+                                ("q_C_mvar", "f8")],                                
+        "_empty_res_line_3ph": [("p_A_from_mw", "f8"),
+                            ("q_A_from_mvar", "f8"),
+                            ("p_B_from_mw", "f8"),
+                            ("q_B_from_mvar", "f8"),
+                            ("q_C_from_mvar", "f8"),
+                            ("p_A_to_mw", "f8"),
+                            ("q_A_to_mvar", "f8"),
+                            ("p_B_to_mw", "f8"),
+                            ("q_B_to_mvar", "f8"),
+                            ("p_C_to_mw", "f8"),
+                            ("q_C_to_mvar", "f8"),
+                            ("p_Al_mw", "f8"),
+                            ("q_Al_mvar", "f8"),
+                            ("p_Bl_mw", "f8"),
+                            ("q_Bl_mvar", "f8"),
+                            ("p_Cl_mw", "f8"),
+                            ("q_Cl_mvar", "f8"),
+                            ("i_A_from_ka", "f8"),
+                            ("i_A_to_ka", "f8"),
+                            ("i_B_from_ka", "f8"),
+                            ("i_B_to_ka", "f8"),
+                            ("i_C_from_ka", "f8"),
+                            ("i_C_to_ka", "f8"),
+                            ("i_A_ka", "f8"),
+                            ("i_B_ka", "f8"),
+                            ("i_C_ka", "f8"),
+                            ("loading_percentA", "f8"),
+                            ("loading_percentB", "f8"),
+                            ("loading_percentC", "f8")],                                                 
         "_empty_res_trafo": [("p_hv_mw", "f8"),
                              ("q_hv_mvar", "f8"),
                              ("p_lv_mw", "f8"),
@@ -263,6 +337,34 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                              ("vm_lv_pu", "f8"),
                              ("va_lv_degree", "f8"),
                              ("loading_percent", "f8")],
+        "_empty_res_trafo_3ph": [("p_A_hv_mw", "f8"),
+                            ("q_A_hv_mvar", "f8"),
+                            ("p_B_hv_mw", "f8"),
+                            ("q_B_hv_mvar", "f8"),
+                            ("p_C_hv_mw", "f8"),
+                            ("q_C_hv_mvar", "f8"),
+                            ("p_A_lv_mw", "f8"),
+                            ("q_A_lv_mvar", "f8"),
+                            ("p_B_lv_mw", "f8"),
+                            ("q_B_lv_mvar", "f8"),
+                            ("p_C_lv_mw", "f8"),
+                            ("q_C_lv_mvar", "f8"),
+                            ("p_Al_mw", "f8"),
+                            ("q_Al_mvar", "f8"),
+                            ("p_Bl_mw", "f8"),
+                            ("q_Bl_mvar", "f8"),
+                            ("p_Cl_mw", "f8"),
+                            ("q_Cl_mvar", "f8"),
+                            ("iA_hv_ka", "f8"),
+                            ("iA_lv_ka", "f8"),
+                            ("iB_hv_ka", "f8"),
+                            ("iB_lv_ka", "f8"),
+                            ("iC_hv_ka", "f8"),
+                            ("iC_lv_ka", "f8"),
+                            ("loading_percentA", "f8"),
+                            ("loading_percentB", "f8"),
+                            ("loading_percentC", "f8"),
+                            ("loading_percent", "f8")],
         "_empty_res_trafo3w": [("p_hv_mw", "f8"),
                                ("q_hv_mvar", "f8"),
                                ("p_mv_mw", "f8"),
@@ -285,14 +387,50 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                                ("loading_percent", "f8")],
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
+        "_empty_res_load_3ph": [("p_A_mw", "f8"),
+                            ("q_A_mvar", "f8"),
+                            ("p_B_mw", "f8"),
+                            ("q_B_mvar", "f8"),
+                            ("p_C_mw", "f8"),
+                            ("q_C_mvar", "f8")],                            
+        "_empty_res_asymmetric_load_3ph": [("p_A_mw", "f8"),
+                            ("q_A_mvar", "f8"),
+                            ("p_B_mw", "f8"),
+                            ("q_B_mvar", "f8"),
+                            ("p_C_mw", "f8"),
+                            ("q_C_mvar", "f8")],                            
         "_empty_res_sgen": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
+        "_empty_res_sgen_3ph": [("p_A_mw", "f8"),
+                            ("q_A_mvar", "f8"),
+                            ("p_B_mw", "f8"),
+                            ("q_B_mvar", "f8"),
+                            ("p_C_mw", "f8"),
+                            ("q_C_mvar", "f8")],
+        "_empty_res_asymmetric_sgen_3ph": [("p_A_mw", "f8"),
+                            ("q_A_mvar", "f8"),
+                            ("p_B_mw", "f8"),
+                            ("q_B_mvar", "f8"),
+                            ("p_C_mw", "f8"),
+                            ("q_C_mvar", "f8")],                                                 
         "_empty_res_storage": [("p_mw", "f8"),
                                ("q_mvar", "f8")],
         "_empty_res_gen": [("p_mw", "f8"),
                            ("q_mvar", "f8"),
                            ("va_degree", "f8"),
                            ("vm_pu", "f8")],
+        "_empty_res_gen_3ph": [("p_A_mw", "f8"),
+                           ("q_A_mvar", "f8"),
+                           ("vaA_degree", "f8"),
+                           ("vmA_pu", "f8"),
+                           ("p_B_mw", "f8"),
+                           ("q_B_mvar", "f8"),
+                           ("vaB_degree", "f8"),
+                           ("vmB_pu", "f8"),
+                           ("p_C_mw", "f8"),
+                           ("q_C_mvar", "f8"),
+                           ("vaC_degree", "f8"),
+                           ("vmC_pu", "f8")],                                               
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
@@ -324,6 +462,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
 
         # internal
         "_ppc": None,
+        "_ppc0": None,
+        "_ppc1": None,
+        "_ppc2": None,
         "_is_elements": None,
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
@@ -633,8 +774,78 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     return index
 
+def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0,
+                     sn_mva=nan, name=None, scaling=1.,
+                    index=None, in_service=True, type=None, 
+                    ):
+    """create_load_3ph(net, bus, p_A_mw, q_A_mvar=0 , p_B_mw, q_B_mvar=0 , p_C_mw, q_C_mvar=0,
+    const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1., index=None, \
+    in_service=True, type=None)
+    
+    Adds one 3 phase load in table net["load_3ph"].
+
+    All loads are modelled in the consumer system, meaning load is positive and generation is
+    negative active power. Please pay attention to the correct signing of the reactive power as
+    well.
+
+    INPUT:
+        **net** - The net within this load should be created
+
+        **bus** (int) - The bus id to which the load is connected
+
+    OPTIONAL:
+        **p_A_mw, p_B_mw, p_C_mw** (float, default 0) - The real power of the load
+
+        - postive value   -> load
+        - negative value  -> generation
+
+        **q_A_mvar, q_B_mvar, q_C_mvar** (float, default 0) - The reactive power of the load
+
+        **sn_kva** (float, default None) - Nominal power of the load
+
+        **name** (string, default None) - The name for this load
+
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the load
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created element
+
+    EXAMPLE:
+        create_load_3ph(net, bus=0, p_mw_a=10., q_mvar_a=2., p_kw_b=10., q_kvar_b=2,
+         p_mw_c=10., q_mvar_c=2)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["load_3ph"])
+    if index in net["load_3ph"].index:
+        raise UserWarning("A 3 phase load_3ph with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.load_3ph.dtypes
+
+    net.asymmetric_load.loc[index, ["name", "bus", "p_A_mw","p_B_mw","p_C_mw", "scaling",
+                         "q_A_mvar","q_B_mvar","q_C_mvar", "sn_kva", "in_service", "type"]] = \
+        [name, bus, p_A_mw,p_B_mw,p_C_mw, scaling, 
+         q_A_mvar,q_B_mvar,q_C_mvar, sn_kva, bool(in_service), type]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.load_3ph, dtypes)
+
+    return index
 
 def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
+
     """
     Creates a load element from rated power and power factor cos(phi).
 
@@ -805,9 +1016,98 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
     return index
 
+# =============================================================================
+# Create 3ph Sgen
+# =============================================================================
+    
+def create_asymmetric_sgen(net, bus, p_A_mw,p_B_mw,p_C_mw, q_A_mvar=0, q_B_mvar=0, q_C_mvar=0, sn_mva=nan, 
+                    name=None, index=None, scaling=1., type=None, in_service=True, 
+                     k=nan, rx=nan):
+    """create_sgen(net, bus, p_mw, q_mvar=0, sn_kva=nan, name=None, index=None, \
+                scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_kw=nan, \
+                max_q_mvar=nan, min_q_kvar=nan, controllable=nan, k=nan, rx=nan)
+    Adds one static generator in table net["sgen"].
+
+    Static generators are modelled as negative  PQ loads. This element is used to model generators
+    with a constant active and reactive power feed-in. If you want to model a voltage controlled
+    generator, use the generator element instead.
+
+    All elements in the grid are modelled in the consumer system, including generators!
+    If you want to model the generation of power, you have to assign a negative active power
+    to the generator. Please pay attention to the correct signing of the
+    reactive power as well.
+
+    INPUT:
+        **net** - The net within this static generator should be created
+
+        **bus** (int) - The bus id to which the static generator is connected
+
+        **p_mw** (float) - The real power of the static generator  (negative for generation!)
+
+    OPTIONAL:
+
+        **q_mvar** (float, default 0) - The reactive power of the sgen
+
+        **sn_kva** (float, default None) - Nominal power of the sgen
+
+        **name** (string, default None) - The name for this sgen
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly
+
+        **type** (string, None) -  type variable to classify the static generator
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **k** (float, NaN) - Ratio of nominal current to short circuit current
+
+        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
+            specified as motor so that sgen is treated as asynchronous motor
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created sgen
+
+    EXAMPLE:
+        create_sgen(net, 1, p_mw = -120)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["sgen_3ph"])
+
+    if index in net["sgen_3ph"].index:
+        raise UserWarning("A static generator with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.sgen_3ph.dtypes
+
+    net.asymmetric_sgen.loc[index, ["name", "bus", "p_A_mw","p_B_mw","p_C_mw", "scaling",
+                         "q_A_mvar", "q_B_mvar", "q_C_mvar","sn_kva", "in_service", "type"]] = \
+        [name, bus, p_A_mw, p_B_mw, p_C_mw, scaling, q_A_mvar, q_B_mvar, q_C_mvar, sn_kva, bool(in_service), type]
+
+    # and preserve dtypes
+    _preserve_dtypes(net.sgen_3ph, dtypes)
+
+    if not isnan(k):
+        if "k" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "k"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "k"] = float(k)
+
+    if not isnan(rx):
+        if "rx" not in net.sgen_3ph.columns:
+            net.sgen_3ph.loc[:, "rx"] = pd.Series()
+
+        net.sgen_3ph.loc[index, "rx"] = float(rx)
+
+    return index
 
 def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
-    """
+    """    
     Creates an sgen element from rated power and power factor cos(phi).
 
     INPUT:

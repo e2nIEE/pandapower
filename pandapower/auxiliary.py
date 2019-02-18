@@ -33,9 +33,10 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import six
+from numpy import complex128
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF,VMIN, VMAX
 from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
@@ -244,6 +245,25 @@ def _sum_by_group(bus, first_val, second_val):
     return bus, first_val, second_val
 
 
+def _sum_by_group_nvals(bus, *vals):
+    order = np.argsort(bus)
+    bus = bus[order]
+    index = np.ones(len(bus), 'bool')
+    index[:-1] = bus[1:] != bus[:-1]
+    bus = bus[index]
+    newvals = tuple(np.zeros((len(vals),len(bus))))
+    for val, newval in zip(vals, newvals):
+        val = val[order]
+        val.cumsum(out=val)
+        val = val[index]
+        val[1:] = val[1:] - val[:-1]
+        newval[:] = val
+        # Returning vals keeps the original array dimensions, which causes an error if more than one element is
+        # connected to the same bus. Instead, we create a second tuple of arrays on which we map the results.
+        # Todo: Check if this workaround causes no problems
+    return (bus,) + newvals
+
+
 def get_indices(selection, lookup, fused_indices=True):
     """
     Helper function during pd2mpc conversion. It resolves the mapping from a
@@ -342,18 +362,20 @@ except RuntimeError:
     set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
-def _select_is_elements_numba(net, isolated_nodes=None):
+def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     # is missing sgen_controllable and load_controllable
 
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        ppc_bus_isolated = np.zeros(net["_ppc"]["bus"].shape[0], dtype=bool)
+        ppc = net["_ppc"] if sequence is None else net["_ppc%s"%sequence]
+        ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
     is_elements = dict()
+#    for element in ["load", "load_3ph", "sgen", "sgen_3ph", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
     for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
@@ -497,6 +519,29 @@ def _add_options(net, options):
 
 
 def _clean_up(net, res=True):
+    # mode = net.__internal_options["mode"]
+
+    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
+    # net._is_elements = None
+
+#    mode = net._options["mode"]
+#    if res:
+#        res_bus = net["res_bus_sc"] if mode == "sc" else \
+#            net["res_bus_3ph"] if mode == "pf_3ph" else \
+#                net["res_bus"]
+#    if len(net["trafo3w"]) > 0:
+#        buses_3w = net.trafo3w["ad_bus"].values
+#        net["bus"].drop(buses_3w, inplace=True)
+#        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
+#        if res:
+#            res_bus.drop(buses_3w, inplace=True)
+#
+#    if len(net["xward"]) > 0:
+#        xward_buses = net["xward"]["ad_bus"].values
+#        net["bus"].drop(xward_buses, inplace=True)
+#        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
+#        if res:
+#            res_bus.drop(xward_buses, inplace=True)
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
@@ -511,8 +556,8 @@ def _set_isolated_buses_out_of_service(net, ppc):
                         ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == 3, :1].real.astype(int))
-    ppc["bus"][net._isolated_buses, 1] = 4.
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF, :1].real.astype(int))
+    ppc["bus"][net._isolated_buses, 1] = NONE
 
 
 def _write_lookup_to_net(net, element, element_lookup):
@@ -543,6 +588,139 @@ def _check_if_numba_is_installed(numba):
     return numba
 
 
+# =============================================================================
+# Functions for 3 Phase Unbalanced Load Flow
+# =============================================================================
+
+# =============================================================================
+# Convert to three decoupled sequence networks
+# =============================================================================
+
+def X012_to_X0(X012):
+    return np.transpose(X012[0, :])
+
+
+def X012_to_X1(X012):
+    return np.transpose(X012[1, :])
+
+
+def X012_to_X2(X012):
+    return np.transpose(X012[2, :])
+
+
+# =============================================================================
+# Three decoupled sequence network to 012 matrix conversion
+# =============================================================================
+
+def combine_X012(X0, X1, X2):
+    comb = np.vstack((X0, X1, X2))
+    return comb
+
+
+# =============================================================================
+# Symmetrical transformation matrix
+# Tabc : 012 > abc
+# T012 : abc >012
+# =============================================================================
+
+def phase_shift_unit_operator(angle_deg):
+    return 1 * np.exp(1j * np.deg2rad(angle_deg))
+
+
+a = phase_shift_unit_operator(120)
+asq = phase_shift_unit_operator(-120)
+Tabc = np.array(
+    [
+        [1, 1, 1],
+        [1, asq, a],
+        [1, a, asq]
+    ])
+
+T012 = np.divide(np.array(
+    [
+        [1, 1, 1],
+        [1, a, asq],
+        [1, asq, a]
+    ]), 3)
+
+
+def sequence_to_phase(X012):
+    return np.asarray(np.matmul(Tabc, X012))
+
+
+def phase_to_sequence(Xabc):
+    return np.asarray(np.matmul(T012, Xabc))
+
+
+# =============================================================================
+# Calculating Sequence Current from sequence Voltages
+# =============================================================================
+
+def I0_from_V012(V012, Y):
+    V0 = X012_to_X0(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.asarray(np.matmul(Y.todense(), V0))
+    else:
+        return np.asarray(np.matmul(Y, V0))
+
+
+def I1_from_V012(V012, Y):
+    V1 = X012_to_X1(V012)[:,np.newaxis]
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        i1 = np.asarray(np.matmul(Y.todense(), V1))
+        return np.transpose(i1)
+    else:
+        i1 = np.asarray(np.matmul(Y, V1))
+        return np.transpose(i1)
+
+
+def I2_from_V012(V012, Y):
+    V2 = X012_to_X2(V012)
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.asarray(np.matmul(Y.todense(), V2))
+    else:
+        return np.asarray(np.matmul(Y, V2))
+
+
+def V1_from_ppc(ppc):
+    return np.transpose(
+        np.array(
+            ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))
+        )
+    )
+
+
+def V_from_I(Y, I):
+    return np.transpose(np.array(sp.sparse.linalg.spsolve(Y, I)))
+
+
+def I_from_V(Y, V):
+    if type(Y) == sp.sparse.csr.csr_matrix:
+        return np.asarray(np.matmul(Y.todense(), V))
+    else:
+        return np.asarray(np.matmul(Y, V))
+
+
+# =============================================================================
+# Calculating Power
+# =============================================================================
+def S_from_VI_elementwise(V, I):
+    return np.multiply(V, I.conjugate())
+
+def I_from_SV_elementwise(S, V):
+    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V!=0)) # Return zero if div by zero
+
+def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
+    if n_res is None:
+        n_res = S012.shape[1]
+    if idx is None:
+        idx = np.ones(n_res, dtype="bool")
+    I012 = np.array(np.zeros((3, n_res)))
+    I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
+    Vabc = sequence_to_phase(V012[:, idx])
+    Iabc = sequence_to_phase(I012[:, idx])
+    Sabc = S_from_VI_elementwise(Vabc, Iabc)
+    return Sabc, Vabc
 def _add_auxiliary_elements(net):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)

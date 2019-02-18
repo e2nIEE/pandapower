@@ -9,6 +9,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+from numpy import complex128
 
 from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA,\
@@ -329,13 +330,15 @@ def set_reference_buses(net, ppc, bus_lookup):
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
 
 
-def _calc_pq_elements_and_add_on_ppc(net, ppc):
+def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     # init values
     b, p, q = np.array([], dtype=int), np.array([]), np.array([])
 
     _is_elements = net["_is_elements"]
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
-    for element in ["load", "sgen", "storage", "ward", "xward"]:
+    mode = net["_options"]["mode"]
+    pq_elements = ["load", "sgen", "storage", "ward", "xward","asymmetric_load", "asymmetric_sgen"] if mode == "pf_3ph"  else ["load", "sgen", "storage", "ward", "xward"]
+    for element in pq_elements:
         tab = net[element]
         if len(tab):
             if element == "load" and voltage_depend_loads:
@@ -378,6 +381,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc):
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
+        # Todo: Actually, P and Q have to be divided by 3 because Sabc=3*S012 (we are writing pos. seq. values here!)
 
 
 def _calc_shunts_and_add_on_ppc(net, ppc):
@@ -460,7 +464,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if mode == "sc":
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
-        c = 1.
+        c = 1.1
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
                          "external grid" )
@@ -471,6 +475,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
+    if mode == 'pf_3ph':
+        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power                        
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid

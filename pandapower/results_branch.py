@@ -32,6 +32,26 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):
     _get_switch_results(net, i_ft)
 
 
+def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses):
+    """
+    Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
+
+    INPUT:
+
+        **results** - the result of runpf loadflow calculation
+
+        **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
+
+    """
+    I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
+    _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
+    _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
+    # _get_trafo3w_results(net, ppc, s_ft, i_ft)
+    # _get_impedance_results(net, ppc, i_ft)
+    # _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
+    # _get_switch_results(net, i_ft)
+
+																			 
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(int)
     vm_ft = ppc["bus"][br_idx, VM] * ppc["bus"][br_idx, BASE_KV]
@@ -39,6 +59,25 @@ def _get_branch_flows(ppc):
                    ppc["branch"][:, (QF, QT)].real ** 2)
     i_ft = s_ft / vm_ft / np.sqrt(3)
     return i_ft, s_ft
+
+
+def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
+    br_from_idx = ppc1["branch"][:, F_BUS].real.astype(int)
+    br_to_idx = ppc1["branch"][:, T_BUS].real.astype(int)
+    V012_f = np.array([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
+                         np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
+    V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
+                         np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
+    S012_f = np.array([((ppc["branch"][:, PF].real +
+                    1j * ppc["branch"][:, QF].real) * 1e3)
+                    for ppc in [ppc0, ppc1, ppc2]])
+    S012_t = np.array([((ppc["branch"][:, PT].real +
+                    1j * ppc["branch"][:, QT].real) * 1e3)
+                    for ppc in [ppc0, ppc1, ppc2]])
+    I012_f = I_from_SV_elementwise(S012_f * 1e-3, V012_f / np.sqrt(3))
+    I012_t = I_from_SV_elementwise(S012_t * 1e-3, V012_t / np.sqrt(3))
+
+    return I012_f, S012_f, V012_f, I012_t, S012_t, V012_t
 
 
 def _get_line_results(net, ppc, i_ft):
@@ -88,6 +127,73 @@ def _get_line_results(net, ppc, i_ft):
     res_line_df["vm_to_pu"].values[:] = ppc["bus"][to_buses, VM]
     res_line_df["va_to_degree"].values[:] = ppc["bus"][to_buses, VA]
     res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
+
+
+def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+    # create res_line_vals which are written to the pandas dataframe
+    ac = net["_options"]["ac"]
+
+    if not "line" in net._pd2ppc_lookups["branch"]:
+        return
+
+    f, t = net._pd2ppc_lookups["branch"]["line"]
+    I012_from_ka = I012_f[:, f:t]
+    I012_to_ka = I012_t[:, f:t]
+    line_df = net["line"]
+    i_max_phase = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+
+    Vabc_f, Vabc_t, Iabc_f, Iabc_t = [sequence_to_phase(X012) for X012 in
+                                      [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
+    Sabc_f, Sabc_t = [S_from_VI_elementwise(*Xabc_tup) * 1e3 / np.sqrt(3) for Xabc_tup in
+                      [(Vabc_f, Iabc_f), (Vabc_t, Iabc_t)]]
+    # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
+    Pabcf_mw = Sabc_f.real
+    Qabcf_mvar = Sabc_f.imag
+    Pabct_mw = Sabc_t.real
+    Qabct_mvar = Sabc_t.imag
+    if ac:
+        Pabcl_mw = Pabcf_mw + Pabct_mw
+        Qabcl_mvar = Qabcf_mvar + Qabct_mvar
+    else:
+        Pabcl_mw = np.zeros_like(Pabcf_mw)
+        Qabcl_mvar = np.zeros_like(Qabct_mvar)
+    Iabc_f_ka = np.abs(sequence_to_phase(I012_from_ka))
+    Iabc_t_ka = np.abs(sequence_to_phase(I012_to_ka))
+    Iabc_ka = np.maximum.reduce([Iabc_t_ka, Iabc_f_ka])
+
+    # write to line
+    net["res_line_3ph"]["p_A_from_mw"] = Pabcf_mw[0, :].flatten()
+    net["res_line_3ph"]["p_B_from_mw"] = Pabcf_mw[1, :].flatten()
+    net["res_line_3ph"]["p_C_from_mw"] = Pabcf_mw[2, :].flatten()
+    net["res_line_3ph"]["q_A_from_mvar"] = Qabcf_mvar[0, :].flatten()
+    net["res_line_3ph"]["q_B_from_mvar"] = Qabcf_mvar[1, :].flatten()
+    net["res_line_3ph"]["q_C_from_mvar"] = Qabcf_mvar[2, :].flatten()
+    net["res_line_3ph"]["p_A_to_mw"] = Pabct_mw[0, :].flatten()
+    net["res_line_3ph"]["p_B_to_mw"] = Pabct_mw[1, :].flatten()
+    net["res_line_3ph"]["p_C_to_mw"] = Pabct_mw[2, :].flatten()
+    net["res_line_3ph"]["q_A_to_mvar"] = Qabct_mvar[0, :].flatten()
+    net["res_line_3ph"]["q_B_to_mvar"] = Qabct_mvar[1, :].flatten()
+    net["res_line_3ph"]["q_C_to_mvar"] = Qabct_mvar[2, :].flatten()
+    net["res_line_3ph"]["p_A_l_mw"] = Pabcl_mw[0, :].flatten()
+    net["res_line_3ph"]["p_B_l_mw"] = Pabcl_mw[1, :].flatten()
+    net["res_line_3ph"]["p_C_l_mw"] = Pabcl_mw[2, :].flatten()
+    net["res_line_3ph"]["q_A_l_mvar"] = Qabcl_mvar[0, :].flatten()
+    net["res_line_3ph"]["q_B_l_mvar"] = Qabcl_mvar[1, :].flatten()
+    net["res_line_3ph"]["q_C_l_mvar"] = Qabcl_mvar[2, :].flatten()
+    net["res_line_3ph"]["iA_from_ka"] = Iabc_f_ka[0, :].flatten()
+    net["res_line_3ph"]["iB_from_ka"] = Iabc_f_ka[1, :].flatten()
+    net["res_line_3ph"]["iC_from_ka"] = Iabc_f_ka[2, :].flatten()
+    net["res_line_3ph"]["iA_to_ka"] = Iabc_t_ka[0, :].flatten()
+    net["res_line_3ph"]["iB_to_ka"] = Iabc_t_ka[1, :].flatten()
+    net["res_line_3ph"]["iC_to_ka"] = Iabc_t_ka[2, :].flatten()
+    net["res_line_3ph"]["iA_ka"] = Iabc_ka[0, :]
+    net["res_line_3ph"]["iB_ka"] = Iabc_ka[1, :]
+    net["res_line_3ph"]["iC_ka"] = Iabc_ka[2, :]
+    net["res_line_3ph"]["loading_percentA"] = Iabc_ka[0, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_percentB"] = Iabc_ka[1, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_percentC"] = Iabc_ka[2, :] / i_max_phase * 100
+    net["res_line_3ph"]["loading_percent"] = Iabc_ka.max(axis=0) / i_max_phase * 100
+    net["res_line_3ph"].index = net["line"].index
 
 
 def _get_trafo_results(net, ppc, s_ft, i_ft):
@@ -148,6 +254,84 @@ def _get_trafo_results(net, ppc, s_ft, i_ft):
     res_trafo_df["vm_lv_pu"].values[:] = ppc["bus"][lv_buses, VM]
     res_trafo_df["va_lv_degree"].values[:] = ppc["bus"][lv_buses, VA]
     res_trafo_df["loading_percent"].values[:] = loading_percent
+
+
+def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+    ac = net["_options"]["ac"]
+    trafo_loading = net["_options"]["trafo_loading"]
+
+    if not "trafo" in net._pd2ppc_lookups["branch"]:
+        return
+    f, t = net._pd2ppc_lookups["branch"]["trafo"]
+    I012_hv_ka = I012_f[:, f:t]
+    I012_lv_ka = I012_t[:, f:t]
+    trafo_df = net["trafo"]
+
+    Vabc_hv, Vabc_lv, Iabc_hv, Iabc_lv = [sequence_to_phase(X012) for X012 in
+                                      [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
+    Sabc_hv, Sabc_lv = [S_from_VI_elementwise(*Xabc_tup) * 1e3 / np.sqrt(3) for Xabc_tup in
+                      [(Vabc_hv, Iabc_hv), (Vabc_lv, Iabc_lv)]]
+    # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
+    Pabc_hv_mw = Sabc_hv.real
+    Qabc_hv_mvar = Sabc_hv.imag
+    Pabc_lv_mw = Sabc_lv.real
+    Qabc_lv_mvar = Sabc_lv.imag
+    if ac:
+        Pabcl_mw = Pabc_hv_mw + Pabc_lv_mw
+        Qabcl_mvar = Qabc_hv_mvar + Qabc_lv_mvar
+    else:
+        Pabcl_mw = np.zeros_like(Pabc_hv_mw)
+        Qabcl_mvar = np.zeros_like(Qabc_lv_mvar)
+    Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
+    Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
+
+    if trafo_loading == "current":
+        trafo_df = net["trafo"]
+        vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
+        ld_trafo = np.maximum.reduce([np.asarray(Iabc_hv_ka) * vns[:, 0], np.asarray(Iabc_lv_ka) * vns[:, 1]])
+        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_kva"].values * 1000. * 100.
+    elif trafo_loading == "power":
+        ld_trafo = np.maximum.reduce([np.abs(Sabc_hv), np.abs(Sabc_lv)])
+        ld_trafo = ld_trafo / net["trafo"]["sn_kva"].values[:, np.newaxis] * 3. * 100.
+    else:
+        raise ValueError(
+            "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+    if any(net["trafo"]["df"].values <= 0):
+        raise UserWarning('Transformer rating factor df must be positive. Transformers with false '
+                          'rating factors: %s' % net["trafo"].query('df<=0').index.tolist())
+    loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+
+    # write results to trafo dataframe
+    res_trafo_df = net["res_trafo_3ph"]
+    res_trafo_df["p_A_hv_mw"] = Pabc_hv_mw[0, :].flatten()
+    res_trafo_df["p_B_hv_mw"] = Pabc_hv_mw[1, :].flatten()
+    res_trafo_df["p_C_hv_mw"] = Pabc_hv_mw[2, :].flatten()
+    res_trafo_df["q_A_hv_mvar"] = Qabc_hv_mvar[0, :].flatten()
+    res_trafo_df["q_B_hv_mvar"] = Qabc_hv_mvar[1, :].flatten()
+    res_trafo_df["q_C_hv_mvar"] = Qabc_hv_mvar[2, :].flatten()
+    res_trafo_df["p_A_lv_mw"] = Pabc_lv_mw[0, :].flatten()
+    res_trafo_df["p_B_lv_mw"] = Pabc_lv_mw[1, :].flatten()
+    res_trafo_df["p_C_lv_mw"] = Pabc_lv_mw[2, :].flatten()
+    res_trafo_df["q_A_lv_mvar"] = Qabc_lv_mvar[0, :].flatten()
+    res_trafo_df["q_B_lv_mvar"] = Qabc_lv_mvar[1, :].flatten()
+    res_trafo_df["q_C_lv_mvar"] = Qabc_lv_mvar[2, :].flatten()
+    res_trafo_df["p_A_l_mw"] = Pabcl_mw[0, :].flatten()
+    res_trafo_df["p_B_l_mw"] = Pabcl_mw[1, :].flatten()
+    res_trafo_df["p_C_l_mw"] = Pabcl_mw[2, :].flatten()
+    res_trafo_df["q_A_l_mvar"] = Qabcl_mvar[0, :].flatten()
+    res_trafo_df["q_B_l_mvar"] = Qabcl_mvar[1, :].flatten()
+    res_trafo_df["q_C_l_mvar"] = Qabcl_mvar[2, :].flatten()
+    res_trafo_df["iA_hv_ka"] = Iabc_hv_ka[0, :].flatten()
+    res_trafo_df["iB_hv_ka"] = Iabc_hv_ka[1, :].flatten()
+    res_trafo_df["iC_hv_ka"] = Iabc_hv_ka[2, :].flatten()
+    res_trafo_df["iA_lv_ka"] = Iabc_lv_ka[0, :].flatten()
+    res_trafo_df["iB_lv_ka"] = Iabc_lv_ka[1, :].flatten()
+    res_trafo_df["iC_lv_ka"] = Iabc_lv_ka[2, :].flatten()
+    res_trafo_df["loading_percentA"] = loading_percent[0, :]
+    res_trafo_df["loading_percentB"] = loading_percent[1, :]
+    res_trafo_df["loading_percentC"] = loading_percent[2, :]
+    res_trafo_df["loading_percent"] = loading_percent.max(axis=0)
+    res_trafo_df.index = net["trafo"].index.values
 
 
 def _get_trafo3w_results(net, ppc, s_ft, i_ft):

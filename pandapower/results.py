@@ -9,10 +9,11 @@ import copy
 import numpy as np
 import pandas as pd
 
-from pandapower.results_branch import _get_branch_results
+from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
-    _get_shunt_results, _get_p_q_results, _get_bus_v_results
-from pandapower.results_gen import _get_gen_results
+    _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
+    _get_bus_results_3ph
+from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 
 
 def _extract_results(net, ppc):
@@ -28,7 +29,20 @@ def _extract_results(net, ppc):
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
 
+def _extract_results_3ph(net, ppc0, ppc1, ppc2):
+    # reset_results(net, False)
+    _set_buses_out_of_service(ppc0)
+    _set_buses_out_of_service(ppc1)
+    _set_buses_out_of_service(ppc2)
+    bus_lookup_aranged = _get_aranged_lookup(net)
 
+    _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2)
+    bus_pq = _get_p_q_results_3ph(net, bus_lookup_aranged)
+    # _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
+    _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
+    _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, bus_pq)
+    _get_bus_results_3ph(net, bus_pq)
+    
 def _extract_results_se(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
@@ -82,20 +96,26 @@ def init_element(net, element):
         empty_res_element(net, res_element)
 
 
-def get_elements_to_empty():
-    return ["bus"] # ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
+def get_elements_to_empty(balanced=True):
+    if balanced:
+        return ["bus"]
+    else:
+        return ["ext_grid_3ph", "asymmetric_load_3ph", "asymmetric_sgen_3ph", "asymmetric_gen_3ph", "bus_3ph", "line_3ph", "trafo_3ph"]
 
 
-def get_elements_to_init():
-    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
+def get_elements_to_init(balanced=True):
+    if balanced:
+        return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
+    else:
+        return []
 
 
-def reset_results(net):
-    elements_to_empty = get_elements_to_empty()
+def reset_results(net, balanced=True):
+    elements_to_empty = get_elements_to_empty(balanced=balanced)
     for element in elements_to_empty:
         empty_res_element(net, "res_" + element)
 
-    elements_to_init = get_elements_to_init()
+    elements_to_init = get_elements_to_init(balanced=balanced)
     for element in elements_to_init:
         init_element(net, element)
 
