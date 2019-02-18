@@ -73,14 +73,14 @@ def _get_options(options, **kwargs):
     recycle = options["recycle"]
     numba = options["numba"]
     enforce_q_lims = options["enforce_q_lims"]
-    tolerance_kva = options["tolerance_kva"]
+    tolerance_mva = options["tolerance_mva"]
     algorithm = options["algorithm"]
     max_iteration = options["max_iteration"]
 
     # algorithms implemented within pypower
     algorithm_pypower_dict = {'nr': 1, 'fdbx': 2, 'fdxb': 3, 'gs': 4}
 
-    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_kva * 1e-3,
+    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_mva,
                      PF_ALG=algorithm_pypower_dict[algorithm], **kwargs)
     ppopt['PF_MAX_IT'] = max_iteration
     ppopt['PF_MAX_IT_GS'] = max_iteration

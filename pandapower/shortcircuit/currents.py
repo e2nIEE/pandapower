@@ -49,21 +49,21 @@ def _current_source_current(net, ppc):
     ppc["bus"][:, IKCV] = 0
     ppc["bus"][:, IKSS2] = 0
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    if not "motor" in net.sgen.type.values:
+    if not False in net.sgen.current_source.values:
         sgen = net.sgen[net._is_elements["sgen"]]
     else:
-        sgen = net.sgen[(net._is_elements["sgen"]) &
-                        (net.sgen.type != "motor")]
+        sgen = net.sgen[net._is_elements["sgen"] &
+                        net.sgen.current_source]
     if len(sgen) == 0:
         return
-    if any(pd.isnull(sgen.sn_kva)):
+    if any(pd.isnull(sgen.sn_mva)):
         raise UserWarning(
-            "sn_kva needs to be specified for all sgens in net.sgen.sn_kva")
+            "sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
     baseI = ppc["internal"]["baseI"]
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
     Zbus = ppc["internal"]["Zbus"]
-    i_sgen_pu = sgen.sn_kva.values / net.sn_kva * sgen.k.values
+    i_sgen_pu = sgen.sn_mva.values / net.sn_mva * sgen.k.values
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
     ppc["bus"][buses, IKCV] = ikcv_pu
     ppc["bus"][:, IKSS2] = abs(

@@ -13,7 +13,7 @@ import pandapower.networks as pn
 def test_rural_1():
     net = pn.create_synthetic_voltage_control_lv_network('rural_1')
     assert abs(net.line.length_km.sum() - 1.616) < 1e-6
-    assert abs(net.load.p_kw.sum() - 77) < 1e-6
+    assert abs(net.load.p_mw.sum() - 77e-3) < 1e-6
     assert len(net.bus.index) == 26
     assert len(net.line.index) == 24
     assert len(net.trafo.index) == 1
@@ -24,7 +24,7 @@ def test_rural_1():
 def test_rural_2():
     net = pn.create_synthetic_voltage_control_lv_network('rural_2')
     assert abs(net.line.length_km.sum() - 0.567) < 1e-6
-    assert abs(net.load.p_kw.sum() - 64.5) < 1e-6
+    assert abs(net.load.p_mw.sum() - 64.5e-3) < 1e-6
     assert len(net.bus.index) == 18
     assert len(net.line.index) == 16
     assert len(net.trafo.index) == 1
@@ -35,7 +35,7 @@ def test_rural_2():
 def test_village_1():
     net = pn.create_synthetic_voltage_control_lv_network('village_1')
     assert abs(net.line.length_km.sum() - 2.6) < 1e-6
-    assert abs(net.load.p_kw.sum() - 262.1) < 1e-6
+    assert abs(net.load.p_mw.sum() - 262.1e-3) < 1e-6
     assert len(net.bus.index) == 80
     assert len(net.line.index) == 78
     assert len(net.trafo.index) == 1
@@ -46,7 +46,7 @@ def test_village_1():
 def test_village_2():
     net = pn.create_synthetic_voltage_control_lv_network('village_2')
     assert abs(net.line.length_km.sum() - 1.832) < 1e-6
-    assert abs(net.load.p_kw.sum() - 183.6) < 1e-6
+    assert abs(net.load.p_mw.sum() - 183.6e-3) < 1e-6
     assert len(net.bus.index) == 74
     assert len(net.line.index) == 72
     assert len(net.trafo.index) == 1
@@ -57,7 +57,7 @@ def test_village_2():
 def test_suburb_1():
     net = pn.create_synthetic_voltage_control_lv_network('suburb_1')
     assert abs(net.line.length_km.sum() - 4.897) < 1e-6
-    assert abs(net.load.p_kw.sum() - 578.3) < 1e-6
+    assert abs(net.load.p_mw.sum() - 578.3e-3) < 1e-6
     assert len(net.bus.index) == 204
     assert len(net.line.index) == 202
     assert len(net.trafo.index) == 1

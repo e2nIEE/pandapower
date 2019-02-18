@@ -16,11 +16,10 @@ except ImportError:
     from pandapower.pf.makeYbus_pypower import makeYbus
 
 
-class wls_matrix_ops:
-    def __init__(self, ppc, slack_buses, non_slack_buses, s_ref):
+class WLSAlgebra:
+    def __init__(self, ppc, slack_buses, non_slack_buses):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppc = ppc
-        self.baseMVA = s_ref / 1e6
         self.slack_buses = slack_buses
         self.non_slack_buses = non_slack_buses
         self.Y_bus = None
@@ -46,7 +45,9 @@ class wls_matrix_ops:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            y_bus, y_f, y_t = makeYbus(self.baseMVA, self.ppc["bus"], self.ppc["branch"])
+            y_bus, y_f, y_t = makeYbus(self.ppc["baseMVA"], self.ppc["bus"], self.ppc["branch"])
+            self.ppc['internal']['Yf'], self.ppc['internal']['Yt'],\
+            self.ppc['internal']['Y_bus'] = y_f, y_t, y_bus.toarray()
 
         # create relevant matrices
         self.Y_bus = y_bus.toarray()
@@ -133,22 +134,7 @@ class wls_matrix_ops:
 
         return hx
 
-    # Create Jacobian matrix
-    def create_jacobian(self, v, delta):
-        n = len(self.ppc["bus"])
-        G = self.G
-        B = self.B
-        G_series = self.G_series
-        B_series = self.B_series
-        G_shunt = self.G_shunt
-        B_shunt = self.B_shunt
-
-        # Create Jacobi Matrix
-        # Source: p.23; Power System State Estimation by Ali Abur
-
-        deltas = delta[:, np.newaxis] - delta  # delta_i - delta_j
-        cos_delta = np.cos(deltas)  # cos(delta_i - delta_j)
-        sin_delta = np.sin(deltas)  # sin(delta_i - delta_j)
+    def _calc_h_dpq_inj_dv(self, n, v, G, B, sin_delta, cos_delta):
         vi_vj = np.outer(v, v)  # Ui * Uj
         diag_n = np.arange(n)  # Used for indexing the diagonal of a n x n matrix
 
@@ -169,12 +155,33 @@ class wls_matrix_ops:
         H_dQinj_dU = np.multiply((G * sin_delta - B * cos_delta).T, v).T
         H_dQinj_dU[diag_n, diag_n] = np.sum(v * (G * sin_delta - B * cos_delta), axis=1) \
                                      - (v * B.diagonal())
+        return H_dPinj_dth, H_dPinj_dU, H_dQinj_dth, H_dQinj_dU
+
+    # Create Jacobian matrix
+    def create_jacobian(self, v, delta):
+        n = len(self.ppc["bus"])
+        G = self.G
+        B = self.B
+        G_series = self.G_series
+        B_series = self.B_series
+        G_shunt = self.G_shunt
+        B_shunt = self.B_shunt
+
+        # Create Jacobi Matrix
+        # Source: p.23; Power System State Estimation by Ali Abur
+
+        deltas = delta[:, np.newaxis] - delta  # delta_i - delta_j
+        cos_delta = np.cos(deltas)  # cos(delta_i - delta_j)
+        sin_delta = np.sin(deltas)  # sin(delta_i - delta_j)
+        vi_vj = np.outer(v, v)  # Ui * Uj
+
+        H_dPinj_dth, H_dPinj_dU, H_dQinj_dth, H_dQinj_dU = \
+            self._calc_h_dpq_inj_dv(n, v, G, B, sin_delta, cos_delta)
 
         # Submatrices d(Pij)/d(theta) and d(Pij)/d(V)
         # d(P01)/d(theta0) is at position H_dPij_dth_i[0,1]
         # d(P23)/d(theta3) is at position H_dPij_dth_j[2,3]
         # d(P23)/d(theta1) is 0 and not stored in the matrix
-
         H_dPij_dth_i = vi_vj * (G_series * sin_delta - B_series * cos_delta)
         H_dPij_dth_j = - H_dPij_dth_i
 
@@ -304,3 +311,57 @@ class wls_matrix_ops:
             h_mat = np.vstack((h_mat, h_))
 
         return h_mat[1:, :]  # delete dummy line
+
+
+class WLSAlgebraZeroInjectionConstraints(WLSAlgebra):
+    # Creates h(x), c(x), depending on the current U and delta and the static topology data
+    def create_hx_cx(self, v, delta, p_zero_inj, q_zero_inj):
+        deltas = delta[:, np.newaxis] - delta
+        cos_delta, sin_delta = np.cos(deltas), np.sin(deltas)
+        vi_vj = np.outer(v, v)
+        p_i = np.sum(vi_vj * (self.G * cos_delta + self.B * sin_delta), axis=1)
+        q_i = np.sum(vi_vj * (self.G * sin_delta - self.B * cos_delta), axis=1)
+
+        hx = self.create_hx(v, delta)
+        cx = np.hstack((p_i[p_zero_inj],
+                        q_i[q_zero_inj]))
+        return hx, cx
+
+    # Create Jacobian matrix
+    def create_jacobian(self, v, delta, p_zero_inj, q_zero_inj):
+        # Build H dynamically from submatrices and measurements
+        n = len(self.ppc["bus"])
+        G = self.G
+        B = self.B
+        columns = 2 * n - len(self.slack_buses)
+        range_theta = self.non_slack_buses
+        range_v = list(range(n))
+        deltas = delta[:, np.newaxis] - delta  # delta_i - delta_j
+        cos_delta = np.cos(deltas)  # cos(delta_i - delta_j)
+        sin_delta = np.sin(deltas)  # sin(delta_i - delta_j)
+
+        h_mat_ret = super(WLSAlgebraZeroInjectionConstraints, self).create_jacobian(v, delta)
+        c_mat = np.zeros((1, columns))      # create C matrix with dummy line so that we can append to it
+
+        H_dPinj_dth, H_dPinj_dU, H_dQinj_dth, H_dQinj_dU = \
+            self._calc_h_dpq_inj_dv(n, v, G, B, sin_delta, cos_delta)
+
+        if len(p_zero_inj) > 0:
+            nodes = np.arange(n)[p_zero_inj]
+            c_t = H_dPinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
+                .reshape(len(range_theta), len(nodes)).T
+            c__u = H_dPinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
+                .reshape(len(range_v), len(nodes)).T
+            c_ = np.hstack((c_t, c__u))
+            c_mat = np.vstack((c_mat, c_))
+
+        if len(q_zero_inj) > 0:
+            nodes = np.arange(n)[q_zero_inj]
+            c_t = H_dQinj_dth[np.tile(nodes, len(range_theta)), np.repeat(range_theta, len(nodes))]\
+                .reshape(len(range_theta), len(nodes)).T
+            c__u = H_dQinj_dU[np.tile(nodes, len(range_v)), np.repeat(range_v, len(nodes))]\
+                .reshape(len(range_v), len(nodes)).T
+            c_ = np.hstack((c_t, c__u))
+            c_mat = np.vstack((c_mat, c_))
+
+        return h_mat_ret, c_mat[1:, :]  # delete dummy lines

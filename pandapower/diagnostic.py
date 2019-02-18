@@ -260,26 +260,26 @@ def invalid_values(net):
                                  ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
                                  ('max_i_ka', '>0'), ('df', '0<x<=1'), ('in_service', 'boolean')],
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
-                                  ('sn_kva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
-                                  ('vscr_percent', '>=0'),
-                                  ('vsc_percent', '>0'), ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
+                                  ('sn_mva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
+                                  ('vkr_percent', '>=0'),
+                                  ('vk_percent', '>0'), ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                   ('in_service', 'boolean')],
                         'trafo3w': [('hv_bus', 'positive_integer'), ('mv_bus', 'positive_integer'),
                                     ('lv_bus', 'positive_integer'),
-                                    ('sn_hv_kva', '>0'), ('sn_mv_kva', '>0'), ('sn_lv_kva', '>0'),
+                                    ('sn_hv_mva', '>0'), ('sn_mv_mva', '>0'), ('sn_lv_mva', '>0'),
                                     ('vn_hv_kv', '>0'), ('vn_mv_kv', '>0'), ('vn_lv_kv', '>0'),
-                                    ('vscr_hv_percent', '>=0'), ('vscr_mv_percent', '>=0'),
-                                    ('vscr_lv_percent', '>=0'), ('vsc_hv_percent', '>0'),
-                                    ('vsc_mv_percent', '>0'), ('vsc_lv_percent', '>0'),
+                                    ('vkr_hv_percent', '>=0'), ('vkr_mv_percent', '>=0'),
+                                    ('vkr_lv_percent', '>=0'), ('vk_hv_percent', '>0'),
+                                    ('vk_mv_percent', '>0'), ('vk_lv_percent', '>0'),
                                     ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                     ('in_service', 'boolean')],
-                        'load': [('bus', 'positive_integer'), ('p_kw', 'number'),
-                                 ('q_kvar', 'number'),
+                        'load': [('bus', 'positive_integer'), ('p_mw', 'number'),
+                                 ('q_mvar', 'number'),
                                  ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'sgen': [('bus', 'positive_integer'), ('p_kw', 'number'),
-                                 ('q_kvar', 'number'),
+                        'sgen': [('bus', 'positive_integer'), ('p_mw', 'number'),
+                                 ('q_mvar', 'number'),
                                  ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'gen': [('bus', 'positive_integer'), ('p_kw', 'number'),
+                        'gen': [('bus', 'positive_integer'), ('p_mw', 'number'),
                                 ('scaling', '>=0'), ('in_service', 'boolean')],
                         'ext_grid': [('bus', 'positive_integer'), ('vm_pu', '>0'),
                                      ('va_degree', 'number')],
@@ -800,9 +800,9 @@ def wrong_reference_system(net):
 
     """
     check_results = {}
-    neg_loads = list(net.load[net.load.p_kw < 0].index)
-    pos_gens = list(net.gen[net.gen.p_kw > 0].index)
-    pos_sgens = list(net.sgen[net.sgen.p_kw > 0].index)
+    neg_loads = list(net.load[net.load.p_mw < 0].index)
+    pos_gens = list(net.gen[net.gen.p_mw < 0].index)
+    pos_sgens = list(net.sgen[net.sgen.p_mw < 0].index)
 
     if neg_loads:
         check_results['loads'] = neg_loads
@@ -881,7 +881,7 @@ def deviation_from_std_type(net):
                 if std_type in net.std_types[key].keys():
                     std_type_values = net.std_types[key][std_type]
                     for param in std_type_values.keys():
-                        if param == "tp_pos":
+                        if param == "tap_pos":
                             continue
                         if param in net[key].columns:
                             try:

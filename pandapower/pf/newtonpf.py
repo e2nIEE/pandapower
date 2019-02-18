@@ -40,7 +40,7 @@ def newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     """
 
     ## options
-    tol = options['tolerance_kva'] * 1e-3
+    tol = options['tolerance_mva']
     max_it = options["max_iteration"]
     numba = options["numba"]
     iwamoto = options["algorithm"] == "iwamoto_nr"

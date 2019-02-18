@@ -80,51 +80,51 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
                    std_type='Line220kV', name='Line 6a-6b')
 
     # Trafos
-    pp.create_transformer_from_parameters(net_cigre_hv, bus7, bus1, sn_kva=1000000,
-                                          vn_hv_kv=380, vn_lv_kv=220, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_kw=0, i0_percent=0,
+    pp.create_transformer_from_parameters(net_cigre_hv, bus7, bus1, sn_mva=1000,
+                                          vn_hv_kv=380, vn_lv_kv=220, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=0.0, name='Trafo 1-7')
-    pp.create_transformer_from_parameters(net_cigre_hv, bus8, bus3, sn_kva=1000000,
-                                          vn_hv_kv=380, vn_lv_kv=220, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_kw=0, i0_percent=0,
+    pp.create_transformer_from_parameters(net_cigre_hv, bus8, bus3, sn_mva=1000,
+                                          vn_hv_kv=380, vn_lv_kv=220, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=0.0, name='Trafo 3-8')
 
-    pp.create_transformer_from_parameters(net_cigre_hv, bus1, bus9, sn_kva=1000000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_kw=0, i0_percent=0,
+    pp.create_transformer_from_parameters(net_cigre_hv, bus1, bus9, sn_mva=1000,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 9-1')
-    pp.create_transformer_from_parameters(net_cigre_hv, bus2, bus10, sn_kva=1000000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_kw=0, i0_percent=0,
+    pp.create_transformer_from_parameters(net_cigre_hv, bus2, bus10, sn_mva=1000,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 10-2')
-    pp.create_transformer_from_parameters(net_cigre_hv, bus3, bus11, sn_kva=1000000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_kw=0, i0_percent=0,
+    pp.create_transformer_from_parameters(net_cigre_hv, bus3, bus11, sn_mva=1000,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 11-3')
-    pp.create_transformer_from_parameters(net_cigre_hv, bus6b, bus12, sn_kva=500000,
-                                          vn_hv_kv=220, vn_lv_kv=22, vscr_percent=0.0,
-                                          vsc_percent=13.0, pfe_kw=0, i0_percent=0,
+    pp.create_transformer_from_parameters(net_cigre_hv, bus6b, bus12, sn_mva=500,
+                                          vn_hv_kv=220, vn_lv_kv=22, vkr_percent=0.0,
+                                          vk_percent=13.0, pfe_kw=0, i0_percent=0,
                                           shift_degree=330.0, name='Trafo 12-6b')
 
     # Loads
-    pp.create_load(net_cigre_hv, bus2, p_kw=285000, q_kvar=200000, name='Load 2')
-    pp.create_load(net_cigre_hv, bus3, p_kw=325000, q_kvar=244000, name='Load 3')
-    pp.create_load(net_cigre_hv, bus4, p_kw=326000, q_kvar=244000, name='Load 4')
-    pp.create_load(net_cigre_hv, bus5, p_kw=103000, q_kvar=62000, name='Load 5')
-    pp.create_load(net_cigre_hv, bus6a, p_kw=435000, q_kvar=296000, name='Load 6a')
+    pp.create_load(net_cigre_hv, bus2, p_mw=285, q_mvar=200, name='Load 2')
+    pp.create_load(net_cigre_hv, bus3, p_mw=325, q_mvar=244, name='Load 3')
+    pp.create_load(net_cigre_hv, bus4, p_mw=326, q_mvar=244, name='Load 4')
+    pp.create_load(net_cigre_hv, bus5, p_mw=103, q_mvar=62, name='Load 5')
+    pp.create_load(net_cigre_hv, bus6a, p_mw=435, q_mvar=296, name='Load 6a')
 
     # External grid
     pp.create_ext_grid(net_cigre_hv, bus9, vm_pu=1.03, va_degree=0, name='Generator 9')
 
     # Generators
-    pp.create_gen(net_cigre_hv, bus10, vm_pu=1.03, p_kw=-5e5, name='Generator 10')
-    pp.create_gen(net_cigre_hv, bus11, vm_pu=1.03, p_kw=-2e5, name='Generator 11')
-    pp.create_gen(net_cigre_hv, bus12, vm_pu=1.03, p_kw=-3e5, name='Generator 12')
+    pp.create_gen(net_cigre_hv, bus10, vm_pu=1.03, p_mw=500, name='Generator 10')
+    pp.create_gen(net_cigre_hv, bus11, vm_pu=1.03, p_mw=200, name='Generator 11')
+    pp.create_gen(net_cigre_hv, bus12, vm_pu=1.03, p_mw=300, name='Generator 12')
 
     # Shunts
-    pp.create_shunt(net_cigre_hv, bus4, p_kw=0.0, q_kvar=-160000, name='Shunt 4')
-    pp.create_shunt(net_cigre_hv, bus5, p_kw=0.0, q_kvar=-80000, name='Shunt 5')
-    pp.create_shunt(net_cigre_hv, bus6a, p_kw=0.0, q_kvar=-180000, name='Shunt 6a')
+    pp.create_shunt(net_cigre_hv, bus4, p_mw=0.0, q_mvar=-0.16, name='Shunt 4')
+    pp.create_shunt(net_cigre_hv, bus5, p_mw=0.0, q_mvar=-0.08, name='Shunt 5')
+    pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-0.18, name='Shunt 6a')
 
     # Bus geo data
     net_cigre_hv.bus_geodata = read_json(
@@ -210,13 +210,13 @@ def create_cigre_network_mv(with_der=False):
                        s_sc_max_mva=5000, s_sc_min_mva=5000, rx_max=0.1, rx_min=0.1)
 
     # Trafos
-    trafo0 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, buses[0], sn_kva=25000,
-                                                   vn_hv_kv=110, vn_lv_kv=20, vscr_percent=0.16,
-                                                   vsc_percent=12.00107, pfe_kw=0, i0_percent=0,
+    trafo0 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, buses[0], sn_mva=25,
+                                                   vn_hv_kv=110, vn_lv_kv=20, vkr_percent=0.16,
+                                                   vk_percent=12.00107, pfe_kw=0, i0_percent=0,
                                                    shift_degree=30.0, name='Trafo 0-1')
-    trafo1 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, buses[11], sn_kva=25000,
-                                                   vn_hv_kv=110, vn_lv_kv=20, vscr_percent=0.16,
-                                                   vsc_percent=12.00107, pfe_kw=0, i0_percent=0,
+    trafo1 = pp.create_transformer_from_parameters(net_cigre_mv, bus0, buses[11], sn_mva=25,
+                                                   vn_hv_kv=110, vn_lv_kv=20, vkr_percent=0.16,
+                                                   vk_percent=12.00107, pfe_kw=0, i0_percent=0,
                                                    shift_degree=30.0, name='Trafo 0-12')
 
     # Switches
@@ -235,51 +235,51 @@ def create_cigre_network_mv(with_der=False):
 
     # Loads
     # Residential
-    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 15300, 0.98, "ind", name='Load R1')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 285, 0.97, "ind", name='Load R3')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[3], 445, 0.97, "ind", name='Load R4')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[4], 750, 0.97, "ind", name='Load R5')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[5], 565, 0.97, "ind", name='Load R6')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[7], 605, 0.97, "ind", name='Load R8')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 490, 0.97, "ind", name='Load R10')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[10], 340, 0.97, "ind", name='Load R11')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 15300, 0.98, "ind", name='Load R12')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 215, 0.97, "ind", name='Load R14')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 15.3, 0.98, "ind", name='Load R1')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 0.285, 0.97, "ind", name='Load R3')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[3], 0.445, 0.97, "ind", name='Load R4')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[4], 0.750, 0.97, "ind", name='Load R5')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[5], 0.565, 0.97, "ind", name='Load R6')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[7], 0.605, 0.97, "ind", name='Load R8')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 0.490, 0.97, "ind", name='Load R10')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[10], 0.340, 0.97, "ind", name='Load R11')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 15.3, 0.98, "ind", name='Load R12')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 0.215, 0.97, "ind", name='Load R14')
 
     # Commercial / Industrial
-    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 5100, 0.95, "ind", name='Load CI1')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 265, 0.85, "ind", name='Load CI3')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[6], 90, 0.85, "ind", name='Load CI7')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[8], 675, 0.85, "ind", name='Load CI9')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 80, 0.85, "ind", name='Load CI10')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 5280, 0.95, "ind", name='Load CI12')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[12], 40, 0.85, "ind", name='Load CI13')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 390, 0.85, "ind", name='Load CI14')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 5.1, 0.95, "ind", name='Load CI1')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 0.265, 0.85, "ind", name='Load CI3')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[6], 0.090, 0.85, "ind", name='Load CI7')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[8], 0.675, 0.85, "ind", name='Load CI9')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 0.080, 0.85, "ind", name='Load CI10')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 5.28, 0.95, "ind", name='Load CI12')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[12], 0.04, 0.85, "ind", name='Load CI13')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 0.390, 0.85, "ind", name='Load CI14')
 
     # Optional distributed energy recources
     if with_der in ["pv_wind", "all"]:
-        pp.create_sgen(net_cigre_mv, buses[2], -20, q_kvar=0, sn_kva=20, name='PV 3', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[3], -20, q_kvar=0, sn_kva=20, name='PV 4', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[4], -30, q_kvar=0, sn_kva=30, name='PV 5', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[5], -30, q_kvar=0, sn_kva=30, name='PV 6', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[7], -30, q_kvar=0, sn_kva=30, name='PV 8', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[8], -30, q_kvar=0, sn_kva=30, name='PV 9', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[9], -40, q_kvar=0, sn_kva=40, name='PV 10', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[10], -10, q_kvar=0, sn_kva=10, name='PV 11', type='PV')
-        pp.create_sgen(net_cigre_mv, buses[6], -1500, q_kvar=0, sn_kva=1500, name='WKA 7',
+        pp.create_sgen(net_cigre_mv, buses[2], 0.02, q_mvar=0, sn_mva=0.02, name='PV 3', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[3], 0.020, q_mvar=0, sn_mva=0.02, name='PV 4', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[4], 0.030, q_mvar=0, sn_mva=0.03, name='PV 5', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[5], 0.030, q_mvar=0, sn_mva=0.03, name='PV 6', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[7], 0.030, q_mvar=0, sn_mva=0.03, name='PV 8', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[8], 0.030, q_mvar=0, sn_mva=0.03, name='PV 9', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[9], 0.040, q_mvar=0, sn_mva=0.04, name='PV 10', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[10], 0.010, q_mvar=0, sn_mva=0.01, name='PV 11', type='PV')
+        pp.create_sgen(net_cigre_mv, buses[6], 1.5, q_mvar=0, sn_mva=1.5, name='WKA 7',
                        type='WP')
         if with_der == "all":
-            pp.create_storage(net_cigre_mv, bus=buses[4], p_kw=-600, max_e_kwh=nan, sn_kva=200,
-                              name='Battery 1', type='Battery', max_p_kw=-600, min_p_kw=600)
-            pp.create_sgen(net_cigre_mv, bus=buses[4], p_kw=-33, sn_kva=33,
+            pp.create_storage(net_cigre_mv, bus=buses[4], p_mw=0.6, max_e_mwh=nan, sn_mva=0.2,
+                              name='Battery 1', type='Battery', max_p_mw=0.6, min_p_mw=-0.6)
+            pp.create_sgen(net_cigre_mv, bus=buses[4], p_mw=0.033, sn_mva=0.033,
                            name='Residential fuel cell 1', type='Residential fuel cell')
-            pp.create_sgen(net_cigre_mv, bus=buses[8], p_kw=-310, sn_kva=310, name='CHP diesel 1',
+            pp.create_sgen(net_cigre_mv, bus=buses[8], p_mw=0.310, sn_mva=0.31, name='CHP diesel 1',
                            type='CHP diesel')
-            pp.create_sgen(net_cigre_mv, bus=buses[8], p_kw=-212, sn_kva=212, name='Fuel cell 1',
+            pp.create_sgen(net_cigre_mv, bus=buses[8], p_mw=0.212, sn_mva=0.212, name='Fuel cell 1',
                            type='Fuel cell')
-            pp.create_storage(net_cigre_mv, bus=buses[9], p_kw=-200, max_e_kwh=nan, sn_kva=200,
-                              name='Battery 2', type='Battery', max_p_kw=-200, min_p_kw=200)
-            pp.create_sgen(net_cigre_mv, bus=buses[9], p_kw=-14, sn_kva=14,
+            pp.create_storage(net_cigre_mv, bus=buses[9], p_mw=0.200, max_e_mwh=nan, sn_mva=0.2,
+                              name='Battery 2', type='Battery', max_p_mw=0.2, min_p_mw=-0.2)
+            pp.create_sgen(net_cigre_mv, bus=buses[9], p_mw=0.014, sn_mva=.014,
                            name='Residential fuel cell 2', type='Residential fuel cell')
 
     # Bus geo data
@@ -466,41 +466,41 @@ def create_cigre_network_lv():
                    name='Line C9-C20')
 
     # Trafos
-    pp.create_transformer_from_parameters(net_cigre_lv, busR0, busR1, sn_kva=500, vn_hv_kv=20.0,
-                                          vn_lv_kv=0.4, vscr_percent=1.0, vsc_percent=4.123106,
+    pp.create_transformer_from_parameters(net_cigre_lv, busR0, busR1, sn_mva=0.5, vn_hv_kv=20.0,
+                                          vn_lv_kv=0.4, vkr_percent=1.0, vk_percent=4.123106,
                                           pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
-                                          tp_pos=0.0, name='Trafo R0-R1')
+                                          tap_pos=0.0, name='Trafo R0-R1')
 
-    pp.create_transformer_from_parameters(net_cigre_lv, busI0, busI1, sn_kva=150, vn_hv_kv=20.0,
-                                          vn_lv_kv=0.4, vscr_percent=1.003125, vsc_percent=4.126896,
+    pp.create_transformer_from_parameters(net_cigre_lv, busI0, busI1, sn_mva=0.15, vn_hv_kv=20.0,
+                                          vn_lv_kv=0.4, vkr_percent=1.003125, vk_percent=4.126896,
                                           pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
-                                          tp_pos=0.0, name='Trafo I0-I1')
+                                          tap_pos=0.0, name='Trafo I0-I1')
 
-    pp.create_transformer_from_parameters(net_cigre_lv, busC0, busC1, sn_kva=300, vn_hv_kv=20.0,
-                                          vn_lv_kv=0.4, vscr_percent=0.993750, vsc_percent=4.115529,
+    pp.create_transformer_from_parameters(net_cigre_lv, busC0, busC1, sn_mva=0.3, vn_hv_kv=20.0,
+                                          vn_lv_kv=0.4, vkr_percent=0.993750, vk_percent=4.115529,
                                           pfe_kw=0.0, i0_percent=0.0, shift_degree=30.0,
-                                          tp_pos=0.0, name='Trafo C0-C1')
+                                          tap_pos=0.0, name='Trafo C0-C1')
 
     # External grid
     pp.create_ext_grid(net_cigre_lv, bus0, vm_pu=1.0, va_degree=0.0, s_sc_max_mva=100.0,
                        s_sc_min_mva=100.0, rx_max=1.0, rx_min=1.0)
 
     # Loads
-    pp.create_load(net_cigre_lv, busR1, p_kw=190.0, q_kvar=62.449980, name='Load R1')
-    pp.create_load(net_cigre_lv, busR11, p_kw=14.25, q_kvar=4.683748, name='Load R11')
-    pp.create_load(net_cigre_lv, busR15, p_kw=49.4, q_kvar=16.236995, name='Load R15')
-    pp.create_load(net_cigre_lv, busR16, p_kw=52.25, q_kvar=17.173744, name='Load R16')
-    pp.create_load(net_cigre_lv, busR17, p_kw=33.25, q_kvar=10.928746, name='Load R17')
-    pp.create_load(net_cigre_lv, busR18, p_kw=44.65, q_kvar=14.675745, name='Load R18')
-    pp.create_load(net_cigre_lv, busI2, p_kw=85.0, q_kvar=52.678269, name='Load I2')
-    pp.create_load(net_cigre_lv, busC1, p_kw=108.0, q_kvar=52.306787, name='Load C1')
-    pp.create_load(net_cigre_lv, busC12, p_kw=18.0, q_kvar=8.717798, name='Load C12')
-    pp.create_load(net_cigre_lv, busC13, p_kw=18.0, q_kvar=8.717798, name='Load C13')
-    pp.create_load(net_cigre_lv, busC14, p_kw=22.5, q_kvar=10.897247, name='Load C14')
-    pp.create_load(net_cigre_lv, busC17, p_kw=22.5, q_kvar=10.897247, name='Load C17')
-    pp.create_load(net_cigre_lv, busC18, p_kw=7.2, q_kvar=3.487119, name='Load C18')
-    pp.create_load(net_cigre_lv, busC19, p_kw=14.4, q_kvar=6.974238, name='Load C19')
-    pp.create_load(net_cigre_lv, busC20, p_kw=7.2, q_kvar=3.487119, name='Load C20')
+    pp.create_load(net_cigre_lv, busR1, p_mw=0.19, q_mvar=0.062449980, name='Load R1')
+    pp.create_load(net_cigre_lv, busR11, p_mw=0.01425, q_mvar=0.004683748, name='Load R11')
+    pp.create_load(net_cigre_lv, busR15, p_mw=0.0494, q_mvar=0.016236995, name='Load R15')
+    pp.create_load(net_cigre_lv, busR16, p_mw=0.05225, q_mvar=0.017173744, name='Load R16')
+    pp.create_load(net_cigre_lv, busR17, p_mw=0.03325, q_mvar=0.010928746, name='Load R17')
+    pp.create_load(net_cigre_lv, busR18, p_mw=0.04465, q_mvar=0.014675745, name='Load R18')
+    pp.create_load(net_cigre_lv, busI2, p_mw=0.0850, q_mvar=0.052678269, name='Load I2')
+    pp.create_load(net_cigre_lv, busC1, p_mw=0.1080, q_mvar=0.052306787, name='Load C1')
+    pp.create_load(net_cigre_lv, busC12, p_mw=0.018, q_mvar=0.008717798, name='Load C12')
+    pp.create_load(net_cigre_lv, busC13, p_mw=0.018, q_mvar=0.008717798, name='Load C13')
+    pp.create_load(net_cigre_lv, busC14, p_mw=0.0225, q_mvar=0.010897247, name='Load C14')
+    pp.create_load(net_cigre_lv, busC17, p_mw=0.0225, q_mvar=0.010897247, name='Load C17')
+    pp.create_load(net_cigre_lv, busC18, p_mw=0.0072, q_mvar=0.003487119, name='Load C18')
+    pp.create_load(net_cigre_lv, busC19, p_mw=0.0144, q_mvar=0.006974238, name='Load C19')
+    pp.create_load(net_cigre_lv, busC20, p_mw=0.0072, q_mvar=0.003487119, name='Load C20')
 
     # Switches
     pp.create_switch(net_cigre_lv, bus0, busR0, et='b', closed=True, type='CB', name='S1')

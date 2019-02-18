@@ -54,7 +54,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
 
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. \
         If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. \
-        net.load.p_kw and net.load.q_kvar are considered as constant-power loads.
+        net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
         **init** (str, "results") - initialization method of the converter
         pandapower ppc converter supports two methods for initializing the converter:
@@ -83,7 +83,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
         ppc = pc.to_ppc(net)
 
     """
-    if (not (net["polynomial_cost"].empty and net["piecewise_linear_cost"].empty) and
+    if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and
        mode is None) or mode == "opf":
         mode = "opf"
         _check_necessary_opf_parameters(net, logger)
@@ -94,8 +94,8 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=True,
-                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init, enforce_q_lims=True,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init,
+                     init_va_degree=init, enforce_q_lims=True,
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
     #  do the conversion
     _, ppci = _pd2ppc(net)

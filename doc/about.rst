@@ -56,6 +56,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     :maxdepth: 1
     
     about/units
+    about/update
     about/authors
     about/changelog
     about/license

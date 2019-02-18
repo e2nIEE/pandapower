@@ -1,9 +1,9 @@
 **Parameter**;**Datatype**;**Value Range**;**Explanation**
 name;string;;name of the extended ward equivalent
 bus*;integer;;index of connected bus
-ps_kw*;float;;constant active power demand [kW]
+ps_mw*;float;;constant active power demand [MW]
 qs_kvar*;float;;constant reactive power demand [kVar]
-pz_kw*;float;;constant impedance active power demand at 1.0 pu [kW]
+pz_mw*;float;;constant impedance active power demand at 1.0 pu [MW]
 qz_kvar*;float;;constant impedance reactive power demand at 1.0 pu [kVar]
 r_ohm*;float;:math:`>` 0;internal resistance of the voltage source [ohm]
 x_ohm*;float;:math:`>` 0;internal reactance of the voltage source [ohm]

@@ -35,15 +35,15 @@ def test_minimize_active_power_curtailment():
     pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
 
     # create loads
-    pp.create_load(net, bus2, p_kw=60e3, controllable=False)
-    pp.create_load(net, bus3, p_kw=70e3, controllable=False)
-    pp.create_load(net, bus4, p_kw=10e3, controllable=False)
+    pp.create_load(net, bus2, p_mw=60, controllable=False)
+    pp.create_load(net, bus3, p_mw=70, controllable=False)
+    pp.create_load(net, bus4, p_mw=10, controllable=False)
 
     # create generators
     pp.create_ext_grid(net, bus1)
-    pp.create_gen(net, bus3, p_kw=-80 * 1e3, min_p_kw=-80e3, max_p_kw=0, vm_pu=1.01,
+    pp.create_gen(net, bus3, p_mw=80, max_p_mw=80, min_p_mw=0, vm_pu=1.01,
                   controllable=True)
-    pp.create_gen(net, bus4, p_kw=-100 * 1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01,
+    pp.create_gen(net, bus4, p_mw=0.1, max_p_mw=100, min_p_mw=0, vm_pu=1.01,
                   controllable=True)
 
     net.trafo["max_loading_percent"] = 50
@@ -52,9 +52,9 @@ def test_minimize_active_power_curtailment():
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02
 
-    pp.create_polynomial_cost(net, 0, "gen", array([1e-5, 0]))
-    pp.create_polynomial_cost(net, 1, "gen", array([1e-5, 0]))
-    pp.create_polynomial_cost(net, 0, "ext_grid", array([0, 0]))
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-0.01)
+    pp.create_poly_cost(net, 1, "gen", cp1_eur_per_mw=-0.01)
+    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0)
 
 
 
@@ -63,8 +63,8 @@ def test_minimize_active_power_curtailment():
     assert allclose(net.res_bus.vm_pu.values, array([1., 1.00000149,  1.01998544,  1.01999628]),
                     atol=1e-5)
     assert allclose(net.res_bus.va_degree.values, array([0., -0.7055226, 0.85974768, 2.24584537]),
-                    atol=1e-5)
+                    atol=1e-3)
 
 
 if __name__ == "__main__":
-    pytest.main(["test_curtailment.py", "-xs"])
+    pytest.main([__file__, "-xs"])

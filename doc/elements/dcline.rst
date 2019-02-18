@@ -30,7 +30,7 @@ Input Parameters
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter 
 
 .. note::
-    DC line is only able to model one-directional loadflow for now, which is why p_kw / max_p_kw have to be > 0.
+    DC line is only able to model one-directional loadflow for now, which is why p_mw / max_p_mw have to be > 0.
    
 Electric Model
 =================
@@ -53,8 +53,8 @@ The active power at the from side is defined by the parameters in the dcline tab
    :nowrap:
    
    \begin{align*}
-    P_{from} &= p\_kw \\
-    P_{to} &= - (p\_kw - loss\_kw) \cdot (1 - \frac{loss\_percent}{100})
+    P_{from} &= p\_mw \\
+    P_{to} &= - (p\_mw - loss\_mw) \cdot (1 - \frac{loss\_percent}{100})
     
    \end{align*}
 
@@ -74,9 +74,9 @@ Result Parameters
    :nowrap:
    
    \begin{align*}
-    p\_from\_kw &= P_{from} \\
-    p\_to\_kw &= P_{to} \\
-    pl\_kw &= p\_from\_kw + p\_to\_kw \\
+    p\_from\_mw &= P_{from} \\
+    p\_to\_mw &= P_{to} \\
+    pl\_mw &= p\_from\_mw + p\_to\_mw \\
     q\_from\_kvar &= Q_{from} \\
     q\_to\_kvar &= Q_{to} \\
     va\_from\_degree &= \angle \underline{v}_{from} \\
