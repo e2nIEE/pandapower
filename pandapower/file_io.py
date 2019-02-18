@@ -27,8 +27,7 @@ import numpy
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 from pandapower.toolbox import convert_format
-from pandapower.io_utils import to_dict_of_dfs, dicts_to_pandas, from_dict_of_dfs, \
-    PPJSONEncoder, PPJSONDecoder
+from pandapower.io_utils import to_dict_of_dfs, from_dict_of_dfs, PPJSONEncoder, PPJSONDecoder
 
 
 def to_pickle(net, filename):
@@ -138,12 +137,11 @@ def to_json(net, filename=None):
              >>> pp.to_json(net, "example.json")
 
     """
-    json_string = to_json_string(net)
     if hasattr(filename, 'write'):
-        filename.write(json_string)
-        return
-    with open(filename, "w") as text_file:
-        text_file.write(json_string)
+        json.dump(net, fp=filename, cls=PPJSONEncoder, indent=4)
+    else:
+        with open(filename, "w") as fp:
+            json.dump(net, fp=fp, cls=PPJSONEncoder, indent=4)
 
 
 def to_sql(net, con, include_results=True):
@@ -267,13 +265,14 @@ def from_excel(filename, convert=True):
 
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
-    try:
-        # pandas < 0.21
+    pd_version = float(pd.__version__[:4])
+    if pd_version < 0.21:
         xls = pd.ExcelFile(filename).parse(sheetname=None)
-    except TypeError:
-        # pandas 0.21
+    elif pd_version < 0.24:
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
-
+    else:
+        xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
+        
     try:
         net = from_dict_of_dfs(xls)
     except:
@@ -326,21 +325,24 @@ def from_json(filename, convert=True):
 
     """
     if hasattr(filename, 'read'):
-        data = json.load(filename, cls=PPJSONDecoder)
+        net = json.load(filename, cls=PPJSONDecoder)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
-        with open(filename) as data_file:
-            data = json.load(data_file, cls=PPJSONDecoder)
-    try:
-        pd_dicts = dicts_to_pandas(data)
-        net = from_dict_of_dfs(pd_dicts)
-        if convert:
-            convert_format(net)
-        return net
-    except UserWarning:
-        # Can be deleted in the future, maybe now
-        return from_json_dict(data, convert=convert)
+        with open(filename) as fp:
+            net = json.load(fp, cls=PPJSONDecoder)
+            # this can be removed in the future
+            # now net is saved with "_module", "_class", "_object"..., so json.load already returns
+            # pandapowerNet. Older files don't have it yet, and are loaded as dict.
+            # After some time, this part can be removed.
+            if not isinstance(net, pandapowerNet):
+                warn("This net is saved in older format, which will not be supported in future.\r\n"
+                     "Please resave your grid using the current pandapower version.",
+                     DeprecationWarning)
+                net = from_json_dict(net)
+    if convert:
+        convert_format(net)
+    return net
 
 
 def from_json_string(json_string, convert=True):
@@ -363,18 +365,14 @@ def from_json_string(json_string, convert=True):
 
     """
     data = json.loads(json_string, cls=PPJSONDecoder)
-    try:
-        pd_dicts = dicts_to_pandas(data)
-        net = from_dict_of_dfs(pd_dicts)
-        if convert:
-            convert_format(net)
-        return net
-    except UserWarning:
-        # Can be deleted in the future, maybe now
-        return from_json_dict(data, convert=convert)
+    net = from_json_dict(data)
+
+    if convert:
+        convert_format(net)
+    return net
 
 
-def from_json_dict(json_dict, convert=True):
+def from_json_dict(json_dict):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -393,9 +391,9 @@ def from_json_dict(json_dict, convert=True):
         >>> net = pp.pp.from_json_dict(json.loads(json_str))
 
     """
-    warn("This function is deprecated and will be removed in a future release.\r\n"
-         "Please resave your grid using the current pandapower version.", DeprecationWarning)
-    net = create_empty_network(name=json_dict["name"], f_hz=json_dict["f_hz"])
+    name = json_dict["name"] if "name" in json_dict else None
+    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50
+    net = create_empty_network(name=name, f_hz=f_hz)
 
     for key in sorted(json_dict.keys()):
         if key == 'dtypes':
@@ -405,9 +403,6 @@ def from_json_dict(json_dict, convert=True):
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:
             net[key] = json_dict[key]
-
-    if convert:
-        convert_format(net)
     return net
 
 

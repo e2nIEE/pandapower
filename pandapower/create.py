@@ -228,7 +228,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                       ],
         # geodata
         "line_geodata": [("coords", dtype(object))],
-        "bus_geodata": [("x", "f8"), ("y", "f8")],
+        "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
@@ -347,7 +347,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
 
 def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
                zone=None, in_service=True, max_vm_pu=nan,
-               min_vm_pu=nan, **kwargs):
+               min_vm_pu=nan, coords=None, **kwargs):
     """create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", \
                   zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
     Adds one bus in table net["bus"].
@@ -378,6 +378,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
         **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
+        **coords** (array, default None, shape= (,2L)) - busbar coordinates to plot the bus with multiple points.
+            coords is typically a list of tuples (start and endpoint of the busbar) [(x1, y1), (x2, y2)]
+
     OUTPUT:
         **index** (int) - The unique ID of the created element
 
@@ -404,6 +407,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
             raise UserWarning("geodata must be given as (x, y) tupel")
         net["bus_geodata"].loc[index, ["x", "y"]] = geodata
 
+    if coords is not None:
+        net["bus_geodata"].loc[index, "coords"] = coords
+
     if not isnan(min_vm_pu):
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
@@ -420,7 +426,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan):
+                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None):
     """create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None, \
                     zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
     Adds several buses in table net["bus"] at once.
@@ -486,6 +492,11 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
                                                               columns=net.bus_geodata.columns))
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
+    if coords is not None:
+        net.bus_geodata = net.bus_geodata.append(pd.DataFrame(index=index,
+                                                              columns=net.bus_geodata.columns))
+        net["bus_geodata"].loc[index, "coords"] = coords
+
     if not isnan(min_vm_pu):
         if "min_vm_pu" not in net.bus.columns:
             net.bus.loc[:, "min_vm_pu"] = pd.Series()
@@ -829,6 +840,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     """create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0, \
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan, \
                    min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable = nan)
+
     Adds a storage to the network.
 
     In order to simulate a storage system it is possible to use sgens or loads to model the
@@ -1281,7 +1293,6 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     if "type" in lineparam:
         v["type"] = lineparam["type"]
-
 
     # store dtypes
     dtypes = net.line.dtypes
@@ -1967,13 +1978,13 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
             raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
     elif et == "t3":
-            elm_tab = 'trafo3w'
-            if element not in net[elm_tab].index:
-                raise UserWarning("Unknown trafo3w index")
-            if (not net[elm_tab]["hv_bus"].loc[element] == bus and
-                    not net[elm_tab]["mv_bus"].loc[element] == bus and
-                    not net[elm_tab]["lv_bus"].loc[element] == bus):
-                raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
+        elm_tab = 'trafo3w'
+        if element not in net[elm_tab].index:
+            raise UserWarning("Unknown trafo3w index")
+        if (not net[elm_tab]["hv_bus"].loc[element] == bus and
+                not net[elm_tab]["mv_bus"].loc[element] == bus and
+                not net[elm_tab]["lv_bus"].loc[element] == bus):
+            raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
     elif et == "b":
         if element not in net["bus"].index:
             raise UserWarning("Unknown bus index")
@@ -2432,7 +2443,9 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
             raise UserWarning("More than one measurement of this type exists")
 
     dtypes = net.measurement.dtypes
-    net.measurement.loc[index] = [name, meas_type.lower(), element_type, element, value, std_dev, side]
+    columns = ["name", "measurement_type", "element_type", "element", "value", "std_dev", "side"]
+    net.measurement.loc[index, columns] =\
+        [name, meas_type.lower(), element_type, element, value, std_dev, side]
     _preserve_dtypes(net.measurement, dtypes)
     return index
 

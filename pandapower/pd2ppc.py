@@ -203,15 +203,9 @@ def _ppc2ppci(ppc, ppci, net):
         ppc["areas"][:, PRICE_REF_BUS] = \
             e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(int)].copy()
 
-    # reorder gens (and gencosts) in order of increasing bus number
-    sort_gens = ppc['gen'][:, GEN_BUS].argsort()
-    new_gen_positions = np.arange(len(sort_gens))
-    new_gen_positions[sort_gens] = np.arange(len(sort_gens))
-    ppc['gen'] = ppc['gen'][sort_gens,]
-
     # initialize gen lookups
     for element, (f, t) in net._gen_order.items():
-        _build_gen_lookups(net, element, f, t, new_gen_positions)
+        _build_gen_lookups(net, element, f, t)
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -260,16 +254,15 @@ def _update_lookup_entries(net, lookup, e2i, element):
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
     aux._write_lookup_to_net(net, element, lookup)
 
-def _build_gen_lookups(net, element, f, t, new_gen_pos):
+def _build_gen_lookups(net, element, f, t):
      in_service = net._is_elements[element]
      if "controllable" in element:
          pandapower_index = net[element.split("_")[0]].index.values[in_service]
      else:
          pandapower_index = net[element].index.values[in_service]
-     ppc_index = new_gen_pos[f:t]
+     ppc_index = np.arange(f, t)
      if len(pandapower_index) > 0:
         _init_lookup(net, element, pandapower_index, ppc_index)
-
 
 def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup

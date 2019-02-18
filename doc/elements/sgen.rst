@@ -46,13 +46,13 @@ The PQ-Values are calculated from the parameter table values as:
    :nowrap:
    
    \begin{align*}
-    P_{sgen} &= p\_kw \cdot scaling \\
+    P_{sgen} &= p\_mw \cdot scaling \\
     Q_{sgen} &= q\_kvar \cdot scaling \\
     \end{align*}
 
 .. note::
 
-   Static generators should always have a negative p_kw value, since all power values are given in the consumer system. If you want to model constant power consumption, please use the load element instead of a static generator with positive active power value.
+   Static generators should always have a negative p_mw value, since all power values are given in the consumer system. If you want to model constant power consumption, please use the load element instead of a static generator with positive active power value.
    If you want to model a voltage controlled generator, use the generator element.
 
 .. note::

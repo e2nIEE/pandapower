@@ -5,14 +5,14 @@ type;string;"| naming conventions:
 | *""async""* - asynchronous generator
 ";type variable to classify generators
 bus*;integer;;index of connected bus
-p_kw*;float;:math:`\leq` 0;the real power of the generator [kW]
+p_mw*;float;:math:`\leq` 0;the real power of the generator [MW]
 vm_pu*;float;;voltage set point of the generator [p.u]
 sn_kva;float;:math:`>` 0;nominal power of the generator [kVA]
 min_q_kvar;float;;minimal reactive power of the generator [kVar]
 max_q_kvar;float;;maximal reactive power of the generator [kVar]
 scaling*;float;:math:`\leq` 0;scaling factor for the active power
-max_p_kw**;float;;Maximum active power
-min_p_kw**;float;;Minimum active power
+max_p_mw**;float;;Maximum active power
+min_p_mw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
 vn_kv***;float;;Rated voltage of the generator

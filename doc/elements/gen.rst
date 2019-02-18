@@ -50,7 +50,7 @@ Voltage magnitude and active power are defined by the input parameters in the ge
    :nowrap:
    
    \begin{align*}
-    P_{gen} &= p\_kw * scaling \\
+    P_{gen} &= p\_mw * scaling \\
     v_{bus} &= vm\_pu
    \end{align*}
     
@@ -70,7 +70,7 @@ The power flow returns reactive generator power and generator voltage angle:
    :nowrap:
 
    \begin{align*}
-    p\_kw &= P_{gen} \\
+    p\_mw &= P_{gen} \\
     q\_kvar &= Q_{gen} \\
     va\_degree &= \angle \underline{v}_{bus} \\
     vm\_degree &= |\underline{v}_{bus}|

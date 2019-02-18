@@ -6,7 +6,7 @@
 
 import numpy as np
 from pandapower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN
-from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG
+from pandapower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_STATUS, GEN_BUS, PG, VG, QG, MBASE
 from pandapower.pf.ppci_variables import bustypes
 
 
@@ -112,6 +112,7 @@ def _build_pp_gen(net, ppc, f, t):
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
     ppc["gen"][f:t, GEN_BUS] = gen_buses
     ppc["gen"][f:t, PG] = (net["gen"]["p_mw"].values[gen_is]* net["gen"]["scaling"].values[gen_is])
+    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is]
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses
@@ -149,6 +150,8 @@ def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
     buses = bus_lookup[tab["bus"].values[is_element]]
 
     ppc["gen"][f:t, GEN_BUS] = buses
+    if "sn_mva" in tab:
+        ppc["gen"][f:t, MBASE] = tab["sn_mva"].values[is_element]
     ppc["gen"][f:t, PG] = sign * tab["p_mw"].values[is_element] * tab["scaling"].values[is_element]
     ppc["gen"][f:t, QG] = sign * tab["q_mvar"].values[is_element] * tab["scaling"].values[is_element]
 
@@ -278,4 +281,4 @@ def _different_values_at_one_bus(buses, values):
     # have the voltage of the first generator at that bus
     values_equal = first_values[buses]
 
-    return not np.array_equal(values, values_equal)
+    return not np.allclose(values, values_equal)

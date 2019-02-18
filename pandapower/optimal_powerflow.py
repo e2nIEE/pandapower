@@ -60,6 +60,11 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
         printpf(baseMVA=result["baseMVA"], bus=result["bus"], gen=result["gen"], fd=stdout,
                 branch=result["branch"],  success=result["success"], et=result["et"], ppopt=ppopt)
 
+    if verbose:
+        ppopt['OUT_ALL'] = 1
+        printpf(baseMVA=result["baseMVA"], bus=result["bus"], gen=result["gen"], fd=stdout,
+                branch=result["branch"],  success=result["success"], et=result["et"], ppopt=ppopt)
+
     if not result["success"]:
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 

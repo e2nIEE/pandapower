@@ -86,13 +86,13 @@ The most common optimization goal is the minimization of the overall generator f
 	pp.create_polynomial_cost(net, 0, 'sgen', np.array([-1, 0]))
 	pp.create_polynomial_cost(net, 0, 'gen', np.array([-1, 0]))
 	pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[net.sgen.min_p_kw.at[0], 1000], [0, 0]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.gen.min_p_kw.at[0], 1000], [0, 0]]))
+	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[net.sgen.min_p_mw.at[0], 1000], [0, 0]]))
+	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.gen.min_p_mw.at[0], 1000], [0, 0]]))
 	pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[-1e9, 1e9], [1e9, -1e9]]))
 
 	
 	
-It is a straight with a negative slope, so that it has the highest cost value at p_min_kw and is zero when the feed in is zero:
+It is a straight with a negative slope, so that it has the highest cost value at p_min_mw and is zero when the feed in is zero:
 
 .. image:: /pics/opf/minimizegeneration.png
 		:width: 20em
@@ -108,12 +108,12 @@ This cost function may be used, when the curtailment of renewables should be min
 	
 	pp.create_polynomial_cost(net, 0, 'sgen', np.array([1, 0]))
 	pp.create_polynomial_cost(net, 0, 'gen', np.array([1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[net.sgen.min_p_kw.at[0], -1000], [0, 0]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.gen.min_p_kw.at[0], -1000], [0, 0]]))
+	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[net.sgen.min_p_mw.at[0], -1000], [0, 0]]))
+	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.gen.min_p_mw.at[0], -1000], [0, 0]]))
 	pp.create_piecewise_linear_cost(net, 0, "ext_grid", np.array([[-1e9, -1e9], [1e9, 1e9]]))
 
 	
-It is a straight with a positive slope, so that the cost is zero at p_min_kw and is at its maximum when the generation equals zero.
+It is a straight with a positive slope, so that the cost is zero at p_min_mw and is at its maximum when the generation equals zero.
 		
 		
 .. image:: /pics/opf/maximizegeneration.png
@@ -130,8 +130,8 @@ In case that the load should be maximized, the cost function could be defined li
 	
 	pp.create_polynomial_cost(net, 0, 'load', np.array([-1, 0]))
 	pp.create_polynomial_cost(net, 0, 'storage', np.array([-1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_kw.at[0], -1000]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_kw.at[0], 1000], [net.storage.max_p_kw.at[0], -1000]]))
+	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_mw.at[0], -1000]]))
+	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_mw.at[0], 1000], [net.storage.max_p_mw.at[0], -1000]]))
 
 	
 	
@@ -149,8 +149,8 @@ In case that the load should be minimized, the cost function could be defined li
 	
 	pp.create_polynomial_cost(net, 0, 'load', np.array([1, 0]))
 	pp.create_polynomial_cost(net, 0, 'storage', np.array([1, 0]))
-	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_kw.at[0], 1000]]))
-	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_kw.at[0], -1000], [net.storage.max_p_kw.at[0], 1000]]))
+	pp.create_piecewise_linear_cost(net, 0, "sgen", np.array([[0, 0], [net.load.max_p_mw.at[0], 1000]]))
+	pp.create_piecewise_linear_cost(net, 0, "gen", np.array([[net.storage.min_p_mw.at[0], -1000], [net.storage.max_p_mw.at[0], 1000]]))
 
 
 .. image:: /pics/opf/minimizeload.png
