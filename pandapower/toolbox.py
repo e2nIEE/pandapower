@@ -776,9 +776,9 @@ def convert_format(net):
         del net.sn_kva
     net.version = float(__version__[:3])
 
-    # Update the switch table with 'r_ohm'
-    if 'r_ohm' not in net.switch:
-        net.switch['r_ohm'] = 0
+    # Update the switch table with 'z_ohm'
+    if 'z_ohm' not in net.switch:
+        net.switch['z_ohm'] = 0
 
     _update_trafo_parameter_names(net)
     return net

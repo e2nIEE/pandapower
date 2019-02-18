@@ -674,7 +674,7 @@ def _calc_switch_parameter(net, ppc):
     switch = net.switch[net._impedance_bb_switches]
     fb = bus_lookup[switch["bus"].values]
     tb = bus_lookup[switch["element"].values]
-    r_switch = switch['r_ohm'].values
+    r_switch = switch['z_ohm'].values
     baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     t = np.zeros(shape=(len(switch), 4), dtype=np.complex128)
 
@@ -683,6 +683,7 @@ def _calc_switch_parameter(net, ppc):
 
     t[:, 2] = r_switch / baseR
     # x_switch will have the same value of r_switch to avoid zero dividence
+    # TODO: x_switch will be updated according to the r/x ratio
     x_switch = r_switch
     t[:, 3] = x_switch / baseR
 #    t[:, 3] = 0

@@ -71,7 +71,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
     switch_elm = switch["element"].values
     switch_et_bus = switch["et"].values == "b"
     switch_closed = switch["closed"].values
-    switch_r_ohm = switch['r_ohm'].values
+    switch_z_ohm = switch['z_ohm'].values
     # create array for fast checking if a bus is in_service
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[bus_is_idx] = True
@@ -81,7 +81,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
     bus_is_pv[net["gen"]["bus"].values[gen_is_mask]] = True
     # create array that represents the disjoint set
     ar = np.arange(max_bus_idx + 1)
-    ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_r_ohm, bus_is_pv, bus_in_service)
+    ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm, bus_is_pv, bus_in_service)
     # finally create and fill bus lookup
     bus_lookup = -np.ones(max_bus_idx + 1, dtype=int)
     fill_bus_lookup(ar, bus_lookup, bus_index)
@@ -111,8 +111,8 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
              (net["switch"]["et"].values == "b") &
              (net["switch"]["bus"].isin(bus_is_idx).values) &
              (net["switch"]["element"].isin(bus_is_idx).values))
-    net._fused_bb_switches = slidx & (net["switch"]["r_ohm"].values<=0)
-    net._impedance_bb_switches = slidx & (net["switch"]["r_ohm"].values>0)
+    net._fused_bb_switches = slidx & (net["switch"]["z_ohm"].values<=0)
+    net._impedance_bb_switches = slidx & (net["switch"]["z_ohm"].values>0)
 
     # if numba activated, use numba version to create the lookup
     if numba:
