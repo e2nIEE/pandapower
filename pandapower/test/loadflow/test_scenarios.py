@@ -455,6 +455,31 @@ def test_generator_as_slack():
     net.gen.slack.iloc[0] = False
     with pytest.raises(UserWarning):
         pp.runpp(net)
+        
+def test_transformer_with_two_open_switches():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110.)
+    pp.create_ext_grid(net, b1, vm_pu=1.02)
+    b2 = pp.create_bus(net, 20.)
+    t = pp.create_transformer(net, b1, b2, std_type='63 MVA 110/20 kV')
+    b3 = pp.create_bus(net, 20.)
+    pp.create_line(net, b2, b3, length_km=7., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_load(net, b2, p_mw=2)
+    pp.runpp(net)
 
+    assert net.res_trafo.vm_hv_pu.at[t] == net.res_bus.vm_pu.at[b1]
+    assert net.res_trafo.vm_lv_pu.at[t] == net.res_bus.vm_pu.at[b2]
+
+    pp.create_switch(net, b2, element=t, et="t", closed=False)
+    pp.runpp(net)
+    assert net.res_trafo.vm_hv_pu.at[t] == net.res_bus.vm_pu.at[b1]
+    assert net.res_trafo.vm_lv_pu.at[t] != net.res_bus.vm_pu.at[b2]
+
+
+    pp.create_switch(net, b1, element=t, et="t", closed=False)
+    pp.runpp(net)
+    assert net.res_trafo.vm_hv_pu.at[t] != net.res_bus.vm_pu.at[b1]
+    assert net.res_trafo.vm_lv_pu.at[t] != net.res_bus.vm_pu.at[b2]
+    
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main(["-xs", __file__])
