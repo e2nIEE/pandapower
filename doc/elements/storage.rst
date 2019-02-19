@@ -44,7 +44,7 @@ The PQ-Values are calculated from the parameter table values as:
    :nowrap:
 
    \begin{align*}
-    P_{storage} &= p\_kw \cdot scaling \\
+    P_{storage} &= p\_mw \cdot scaling \\
     Q_{storage} &= q\_kvar \cdot scaling \\
     \end{align*}
 
@@ -54,7 +54,7 @@ The PQ-Values are calculated from the parameter table values as:
 
 .. note::
 
-    The apparent power value sn_kva, state of charge soc and storage capacity max_e_kwh are provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!
+    The apparent power value sn_kva, state of charge soc and storage capacity max_e_mwh are provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!
 
 Result Parameters
 ==========================

@@ -1,9 +1,9 @@
 **Parameter**;**Datatype**;**Explanation**
-p_from_kw;float;"active power flow into the line at ""from"" bus [kW]"
+p_from_mw;float;"active power flow into the line at ""from"" bus [MW]"
 q_from_kvar;float;"reactive power flow into the line at ""from"" bus [kVar]"
-p_to_kw;float;"active power flow into the line at ""to"" bus [kW]"
+p_to_mw;float;"active power flow into the line at ""to"" bus [MW]"
 q_to_kvar;float;"reactive power flow into the line at ""to"" bus [kVar]"
-pl_kw;float;active power losses of the line [kW]
+pl_mw;float;active power losses of the line [MW]
 ql_kvar;float;reactive power consumption of the line [kVar]
 i_from_ka;float;Current at to bus [kA]
 i_to_ka;float;Current at from bus [kA]

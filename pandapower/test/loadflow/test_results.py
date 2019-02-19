@@ -5,7 +5,7 @@
 
 
 import pytest
-from numpy import in1d
+from numpy import in1d, isnan
 
 import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -25,50 +25,50 @@ def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
     # result values from powerfactory
     load1 = 14.578
     load2 = 8.385
-    
+
     ika1 = 0.0466482
     ika2 = 0.0134161
-    
-    p_from1 = 1212.158
-    p_from2 = 5.11
-    
-    q_from1 = 167.416
-    q_from2 = -469.371
-    
-    p_to1 = -1200.00
+
+    p_from1 = 1.212158
+    p_from2 = 0.00511
+
+    q_from1 = 0.167416
+    q_from2 = -0.469371
+
+    p_to1 = -1.20000
     p_to2 = 0.000
-    
-    q_to1 = -1100.000
+
+    q_to1 = -1.100000
     q_to2 = 0.0000
-    
+
     v = 1.007389386
 
 
     # line 1
     assert abs(net.res_line.loading_percent.at[l1] - load1) < l_tol
     assert abs(net.res_line.i_ka.at[l1] - ika1) < i_tol
-    assert abs(net.res_line.p_from_kw.at[l1] - p_from1) < s_tol
-    assert abs(net.res_line.q_from_kvar.at[l1] - q_from1) < s_tol
-    assert abs(net.res_line.p_to_kw.at[l1] - p_to1) < s_tol
-    assert abs(net.res_line.q_to_kvar.at[l1] - q_to1) < s_tol
+    assert abs(net.res_line.p_from_mw.at[l1] - p_from1) < s_tol
+    assert abs(net.res_line.q_from_mvar.at[l1] - q_from1) < s_tol
+    assert abs(net.res_line.p_to_mw.at[l1] - p_to1) < s_tol
+    assert abs(net.res_line.q_to_mvar.at[l1] - q_to1) < s_tol
 
     # line2 (open switch line)
     assert abs(net.res_line.loading_percent.at[l2] - load2) < l_tol
     assert abs(net.res_line.i_ka.at[l2] - ika2) < i_tol
-    assert abs(net.res_line.p_from_kw.at[l2] - p_from2) < s_tol
-    assert abs(net.res_line.q_from_kvar.at[l2] - q_from2) < s_tol
-    assert abs(net.res_line.p_to_kw.at[l2] - p_to2) < s_tol
-    assert abs(net.res_line.q_to_kvar.at[l2] - q_to2) < s_tol
+    assert abs(net.res_line.p_from_mw.at[l2] - p_from2) < s_tol
+    assert abs(net.res_line.q_from_mvar.at[l2] - q_from2) < s_tol
+    assert abs(net.res_line.p_to_mw.at[l2] - p_to2) < s_tol
+    assert abs(net.res_line.q_to_mvar.at[l2] - q_to2) < s_tol
 
     assert abs(net.res_bus.vm_pu.at[b2] - v) < v_tol
 
     # line3 (of out of service line)
     assert abs(net.res_line.loading_percent.at[l3] - 0) < l_tol
     assert abs(net.res_line.i_ka.at[l3] - 0) < i_tol
-    assert abs(net.res_line.p_from_kw.at[l3] - 0) < s_tol
-    assert abs(net.res_line.q_from_kvar.at[l3] - 0) < s_tol
-    assert abs(net.res_line.p_to_kw.at[l3] - 0) < s_tol
-    assert abs(net.res_line.q_to_kvar.at[l3] - 0) < s_tol
+    assert abs(net.res_line.p_from_mw.at[l3] - 0) < s_tol
+    assert abs(net.res_line.q_from_mvar.at[l3] - 0) < s_tol
+    assert abs(net.res_line.p_to_mw.at[l3] - 0) < s_tol
+    assert abs(net.res_line.q_to_mvar.at[l3] - 0) < s_tol
 
 
 def test_load_sgen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -80,20 +80,20 @@ def test_load_sgen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
     sg1 = sgens[0]
     b2 = buses.index[1]
     # result values from powerfactory
-    pl1 = 1200.000
-    ql1 = 1100.000
+    pl1 = 1.200000
+    ql1 = 1.100000
 
-    qs1 = -100.000
-    ps1 = 500.000
+    qs1 = -0.1000
+    ps1 = 0.500
 
     u = 1.00477465
 
-    assert abs(net.res_load.p_kw.at[l1] - pl1) < s_tol
-    assert abs(net.res_load.q_kvar.at[l1] - ql1) < s_tol
+    assert abs(net.res_load.p_mw.at[l1] - pl1) < s_tol
+    assert abs(net.res_load.q_mvar.at[l1] - ql1) < s_tol
     # pf uses generator system
-    assert abs(net.res_sgen.p_kw.at[sg1] - (- ps1)) < s_tol
+    assert abs(net.res_sgen.p_mw.at[sg1] - ps1) < s_tol
     # pf uses generator system
-    assert abs(net.res_sgen.q_kvar.at[sg1] - (-qs1)) < s_tol
+    assert abs(net.res_sgen.q_mvar.at[sg1] - qs1) < s_tol
     assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
 
 
@@ -124,16 +124,16 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     load1 = 28.7842
     load2 = 0.4830
 
-    ph1 = 204.756
-    ph2 = 1.7741
+    ph1 = 0.204756
+    ph2 = 0.0017741
 
-    qh1 = 52.848
-    qh2 = 0.0038
+    qh1 = 0.052848
+    qh2 = 0.000038
 
-    pl1 = -200.0000
+    pl1 = -0.2000000
     pl2 = 0
 
-    ql1 = -50.0000
+    ql1 = -0.050
     ql2 = 0.0
 
     ih1 = 0.006043
@@ -149,26 +149,26 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     va3 = -150.73914408
 
     assert abs(net.res_trafo.loading_percent.at[t1] - load1) < l_tol
-    assert abs(net.res_trafo.p_hv_kw.at[t1] - ph1) < s_tol
-    assert abs(net.res_trafo.q_hv_kvar.at[t1] - qh1) < s_tol
-    assert abs(net.res_trafo.p_lv_kw.at[t1] - pl1) < s_tol
-    assert abs(net.res_trafo.q_lv_kvar.at[t1] - ql1) < s_tol
+    assert abs(net.res_trafo.p_hv_mw.at[t1] - ph1) < s_tol
+    assert abs(net.res_trafo.q_hv_mvar.at[t1] - qh1) < s_tol
+    assert abs(net.res_trafo.p_lv_mw.at[t1] - pl1) < s_tol
+    assert abs(net.res_trafo.q_lv_mvar.at[t1] - ql1) < s_tol
     assert abs(net.res_trafo.i_hv_ka.at[t1] - ih1) < i_tol
     assert abs(net.res_trafo.i_lv_ka.at[t1] - il1) < i_tol
 
     assert abs(net.res_trafo.loading_percent.at[t2] - load2) < l_tol
-    assert abs(net.res_trafo.p_hv_kw.at[t2] - ph2) < s_tol
-    assert abs(net.res_trafo.q_hv_kvar.at[t2] - qh2) < s_tol
-    assert abs(net.res_trafo.p_lv_kw.at[t2] - pl2) < s_tol
-    assert abs(net.res_trafo.q_lv_kvar.at[t2] - ql2) < s_tol
+    assert abs(net.res_trafo.p_hv_mw.at[t2] - ph2) < s_tol
+    assert abs(net.res_trafo.q_hv_mvar.at[t2] - qh2) < s_tol
+    assert abs(net.res_trafo.p_lv_mw.at[t2] - pl2) < s_tol
+    assert abs(net.res_trafo.q_lv_mvar.at[t2] - ql2) < s_tol
     assert abs(net.res_trafo.i_hv_ka.at[t2] - ih2) < i_tol
     assert abs(net.res_trafo.i_lv_ka.at[t2] - il2) < i_tol
 
     assert abs(net.res_trafo.loading_percent.at[t3] - 0) < l_tol
-    assert abs(net.res_trafo.p_hv_kw.at[t3] - 0) < s_tol
-    assert abs(net.res_trafo.q_hv_kvar.at[t3] - 0) < s_tol
-    assert abs(net.res_trafo.p_lv_kw.at[t3] - 0) < s_tol
-    assert abs(net.res_trafo.q_lv_kvar.at[t3] - 0) < s_tol
+    assert abs(net.res_trafo.p_hv_mw.at[t3] - 0) < s_tol
+    assert abs(net.res_trafo.q_hv_mvar.at[t3] - 0) < s_tol
+    assert abs(net.res_trafo.p_lv_mw.at[t3] - 0) < s_tol
+    assert abs(net.res_trafo.q_lv_mvar.at[t3] - 0) < s_tol
     assert abs(net.res_trafo.i_hv_ka.at[t3] - 0) < i_tol
     assert abs(net.res_trafo.i_lv_ka.at[t3] - 0) < i_tol
 
@@ -212,20 +212,20 @@ def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_to
     eg1 = ext_grids[0]
     eg2 = ext_grids[1]
     # results from powerfactory
-    p1 = --5653.1650
-    q1 = -2107.4499
+    p1 = 5.6531650
+    q1 = -2.1074499
 
     v2 = 1.015506741
     va2 = 1.47521433
 
-    p2 = 5837.7758
-    q2 = -2778.6795
+    p2 = 5.8377758
+    q2 = -2.7786795
 
-    assert abs(net.res_ext_grid.p_kw.at[eg1] - (-p1))
-    assert abs(net.res_ext_grid.q_kvar.at[eg1] - (-q1))
+    assert abs(net.res_ext_grid.p_mw.at[eg1] - (-p1))
+    assert abs(net.res_ext_grid.q_mvar.at[eg1] - (-q1))
 
-    assert abs(net.res_ext_grid.p_kw.at[eg2] - (-p2))
-    assert abs(net.res_ext_grid.q_kvar.at[eg2] - (-q2))
+    assert abs(net.res_ext_grid.p_mw.at[eg2] - (-p2))
+    assert abs(net.res_ext_grid.q_mvar.at[eg2] - (-q2))
 
     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
     assert abs(net.res_bus.va_degree.at[b2] - va2) < va_tol
@@ -238,13 +238,13 @@ def test_ward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
     b2 = buses.index[1]
     w1 = wards[0]
     # powerfactory results
-    pw = -1704.6146
-    qw = -1304.2294
+    pw = -1.7046146
+    qw = -1.3042294
     u = 1.00192121
 
     assert abs(net.res_bus.vm_pu.loc[b2] - u) < v_tol
-    assert abs(net.res_ward.p_kw.loc[w1] - (-pw)) < s_tol
-    assert abs(net.res_ward.q_kvar.loc[w1] - (-qw)) < s_tol
+    assert abs(net.res_ward.p_mw.loc[w1] - (-pw)) < s_tol
+    assert abs(net.res_ward.q_mvar.loc[w1] - (-qw)) < s_tol
 
 
 def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -255,13 +255,13 @@ def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_t
     w1 = wards[0]
     w2 = wards[1]
     # powerfactory results
-    pw = -1704.6146
-    qw = -1304.2294
+    pw = -1.7046146
+    qw = -1.3042294
     u = 1.00192121
 
     assert abs(net.res_bus.vm_pu.at[b2] - u)
-    assert abs(net.res_ward.p_kw.loc[[w1, w2]].sum() - (-pw))
-    assert abs(net.res_ward.q_kvar.loc[[w1, w2]].sum() - (-qw))
+    assert abs(net.res_ward.p_mw.loc[[w1, w2]].sum() - (-pw))
+    assert abs(net.res_ward.q_mvar.loc[[w1, w2]].sum() - (-qw))
     #
 
 
@@ -274,16 +274,16 @@ def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
     xw2 = xwards[1]  # Out of servic xward
     #    powerfactory result for 1 xward
     u = 1.00308684
-    pxw = -1721.0380
-    qxw = -975.9919
+    pxw = -1.7210380
+    qxw = -0.9759919
     #
     assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
-    assert abs(net.res_xward.p_kw.at[xw1] - (-pxw)) < s_tol
-    assert abs(net.res_xward.q_kvar.at[xw1] - (-qxw)) < s_tol
+    assert abs(net.res_xward.p_mw.at[xw1] - (-pxw)) < s_tol
+    assert abs(net.res_xward.q_mvar.at[xw1] - (-qxw)) < s_tol
 
     assert abs(net.res_bus.vm_pu.at[b2] - u) < 1e-2
-    assert abs(net.res_xward.p_kw.loc[[xw1, xw2]].sum() - (-pxw)) < s_tol
-    assert abs(net.res_xward.q_kvar.loc[[xw1, xw2]].sum() - (-qxw)) < s_tol
+    assert abs(net.res_xward.p_mw.loc[[xw1, xw2]].sum() - (-pxw)) < s_tol
+    assert abs(net.res_xward.q_mvar.loc[[xw1, xw2]].sum() - (-qxw)) < s_tol
 
 
 def test_xward_combination(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -296,18 +296,18 @@ def test_xward_combination(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e
 
     # powerfactory result for 2 active xwards
     u = 0.99568034
-    pxw1 = -1707.1216
-    pxw3 = -1707.1216
+    pxw1 = -1.7071216
+    pxw3 = -1.7071216
 
-    qxw1 = -918.7316
-    qxw3 = -918.7316
+    qxw1 = -0.9187316
+    qxw3 = -0.9187316
 
     assert abs(net.res_bus.vm_pu.at[b2] - u) < 1e-2
-    assert abs(net.res_xward.p_kw.at[xw1] - (-pxw1)) < s_tol
-    assert abs(net.res_xward.q_kvar.at[xw1] - (-qxw1)) < s_tol
+    assert abs(net.res_xward.p_mw.at[xw1] - (-pxw1)) < s_tol
+    assert abs(net.res_xward.q_mvar.at[xw1] - (-qxw1)) < s_tol
 
-    assert abs(net.res_xward.p_kw.at[xw3] - (-pxw3)) < s_tol
-    assert abs(net.res_xward.q_kvar.at[xw3] - (-qxw3)) < s_tol
+    assert abs(net.res_xward.p_mw.at[xw3] - (-pxw3)) < s_tol
+    assert abs(net.res_xward.q_mvar.at[xw3] - (-qxw3)) < s_tol
 
 
 def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -318,13 +318,13 @@ def test_gen(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3
     b3 = buses.index[2]
     g1 = gens[0]
     # powerfactory results
-    q = -260.660
+    q = 0.260660
     u2 = 1.00584636
     u_set = 1.0
 
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - u_set) < v_tol
-    assert abs(net.res_gen.q_kvar.at[g1] - (-q)) < s_tol
+    assert abs(net.res_gen.q_mvar.at[g1] - (-q)) < s_tol
 
 
 def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -344,7 +344,7 @@ def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, 
 
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
-    assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < s_tol
+    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
 
 
 def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=1e-3):
@@ -363,7 +363,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     ulv = 0.940630980
 
     load = 37.21
-    qhv = 1.64375
+    qhv = 0.00164375
     qmv = 0
     qlv = 0
 
@@ -371,10 +371,10 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     imv = 0.20141269123
     ilv = 0.15344761586
 
-    phv = 300.43
-    pmv = -200.00
-    plv = -100.00
-    
+    phv = 0.30043
+    pmv = -0.200
+    plv = -0.100
+
 
     assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
@@ -382,18 +382,18 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
 
     assert abs((net.res_trafo3w.loading_percent.at[t3] - load)) < l_tol
 
-    assert abs((net.res_trafo3w.p_hv_kw.at[t3] - phv)) < s_tol
-    assert abs((net.res_trafo3w.p_mv_kw.at[t3] - pmv)) < s_tol
-    assert abs((net.res_trafo3w.p_lv_kw.at[t3] - plv)) < s_tol
+    assert abs((net.res_trafo3w.p_hv_mw.at[t3] - phv)) < s_tol
+    assert abs((net.res_trafo3w.p_mv_mw.at[t3] - pmv)) < s_tol
+    assert abs((net.res_trafo3w.p_lv_mw.at[t3] - plv)) < s_tol
 
-    assert abs((net.res_trafo3w.q_hv_kvar.at[t3] - qhv)) < s_tol
-    assert abs((net.res_trafo3w.q_mv_kvar.at[t3] - qmv)) < s_tol
-    assert abs((net.res_trafo3w.q_lv_kvar.at[t3] - qlv)) < s_tol
+    assert abs((net.res_trafo3w.q_hv_mvar.at[t3] - qhv)) < s_tol
+    assert abs((net.res_trafo3w.q_mv_mvar.at[t3] - qmv)) < s_tol
+    assert abs((net.res_trafo3w.q_lv_mvar.at[t3] - qlv)) < s_tol
 
     assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
-    
+
     runpp_with_consistency_checks(net, trafo_model="pi",trafo3w_losses='star')
 
     #Test results Integral:
@@ -402,7 +402,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     ulv = 0.94062989256
 
     load = 37.209
-    qhv = 1.660
+    qhv = 0.001660
     qmv = 0
     qlv = 0
 
@@ -410,29 +410,27 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     imv = 0.20141290445
     ilv = 0.15344776975
 
-    phv = 300.43
-    pmv = -200.00
-    plv = -100.00
-    
+    phv = 0.30043
+    pmv = -0.200
+    plv = -0.100
+
     assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b4] - ulv)) < v_tol
 
     assert abs((net.res_trafo3w.loading_percent.at[t3] - load)) < l_tol
 
-    assert abs((net.res_trafo3w.p_hv_kw.at[t3] - phv)) < s_tol
-    assert abs((net.res_trafo3w.p_mv_kw.at[t3] - pmv)) < s_tol
-    assert abs((net.res_trafo3w.p_lv_kw.at[t3] - plv)) < s_tol
+    assert abs((net.res_trafo3w.p_hv_mw.at[t3] - phv)) < s_tol
+    assert abs((net.res_trafo3w.p_mv_mw.at[t3] - pmv)) < s_tol
+    assert abs((net.res_trafo3w.p_lv_mw.at[t3] - plv)) < s_tol
 
-    assert abs((net.res_trafo3w.q_hv_kvar.at[t3] - qhv)) < s_tol
-    assert abs((net.res_trafo3w.q_mv_kvar.at[t3] - qmv)) < s_tol
-    assert abs((net.res_trafo3w.q_lv_kvar.at[t3] - qlv)) < s_tol
+    assert abs((net.res_trafo3w.q_hv_mvar.at[t3] - qhv)) < s_tol
+    assert abs((net.res_trafo3w.q_mv_mvar.at[t3] - qmv)) < s_tol
+    assert abs((net.res_trafo3w.q_lv_mvar.at[t3] - qlv)) < s_tol
 
     assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
-
-
 
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -452,19 +450,19 @@ def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_to
     ifrom = 0.0444417
     ito = 0.0029704
 
-    pfrom = 1123.7008
-    qfrom = 1061.8504
+    pfrom = 1.1237008
+    qfrom = 1.0618504
 
-    pto = -1000.0000
-    qto = -500.0000
+    pto = -1.000
+    qto = -0.500
 
     u2 = 1.004242894
     u3 = 0.987779091
 
-    assert abs(net.res_impedance.p_from_kw.at[imp1] - pfrom) < s_tol
-    assert abs(net.res_impedance.p_to_kw.at[imp1] - pto) < s_tol
-    assert abs(net.res_impedance.q_from_kvar.at[imp1] - qfrom) < s_tol
-    assert abs(net.res_impedance.q_to_kvar.at[imp1] - qto) < s_tol
+    assert abs(net.res_impedance.p_from_mw.at[imp1] - pfrom) < s_tol
+    assert abs(net.res_impedance.p_to_mw.at[imp1] - pto) < s_tol
+    assert abs(net.res_impedance.q_from_mvar.at[imp1] - qfrom) < s_tol
+    assert abs(net.res_impedance.q_to_mvar.at[imp1] - qto) < s_tol
     assert abs(net.res_impedance.i_from_ka.at[imp1] - ifrom) < i_tol
     assert abs(net.res_impedance.i_to_ka.at[imp1] - ito) < i_tol
 
@@ -497,12 +495,12 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     b2 = buses.index[1]
     b3 = buses.index[2]
     g1 = gens[0]
-    q = -260.660
+    q = -0.260660
     u2 = 1.00584636
     u_set = 1.0
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - u_set) < v_tol
-    assert abs(net.res_gen.q_kvar.at[g1] - (-q)) < s_tol
+    assert abs(net.res_gen.q_mvar.at[g1] - q) < s_tol
 
     # test_enforce_qlims
     net = add_test_enforce_qlims(net)
@@ -517,7 +515,7 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     u3 = 1.00045091
     assert abs(net.res_bus.vm_pu.at[b2] - u2) < 1e-2
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1e-2
-    assert abs(net.res_gen.q_kvar.at[g1] - net.gen.max_q_kvar.at[g1]) < 1e-2
+    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < 1e-2
 
 
 def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -528,12 +526,12 @@ def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
     s1 = shunts[0]
 
     u = 1.0177330269
-    p = 205.44
-    q = -2054.44
+    p = 0.20544
+    q = -2.05444
 
     assert abs(net.res_bus.vm_pu.loc[b2] - u) < v_tol
-    assert abs(net.res_shunt.p_kw.loc[s1] - p) < s_tol
-    assert abs(net.res_shunt.q_kvar.loc[s1] - q) < s_tol
+    assert abs(net.res_shunt.p_mw.loc[s1] - p) < s_tol
+    assert abs(net.res_shunt.q_mvar.loc[s1] - q) < s_tol
 
 
 def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -544,12 +542,12 @@ def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_
     s1 = shunts[0]
 
     u = 1.015007138
-    p = 123.628741
-    q = -1236.287413
+    p = 0.123628741
+    q = -1.236287413
 
     assert abs(net.res_bus.vm_pu.loc[b2] - u) < v_tol
-    assert abs(net.res_shunt.p_kw.loc[s1] - p / 2) < s_tol
-    assert abs(net.res_shunt.q_kvar.loc[s1] - q / 2) < s_tol
+    assert abs(net.res_shunt.p_mw.loc[s1] - p / 2) < s_tol
+    assert abs(net.res_shunt.q_mvar.loc[s1] - q / 2) < s_tol
 
 
 def test_open(result_test_network):
@@ -557,8 +555,7 @@ def test_open(result_test_network):
     buses = net.bus[net.bus.zone == "two_open_switches_on_deactive_line"]
     lines = net['line'][in1d(net['line'].from_bus, buses.index) | in1d(net['line'].to_bus, buses.index)]
 
-    assert net['res_line'].ix[lines.index].i_ka.iloc[1] == 0.
-
+    assert isnan(net['res_line'].at[lines.index[1], "i_ka"])
 
 if __name__ == "__main__":
-    pytest.main(["test_results.py"])
+    pytest.main(["-xs"])

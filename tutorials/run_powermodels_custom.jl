@@ -3,11 +3,8 @@ using Ipopt
 import JSON
 
 function run_powermodels(json_path)
-    pm_net = Dict()
-    open(json_path, "r") do f
-        dicttxt = JSON.readstring(f)  # file information to string
-        pm_net=JSON.parse(dicttxt)  # parse and transform data
-    end
-    result = run_dc_opf(pm_net, IpoptSolver())
+    pm = PP2PM.load_pm_from_json(json_path)
+    result = PowerModels.run_pf(pm, ACPPowerModel, Ipopt.IpoptSolver(),
+                                    setting = Dict("output" => Dict("branch_flows" => true)))
     return result
 end

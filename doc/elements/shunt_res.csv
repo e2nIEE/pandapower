@@ -1,4 +1,4 @@
 **Parameter**;**Datatype**;**Explanation**
-p_kw;float;shunt active power consumption [kW]
+p_mw;float;shunt active power consumption [MW]
 q_kvar;float;shunt reactive power consumption [kVAr]
 vm_pu;float;voltage magnitude at shunt bus [pu]

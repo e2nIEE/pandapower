@@ -114,8 +114,7 @@ def _update_q(baseMVA, bus, gen, gbus, Sbus, on):
         ## gens at buses with Qg range = 0
         ig = find(Cg * Qg_min == Cg * Qg_max)
         Qg_save = gen[on[ig], QG]
-        gen[on, QG] = gen[on, QMIN] + \
-            (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
+        gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
                 (gen[on, QMAX] - gen[on, QMIN])    ##    ^ avoid div by 0
         gen[on[ig], QG] = Qg_save  ## (terms are mult by 0 anyway)
 

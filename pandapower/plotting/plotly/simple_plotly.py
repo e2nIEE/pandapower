@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
         load_str, sgen_str = [], []
-        for ln in [net.load.loc[net.load.bus == b, "p_kw"].sum() for b in net.bus.index]:
+        for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
             load_str.append("load: {:.0f} kW<br />".format(ln) if ln != 0. else "")
-        for s in [net.sgen.loc[net.sgen.bus == b, "p_kw"].sum() for b in net.bus.index]:
+        for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
             sgen_str.append("static generation: {:.0f} kW<br />".format(s) if s != 0. else "")
         hoverinfo = (
                 "index = " + net.bus.index.astype(str) + '<br />' +
@@ -45,7 +45,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 "name = " + net.trafo['name'].astype(str) + '<br />' +
                 'v_n hv = ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
                 'v_n lv = ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'tap = ' + net.trafo['tp_pos'].astype(str) + '<br />').tolist()
+                'tap = ' + net.trafo['tap_pos'].astype(str) + '<br />').tolist()
     elif element == "ext_grid":
         hoverinfo = (
                 "index = " + net.ext_grid.index.astype(str) + '<br />' +

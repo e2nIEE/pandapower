@@ -4,8 +4,8 @@ lv_bus;auxiliary bus;mv_bus;lv_bus
 sn_kva;sn_hv_kva;sn_mv_kva;sn_lv_kva
 vn_hv_kv;vn_hv_kv;vn_hv_kv;vn_hv_kv
 vn_lv_kv;vn_hv_kv;vn_mv_kv;vn_lv_kv
-vsc_percent;:math:`v_{k, t1}`;:math:`v_{k, t2}`;:math:`v_{k, t3}`
-vscr_percent;:math:`v_{r, t1}`;:math:`v_{r, t2}`;:math:`v_{r, t3}`
+vk_percent;:math:`v_{k, t1}`;:math:`v_{k, t2}`;:math:`v_{k, t3}`
+vkr_percent;:math:`v_{r, t1}`;:math:`v_{r, t2}`;:math:`v_{r, t3}`
 pfe_kw;pfe_kw;0;0
 i0_percent;i0_percent;0;0
 shift_degree;shift_degree;0;0

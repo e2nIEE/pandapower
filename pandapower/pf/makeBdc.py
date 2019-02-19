@@ -73,7 +73,7 @@ def makeBdc(bus, branch):
 
     ## build Bf such that Bf * Va is the vector of real branch powers injected
     ## at each branch's "from" bus
-    Bf = sparse((r_[b, -b], (i, r_[f, t])))## = spdiags(b, 0, nl, nl) * Cft
+    Bf = sparse((r_[b, -b], (i, r_[f, t])), (nl, nb))## = spdiags(b, 0, nl, nl) * Cft
 
     ## build Bbus
     Bbus = Cft.T * Bf

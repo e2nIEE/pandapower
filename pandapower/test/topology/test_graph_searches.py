@@ -163,5 +163,4 @@ def test_graph_characteristics(feeder_network):
 
 
 if __name__ == '__main__':
-    pass
-#    pytest.main(["test_graph_searches.py"])
+    pytest.main([__file__])

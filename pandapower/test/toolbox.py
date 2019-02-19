@@ -113,13 +113,13 @@ def assert_res_out_of_service(net, idx, name):
 
         res_bus["vm_pu"]  		     nan
         res_bus.va_degree  	         nan
-        res_bus["p_kw"]       	     0
-        res_bus["q_kvar"]        	  0
+        res_bus["p_mw"]       	     0
+        res_bus["q_mvar"]        	  0
 
-        res_line.p_from_kw  		  0
-        res_line.q_from_kvar		  0
-        res_line.p_to_kw		     0
-        res_line.q_to_kvar		     0
+        res_line.p_from_mw  		  0
+        res_line.q_from_mvar		  0
+        res_line.p_to_mw		     0
+        res_line.q_to_mvar		     0
         res_line.i_ka			     0
         res_line["loading_percent"] 0
 
@@ -129,8 +129,8 @@ def assert_res_out_of_service(net, idx, name):
 
         res_ext_grid		        all nan
 
-        res_gen["p_kw"]		         0
-        res_gen-q_kvar 		         0
+        res_gen["p_mw"]		         0
+        res_gen-q_mvar 		         0
         res_gen_va_degree	         nan
 
         res_sgen 		           all  0
@@ -144,12 +144,12 @@ def assert_res_out_of_service(net, idx, name):
         if name == 'bus':
             assert isnan(net["res_bus"]["vm_pu"].at[idx])
             assert isnan(net["res_bus"].va_degree.at[idx])
-            assert net["res_bus"]["p_kw"].at[idx] == 0
-            assert net["res_bus"]["q_kvar"].at[idx] == 0
+            assert net["res_bus"]["p_mw"].at[idx] == 0
+            assert net["res_bus"]["q_mvar"].at[idx] == 0
         elif name == 'gen':
             if net.gen.in_service.any():
-                assert net["res_gen"]["p_kw"].at[idx] == 0
-                assert net["res_gen"]["q_kvar"].at[idx] == 0
+                assert net["res_gen"]["p_mw"].at[idx] == 0
+                assert net["res_gen"]["q_mvar"].at[idx] == 0
                 assert isnan(net["res_gen"].va_degree.at[idx])
             else:
                 assert net.res_gen is None
@@ -226,13 +226,13 @@ def create_test_network():
     b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
     b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4, index=7)
     b4 = pp.create_bus(net, name="bus4", vn_kv=10.)
-    pp.create_transformer_from_parameters(net, b4, b2, vsc_percent=3.75,
-                                          tp_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tp_mid=0,
-                                          vn_hv_kv=10.0, vscr_percent=2.8125,
-                                          tp_pos=0, tp_side="hv", tp_min=-2,
-                                          tp_st_percent=2.5, i0_percent=0.68751,
-                                          sn_kva=16.0, pfe_kw=0.11, name=None,
+    pp.create_transformer_from_parameters(net, b4, b2, vk_percent=3.75,
+                                          tap_max=2, vn_lv_kv=0.4,
+                                          shift_degree=150, tap_neutral=0,
+                                          vn_hv_kv=10.0, vkr_percent=2.8125,
+                                          tap_pos=0, tap_side="hv", tap_min=-2,
+                                          tap_step_percent=2.5, i0_percent=0.68751,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None,
                                           in_service=True, index=None)
     # 0.016 MVA 10/0.4 kV ET 16/23  SGB
 
@@ -245,10 +245,10 @@ def create_test_network():
 
     # NAYSEY 3x35rm/16 6/10kV
 
-    pp.create_load(net, b2, p_kw=10, q_kvar=0, name="load1")
-    pp.create_load(net, b3, p_kw=40, q_kvar=2, name="load2")
-    pp.create_gen(net, b4, p_kw=-200., vm_pu=1.0)
-    pp.create_sgen(net, b3, p_kw=-50, sn_kva=100)
+    pp.create_load(net, b2, p_mw=0.010, q_mvar=0, name="load1")
+    pp.create_load(net, b3, p_mw=0.040, q_mvar=0.002, name="load2")
+    pp.create_gen(net, b4, p_mw=0.200, vm_pu=1.0)
+    pp.create_sgen(net, b3, p_mw=0.050, sn_mva=0.1)
 
     return net
 

@@ -391,7 +391,9 @@ def from_json_dict(json_dict):
         >>> net = pp.pp.from_json_dict(json.loads(json_str))
 
     """
-    net = create_empty_network(name=json_dict["name"], f_hz=json_dict["f_hz"])
+    name = json_dict["name"] if "name" in json_dict else None
+    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50
+    net = create_empty_network(name=name, f_hz=f_hz)
 
     for key in sorted(json_dict.keys()):
         if key == 'dtypes':
