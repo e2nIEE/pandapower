@@ -14,7 +14,7 @@ def _copy_power_flow_results(net):
     :param net: pandapower grid
     :return:
     """
-    elements_to_init = ["bus", "ext_grid", "line", "load", "sgen", "trafo", "trafo3w",
+    elements_to_init = ["bus", "ext_grid", "line", "load", "load_3ph" "sgen", "sgen_3ph", "trafo", "trafo3w",
                         "shunt", "impedance", "gen", "ward", "xward", "dcline"]
     for element in elements_to_init:
         res_name = "res_" + element

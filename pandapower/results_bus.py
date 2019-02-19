@@ -4,7 +4,10 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import pandas as pd
 import numpy as np
+from numpy import zeros, array, float, hstack, invert, angle, complex128
+
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
 from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE
 from pandapower.idx_gen import PG, QG
@@ -181,7 +184,7 @@ def write_pq_results_to_element(net, ppc, element):
 
     element_in_service = _is_elements[element]
 
-    # P result in kw to element
+
     net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
     if is_controllable:
         net[res_]["p_mw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign
@@ -219,7 +222,7 @@ def write_pq_results_to_element_3ph(net, element):
     net[res_]["p_B_mw"] = pd.Series(el_data["p_B_mw"].values * scaling * element_in_service)
     net[res_]["p_C_mw"] = pd.Series(el_data["p_C_mw"].values * scaling * element_in_service)
     if ac:
-        # Q result in kvar to element
+        # Q result in mvar to element
         net[res_]["q_A_mvar"] = pd.Series(el_data["q_A_mvar"].values * scaling * element_in_service)
         net[res_]["q_B_mvar"] = pd.Series(el_data["q_B_mvar"].values * scaling * element_in_service)
         net[res_]["q_C_mvar"] = pd.Series(el_data["q_C_mvar"].values * scaling * element_in_service)

@@ -801,7 +801,7 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
 
         **q_A_mvar, q_B_mvar, q_C_mvar** (float, default 0) - The reactive power of the load
 
-        **sn_kva** (float, default None) - Nominal power of the load
+        **sn_mva** (float, default None) - Nominal power of the load
 
         **name** (string, default None) - The name for this load
 

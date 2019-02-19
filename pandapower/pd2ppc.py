@@ -5,6 +5,7 @@
 
 
 import copy
+import math
 
 import numpy as np
 
@@ -324,8 +325,7 @@ def _update_ppc(net, sequence=None):
     ppci["gen"] = ppc["gen"][gs]
 
     return ppc, ppci
-    
-    
+
 def _build_branch_ppc_zero(net, ppc):
     """
     Takes the empty ppc network and fills it with the zero imepdance branch values. The branch
@@ -376,6 +376,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         if vector_group in ["Yy", "Yd", "Dy", "Dd"]:
             continue
 
+<<<<<<< HEAD
         vk_percent = trafos["vk_percent"].values.astype(float)
         vkr_percent = trafos["vkr_percent"].values.astype(float)
         sn_mva = trafos["sn_mva"].values.astype(float)
@@ -481,7 +482,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
     del net.trafo["_ppc_idx"]
-
 
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):

@@ -227,6 +227,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
                         0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
 
     """
+#    mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]

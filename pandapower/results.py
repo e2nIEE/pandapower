@@ -79,7 +79,6 @@ def verify_results(net):
                     net._options["init_vm_pu"] = "auto"
                     net._options["init_va_degree"] = "auto"
 
-
 def empty_res_element(net, res_element):
     net[res_element] = copy.copy(net["_empty_" + res_element])
 

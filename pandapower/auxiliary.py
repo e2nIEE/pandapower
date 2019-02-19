@@ -375,8 +375,12 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
 
     is_elements = dict()
+<<<<<<< HEAD
 #    for element in ["load", "load_3ph", "sgen", "sgen_3ph", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
     for element in ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
+=======
+    for element in ["load", "load_3ph", "sgen", "sgen_3ph","gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
+>>>>>>> remotes/origin/unbalanced_pf
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
         if len_ > 0:
@@ -542,8 +546,6 @@ def _clean_up(net, res=True):
 #        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
 #        if res:
 #            res_bus.drop(xward_buses, inplace=True)
-    if len(net["dcline"]) > 0:
-        dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
         if res:
             net.res_gen.drop(dc_gens, inplace=True)

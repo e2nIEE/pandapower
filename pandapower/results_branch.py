@@ -2,12 +2,12 @@
 
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import copy
 
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _sum_by_group
+from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
 from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pandapower.idx_bus import BASE_KV, VM, VA
 
