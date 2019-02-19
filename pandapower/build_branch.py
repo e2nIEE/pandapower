@@ -493,7 +493,6 @@ def _switch_branches(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     calculate_voltage_angles = net._options["calculate_voltage_angles"]
     mode = net._options["mode"]
-    future_buses = [ppc["bus"]]
     open_switches = (net.switch.closed.values == False)
     n_bus = ppc["bus"].shape[0]
     for et, element in [("l", "line"), ("t", "trafo"), ("t3", "trafo3w")]:
@@ -514,11 +513,13 @@ def _switch_branches(net, ppc):
         new_indices = np.arange(n_bus, n_bus + nr_open_switches)
         new_buses[:, 0] = new_indices
         new_buses[:, BASE_KV] = ppc["bus"][sw_bus_index, BASE_KV]
-
+        ppc["bus"] = np.vstack([ppc["bus"], new_buses])
+        n_bus += new_buses.shape[0]
         init_vm = net._options["init_vm_pu"]
         init_va = net._options["init_va_degree"]
         for location in np.unique(sw_sides):
             mask = sw_sides==location
+            buses = new_indices[mask]
             side = F_BUS if location == "hv" or location == "from" else T_BUS
             for init, col in [(init_vm, VM),  (init_va, VA)]:
                 if isinstance(init, str) and init == "results":
@@ -529,8 +530,8 @@ def _switch_branches(net, ppc):
                     init_values = res_column.loc[switch_element].values[mask]
                 else:
                     if element == "line":
-                        buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
-                        init_values = ppc["bus"][buses, col]
+                        opposite_buses = ppc["branch"][sw_branch_index[mask], side].real.astype(int)
+                        init_values = ppc["bus"][opposite_buses, col]
                     else:
                         opposite_side = T_BUS if side == F_BUS else F_BUS
                         opposite_buses = ppc["branch"][sw_branch_index[mask], opposite_side].real.astype(int)
@@ -543,15 +544,12 @@ def _switch_branches(net, ppc):
                                 init_values = ppc["bus"][opposite_buses, col] + shift
                             else:
                                 init_values = ppc["bus"][opposite_buses, col]
-                new_buses[mask, col] = init_values
+                ppc["bus"][buses, col] = init_values
             if mode == "sc":
-                new_buses[mask, C_MAX] = ppc["bus"][buses, C_MAX]
-                new_buses[mask, C_MIN] = ppc["bus"][buses, C_MIN]
+                ppc["bus"][buses, C_MAX] = ppc["bus"][opposite_buses, C_MAX]
+                ppc["bus"][buses, C_MIN] = ppc["bus"][opposite_buses, C_MIN]
             ppc["branch"][sw_branch_index[mask], side] = new_indices[mask]
-        future_buses.append(new_buses)
-        n_bus += new_buses.shape[0]
-    if len(future_buses) > 1:
-        ppc["bus"] = np.vstack(future_buses)
+
 
 def _branches_with_oos_buses(net, ppc):
     """
