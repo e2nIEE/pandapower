@@ -206,9 +206,9 @@ which allows direct definition of the costs and ranges.
 Of course the signing changes and the MVA-unit changes also apply, so that in summary the different cost function definitions look like this:
 
 +--------------------+--------------------------------------------------------------------------------------------------------------+
-| **pandapower 1.x** | :code:`pp.create_piecewise_linear_costs(net, 3, "gen", [(0, 0), (-1000, -50), (-3000, -250)])`               |
+| **pandapower 1.x** | :code:`pp.create_piecewise_linear_costs(net, 3, "gen", [(0, 0), (-10000, -50), (-30000, -250)])`             |
 +--------------------+--------------------------------------------------------------------------------------------------------------+
-| **pandapower 2.x** | :code:`pp.create_pwl_cost(net, 3, "gen", [(0, 100, 0.5), (100, 300, 1.)])`                                   |
+| **pandapower 2.x** | :code:`pp.create_pwl_cost(net, 3, "gen", [(0, 10, 0.5), (10, 30, 1.)])`                                      |
 +--------------------+--------------------------------------------------------------------------------------------------------------+
 
 Measurements
