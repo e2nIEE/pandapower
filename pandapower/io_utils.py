@@ -71,7 +71,7 @@ def coords_to_df(value, geotype="line"):
 
 def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
     dodfs = dict()
-    dodfs["dtypes"] = collect_all_dtypes_df(net)
+    dtypes = []
     dodfs["parameters"] = pd.DataFrame(columns=["parameter"])
     for item, value in net.items():
         # dont save internal variables and results (if not explicitely specified)
@@ -97,17 +97,10 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
             dodfs[item] = geo
         else:
             dodfs[item] = value
+            for column, dtype in value.dtypes.iteritems():
+                dtypes.append((item, column, str(dtype)))
+    dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
     return dodfs
-
-
-def collect_all_dtypes_df(net):
-    dtypes = []
-    for element, table in net.items():
-        if not hasattr(table, "dtypes"):
-            continue
-        for item, dtype in table.dtypes.iteritems():
-            dtypes.append((element, item, str(dtype)))
-    return pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
 
 
 def dicts_to_pandas(json_dict):
