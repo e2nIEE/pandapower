@@ -722,5 +722,4 @@ def test_impedance_line_replacement():
 
 
 if __name__ == "__main__":
-#    pytest.main([__file__, "-xs"])
-    pass
+    pytest.main([__file__, "-xs"])
