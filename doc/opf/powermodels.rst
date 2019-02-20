@@ -1,3 +1,5 @@
+.. _powermodels:
+
 Optimization with PowerModels.jl
 =================================
 
