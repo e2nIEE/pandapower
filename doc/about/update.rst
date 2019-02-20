@@ -19,9 +19,9 @@ used in transmission systems. The most significant changes are:
 - some transformer parameters where renamed for better readability
 - the definition of constraints and costs was made easier and more intuitive
 
-These changes are not backwards compatible, which is why a major release was necessary.
+These changes are not backwards compatible, which is why a major release was necessary. In the following you can find a description for how to update from pandapower 1.x to 2.x.
 
-In the following you can find a description for how to update from pandapower 1.x to 2.x.
+Of course there are also many new features in addition to these changes, such as :ref:`an Interface to PowerModels.jl <powermodels>`.
 
 How to update saved networks
 ==============================
@@ -103,7 +103,7 @@ Here is a full list of affected parameters:
 MVA-based Units
 ==============================
 
-The basic power unit has been changed from kVA to MVA. This affects all three types of power units:
+The basic power unit has been changed from kVA to MVA to allow a more comfortable handling of transmission systems. This affects all three types of power units:
 
     - active power: kw --> mw
     - reactive power: kvar --> mvar
@@ -141,7 +141,6 @@ a generator based signing system:
     - net.ext_grid
     
 All other elements remain in the load-based signing system.
-
 So for these three elements, in addition to the unit being changed from kW to MW, the sign for active and reactive power is also reversed:
 
 +--------------------------------------------------------------------------+------------------------------------------------------------------------+
@@ -176,27 +175,25 @@ Cost Functions
 Constraints are also changed to MVA-based units, and they are also affected by the change in the signing. In addition to that, for polynomial costs,
 the cost parameters can be directly specified as parameters instead of passing a list of polynomials:
 
-+----------------+--------------------------------------------------------------------------------------------------------------+
-| pandapower 1.x | :code:`pp.create_polynomial_costs(net, 3, "gen", [0, -10, -100])`                                            |
-+----------------+--------------------------------------------------------------------------------------------------------------+
-| pandapower 2.x | :code:`pp.create_poly_cost(net, 3, "gen", c_per_mw=0.1, c2_per_mw2=0.01)`                                    |
-+----------------+--------------------------------------------------------------------------------------------------------------+
++--------------------+--------------------------------------------------------------------------------------------------------------+
+| **pandapower 1.x** | :code:`pp.create_polynomial_costs(net, 3, "gen", [0, -10, -100])`                                            |
++--------------------+--------------------------------------------------------------------------------------------------------------+
+| **pandapower 2.x** | :code:`pp.create_poly_cost(net, 3, "gen", c_per_mw=0.1, c2_per_mw2=0.01)`                                    |
++--------------------+--------------------------------------------------------------------------------------------------------------+
 
 The definition of piecewise linear costs has also changed. In pandapower 1.x, the cost polyonmial is given as list of cost points: ::
 
     [(p1, c1), (p2, c2), (p3, c3)]
     
-The cost function is then interpolated between those points. So for a generator with the cost function: ::
+The cost function is then interpolated between those points, and the costs are then defined by the slope of the curve between those points.
+So for a generator with the cost function: ::
 
     [(0, 0), (100, 50), (300, 250)]
     
-The costs are however not represented by the points, but rather by the slope of the curve between those points. The costs are therefore 0.5 €/MW in the range between
-0 and 100 MW and 1€/MW in the range between 100 MW and 300 MW. With this definition of the cost function, the actual costs are not intuitively clear from the defined function.
+the costs are 0.5 €/MW in the range between 0 and 100 MW and 1€/MW in the range between 100 MW and 300 MW.
+
+With this definition of the cost function, the actual costs are not intuitively clear from the defined function.
 In pandapower 2.0, the costs are therefore defined with a range and slope: ::
-
-     [(p1, p2, c1), (p3, p4, c2)]
-
-The given ranges have to be continous so that there are no gaps in the cost functions, such as: ::
 
      [(p1, p2, c1), (p2, p3, c2)]
 
@@ -204,13 +201,15 @@ The same cost function that was defined as above would therefore be defined in p
 
     [(0, 100, 0.5), (100, 300, 1.)]
 
+which allows direct definition of the costs and ranges.
+    
 Of course the signing changes and the MVA-unit changes also apply, so that in summary the different cost function definitions look like this:
 
-+----------------+--------------------------------------------------------------------------------------------------------------+
-| pandapower 1.x | :code:`pp.create_piecewise_linear_costs(net, 3, "gen", [(0, 0), (-1000, -50), (-3000, -250)])`               |
-+----------------+--------------------------------------------------------------------------------------------------------------+
-| pandapower 2.x | :code:`pp.create_pwl_cost(net, 3, "gen", [(0, 100, 0.5), (100, 300, 1.)])`                                   |
-+----------------+--------------------------------------------------------------------------------------------------------------+
++--------------------+--------------------------------------------------------------------------------------------------------------+
+| **pandapower 1.x** | :code:`pp.create_piecewise_linear_costs(net, 3, "gen", [(0, 0), (-1000, -50), (-3000, -250)])`               |
++--------------------+--------------------------------------------------------------------------------------------------------------+
+| **pandapower 2.x** | :code:`pp.create_pwl_cost(net, 3, "gen", [(0, 100, 0.5), (100, 300, 1.)])`                                   |
++--------------------+--------------------------------------------------------------------------------------------------------------+
 
 Measurements
 ===========================
