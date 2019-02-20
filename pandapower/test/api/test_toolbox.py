@@ -53,6 +53,58 @@ def test_nets_equal():
     assert tb.nets_equal(net, original, tol=0.1)
 
 
+def test_add_column_from_node_to_elements():
+    net = nw.create_cigre_network_mv("pv_wind")
+    net.bus["subnet"] = ["subnet_%i" % i for i in range(net.bus.shape[0])]
+    net.sgen["subnet"] = "already_given"
+    net.switch["subnet"] = None
+    net_orig = copy.deepcopy(net)
+
+    branch_bus = ["from_bus", "lv_bus"]
+    pp.add_column_from_node_to_elements(net, "subnet", False, branch_bus=branch_bus)
+
+    def check_subnet_correctness(net, elements, branch_bus):
+        for elm in elements:
+            if "bus" in net[elm].columns:
+                assert all(pp.compare_arrays(net[elm]["subnet"].values,
+                                             np.array(["subnet_%i" % bus for bus in net[elm].bus])))
+            elif branch_bus[0] in net[elm].columns:
+                assert all(pp.compare_arrays(net[elm]["subnet"].values, np.array([
+                        "subnet_%i" % bus for bus in net[elm][branch_bus[0]]])))
+            elif branch_bus[1] in net[elm].columns:
+                assert all(pp.compare_arrays(net[elm]["subnet"].values, np.array([
+                        "subnet_%i" % bus for bus in net[elm][branch_bus[1]]])))
+
+    check_subnet_correctness(net, pp.pp_elements(bus=False)-{"sgen"}, branch_bus)
+
+    pp.add_column_from_node_to_elements(net_orig, "subnet", True, branch_bus=branch_bus)
+    check_subnet_correctness(net_orig, pp.pp_elements(bus=False), branch_bus)
+
+
+def test_add_column_from_element_to_elements():
+    net = nw.create_cigre_network_mv()
+    pp.create_measurement(net, "i", "trafo", 5, 3, 0, side="hv")
+    pp.create_measurement(net, "i", "line", 5, 3, 0, side="to")
+    pp.create_measurement(net, "p", "bus", 5, 3, 2)
+    assert net.measurement.name.isnull().all()
+    assert ~net.switch.name.isnull().all()
+    orig_switch_names = copy.deepcopy(net.switch.name.values)
+    expected_measurement_names = np.array([
+        net.trafo.name.loc[0], net.line.name.loc[0], net.bus.name.loc[2]])
+    expected_switch_names = np.append(
+        net.line.name.loc[net.switch.element.loc[net.switch.et == "l"]].values,
+        net.trafo.name.loc[net.switch.element.loc[net.switch.et == "t"]].values)
+
+    pp.add_column_from_element_to_elements(net, "name", False)
+    assert all(pp.compare_arrays(net.measurement.name.values, expected_measurement_names))
+    assert all(pp.compare_arrays(net.switch.name.values, orig_switch_names))
+
+    del net.measurement["name"]
+    pp.add_column_from_element_to_elements(net, "name", True)
+    assert all(pp.compare_arrays(net.measurement.name.values, expected_measurement_names))
+    assert all(pp.compare_arrays(net.switch.name.values, expected_switch_names))
+
+
 def test_continuos_bus_numbering():
     net = pp.create_empty_network()
 
@@ -670,4 +722,5 @@ def test_impedance_line_replacement():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+#    pytest.main([__file__, "-xs"])
+    pass
