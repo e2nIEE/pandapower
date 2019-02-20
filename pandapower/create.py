@@ -2240,7 +2240,11 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **qz_mvar** (float) - reactive power of the impedance load in kVar at 1.pu voltage
 
-        **vm_pu** (float)
+        **r_ohm** (float) - internal resistance of the voltage source
+
+        **x_ohm** (float) - internal reactance of the voltage source
+
+        **vm_pu** (float) - voltage magnitude at the additional PV-node
 
     OUTPUT:
         xward id
