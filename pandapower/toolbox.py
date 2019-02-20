@@ -212,10 +212,10 @@ def opf_task(net):  # pragma: no cover
         constr_col = pd.Series(['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar'])
         constr_col_exist = constr_col[constr_col.isin(net[variable].columns)]
         constr = net[variable][constr_col_exist]
+        if variable != 'ext_grid' and "controllable" in net[variable].columns:
+            constr = constr.loc[net[variable].loc[net[variable].controllable].index]
         if (constr.shape[1] > 0) & (constr.shape[0] > 0):
             constr_exist = True
-            if variable != 'ext_grid':
-                constr = constr.loc[net[variable].loc[net[variable].controllable].index]
             to_log += '\n' + "  " + variable_long_names[j] + " Constraints"
             for i in constr_col[~constr_col.isin(net[variable].columns)]:
                 constr[i] = np.nan
@@ -1155,6 +1155,8 @@ def create_continuous_bus_index(net, start=0):
     Creates a continuous bus index starting at zero and replaces all
     references of old indices by the new ones.
     """
+
+    net.bus.sort_index(inplace=True)
     new_bus_idxs = list(np.arange(start, len(net.bus) + start))
     bus_lookup = dict(zip(net["bus"].index.values, new_bus_idxs))
     net.bus.index = new_bus_idxs
@@ -1192,7 +1194,6 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
                               power flow will be selected. Additionally elements,
                               like line_geodata and bus_geodata, also can be here
                               considered.
-
     OUTPUT:
       **net** - pandapower network with odered and continuous indices
 
