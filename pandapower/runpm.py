@@ -133,7 +133,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
     _runpm(net)
 
-def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True, check_connectivity=True,
           trafo_model="t", delta=0, trafo3w_losses="hv"):
     """
     Runs a power system optimization using PowerModels.jl.
@@ -178,7 +178,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=False,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)

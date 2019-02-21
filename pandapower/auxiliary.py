@@ -35,7 +35,7 @@ import scipy as sp
 import six
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
 from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
@@ -174,8 +174,8 @@ class ADict(dict, MutableMapping):
             'register').
         """
         return (
-            isinstance(key, six.string_types) and
-            not hasattr(cls, key)
+                isinstance(key, six.string_types) and
+                not hasattr(cls, key)
         )
 
 
@@ -277,18 +277,69 @@ def _get_values(source, selection, lookup):
     return v
 
 
+def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
+    isolated_nodes = np.where(bus_not_reachable)[0]
+    if len(isolated_nodes) > 0:
+        logger.debug("There are isolated buses in the network!")
+        # set buses in ppc out of service
+        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
+
+        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+        if pus > 0 or qus > 0:
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+    else:
+        pus = qus = 0
+
+    return isolated_nodes, pus, qus, ppc
+
+
+def _check_connectivity_opf(ppc):
+    """
+    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are in net.
+    :param ppc: pypower case file
+    :return:
+    """
+    br_status = ppc['branch'][:, BR_STATUS] == True
+    nobranch = ppc['branch'][br_status, :].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(int)
+
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch),
+                                       (bus_from, bus_to)),
+                                      shape=(nobus, nobus))
+
+    bus_not_reachable = np.ones(ppc["bus"].shape[0], dtype=bool)
+    slack_set = set(slacks)
+    for slack in slacks:
+        if ppc['bus'][slack, BUS_TYPE] == PV:
+            continue
+        reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, slack, False, False)
+        bus_not_reachable[reachable] = False
+        reach_set = set(reachable)
+        intersection = slack_set & reach_set
+        if len(intersection) > 1:
+            # if slack is in reachable other slacks are connected to this one. Set it to Gen bus
+            demoted_slacks = list(intersection - {slack})
+            ppc['bus'][demoted_slacks, BUS_TYPE] = PV
+
+    isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
+    return isolated_nodes, pus, qus
+
+
 def _check_connectivity(ppc):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pypower case file
     :return:
     """
-    br_status=ppc['branch'][:, BR_STATUS]==True
+    br_status = ppc['branch'][:, BR_STATUS] == True
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
     bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
-
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
@@ -305,18 +356,7 @@ def _check_connectivity(ppc):
     # if so: bus_not_reachable = np.hstack([ppc['bus'][:, BUS_TYPE] != 4, np.array([False])])
     bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
     bus_not_reachable[reachable] = False
-    isolated_nodes = np.where(bus_not_reachable)[0]
-    if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network!")
-        # set buses in ppc out of service
-        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
-
-        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
-        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
-        if pus > 0 or qus > 0:
-            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
-    else:
-        pus = qus = 0
+    isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
     return isolated_nodes, pus, qus
 
 
@@ -363,13 +403,12 @@ def _select_is_elements_numba(net, isolated_nodes=None):
                              bus_in_service, element_in_service)
         if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
             if "controllable" in net[element]:
-               controllable = net[element].controllable.fillna(False).values.astype(bool)
-               controllable_is = controllable & element_in_service
-               if controllable_is.any():
-                   is_elements["%s_controllable"%element] = controllable_is
-                   element_in_service = element_in_service & ~controllable_is
+                controllable = net[element].controllable.fillna(False).values.astype(bool)
+                controllable_is = controllable & element_in_service
+                if controllable_is.any():
+                    is_elements["%s_controllable" % element] = controllable_is
+                    element_in_service = element_in_service & ~controllable_is
         is_elements[element] = element_in_service
-
 
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
@@ -386,7 +425,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
     if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
 
-    init_results = (isinstance(init_vm_pu, str)     and (init_vm_pu == "results")) or \
+    init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
 
     options = {
@@ -426,8 +465,8 @@ def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
     if max_gen >= n_max and len(net["gen"]) < n_max:
         logger.warning(
             "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
-            #" Try resetting the bus indices with the toolbox function "
-            #"create_continous_bus_index()"
+            # " Try resetting the bus indices with the toolbox function "
+            # "create_continous_bus_index()"
             % max_gen)
 
 
@@ -548,6 +587,7 @@ def _add_auxiliary_elements(net):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
 
+
 def _add_dcline_gens(net):
     from pandapower.create import create_gen
     for dctab in net.dcline.itertuples():
@@ -562,6 +602,7 @@ def _add_dcline_gens(net):
                    min_p_mw=-pmax, max_p_mw=0,
                    max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
                    in_service=dctab.in_service)
+
 
 def _replace_nans_with_default_limits(net, ppc):
     qlim = net._options["q_lim_default"]

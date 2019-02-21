@@ -360,7 +360,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _powerflow(net, **kwargs)
 
 
-def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
+def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
            suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True,
            trafo3w_losses="hv", **kwargs):
     """
