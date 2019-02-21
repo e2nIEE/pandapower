@@ -39,7 +39,7 @@ The constant apparent power is given by:
    :nowrap:
    
    \begin{align*}
-   P_{const} &= ps\_kw\\
+   P_{const} &= ps\_mw\\
    Q_{const} &= qs\_kvar\\
    \end{align*}
     
@@ -49,7 +49,7 @@ The shunt admittance part of the extended ward equivalent is calculated as descr
    :nowrap:
    
    \begin{align*}
-   \underline{y}_{shunt} &= \frac{pz\_kw + j \cdot qz\_kvar}{S_{N}}
+   \underline{y}_{shunt} &= \frac{pz\_mw + j \cdot qz\_kvar}{S_{N}}
    \end{align*}
 
 The internal resistance is defined as:
@@ -67,7 +67,7 @@ The internal voltage source is modelled as a PV-node (:ref:`generator<gen>`) wit
    :nowrap:
    
    \begin{align*}
-   p\_kw &= 0 \\
+   p\_mw &= 0 \\
    vm\_pu &= vm\_pu
    \end{align*}
 
@@ -88,6 +88,6 @@ Result Parameters
    
    \begin{align*}
    vm\_pu &= v_{bus} \\
-   p\_kw &= P_{const} + Re(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}}) + Re(\underline{I}_{int} \cdot \underline{V}_{bus}) \\
+   p\_mw &= P_{const} + Re(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}}) + Re(\underline{I}_{int} \cdot \underline{V}_{bus}) \\
    q_kvar &= Q_{const} + Im(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}} + Im(\underline{I}_{int} \cdot \underline{V}_{bus}) )
    \end{align*}

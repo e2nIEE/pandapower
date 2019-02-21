@@ -29,7 +29,7 @@ Input Parameters
 
 .. note::
 
-   Loads should always have a positive p_kw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (sgen element) instead of a negative load.
+   Loads should always have a positive p_mw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (sgen element) instead of a negative load.
 
 .. note::
     
@@ -63,7 +63,7 @@ The load power values are then defines as:
    :nowrap:
    
    \begin{align*}
-    P_{load} =&  p\_kw \cdot scaling \cdot (p_{const} + z_{const} \cdot V^2 + i_{const} \cdot V ) \\
+    P_{load} =&  p\_mw \cdot scaling \cdot (p_{const} + z_{const} \cdot V^2 + i_{const} \cdot V ) \\
     Q_{load} =&  q\_kvar \cdot scaling \cdot (p_{const} + z_{const} \cdot V^2 + i_{const} \cdot V)
     \end{align*}
 

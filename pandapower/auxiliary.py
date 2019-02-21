@@ -27,6 +27,7 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 from collections import MutableMapping
+import numpy.core.numeric as ncn
 
 import numpy as np
 import pandas as pd
@@ -34,7 +35,8 @@ import scipy as sp
 import six
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX
+from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
     from numba import jit
@@ -325,7 +327,7 @@ def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
 
 
 def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-    for k in range(len(bus_lookup)):
+    for k in range(len(bus_in_service)):
         if ppc_bus_isolated[bus_lookup[k]]:
             bus_in_service[k] = False
 
@@ -342,6 +344,7 @@ except RuntimeError:
 
 def _select_is_elements_numba(net, isolated_nodes=None):
     # is missing sgen_controllable and load_controllable
+
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
@@ -358,24 +361,25 @@ def _select_is_elements_numba(net, isolated_nodes=None):
             element_df = net[element]
             set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
                              bus_in_service, element_in_service)
+        if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
+            if "controllable" in net[element]:
+               controllable = net[element].controllable.fillna(False).values.astype(bool)
+               controllable_is = controllable & element_in_service
+               if controllable_is.any():
+                   is_elements["%s_controllable"%element] = controllable_is
+                   element_in_service = element_in_service & ~controllable_is
         is_elements[element] = element_in_service
+
+
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
-
-    if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
-        if "load_controllable" in net._is_elements:
-            is_elements["load_controllable"] = net._is_elements["load_controllable"]
-        if "sgen_controllable" in net._is_elements:
-            is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
-        if "storage_controllable" in net._is_elements:
-            is_elements["storage_controllable"] = net._is_elements["storage_controllable"]
     return is_elements
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, enforce_q_lims, recycle, delta=1e-10,
+                     r_switch, enforce_q_lims, recycle, delta=1e-10,
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
-                     init_va_degree=0):
+                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -390,7 +394,6 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "trafo_model": trafo_model,
         "check_connectivity": check_connectivity,
         "mode": mode,
-        "copy_constraints_to_ppc": copy_constraints_to_ppc,
         "r_switch": r_switch,
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
@@ -399,7 +402,9 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "trafo3w_losses": trafo3w_losses,
         "init_vm_pu": init_vm_pu,
         "init_va_degree": init_va_degree,
-        "init_results": init_results
+        "init_results": init_results,
+        "p_lim_default": p_lim_default,
+        "q_lim_default": q_lim_default
     }
     _add_options(net, options)
 
@@ -425,14 +430,14 @@ def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
             % max_gen)
 
 
-def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
+def _add_pf_options(net, tolerance_mva, trafo_loading, numba, ac,
                     algorithm, max_iteration, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
     options = {
-        "tolerance_kva": tolerance_kva,
+        "tolerance_mva": tolerance_mva,
         "trafo_loading": trafo_loading,
         "numba": numba,
         "ac": ac,
@@ -492,28 +497,6 @@ def _add_options(net, options):
 
 
 def _clean_up(net, res=True):
-    # mode = net.__internal_options["mode"]
-
-    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
-    # net._is_elements = None
-
-    mode = net._options["mode"]
-    if res:
-        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
-    if len(net["trafo3w"]) > 0:
-        buses_3w = net.trafo3w["ad_bus"].values
-        net["bus"].drop(buses_3w, inplace=True)
-        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-        if res:
-            res_bus.drop(buses_3w, inplace=True)
-
-    if len(net["xward"]) > 0:
-        xward_buses = net["xward"]["ad_bus"].values
-        net["bus"].drop(xward_buses, inplace=True)
-        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-        if res:
-            res_bus.drop(xward_buses, inplace=True)
-
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
@@ -558,3 +541,33 @@ def _check_if_numba_is_installed(numba):
         numba = False
 
     return numba
+
+
+def _add_auxiliary_elements(net):
+    if len(net.dcline) > 0:
+        _add_dcline_gens(net)
+
+def _add_dcline_gens(net):
+    from pandapower.create import create_gen
+    for dctab in net.dcline.itertuples():
+        pfrom = dctab.p_mw
+        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
+        pmax = dctab.max_p_mw
+        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=0, max_p_mw=pmax,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+                   in_service=dctab.in_service)
+        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-pmax, max_p_mw=0,
+                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+                   in_service=dctab.in_service)
+
+def _replace_nans_with_default_limits(net, ppc):
+    qlim = net._options["q_lim_default"]
+    plim = net._options["p_lim_default"]
+
+    for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
+                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
+        limits = ppc[matrix][:, [column]]
+        ncn.copyto(limits, default, where=np.isnan(limits))
+        ppc[matrix][:, [column]] = limits

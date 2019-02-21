@@ -18,7 +18,8 @@ from pandapower.idx_cost import MODEL, PW_LINEAR, NCOST
 from pandapower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
 from pypower.makeYbus import makeYbus
 from pypower.opf_consfcn import opf_consfcn
-from pypower.opf_costfcn import opf_costfcn
+from pandapower.opf.opf_costfcn import opf_costfcn
+
 from pypower.util import sub2ind
 
 from pandapower.opf.opf_hessfcn import opf_hessfcn #temporary changed import to match bugfix path

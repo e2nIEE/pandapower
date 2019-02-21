@@ -5,12 +5,12 @@ type;string;"| naming conventions:
 | *""WP""* - wind power system
 | *""CHP""* - combined heating and power system";type of generator
 bus*;integer;;index of connected bus
-p_kw*;float;:math:`\leq` 0;active power of the static generator [kW]
+p_mw*;float;:math:`\leq` 0;active power of the static generator [MW]
 q_kvar*;float;;reactive power of the static generator [kVar]
 sn_kva;float;:math:`>` 0;rated power ot the static generator [kVA]
 scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
-max_p_kw**;float;;Maximum active power
-min_p_kw**;float;;Minimum active power
+max_p_mw**;float;;Maximum active power
+min_p_mw**;float;;Minimum active power
 max_q_kvar**;float;;Maximum reactive power
 min_q_kvar**;float;;Minimum reactive power
 controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable

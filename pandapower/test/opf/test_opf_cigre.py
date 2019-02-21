@@ -29,19 +29,19 @@ def test_opf_cigre():
     net.bus["min_vm_pu"] = 0.9
     net.line["max_loading_percent"] = 200
     net.trafo["max_loading_percent"] = 100
-    net.sgen["min_p_kw"] = -net.sgen.sn_kva
-    net.sgen["max_p_kw"] = 0
-    net.sgen["max_q_kvar"] = 10
-    net.sgen["min_q_kvar"] = -10
-    net.sgen["controllable"] = 1
-    net.load["controllable"] = 0
+    net.sgen["max_p_mw"] = net.sgen.sn_mva
+    net.sgen["min_p_mw"] = 0
+    net.sgen["max_q_mvar"] = 0.01
+    net.sgen["min_q_mvar"] = -0.01
+    net.sgen["controllable"] = True
+    net.load["controllable"] = False
     net.sgen.in_service[net.sgen.bus == 4] = False
     net.sgen.in_service[net.sgen.bus == 6] = False
     net.sgen.in_service[net.sgen.bus == 8] = False
     net.sgen.in_service[net.sgen.bus == 9] = False
 
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
 
 
@@ -55,29 +55,29 @@ def test_some_sgens_not_controllable():
     net.bus["min_vm_pu"] = 0.9
     net.line["max_loading_percent"] = 200
     net.trafo["max_loading_percent"] = 100
-    net.sgen["min_p_kw"] = -net.sgen.sn_kva
-    net.sgen["max_p_kw"] = 0
-    net.sgen["max_q_kvar"] = 10
-    net.sgen["min_q_kvar"] = -10
-    net.sgen["controllable"] = 1
-    net.load["controllable"] = 0
+    net.sgen["max_p_mw"] = net.sgen.sn_mva
+    net.sgen["min_p_mw"] = 0
+    net.sgen["max_q_mvar"] = 0.01
+    net.sgen["min_q_mvar"] = -0.01
+    net.sgen["controllable"] = True
+    net.load["controllable"] = False
     net.sgen.controllable[net.sgen.bus == 4] = False
     net.sgen.controllable[net.sgen.bus == 6] = False
     net.sgen.controllable[net.sgen.bus == 8] = False
     net.sgen.controllable[net.sgen.bus == 9] = False
 
     for sgen_idx, row in net["sgen"].iterrows():
-        cost_sgen = pp.create_polynomial_cost(net, sgen_idx, 'sgen', np.array([1, 0]))
-        net.polynomial_cost.c.at[cost_sgen] = np.array([[0.1, 0]])
+        cost_sgen = pp.create_poly_cost(net, sgen_idx, 'sgen', cp1_eur_per_mw=1.)
+        net.poly_cost.cp1_eur_per_mw.at[cost_sgen] = 100
 
     # run OPF
-    pp.runopp(net, verbose=False)
+    pp.runopp(net, )
     assert net["OPF_converged"]
-    # check if p_kw of non conrollable sgens are unchanged
-    assert np.allclose(net.res_sgen.p_kw[net.sgen.controllable == False], net.sgen.p_kw[net.sgen.controllable == False])
-    assert not np.allclose(net.res_sgen.p_kw[net.sgen.controllable == True],
-                           net.sgen.p_kw[net.sgen.controllable == True])
+    # check if p_mw of non conrollable sgens are unchanged
+    assert np.allclose(net.res_sgen.p_mw[net.sgen.controllable == False], net.sgen.p_mw[net.sgen.controllable == False])
+    assert not np.allclose(net.res_sgen.p_mw[net.sgen.controllable == True],
+                           net.sgen.p_mw[net.sgen.controllable == True])
 
 
 if __name__ == "__main__":
-    pytest.main(["test_opf_cigre.py", "-xs"])
+    pytest.main(["-xs"])

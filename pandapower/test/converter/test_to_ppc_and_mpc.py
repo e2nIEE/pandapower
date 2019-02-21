@@ -34,7 +34,7 @@ def test_to_ppc_and_mpc():
         # validate voltage results of pandapower-to-ppc-converted grids vs. original pypower results
         net["_options"]['ac'] = True
         net["_options"]['numba'] = True
-        net["_options"]['tolerance_kva'] = 1e-5
+        net["_options"]['tolerance_mva'] = 1e-8
         net["_options"]['algorithm'] = "fdbx"
         net["_options"]['max_iteration'] = 30
         net["_options"]['enforce_q_lims'] = False

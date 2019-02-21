@@ -1,8 +1,19 @@
 Change Log
 =============
-[develop]
+
+[1.6.1] - 2019-02-18
 ----------------------
 - [CHANGED] Patch size in create_bus_collection is not duplicated for rectangles anymore #181
+- [CHANGED] Mask colormap z array to ensure nan handling 
+- [FIXED] active power distribution in DC OPF for multiple generators at one bus
+- [ADDED] support for networkx graphs in json IO
+- [ADDED] support for shapely objects in json IO
+- [ADDED] switches for three winding transformers #30
+- [ADDED] net.bus_geodata.coords to store line representation of busbars and create_busbar_collection to plot them
+- [CHANGED] draw_collections also supports tuples of collections
+- [ADDED] OPF logging output for verbose=True
+- [ADDED] compatibility for pandas 0.24
+- [FIXED] bug for single bus networks in DC PF #288
 
 [1.6.0] - 2018-09-18
 ----------------------

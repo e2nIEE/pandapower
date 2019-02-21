@@ -34,25 +34,16 @@ def bustypes(bus, gen):
     changes by Uni Kassel (Florian Schaefer): If new ref bus is chosen -> Init as numpy array
     """
     # get generator status
-    nb = bus.shape[0]
-    ng = gen.shape[0]
+#    nb = bus.shape[0]
+#    ng = gen.shape[0]
     # gen connection matrix, element i, j is 1 if, generator j at bus i is ON
-    Cg = sparse((gen[:, GEN_STATUS] > 0,
-                 (gen[:, GEN_BUS], range(ng))), (nb, ng))
+    #Cg = sparse((gen[:, GEN_STATUS] > 0,
+#                 (gen[:, GEN_BUS], range(ng))), (nb, ng))
     # number of generators at each bus that are ON
-    bus_gen_status = (Cg * ones(ng, int)).astype(bool)
+    #bus_gen_status = (Cg * ones(ng, int)).astype(bool)
 
     # form index lists for slack, PV, and PQ buses
-    ref = find((bus[:, BUS_TYPE] == REF) & bus_gen_status) # ref bus index
-    pv  = find((bus[:, BUS_TYPE] == PV)  & bus_gen_status) # PV bus indices
-    pq  = find((bus[:, BUS_TYPE] == PQ) | ~bus_gen_status) # PQ bus indices
-
-    # throw an error since no reference bus is defined
-    if len(ref) == 0:
-        raise KeyError("No reference bus (ext_grid) is available. Abort power flow calculation. Please add an ext_grid")
-        # bugfix Pypower: must be an numpy array!
-        # ref = zeros(1, dtype=int)
-        # ref[0] = pv[0]      # use the first PV bus
-        # pv = pv[1:]      # take it off PV list
-
+    ref = find((bus[:, BUS_TYPE] == REF)) # ref bus index
+    pv  = find((bus[:, BUS_TYPE] == PV)) # PV bus indices
+    pq  = find((bus[:, BUS_TYPE] == PQ)) # PQ bus indices
     return ref, pv, pq
