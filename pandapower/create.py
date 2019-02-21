@@ -13,7 +13,7 @@ from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower import __version__
 
 
-def create_empty_network(name="", f_hz=50., sn_mva=1):
+def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     """
     This function initializes the pandapower datastructure.
 
@@ -23,6 +23,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
         **name** (string, None) - name for the network
 
         **sn_mva** (float, 1e3) - reference apparent power for per unit system
+
+        **add_stdtypes** (boolean, True) - Includes standard types to net
 
     OUTPUT:
         **net** (attrdict) - PANDAPOWER attrdict with empty tables:
@@ -337,8 +339,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
     for s in net:
         if isinstance(net[s], list):
             net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
-    add_basic_std_types(net)
-    net._empty_aux_trafo3w = net.trafo.copy()
+    if add_stdtypes:
+        add_basic_std_types(net)
+    else:
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
     reset_results(net)
     net['user_pf_options'] = dict()
     return net
@@ -2236,7 +2240,11 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **qz_mvar** (float) - reactive power of the impedance load in kVar at 1.pu voltage
 
-        **vm_pu** (float)
+        **r_ohm** (float) - internal resistance of the voltage source
+
+        **x_ohm** (float) - internal reactance of the voltage source
+
+        **vm_pu** (float) - voltage magnitude at the additional PV-node
 
     OUTPUT:
         xward id
