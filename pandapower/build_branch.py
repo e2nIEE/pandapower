@@ -183,6 +183,7 @@ def _calc_trafo_parameter(net, ppc):
         temp_para[:, 8] = max_load / 100. * trafo.sn_mva.values * trafo.df.values * parallel
     return temp_para
 
+
 def get_trafo_values(trafo_df, par):
     if isinstance(trafo_df, dict):
         return trafo_df[par]
@@ -316,6 +317,7 @@ def _calc_y_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     y = - b_real * 1j - b_img * np.sign(i0)
     return y / np.square(vn_trafo_lv / vn_lv_kv)
 
+
 def _calc_tap_from_dataframe(net, trafo_df):
     """
     Adjust the nominal voltage vnh and vnl to the active tab position "tap_pos".
@@ -382,10 +384,12 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 )
     return vnh, vnl, trafo_shift
 
+
 def _replace_nan(array, value=0):
     mask = np.isnan(array)
     array[mask] = value
     return array
+
 
 def _calc_r_x_from_dataframe(trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     """
@@ -686,7 +690,7 @@ def _calc_switch_parameter(net, ppc):
 def _end_temperature_correction_factor(net):
     if "endtemp_degree" not in net.line:
         raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
-    return (1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20))  # formula from standard
+    return 1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20)  # formula from standard
 
 
 def _transformer_correction_factor(vk, vkr, sn, cmax):
@@ -700,6 +704,7 @@ def _transformer_correction_factor(vk, vkr, sn, cmax):
 def get_is_lines(net):
     _is_elements = net["_is_elements"]
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
+
 
 def _trafo_df_from_trafo3w(net):
     nr_trafos = len(net["trafo3w"])
@@ -716,8 +721,8 @@ def _trafo_df_from_trafo3w(net):
     trafo2["hv_bus"] = {"hv": t3.hv_bus.values, "mv": aux_buses, "lv": aux_buses}
     trafo2["lv_bus"] = {"hv": aux_buses, "mv": t3.mv_bus.values, "lv": t3.lv_bus.values}
     trafo2["in_service"] = {side: t3.in_service.values for side in sides}
-    trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side==side else zeros for side in sides}
-    trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side==side else zeros for side in sides}
+    trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
+    trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv"%side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
@@ -745,15 +750,17 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode):
     vkr_2w = wye_delta_vector(vkr_2w_delta, sn)
     vki_2w = wye_delta_vector(vki_2w_delta, sn)
     vk_2w = np.sign(vki_2w) * np.sqrt(vki_2w ** 2 + vkr_2w ** 2)
-    if np.any(vk_2w==0):
+    if np.any(vk_2w == 0):
         raise UserWarning("Equivalent transformer with zero impedance!")
-    t2["vk_percent"] = {"hv": vk_2w[0,:], "mv": vk_2w[1,:], "lv": vk_2w[2,:]}
-    t2["vkr_percent"] = {"hv": vkr_2w[0,:], "mv": vkr_2w[1,:], "lv": vkr_2w[2,:]}
-    t2["sn_mva"] = {"hv": sn[0,:], "mv": sn[1,:], "lv": sn[2,:]}
+    t2["vk_percent"] = {"hv": vk_2w[0, :], "mv": vk_2w[1, :], "lv": vk_2w[2, :]}
+    t2["vkr_percent"] = {"hv": vkr_2w[0, :], "mv": vkr_2w[1, :], "lv": vkr_2w[2, :]}
+    t2["sn_mva"] = {"hv": sn[0, :], "mv": sn[1, :], "lv": sn[2, :]}
+
 
 def z_br_to_bus_vector(z, sn):
     return sn[0, :] * np.array([z[0,:] / sn[[0,1],:].min(axis=0), z[1,:] /
                             sn[[1,2],:].min(axis=0), z[2,:] / sn[[0,2],:].min(axis=0)])
+
 
 def wye_delta(zbr_n, s):
     return .5 * s / s[0] * np.array([(zbr_n[0] + zbr_n[2] - zbr_n[1]),
@@ -783,10 +790,10 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         for var in tap_variables:
             tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
 
-        #t3 trafos with tap changer at terminals
+        # t3 trafos with tap changer at terminals
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
-        #t3 trafos with tap changer at star points
+        # t3 trafos with tap changer at star points
         if any_at_star_point:
             mask_star_point = tap_mask & at_star_point
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
