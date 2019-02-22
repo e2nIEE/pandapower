@@ -1100,7 +1100,8 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
                                  "%s data at from-/hv- and to-/lv-bus" % column)
 
 
-def add_column_from_element_to_elements(net, column, replace, elements=None):
+def add_column_from_element_to_elements(net, column, replace, elements=None,
+                                        continue_on_missing_column=True):
     """
     Adds column data to elements, inferring them from the column data of the elements linked by the
     columns "element" and "element_type" or "et".
@@ -1115,6 +1116,12 @@ def add_column_from_element_to_elements(net, column, replace, elements=None):
         **elements** (list) - list of elements that should get the column values from the linked
             element tables. If None, all elements with the columns "element" and "element_type" or
             "et" are considered (these are currently "measurement" and "switch").
+
+        **continue_on_missing_column** (Boolean, True) - If False, a error will be raised in case of
+            an element table has no column 'column' although this element is refered in 'elements'.
+            E.g. 'measurement' is in 'elements' and in net.measurement is a trafo measurement but
+            in net.trafo there is no column 'name' although column=='name' - ni this case
+            'continue_on_missing_column' acts.
 
     EXAMPLE:
         import pandapower as pp
@@ -1139,7 +1146,16 @@ def add_column_from_element_to_elements(net, column, replace, elements=None):
         for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
                                 ("b", "bus")]:
             element_type.loc[element_type == short] = complete
-        for et in element_type.unique():
+        element_types_without_column = [et for et in set(element_type) if column not in
+                                        net[et].columns]
+        if len(element_types_without_column):
+            message = "%s is not in net[et].columns with et in " % column + str(
+                element_types_without_column)
+            if not continue_on_missing_column:
+                raise KeyError(message)
+            else:
+                logger.debug(message)
+        for et in list(set(element_type)-set(element_types_without_column)):
             idx_et = element_type.index[element_type == et]
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
