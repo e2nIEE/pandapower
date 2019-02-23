@@ -219,11 +219,11 @@ def test_multiple_ext_grids():
     # create load and sgen to optimize
     pp.create_load(net, b12, p_mw=60)
 
-    g3 = pp.create_sgen(net, b32, p_mw=50, min_p_mw=20, max_p_mw=200, controllable=True)
-    pp.create_poly_cost(net, g3, 'sgen', cp1_eur_per_mw=-10)
+    g3 = pp.create_sgen(net, b12, p_mw=50, min_p_mw=20, max_p_mw=200, controllable=True)
+    pp.create_poly_cost(net, g3, 'sgen', cp1_eur_per_mw=10.)
     # set positive costs for ext_grid -> minimize ext_grid usage
     ext_grids = net.ext_grid.index
-    net["ext_grid"].loc[0, "vm_pu"] = 0.99
+    net["ext_grid"].loc[0, "vm_pu"] = .99
     net["ext_grid"].loc[1, "vm_pu"] = 1.0
     net["ext_grid"].loc[2, "vm_pu"] = 1.01
     for idx in ext_grids:
@@ -231,7 +231,7 @@ def test_multiple_ext_grids():
         pp.create_poly_cost(net, idx, 'ext_grid', cp1_eur_per_mw=10.)
 
     pp.runpm_ac_opf(net)
-    # Todo: Assert the correct result. 
+    assert np.allclose(net.res_sgen.loc[0, "p_mw"], 60.)
 
 
 @pytest.mark.xfail(reason="Have no reason. Why does it fail?")
