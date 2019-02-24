@@ -613,3 +613,108 @@ def _replace_nans_with_default_limits(net, ppc):
         limits = ppc[matrix][:, [column]]
         ncn.copyto(limits, default, where=np.isnan(limits))
         ppc[matrix][:, [column]] = limits
+
+
+def _passed_runpp_parameters(local_parameters):
+    """
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
+    the user.
+    :param local_parameters: locals() in the runpp() function
+    :return: dictionary of explicitly passed parameters
+    """
+    try:
+        default_parameters = {k: v.default for k, v in inspect.signature(runpp).parameters.items()}
+    except:
+        args, varargs, keywords, defaults = inspect.getargspec(runpp)
+        default_parameters = dict(zip(args[-len(defaults):], defaults))
+    default_parameters.update({"init": "auto"})
+
+    passed_parameters = {
+        key: val for key, val in local_parameters.items()
+        if key in default_parameters.keys() and val != default_parameters.get(key, None)}
+
+    return passed_parameters
+
+
+def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
+                        max_iteration, tolerance_mva, trafo_model,
+                        trafo_loading, enforce_q_lims, check_connectivity,
+                        voltage_depend_loads, **kwargs):
+    """
+    Inits _options in net for runpp.
+    """
+    overrule_options = {}
+    if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
+        passed_parameters = _passed_runpp_parameters(locals())
+        overrule_options = {key: val for key, val in net.user_pf_options.items()
+                            if key not in passed_parameters.keys()}
+
+    kwargs.update(overrule_options)
+
+    trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
+    v_debug = kwargs.get("v_debug", False)
+    delta_q = kwargs.get("delta_q", 0)
+    r_switch = kwargs.get("r_switch", 0.0)
+    numba = kwargs.get("numba", True)
+    init_vm_pu = kwargs.get("init_vm_pu", None)
+    init_va_degree = kwargs.get("init_va_degree", None)
+    recycle = kwargs.get("recycle", None)
+    neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    if "init" in overrule_options:
+        init = overrule_options["init"]
+
+    # check if numba is available and the corresponding flag
+    if numba:
+        numba = _check_if_numba_is_installed(numba)
+
+    if voltage_depend_loads:
+        if not (np.any(net["load"]["const_z_percent"].values) or np.any(net["load"]["const_i_percent"].values)):
+            voltage_depend_loads = False
+
+    if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
+        logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
+                       "loads will be considered as constant power".format(algorithm))
+
+    ac = True
+    mode = "pf"
+    if calculate_voltage_angles == "auto":
+        calculate_voltage_angles = False
+        is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
+        if any(is_hv_bus) > 0:
+            line_buses = set(net.line.from_bus.values) & set(net.line.to_bus.values)
+            hv_buses = net.bus.index[is_hv_bus]
+            if any(a in line_buses for a in hv_buses):
+                calculate_voltage_angles = True
+
+    default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+    if max_iteration == "auto":
+        max_iteration = default_max_iteration[algorithm]
+
+    if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
+        raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
+
+    if init == "auto":
+        if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
+            init_va_degree = "dc" if calculate_voltage_angles else "flat"
+        if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
+            init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
+                         (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
+    elif init == "dc":
+        init_vm_pu = "flat"
+        init_va_degree = "dc"
+    else:
+        init_vm_pu = init
+        init_va_degree = init
+
+    # init options
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=voltage_depend_loads, delta=delta_q,
+                     trafo3w_losses=trafo3w_losses, neglect_open_switch_branches=neglect_open_switch_branches)
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    v_debug=v_debug)
+    net._options.update(overrule_options)
