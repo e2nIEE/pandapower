@@ -27,9 +27,9 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 from collections import MutableMapping
-import numpy.core.numeric as ncn
 
 import numpy as np
+import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
 import six
@@ -615,37 +615,15 @@ def _replace_nans_with_default_limits(net, ppc):
         ppc[matrix][:, [column]] = limits
 
 
-def _passed_runpp_parameters(local_parameters):
-    """
-    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
-    the user.
-    :param local_parameters: locals() in the runpp() function
-    :return: dictionary of explicitly passed parameters
-    """
-    try:
-        default_parameters = {k: v.default for k, v in inspect.signature(runpp).parameters.items()}
-    except:
-        args, varargs, keywords, defaults = inspect.getargspec(runpp)
-        default_parameters = dict(zip(args[-len(defaults):], defaults))
-    default_parameters.update({"init": "auto"})
-
-    passed_parameters = {
-        key: val for key, val in local_parameters.items()
-        if key in default_parameters.keys() and val != default_parameters.get(key, None)}
-
-    return passed_parameters
-
-
 def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         max_iteration, tolerance_mva, trafo_model,
                         trafo_loading, enforce_q_lims, check_connectivity,
-                        voltage_depend_loads, **kwargs):
+                        voltage_depend_loads, passed_parameters=None, **kwargs):
     """
     Inits _options in net for runpp.
     """
     overrule_options = {}
-    if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
-        passed_parameters = _passed_runpp_parameters(locals())
+    if passed_parameters is not None:
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
 
@@ -718,3 +696,69 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug)
     net._options.update(overrule_options)
+
+
+def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity, r_switch, trafo3w_losses):
+    ac = False
+    numba = True
+    mode = "pf"
+    init = 'flat'
+
+    numba = _check_if_numba_is_installed(numba)
+
+    # the following parameters have no effect if ac = False
+    calculate_voltage_angles = True
+    enforce_q_lims = False
+    algorithm = None
+    max_iteration = None
+    tolerance_mva = None
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+
+
+def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, r_switch, delta, init, numba,
+                         trafo3w_losses):
+    if numba:
+        numba = _check_if_numba_is_installed(numba)
+    mode = "opf"
+    ac = True
+    trafo_model = "t"
+    trafo_loading = 'current'
+    enforce_q_lims = True
+    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
+
+
+def _init_rundcopp_options(net, check_connectivity, r_switch, delta, trafo3w_losses):
+    mode = "opf"
+    ac = False
+    init = "flat"
+    trafo_model = "t"
+    trafo_loading = 'current'
+    calculate_voltage_angles = True
+    enforce_q_lims = True
+    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+
+    # net.__internal_options = {}
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
+    pass

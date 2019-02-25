@@ -4,9 +4,11 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from pandapower.auxiliary import _add_pf_options, _add_ppc_options, _add_opf_options, \
-    _check_if_numba_is_installed, _check_bus_index_and_print_warning_if_high, \
-    _check_gen_index_and_print_warning_if_high, _init_runpp_options
+import inspect
+
+from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
+    _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, _init_rundcpp_options, \
+    _init_runopp_options
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow
@@ -191,11 +193,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
+    passed_parameters = _passed_runpp_parameters(locals())
     _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles, init=init,
                         max_iteration=max_iteration, tolerance_mva=tolerance_mva, trafo_model=trafo_model,
                         trafo_loading=trafo_loading, enforce_q_lims=enforce_q_lims,
                         check_connectivity=check_connectivity,
-                        voltage_depend_loads=voltage_depend_loads, **kwargs)
+                        voltage_depend_loads=voltage_depend_loads, passed_parameters=passed_parameters, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
@@ -239,28 +242,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
-    ac = False
-    numba = True
-    mode = "pf"
-    init = 'flat'
+    _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading, recycle=recycle,
+                          check_connectivity=check_connectivity, r_switch=r_switch, trafo3w_losses=trafo3w_losses)
 
-    numba = _check_if_numba_is_installed(numba)
-
-    # the following parameters have no effect if ac = False
-    calculate_voltage_angles = True
-    enforce_q_lims = False
-    algorithm = None
-    max_iteration = None
-    tolerance_mva = None
-
-    net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
-    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)
@@ -329,22 +313,10 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
 
     """
     _check_necessary_opf_parameters(net, logger)
-    if numba:
-        numba = _check_if_numba_is_installed(numba)
-    mode = "opf"
-    ac = True
-    trafo_model = "t"
-    trafo_loading = 'current'
-    enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
-
-    net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
+    _init_runopp_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                         check_connectivity=check_connectivity,
+                         r_switch=r_switch, delta=delta, init=init, numba=numba,
+                         trafo3w_losses=trafo3w_losses)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
@@ -382,30 +354,38 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
     """
-
     if (not net.sgen.empty) & ("controllable" not in net.sgen.columns):
         logger.warning('Warning: Please specify sgen["controllable"]\n')
 
     if (not net.load.empty) & ("controllable" not in net.load.columns):
         logger.warning('Warning: Please specify load["controllable"]\n')
 
-    mode = "opf"
-    ac = False
-    init = "flat"
-    trafo_model = "t"
-    trafo_loading = 'current'
-    calculate_voltage_angles = True
-    enforce_q_lims = True
-    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
-
-    # net.__internal_options = {}
-    net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
+    _init_rundcopp_options(net, check_connectivity=check_connectivity, r_switch=r_switch,
+                           delta=delta, trafo3w_losses=trafo3w_losses)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
+
+
+def _passed_runpp_parameters(local_parameters):
+    """
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
+    the user.
+    :param local_parameters: locals() in the runpp() function
+    :return: dictionary of explicitly passed parameters
+    """
+    net = local_parameters.pop("net")
+    if not ("user_pf_options" in net.keys() and len(net.user_pf_options) > 0):
+        return None
+    try:
+        default_parameters = {k: v.default for k, v in inspect.signature(runpp).parameters.items()}
+    except:
+        args, varargs, keywords, defaults = inspect.getfullargspec(runpp)
+        default_parameters = dict(zip(args[-len(defaults):], defaults))
+    default_parameters.update({"init": "auto"})
+
+    passed_parameters = {
+        key: val for key, val in local_parameters.items()
+        if key in default_parameters.keys() and val != default_parameters.get(key, None)}
+
+    return passed_parameters
