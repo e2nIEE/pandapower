@@ -1040,6 +1040,7 @@ def test_parallel_switches(test_net, diag_params, diag_errors, report_methods):
     pp.create_switch(net, 13, 0, et='t', closed=False)
     pp.create_switch(net, 13, 0, et='t')
     pp.create_switch(net, 47, 16, et='l')
+    pp.create_switch(net, 13, 0, et='b')
 
     check_result = pp.parallel_switches(net)
     if check_result:

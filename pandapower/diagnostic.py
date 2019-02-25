@@ -920,11 +920,10 @@ def parallel_switches(net):
 
     """
     parallel_switches = []
-    compare_parameters = ['bus', 'element']
+    compare_parameters = ['bus', 'element', 'et']
     parallels_bus_and_element = list(
-        net.switch.groupby(compare_parameters).count().query('et > 1').index)
-    for bus, element in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch[(net.switch.bus == bus)
-                                                 & (net.switch.element == element)].index))
+        net.switch.groupby(compare_parameters).count().query('closed > 1').index)
+    for bus, element, et in parallels_bus_and_element:
+        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
     if parallel_switches:
         return parallel_switches
