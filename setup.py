@@ -28,7 +28,8 @@ setup(
                       "networkx",
                       "numpy",
                       "scipy"],
-    extras_require = {":python_version<'3.0'": ["future"]},
+    extras_require = {":python_version<'3.0'": ["future"],
+                      "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"]},
     packages=find_packages(),
     include_package_data=True,
     classifiers=[

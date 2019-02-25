@@ -13,7 +13,6 @@
 
 import os
 import sys
-import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -73,8 +72,6 @@ release = "1.6.1"
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
-autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib',
-                        'scipy', 'seaborn', 'plotly', 'geopandas']
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 
