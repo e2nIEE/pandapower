@@ -36,7 +36,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     :return: None
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
-                           'r_switch', 'init', 'enforce_q_lims',
+                           'switch_rx_ratio', 'init', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'delta', 'tolerance_mva',
                            'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration',
                            'trafo3w_losses', 'init_vm_pu', 'init_va_degree']
@@ -175,7 +175,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
             If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
             which leads to significant speed improvements.
 
-        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch.
+        **switch_rx_ratio** (float, 0.5) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter 
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
@@ -224,7 +224,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
     v_debug = kwargs.get("v_debug", False)
     delta_q = kwargs.get("delta_q", 0)
-    r_switch = kwargs.get("r_switch", 0.0)
+    switch_rx_ratio = kwargs.get("switch_rx_ratio", 0.0)
     numba = kwargs.get("numba", True)
     init_vm_pu = kwargs.get("init_vm_pu", None)
     init_va_degree = kwargs.get("init_va_degree", None)
@@ -279,7 +279,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses)
@@ -293,7 +293,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
 
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
-            r_switch=0.0, trafo3w_losses="hv", **kwargs):
+            switch_rx_ratio=0.5, trafo3w_losses="hv", **kwargs):
     """
     Runs PANDAPOWER DC Flow
 
@@ -326,7 +326,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
             If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
-        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance r_switch
+        **switch_rx_ratio** (float, 0.5) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter 
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
@@ -347,7 +347,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
@@ -358,7 +358,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=False,
-           suppress_warnings=True, r_switch=0.0, delta=1e-10, init="flat", numba=True,
+           suppress_warnings=True, switch_rx_ratio=0.5, delta=1e-10, init="flat", numba=True,
            trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
@@ -432,7 +432,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
@@ -441,7 +441,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, r_switch=0.0,
+def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True, switch_rx_ratio=0.5,
              delta=1e-10, trafo3w_losses="hv", **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
@@ -493,7 +493,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)

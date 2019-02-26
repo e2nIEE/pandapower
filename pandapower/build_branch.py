@@ -670,23 +670,24 @@ def _calc_switch_parameter(net, ppc):
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
 #    r_switch = net["_options"]["r_switch"]
+    rx_ratio = net["_options"]["switch_rx_ratio"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     switch = net.switch[net._impedance_bb_switches]
     fb = bus_lookup[switch["bus"].values]
     tb = bus_lookup[switch["element"].values]
-    r_switch = switch['z_ohm'].values
+    z_switch = switch['z_ohm'].values
     baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     t = np.zeros(shape=(len(switch), 4), dtype=np.complex128)
+    rz_ratio = np.sqrt(1 / (1 + rx_ratio)**2)
+    xz_ratio = np.sqrt(rx_ratio / (1 + rx_ratio)**2)
 
     t[:, 0] = fb
     t[:, 1] = tb
 
-    t[:, 2] = r_switch / baseR
+    t[:, 2] = z_switch / baseR * rz_ratio
     # x_switch will have the same value of r_switch to avoid zero dividence
     # TODO: x_switch will be updated according to the r/x ratio
-    x_switch = r_switch
-    t[:, 3] = x_switch / baseR
-#    t[:, 3] = 0
+    t[:, 3] = z_switch / baseR * xz_ratio
     return t
 
 
