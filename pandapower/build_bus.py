@@ -188,18 +188,14 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
 def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
-            if len(net.res_bus) > 0:
-                # init voltage possible if bus results are available
-                if net.res_bus.index.equals(net.bus.index):
-                    # init bus voltages from results if the sorting is correct
-                    return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
-                else:
-                    # cannot init from results, since sorting of results is different from element table
-                    UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
-                                "You should sort res_bus before calling runpp.")
-                    return None
+            # init voltage possible if bus results are available
+            if net.res_bus.index.equals(net.bus.index):
+                # init bus voltages from results if the sorting is correct
+                return net["res_bus"]["vm_pu" if mode == "magnitude" else "va_degree"].values
             else:
-                # No results available. Cannot init from results
+                # cannot init from results, since sorting of results is different from element table
+                UserWarning("Init from results not possible. Index of res_bus do not match with bus. "
+                            "You should sort res_bus before calling runpp.")
                 return None
         if init_v == "flat":
             if mode == "magnitude":

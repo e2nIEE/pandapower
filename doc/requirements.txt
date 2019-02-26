@@ -1,4 +1,0 @@
-numpydoc
-pypower
-networkx
-sphinx

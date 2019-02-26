@@ -271,7 +271,7 @@ def create_kerber_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
     return pd_net
 
 
-def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_mw=2., q_load_mvar=0.,
+def create_kerber_vorstadtnetz_kabel_1(std_type="NAYY 4x150", p_load_mw=0.002, q_load_mvar=0.,
                                        trafotype="0.63 MVA 10/0.4 kV", v_os=10.):
     """
     .. note:: Please pay attention, that the linetypes of the branch out house connections are \

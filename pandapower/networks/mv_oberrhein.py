@@ -9,7 +9,7 @@ import os
 import numpy as np
 
 import pandapower as pp
-from pandapower.networks.power_system_test_cases import get_pp_networks_path
+from pandapower import pp_dir
 
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False):
@@ -49,9 +49,9 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     net = pandapower.networks.mv_oberrhein("generation")
     """
     if include_substations:
-        net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein_substations.json"))
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"))
     else:
-        net = pp.from_json(os.path.join(get_pp_networks_path(), "mv_oberrhein.json"))
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"))
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 

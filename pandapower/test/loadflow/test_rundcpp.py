@@ -87,5 +87,16 @@ def test_test_sn_mva():
             raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
 
+def test_single_bus_network():
+    net = pp.create_empty_network()
+    b = pp.create_bus(net, vn_kv=20.)
+    pp.create_ext_grid(net, b)
+    
+    pp.runpp(net)
+    assert net.converged
+    
+    pp.rundcpp(net)
+    assert net.converged
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
