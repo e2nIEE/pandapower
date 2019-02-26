@@ -496,6 +496,7 @@ def _switch_branches(net, ppc):
     from pandapower.shortcircuit.idx_bus import C_MIN, C_MAX
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     calculate_voltage_angles = net._options["calculate_voltage_angles"]
+    neglect_open_switch_branches = net._options["neglect_open_switch_branches"]
     mode = net._options["mode"]
     open_switches = (net.switch.closed.values == False)
     n_bus = ppc["bus"].shape[0]
@@ -511,6 +512,10 @@ def _switch_branches(net, ppc):
         sw_sides = switch_info[:, 0]
         sw_bus_index = bus_lookup[switch_info[:, 1].astype(int)]
         sw_branch_index = switch_info[:, 2].astype(int)
+        if neglect_open_switch_branches:
+            # deactivate switches which have an open switch instead of creating aux buses
+            ppc["branch"][sw_branch_index, BR_STATUS] = 0
+            continue
 
         new_buses = np.zeros(shape=(nr_open_switches, ppc["bus"].shape[1]), dtype=float)
         new_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])

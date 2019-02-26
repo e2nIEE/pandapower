@@ -84,7 +84,13 @@ def dcopf_solver(om, ppopt, out_opt=None):
         elif have_fcn('mosek'):      ## if not, then MOSEK, if available
             alg = 600
         elif have_fcn('gurobi'):     ## if not, then Gurobi, if available
-            alg = 700
+            # Error in Gurobi pypower solver -> Issue with pypower 5.1.4. Gurobi won't work. Using alg 200 instead
+            # Reason for failure: In qps_gurobi of pypower len(H) raises Error:
+            # TypeError: sparse matrix length is ambiguous; use getnnz() or shape[0]
+            # Todo: Fix Gurobi and activate 700 again. ATM: Fallback on 200
+            # alg = 700
+            alg = 200
+            UserWarning("Gurobi not working with pypower 5.1.4")
         else:                        ## otherwise PIPS
             alg = 200
 
@@ -223,7 +229,11 @@ def dcopf_solver(om, ppopt, out_opt=None):
     elif alg == 600:
         opt['mosek_opt'] = mosek_options([], ppopt)
     elif alg == 700:
-        opt['grb_opt'] = gurobi_options([], ppopt)
+        ppopt['GRB_OPT'] = 0
+        ppopt['GRB_METHOD'] = "automatic"
+        ppopt['GRB_TIMELIMIT'] = Inf
+        ppopt['GRB_THREADS'] = 0
+        opt['GRB_OPT'] = gurobi_options(None, ppopt)
     else:
         raise ValueError("Unrecognised solver [%d]." % alg)
 
