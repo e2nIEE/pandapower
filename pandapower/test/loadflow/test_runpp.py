@@ -14,7 +14,7 @@ import pytest
 import pandapower as pp
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
-    example_simple, simple_four_bus_system
+    example_simple, simple_four_bus_system, example_multivoltage
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
@@ -950,10 +950,19 @@ def test_dc_with_ext_grid_at_one_bus():
 
 def test_init_results_without_results():
     # should switch to "auto" mode and not fail
-    net = four_loads_with_branches_out()
+    net = example_multivoltage()
     pp.reset_results(net)
     pp.runpp(net, init="results")
-
+    assert net.converged
+    pp.reset_results(net)
+    pp.runpp(net, init_vm_pu="results")
+    assert net.converged
+    pp.reset_results(net)
+    pp.runpp(net, init_va_degree="results")
+    assert net.converged
+    pp.reset_results(net)
+    pp.runpp(net, init_va_degree="results", init_vm_pu="results")
+    assert net.converged
 
 def test_init_results():
     net = pp.create_empty_network()
