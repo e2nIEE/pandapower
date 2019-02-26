@@ -243,7 +243,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
         ****kwargs** - options to use for PYPOWER.runpf
     """
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading, recycle=recycle,
-                          check_connectivity=check_connectivity, r_switch=r_switch, trafo3w_losses=trafo3w_losses)
+                          check_connectivity=check_connectivity, switch_rx_ratio=switch_rx_ratio, trafo3w_losses=trafo3w_losses)
 
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -315,7 +315,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _check_necessary_opf_parameters(net, logger)
     _init_runopp_options(net, calculate_voltage_angles=calculate_voltage_angles,
                          check_connectivity=check_connectivity,
-                         r_switch=r_switch, delta=delta, init=init, numba=numba,
+                         switch_rx_ratio=switch_rx_ratio, delta=delta, init=init, numba=numba,
                          trafo3w_losses=trafo3w_losses)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -360,7 +360,7 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     if (not net.load.empty) & ("controllable" not in net.load.columns):
         logger.warning('Warning: Please specify load["controllable"]\n')
 
-    _init_rundcopp_options(net, check_connectivity=check_connectivity, r_switch=r_switch,
+    _init_rundcopp_options(net, check_connectivity=check_connectivity, switch_rx_ratio=switch_rx_ratio,
                            delta=delta, trafo3w_losses=trafo3w_losses)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
