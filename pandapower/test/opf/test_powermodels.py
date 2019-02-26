@@ -88,6 +88,12 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     np.allclose(vm_bus, net.res_bus.vm_pu.values)
     np.allclose(va_bus, net.res_bus.va_degree.values)
 
+    pp.runpm_dc_opf(net)
+    consistency_checks(net)
+
+    np.allclose(p_gen, net.res_gen.p_mw.values)
+    np.allclose(va_bus, net.res_bus.va_degree.values)
+
 
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_pwl():
@@ -201,7 +207,12 @@ def test_without_ext_grid():
     net.trafo3w["max_loading_percent"] = 50
     pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50
+    assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50.01
+    assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] * 1e3 + net.res_gen.p_mw.at[g2] * 2e3)
+
+    pp.runpm_dc_opf(net)
+    consistency_checks(net, rtol=1e-3)
+    assert 49.9 < net.res_trafo3w.loading_percent.values[0] < 50.01
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] * 1e3 + net.res_gen.p_mw.at[g2] * 2e3)
 
 
@@ -233,8 +244,6 @@ def test_multiple_ext_grids():
     pp.runpm_ac_opf(net)
     assert np.allclose(net.res_sgen.loc[0, "p_mw"], 60.)
 
-
-@pytest.mark.xfail(reason="Have no reason. Why does it fail?")
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_voltage_angles():
     net = pp.create_empty_network()
@@ -257,12 +266,14 @@ def test_voltage_angles():
     for run in [pp.runpm_ac_opf, partial(pp.runpm, julia_file=custom_file)]:
         run(net)
         consistency_checks(net)
+        print(net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3])
+        print(net.res_bus.va_degree.at[b1])
+        print(net.res_bus.va_degree.at[b3])
         assert 119.9 < net.res_trafo3w.loading_percent.at[tidx] <= 120
-        assert -280 < net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3] < -270
-        assert 120 < net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b4] < 130
+        assert 85 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b3]) % 360 < 86
+        assert 120 < (net.res_bus.va_degree.at[b1] - net.res_bus.va_degree.at[b4]) % 360 < 130
         assert np.isnan(net.res_bus.va_degree.at[b5])
 
 
 if __name__ == '__main__':
-    # pytest.main([__file__])
-    test_multiple_ext_grids()
+    pytest.main([__file__])
