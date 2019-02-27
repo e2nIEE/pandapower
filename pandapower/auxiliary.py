@@ -671,6 +671,13 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
 
+    init_from_results = init == "results" or (isinstance(init_vm_pu, str) and init_vm_pu=="results") \
+                                or (isinstance(init_va_degree, str) and init_va_degree=="results")
+    if init_from_results and len(net.res_bus) == 0:
+        init = "auto"
+        init_vm_pu = None
+        init_va_degree = None
+
     if init == "auto":
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles else "flat"
@@ -683,6 +690,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     else:
         init_vm_pu = init
         init_va_degree = init
+
 
     # init options
     net._options = {}
