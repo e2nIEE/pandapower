@@ -198,7 +198,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                         max_iteration=max_iteration, tolerance_mva=tolerance_mva, trafo_model=trafo_model,
                         trafo_loading=trafo_loading, enforce_q_lims=enforce_q_lims,
                         check_connectivity=check_connectivity,
-                        voltage_depend_loads=voltage_depend_loads, passed_parameters=passed_parameters, **kwargs)
+                        voltage_depend_loads=voltage_depend_loads, 
+                        passed_parameters=passed_parameters, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _powerflow(net, **kwargs)

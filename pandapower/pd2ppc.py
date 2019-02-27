@@ -70,9 +70,6 @@ def _pd2ppc(net):
     mode = net["_options"]["mode"]
     check_connectivity = net["_options"]["check_connectivity"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
-    r_switch = net["_options"]["r_switch"]
-    if r_switch > 0:
-        net.switch['z_ohm'] = r_switch
 
     ppc = _init_ppc(net)
 
@@ -150,7 +147,6 @@ def _init_ppc(net):
             , "Yt": np.array([], dtype=np.complex128)
             , "branch_is": np.array([], dtype=bool)
             , "gen_is": np.array([], dtype=bool)
-
             , "DLF": np.array([], dtype=np.complex128)
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }
