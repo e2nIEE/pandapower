@@ -164,7 +164,7 @@ def _ppc2ppci(ppc, ppci, net):
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
-    ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
+    ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)

@@ -606,7 +606,7 @@ def _branches_with_oos_buses(net, ppc):
         # buses that are connected to two oos buses will be removed by ext2int
         mask_or = mask_to | mask_from
         # check whether buses are connected to line
-        oos_buses_at_lines = np.r_[f_bus[mask_from], t_bus[mask_to]]
+        oos_buses_at_lines = np.hstack([f_bus[mask_from], t_bus[mask_to]])
         n_oos_buses_at_lines = len(oos_buses_at_lines)
 
         # only if oos_buses are at lines (they could be isolated as well)
