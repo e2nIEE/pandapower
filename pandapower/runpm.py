@@ -233,7 +233,7 @@ def _call_powermodels(pm, julia_file):
 
     Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
-        run_powermodels = j.include(julia_file)
+        run_powermodels = Main.include(julia_file)
     except ImportError:
         raise UserWarning("File %s could not be imported" % julia_file)
     result_pm = run_powermodels(buffer_file)
