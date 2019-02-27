@@ -2428,7 +2428,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
-        **data_points** - (numpy array) Numpy array containing n data points (see example)
+        **data_points** - (numpy array) Numpy array containing data points and slopes (see example)
 
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
@@ -2440,12 +2440,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
-        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
+        The cost function is given by the x-values x1 and x2 with the slope m between those points. The constant part
+        b of a linear function y = m*x + b can be neglected for OPF purposes. If the PWL function contains more than 1
+        interval, the intervals are put together in a way, where the right point of the left interval equals the left
+        point of the right interval.
 
-    NOTE:
-      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
-          supported.
-      - costs for storages are positive per definition (similar to sgen costs)
+        create_pwl_cost(net, 0, "load", [(x1, x2, m)])
     """
 
     if index is None:
@@ -2461,6 +2461,48 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
                            cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+    """
+    Creates an entry for polynimoal costs for an element. The currently supported elements are
+     - Generator{}
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
+     - Storage
+
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+            are possible
+
+        **cp1_eur_per_mw** (float) - Linear costs per MW
+
+        **cp0_eur=0** (float) - Offset active power costs in euro
+
+        **cq1_eur_per_mvar=0** (float) - Linear costs per Mvar
+
+        **cq0_eur=0** (float) - Offset reactive power costs in euro
+
+        **cp2_eur_per_mw2=0** (float) - Quadratic costs per MW
+
+        **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
+
+    OPTIONAL:
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        The polynomial cost function is given by the linear and quadratic cost coefficients.
+
+        create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
+    """
+
     if index is None:
         index = get_free_id(net["poly_cost"])
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
