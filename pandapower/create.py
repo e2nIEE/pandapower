@@ -2445,7 +2445,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         interval, the intervals are put together in a way, where the right point of the left interval equals the left
         point of the right interval.
 
-        create_pwl_cost(net, 0, "load", np.array([[x1, x2, m]]))
+        create_pwl_cost(net, 0, "load", [(x1, x2, m)])
     """
 
     if index is None:
