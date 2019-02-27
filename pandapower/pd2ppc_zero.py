@@ -117,9 +117,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
 
         vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
-#        if mode == 'pf3ph':
-#            vn_trafo_hv = vn_trafo_hv/np.sqrt(3)
-#            vn_trafo_lv = vn_trafo_lv/np.sqrt(3)
         vn_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
         ratio = _calc_nominal_ratio_from_dataframe(ppc, trafos, vn_trafo_hv, vn_trafo_lv,
                                                    bus_lookup)
@@ -155,7 +152,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             buses_all = np.hstack([buses_all, lv_buses_ppc])
             gs_all = np.hstack([gs_all, y0_k.real*in_service* int(ppc["baseMVA"])])
             bs_all = np.hstack([bs_all, y0_k.imag*in_service* int(ppc["baseMVA"])])
-             
+
         elif vector_group == "YNd":
             buses_all = np.hstack([buses_all, hv_buses_ppc])
             gs_all = np.hstack([gs_all, y0_k.real*in_service* int(ppc["baseMVA"])])
@@ -169,9 +166,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
 
         elif vector_group == "YNyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
-            
-#            if net._options['trafo_model'] == "t":
-                # convert the t model to pi model
+            # convert the t model to pi model
             z1 = si0_hv_partial * z0_k
             z2 = (1 - si0_hv_partial) * z0_k
             z3 = z0_mag
@@ -200,8 +195,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None):
             gs_all = np.hstack([gs_all, y.real*in_service])
             bs_all = np.hstack([bs_all, y.imag*in_service])
         elif vector_group[-1].isdigit():
-            raise ValueError(
-                "Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree" % vector_group)
+            raise ValueError("Unknown transformer vector group %s - please specify vector group without phase shift number. Phase shift can be specified in net.trafo.shift_degree"%vector_group)
         else:
             raise ValueError("Transformer vector group %s is unknown / not implemented"%vector_group)
 
@@ -237,6 +231,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
                          case)
     rx = eg["rx_%s" % case].values
+
     z_grid = c / s_sc
     if mode == 'pf_3ph':
         z_grid = c / (s_sc/3)                       

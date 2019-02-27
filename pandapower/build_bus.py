@@ -368,11 +368,16 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
             if element.endswith("ward"):
                 p = np.hstack([p, tab["ps_mw"].values * active * sign])
                 q = np.hstack([q, tab["qs_mvar"].values * active * sign])
+            elif element.startswith("asymmetric"):
+                scaling = tab["scaling"].values
+                p = np.hstack([p, np.sum(tab[["q_A_mvar", "q_B_mvar", "q_C_mvar"]].values,axis=1) * active * scaling * sign])
+                q = np.hstack([q, np.sum(tab[["p_A_mw", "p_B_mw", "p_C_mw"]].values,axis=1) * active * scaling * sign])                
             else:
                 scaling = tab["scaling"].values
                 p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
+
     # sum up p & q of bus elements
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -465,8 +470,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     else:
         c = 1.1
     if not "s_sc_%s_mva" % case in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case +
-                         "external grid")
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for "% case +
+                         "external grid" )
     s_sc = eg["s_sc_%s_mva" % case].values
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %

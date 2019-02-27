@@ -277,12 +277,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1):
                             ("vm_to_pu", "f8"),
                             ("va_to_degree", "f8"),
                             ("loading_percent", "f8")],
-        "_empty_res_bus_3ph": [("vm_A_pu", "f8"),
-                           ("va_A_degree", "f8"),
-                           ("vm_B_pu", "f8"),
-                           ("va_B_degree", "f8"),
-                           ("vm_C_pu", "f8"),
-                           ("va_C_degree", "f8"),
+        "_empty_res_bus_3ph": [("vmA_pu", "f8"),
+                           ("vaA_degree", "f8"),
+                           ("vmB_pu", "f8"),
+                           ("vaB_degree", "f8"),
+                           ("vmC_pu", "f8"),
+                           ("vaC_degree", "f8"),
                            ("p_A_mw", "f8"),
                            ("q_A_mvar", "f8"),
                            ("p_B_mw", "f8"),
@@ -778,11 +778,11 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
                      sn_mva=nan, name=None, scaling=1.,
                     index=None, in_service=True, type=None, 
                     ):
-    """create_load_3ph(net, bus, p_A_mw, q_A_mvar=0 , p_B_mw, q_B_mvar=0 , p_C_mw, q_C_mvar=0,
+    """create_asymmetric_load(net, bus, p_A_mw, q_A_mvar=0 , p_B_mw, q_B_mvar=0 , p_C_mw, q_C_mvar=0,
     const_z_percent=0, const_i_percent=0, sn_kva=nan, name=None, scaling=1., index=None, \
     in_service=True, type=None)
     
-    Adds one 3 phase load in table net["load_3ph"].
+    Adds one 3 phase load in table net["asymmetric_load"].
 
     All loads are modelled in the consumer system, meaning load is positive and generation is
     negative active power. Please pay attention to the correct signing of the reactive power as
@@ -801,7 +801,7 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
 
         **q_A_mvar, q_B_mvar, q_C_mvar** (float, default 0) - The reactive power of the load
 
-        **sn_mva** (float, default None) - Nominal power of the load
+        **sn_kva** (float, default None) - Nominal power of the load
 
         **name** (string, default None) - The name for this load
 
@@ -819,7 +819,7 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
         **index** (int) - The unique ID of the created element
 
     EXAMPLE:
-        create_load_3ph(net, bus=0, p_mw_a=10., q_mvar_a=2., p_kw_b=10., q_kvar_b=2,
+        create_asymmetric_load(net, bus=0, p_mw_a=10., q_mvar_a=2., p_kw_b=10., q_kvar_b=2,
          p_mw_c=10., q_mvar_c=2)
 
     """
@@ -827,20 +827,20 @@ def create_asymmetric_load(net, bus, p_A_mw , p_B_mw , p_C_mw, q_A_mvar=0, q_B_m
         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
 
     if index is None:
-        index = get_free_id(net["load_3ph"])
-    if index in net["load_3ph"].index:
-        raise UserWarning("A 3 phase load_3ph with the id %s already exists" % index)
+        index = get_free_id(net["asymmetric_load"])
+    if index in net["asymmetric_load"].index:
+        raise UserWarning("A 3 phase asymmetric_load with the id %s already exists" % index)
 
     # store dtypes
-    dtypes = net.load_3ph.dtypes
+    dtypes = net.asymmetric_load.dtypes
 
     net.asymmetric_load.loc[index, ["name", "bus", "p_A_mw","p_B_mw","p_C_mw", "scaling",
                          "q_A_mvar","q_B_mvar","q_C_mvar", "sn_kva", "in_service", "type"]] = \
         [name, bus, p_A_mw,p_B_mw,p_C_mw, scaling, 
-         q_A_mvar,q_B_mvar,q_C_mvar, sn_kva, bool(in_service), type]
+         q_A_mvar,q_B_mvar,q_C_mvar, sn_mva, bool(in_service), type]
 
     # and preserve dtypes
-    _preserve_dtypes(net.load_3ph, dtypes)
+    _preserve_dtypes(net.asymmetric_load, dtypes)
 
     return index
 

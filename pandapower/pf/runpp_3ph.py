@@ -58,8 +58,8 @@ def _get_pf_variables_from_ppci(ppci):
     # V0    = ones(bus.shape[0])            ## flat start
     V0 = bus[:, VM] * exp(1j * pi / 180 * bus[:, VA])
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
-
-    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0
+    ref_gens = ppci["internal"]["ref_gens"]
+    return baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0,ref_gens
 
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
@@ -71,7 +71,7 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 # Mapping load for positive sequence loads
 # =============================================================================
 # Todo: The bugfix in commit 1dd8a04 by @shankhoghosh caused test_runpp_3ph.py to fail and was therefore reverted
-def load_mapping(net,ppci1,):
+def load_mapping(net,ppci1):
     _is_elements = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     b = np.array([], dtype=int)
@@ -107,28 +107,28 @@ def load_mapping(net,ppci1,):
         p_c, PC = (ppci1["bus"][b_ppc, PD])/3, np.array([])
         b = np.where(bus_lookup == b_ppc)[0]
 
-    l3 = net["load_3ph"]
-    l3_is = net["_is_elements"]["load_3ph"]
+    l3 = net["asymmetric_load"]
+    l3_is = net["_is_elements"]["asymmetric_load"]
     if len(l3) > 0 and l3_is.any():
-        vl = (_is_elements["load_3ph"] * l3["scaling"].values.T*1e-3)[l3_is]
-        q_a = np.hstack([q_a, l3["q_kvar_A"].values[l3_is] * vl])
-        p_a = np.hstack([p_a, l3["p_kw_A"].values[l3_is] * vl])
-        q_b = np.hstack([q_b, l3["q_kvar_B"].values[l3_is] * vl])
-        p_b = np.hstack([p_b, l3["p_kw_B"].values[l3_is] * vl])
-        q_c = np.hstack([q_c, l3["q_kvar_C"].values[l3_is] * vl])
-        p_c = np.hstack([p_c, l3["p_kw_C"].values[l3_is] * vl])
+        vl = (_is_elements["asymmetric_load"] * l3["scaling"].values.T)[l3_is]
+        q_a = np.hstack([q_a, l3["q_A_mvar"].values[l3_is] * vl])
+        p_a = np.hstack([p_a, l3["p_A_mw"].values[l3_is] * vl])
+        q_b = np.hstack([q_b, l3["q_B_mvar"].values[l3_is] * vl])
+        p_b = np.hstack([p_b, l3["p_B_mw"].values[l3_is] * vl])
+        q_c = np.hstack([q_c, l3["q_C_mvar"].values[l3_is] * vl])
+        p_c = np.hstack([p_c, l3["p_C_mw"].values[l3_is] * vl])
         b = np.hstack([b, l3["bus"].values[l3_is]])
 
-    sgen3 = net["sgen_3ph"]
-    sgen3_is = net["_is_elements"]["sgen_3ph"]
+    sgen3 = net["asymmetric_sgen"]
+    sgen3_is = net["_is_elements"]["asymmetric_sgen"]
     if len(sgen3) > 0 and sgen3_is.any():
-        vl = (_is_elements["sgen_3ph"] * sgen3["scaling"].values.T*1e-3)[sgen3_is]
-        q_a = np.hstack([q_a, sgen3["q_kvar_A"].values[sgen3_is] * vl])
-        p_a = np.hstack([p_a, sgen3["p_kw_A"].values[sgen3_is] * vl])
-        q_b = np.hstack([q_b, sgen3["q_kvar_B"].values[sgen3_is] * vl])
-        p_b = np.hstack([p_b, sgen3["p_kw_B"].values[sgen3_is] * vl])
-        q_c = np.hstack([q_c, sgen3["q_kvar_C"].values[sgen3_is] * vl])
-        p_c = np.hstack([p_c, sgen3["p_kw_C"].values[sgen3_is] * vl])
+        vl = (_is_elements["asymmetric_sgen"] * sgen3["scaling"].values.T)[sgen3_is]
+        q_a = np.hstack([q_a, sgen3["q_A_mvar"].values[sgen3_is] * vl])
+        p_a = np.hstack([p_a, sgen3["p_A_mw"].values[sgen3_is] * vl])
+        q_b = np.hstack([q_b, sgen3["q_B_mvar"].values[sgen3_is] * vl])
+        p_b = np.hstack([p_b, sgen3["p_B_mw"].values[sgen3_is] * vl])
+        q_c = np.hstack([q_c, sgen3["q_C_mvar"].values[sgen3_is] * vl])
+        p_c = np.hstack([p_c, sgen3["p_C_mw"].values[sgen3_is] * vl])
         b = np.hstack([b, sgen3["bus"].values[sgen3_is]])
 
     # Todo: Unserved powers on isolated nodes don't include 3ph elements yet
@@ -151,9 +151,9 @@ def load_mapping(net,ppci1,):
 # 3 phase algorithm function
 # =============================================================================
 def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="auto",
-              tolerance_kva=1e-6, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
+              tolerance_mva=1e-6, trafo_model="t", trafo_loading="current", enforce_q_lims=False,
               numba=True, recycle=None, check_connectivity=True, r_switch=0.0,
-              delta_q=0, **kwargs):
+              delta_q=0,v_debug =False, **kwargs):
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
         passed_parameters = _passed_runpp_parameters(locals())
@@ -164,7 +164,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
-
+#    v_debug = kwargs.get("v_debug", False)
     copy_constraints_to_ppc = False
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
@@ -188,12 +188,13 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, copy_constraints_to_ppc=copy_constraints_to_ppc,
+                     mode=mode,
+#                     copy_constraints_to_ppc=copy_constraints_to_ppc,
                      r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims,
                      recycle=recycle, voltage_depend_loads=False, delta=delta_q)
-    _add_pf_options(net, tolerance_kva=tolerance_kva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration)
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
+                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,v_debug=v_debug)
     # net.__internal_options.update(overrule_options)
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
@@ -205,7 +206,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     #    net._options = {'calculate_voltage_angles': 'auto', 'check_connectivity': True, 'init': 'auto',
     #        'r_switch': 0.0,'voltage_depend_loads': False, 'mode': "pf_3ph",'copy_constraints_to_ppc': False,
     #        'enforce_q_lims': False, 'numba': True, 'recycle': {'Ybus': False, '_is_elements': False, 'bfsw': False, 'ppc': False},
-    #        "tolerance_kva": 1e-5, "max_iteration": 10}
+    #        "tolerance_mva": 1e-5, "max_iteration": 10}
     net["_is_elements"] = None
     _, ppci1 = _pd2ppc(net, 1)
 
@@ -214,9 +215,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
     _, ppci0 = _pd2ppc(net, 0)
 
-    _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00 = _get_pf_variables_from_ppci(ppci0)
-    baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01 = _get_pf_variables_from_ppci(ppci1)
-    _,       bus2, gen2, branch2,      _,      _,      _, _, _, V02 = _get_pf_variables_from_ppci(ppci2)
+    _,       bus0, gen0, branch0,      _,      _,      _, _, _, V00, ref_gens = _get_pf_variables_from_ppci(ppci0)
+    baseMVA, bus1, gen1, branch1, sl_bus, pv_bus, pq_bus, _, _, V01, ref_gens = _get_pf_variables_from_ppci(ppci1)
+    _,       bus2, gen2, branch2,      _,      _,      _, _, _, V02, ref_gens = _get_pf_variables_from_ppci(ppci2)
 
     ppci0, ppci1, ppci2, Y0_pu, Y1_pu, Y2_pu, Y0_f, Y1_f, Y2_f, Y0_t, Y1_t, Y2_t = _get_Y_bus(ppci0, ppci1, ppci2, recycle, makeYbus)
 
@@ -245,7 +246,7 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     #             Iteration using Power mismatch criterion
     # =============================================================================
     t0 = time()
-    while (S_mismatch > tolerance_kva).any() and count < 3*max_iteration :
+    while (S_mismatch > tolerance_mva).any() and count < 3*max_iteration :
         # =============================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =============================================================================
@@ -306,9 +307,9 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
 
     ## update data matrices with solution
     # Todo: Add reference to paper to explain the choice of Y1 over Y2 in the negative sequence
-    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].flatten(), sl_bus)
-    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].flatten(), sl_bus)
-    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y1_pu, Y1_f, Y1_t, V012_it[2, :].flatten(), sl_bus)
+    bus0, gen0, branch0 = pfsoln(baseMVA, bus0, gen0, branch0, Y0_pu, Y0_f, Y0_t, V012_it[0, :].flatten(), sl_bus, ref_gens)
+    bus1, gen1, branch1 = pfsoln(baseMVA, bus1, gen1, branch1, Y1_pu, Y1_f, Y1_t, V012_it[1, :].flatten(), sl_bus, ref_gens)
+    bus2, gen2, branch2 = pfsoln(baseMVA, bus2, gen2, branch2, Y1_pu, Y1_f, Y1_t, V012_it[2, :].flatten(), sl_bus, ref_gens)
 
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)

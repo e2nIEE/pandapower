@@ -74,18 +74,19 @@ def verify_results(net):
             if element in elements_to_empty:
                 empty_res_element(net, res_element)
             else:
-                init_element(net, element)
+                init_element(net, element,balanced=True)
                 if element == "bus":
                     net._options["init_vm_pu"] = "auto"
                     net._options["init_va_degree"] = "auto"
+
 
 def empty_res_element(net, res_element):
     net[res_element] = copy.copy(net["_empty_" + res_element])
 
 
-def init_element(net, element):
-    res_empty_element = "_empty_res_" + element
-    res_element = "res_" + element
+def init_element(net, element, balanced):
+    res_empty_element = "_empty_res_" + element if balanced else "_empty_res_" + element+"_3ph"
+    res_element = "res_" + element if balanced else "res_" + element+"_3ph"
     index = net[element].index
     if len(index):
         # init empty dataframe
@@ -99,14 +100,16 @@ def get_elements_to_empty(balanced=True):
     if balanced:
         return ["bus"]
     else:
-        return ["ext_grid_3ph", "asymmetric_load_3ph", "asymmetric_sgen_3ph", "asymmetric_gen_3ph", "bus_3ph", "line_3ph", "trafo_3ph"]
+        return ["bus_3ph"]
 
 
 def get_elements_to_init(balanced=True):
     if balanced:
-        return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
+        return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
+               , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
     else:
-        return []
+        return ["ext_grid","load","sgen", "asymmetric_load"\
+        , "asymmetric_sgen", "gen", "line", "trafo"]
 
 
 def reset_results(net, balanced=True):
@@ -116,7 +119,7 @@ def reset_results(net, balanced=True):
 
     elements_to_init = get_elements_to_init(balanced=balanced)
     for element in elements_to_init:
-        init_element(net, element)
+        init_element(net, element,balanced)
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):

@@ -2,12 +2,12 @@
 
 # Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import copy
+
 
 import numpy as np
 import pandas as pd
-
 from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
+from pandapower.auxiliary import _sum_by_group
 from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
 from pandapower.idx_bus import BASE_KV, VM, VA
 
@@ -289,10 +289,10 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
         trafo_df = net["trafo"]
         vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
         ld_trafo = np.maximum.reduce([np.asarray(Iabc_hv_ka) * vns[:, 0], np.asarray(Iabc_lv_ka) * vns[:, 1]])
-        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_kva"].values * 1000. * 100.
+        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_mva"].values * 1000. * 100.
     elif trafo_loading == "power":
         ld_trafo = np.maximum.reduce([np.abs(Sabc_hv), np.abs(Sabc_lv)])
-        ld_trafo = ld_trafo / net["trafo"]["sn_kva"].values[:, np.newaxis] * 3. * 100.
+        ld_trafo = ld_trafo / net["trafo"]["sn_mva"].values[:, np.newaxis] * 3. * 100.
     else:
         raise ValueError(
             "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)

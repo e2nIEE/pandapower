@@ -6,7 +6,6 @@
 
 import numpy as np
 from numpy import complex128
-
 from pandapower.idx_bus import VM, VA
 from pandapower.idx_gen import PG, QG, GEN_BUS
 
@@ -221,6 +220,7 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     net["res_gen_3ph"]["q_C_mvar"] = qC
 
     return pA, qA, pB, qB, pC, qC
+
 
 
 def _get_v_gen_resuts(net, ppc):
