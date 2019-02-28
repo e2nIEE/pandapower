@@ -240,7 +240,8 @@ class StateEstimation(object):
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
         bus_to_be_fused = None
-        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
+        if isinstance(fuse_buses_with_bb_switch, str) and fuse_buses_with_bb_switch != 'all' and\
+            not self.net.switch.empty:
             if isinstance(fuse_buses_with_bb_switch, str):
                 raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
             if callable(fuse_buses_with_bb_switch):
@@ -261,15 +262,17 @@ class StateEstimation(object):
         # Finished converting pandapower network to ppci
         # Estimate voltage magnitude and angle with the given estimator
         V = self.estimator.estimate(ppci, **hyperparameter)
-
-        # calculate the branch power flow and bus power injection based on the estimated voltage vector
-        ppci = _calc_power_flow(ppci, V)
+        
+        if self.estimator.successful:
+            # calculate the branch power flow and bus power injection based on the estimated voltage vector
+            ppci = _calc_power_flow(ppci, V)
 
         # extract the result from ppci to ppc and pandpower network
         self.net = _extract_result_ppci_to_pp(self.net, ppc, ppci)
 
         # clear the aux elements and calculation results created for the substitution of bb switches
-        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
+        if isinstance(fuse_buses_with_bb_switch, str) and fuse_buses_with_bb_switch != 'all' and\
+            not self.net.switch.empty:
             _drop_aux_elements_for_bb_switch(self.net)
 
         return self.estimator.successful

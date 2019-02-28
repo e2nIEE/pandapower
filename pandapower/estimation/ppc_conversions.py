@@ -471,9 +471,9 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
 
         zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
         bus_append[zero_inj_bus, P] = 0
-        bus_append[zero_inj_bus, P_STD] = 1
+        bus_append[zero_inj_bus, P_STD] = 0.05
         bus_append[zero_inj_bus, Q] = 0
-        bus_append[zero_inj_bus, Q_STD] = 1
+        bus_append[zero_inj_bus, Q_STD] = 0.05
     return bus_append
     
 
