@@ -995,5 +995,33 @@ def assert_init_results(net):
     pp.runpp(net, init="results")
     assert net._ppc["iterations"] == 0
 
+def test_wye_delta():
+    from pandapower.idx_brch import BR_R, BR_X, BR_B
+    net = pp.create_empty_network()
+    pp.create_bus(net, vn_kv=110)
+    pp.create_buses(net, nr_buses=4, vn_kv=20)
+    trafo = pp.create_transformer(net, hv_bus=0, lv_bus=1, std_type='25 MVA 110/20 kV')
+    pp.create_line(net, 1, 2, length_km=2.0, std_type="NAYY 4x50 SE")
+    pp.create_line(net, 2, 3, length_km=6.0, std_type="NAYY 4x50 SE")
+    pp.create_line(net, 3, 4, length_km=10.0, std_type="NAYY 4x50 SE")   
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 4, p_mw=0.1)
+    pp.create_sgen(net, 2, p_mw=4.)
+    pp.create_sgen(net, 3, p_mw=4.)
+    
+    pp.runpp(net, trafo_model="pi")
+    f, t = net._pd2ppc_lookups["branch"]["trafo"]
+    assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
+               np.array([ 0.0001640+0.j,  0.0047972+0.j, -0.0105000-0.014j]))
+    
+    pp.runpp(net, trafo_model="t")
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
+               np.array([ 0.00016392+0.j, 0.00479726+0.j,-0.01050009-0.01399964j]))   
+    assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
+
+    
+    
 if __name__ == "__main__":
-    pytest.main([__file__, "-xs"])
+    test_wye_delta()
+#    pytest.main([__file__, "-xs"])
