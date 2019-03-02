@@ -1013,15 +1013,13 @@ def test_wye_delta():
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
     assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-               np.array([ 0.0001640+0.j,  0.0047972+0.j, -0.0105000-0.014j]))
+               np.array([ 0.0001640+0.j,  0.0047972+0.j, -0.0105000-0.014j]),
+                        rtol=1e-7)
     
     pp.runpp(net, trafo_model="t")
     assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
                np.array([ 0.00016392+0.j, 0.00479726+0.j,-0.01050009-0.01399964j]))   
-    assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
-
-    
+    assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)    
     
 if __name__ == "__main__":
-    test_wye_delta()
-#    pytest.main([__file__, "-xs"])
+    pytest.main([__file__, "-xs"])
