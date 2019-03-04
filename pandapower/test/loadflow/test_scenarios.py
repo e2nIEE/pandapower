@@ -9,7 +9,8 @@ import pytest
 
 import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, add_test_trafo
+from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, \
+                                                                   add_test_trafo
 from pandapower.test.toolbox import create_test_network2, add_grid_connection
 
 #TODO: 2 gen 2 ext_grid missing
@@ -382,7 +383,8 @@ def test_oos_buses_at_trafo3w():
     assert np.isnan(net.res_trafo3w.i_hv_ka.at[tidx])
 
 
-def test_trafo3w_switches():
+@pytest.fixture
+def network_with_trafo3ws():
     net = pp.create_empty_network()
     add_test_trafo(net)
     slack, hv, ln = add_grid_connection(net, zone="test_trafo3w")
@@ -391,15 +393,20 @@ def test_trafo3w_switches():
         pp.create_load(net, mv, p_mw=0.8, q_mvar=0)
         lv = pp.create_bus(net, vn_kv=0.4, zone="test_trafo3w")
         pp.create_load(net, lv, p_mw=0.5, q_mvar=0)
-        t3 = pp.create_transformer3w_from_parameters(net, hv_bus=hv, mv_bus=mv, lv_bus=lv, vn_hv_kv=22,
-                                                vn_mv_kv=.64, vn_lv_kv=.42, sn_hv_mva=1,
-                                                sn_mv_mva=0.7, sn_lv_mva=0.3, vk_hv_percent=1.,
-                                                vkr_hv_percent=.03, vk_mv_percent=.5,
-                                                vkr_mv_percent=.02, vk_lv_percent=.25,
-                                                vkr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
-                                                name="test", index=pp.get_free_id(net.trafo3w) + 1,
-                                                tap_side="hv", tap_pos=2, tap_step_percent=1.25,
-                                                tap_min=-5, tap_neutral=0, tap_max=5)
+        t3 = pp.create_transformer3w_from_parameters(net, hv_bus=hv, mv_bus=mv, lv_bus=lv,
+                                                     vn_hv_kv=20, vn_mv_kv=.6, vn_lv_kv=.4,
+                                                     sn_hv_mva=1, sn_mv_mva=0.7, sn_lv_mva=0.3,
+                                                     vk_hv_percent=1., vkr_hv_percent=.03,
+                                                     vk_mv_percent=.5, vkr_mv_percent=.02,
+                                                     vk_lv_percent=.25, vkr_lv_percent=.01,
+                                                     pfe_kw=0., i0_percent=0.0, name="test", 
+                                                     index=pp.get_free_id(net.trafo3w) + 1)
+    return (net, t3, hv, mv, lv)
+        
+    
+def test_trafo3w_switches(network_with_trafo3ws):
+    net, t3, hv, mv, lv = network_with_trafo3ws
+
     # open switch at hv side - t3 is disconnected
     s1 = pp.create_switch(net, bus=hv, element=t3, et="t3", closed=False)
     runpp_with_consistency_checks(net)
