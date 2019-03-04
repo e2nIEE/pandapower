@@ -200,10 +200,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
     passed_parameters = _passed_runpp_parameters(locals())
-    _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles, init=init,
-                        max_iteration=max_iteration, tolerance_mva=tolerance_mva, trafo_model=trafo_model,
-                        trafo_loading=trafo_loading, enforce_q_lims=enforce_q_lims,
-                        check_connectivity=check_connectivity,
+    _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
+                        init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
+                        trafo_model=trafo_model, trafo_loading=trafo_loading,
+                        enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
                         voltage_depend_loads=voltage_depend_loads,
                         consider_line_temperature=consider_line_temperature,
                         passed_parameters=passed_parameters, **kwargs)
@@ -250,8 +250,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
-    _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading, recycle=recycle,
-                          check_connectivity=check_connectivity, r_switch=r_switch, trafo3w_losses=trafo3w_losses)
+    _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
+                          recycle=recycle, check_connectivity=check_connectivity, r_switch=r_switch,
+                          trafo3w_losses=trafo3w_losses)
 
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
