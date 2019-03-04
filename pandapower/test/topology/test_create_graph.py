@@ -107,6 +107,9 @@ def test_trafo3w():
 
 def test_trafo3w_impedances(network_with_trafo3ws):
     net, t3, hv, mv, lv = network_with_trafo3ws
+    net.trafo3w.vn_hv_kv = 20
+    net.trafo3w.vn_mv_kv = 0.6
+    net.trafo3w.vn_lv_kv = 0.4
     t3 = net.trafo3w.index[0]
     mg = create_nxgraph(net, calc_z=True)
     trafo3 = net.trafo3w.loc[t3]
