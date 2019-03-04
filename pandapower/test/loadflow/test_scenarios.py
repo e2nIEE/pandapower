@@ -393,14 +393,15 @@ def network_with_trafo3ws():
         pp.create_load(net, mv, p_mw=0.8, q_mvar=0)
         lv = pp.create_bus(net, vn_kv=0.4, zone="test_trafo3w")
         pp.create_load(net, lv, p_mw=0.5, q_mvar=0)
-        t3 = pp.create_transformer3w_from_parameters(net, hv_bus=hv, mv_bus=mv, lv_bus=lv,
-                                                     vn_hv_kv=20, vn_mv_kv=.6, vn_lv_kv=.4,
-                                                     sn_hv_mva=1, sn_mv_mva=0.7, sn_lv_mva=0.3,
-                                                     vk_hv_percent=1., vkr_hv_percent=.03,
-                                                     vk_mv_percent=.5, vkr_mv_percent=.02,
-                                                     vk_lv_percent=.25, vkr_lv_percent=.01,
-                                                     pfe_kw=0., i0_percent=0.0, name="test", 
-                                                     index=pp.get_free_id(net.trafo3w) + 1)
+        t3 = pp.create_transformer3w_from_parameters(net, hv_bus=hv, mv_bus=mv, lv_bus=lv, vn_hv_kv=22,
+                                                vn_mv_kv=.64, vn_lv_kv=.42, sn_hv_mva=1,
+                                                sn_mv_mva=0.7, sn_lv_mva=0.3, vk_hv_percent=1.,
+                                                vkr_hv_percent=.03, vk_mv_percent=.5,
+                                                vkr_mv_percent=.02, vk_lv_percent=.25,
+                                                vkr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
+                                                name="test", index=pp.get_free_id(net.trafo3w) + 1,
+                                                tap_side="hv", tap_pos=2, tap_step_percent=1.25,
+                                                tap_min=-5, tap_neutral=0, tap_max=5)
     return (net, t3, hv, mv, lv)
         
     
