@@ -776,12 +776,21 @@ def convert_format(net):
     _convert_to_mw(net)
     _revert_pfe_mw(net)
     if "sn_kva" in net.keys():
-        net.sn_mva = net.sn_kva*1e-3
-        del net.sn_kva
+        net.sn_mva = net.pop("sn_kva") * 1e-3
     net.version = float(__version__[:3])
 
     _update_trafo_parameter_names(net)
+    _update_trafo_type_parameter_names(net)
     return net
+
+
+def _update_trafo_type_parameter_names(net):
+    for element in ('trafo', 'trafo3w'):
+        for type in net.std_types[element].keys():
+            keys = {col: _update_column(col) for col in net.std_types[element][type].keys() if
+                            col.startswith("tp") or col.startswith("vsc")}
+            for old_key, new_key in keys.items():
+                net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
 
 def _update_trafo_parameter_names(net):
