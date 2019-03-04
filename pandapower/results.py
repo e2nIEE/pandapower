@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.results_branch import _get_branch_results
-from pandapower.results_bus import _get_bus_results, _get_p_q_results, _set_buses_out_of_service, \
-    _get_shunt_results, _get_p_q_results_opf, _get_bus_v_results
+from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
+    _get_shunt_results, _get_p_q_results, _get_bus_v_results
 from pandapower.results_gen import _get_gen_results
 
 
@@ -20,25 +20,13 @@ def _extract_results(net, ppc):
     bus_lookup_aranged = _get_aranged_lookup(net)
 
     _get_bus_v_results(net, ppc)
-    bus_pq = _get_p_q_results(net, bus_lookup_aranged)
+    bus_pq = _get_p_q_results(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
-
-
-def _extract_results_opf(net, ppc):
-    # get options
-    bus_lookup_aranged = _get_aranged_lookup(net)
-
-    _get_bus_v_results(net, ppc)
-    _set_buses_out_of_service(ppc)
-    bus_pq = _get_p_q_results_opf(net, ppc, bus_lookup_aranged)
-    _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
-    _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
-    _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
-    _get_bus_results(net, ppc, bus_pq)
-    _get_costs(net, ppc)
+    if net._options["mode"] == "opf":
+        _get_costs(net, ppc)
 
 
 def _extract_results_se(net, ppc):
@@ -73,6 +61,9 @@ def verify_results(net):
                 empty_res_element(net, res_element)
             else:
                 init_element(net, element)
+                if element == "bus":
+                    net._options["init_vm_pu"] = "auto"
+                    net._options["init_va_degree"] = "auto"
 
 
 def empty_res_element(net, res_element):
@@ -92,11 +83,11 @@ def init_element(net, element):
 
 
 def get_elements_to_empty():
-    return ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
+    return ["bus"] # ["ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline", "bus"]
 
 
 def get_elements_to_init():
-    return ["line", "trafo", "trafo3w", "impedance"]
+    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
 
 
 def reset_results(net):
@@ -163,7 +154,7 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
 
     if "iterations" in result:
         ppc["iterations"] = result["iterations"]
-        
+
 
     result = ppc
     return result

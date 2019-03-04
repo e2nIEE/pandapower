@@ -1,9 +1,9 @@
 load_name;bus;p;q
-Further MV-Rings;Bus MV0;6000;2000
-Industry Load;Bus MV0 20kV;18000;4000
-LV Net 1;Bus MV1;400;100
-LV Net 2;Bus MV2;400;60
-LV Net 3;Bus MV3;400;60
-LV Net 5;Bus MV5;400;60
-LV Net 6;Bus MV6;400;60
-LV Net 7;Bus MV7;400;60
+Further MV-Rings;Bus MV0;6;2
+Industry Load;Bus MV0 20kV;18;4
+LV Net 1;Bus MV1;0.4;0.1
+LV Net 2;Bus MV2;0.4;0.06
+LV Net 3;Bus MV3;0.4;0.06
+LV Net 5;Bus MV5;0.4;0.06
+LV Net 6;Bus MV6;0.4;0.06
+LV Net 7;Bus MV7;0.4;0.06

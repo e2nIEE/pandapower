@@ -33,7 +33,7 @@ def diag_params():
     "min_r_pu":1e-05,
     "min_x_pu":1e-05,
     "nom_voltage_tolerance": 0.3,
-    "numba_tolerance": 1e-5}
+    "numba_tolerance": 1e-8}
 
 @pytest.fixture(scope='module')
 def test_net():
@@ -84,15 +84,15 @@ class TestInvalidValues:
         net.bus.loc[42, 'vn_kv'] = '-1'
         net.line.loc[7, 'length_km'] = -1
         net.line.loc[8, 'max_i_ka'] = 0
-        net.trafo.loc[0, 'vsc_percent'] = 0.0
-        net.trafo.loc[0, 'sn_kva'] = None
+        net.trafo.loc[0, 'vk_percent'] = 0.0
+        net.trafo.loc[0, 'sn_mva'] = None
         net.trafo.loc[0, 'vn_hv_kv'] = -1.5
         net.trafo.loc[0, 'vn_lv_kv'] = False
-        net.trafo3w.loc[0, 'vsc_hv_percent'] = 2.3
-        net.trafo3w.loc[0, 'vsc_mv_percent'] = np.nan
-        net.trafo3w.loc[0, 'vsc_lv_percent'] = 0.0
-        net.trafo3w.loc[0, 'sn_hv_kva'] = 11
-        net.trafo3w.loc[0, 'sn_mv_kva'] = 'a'
+        net.trafo3w.loc[0, 'vk_hv_percent'] = 2.3
+        net.trafo3w.loc[0, 'vk_mv_percent'] = np.nan
+        net.trafo3w.loc[0, 'vk_lv_percent'] = 0.0
+        net.trafo3w.loc[0, 'sn_hv_mva'] = 11
+        net.trafo3w.loc[0, 'sn_mv_mva'] = 'a'
         net.trafo3w.loc[0, 'vn_hv_kv'] = -1.5
         net.trafo3w.loc[0, 'vn_mv_kv'] = -1.5
         net.trafo3w.loc[0, 'vn_lv_kv'] = False
@@ -108,11 +108,11 @@ class TestInvalidValues:
         {'bus': [(42, 'vn_kv', '-1', '>0')],
          'ext_grid': [(0, 'vm_pu', True, '>0')],
          'line': [(7, 'length_km', -1.0, '>0'), (8, 'max_i_ka', 0.0, '>0')],
-         'trafo': [(0, 'sn_kva', 'nan', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
-                   (0, 'vn_lv_kv', False, '>0'), (0, 'vsc_percent', 0.0, '>0')],
-         'trafo3w': [(0, 'sn_mv_kva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
+         'trafo': [(0, 'sn_mva', 'nan', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
+                   (0, 'vn_lv_kv', False, '>0'), (0, 'vk_percent', 0.0, '>0')],
+         'trafo3w': [(0, 'sn_mv_mva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
                      (0, 'vn_mv_kv', -1.5, '>0'), (0, 'vn_lv_kv', False, '>0'),
-                     (0, 'vsc_mv_percent', 'nan', '>0'), (0, 'vsc_lv_percent', 0.0, '>0')]}
+                     (0, 'vk_mv_percent', 'nan', '>0'), (0, 'vk_lv_percent', 0.0, '>0')]}
 
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
@@ -131,12 +131,12 @@ class TestInvalidValues:
         net.line.loc[7, 'r_ohm_per_km'] = -1
         net.line.loc[8, 'x_ohm_per_km'] = None
         net.line.loc[8, 'c_nf_per_km'] = '0'
-        net.trafo.loc[0, 'vscr_percent'] = '-1'
+        net.trafo.loc[0, 'vkr_percent'] = '-1'
         net.trafo.loc[0, 'pfe_kw'] = -1.5
         net.trafo.loc[0, 'i0_percent'] = -0.001
-        net.trafo3w.loc[0, 'vscr_hv_percent'] = True
-        net.trafo3w.loc[0, 'vscr_mv_percent'] = False
-        net.trafo3w.loc[0, 'vscr_lv_percent'] = 1
+        net.trafo3w.loc[0, 'vkr_hv_percent'] = True
+        net.trafo3w.loc[0, 'vkr_mv_percent'] = False
+        net.trafo3w.loc[0, 'vkr_lv_percent'] = 1
         net.trafo3w.loc[0, 'pfe_kw'] = '2'
         net.trafo3w.loc[0, 'i0_percent'] = 10
         net.load.loc[0, 'scaling'] = -0.1
@@ -154,9 +154,9 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'), (8, 'x_ohm_per_km', 'nan', '>=0'),
                   (8, 'c_nf_per_km', '0', '>=0')],
-         'trafo': [(0, 'vscr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
+         'trafo': [(0, 'vkr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
                    (0, 'i0_percent', -0.001, '>=0')],
-         'trafo3w': [(0, 'vscr_hv_percent', True, '>=0'), (0, 'vscr_mv_percent', False, '>=0'),
+         'trafo3w': [(0, 'vkr_hv_percent', True, '>=0'), (0, 'vkr_mv_percent', False, '>=0'),
                      (0, 'pfe_kw', '2', '>=0')],
          'gen': [(0, 'scaling', 'nan', '>=0')],
          'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
@@ -284,11 +284,11 @@ class TestInvalidValues:
         check_function = 'invalid_values'
         diag_params = copy.deepcopy(diag_params)
         report_methods = copy.deepcopy(report_methods)
-        net.load.loc[0, 'p_kw'] = '1000'
-        net.load.loc[1, 'q_kvar'] = None
-        net.gen.loc[0, 'p_kw'] = False
-        net.sgen.loc[0, 'p_kw'] = -1.5
-        net.sgen.loc[1, 'q_kvar'] = np.nan
+        net.load.loc[0, 'p_mw'] = '1000'
+        net.load.loc[1, 'q_mvar'] = None
+        net.gen.loc[0, 'p_mw'] = False
+        net.sgen.loc[0, 'p_mw'] = -1.5
+        net.sgen.loc[1, 'q_mvar'] = np.nan
         net.ext_grid.loc[0, 'va_degree'] = 13.55
 
         check_result = pp.invalid_values(net)
@@ -297,9 +297,9 @@ class TestInvalidValues:
         else:
             diag_results = {}
         assert diag_results[check_function] == \
-        {'gen': [(0, 'p_kw', False, 'number')],
-         'load': [(0, 'p_kw', '1000', 'number'), (1, 'q_kvar', 'nan', 'number')],
-         'sgen': [(1, 'q_kvar', 'nan', 'number')]}
+        {'gen': [(0, 'p_mw', False, 'number')],
+         'load': [(0, 'p_mw', '1000', 'number'), (1, 'q_mvar', 'nan', 'number')],
+         'sgen': [(1, 'q_mvar', 'nan', 'number')]}
 
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
@@ -419,7 +419,7 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
     check_function = 'overload'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.load.p_kw.at[4] *= 1000
+    net.load.p_mw.at[4] *= 1000
 
     check_result = pp.overload(net, diag_params['overload_scaling_factor'])
     if check_result:
@@ -440,7 +440,7 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
         assert report_check
 
     net = copy.deepcopy(test_net)
-    net.gen.p_kw *= 1000
+    net.gen.p_mw *= 1000
     check_result = pp.overload(net, diag_params['overload_scaling_factor'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -460,8 +460,8 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
         assert report_check
 
     net = copy.deepcopy(test_net)
-    net.load.p_kw *= 1000
-    net.gen.p_kw *= 1000
+    net.load.p_mw *= 1000
+    net.gen.p_mw *= 1000
     check_result = pp.overload(net, diag_params['overload_scaling_factor'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -512,7 +512,7 @@ def test_switch_configuration(test_net, diag_params, diag_errors, report_methods
 
     net = copy.deepcopy(test_net)
     net.switch.closed = 1
-    net.load.p_kw.at[4] *= 1000
+    net.load.p_mw.at[4] *= 1000
     check_result = pp.wrong_switch_configuration(net)
     diag_results = {check_function: check_result}
     assert diag_results[check_function] == False
@@ -905,9 +905,9 @@ def test_wrong_reference_system(test_net, diag_params, diag_errors, report_metho
     check_function = 'wrong_reference_system'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.load.p_kw.at[0] = -1
-    net.gen.p_kw.at[0] = 1
-    net.sgen.p_kw.at[0] = 1
+    net.load.p_mw.at[0] = -1
+    net.gen.p_mw.at[0] = -1
+    net.sgen.p_mw.at[0] = -1
     check_result = pp.wrong_reference_system(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -975,7 +975,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
     net.line.c_nf_per_km.loc[14] *= -1
     net.line.max_i_ka.loc[21] = '5'
     pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
-    net.trafo.vsc_percent.loc[0] *= 2
+    net.trafo.vk_percent.loc[0] *= 2
     check_result = pp.deviation_from_std_type(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -990,7 +990,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
                    'std_type_value': 264},
               21: {'e_value': '5', 'param': 'max_i_ka', 'std_type_in_lib': True,
                    'std_type_value': 0.105}},
-    'trafo': {0: {'e_value': 24.4, 'param': 'vsc_percent', 'std_type_in_lib': True,
+    'trafo': {0: {'e_value': 24.4, 'param': 'vk_percent', 'std_type_in_lib': True,
                   'std_type_value': 12.2}}
     }
 
@@ -1008,7 +1008,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
 def test_numba_comparison(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'numba_comparison'
-    diag_params['numba_tolerance'] = 1e-10
+    diag_params['numba_tolerance'] = 1e-13
     check_result = pp.numba_comparison(net, numba_tolerance=diag_params['numba_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -1040,6 +1040,7 @@ def test_parallel_switches(test_net, diag_params, diag_errors, report_methods):
     pp.create_switch(net, 13, 0, et='t', closed=False)
     pp.create_switch(net, 13, 0, et='t')
     pp.create_switch(net, 47, 16, et='l')
+    pp.create_switch(net, 13, 0, et='b')
 
     check_result = pp.parallel_switches(net)
     if check_result:
@@ -1094,7 +1095,7 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
 
 def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
-    net.load.p_kw *= 100
+    net.load.p_mw *= 100
     diag = pp.diagnostic(net)
 
 if __name__ == "__main__":

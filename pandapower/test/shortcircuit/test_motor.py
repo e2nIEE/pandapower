@@ -18,7 +18,7 @@ def motor_net():
     pp.create_ext_grid(net, b1, s_sc_max_mva=10., rx_max=0.1)
     pp.create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1., r_ohm_per_km=0.3211,
                                    x_ohm_per_km=0.06911504, c_nf_per_km=0, max_i_ka=1)
-    pp.create_sgen(net, b2, p_kw=110, sn_kva=500, type="motor", k=7, rx=0.6)
+    pp.create_sgen(net, b2, p_mw=0.11, sn_mva=0.5, type="motor", k=7, rx=0.6, current_source=False)
     return net
 
 def test_motor(motor_net):
@@ -29,4 +29,4 @@ def test_motor(motor_net):
     #TODO: ip, ith, Ib, Ik with motors
 
 if __name__ == '__main__':
-    pytest.main()
+    pytest.main([__file__])

@@ -4,13 +4,16 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+import numpy as np
+import tempfile
+import math
+import os
+import json
+
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pf.run_newton_raphson_pf import _get_numba_functions
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-from pandapower.results import _extract_results_opf, reset_results, _copy_results_ppci_to_ppc
-from pandapower.powerflow import _add_auxiliary_elements
-from pandapower.auxiliary import _clean_up
+from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
+from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
 from pandapower import pp_dir
 
 try:
@@ -20,18 +23,15 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-import numpy as np
-import tempfile
-import os
-import json
-
-from pandapower.idx_gen import QC1MAX, PG,QC2MAX, RAMP_AGC, QG, GEN_BUS, RAMP_10,VG, MBASE, PC2, QMAX,GEN_STATUS, QMIN,QC1MIN, QC2MIN, PC1, PMIN, PMAX, RAMP_Q, RAMP_30, APF
+from pandapower.idx_gen import PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
 from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
-from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, ANGMIN, ANGMAX, TAP, SHIFT
-from pandapower.idx_cost import MODEL, STARTUP, SHUTDOWN, COST
+from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
+    ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
+from pandapower.idx_cost import MODEL, COST, NCOST
 
-def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv"):
+
+def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
+          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
     """
     Runs a power system optimization using PowerModels.jl.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -40,15 +40,15 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     net.sgen.controllable if a static generator is controllable. If False,
     the active and reactive power are assigned as in a normal power flow. If True, the following
     flexibilities apply:
-        - net.sgen.min_p_kw / net.sgen.max_p_kw
-        - net.sgen.min_q_kvar / net.sgen.max_q_kvar
-        - net.load.min_p_kw / net.load.max_p_kw
-        - net.load.min_q_kvar / net.load.max_q_kvar
-        - net.gen.min_p_kw / net.gen.max_p_kw
-        - net.gen.min_q_kvar / net.gen.max_q_kvar
-        - net.ext_grid.min_p_kw / net.ext_grid.max_p_kw
-        - net.ext_grid.min_q_kvar / net.ext_grid.max_q_kvar
-        - net.dcline.min_q_to_kvar / net.dcline.max_q_to_kvar / net.dcline.min_q_from_kvar / net.dcline.max_q_from_kvar
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
+        - net.load.min_p_mw / net.load.max_p_mw
+        - net.load.min_q_mvar / net.load.max_q_mvar
+        - net.gen.min_p_mw / net.gen.max_p_mw
+        - net.gen.min_q_mvar / net.gen.max_q_mvar
+        - net.ext_grid.min_p_mw / net.ext_grid.max_p_mw
+        - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
+        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
 
     Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
     Otherwise, they are not respected as flexibilities.
@@ -71,66 +71,178 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
      """
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
+
+
+def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
+    """
+    Runs a power system optimization using PowerModels.jl.
+    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
+    flexibilities apply:
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
+        - net.load.min_p_mw / net.load.max_p_mw
+        - net.load.min_q_mvar / net.load.max_q_mvar
+        - net.gen.min_p_mw / net.gen.max_p_mw
+        - net.gen.min_q_mvar / net.gen.max_q_mvar
+        - net.ext_grid.min_p_mw / net.ext_grid.max_p_mw
+        - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
+        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
+
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        - net.bus.min_vm_pu / net.bus.max_vm_pu
+        - net.line.max_loading_percent
+        - net.trafo.max_loading_percent
+        - net.trafo3w.max_loading_percent
+
+    How these costs are combined into a cost function depends on the cost_function parameter.
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+     """
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_dc.jl')
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=False,
-                     mode="opf", copy_constraints_to_ppc=True,
-                     r_switch=0, init_vm_pu="flat", init_va_degree="flat",
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='current', ac=True, init="flat", numba=True)
-    _runpm(net, julia_file, pp_to_pm_callback)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
 
-def _runpm(net, julia_file=None, pp_to_pm_callback=None):
+
+def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
+    """
+    Runs a power system optimization using PowerModels.jl.
+    Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
+
+    Flexibilities can be defined in net.sgen / net.gen /net.load
+    net.sgen.controllable if a static generator is controllable. If False,
+    the active and reactive power are assigned as in a normal power flow. If True, the following
+    flexibilities apply:
+        - net.sgen.min_p_mw / net.sgen.max_p_mw
+        - net.sgen.min_q_mvar / net.sgen.max_q_mvar
+        - net.load.min_p_mw / net.load.max_p_mw
+        - net.load.min_q_mvar / net.load.max_q_mvar
+        - net.gen.min_p_mw / net.gen.max_p_mw
+        - net.gen.min_q_mvar / net.gen.max_q_mvar
+        - net.ext_grid.min_p_mw / net.ext_grid.max_p_mw
+        - net.ext_grid.min_q_mvar / net.ext_grid.max_q_mvar
+        - net.dcline.min_q_to_mvar / net.dcline.max_q_to_mvar / net.dcline.min_q_from_mvar / net.dcline.max_q_from_mvar
+
+    Controllable loads behave just like controllable static generators. It must be stated if they are controllable.
+    Otherwise, they are not respected as flexibilities.
+    Dc lines are controllable per default
+
+    Network constraints can be defined for buses, lines and transformers the elements in the following columns:
+        - net.bus.min_vm_pu / net.bus.max_vm_pu
+        - net.line.max_loading_percent
+        - net.trafo.max_loading_percent
+        - net.trafo3w.max_loading_percent
+
+    How these costs are combined into a cost function depends on the cost_function parameter.
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **julia_file** (str, None) - path to a custom julia optimization file
+
+        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
+
+     """
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ac.jl')
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
+                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
+    _runpm(net)
+
+
+def _runpm(net):
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
     reset_results(net)
     ppc, ppci = _pd2ppc(net)
+    net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     net._pm = pm
-    if pp_to_pm_callback is not None:
-        pp_to_pm_callback(net, ppci, pm)
-    result_pm = _call_powermodels(pm, julia_file)
-    net._result_pm = result_pm
+    if net._options["pp_to_pm_callback"] is not None:
+        net._options["pp_to_pm_callback"](net, ppci, pm)
+    result_pm = _call_powermodels(pm, net._options["julia_file"])
+    net._pm_res = result_pm
     result = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
+    net._pm_result = result_pm
     success = ppc["success"]
-    net["_ppc_opf"] = ppci
     if success:
-        _extract_results_opf(net, result)
+        _extract_results(net, result)
         _clean_up(net)
         net["OPF_converged"] = True
     else:
-        _clean_up(net)
+        _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
 
-def _call_powermodels(pm, julia_file=None):
+
+def _call_powermodels(pm, julia_file):
     buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
+    logger.debug("writing PowerModels data structure to %s" % buffer_file)
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     try:
         import julia
+        from julia import Main
     except ImportError:
         raise ImportError("Please install pyjulia to run pandapower with PowerModels.jl")
     try:
         j = julia.Julia()
     except:
-        raise UserWarning("Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
+        raise UserWarning(
+            "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
-    if julia_file is None:
-        folder = os.path.join(pp_dir, "opf")
-        julia_file = os.path.join(folder, 'run_powermodels.jl')
+    Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
-        run_powermodels = j.include(julia_file)
-    except:
-        raise UserWarning("File %s could not be imported"%julia_file)
+        run_powermodels = Main.include(julia_file)
+    except ImportError:
+        raise UserWarning("File %s could not be imported" % julia_file)
     result_pm = run_powermodels(buffer_file)
     return result_pm
 
+
 def ppc_to_pm(net, ppc):
-    pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(),
-          "baseMVA": ppc["baseMVA"],  "source_version": "2.0.0", "shunt": dict(),
+    pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
+          "baseMVA": ppc["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     load_idx = 1
     shunt_idx = 1
@@ -150,13 +262,13 @@ def ppc_to_pm(net, ppc):
         qd = row[QD]
         if pd != 0 or qd != 0:
             pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
-                                        "status": True, "index": load_idx}
+                                         "status": True, "index": load_idx}
             load_idx += 1
         bs = row[BS]
         gs = row[GS]
         if pd != 0 or qd != 0:
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx,
-                                        "status": True, "index": shunt_idx}
+                                           "status": True, "index": shunt_idx}
             shunt_idx += 1
         pm["bus"][str(idx)] = bus
 
@@ -180,113 +292,65 @@ def ppc_to_pm(net, ppc):
         branch["angmin"] = row[ANGMIN].real
         branch["angmax"] = row[ANGMAX].real
         branch["tap"] = row[TAP].real
-        branch["shift"] = row[SHIFT].real
+        branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
 
     for idx, row in enumerate(ppc["gen"], start=1):
         gen = dict()
-        gen["qc1max"] = row[QC1MAX]
         gen["pg"] = row[PG]
-        gen["qc2max"] = row[QC2MAX]
-        gen["ramp_agc"] = row[RAMP_AGC]
         gen["qg"] = row[QG]
         gen["gen_bus"] = int(row[GEN_BUS]) + 1
-        gen["ramp_10"] = row[RAMP_10]
         gen["vg"] = row[VG]
-        gen["mbase"] = row[MBASE]
-        gen["pc2"] = row[PC2]
         gen["qmax"] = row[QMAX]
         gen["gen_status"] = int(row[GEN_STATUS])
         gen["qmin"] = row[QMIN]
-        gen["qc1min"] = row[QC1MIN]
-        gen["qc2min"] = row[QC2MIN]
-        gen["pc1"] = row[PC1]
-        gen["ramp_q"] = row[RAMP_Q]
-        gen["ramp_30"] = row[RAMP_30]
         gen["pmin"] = row[PMIN]
         gen["pmax"] = row[PMAX]
-        gen["apf"] = row[APF]
         gen["index"] = idx
         pm["gen"][str(idx)] = gen
 
+    if len(ppc["gencost"]) > len(ppc["gen"]):
+        logger.warning("PowerModels.jl does not reactive power cost - costs are ignored")
+        ppc["gencost"] = ppc["gencost"][:ppc["gen"].shape[0], :]
     for idx, row in enumerate(ppc["gencost"], start=1):
         gen = pm["gen"][str(idx)]
         gen["model"] = int(row[MODEL])
-        gen["shutdown"] = row[SHUTDOWN]
-        gen["startup"] = row[STARTUP]
-        gen["ncost"] = 2#int(row[NCOST])
-        gen["cost"] = [row[COST], row[COST +1], 0]
+        if gen["model"] == 1:
+            gen["ncost"] = int(row[NCOST])
+            gen["cost"] = row[COST:COST + gen["ncost"] * 2].tolist()
+        elif gen["model"] == 2:
+            gen["ncost"] = 2
+            gen["cost"] = [0] * 3
+            costs = row[COST:]
+            if len(costs) > 3:
+                print(costs)
+                raise ValueError("Maximum quadratic cost function allowed")
+            gen["cost"][-len(costs):] = costs
     return pm
 
+
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
-    V = np.zeros(len(ppci["bus"]), dtype="complex")
-    for i, bus in result_pm["solution"]["bus"].items():
-        V[int(i)-1] = bus["vm"] * np.exp(1j*bus["va"])
+    options = net._options
+    sol = result_pm["solution"]
+    for i, bus in sol["bus"].items():
+        ppci["bus"][int(i) - 1, VM] = bus["vm"]
+        ppci["bus"][int(i) - 1, VA] = math.degrees(bus["va"])
 
-    for i, gen in result_pm["solution"]["gen"].items():
-        ppci["gen"][int(i)-1, PG] = gen["pg"]
-        ppci["gen"][int(i)-1, QG] = gen["qg"]
+    for i, gen in sol["gen"].items():
+        ppci["gen"][int(i) - 1, PG] = gen["pg"]
+        ppci["gen"][int(i) - 1, QG] = gen["qg"]
 
-    ppci["obj"] = result_pm["objective"]
+    dc_results = np.isnan(sol["branch"]["1"]["qf"])
+    for i, branch in sol["branch"].items():
+        ppci["branch"][int(i) - 1, PF] = branch["pf"]
+        ppci["branch"][int(i) - 1, PT] = branch["pt"]
+        if not dc_results:
+            ppci["branch"][int(i) - 1, QF] = branch["qf"]
+            ppci["branch"][int(i) - 1, QT] = branch["qt"]
+
+    ppc["obj"] = result_pm["objective"]
     ppci["success"] = result_pm["status"] == "LocalOptimal"
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
-    ppci["internal_gencost"] = result_pm["objective"]
-
-    makeYbus, pfsoln = _get_numba_functions(ppci, net._options)
-    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
-    Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
-    ppc["bus"][:, VM] = np.nan
-    ppc["bus"][:, VA] = np.nan
-    result = _copy_results_ppci_to_ppc(ppci, ppc, "opf")
+    result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
     return result
-
-if __name__ == '__main__':
-    import pandapower as pp
-    net = pp.create_empty_network()
-
-    #create buses
-    bus1 = pp.create_bus(net, vn_kv=220.)
-    bus2 = pp.create_bus(net, vn_kv=110.)
-    bus3 = pp.create_bus(net, vn_kv=110.)
-    bus4 = pp.create_bus(net, vn_kv=110.)
-    bus5 = pp.create_bus(net, vn_kv=110.)
-
-    bus6 = pp.create_bus(net, vn_kv=110., in_service=False)
-
-
-    #create 220/110 kV transformer
-    pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
-                                            vn_lv_kv=110, vsc_hv_percent=10., vsc_mv_percent=10.,
-                                            vsc_lv_percent=10., vscr_hv_percent=0.5,
-                                            vscr_mv_percent=0.5, vscr_lv_percent=0.5, pfe_kw=100.,
-                                            i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
-                                            sn_hv_kva=100e3, sn_mv_kva=50e3, sn_lv_kva=50e3)
-    net.trafo3w["max_loading_percent"] = 50
-
-    #create 110 kV lines
-    pp.create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus4, bus5, length_km=30., std_type='149-AL1/24-ST1A 110.0')
-    net.line["max_loading_percent"] = 30
-
-    #create loads
-    pp.create_load(net, bus2, p_kw=60e3, controllable = False)
-    pp.create_load(net, bus3, p_kw=70e3, controllable = False)
-    pp.create_load(net, bus4, p_kw=10e3, controllable = False)
-
-    #create generators
-    eg = pp.create_ext_grid(net, bus1, min_p_kw = -1e9, max_p_kw = 1e9)
-    g0 = pp.create_gen(net, bus3, p_kw=-80*1e3, min_p_kw=-80e3, max_p_kw=0,vm_pu=1.01, controllable=True)
-    g1 = pp.create_gen(net, bus4, p_kw=-100*1e3, min_p_kw=-100e3, max_p_kw=0, vm_pu=1.01, controllable=True)
-
-    costeg = pp.create_polynomial_cost(net, 0, 'ext_grid', np.array([-1, 0]))
-    costgen1 = pp.create_polynomial_cost(net, 0, 'gen', np.array([-1, 0]))
-    costgen2 = pp.create_polynomial_cost(net, 1, 'gen', np.array([-1, 0]))
-
-    runpm(net)
-    if net.OPF_converged:
-        from pandapower.test.consistency_checks import consistency_checks
-        consistency_checks(net)

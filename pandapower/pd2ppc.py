@@ -25,7 +25,7 @@ from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branch
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_gen_impedances_ppc, _add_motor_impedances_ppc
 from pandapower.build_gen import _build_gen_ppc, _update_gen_ppc, _check_voltage_setpoints_at_same_bus, \
-                                 _check_voltage_angles_at_same_bus
+                                 _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
 
 
@@ -81,8 +81,6 @@ def _pd2ppc(net):
     ppci = copy.deepcopy(ppc)
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc)
-    # generate ppc['gen'] and fills ppc['bus'] with generator values (PV, REF nodes)
-    _build_gen_ppc(net, ppc)
     # generate ppc['branch'] and directly generates branch values
     _build_branch_ppc(net, ppc)
     # adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
@@ -103,22 +101,31 @@ def _pd2ppc(net):
 
     if check_connectivity:
         # sets islands (multiple isolated nodes) out of service
-        isolated_nodes, _, _ = aux._check_connectivity(ppc)
+        if "opf" in mode:
+            isolated_nodes, _, _ = aux._check_connectivity_opf(ppc)
+        else:
+            isolated_nodes, _, _ = aux._check_connectivity(ppc)
         net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
 
     # sets buses out of service, which aren't connected to branches / REF buses
     aux._set_isolated_buses_out_of_service(net, ppc)
 
-    # check if any generators connected to the same bus have different voltage setpoints
-    if mode == "pf":
-        _check_voltage_setpoints_at_same_bus(ppc)
+    _build_gen_ppc(net, ppc)
+
+    if "pf" in mode:
+        _check_for_reference_bus(ppc)
+
+    aux._replace_nans_with_default_limits(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, ppci, net)
 
-    if calculate_voltage_angles:
-        _check_voltage_angles_at_same_bus(net, ppci)
+    if mode == "pf":
+        # check if any generators connected to the same bus have different voltage setpoints
+        _check_voltage_setpoints_at_same_bus(ppc)
+        if calculate_voltage_angles:
+            _check_voltage_angles_at_same_bus(net, ppci)
 
     if mode == "opf":
         # make opf objective
@@ -129,7 +136,7 @@ def _pd2ppc(net):
 
 def _init_ppc(net):
     # init empty ppc
-    ppc = {"baseMVA": net.sn_kva * 1e-3
+    ppc = {"baseMVA": net.sn_mva
         , "version": 2
         , "bus": np.array([], dtype=float)
         , "branch": np.array([], dtype=np.complex128)
@@ -157,7 +164,7 @@ def _ppc2ppci(ppc, ppci, net):
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
-    ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
+    ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
@@ -196,30 +203,9 @@ def _ppc2ppci(ppc, ppci, net):
         ppc["areas"][:, PRICE_REF_BUS] = \
             e2i[np.real(ppc["areas"][:, PRICE_REF_BUS]).astype(int)].copy()
 
-    # reorder gens (and gencosts) in order of increasing bus number
-    sort_gens = ppc['gen'][:, GEN_BUS].argsort()
-    new_gen_positions = np.arange(len(sort_gens))
-    new_gen_positions[sort_gens] = np.arange(len(sort_gens))
-    ppc['gen'] = ppc['gen'][sort_gens,]
-
-    # update gen lookups
-    _is_elements = net["_is_elements"]
-    eg_end = np.sum(_is_elements['ext_grid'])
-    gen_end = eg_end + np.sum(net['gen']['in_service'].values)
-    sgen_end = len(_is_elements["sgen_controllable"]) + gen_end if "sgen_controllable" in _is_elements else gen_end
-    load_end = len(_is_elements["load_controllable"]) + sgen_end if "load_controllable" in _is_elements else sgen_end
-    storage_end = len(_is_elements["storage_controllable"]) + load_end if "storage_controllable" in _is_elements else load_end
-
-    if eg_end > 0:
-        _build_gen_lookups(net, "ext_grid", 0, eg_end, new_gen_positions)
-    if gen_end > eg_end:
-        _build_gen_lookups(net, "gen", eg_end, gen_end, new_gen_positions)
-    if sgen_end > gen_end:
-        _build_gen_lookups(net, "sgen_controllable", gen_end, sgen_end, new_gen_positions)
-    if load_end > sgen_end:
-        _build_gen_lookups(net, "load_controllable", sgen_end, load_end, new_gen_positions)
-    if storage_end > load_end:
-        _build_gen_lookups(net, "storage_controllable", load_end, storage_end, new_gen_positions)
+    # initialize gen lookups
+    for element, (f, t) in net._gen_order.items():
+        _build_gen_lookups(net, element, f, t)
 
     # determine which buses, branches, gens are connected and
     # in-service
@@ -251,7 +237,14 @@ def _ppc2ppci(ppc, ppci, net):
     if 'userfcn' in ppci:
         ppci = run_userfcn(ppci['userfcn'], 'ext2int', ppci)
 
-    ppci["internal"]["ref_gens"] = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
+    if net._pd2ppc_lookups["ext_grid"] is not None:
+        ref_gens = np.setdiff1d(net._pd2ppc_lookups["ext_grid"], np.array([-1]))
+    else:
+        ref_gens = np.array([])
+    if np.any(net.gen.slack.values[net._is_elements["gen"]]):
+        slack_gens = np.array(net.gen.index)[net._is_elements["gen"] & net.gen["slack"].values]
+        ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
+    ppci["internal"]["ref_gens"] = ref_gens.astype(int)
     return ppci
 
 
@@ -261,22 +254,23 @@ def _update_lookup_entries(net, lookup, e2i, element):
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
     aux._write_lookup_to_net(net, element, lookup)
 
+def _build_gen_lookups(net, element, f, t):
+     in_service = net._is_elements[element]
+     if "controllable" in element:
+         pandapower_index = net[element.split("_")[0]].index.values[in_service]
+     else:
+         pandapower_index = net[element].index.values[in_service]
+     ppc_index = np.arange(f, t)
+     if len(pandapower_index) > 0:
+        _init_lookup(net, element, pandapower_index, ppc_index)
 
-def _build_gen_lookups(net, element, ppc_start_index, ppc_end_index, new_gen_pos):
-    # get buses from pandapower and ppc
-    _is_elements = net["_is_elements"]
-    if element in ["sgen_controllable", "load_controllable", "storage_controllable"]:
-        pandapower_index = net["_is_elements"][element].index.values
-    else:
-        pandapower_index = net[element].index.values[net[element]['in_service'].values]
-    ppc_index = new_gen_pos[ppc_start_index: ppc_end_index]
-
+def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # init lookup
     lookup = -np.ones(max(pandapower_index) + 1, dtype=int)
 
     # update lookup
     lookup[pandapower_index] = ppc_index
-    aux._write_lookup_to_net(net, element, lookup)
+    aux._write_lookup_to_net(net, lookup_name, lookup)
 
 
 def _update_ppc(net):

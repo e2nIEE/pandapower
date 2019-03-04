@@ -35,12 +35,14 @@ def add_network(net, vector_group):
                    index=pp.get_free_id(net.line)+1)
     l2 = pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
     pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
-    
-    
-    transformer_type = copy.copy(pp.load_std_type(net, "25 MVA 110/20 kV v1.4.3 and older","trafo"))
-    transformer_type.update({"vsc0_percent": 5, "vscr0_percent": 0.4, "mag0_percent": 10,
-                             "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
-                             "vector_group": vector_group})
+
+    transformer_type = {"i0_percent": 0.071, "pfe_kw": 29, "vkr_percent": 0.282,
+            "sn_mva": 25, "vn_lv_kv": 20.0, "vn_hv_kv": 110.0, "vk_percent": 11.2,
+            "shift_degree": 150, "vector_group": vector_group, "tap_side": "hv",
+            "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
+            "tap_step_percent": 1.5, "tap_phase_shifter": False, "vk0_percent": 5,
+            "vkr0_percent": 0.4, "mag0_percent": 10, "mag0_rx": 0.4, "mag0_rx": 0.4, 
+            "si0_hv_partial": 0.9}
     pp.create_std_type(net, transformer_type, vector_group, "trafo")
     t1 = pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2,
                           index=pp.get_free_id(net.trafo)+1)
@@ -53,7 +55,7 @@ def test_1ph_shortcircuit():
                  "Yy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
                 ,"Yyn": [0.52209347337, 2.5145986133,  1.6737892808,  1.1117955913 ]
                 ,"Yd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
-                ,"YNy": [0.6291931171,  0.74400073149, 0.74563682772, 0.81607276962]        
+                ,"YNy": [0.6291931171,  0.74400073149, 0.74563682772, 0.81607276962]
                 ,"YNyn":[0.62623661918, 2.9829679356,  1.8895041867,  1.2075537026 ]
                 ,"YNd": [0.75701600162, 0.74400073149, 0.74563682772, 0.81607276962]
                 ,"Dy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
@@ -67,7 +69,7 @@ def test_1ph_shortcircuit():
              sc.calc_sc(net, fault="1ph", case="max")
          except:
              raise UserWarning("Did not converge after adding transformer with vector group %s"%vc)
-    
+
     for vc, result in results.items():
         check_results(net, vc, result)
 
@@ -90,12 +92,9 @@ def test_1ph_with_switches():
     pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
                    std_type="unsymmetric_line_type", parallel=2.)
     pp.add_zero_impedance_parameters(net)
-    pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)   
+    pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
     sc.calc_sc(net, fault="1ph", case="max")
     check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
-          
+
 if __name__ == "__main__":
-#    test_1ph_with_switches()
-#    test_iec60909_example_4()
-#    test_1ph_shortcircuit()
-    pytest.main()
+    pytest.main([__file__])

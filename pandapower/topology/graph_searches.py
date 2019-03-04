@@ -414,10 +414,10 @@ def lines_on_path(mg, path):
 
      """
 
-    return elements_on_path(mg, path, "l")
+    return elements_on_path(mg, path, "line")
 
 
-def elements_on_path(mg, path, element="l", multi=True):
+def elements_on_path(mg, path, element="line"):
     """
      Finds all elements that connect a given path of buses.
 
@@ -441,13 +441,14 @@ def elements_on_path(mg, path, element="l", multi=True):
          elements = top.elements_on_path(mg, [4, 5, 6])
 
      """
-
-    if multi:
-        return [mg[b1][b2][0]["key"] for b1, b2 in zip(path, path[1:])
-                if mg[b1][b2][0]["type"] == element]
+    if element not in ["line", "switch", "trafo", "trafo3w"]:
+        raise ValueError("Invalid element type %s"%element)
+    if isinstance(mg, nx.MultiGraph):
+        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() 
+                if edge[0]==element]
     else:
-        return [mg[b1][b2]["key"] for b1, b2 in zip(path, path[1:])
-                if mg[b1][b2]["type"] == element]
+        return [mg.get_edge_data(b1, b2)["key"][1] for b1, b2 in zip(path, path[1:])
+                if mg.get_edge_data(b1, b2)["key"][0]==element]
 
 
 def estimate_voltage_vector(net):
@@ -467,7 +468,7 @@ def estimate_voltage_vector(net):
     trafo_index = trafos.index.tolist()
     while len(trafo_index):
         for tix in trafo_index:
-            trafo = trafos.ix[tix]
+            trafo = trafos.loc[tix]
             if pd.notnull(res_bus.vm_pu.at[trafo.hv_bus]) \
                     and pd.isnull(res_bus.vm_pu.at[trafo.lv_bus]):
                 try:

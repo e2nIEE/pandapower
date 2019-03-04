@@ -62,17 +62,17 @@ def example_simple():
     pp.create_switch(net, bus5, line4, et="l", type="LBS", closed=True)
 
     # create load
-    pp.create_load(net, bus7, p_kw=2000, q_kvar=4000, scaling=0.6, name="load")
+    pp.create_load(net, bus7, p_mw=2, q_mvar=4, scaling=0.6, name="load")
 
     # create generator
-    pp.create_gen(net, bus6, p_kw=-6000, max_q_kvar=3000, min_q_kvar=-3000, vm_pu=1.03,
+    pp.create_gen(net, bus6, p_mw=6, max_q_mvar=3, min_q_mvar=-3, vm_pu=1.03,
                   name="generator")
 
     # create static generator
-    pp.create_sgen(net, bus7, p_kw=-2000, q_kvar=500, name="static generator")
+    pp.create_sgen(net, bus7, p_mw=2, q_mvar=0.5, name="static generator")
 
     # create shunt
-    pp.create_shunt(net, bus3, q_kvar=-960, p_kw=0, name='Shunt')
+    pp.create_shunt(net, bus3, q_mvar=-0.96, p_mw=0, name='Shunt')
 
     return net
 
@@ -190,19 +190,19 @@ def example_multivoltage():
     hv_bus = pp.get_element_index(net, "bus", "Bus DB 2")
     lv_bus = pp.get_element_index(net, "bus", "Bus SB 1")
     pp.create_transformer_from_parameters(net, hv_bus, lv_bus,
-                                          sn_kva=300000, vn_hv_kv=380, vn_lv_kv=110,
-                                          vscr_percent=0.06, vsc_percent=8, pfe_kw=0,
-                                          i0_percent=0, tp_pos=0, shift_degree=0,
+                                          sn_mva=300, vn_hv_kv=380, vn_lv_kv=110,
+                                          vkr_percent=0.06, vk_percent=8, pfe_kw=0,
+                                          i0_percent=0, tap_pos=0, shift_degree=0,
                                           name='EHV-HV-Trafo')
 
     hv_bus = pp.get_element_index(net, "bus", "Bus MV4")
     lv_bus = pp.get_element_index(net, "bus", "Bus LV0")
     pp.create_transformer_from_parameters(net, hv_bus, lv_bus,
-                                          sn_kva=400, vn_hv_kv=10, vn_lv_kv=0.4,
-                                          vscr_percent=1.325, vsc_percent=4,
-                                          pfe_kw=0.95, i0_percent=0.2375, tp_side="hv",
-                                          tp_mid=0, tp_min=-2, tp_max=2,
-                                          tp_st_percent=2.5, tp_pos=0,
+                                          sn_mva=0.4, vn_hv_kv=10, vn_lv_kv=0.4,
+                                          vkr_percent=1.325, vk_percent=4,
+                                          pfe_kw=0.95, i0_percent=0.2375, tap_side="hv",
+                                          tap_neutral=0, tap_min=-2, tap_max=2,
+                                          tap_step_percent=2.5, tap_pos=0,
                                           shift_degree=150, name='MV-LV-Trafo')
 
     # Trafo3w
@@ -211,48 +211,48 @@ def example_multivoltage():
     lv_bus = pp.get_element_index(net, "bus", "Bus MV0")
     pp.create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus,
                                             vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
-                                            sn_hv_kva=40000, sn_mv_kva=15000, sn_lv_kva=25000,
-                                            vsc_hv_percent=10.1, vsc_mv_percent=10.1,
-                                            vsc_lv_percent=10.1, vscr_hv_percent=0.266667,
-                                            vscr_mv_percent=0.033333, vscr_lv_percent=0.04,
+                                            sn_hv_mva=40, sn_mv_mva=15, sn_lv_mva=25,
+                                            vk_hv_percent=10.1, vk_mv_percent=10.1,
+                                            vk_lv_percent=10.1, vkr_hv_percent=0.266667,
+                                            vkr_mv_percent=0.033333, vkr_lv_percent=0.04,
                                             pfe_kw=0, i0_percent=0, shift_mv_degree=30,
-                                            shift_lv_degree=30, tp_side="hv", tp_mid=0,
-                                            tp_min=-8, tp_max=8, tp_st_percent=1.25,
-                                            tp_pos=0, name='HV-MV-MV-Trafo')
+                                            shift_lv_degree=30, tap_side="hv", tap_neutral=0,
+                                            tap_min=-8, tap_max=8, tap_step_percent=1.25,
+                                            tap_pos=0, name='HV-MV-MV-Trafo')
 
     # --- Static generators
 
     # HV
-    pp.create_sgen(net, pp.get_element_index(net, "bus", 'Bus SB 5'), p_kw=-20000,
-                   q_kvar=-4000, sn_kva=45000, type='WP', name='Wind Park')
+    pp.create_sgen(net, pp.get_element_index(net, "bus", 'Bus SB 5'), p_mw=20,
+                   q_mvar=4, sn_mva=45, type='WP', name='Wind Park')
 
     # MV
     mv_sgens = pd.DataFrame()
     mv_sgens['sgen_name'] = ['Biogas plant', 'Further MV Generator', 'Industry Generator',
                              'PV Park']
     mv_sgens['bus'] = ['Bus MV6', 'Bus MV0', 'Bus MV0 20kV', 'Bus MV5']
-    mv_sgens['p'] = [-500, -500, -15000, -2000]
-    mv_sgens['q'] = [0, -50, -3000, -100]
-    mv_sgens['sn'] = [750, 1000, 20000, 5000]
+    mv_sgens['p'] = [0.5, 0.5, 15, 2]
+    mv_sgens['q'] = [0, 0.05, 3, 0.1]
+    mv_sgens['sn'] = [0.75, 1, 20, 5]
     mv_sgens['type'] = ['SGEN', 'SGEN', 'SGEN', 'PV']
 
     for _, sgen in mv_sgens.iterrows():
         bus_idx = pp.get_element_index(net, "bus", sgen.bus)
-        pp.create_sgen(net, bus_idx, p_kw=sgen.p, q_kvar=sgen.q, sn_kva=sgen.sn,
+        pp.create_sgen(net, bus_idx, p_mw=sgen.p, q_mvar=sgen.q, sn_mva=sgen.sn,
                        type=sgen.type, name=sgen.sgen_name)
 
     # LV
     lv_sgens = pd.DataFrame()
     lv_sgens['sgen_name'] = ['PV'] + ['PV(%s)' % i for i in range(1, 6)]
     lv_sgens['bus'] = ['Bus LV%s' % i for i in ['1.1', '1.3', '2.3', '2.4', '2.2.1', '2.2.2']]
-    lv_sgens['p'] = [-6, -5, -5, -5, -5, -5]
+    lv_sgens['p'] = [0.006, 0.005, 0.005, 0.005, 0.005, 0.005]
     lv_sgens['q'] = 0
-    lv_sgens['sn'] = [12, 10, 10, 10, 10, 10]
+    lv_sgens['sn'] = [0.012, 0.01, 0.01, 0.01, 0.01, 0.01]
     lv_sgens['type'] = 'PV'
 
     for _, sgen in lv_sgens.iterrows():
         bus_idx = pp.get_element_index(net, "bus", sgen.bus)
-        pp.create_sgen(net, bus_idx, p_kw=sgen.p, q_kvar=sgen.q, sn_kva=sgen.sn,
+        pp.create_sgen(net, bus_idx, p_mw=sgen.p, q_mvar=sgen.q, sn_mva=sgen.sn,
                        type=sgen.type, name=sgen.sgen_name)
 
     # --- Loads
@@ -261,24 +261,24 @@ def example_multivoltage():
     hv_loads = pd.DataFrame()
     hv_loads['load_name'] = ['MV Net %s' % i for i in range(5)]
     hv_loads['bus'] = ['Bus SB 4', 'Bus HV1', 'Bus HV2', 'Bus HV3', 'Bus HV4']
-    hv_loads['p'] = 38000
-    hv_loads['q'] = 6000
+    hv_loads['p'] = 38
+    hv_loads['q'] = 6
 
     for _, load in hv_loads.iterrows():
         bus_idx = pp.get_element_index(net, "bus", load.bus)
-        pp.create_load(net, bus_idx, p_kw=load.p, q_kvar=load.q, name=load.load_name)
+        pp.create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
 
     # MV
     mv_loads = pd.DataFrame()
     mv_loads['load_name'] = ['Further MV-Rings', 'Industry Load'] + ['LV Net %s' % i for i in
                                                                      [1, 2, 3, 5, 6, 7]]
     mv_loads['bus'] = ['Bus MV0', 'Bus MV0 20kV'] + ['Bus MV%s' % i for i in [1, 2, 3, 5, 6, 7]]
-    mv_loads['p'] = [6000, 18000, 400, 400, 400, 400, 400, 400]
-    mv_loads['q'] = [2000, 4000, 100, 60, 60, 60, 60, 60]
+    mv_loads['p'] = [6, 18, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+    mv_loads['q'] = [2, 4, 0.1, 0.06, 0.06, 0.06, 0.06, 0.06]
 
     for _, load in mv_loads.iterrows():
         bus_idx = pp.get_element_index(net, "bus", load.bus)
-        pp.create_load(net, bus_idx, p_kw=load.p, q_kvar=load.q, name=load.load_name)
+        pp.create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
 
     # LV
     lv_loads = pd.DataFrame()
@@ -287,17 +287,17 @@ def example_multivoltage():
         'Residential Load%s' % i for i in idx[0:5]] + ['Rural Load%s' % i for i in idx[0:6]]
     lv_loads['bus'] = ['Bus LV%s' % i for i in ['0', '1.1', '1.2', '1.3', '1.4', '1.5', '2.1',
                        '2.2', '2.3', '2.4', '2.2.1', '2.2.2']]
-    lv_loads['p'] = [100] + [10]*11
-    lv_loads['q'] = [10] + [3]*11
+    lv_loads['p'] = [0.1] + [0.01]*11
+    lv_loads['q'] = [0.01] + [0.03]*11
 
     for _, load in lv_loads.iterrows():
         bus_idx = pp.get_element_index(net, "bus", load.bus)
-        pp.create_load(net, bus_idx, p_kw=load.p, q_kvar=load.q, name=load.load_name)
+        pp.create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
 
     # --- Other
 
     # Shunt
-    pp.create_shunt(net, pp.get_element_index(net, "bus", 'Bus HV1'), p_kw=0, q_kvar=-960,
+    pp.create_shunt(net, pp.get_element_index(net, "bus", 'Bus HV1'), p_mw=0, q_mvar=-0.96,
                     name='Shunt')
 
     # ExtGrids
@@ -305,20 +305,20 @@ def example_multivoltage():
                        va_degree=0, name='External grid', s_sc_max_mva=10000, rx_max=0.1,
                        rx_min=0.1)
     # Gen
-    pp.create_gen(net, pp.get_element_index(net, "bus", 'Bus HV4'), vm_pu=1.03, p_kw=-1e5,
+    pp.create_gen(net, pp.get_element_index(net, "bus", 'Bus HV4'), vm_pu=1.03, p_mw=100,
                   name='Gas turbine')
 
     # Impedance
     pp.create_impedance(net, pp.get_element_index(net, "bus", 'Bus HV3'),
                         pp.get_element_index(net, "bus", 'Bus HV1'), rft_pu=0.074873,
-                        xft_pu=0.198872, sn_kva=100000, name='Impedance')
+                        xft_pu=0.198872, sn_mva=100, name='Impedance')
 
     # xwards
-    pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV3'), ps_kw=23942,
-                    qs_kvar=-12241.87, pz_kw=2814.571, qz_kvar=0, r_ohm=0, x_ohm=12.18951,
+    pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV3'), ps_mw=23.942,
+                    qs_mvar=-12.24187, pz_mw=2.814571, qz_mvar=0, r_ohm=0, x_ohm=12.18951,
                     vm_pu=1.02616, name='XWard 1')
-    pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV1'), ps_kw=3776,
-                    qs_kvar=-7769.979, pz_kw=9174.917, qz_kvar=0, r_ohm=0, x_ohm=50.56217,
+    pp.create_xward(net, pp.get_element_index(net, "bus", 'Bus HV1'), ps_mw=3.776,
+                    qs_mvar=-7.769979, pz_mw=9.174917, qz_mvar=0, r_ohm=0, x_ohm=50.56217,
                     vm_pu=1.024001, name='XWard 2')
 
     # --- Switches

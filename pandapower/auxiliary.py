@@ -29,12 +29,14 @@
 from collections import MutableMapping
 
 import numpy as np
+import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
 import six
 
 from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD
+from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
+from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
     from numba import jit
@@ -172,8 +174,8 @@ class ADict(dict, MutableMapping):
             'register').
         """
         return (
-            isinstance(key, six.string_types) and
-            not hasattr(cls, key)
+                isinstance(key, six.string_types) and
+                not hasattr(cls, key)
         )
 
 
@@ -275,18 +277,69 @@ def _get_values(source, selection, lookup):
     return v
 
 
+def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
+    isolated_nodes = np.where(bus_not_reachable)[0]
+    if len(isolated_nodes) > 0:
+        logger.debug("There are isolated buses in the network!")
+        # set buses in ppc out of service
+        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
+
+        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+        if pus > 0 or qus > 0:
+            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+    else:
+        pus = qus = 0
+
+    return isolated_nodes, pus, qus, ppc
+
+
+def _check_connectivity_opf(ppc):
+    """
+    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are in net.
+    :param ppc: pypower case file
+    :return:
+    """
+    br_status = ppc['branch'][:, BR_STATUS] == True
+    nobranch = ppc['branch'][br_status, :].shape[0]
+    nobus = ppc['bus'].shape[0]
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(int)
+
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch),
+                                       (bus_from, bus_to)),
+                                      shape=(nobus, nobus))
+
+    bus_not_reachable = np.ones(ppc["bus"].shape[0], dtype=bool)
+    slack_set = set(slacks)
+    for slack in slacks:
+        if ppc['bus'][slack, BUS_TYPE] == PV:
+            continue
+        reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, slack, False, False)
+        bus_not_reachable[reachable] = False
+        reach_set = set(reachable)
+        intersection = slack_set & reach_set
+        if len(intersection) > 1:
+            # if slack is in reachable other slacks are connected to this one. Set it to Gen bus
+            demoted_slacks = list(intersection - {slack})
+            ppc['bus'][demoted_slacks, BUS_TYPE] = PV
+
+    isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
+    return isolated_nodes, pus, qus
+
+
 def _check_connectivity(ppc):
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pypower case file
     :return:
     """
-    br_status=ppc['branch'][:, BR_STATUS]==True
+    br_status = ppc['branch'][:, BR_STATUS] == True
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
     bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
-
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
@@ -303,18 +356,7 @@ def _check_connectivity(ppc):
     # if so: bus_not_reachable = np.hstack([ppc['bus'][:, BUS_TYPE] != 4, np.array([False])])
     bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
     bus_not_reachable[reachable] = False
-    isolated_nodes = np.where(bus_not_reachable)[0]
-    if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network!")
-        # set buses in ppc out of service
-        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
-
-        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
-        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
-        if pus > 0 or qus > 0:
-            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
-    else:
-        pus = qus = 0
+    isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
     return isolated_nodes, pus, qus
 
 
@@ -325,7 +367,7 @@ def _python_set_elements_oos(ti, tis, bis, lis):  # pragma: no cover
 
 
 def _python_set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, bus_lookup):  # pragma: no cover
-    for k in range(len(bus_lookup)):
+    for k in range(len(bus_in_service)):
         if ppc_bus_isolated[bus_lookup[k]]:
             bus_in_service[k] = False
 
@@ -342,6 +384,7 @@ except RuntimeError:
 
 def _select_is_elements_numba(net, isolated_nodes=None):
     # is missing sgen_controllable and load_controllable
+
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
@@ -358,31 +401,32 @@ def _select_is_elements_numba(net, isolated_nodes=None):
             element_df = net[element]
             set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
                              bus_in_service, element_in_service)
+        if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
+            if "controllable" in net[element]:
+                controllable = net[element].controllable.fillna(False).values.astype(bool)
+                controllable_is = controllable & element_in_service
+                if controllable_is.any():
+                    is_elements["%s_controllable" % element] = controllable_is
+                    element_in_service = element_in_service & ~controllable_is
         is_elements[element] = element_in_service
+
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
-
-    if net["_options"]["mode"] == "opf" and "_is_elements" in net and net._is_elements is not None:
-        if "load_controllable" in net._is_elements:
-            is_elements["load_controllable"] = net._is_elements["load_controllable"]
-        if "sgen_controllable" in net._is_elements:
-            is_elements["sgen_controllable"] = net._is_elements["sgen_controllable"]
-        if "storage_controllable" in net._is_elements:
-            is_elements["storage_controllable"] = net._is_elements["storage_controllable"]
     return is_elements
 
 
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
-                     copy_constraints_to_ppc, r_switch, enforce_q_lims, recycle, delta=1e-10,
+                     r_switch, enforce_q_lims, recycle, delta=1e-10,
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
-                     init_va_degree=0, consider_line_temperature=False):
+                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
+                     neglect_open_switch_branches=False, consider_line_temperature=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
     if recycle is None:
         recycle = dict(_is_elements=False, ppc=False, Ybus=False, bfsw=False)
 
-    init_results = (isinstance(init_vm_pu, str)     and (init_vm_pu == "results")) or \
+    init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
 
     options = {
@@ -390,7 +434,6 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "trafo_model": trafo_model,
         "check_connectivity": check_connectivity,
         "mode": mode,
-        "copy_constraints_to_ppc": copy_constraints_to_ppc,
         "r_switch": r_switch,
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
@@ -400,7 +443,10 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "trafo3w_losses": trafo3w_losses,
         "init_vm_pu": init_vm_pu,
         "init_va_degree": init_va_degree,
-        "init_results": init_results
+        "init_results": init_results,
+        "p_lim_default": p_lim_default,
+        "q_lim_default": q_lim_default,
+        "neglect_open_switch_branches": neglect_open_switch_branches
     }
     _add_options(net, options)
 
@@ -421,19 +467,19 @@ def _check_gen_index_and_print_warning_if_high(net, n_max=1e7):
     if max_gen >= n_max and len(net["gen"]) < n_max:
         logger.warning(
             "Maximum generator index is high (%i). You should avoid high generator indices because of perfomance reasons."
-            #" Try resetting the bus indices with the toolbox function "
-            #"create_continous_bus_index()"
+            # " Try resetting the bus indices with the toolbox function "
+            # "create_continous_bus_index()"
             % max_gen)
 
 
-def _add_pf_options(net, tolerance_kva, trafo_loading, numba, ac,
+def _add_pf_options(net, tolerance_mva, trafo_loading, numba, ac,
                     algorithm, max_iteration, **kwargs):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
     options = {
-        "tolerance_kva": tolerance_kva,
+        "tolerance_mva": tolerance_mva,
         "trafo_loading": trafo_loading,
         "numba": numba,
         "ac": ac,
@@ -493,28 +539,6 @@ def _add_options(net, options):
 
 
 def _clean_up(net, res=True):
-    # mode = net.__internal_options["mode"]
-
-    # set internal selected _is_elements to None. This way it is not stored (saves disk space)
-    # net._is_elements = None
-
-    mode = net._options["mode"]
-    if res:
-        res_bus = net["res_bus_sc"] if mode == "sc" else net["res_bus"]
-    if len(net["trafo3w"]) > 0:
-        buses_3w = net.trafo3w["ad_bus"].values
-        net["bus"].drop(buses_3w, inplace=True)
-        net["trafo3w"].drop(["ad_bus"], axis=1, inplace=True)
-        if res:
-            res_bus.drop(buses_3w, inplace=True)
-
-    if len(net["xward"]) > 0:
-        xward_buses = net["xward"]["ad_bus"].values
-        net["bus"].drop(xward_buses, inplace=True)
-        net["xward"].drop(["ad_bus"], axis=1, inplace=True)
-        if res:
-            res_bus.drop(xward_buses, inplace=True)
-
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
         net.gen.drop(dc_gens, inplace=True)
@@ -559,3 +583,192 @@ def _check_if_numba_is_installed(numba):
         numba = False
 
     return numba
+
+
+def _add_auxiliary_elements(net):
+    if len(net.dcline) > 0:
+        _add_dcline_gens(net)
+
+
+def _add_dcline_gens(net):
+    from pandapower.create import create_gen
+    for dctab in net.dcline.itertuples():
+        pfrom = dctab.p_mw
+        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
+        pmax = dctab.max_p_mw
+        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=0, max_p_mw=pmax,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+                   in_service=dctab.in_service)
+        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-pmax, max_p_mw=0,
+                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+                   in_service=dctab.in_service)
+
+
+def _replace_nans_with_default_limits(net, ppc):
+    qlim = net._options["q_lim_default"]
+    plim = net._options["p_lim_default"]
+
+    for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
+                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
+        limits = ppc[matrix][:, [column]]
+        ncn.copyto(limits, default, where=np.isnan(limits))
+        ppc[matrix][:, [column]] = limits
+
+
+def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
+                        max_iteration, tolerance_mva, trafo_model,
+                        trafo_loading, enforce_q_lims, check_connectivity,
+                        voltage_depend_loads, passed_parameters=None, **kwargs):
+    """
+    Inits _options in net for runpp.
+    """
+    overrule_options = {}
+    if passed_parameters is not None:
+        overrule_options = {key: val for key, val in net.user_pf_options.items()
+                            if key not in passed_parameters.keys()}
+
+    kwargs.update(overrule_options)
+
+    trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
+    v_debug = kwargs.get("v_debug", False)
+    delta_q = kwargs.get("delta_q", 0)
+    r_switch = kwargs.get("r_switch", 0.0)
+    numba = kwargs.get("numba", True)
+    init_vm_pu = kwargs.get("init_vm_pu", None)
+    init_va_degree = kwargs.get("init_va_degree", None)
+    recycle = kwargs.get("recycle", None)
+    neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
+    if "init" in overrule_options:
+        init = overrule_options["init"]
+
+    # check if numba is available and the corresponding flag
+    if numba:
+        numba = _check_if_numba_is_installed(numba)
+
+    if voltage_depend_loads:
+        if not (np.any(net["load"]["const_z_percent"].values) or np.any(net["load"]["const_i_percent"].values)):
+            voltage_depend_loads = False
+
+    if algorithm not in ['nr', 'bfsw', 'iwamoto_nr'] and voltage_depend_loads == True:
+        logger.warning("voltage-dependent loads not supported for {0} power flow algorithm -> "
+                       "loads will be considered as constant power".format(algorithm))
+
+    ac = True
+    mode = "pf"
+    if calculate_voltage_angles == "auto":
+        calculate_voltage_angles = False
+        is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
+        if any(is_hv_bus) > 0:
+            line_buses = set(net.line.from_bus.values) & set(net.line.to_bus.values)
+            hv_buses = net.bus.index[is_hv_bus]
+            if any(a in line_buses for a in hv_buses):
+                calculate_voltage_angles = True
+
+    default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30, "fdbx": 30}
+    if max_iteration == "auto":
+        max_iteration = default_max_iteration[algorithm]
+
+    if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
+        raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and 'init_va_degree'.")
+
+    init_from_results = init == "results" or (isinstance(init_vm_pu, str) and init_vm_pu=="results") \
+                                or (isinstance(init_va_degree, str) and init_va_degree=="results")
+    if init_from_results and len(net.res_bus) == 0:
+        init = "auto"
+        init_vm_pu = None
+        init_va_degree = None
+
+    if init == "auto":
+        if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
+            init_va_degree = "dc" if calculate_voltage_angles else "flat"
+        if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
+            init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
+                         (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
+    elif init == "dc":
+        init_vm_pu = "flat"
+        init_va_degree = "dc"
+    else:
+        init_vm_pu = init
+        init_va_degree = init
+
+
+    # init options
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=voltage_depend_loads, delta=delta_q,
+                     trafo3w_losses=trafo3w_losses, neglect_open_switch_branches=neglect_open_switch_branches)
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
+                    v_debug=v_debug)
+    net._options.update(overrule_options)
+
+
+def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity, r_switch, trafo3w_losses):
+    ac = False
+    numba = True
+    mode = "pf"
+    init = 'flat'
+
+    numba = _check_if_numba_is_installed(numba)
+
+    # the following parameters have no effect if ac = False
+    calculate_voltage_angles = True
+    enforce_q_lims = False
+    algorithm = None
+    max_iteration = None
+    tolerance_mva = None
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
+    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
+                    numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
+
+
+def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, r_switch, delta, init, numba,
+                         trafo3w_losses):
+    if numba:
+        numba = _check_if_numba_is_installed(numba)
+    mode = "opf"
+    ac = True
+    trafo_model = "t"
+    trafo_loading = 'current'
+    enforce_q_lims = True
+    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
+
+
+def _init_rundcopp_options(net, check_connectivity, r_switch, delta, trafo3w_losses):
+    mode = "opf"
+    ac = False
+    init = "flat"
+    trafo_model = "t"
+    trafo_loading = 'current'
+    calculate_voltage_angles = True
+    enforce_q_lims = True
+    recycle = dict(_is_elements=False, ppc=False, Ybus=False)
+
+    # net.__internal_options = {}
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac)
+    pass

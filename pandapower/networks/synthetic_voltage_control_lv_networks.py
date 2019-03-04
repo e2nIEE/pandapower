@@ -18,11 +18,11 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
 
     Neccessary assumptions, in addition to the paper above:
 
-    According to Lindner the household loads are 5.1 kW and the special loads are 7.9 kW. \
+    According to Lindner the household loads are 5.1 mw and the special loads are 7.9 kW. \
     The user is suggested to assume load distribution and load profile generation. The line
     parameters according to the given types are received from pandapower standard types and
-    literatur (as stated in the code). Transformer parameters, except the given 'vsc_percent',
-    'sn_kva' and voltage levels, are based the pandapower standard type data.
+    literatur (as stated in the code). Transformer parameters, except the given 'vk_percent',
+    'sn_mva' and voltage levels, are based the pandapower standard type data.
 
     OPTIONAL:
 
@@ -103,21 +103,21 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     # trafos
     if network_class == "rural_1":
         data = net.std_types['trafo']['0.25 MVA 20/0.4 kV']
-        data['sn_kva'] = 160
+        data['sn_mva'] = 0.16
         data['pfe_kw'] = 0.62
         data['i0_percent'] = 0.31
-        data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
-        data['vsc_percent'] = 4
+        data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
+        data['vk_percent'] = 4
         pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
     elif network_class in ["rural_2", "village_1"]:
         data = net.std_types['trafo']['0.25 MVA 20/0.4 kV']
-        data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
-        data['vsc_percent'] = 4
+        data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
+        data['vk_percent'] = 4
         pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
     elif network_class in ["suburb_1", "village_2"]:
         data = net.std_types['trafo']['0.4 MVA 20/0.4 kV']
-        data['vscr_percent'] = data['vscr_percent'] * 4 / data['vsc_percent']
-        data['vsc_percent'] = 4
+        data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
+        data['vk_percent'] = 4
         pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
 
     # create mv connection
@@ -157,7 +157,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
                            std_type=lines.std_type)
         # load
         for i in house_buses[i]:
-            pp.create_load(net, i, p_kw=5.1)
+            pp.create_load(net, i, p_mw=5.1e-3)
 
     # direct loads and DEA
     if network_class == "rural_1":
@@ -181,9 +181,9 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
         DER = [(1, 1, 9.36), (1, 2, 79.12), (7, 7, 30), (8, 7, 18.47), (8, 15, 9.54),
                (10, 10, 14.4)]
     for i in special_load:
-        pp.create_load(net, lv_buses[i[0]-1][i[1]-1], p_kw=7.9)
+        pp.create_load(net, lv_buses[i[0]-1][i[1]-1], p_mw=7.9e-3)
     for i in DER:
-        pp.create_sgen(net, house_buses[i[0]-1][i[1]-1], p_kw=-i[2])
+        pp.create_sgen(net, house_buses[i[0]-1][i[1]-1], p_mw=i[2]*1e-3)
 
     # set bus geo data
     bus_geo = {
