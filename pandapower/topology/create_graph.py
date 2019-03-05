@@ -12,7 +12,7 @@ except ImportError:
     import logging
 
 from pandapower.pd2ppc import _init_ppc
-from pandapower.auxiliary import _init_runpp_options, _select_is_elements_numba 
+from pandapower.auxiliary import _init_nx_options, _select_is_elements_numba 
 from pandapower.idx_bus import BASE_KV
 
 from pandapower.build_branch import _calc_impedance_parameters_from_dataframe,\
@@ -90,7 +90,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         mg = nx.MultiGraph()
     else:
         mg = nx.Graph()
-    mg.add_nodes_from(net.bus.index)
+    for b in net.bus.index:
+        mg.add_node(b)
    
     open_sw = net.switch.closed.values == False   
     if calc_z:
@@ -213,7 +214,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                     del mg[b][i]  # networkx versions < 2.0
                 except:
                     del mg._adj[b][i]  # networkx versions 2.0
-    mg.remove_nodes_from(net.bus.index[~net.bus.in_service.values])
+    for b in net.bus.index[~net.bus.in_service.values]:
+        mg.remove_node(b)
     return mg
 
 
@@ -251,12 +253,7 @@ def init_par(tab, calc_z):
             
 
 def get_nx_ppc(net):
-    _init_runpp_options(net, algorithm='nr', calculate_voltage_angles="auto",
-                        init="auto", max_iteration="auto", tolerance_mva=1e-8,
-                        trafo_model="t", trafo_loading="current",
-                        enforce_q_lims=False, check_connectivity=True,
-                        voltage_depend_loads=True)
-    net["_is_elements"] = _select_is_elements_numba(net)
+    _init_nx_options(net)
     ppc = _init_ppc(net)
     _build_bus_ppc(net, ppc)
     return ppc

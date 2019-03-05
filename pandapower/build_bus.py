@@ -102,8 +102,7 @@ class DisjointSet(dict):
         p2 = self.find(item2)
         self[p1] = p2
 
-
-def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_switch):
+def create_consecutive_bus_lookup(net, bus_index):
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     consec_buses = np.arange(len(bus_index))
     # bus_lookup as dict:
@@ -112,6 +111,10 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_swi
     # bus lookup as mask from pandapower -> pypower
     bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
     bus_lookup[bus_index] = consec_buses
+    return bus_lookup    
+
+def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_switch):
+    bus_lookup = create_consecutive_bus_lookup(net, bus_index)
 
     # if there are any closed bus-bus switches update those entries
     slidx = ((net["switch"]["closed"].values == 1) &
@@ -234,16 +237,20 @@ def _build_bus_ppc(net, ppc):
     else:
         bus_index = net["bus"].index.values
     # get in service elements
-    _is_elements = net["_is_elements"]
-    eg_is_mask = _is_elements['ext_grid']
-    gen_is_mask = _is_elements['gen']
-    bus_is_idx = _is_elements['bus_is_idx']
 
-    if numba and not r_switch:
-        bus_lookup = create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_mask, eg_is_mask)
+
+    if mode == "nx":
+        bus_lookup = create_consecutive_bus_lookup(net, bus_index)
     else:
-        bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
-                                       gen_is_mask, eg_is_mask, r_switch)
+        _is_elements = net["_is_elements"]
+        eg_is_mask = _is_elements['ext_grid']
+        gen_is_mask = _is_elements['gen']
+        bus_is_idx = _is_elements['bus_is_idx']
+        if numba and not r_switch:
+            bus_lookup = create_bus_lookup_numba(net, bus_is_idx, bus_index, gen_is_mask, eg_is_mask)
+        else:
+            bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
+                                           gen_is_mask, eg_is_mask, r_switch)
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
     ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=float)
@@ -269,7 +276,8 @@ def _build_bus_ppc(net, ppc):
     else:
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
-    set_reference_buses(net, ppc, bus_lookup)
+    if mode != "nx":
+        set_reference_buses(net, ppc, bus_lookup)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
