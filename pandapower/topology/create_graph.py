@@ -105,8 +105,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         if respect_switches:
             mask = (net.switch.et.values == "l") & open_sw
             if mask.any():
-                open_switch = np.in1d(indices[:, INDEX], net.switch.element.values[mask])
-                in_service &= ~open_switch
+                open_lines = net.switch.element.values[mask]
+                open_lines_mask = np.in1d(indices[:, INDEX], open_lines)
+                in_service &= ~open_lines_mask
 
         parameter[:, WEIGHT] = line.length_km.values
         if calc_z:
@@ -142,8 +143,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
             if respect_switches:
                 mask = (net.switch.et.values == "t") & open_sw
                 if mask.any():
-                    open_switch = np.in1d(indices[:, INDEX], net.switch.element.values[mask])
-                    in_service &= ~open_switch
+                    open_trafos = net.switch.element.values[mask]
+                    open_trafos_mask = np.in1d(indices[:, INDEX], open_trafos)
+                    in_service &= ~open_trafos_mask
 
             if calc_z:
                 baseR = get_baseR(net, ppc, trafo.hv_bus.values)
@@ -164,21 +166,22 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                 baseR = get_baseR(net, ppc, trafo3w.hv_bus.values)
             open_switch = np.zeros(trafo3w.shape[0], dtype=bool)
             if respect_switches:
+                #for trafo3ws the bus where the open switch is located also matters. Open switches
+                #are therefore defined by the tuple (idx, b) where idx is the trafo3w index and b
+                #is the bus. To make searching for the open 3w trafos a 1d problem, open 3w switches
+                #are represented with imaginary numbers as idx + b*1j
                 mask = (net.switch.et.values == "t3") & open_sw
-                if mask.any():
-                    open_switch = np.in1d(net.trafo3w.index, net.switch.element.values[mask])
-                    open_element_bus_combos = net.switch[["element", "bus"]].values[mask].tolist()
+                open_trafo3w_index = net.switch.element.values[mask]
+                open_trafo3w_buses = net.switch.bus.values[mask]
+                open_trafo3w = (open_trafo3w_index + open_trafo3w_buses*1j).flatten()
             for f, t in combinations(sides, 2):
                 indices, parameter, in_service = init_par(trafo3w, calc_z)
                 indices[:, F_BUS] = trafo3w["%s_bus"%f].values
-                indices[:, T_BUS] = trafo3w["%s_bus"%t].values
-                
-                if open_switch.any():
-                    no_branch_at = [([b[INDEX], b[F_BUS]] in open_element_bus_combos or
-                                     [b[INDEX], b[T_BUS]] in open_element_bus_combos) 
-                                      for b in indices[open_switch]]
-                    in_service[open_switch] = ~np.array(no_branch_at)
-                
+                indices[:, T_BUS] = trafo3w["%s_bus"%t].values                
+                if respect_switches and len(open_trafo3w):
+                    for BUS in [F_BUS, T_BUS]:
+                        open_switch = np.in1d(indices[:, INDEX] + indices[:, BUS]*1j, open_trafo3w)
+                        in_service &= ~open_switch
                 if calc_z:     
                     parameter[:, BR_R] = (r[f] + r[t]) * baseR
                     parameter[:, BR_X] = (x[f] + x[t]) * baseR
