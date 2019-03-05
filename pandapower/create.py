@@ -351,8 +351,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
 def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
                zone=None, in_service=True, max_vm_pu=nan,
                min_vm_pu=nan, coords=None, **kwargs):
-    """create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", \
-                  zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
+    """
     Adds one bus in table net["bus"].
 
     Busses are the nodes of the network that all other elements connect to.
@@ -430,8 +429,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b",
 
 def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
                  zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None):
-    """create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None, \
-                    zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan)
+    """
     Adds several buses in table net["bus"] at once.
 
     Busses are the nodal points of the network that all other elements connect to.
@@ -519,10 +517,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
                 name=None, scaling=1., index=None,
                 in_service=True, type=None, max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan):
-    """create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan, \
-                   name=None, scaling=1., index=None, \
-                   in_service=True, type=None, max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, \
-                   min_q_mvar=nan, controllable=nan)
+    """
     Adds one load in table net["load"].
 
     All loads are modelled in the consumer system, meaning load is positive and generation is
@@ -671,10 +666,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
                 current_source=True):
-    """create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None, \
-                scaling=1., type=None, in_service=True, max_p_mw=nan, min_p_mw=nan, \
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, \
-                current_source=True)
+    """
     Adds one static generator in table net["sgen"].
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
@@ -840,10 +832,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
                    name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
                    min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable = nan):
-    """create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0, \
-                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan, \
-                   min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable = nan)
-
+    """
     Adds a storage to the network.
 
     In order to simulate a storage system it is possible to use sgens or loads to model the
@@ -972,9 +961,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, scaling=1., type=None, slack=False,
                controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True):
-    """create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan, \
-               min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, scaling=1., type=None, \
-               controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_pu=nan, cos_phi=nan, in_service=True)
+    """
     Adds a generator to the network.
 
     Generators are always modelled as voltage controlled PV nodes, which is why the input parameter
@@ -1104,10 +1091,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
                     s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
                     max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
                     index=None, **kwargs):
-    """create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,\
-                    s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,\
-                    max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,\
-                    index=None)
+    """
     Creates an external grid connection.
 
     External grids represent the higher level power grid connection and are modelled as the slack
@@ -1222,8 +1206,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
                 df=1., parallel=1, in_service=True, max_loading_percent=nan):
-    """ create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None, \
-                df=1., parallel=1, in_service=True, max_loading_percent=nan)
+    """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
 
@@ -1321,10 +1304,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
                                 max_loading_percent=nan, **kwargs):
-    """create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km, \
-                                c_nf_per_km, max_i_ka, name=None, index=None, type=None, \
-                                geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,\
-                                max_loading_percent=nan, **kwargs)
+    """
     Creates a line element in net["line"] from line parameters.
 
     INPUT:
@@ -1421,8 +1401,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1.):
-    """create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True, \
-                       index=None, max_loading_percent=nan, parallel=1, df=1.)
+    """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1533,13 +1512,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        tap_pos=nan, tap_phase_shifter=False, in_service=True,
                                        name=None, index=None, max_loading_percent=nan, parallel=1,
                                        df=1., **kwargs):
-    """create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv, \
-                                       vkr_percent, vk_percent, pfe_kw, i0_percent, \
-                                       shift_degree=0, tap_side=None, tap_neutral=nan, tap_max=nan, \
-                                       tap_min=nan, tap_step_percent=nan, tap_step_degree=nan, \
-                                       tap_pos=nan, tap_phase_shifter=False, in_service=True, \
-                                       name=None, index=None, max_loading_percent=nan, parallel=1, \
-                                       df=1., **kwargs)
+    """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
 
@@ -1665,9 +1638,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan,
                          tap_at_star_point=False):
-    """create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan, \
-                         in_service=True, index=None, max_loading_percent=nan, \
-                         tap_at_star_point=False)
+    """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
 
@@ -1781,15 +1752,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
                                          tap_neutral=nan, tap_max=nan,
                                          tap_min=nan, name=None, in_service=True, index=None,
                                          max_loading_percent=nan, tap_at_star_point=False):
-    """create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, vn_mv_kv, vn_lv_kv, \
-                                         sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent, \
-                                         vk_mv_percent, vk_lv_percent, vkr_hv_percent, \
-                                         vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent, \
-                                         shift_mv_degree=0., shift_lv_degree=0., tap_side=None, \
-                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan, \
-                                         tap_neutral=nan, tap_max=nan, \
-                                         tap_min=nan, name=None, in_service=True, index=None, \
-                                         max_loading_percent=nan, tap_at_star_point=False)
+    """
     Adds a three-winding transformer in table net["trafo3w"].
 
     Input:
@@ -2009,8 +1972,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
 
 def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
                  in_service=True, index=None):
-    """create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=nan, name=None,
-                 in_service=True, index=None)
+    """
     Creates a shunt element
 
     INPUT:
@@ -2275,10 +2237,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
                   index=None, name=None, max_p_mw=nan, min_q_from_mvar=nan,
                   min_q_to_mvar=nan, max_q_from_mvar=nan, max_q_to_mvar=nan,
                   in_service=True):
-    """create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu, vm_to_pu, \
-                  index=None, name=None, max_p_mw=nan, min_q_from_mvar=nan, \
-                  min_q_to_mvar=nan, max_q_from_mvar=nan, max_q_to_mvar=nan, \
-                  in_service=True)
+    """
     Creates a dc line.
 
     INPUT:
@@ -2469,7 +2428,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
             are possible
 
-        **data_points** - (numpy array) Numpy array containing n data points (see example)
+        **data_points** - (numpy array) Numpy array containing data points and slopes (see example)
 
     OPTIONAL:
         **type** - (string) - Type of cost ["p", "q"] are allowed
@@ -2481,12 +2440,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
-        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
+        The cost function is given by the x-values x1 and x2 with the slope m between those points. The constant part
+        b of a linear function y = m*x + b can be neglected for OPF purposes. If the PWL function contains more than 1
+        interval, the intervals are put together in a way, where the right point of the left interval equals the left
+        point of the right interval.
 
-    NOTE:
-      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
-          supported.
-      - costs for storages are positive per definition (similar to sgen costs)
+        create_pwl_cost(net, 0, "load", [(x1, x2, m)])
     """
 
     if index is None:
@@ -2502,6 +2461,48 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
                            cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+    """
+    Creates an entry for polynimoal costs for an element. The currently supported elements are
+     - Generator{}
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
+     - Storage
+
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+            are possible
+
+        **cp1_eur_per_mw** (float) - Linear costs per MW
+
+        **cp0_eur=0** (float) - Offset active power costs in euro
+
+        **cq1_eur_per_mvar=0** (float) - Linear costs per Mvar
+
+        **cq0_eur=0** (float) - Offset reactive power costs in euro
+
+        **cp2_eur_per_mw2=0** (float) - Quadratic costs per MW
+
+        **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
+
+    OPTIONAL:
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        The polynomial cost function is given by the linear and quadratic cost coefficients.
+
+        create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
+    """
+
     if index is None:
         index = get_free_id(net["poly_cost"])
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",

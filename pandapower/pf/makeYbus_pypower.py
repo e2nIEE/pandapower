@@ -8,14 +8,15 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 """Builds the bus admittance matrix and branch admittance matrices.
 """
 
-from numpy import ones, conj, nonzero, any, exp, pi, r_, real
+from numpy import ones, conj, nonzero, any, exp, pi, hstack, real
+from scipy.sparse import csr_matrix
+
 from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
 from pandapower.idx_bus import GS, BS
-from scipy.sparse import csr_matrix
+
 
 def makeYbus(baseMVA, bus, branch):
     """Builds the bus admittance matrix and branch admittance matrices.
@@ -32,8 +33,8 @@ def makeYbus(baseMVA, bus, branch):
     @author: Richard Lincoln
     """
     ## constants
-    nb = bus.shape[0]          ## number of buses
-    nl = branch.shape[0]       ## number of lines
+    nb = bus.shape[0]  ## number of buses
+    nl = branch.shape[0]  ## number of lines
 
     ## for each branch, compute the elements of the branch admittance matrix where
     ##
@@ -51,8 +52,8 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = real(branch[:, F_BUS]).astype(int)                           ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)                           ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(int)  ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int)  ## list of "to" buses
     ## connection matrix for line & from buses
     Cf = csr_matrix((ones(nl), (range(nl), f)), (nl, nb))
     ## connection matrix for line & to buses
@@ -60,16 +61,16 @@ def makeYbus(baseMVA, bus, branch):
 
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end
-    i = r_[range(nl), range(nl)]                   ## double set of row indices
+    i = hstack([range(nl), range(nl)])  ## double set of row indices
 
-    Yf = csr_matrix((r_[Yff, Yft], (i, r_[f, t])), (nl, nb))
-    Yt = csr_matrix((r_[Ytf, Ytt], (i, r_[f, t])), (nl, nb))
+    Yf = csr_matrix((hstack([Yff, Yft]), (i, hstack([f, t]))), (nl, nb))
+    Yt = csr_matrix((hstack([Ytf, Ytt]), (i, hstack([f, t]))), (nl, nb))
     # Yf = spdiags(Yff, 0, nl, nl) * Cf + spdiags(Yft, 0, nl, nl) * Ct
     # Yt = spdiags(Ytf, 0, nl, nl) * Cf + spdiags(Ytt, 0, nl, nl) * Ct
 
     ## build Ybus
     Ybus = Cf.T * Yf + Ct.T * Yt + \
-        csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
+           csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
 
     return Ybus, Yf, Yt
 
@@ -78,7 +79,8 @@ def branch_vectors(branch, nl):
     stat = branch[:, BR_STATUS]  ## ones at in-service branches
     Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
     if any(branch[:, BR_R_ASYM]) or any(branch[:, BR_X_ASYM]):
-        Yst = stat / ((branch[:, BR_R] + branch[:, BR_R_ASYM]) + 1j * (branch[:, BR_X] + branch[:, BR_X_ASYM]))  ## series admittance
+        Yst = stat / ((branch[:, BR_R] + branch[:, BR_R_ASYM]) + 1j * (
+                    branch[:, BR_X] + branch[:, BR_X_ASYM]))  ## series admittance
     else:
         Yst = Ysf
     Bc = stat * branch[:, BR_B]  ## line charging susceptance

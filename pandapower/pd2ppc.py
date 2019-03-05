@@ -101,7 +101,10 @@ def _pd2ppc(net):
 
     if check_connectivity:
         # sets islands (multiple isolated nodes) out of service
-        isolated_nodes, _, _ = aux._check_connectivity(ppc)
+        if "opf" in mode:
+            isolated_nodes, _, _ = aux._check_connectivity_opf(ppc)
+        else:
+            isolated_nodes, _, _ = aux._check_connectivity(ppc)
         net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
 
     # sets buses out of service, which aren't connected to branches / REF buses
@@ -161,7 +164,7 @@ def _ppc2ppci(ppc, ppci, net):
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
-    ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
+    ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)
