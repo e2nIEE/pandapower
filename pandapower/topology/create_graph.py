@@ -105,7 +105,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         if respect_switches:
             mask = (net.switch.et.values == "l") & open_sw
             if mask.any():
-                open_switch = np.isin(indices[:, INDEX], net.switch.element.values[mask])
+                open_switch = np.in1d(indices[:, INDEX], net.switch.element.values[mask])
                 in_service &= ~open_switch
 
         parameter[:, WEIGHT] = line.length_km.values
@@ -142,7 +142,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
             if respect_switches:
                 mask = (net.switch.et.values == "t") & open_sw
                 if mask.any():
-                    open_switch = np.isin(indices[:, INDEX], net.switch.element.values[mask])
+                    open_switch = np.in1d(indices[:, INDEX], net.switch.element.values[mask])
                     in_service &= ~open_switch
 
             if calc_z:
@@ -166,7 +166,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
             if respect_switches:
                 mask = (net.switch.et.values == "t3") & open_sw
                 if mask.any():
-                    open_switch = np.isin(net.trafo3w.index, net.switch.element.values[mask])
+                    open_switch = np.in1d(net.trafo3w.index, net.switch.element.values[mask])
                     open_element_bus_combos = net.switch[["element", "bus"]].values[mask].tolist()
             for f, t in combinations(sides, 2):
                 indices, parameter, in_service = init_par(trafo3w, calc_z)

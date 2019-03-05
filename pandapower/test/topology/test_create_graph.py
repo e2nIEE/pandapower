@@ -23,11 +23,11 @@ def test_line():
     
     #check that oos lines are neglected and switches are respected   
     mg = create_nxgraph(net)
-    assert list(mg.get_edge_data(f, t).keys()) == [("line", line)]
+    assert set(mg.get_edge_data(f, t).keys()) == {("line", line)}
 
     #check respect_switches
     mg = create_nxgraph(net, respect_switches=False)
-    assert list(mg.get_edge_data(f, t).keys()) == [("line", line), ("line", open_loop_line)]
+    assert set(mg.get_edge_data(f, t).keys()) == {("line", line), ("line", open_loop_line)}
 
     #check not including lines
     mg = create_nxgraph(net, include_lines=False)
@@ -54,11 +54,11 @@ def test_trafo():
     
     #check that oos trafos are neglected and switches are respected
     mg = create_nxgraph(net)
-    assert list(mg.get_edge_data(f, t).keys()) == [("trafo", trafo)]
+    assert set(mg.get_edge_data(f, t).keys()) == {("trafo", trafo)}
     
     #check respect_switches
     mg = create_nxgraph(net, respect_switches=False)
-    assert list(mg.get_edge_data(f, t).keys()) == [("trafo", trafo), ("trafo", open_loop_trafo)]
+    assert set(mg.get_edge_data(f, t).keys()) == {("trafo", trafo), ("trafo", open_loop_trafo)}
 
     #check not including trafos
     mg = create_nxgraph(net, include_trafos=False)
@@ -88,21 +88,21 @@ def test_trafo3w():
     hv, mv, lv = trafo3.hv_bus, trafo3.mv_bus, trafo3.lv_bus
     mg = create_nxgraph(net)
     for f, t in combinations([hv, mv, lv], 2):
-        assert list(mg.get_edge_data(f, t).keys()) == [("trafo3w", t1)]
+        assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1)}
    
     net.trafo3w.in_service.at[t2] = True
     mg = create_nxgraph(net)
     for f, t in combinations([hv, mv, lv], 2):
-        assert list(mg.get_edge_data(f, t).keys()) == [("trafo3w", t1), ("trafo3w", t2)]
+        assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
       
     for sb in [hv, mv, lv]:
         sw = pp.create_switch(net, bus=sb, element=t1, et="t3", closed=False)
         mg = create_nxgraph(net)
         for f, t in combinations([hv, mv, lv], 2):
             if sb == f or t == sb:
-                assert list(mg.get_edge_data(f, t).keys()) == [("trafo3w", t2)]
+                assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t2)}
             else:
-                assert list(mg.get_edge_data(f, t).keys()) == [("trafo3w", t1), ("trafo3w", t2)]
+                assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
         net.switch.closed.at[sw] = True
 
 def test_trafo3w_impedances(network_with_trafo3ws):
@@ -144,7 +144,7 @@ def test_impedance():
     
     #check that oos impedances are neglected and switches are respected   
     mg = create_nxgraph(net)
-    assert list(mg.get_edge_data(f, t).keys()) == [("impedance", impedance)]
+    assert set(mg.get_edge_data(f, t).keys()) == {("impedance", impedance)}
 
     #check not including impedances
     mg = create_nxgraph(net, include_impedances=False)
@@ -165,14 +165,14 @@ def test_bus_bus_switches():
     
     net.switch.closed.at[s] = True
     mg = create_nxgraph(net)
-    assert list(mg.get_edge_data(f, t)) == [("switch", s)]
+    assert set(mg.get_edge_data(f, t)) == {("switch", s)}
 
     net.switch.closed.at[s] = False
     mg = create_nxgraph(net)
     assert mg.get_edge_data(f, t) is None
     
     mg = create_nxgraph(net, respect_switches=False)
-    assert list(mg.get_edge_data(f, t)) == [("switch", s)]
+    assert set(mg.get_edge_data(f, t)) == {("switch", s)}
 
 def test_nogo():
     net = pp.create_empty_network()
