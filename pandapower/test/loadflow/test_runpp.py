@@ -1075,5 +1075,35 @@ def test_line_temperature():
     assert "r_ohm_per_km" not in net.res_line.columns
 
 
+def test_results_for_line_temperature():
+    net = pp.create_empty_network()
+    pp.create_bus(net, 0.4)
+    pp.create_buses(net, 2, 0.4)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 5e-3, 10e-3)
+    pp.create_load(net, 2, 5e-3, 10e-3)
+
+    pp.create_line_from_parameters(net, 0, 1, 0.5, 0.642, 0.083, 210, 1, alpha=0.00403)
+    pp.create_line_from_parameters(net, 1, 2, 0.5, 0.642, 0.083, 210, 1, alpha=0.00403)
+
+    vm_res_20 = [1, 0.9727288676, 0.95937328755]
+    va_res_20 = [0, 2.2103403814, 3.3622612327]
+    vm_res_80 = [1, 0.96677572771, 0.95062498477]
+    va_res_80 = [0, 2.7993156134, 4.2714451629]
+
+    pp.runpp(net)
+
+    assert np.allclose(net.res_bus.vm_pu, vm_res_20, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, va_res_20, rtol=0, atol=1e-6)
+
+    net.line["temperature_degree_celsius"] = 80
+    pp.set_user_pf_options(net, consider_line_temperature=True)
+    pp.runpp(net)
+
+    assert np.allclose(net.res_bus.vm_pu, vm_res_80, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, va_res_80, rtol=0, atol=1e-6)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
