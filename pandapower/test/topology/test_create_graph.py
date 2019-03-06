@@ -14,6 +14,7 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_traf
                                                                    add_test_trafo, add_test_line, \
                                                                    add_test_impedance, \
                                                                    add_test_bus_bus_switch
+from pandapower.idx_brch import BR_R, BR_X
 
 def test_line():
     net = pp.create_empty_network()
@@ -34,7 +35,7 @@ def test_line():
     assert mg.get_edge_data(f, t) is None
     
     #check edge attributes
-    mg = create_nxgraph(net, calc_z=True)
+    mg = create_nxgraph(net, calc_branch_impedances=True)
     line_tab = net.line.loc[line]
     par = mg.get_edge_data(f, t, key=("line", line))
     r = line_tab.length_km / line_tab.parallel * line_tab.r_ohm_per_km
@@ -45,6 +46,14 @@ def test_line():
     assert np.isclose(par["z_ohm"], z)
     assert np.isclose(par["weight"], line_tab.length_km)
     assert par["path"] == 1  
+
+    mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu")
+    line_tab = net.line.loc[line]
+    par = mg.get_edge_data(f, t, key=("line", line))
+    pp.runpp(net)
+    f, t = net._pd2ppc_lookups["branch"]["line"]
+    assert np.isclose(par["r_pu"], net._ppc["branch"][f, BR_R])
+    assert np.isclose(par["x_pu"], net._ppc["branch"][f, BR_X])
 
 def test_trafo():
     net = pp.create_empty_network()
@@ -69,7 +78,7 @@ def test_trafo():
     net.trafo.vn_lv_kv = 0.4
     net.trafo.pfe_kw = 0
     net.trafo.i0_percent = 0
-    mg = create_nxgraph(net, calc_z=True)
+    mg = create_nxgraph(net, calc_branch_impedances=True)
     trafo_tab = net.trafo.loc[trafo]
     par = mg.get_edge_data(f, t, key=("trafo", trafo))
     base_Z=(trafo_tab.sn_mva) / (trafo_tab.vn_hv_kv ** 2)
@@ -79,6 +88,13 @@ def test_trafo():
     assert np.isclose(par["z_ohm"], z)
     assert par["weight"] == 0
     assert par["path"] == 1  
+
+    mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu")
+    par = mg.get_edge_data(f, t, key=("trafo", trafo))
+    pp.runpp(net)
+    f, t = net._pd2ppc_lookups["branch"]["trafo"]
+    assert np.isclose(par["r_pu"], net._ppc["branch"][f, BR_R])
+    assert np.isclose(par["x_pu"], net._ppc["branch"][f, BR_X])
 
 def test_trafo3w():
     net = pp.create_empty_network()
@@ -111,7 +127,7 @@ def test_trafo3w_impedances(network_with_trafo3ws):
     net.trafo3w.vn_mv_kv = 0.6
     net.trafo3w.vn_lv_kv = 0.4
     t3 = net.trafo3w.index[0]
-    mg = create_nxgraph(net, calc_z=True)
+    mg = create_nxgraph(net, calc_branch_impedances=True)
     trafo3 = net.trafo3w.loc[t3]
     hv, mv, lv = trafo3.hv_bus, trafo3.mv_bus, trafo3.lv_bus
     base_Z_hv  = min(trafo3.sn_hv_mva, trafo3.sn_mv_mva) / (trafo3.vn_hv_kv ** 2)
@@ -151,11 +167,15 @@ def test_impedance():
     assert mg.get_edge_data(f, t) is None
     
     #check edge attributes
-    mg = create_nxgraph(net, calc_z=True)
-    #TODO check R/X/Z values
+    mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu")
+    pp.runpp(net)
+
     par = mg.get_edge_data(f, t, key=("impedance", impedance))
     assert np.isclose(par["weight"], 0)
-    assert par["path"] == 1  
+    assert par["path"] == 1
+    f, t = net._pd2ppc_lookups["branch"]["impedance"]
+    assert np.isclose(par["r_pu"], net._ppc["branch"][f, BR_R])
+    assert np.isclose(par["x_pu"], net._ppc["branch"][f, BR_X])
 
 def test_bus_bus_switches():
     net = pp.create_empty_network()
@@ -174,6 +194,14 @@ def test_bus_bus_switches():
     mg = create_nxgraph(net, respect_switches=False)
     assert set(mg.get_edge_data(f, t)) == {("switch", s)}
 
+    mg = create_nxgraph(net, respect_switches=False, calc_branch_impedances=True)
+    #TODO check R/X/Z values
+    par = mg.get_edge_data(f, t, key=("switch", s))
+    assert np.isclose(par["r_ohm"], 0)
+    assert np.isclose(par["z_ohm"], 0)
+    assert np.isclose(par["weight"], 0)
+    assert par["path"] == 1 
+
 def test_nogo():
     net = pp.create_empty_network()
     add_test_line(net)
@@ -184,5 +212,5 @@ def test_nogo():
     bus_index.remove(0)
     assert list(mg.nodes()) == bus_index 
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     pytest.main(__file__)
