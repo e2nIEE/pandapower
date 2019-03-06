@@ -14,6 +14,7 @@ from pandapower.estimation.estimator.wls import WLSEstimator
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
 #from pandapower.estimation.estimator.wls_matrix_ops_ori import WLSAlgebra
 from scipy.optimize import minimize, linprog
+from cvxopt import solvers, matrix
 
 
 class LAVEstimator(WLSEstimator):
@@ -40,7 +41,7 @@ class LAVEstimator(WLSEstimator):
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
-                d_E = new_X(H, E, delta_z)
+                d_E = new_X(H, E, delta_z, r_cov)
                 E += d_E
 
                 # update V/delta
@@ -63,21 +64,23 @@ class LAVEstimator(WLSEstimator):
         V = v_m * np.exp(1j * delta)
         return V
     
-def new_X(H, x, delta_z):
+def new_X(H, x, delta_z, r_cov):
     n, m = H.shape[1], H.shape[0]
     zero_n = np.zeros((n, 1))
     one_m = np.ones((m, 1))
     Im = np.eye(m)
     
-    c_T = np.r_[zero_n, zero_n, one_m, one_m]
+    c_T = np.r_[zero_n, zero_n, one_m, one_m] / np.r_[np.ones((n,)),np.ones((n,)), r_cov, r_cov]
     A = np.c_[H, -H, Im, -Im]
     
 #    res = linprog(c_T.ravel(), A_eq=A, b_eq=delta_z ,bounds=[(0, None) for _ in range(A.shape[1])],
 #                  method="interior-point")
-    res = linprog(c_T.ravel(), A_eq=A, b_eq=delta_z ,bounds=[(0, None) for _ in range(A.shape[1])],
-                  method="simplex")
-    if res.success:
-        d_x = res.x[:n].ravel() - res.x[n:2*n].ravel()
+#    res = linprog(c_T.ravel(), A_eq=A, b_eq=delta_z ,bounds=[(0, None) for _ in range(A.shape[1])],
+#                  method="simplex")
+    res = solvers.lp(matrix(c_T.ravel()), G=matrix(-np.eye((n+m)*2)), h=matrix(np.zeros(((n+m)*2,1))), 
+                     A=matrix(A), b=matrix(delta_z))
+    if res:
+        d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2*n]).ravel()
         return d_x
     else:
         raise np.linalg.linalg.LinAlgError
@@ -104,8 +107,8 @@ if __name__ == "__main__":
     pp.create_measurement(net, "p", "bus", 0.018, 0.01, 2)  # p3
     pp.create_measurement(net, "q", "bus", -0.1, 0.01, 2)  # q3
 
-    pp.create_measurement(net, "v", "bus", 1.08, 0.05, 0)  # u1
-    pp.create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
+    pp.create_measurement(net, "v", "bus", 1.08, 0.005, 0)  # u1
+    pp.create_measurement(net, "v", "bus", 1.015, 0.005, 2)  # u3
 
     # 1. Create false voltage measurement for testing bad data detection (-> should be removed)
     pp.create_measurement(net, "v", "bus", 1.3, 0.01, 1)   # V at bus 2
