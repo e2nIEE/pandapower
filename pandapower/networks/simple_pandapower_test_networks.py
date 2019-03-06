@@ -12,7 +12,7 @@ import pandapower as pp
 def panda_four_load_branch():
     """
     This function creates a simple six bus system with four radial low voltage nodes connected to \
-    a medium valtage slack bus. At every low voltage node the same load is connected.
+    a medium voltage slack bus. At every low voltage node the same load is connected.
 
     OUTPUT:
          **net** - Returns the required four load system
@@ -58,7 +58,7 @@ def panda_four_load_branch():
 def four_loads_with_branches_out():
     """
     This function creates a simple ten bus system with four radial low voltage nodes connected to \
-    a medium valtage slack bus. At every of the four radial low voltage nodes another low voltage \
+    a medium voltage slack bus. At every of the four radial low voltage nodes another low voltage \
     node with a load is connected via cable.
 
     OUTPUT:
@@ -117,7 +117,7 @@ def four_loads_with_branches_out():
 def simple_four_bus_system():
     """
     This function creates a simple four bus system with two radial low voltage nodes connected to \
-    a medium valtage slack bus. At both low voltage nodes the a load and a static generator is \
+    a medium voltage slack bus. At both low voltage nodes the a load and a static generator is \
     connected.
 
     OUTPUT:
