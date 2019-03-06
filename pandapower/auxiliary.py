@@ -710,6 +710,14 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                     v_debug=v_debug)
     net._options.update(overrule_options)
 
+def _init_nx_options(net):
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=False,
+                     trafo_model="t", check_connectivity=False,
+                     mode="nx", r_switch=0, init_vm_pu='flat', init_va_degree="flat",
+                     enforce_q_lims=False, recycle=False,
+                     voltage_depend_loads=False, delta=0, trafo3w_losses="hv")
+
 
 def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity, r_switch, trafo3w_losses):
     ac = False

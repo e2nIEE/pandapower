@@ -241,7 +241,8 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]
-    vn_lv = get_values(ppc["bus"][:, BASE_KV], get_trafo_values(trafo_df, "lv_bus"), bus_lookup)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus")
+    vn_lv = ppc["bus"][bus_lookup[lv_bus], BASE_KV]
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
@@ -445,20 +446,29 @@ def _calc_impedance_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["impedance"]
     branch = ppc["branch"]
-    sn_impedance = net["impedance"]["sn_mva"].values
-    sn_net = net.sn_mva
-    rij = net["impedance"]["rft_pu"].values
-    xij = net["impedance"]["xft_pu"].values
-    rji = net["impedance"]["rtf_pu"].values
-    xji = net["impedance"]["xtf_pu"].values
-    branch[f:t, F_BUS] = bus_lookup[net["impedance"]["from_bus"].values]
-    branch[f:t, T_BUS] = bus_lookup[net["impedance"]["to_bus"].values]
-    branch[f:t, BR_R] = rij / sn_impedance * sn_net
-    branch[f:t, BR_X] = xij / sn_impedance * sn_net
-    branch[f:t, BR_R_ASYM] = (rji - rij) / sn_impedance * sn_net
-    branch[f:t, BR_X_ASYM] = (xji - xij) / sn_impedance * sn_net
+    rij, xij, r_asym, x_asym = _calc_impedance_parameters_from_dataframe(net)
+    branch[f:t, BR_R] = rij
+    branch[f:t, BR_X] = xij
+    branch[f:t, BR_R_ASYM] = r_asym
+    branch[f:t, BR_X_ASYM] = x_asym
+    branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
+    branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
+def _calc_impedance_parameters_from_dataframe(net):
+    impedance = net.impedance
+    sn_impedance = impedance["sn_mva"].values
+    sn_net = net.sn_mva
+    rij = impedance["rft_pu"].values
+    xij = impedance["xft_pu"].values
+    rji = impedance["rtf_pu"].values
+    xji = impedance["xtf_pu"].values
+
+    r = rij / sn_impedance * sn_net
+    x = xij / sn_impedance * sn_net
+    r_asym = (rji - rij) / sn_impedance * sn_net
+    x_asym = (xji - xij) / sn_impedance * sn_net
+    return r, x, r_asym, x_asym
 
 def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
