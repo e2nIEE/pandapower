@@ -1205,7 +1205,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
-                df=1., parallel=1, in_service=True, max_loading_percent=nan):
+                df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=None,
+                temperature_degree_celsius=None):
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -1280,6 +1281,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "type" in lineparam:
         v["type"] = lineparam["type"]
 
+    # if net.line column already has alpha, add it from std_type
+    if "alpha" in net.line.columns and "alpha" in lineparam:
+        v["alpha"] = lineparam["alpha"]
+
     # store dtypes
     dtypes = net.line.dtypes
 
@@ -1297,13 +1302,24 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
+    if alpha is not None:
+        if "alpha" not in net.line.columns:
+            net.line.loc[:, "alpha"] = pd.Series()
+        net.line.loc[index, "alpha"] = alpha
+
+    if temperature_degree_celsius is not None:
+        if "temperature_degree_celsius" not in net.line.columns:
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
+        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
     return index
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                max_loading_percent=nan, **kwargs):
+                                max_loading_percent=nan, alpha=None,
+                                temperature_degree_celsius=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1395,6 +1411,16 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+    if alpha is not None:
+        if "alpha" not in net.line.columns:
+            net.line.loc[:, "alpha"] = pd.Series()
+        net.line.loc[index, "alpha"] = alpha
+
+    if temperature_degree_celsius is not None:
+        if "temperature_degree_celsius" not in net.line.columns:
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
+        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
 
     return index
 
