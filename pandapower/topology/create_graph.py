@@ -92,14 +92,13 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         mg = nx.MultiGraph()
     else:
         mg = nx.Graph()
-    for b in net.bus.index:
-        mg.add_node(b)
     if branch_impedance_unit not in ["ohm", "pu"]:
         raise ValueError("branch impedance unit can be either 'ohm' or 'pu'")
     open_sw = net.switch.closed.values == False   
-    ppc = get_nx_ppc(net)        
+    if calc_branch_impedances:
+        ppc = get_nx_ppc(net)
         
-    if include_lines:        
+    if include_lines:
         line = net.line
         indices, parameter, in_service = init_par(line, calc_branch_impedances)
         indices[:, F_BUS] = line.from_bus.values
@@ -122,7 +121,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
             parameter[:, BR_R] = r / baseR
             parameter[:, BR_X] = x / baseR
             
-        add_edges(mg, ppc, indices, parameter, in_service, net, "line", calc_branch_impedances,
+        add_edges(mg, indices, parameter, in_service, net, "line", calc_branch_impedances,
                   branch_impedance_unit)
 
     if include_impedances and len(net.impedance):
@@ -138,7 +137,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
             parameter[:, BR_R] = r * baseR
             parameter[:, BR_X] = x * baseR
             
-        add_edges(mg, ppc, indices, parameter, in_service, net, "impedance",
+        add_edges(mg, indices, parameter, in_service, net, "impedance",
                   calc_branch_impedances, branch_impedance_unit)
         
     if include_trafos:
@@ -162,7 +161,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                 parameter[:, BR_R] = r * baseR
                 parameter[:, BR_X] = x * baseR
             
-            add_edges(mg, ppc, indices, parameter, in_service, net, "trafo",
+            add_edges(mg, indices, parameter, in_service, net, "trafo",
                       calc_branch_impedances, branch_impedance_unit)
 
         trafo3w = net.trafo3w
@@ -196,7 +195,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                 if calc_branch_impedances:     
                     parameter[:, BR_R] = (r[f] + r[t]) * baseR
                     parameter[:, BR_X] = (x[f] + x[t]) * baseR
-                add_edges(mg, ppc, indices, parameter, in_service, net, "trafo3w",
+                add_edges(mg, indices, parameter, in_service, net, "trafo3w",
                           calc_branch_impedances, branch_impedance_unit)
 
     switch = net.switch
@@ -210,13 +209,13 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         indices, parameter = init_par(switch, calc_branch_impedances)
         indices[:, F_BUS] = switch.bus.values
         indices[:, T_BUS] = switch.element.values
-        add_edges(mg, ppc, indices, parameter, in_service, net, "switch",
+        add_edges(mg, indices, parameter, in_service, net, "switch",
                   calc_branch_impedances, branch_impedance_unit)
-                
-    # nogobuses are a nogo
-    if nogobuses is not None:
-        for b in nogobuses:
-            mg.remove_node(b)
+
+    if len(mg.nodes()) < len(net.bus.index):
+        for b in set(net.bus.index) - set(mg.nodes()):
+            mg.add_node(b)               
+
     if notravbuses is not None:
         for b in notravbuses:
             for i in list(mg[b].keys()):
@@ -224,12 +223,19 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                     del mg[b][i]  # networkx versions < 2.0
                 except:
                     del mg._adj[b][i]  # networkx versions 2.0
+
+    # nogobuses are a nogo
+    if nogobuses is not None:
+        for b in nogobuses:
+            mg.remove_node(b)
+            
     for b in net.bus.index[~net.bus.in_service.values]:
         mg.remove_node(b)
+        
     return mg
 
 
-def add_edges(mg, ppc, indices, parameter, in_service, net, element, calc_branch_impedances, 
+def add_edges(mg, indices, parameter, in_service, net, element, calc_branch_impedances, 
               branch_impedance_unit):
     #this function is optimized for maximum perfomance, because the loops are called for every
     #branch element. That is why the loop over the numpy array is copied for each use case instead
