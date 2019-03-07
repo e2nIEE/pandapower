@@ -69,7 +69,7 @@ def example_simple():
                   name="generator")
 
     # create static generator
-    pp.create_sgen(net, bus7, p_mw=2, q_mvar=0.5, name="static generator")
+    pp.create_sgen(net, bus7, p_mw=2, q_mvar=-0.5, name="static generator")
 
     # create shunt
     pp.create_shunt(net, bus3, q_mvar=-0.96, p_mw=0, name='Shunt')

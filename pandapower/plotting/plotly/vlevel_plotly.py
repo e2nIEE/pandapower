@@ -131,3 +131,52 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
 
     draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                 aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
+    
+if __name__ == '__main__':
+    from pandapower.plotting.plotly import simple_plotly
+    from pandapower.networks import mv_oberrhein
+    from pandapower import runpp
+    net = mv_oberrhein()
+    vlevel_plotly(net)
+    runpp(net)
+    line_width=2
+    bus_size=10
+    use_line_geodata = None
+    graph = create_nxgraph(net, include_trafos=False)
+    vlev_buses = connected_components(graph)
+    respect_switches = True
+    
+    # getting unique sets of buses for each voltage level
+    vlev_bus_dict = {}
+    for vl_buses in vlev_buses:
+        if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
+            logger.warning('buses from the same voltage level does not have the same vn_kv !?')
+        vn_kv = net.bus.loc[vl_buses, 'vn_kv'].unique()[0]
+        if vlev_bus_dict.get(vn_kv):
+            vlev_bus_dict[vn_kv].update(vl_buses)
+        else:
+            vlev_bus_dict[vn_kv] = vl_buses
+            
+    # create a default colormap for voltage levels
+    nvlevs = len(vlev_bus_dict)
+    colors = get_plotly_color_palette(nvlevs)
+    colors_dict = dict(zip(vlev_bus_dict.keys(), colors))
+
+    # creating traces for buses and lines for each voltage level
+    bus_traces = []
+    line_traces = []
+    for vn_kv, buses_vl in vlev_bus_dict.items():
+
+        vlev_color = colors_dict[vn_kv]
+        bus_trace_vlev = create_bus_trace(net, buses=buses_vl, size=bus_size, legendgroup=str(vn_kv),
+                                          color=vlev_color, trace_name='buses {0} kV'.format(vn_kv))
+        if bus_trace_vlev is not None:
+            bus_traces += bus_trace_vlev
+
+        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
+        print(vlev_lines)
+        line_trace_vlev = create_line_trace(net, lines=vlev_lines, use_line_geodata=use_line_geodata,
+                                            respect_switches=respect_switches, legendgroup=str(vn_kv),
+                                            color="r", width=line_width, trace_name='lines {0} kV'.format(vn_kv))
+        if line_trace_vlev is not None:
+            line_traces += line_trace_vlev
