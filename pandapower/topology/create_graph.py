@@ -218,6 +218,11 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         for b in set(net.bus.index) - set(mg.nodes()):
             mg.add_node(b)               
 
+    # remove nogobuses
+    if nogobuses is not None:
+        for b in nogobuses:
+            mg.remove_node(b)
+
     #remove the edges pointing away of notravbuses
     if notravbuses is not None:
         for b in notravbuses:
@@ -226,11 +231,6 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                     del mg[b][i]  # networkx versions < 2.0
                 except:
                     del mg._adj[b][i]  # networkx versions 2.0
-
-    # remove nogobuses
-    if nogobuses is not None:
-        for b in nogobuses:
-            mg.remove_node(b)
             
     # remove out of service buses
     for b in net.bus.index[~net.bus.in_service.values]:
@@ -285,3 +285,6 @@ def get_nx_ppc(net):
     ppc = _init_ppc(net)
     _build_bus_ppc(net, ppc)
     return ppc
+
+if __name__ == '__main__':
+    mg = create_nxgraph(net, nogobuses={0}, notravbuses={1})
