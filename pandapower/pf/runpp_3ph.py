@@ -74,6 +74,9 @@ def _store_results_from_pf_in_ppci(ppci, bus, gen, branch):
 def load_mapping(net,ppci1):
     _is_elements = net["_is_elements"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+
+    aranged_buses = np.arange(len(ppci1["bus"]))
+    
     b = np.array([], dtype=int)
     b_ppc = np.array([], dtype=int)
     
@@ -188,11 +191,8 @@ def runpp_3ph(net, calculate_voltage_angles="auto", init="auto", max_iteration="
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode,
-#                     copy_constraints_to_ppc=copy_constraints_to_ppc,
-                     r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims,
-                     recycle=recycle, voltage_depend_loads=False, delta=delta_q)
+                     mode=mode,r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
+                     enforce_q_lims=enforce_q_lims, recycle=recycle, voltage_depend_loads=False, delta=delta_q)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,v_debug=v_debug)
     # net.__internal_options.update(overrule_options)

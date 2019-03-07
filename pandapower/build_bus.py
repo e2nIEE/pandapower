@@ -337,7 +337,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     _is_elements = net["_is_elements"]
     voltage_depend_loads = net["_options"]["voltage_depend_loads"]
     mode = net["_options"]["mode"]
-    pq_elements = ["load", "sgen", "storage", "ward", "xward","asymmetric_load", "asymmetric_sgen"] if mode == "pf_3ph"  else ["load", "sgen", "storage", "ward", "xward"]
+    pq_elements = ["load", "sgen", "storage", "ward", "xward"] 
     for element in pq_elements:
         tab = net[element]
         if len(tab):
@@ -368,15 +368,25 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
             if element.endswith("ward"):
                 p = np.hstack([p, tab["ps_mw"].values * active * sign])
                 q = np.hstack([q, tab["qs_mvar"].values * active * sign])
-            elif element.startswith("asymmetric"):
-                scaling = tab["scaling"].values
-                p = np.hstack([p, np.sum(tab[["q_A_mvar", "q_B_mvar", "q_C_mvar"]].values,axis=1) * active * scaling * sign])
-                q = np.hstack([q, np.sum(tab[["p_A_mw", "p_B_mw", "p_C_mw"]].values,axis=1) * active * scaling * sign])                
             else:
                 scaling = tab["scaling"].values
                 p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
+     
+    l_3ph = net["asymmetric_load"]
+    if len(l_3ph) > 0 and mode == "pf":
+            # TODO: Voltage dependent loads
+        vl = _is_elements["asymmetric_load"] * l_3ph["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, np.sum(l_3ph[["q_A_mvar", "q_B_mvar", "q_C_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(l_3ph[["p_A_mw", "p_B_mw", "p_C_mw"]].values, axis=1) * vl])
+        b = np.hstack([b, l_3ph["bus"].values])
+    sgen_3ph = net["asymmetric_sgen"]
+    if len(sgen_3ph) > 0 and mode == "pf":
+        vl = _is_elements["sgen_3ph"] * sgen_3ph["scaling"].values.T / np.float64(1000.)
+        q = np.hstack([q, np.sum(sgen_3ph[["q_A_mvar", "q_B_mvar", "q_C_mvar"]].values, axis=1) * vl])
+        p = np.hstack([p, np.sum(sgen_3ph[["p_A_mw", "p_B_mw", "p_C_mw"]].values, axis=1) * vl])
+        b = np.hstack([b, sgen_3ph["bus"].values])
 
     # sum up p & q of bus elements
     if b.size:

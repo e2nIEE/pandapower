@@ -67,9 +67,14 @@ def _get_aranged_lookup(net):
 def verify_results(net):
     elements_to_empty = get_elements_to_empty()
     elements_to_init = get_elements_to_init()
-
+    mode = net["_options"]["mode"]
     for element in elements_to_init + elements_to_empty:
-        res_element = "res_" + element
+        if mode != "pf_3ph" :
+            element = (
+        "load" if element == "asymmetric_load" else
+        "sgen" if element == "asymmetric_sgen" else
+        element)
+        res_element = "res_" + element+"_3ph" if mode == "pf_3ph" else "res_" + element
         if len(net[element]) != len(net[res_element]):
             if element in elements_to_empty:
                 empty_res_element(net, res_element)
@@ -85,13 +90,20 @@ def empty_res_element(net, res_element):
 
 
 def init_element(net, element, balanced):
-    res_empty_element = "_empty_res_" + element if balanced else "_empty_res_" + element+"_3ph"
+    if balanced :
+        element = (
+        "load" if element == "asymmetric_load" else
+        "sgen" if element == "asymmetric_sgen" else
+        element)
+
+    res_empty_element = "_empty_res_" + element if balanced else "_empty_res_"\
+    + element+"_3ph"
     res_element = "res_" + element if balanced else "res_" + element+"_3ph"
-    index = net[element].index
-    if len(index):
+    indx = net[element].index
+    if len(indx):
         # init empty dataframe
         res_columns = net[res_empty_element].columns
-        net[res_element] = pd.DataFrame(np.nan, index=index, columns=res_columns, dtype='float')
+        net[res_element] = pd.DataFrame(np.nan, index=indx, columns=res_columns, dtype='float')
     else:
         empty_res_element(net, res_element)
 
@@ -103,13 +115,15 @@ def get_elements_to_empty(balanced=True):
         return ["bus_3ph"]
 
 
-def get_elements_to_init(balanced=True):
-    if balanced:
-        return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
-               , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"]
-    else:
-        return ["ext_grid","load","sgen", "asymmetric_load"\
-        , "asymmetric_sgen", "gen", "line", "trafo"]
+#def get_elements_to_init(balanced=True):
+def get_elements_to_init():
+#    if balanced:
+    return ["line", "trafo", "trafo3w", "impedance", "ext_grid", "load"\
+           , "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline"\
+           ,"asymmetric_load","asymmetric_sgen"]
+#    else:
+#        return ["ext_grid","load","sgen", "asymmetric_load"\
+#        , "asymmetric_sgen", "gen", "line", "trafo"]
 
 
 def reset_results(net, balanced=True):
@@ -117,7 +131,7 @@ def reset_results(net, balanced=True):
     for element in elements_to_empty:
         empty_res_element(net, "res_" + element)
 
-    elements_to_init = get_elements_to_init(balanced=balanced)
+    elements_to_init = get_elements_to_init()
     for element in elements_to_init:
         init_element(net, element,balanced)
 

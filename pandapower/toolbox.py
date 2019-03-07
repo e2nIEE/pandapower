@@ -596,6 +596,36 @@ def convert_format(net):
                                                                        ("vm_lv_pu", "f8"),
                                                                        ("va_lv_degree", "f8"),
                                                                        ("loading_percent", "f8")]))
+    if "asymmetric_load" not in net:
+        net["asymmetric_load"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+             ("bus", "u4"),
+             ("p_A_mw", "f8"),
+             ("q_A_mvar", "f8"),
+             ("p_B_mw", "f8"),
+             ("q_B_mvar", "f8"),
+             ("p_C_mw", "f8"),
+             ("q_C_mvar", "f8"),
+             ("const_z_percent", "f8"),
+             ("const_i_percent", "f8"),
+             ("sn_kva", "f8"),
+             ("scaling", "f8"),
+             ("in_service", 'bool'),
+             ("type", np.dtype(object))]))
+    if "asymmetric_sgen" not in net:
+        net["asymmetric_sgen"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
+             ("bus", "i8"),
+             ("p_A_mw", "f8"),
+             ("p_B_mw", "f8"),
+             ("p_C_mw", "f8"),
+             ("q_A_mvar", "f8"),
+             ("q_B_mvar", "f8"),
+             ("q_C_mvar", "f8"),
+             ("sn_mva", "f8"),
+             ("scaling", "f8"),
+             ("in_service", 'bool'),
+             ("type", np.dtype(object)),
+             ("current_source", "bool")]))
+
     # update required values for OPF
     if "min_p_kw" in net.gen and "max_p_kw" in net.gen:
         if np.any(net.gen.min_p_kw > net.gen.max_p_kw):

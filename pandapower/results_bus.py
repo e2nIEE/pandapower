@@ -41,13 +41,13 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc_pu = sequence_to_phase(V012_pu)
 
     if ac:
-        net["res_bus_3ph"]["vm_A_pu"] = abs(Vabc_pu[0, :].flatten())
-        net["res_bus_3ph"]["vm_B_pu"] = abs(Vabc_pu[1, :].flatten())
-        net["res_bus_3ph"]["vm_C_pu"] = abs(Vabc_pu[2, :].flatten())
+        net["res_bus_3ph"]["vmA_pu"] = abs(Vabc_pu[0, :].flatten())
+        net["res_bus_3ph"]["vmB_pu"] = abs(Vabc_pu[1, :].flatten())
+        net["res_bus_3ph"]["vmC_pu"] = abs(Vabc_pu[2, :].flatten())
     # voltage angles
-    net["res_bus_3ph"]["va_A_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["va_B_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["va_C_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["vaA_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["vaB_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
+    net["res_bus_3ph"]["vaC_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
     net["res_bus_3ph"].index = net["bus"].index
 
 
@@ -154,7 +154,6 @@ def write_pq_results_to_element(net, ppc, element):
     """
     get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table
-
     :param net: pandapower net
     :param element: element name (str)
     :return:
@@ -163,16 +162,10 @@ def write_pq_results_to_element(net, ppc, element):
     # info from net
     _is_elements = net["_is_elements"]
     ac = net["_options"]["ac"]
-    mode = net["_options"]["mode"]
+
     # info element
     el_data = net[element]
-    res_ = "res_" + (
-        "load" if element == "asymmetric_load" and mode != "pf_3ph" else
-        "sgen" if element == "asymmetric_sgen" and mode != "pf_3ph" else
-        element) + "_3ph" if mode =="pf_3ph" else "res_" + (
-        "load" if element == "asymmetric_load" and mode != "pf_3ph" else
-        "sgen" if element == "asymmetric_sgen" and mode != "pf_3ph" else
-        element)
+    res_ = "res_%s"%element
     ctrl_ = "%s_controllable"%element
 
     is_controllable = False
@@ -183,45 +176,24 @@ def write_pq_results_to_element(net, ppc, element):
         is_controllable = True
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
-    p_mw = "ps_mw" if element in ["ward", "xward"] else\
-    ["p_A_mw", "p_B_mw", "p_C_mw"] if res_ in \
-    ["res_asymmetric_load_3ph", "res_asymmetric_sgen_3ph","res_load_3ph",\
-     "res_sgen_3ph"] else "p_mw"
-    q_mvar = "qs_mvar" if element in ["ward", "xward"] else\
-    ["q_A_mvar", "q_B_mvar", "q_C_mvar"] if res_ in \
-    ["res_asymmetric_load_3ph", "res_asymmetric_sgen_3ph","res_load_3ph",\
-     "res_sgen_3ph"] else "q_mvar"
-    scaling = el_data["scaling"].values if element not in ["ward", "xward"]\
-    else 1.0
+    p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"
+    q_mvar = "qs_mvar" if element in ["ward", "xward"] else "q_mvar"
+    scaling = el_data["scaling"].values if element not in ["ward", "xward"] else 1.0
 
     element_in_service = _is_elements[element]
 
     # P result in kw to element
-    
-    if res_.__contains__("asymmetric"):
-        # P result in kw to element
-        net[res_]["p_mw"].values[:] = np.sum(el_data[p_mw].values, axis=1) * scaling * element_in_service
-        if ac:
-            # Q result in kvar to element
-            net[res_]["q_mvar"].values[:] = np.sum(el_data[q_mvar].values, axis=1) * scaling * element_in_service
-    else:
-        # P result in kw to element
-        net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
-        if ac:
-            # Q result in kvar to element
-            net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
-    
+    net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
     if is_controllable:
         net[res_]["p_mw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign
 
     if ac:
         # Q result in kvar to element
-#        net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
+        net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
             net[res_]["q_mvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign
-    # update index of result table
-    net[res_].index = net[element].index    
     return net
+
 
 
 def write_pq_results_to_element_3ph(net, element):
@@ -246,14 +218,30 @@ def write_pq_results_to_element_3ph(net, element):
 
     element_in_service = _is_elements[element]
 
-    net[res_]["p_A_mw"] = pd.Series(el_data["p_A_mw"].values * scaling * element_in_service)
-    net[res_]["p_B_mw"] = pd.Series(el_data["p_B_mw"].values * scaling * element_in_service)
-    net[res_]["p_C_mw"] = pd.Series(el_data["p_C_mw"].values * scaling * element_in_service)
+    net[res_]["p_A_mw"] = pd.Series((el_data["p_mw"].values/3)\
+    * scaling * element_in_service) if element in[ "load","sgen"] else\
+    pd.Series(el_data["p_A_mw"].values * scaling * element_in_service)
+    
+    net[res_]["p_B_mw"] = pd.Series((el_data["p_mw"].values/3) \
+    * scaling * element_in_service)if element in[ "load","sgen"]  else\
+    pd.Series(el_data["p_B_mw"].values * scaling * element_in_service)
+    
+    net[res_]["p_C_mw"] = pd.Series((el_data["p_mw"].values/3) \
+       * scaling * element_in_service) if element in[ "load","sgen"]  else\
+       pd.Series(el_data["p_C_mw"].values * scaling * element_in_service)
     if ac:
         # Q result in kvar to element
-        net[res_]["q_A_mvar"] = pd.Series(el_data["q_A_mvar"].values * scaling * element_in_service)
-        net[res_]["q_B_mvar"] = pd.Series(el_data["q_B_mvar"].values * scaling * element_in_service)
-        net[res_]["q_C_mvar"] = pd.Series(el_data["q_C_mvar"].values * scaling * element_in_service)
+        net[res_]["q_A_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
+    * scaling * element_in_service) if element in[ "load","sgen"]  else\
+    pd.Series(el_data["q_A_mvar"].values * scaling * element_in_service)
+        
+        net[res_]["q_B_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
+    * scaling * element_in_service) if element in[ "load","sgen"]  else\
+    pd.Series(el_data["q_B_mvar"].values * scaling * element_in_service)
+        
+        net[res_]["q_C_mvar"] = pd.Series((el_data["q_mvar"].values/3)\
+    * scaling * element_in_service) if element in[ "load","sgen"]  else\
+    pd.Series(el_data["q_C_mvar"].values * scaling * element_in_service)
 
     # update index of result table
     net[res_].index = net[element].index
@@ -325,8 +313,8 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
 
     ac = net["_options"]["ac"]
     # Todo: Voltage dependent loads
-    elements = ["load", "sgen", "storage", "ward", "xward"]
-    elements_3ph = ["asymmetric_load", "asymmetric_sgen"]
+    elements = ["storage", "ward", "xward"]
+    elements_3ph = ["load", "sgen", "asymmetric_load", "asymmetric_sgen"]
 
     for element in elements:
         if len(net[element]):

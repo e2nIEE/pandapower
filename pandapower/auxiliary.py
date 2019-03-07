@@ -364,7 +364,6 @@ except RuntimeError:
 
 def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     # is missing sgen_controllable and load_controllable
-
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
@@ -373,12 +372,10 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
-    mode = net["_options"]["mode"]
+#    mode = net["_options"]["mode"]
     elements = ["load", "sgen","asymmetric_load", "asymmetric_sgen", "gen"\
-    , "ward", "xward", "shunt", "ext_grid", "storage"] if mode=="pf_3ph" else\
-    ["load", "sgen", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]
+    , "ward", "xward", "shunt", "ext_grid", "storage"]   
     is_elements = dict()
-#    for element in ["load", "load_3ph", "sgen", "sgen_3ph", "gen", "ward", "xward", "shunt", "ext_grid", "storage"]:
     for element in elements:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)

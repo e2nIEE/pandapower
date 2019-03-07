@@ -144,7 +144,7 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
 
     Vabc_f, Vabc_t, Iabc_f, Iabc_t = [sequence_to_phase(X012) for X012 in
                                       [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
-    Sabc_f, Sabc_t = [S_from_VI_elementwise(*Xabc_tup) * 1e3 / np.sqrt(3) for Xabc_tup in
+    Sabc_f, Sabc_t = [S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3) for Xabc_tup in
                       [(Vabc_f, Iabc_f), (Vabc_t, Iabc_t)]]
     # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
     Pabcf_mw = Sabc_f.real
