@@ -212,10 +212,12 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         add_edges(mg, indices, parameter, in_service, net, "switch",
                   calc_branch_impedances, branch_impedance_unit)
 
+    #add all buses that were not added when creating branches
     if len(mg.nodes()) < len(net.bus.index):
         for b in set(net.bus.index) - set(mg.nodes()):
             mg.add_node(b)               
 
+    #remove the edges pointing away of notravbuses
     if notravbuses is not None:
         for b in notravbuses:
             for i in list(mg[b].keys()):
@@ -224,11 +226,12 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
                 except:
                     del mg._adj[b][i]  # networkx versions 2.0
 
-    # nogobuses are a nogo
+    # remove nogobuses
     if nogobuses is not None:
         for b in nogobuses:
             mg.remove_node(b)
             
+    # remove out of service buses
     for b in net.bus.index[~net.bus.in_service.values]:
         mg.remove_node(b)
         
