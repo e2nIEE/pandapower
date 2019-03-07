@@ -94,7 +94,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True,
         mg = nx.Graph()
     if branch_impedance_unit not in ["ohm", "pu"]:
         raise ValueError("branch impedance unit can be either 'ohm' or 'pu'")
-    open_sw = net.switch.closed.values == False   
+    if respect_switches:
+        open_sw = net.switch.closed.values == False   
     if calc_branch_impedances:
         ppc = get_nx_ppc(net)
         
