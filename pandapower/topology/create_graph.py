@@ -285,6 +285,3 @@ def get_nx_ppc(net):
     ppc = _init_ppc(net)
     _build_bus_ppc(net, ppc)
     return ppc
-
-if __name__ == '__main__':
-    mg = create_nxgraph(net, nogobuses={0}, notravbuses={1})
