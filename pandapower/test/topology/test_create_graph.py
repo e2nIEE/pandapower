@@ -25,14 +25,17 @@ def test_line():
     #check that oos lines are neglected and switches are respected   
     mg = create_nxgraph(net)
     assert set(mg.get_edge_data(f, t).keys()) == {("line", line)}
+    assert set(mg.nodes()) == set(net.bus.index)
 
     #check respect_switches
     mg = create_nxgraph(net, respect_switches=False)
     assert set(mg.get_edge_data(f, t).keys()) == {("line", line), ("line", open_loop_line)}
+    assert set(mg.nodes()) == set(net.bus.index)
 
     #check not including lines
     mg = create_nxgraph(net, include_lines=False)
     assert mg.get_edge_data(f, t) is None
+    assert set(mg.nodes()) == set(net.bus.index)
     
     #check edge attributes
     mg = create_nxgraph(net, calc_branch_impedances=True)
@@ -64,14 +67,17 @@ def test_trafo():
     #check that oos trafos are neglected and switches are respected
     mg = create_nxgraph(net)
     assert set(mg.get_edge_data(f, t).keys()) == {("trafo", trafo)}
+    assert set(mg.nodes()) == set(net.bus.index)
     
     #check respect_switches
     mg = create_nxgraph(net, respect_switches=False)
     assert set(mg.get_edge_data(f, t).keys()) == {("trafo", trafo), ("trafo", open_loop_trafo)}
+    assert set(mg.nodes()) == set(net.bus.index)
 
     #check not including trafos
     mg = create_nxgraph(net, include_trafos=False)
-    assert mg.get_edge_data(f, t) is None   
+    assert mg.get_edge_data(f, t) is None
+    assert set(mg.nodes()) == set(net.bus.index)
 
     #check edge attributes
     net.trafo.vn_hv_kv = 20
@@ -105,11 +111,13 @@ def test_trafo3w():
     mg = create_nxgraph(net)
     for f, t in combinations([hv, mv, lv], 2):
         assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1)}
+        assert set(mg.nodes()) == set(net.bus.index)
    
     net.trafo3w.in_service.at[t2] = True
     mg = create_nxgraph(net)
     for f, t in combinations([hv, mv, lv], 2):
         assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
+        assert set(mg.nodes()) == set(net.bus.index)
       
     for sb in [hv, mv, lv]:
         sw = pp.create_switch(net, bus=sb, element=t1, et="t3", closed=False)
@@ -119,6 +127,7 @@ def test_trafo3w():
                 assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t2)}
             else:
                 assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
+            assert set(mg.nodes()) == set(net.bus.index)
         net.switch.closed.at[sw] = True
 
 def test_trafo3w_impedances(network_with_trafo3ws):
@@ -161,10 +170,12 @@ def test_impedance():
     #check that oos impedances are neglected and switches are respected   
     mg = create_nxgraph(net)
     assert set(mg.get_edge_data(f, t).keys()) == {("impedance", impedance)}
+    assert set(mg.nodes()) == set(net.bus.index)
 
     #check not including impedances
     mg = create_nxgraph(net, include_impedances=False)
     assert mg.get_edge_data(f, t) is None
+    assert set(mg.nodes()) == set(net.bus.index)
     
     #check edge attributes
     mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu")
@@ -186,13 +197,16 @@ def test_bus_bus_switches():
     net.switch.closed.at[s] = True
     mg = create_nxgraph(net)
     assert set(mg.get_edge_data(f, t)) == {("switch", s)}
+    assert set(mg.nodes()) == set(net.bus.index)
 
     net.switch.closed.at[s] = False
     mg = create_nxgraph(net)
     assert mg.get_edge_data(f, t) is None
+    assert set(mg.nodes()) == set(net.bus.index)
     
     mg = create_nxgraph(net, respect_switches=False)
     assert set(mg.get_edge_data(f, t)) == {("switch", s)}
+    assert set(mg.nodes()) == set(net.bus.index)
 
     mg = create_nxgraph(net, respect_switches=False, calc_branch_impedances=True)
     #TODO check R/X/Z values
@@ -206,11 +220,9 @@ def test_nogo():
     net = pp.create_empty_network()
     add_test_line(net)
     mg = create_nxgraph(net)
-    bus_index = net.bus.index.tolist()
-    assert list(mg.nodes()) == bus_index
+    assert set(mg.nodes()) == set(net.bus.index)
     mg = create_nxgraph(net, nogobuses=[0])
-    bus_index.remove(0)
-    assert list(mg.nodes()) == bus_index 
+    assert set(mg.nodes()) == set(net.bus.index) - {0}
 
 if __name__ == '__main__':
     pytest.main(__file__)
