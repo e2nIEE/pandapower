@@ -1,6 +1,6 @@
 using PowerModels
 using Ipopt
-using PP2PM
+using .PP2PM
 
 function run_powermodels(json_path)
     pm = PP2PM.load_pm_from_json(json_path)

@@ -16,6 +16,7 @@ from pandapower.create import create_empty_network, create_switch, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
+from pandapower.powerflow import reset_results
 
 try:
     import pplog as logging
@@ -772,16 +773,26 @@ def convert_format(net):
 
         pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
         net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
+        reset_results(net)
 
     _convert_to_mw(net)
     _revert_pfe_mw(net)
     if "sn_kva" in net.keys():
-        net.sn_mva = net.sn_kva*1e-3
-        del net.sn_kva
+        net.sn_mva = net.pop("sn_kva") * 1e-3
     net.version = float(__version__[:3])
 
     _update_trafo_parameter_names(net)
+    _update_trafo_type_parameter_names(net)
     return net
+
+
+def _update_trafo_type_parameter_names(net):
+    for element in ('trafo', 'trafo3w'):
+        for type in net.std_types[element].keys():
+            keys = {col: _update_column(col) for col in net.std_types[element][type].keys() if
+                            col.startswith("tp") or col.startswith("vsc")}
+            for old_key, new_key in keys.items():
+                net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
 
 def _update_trafo_parameter_names(net):
@@ -1100,7 +1111,8 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
                                  "%s data at from-/hv- and to-/lv-bus" % column)
 
 
-def add_column_from_element_to_elements(net, column, replace, elements=None):
+def add_column_from_element_to_elements(net, column, replace, elements=None,
+                                        continue_on_missing_column=True):
     """
     Adds column data to elements, inferring them from the column data of the elements linked by the
     columns "element" and "element_type" or "et".
@@ -1115,6 +1127,12 @@ def add_column_from_element_to_elements(net, column, replace, elements=None):
         **elements** (list) - list of elements that should get the column values from the linked
             element tables. If None, all elements with the columns "element" and "element_type" or
             "et" are considered (these are currently "measurement" and "switch").
+
+        **continue_on_missing_column** (Boolean, True) - If False, a error will be raised in case of
+            an element table has no column 'column' although this element is refered in 'elements'.
+            E.g. 'measurement' is in 'elements' and in net.measurement is a trafo measurement but
+            in net.trafo there is no column 'name' although column=='name' - ni this case
+            'continue_on_missing_column' acts.
 
     EXAMPLE:
         import pandapower as pp
@@ -1139,7 +1157,16 @@ def add_column_from_element_to_elements(net, column, replace, elements=None):
         for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
                                 ("b", "bus")]:
             element_type.loc[element_type == short] = complete
-        for et in element_type.unique():
+        element_types_without_column = [et for et in set(element_type) if column not in
+                                        net[et].columns]
+        if len(element_types_without_column):
+            message = "%s is not in net[et].columns with et in " % column + str(
+                element_types_without_column)
+            if not continue_on_missing_column:
+                raise KeyError(message)
+            else:
+                logger.debug(message)
+        for et in list(set(element_type)-set(element_types_without_column)):
             idx_et = element_type.index[element_type == et]
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
