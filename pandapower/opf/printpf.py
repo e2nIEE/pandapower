@@ -26,7 +26,7 @@ from pypower.ppoption import ppoption
 
 
 def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
-            et=None, fd=None, ppopt=None):
+            et=None, fd=None, ppopt=None): # pragma: no cover
     """Prints power flow results.
 
     Prints power flow and optimal power flow results to C{fd} (a file

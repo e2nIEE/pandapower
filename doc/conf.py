@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pandapower'
-copyright = u'2016-2018 by Fraunhofer IEE and University of Kassel'
+copyright = u'2016-2019 by Fraunhofer IEE and University of Kassel'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
