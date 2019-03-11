@@ -109,7 +109,9 @@ def _calc_line_parameter(net, ppc):
     calculates the line parameter in per unit.
 
     **INPUT**:
-        **net** -The pandapower format network
+        **net** - The pandapower format network
+
+        **ppc** - the ppc array
 
     **RETURN**:
         **t** - Temporary line parameter. Which is a complex128
@@ -121,25 +123,32 @@ def _calc_line_parameter(net, ppc):
     mode = net["_options"]["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     line = net["line"]
-    fb = bus_lookup[line["from_bus"].values]
-    tb = bus_lookup[line["to_bus"].values]
-    length = line["length_km"].values
+    from_bus = bus_lookup[line["from_bus"].values]
+    to_bus = bus_lookup[line["to_bus"].values]
+    length_km = line["length_km"].values
     parallel = line["parallel"].values
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
+    base_kv = ppc["bus"][from_bus, BASE_KV]
+    baseR = np.square(base_kv) / net.sn_mva
 
-    branch[f:t, F_BUS] = fb
-    branch[f:t, T_BUS] = tb
+    branch[f:t, F_BUS] = from_bus
+    branch[f:t, T_BUS] = to_bus
 
-    branch[f:t, BR_R] = line["r_ohm_per_km"].values * length / baseR / parallel
-    branch[f:t, BR_X] = line["x_ohm_per_km"].values * length / baseR / parallel
+    branch[f:t, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
+    branch[f:t, BR_X] = line["x_ohm_per_km"].values * length_km / baseR / parallel
+
     if mode == "sc":
+        # temperature correction
         if net["_options"]["case"] == "min":
-            branch[f:t, BR_R] *= _end_temperature_correction_factor(net)
+            branch[f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
     else:
-        b = (2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR *
-             length * parallel)
-        g = line["g_us_per_km"].values * 1e-6 * baseR * length * parallel
+        # temperature correction
+        if net["_options"]["consider_line_temperature"]:
+            branch[f:t, BR_R] *= _end_temperature_correction_factor(net)
+
+        b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
+        g = line["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
         branch[f:t, BR_B] = b - g * 1j
+    # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
     if net._options["mode"] == "opf":
         max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0
@@ -232,7 +241,8 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if trafo_df is None:
         trafo_df = net["trafo"]
-    vn_lv = get_values(ppc["bus"][:, BASE_KV], get_trafo_values(trafo_df, "lv_bus"), bus_lookup)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus")
+    vn_lv = ppc["bus"][bus_lookup[lv_bus], BASE_KV]
     ### Construct np.array to parse results in ###
     # 0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
@@ -436,20 +446,29 @@ def _calc_impedance_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["impedance"]
     branch = ppc["branch"]
-    sn_impedance = net["impedance"]["sn_mva"].values
-    sn_net = net.sn_mva
-    rij = net["impedance"]["rft_pu"].values
-    xij = net["impedance"]["xft_pu"].values
-    rji = net["impedance"]["rtf_pu"].values
-    xji = net["impedance"]["xtf_pu"].values
-    branch[f:t, F_BUS] = bus_lookup[net["impedance"]["from_bus"].values]
-    branch[f:t, T_BUS] = bus_lookup[net["impedance"]["to_bus"].values]
-    branch[f:t, BR_R] = rij / sn_impedance * sn_net
-    branch[f:t, BR_X] = xij / sn_impedance * sn_net
-    branch[f:t, BR_R_ASYM] = (rji - rij) / sn_impedance * sn_net
-    branch[f:t, BR_X_ASYM] = (xji - xij) / sn_impedance * sn_net
+    rij, xij, r_asym, x_asym = _calc_impedance_parameters_from_dataframe(net)
+    branch[f:t, BR_R] = rij
+    branch[f:t, BR_X] = xij
+    branch[f:t, BR_R_ASYM] = r_asym
+    branch[f:t, BR_X_ASYM] = x_asym
+    branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
+    branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
+def _calc_impedance_parameters_from_dataframe(net):
+    impedance = net.impedance
+    sn_impedance = impedance["sn_mva"].values
+    sn_net = net.sn_mva
+    rij = impedance["rft_pu"].values
+    xij = impedance["xft_pu"].values
+    rji = impedance["rtf_pu"].values
+    xji = impedance["xtf_pu"].values
+
+    r = rij / sn_impedance * sn_net
+    x = xij / sn_impedance * sn_net
+    r_asym = (rji - rij) / sn_impedance * sn_net
+    x_asym = (xji - xij) / sn_impedance * sn_net
+    return r, x, r_asym, x_asym
 
 def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -678,7 +697,7 @@ def _calc_switch_parameter(net, ppc):
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
     f, t = net["_pd2ppc_lookups"]["branch"]["switch"]
-    branch = ppc["branch"]   
+    branch = ppc["branch"]
     r_switch = net["_options"]["r_switch"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     switch = net.switch[net._closed_bb_switches]
@@ -690,13 +709,80 @@ def _calc_switch_parameter(net, ppc):
     branch[f:t, BR_R] = r_switch / baseR
 
 
-def _end_temperature_correction_factor(net):
-    if "endtemp_degree" not in net.line:
-        raise UserWarning("Specify end temperature for lines in net.endtemp_degree")
-    return 1 + .004 * (net.line.endtemp_degree.values.astype(float) - 20)  # formula from standard
+def _end_temperature_correction_factor(net, short_circuit=False):
+    """
+    Function to calculate resistance correction factor for the given temperature ("endtemp_degree").
+    When multiplied by the factor, the value of r_ohm_per_km will correspond to the resistance at
+    the given temperature.
+
+    In case of short circuit calculation, the relevant value for the temperature is
+    "endtemp_degree", which stands for the final temperature of a line after the short circuit.
+    The temperature coefficient "alpha" is a constant value of 0.004 in the short circuit
+    calculation standard IEC 60909-0:2016.
+
+    In case of a load flow calculation, the relelvant parameter is "temperature_degree_celsius",
+    which is specified by the user and allows calculating load flow for a given operating
+    temperature.
+
+    The alpha value can be provided according to the used material for the purpose of load flow
+    calculation, e.g. 0.0039 for copper or 0.00403 for aluminum. If alpha is not provided in the
+    net.line table, the default value of 0.004 is used.
+
+    The calculation of the electrical resistance is based on the formula R = R20(1+alpha*(T-20°C)),
+    where R is the calculated resistance, R20 is the resistance at 20 °C, alpha is the temperature
+    coefficient of resistance of the conducting material and T is the line temperature in °C.
+    Accordingly, the resulting correction factor is (1+alpha*(T-20°C)).
+
+    Args:
+        net: pandapowerNet
+        short_circuit: whether the factor is calculated in the scope of a short circuit calculation
+
+    Returns:
+        correction factor for line R, by which the line parameter should be multiplied to
+                obtain the value of resistance at line temperature "endtemp_degree"
+
+    """
+
+    if short_circuit:
+        # endtemp_degree is line temperature that is reached as the result of a short circuit
+        # this value is the property of the lines
+        if "endtemp_degree" not in net.line.columns:
+            raise UserWarning("Specify end temperature for lines in net.line.endtemp_degree")
+
+        delta_t_degree_celsius = net.line.endtemp_degree.values.astype(np.float64) - 20
+        # alpha is the temperature correction factor for the electric resistance of the material
+        # formula from standard, used this way in short-circuit calculation
+        alpha = 4e-3
+    else:
+        # temperature_degree_celsius is line temperature for load flow calculation
+        if "temperature_degree_celsius" not in net.line.columns:
+            raise UserWarning("Specify line temperature in net.line.temperature_degree_celsius")
+
+        delta_t_degree_celsius = net.line.temperature_degree_celsius.values.astype(np.float64) - 20
+
+        if 'alpha' in net.line.columns:
+            alpha = net.line.alpha.values.astype(np.float64)
+        else:
+            alpha = 4e-3
+
+    r_correction_for_temperature = 1 + alpha * delta_t_degree_celsius
+
+    return r_correction_for_temperature
 
 
 def _transformer_correction_factor(vk, vkr, sn, cmax):
+    """
+        2W-Transformer impedance correction factor in short circuit calculations,
+        based on the IEC 60909-0:2016 standard.
+        Args:
+            vk: transformer short-circuit voltage, percent
+            vkr: real-part of transformer short-circuit voltage, percent
+            sn: transformer rating, kVA
+            cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+
+        Returns:
+            kt: transformer impedance correction factor for short-circuit calculations
+        """
     zt = vk / 100 / sn
     rt = vkr / 100 / sn
     xt = np.sqrt(zt ** 2 - rt ** 2)
@@ -705,6 +791,9 @@ def _transformer_correction_factor(vk, vkr, sn, cmax):
 
 
 def get_is_lines(net):
+    """
+    get indices of lines that are in service and save that information in net
+    """
     _is_elements = net["_is_elements"]
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 

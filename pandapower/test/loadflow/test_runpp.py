@@ -159,7 +159,7 @@ def test_bus_bus_switches(bus_bus_net):
     net = bus_bus_net
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == \
-        net.res_bus.vm_pu.at[6]
+           net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.in_service.at[5] = False
@@ -557,7 +557,8 @@ def test_zip_loads_gridcal():
 
     losses_gridcal = 4.69773448916 - 2.710430515j
 
-    abs_path = os.path.join(pp.pp_dir, 'networks', 'power_system_test_case_jsons', 'case5_demo_gridcal.json')
+    abs_path = os.path.join(pp.pp_dir, 'networks', 'power_system_test_case_jsons',
+                            'case5_demo_gridcal.json')
     net = pp.from_json(abs_path)
 
     pp.runpp(net, voltage_depend_loads=True,
@@ -1003,23 +1004,106 @@ def test_wye_delta():
     trafo = pp.create_transformer(net, hv_bus=0, lv_bus=1, std_type='25 MVA 110/20 kV')
     pp.create_line(net, 1, 2, length_km=2.0, std_type="NAYY 4x50 SE")
     pp.create_line(net, 2, 3, length_km=6.0, std_type="NAYY 4x50 SE")
-    pp.create_line(net, 3, 4, length_km=10.0, std_type="NAYY 4x50 SE")   
+    pp.create_line(net, 3, 4, length_km=10.0, std_type="NAYY 4x50 SE")
     pp.create_ext_grid(net, 0)
     pp.create_load(net, 4, p_mw=0.1)
     pp.create_sgen(net, 2, p_mw=4.)
     pp.create_sgen(net, 3, p_mw=4.)
-    
+
     pp.runpp(net, trafo_model="pi")
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
     assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
                np.array([ 0.0001640+0.j,  0.0047972+0.j, -0.0105000-0.014j]),
                         rtol=1e-7)
-    
+
     pp.runpp(net, trafo_model="t")
     assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-               np.array([ 0.00016392+0.j, 0.00479726+0.j,-0.01050009-0.01399964j]))   
-    assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)    
-    
+               np.array([ 0.00016392+0.j, 0.00479726+0.j,-0.01050009-0.01399964j]))
+    assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
+
+
+def test_line_temperature():
+    net = four_loads_with_branches_out()
+    r_init = net.line.r_ohm_per_km.values.copy()
+
+    # r_ohm_per_km is not in line results by default
+    pp.runpp(net)
+    v_init = net.res_bus.vm_pu.values.copy()
+    va_init = net.res_bus.va_degree.values.copy()
+    assert "r_ohm_per_km" not in net.res_line.columns
+
+    # no temperature adjustment performed if not explicitly set in options/arguments to runpp
+    net.line["temperature_degree_celsius"] = 20
+    pp.runpp(net)
+    assert "r_ohm_per_km" not in net.res_line.columns
+    assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+
+    # argument in runpp is considered
+    pp.runpp(net, consider_line_temperature=True)
+    assert "r_ohm_per_km" in net.res_line.columns
+    assert np.allclose(net.res_line.r_ohm_per_km, r_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+
+    # check results of r adjustment, check that user_pf_options works, alpha is 4e-3 by default
+    t = np.arange(0, 80, 10)
+    net.line.temperature_degree_celsius = t
+    pp.set_user_pf_options(net, consider_line_temperature=True)
+    pp.runpp(net)
+    alpha = 4e-3
+    r_temp = r_init * (1 + alpha * (t - 20))
+    assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)
+    assert not np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-4)
+    assert not np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-2)
+
+    # check reults with user-defined alpha
+    alpha = np.arange(3e-3, 5e-3, 2.5e-4)
+    net.line['alpha'] = alpha
+    pp.runpp(net)
+    r_temp = r_init * (1 + alpha * (t - 20))
+    assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)
+    assert not np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-4)
+    assert not np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-2)
+
+    # not anymore in net if not considered
+    pp.set_user_pf_options(net, overwrite=True)
+    pp.runpp(net)
+    assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
+    assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
+    assert "r_ohm_per_km" not in net.res_line.columns
+
+
+def test_results_for_line_temperature():
+    net = pp.create_empty_network()
+    pp.create_bus(net, 0.4)
+    pp.create_buses(net, 2, 0.4)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 5e-3, 10e-3)
+    pp.create_load(net, 2, 5e-3, 10e-3)
+
+    pp.create_line_from_parameters(net, 0, 1, 0.5, 0.642, 0.083, 210, 1, alpha=0.00403)
+    pp.create_line_from_parameters(net, 1, 2, 0.5, 0.642, 0.083, 210, 1, alpha=0.00403)
+
+    vm_res_20 = [1, 0.9727288676, 0.95937328755]
+    va_res_20 = [0, 2.2103403814, 3.3622612327]
+    vm_res_80 = [1, 0.96677572771, 0.95062498477]
+    va_res_80 = [0, 2.7993156134, 4.2714451629]
+
+    pp.runpp(net)
+
+    assert np.allclose(net.res_bus.vm_pu, vm_res_20, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, va_res_20, rtol=0, atol=1e-6)
+
+    net.line["temperature_degree_celsius"] = 80
+    pp.set_user_pf_options(net, consider_line_temperature=True)
+    pp.runpp(net)
+
+    assert np.allclose(net.res_bus.vm_pu, vm_res_80, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, va_res_80, rtol=0, atol=1e-6)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

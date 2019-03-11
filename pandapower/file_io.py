@@ -272,7 +272,7 @@ def from_excel(filename, convert=True):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
         xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
-        
+
     try:
         net = from_dict_of_dfs(xls)
     except:

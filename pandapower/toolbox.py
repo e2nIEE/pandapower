@@ -16,6 +16,7 @@ from pandapower.create import create_empty_network, create_switch, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
+from pandapower.powerflow import reset_results
 
 try:
     import pplog as logging
@@ -772,16 +773,26 @@ def convert_format(net):
 
         pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
         net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
+        reset_results(net)
 
     _convert_to_mw(net)
     _revert_pfe_mw(net)
     if "sn_kva" in net.keys():
-        net.sn_mva = net.sn_kva*1e-3
-        del net.sn_kva
+        net.sn_mva = net.pop("sn_kva") * 1e-3
     net.version = float(__version__[:3])
 
     _update_trafo_parameter_names(net)
+    _update_trafo_type_parameter_names(net)
     return net
+
+
+def _update_trafo_type_parameter_names(net):
+    for element in ('trafo', 'trafo3w'):
+        for type in net.std_types[element].keys():
+            keys = {col: _update_column(col) for col in net.std_types[element][type].keys() if
+                            col.startswith("tp") or col.startswith("vsc")}
+            for old_key, new_key in keys.items():
+                net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
 
 def _update_trafo_parameter_names(net):

@@ -7,6 +7,7 @@
 import pytest
 
 import pandapower as pp
+import pandapower.networks as nw
 
 
 def test_create_and_load_std_type_line():
@@ -311,6 +312,13 @@ def test_parameter_from_std_type_line():
     net.line.endtemp_degree.at[lid3] = 10
     pp.parameter_from_std_type(net, "endtemp_degree", fill=endtemp_fill)
     assert net.line.endtemp_degree.at[lid3] == 10 #check that existing values arent overwritten
+
+
+def test_add_temperature_coefficient():
+    net = nw.simple_mv_open_ring_net()
+    pp.add_temperature_coefficient(net)
+    assert "alpha" in net.line.columns
+    assert all(net.line.alpha == 4.03e-3)
 
 
 if __name__ == "__main__":
