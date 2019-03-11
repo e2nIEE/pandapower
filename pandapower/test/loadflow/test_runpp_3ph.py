@@ -529,7 +529,7 @@ def check_results(net, vc, result):
 #           , net.res_bus_3ph[(net.bus.zone==vc)&(net.bus.in_service)].vaC_degree
             )
             ,axis =0)
-    if not np.allclose(result, res_vm_kv,atol=1e-1):
+    if not np.allclose(result, res_vm_kv,atol=1e-2):
         raise ValueError("Incorrect results for vector group %s"%vc, res_vm_kv, result)
         
 def make_nw(net,vector_group):

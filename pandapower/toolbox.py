@@ -599,7 +599,7 @@ def convert_format(net):
                                                                     ("vm_lv_pu", "f8"),
                                                                     ("va_lv_degree", "f8"),
                                                                     ("loading_percent", "f8")]))
-     if "asymmetric_load" not in net:
+    if "asymmetric_load" not in net:
         net["asymmetric_load"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),
              ("bus", "u4"),
              ("p_A_mw", "f8"),
@@ -630,7 +630,7 @@ def convert_format(net):
              ("current_source", "bool")]))
                 
     if "_empty_res_gen_3ph" not in net:
-        net["_empty_res_gen_3ph"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),[("p_A_mw", "f8"),
+        net["_empty_res_gen_3ph"] = pd.DataFrame(np.zeros(0, dtype=[("name", np.dtype(object)),("p_A_mw", "f8"),
                            ("q_A_mvar", "f8"),
                            ("vaA_degree", "f8"),
                            ("vmA_pu", "f8"),

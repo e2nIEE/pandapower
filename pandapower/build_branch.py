@@ -246,7 +246,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, net.sn_mva)
+    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc)
     return r, x, y, ratio, shift
 
 
@@ -308,14 +308,14 @@ def _calc_y_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
         the form (-b_img, -b_real)
     """
    
-    baseR = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else  baseR = np.square(vn_lv) / sn_mva
+    baseR = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / sn_mva
     vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
     pfe = get_trafo_values(trafo_df, "pfe_kw") * 1e-3
     parallel = get_trafo_values(trafo_df, "parallel")
 
     ### Calculate subsceptance ###
    
-    vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else vnl_squared = vn_lv_kv **2
+    vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else  vn_lv_kv **2
     b_real = pfe / vnl_squared * baseR
     i0 =  get_trafo_values(trafo_df, "i0_percent")
     sn = get_trafo_values(trafo_df, "sn_mva")
@@ -409,7 +409,7 @@ def _calc_r_x_from_dataframe(mode,trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     vk_percent = get_trafo_values(trafo_df, "vk_percent")
     vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
     tap_lv = np.square(vn_trafo_lv / vn_lv) * (3* sn_mva)  if mode == 'pf_3ph' else\
-    tap_lv = np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
+    np.square(vn_trafo_lv / vn_lv) * sn_mva  # adjust for low voltage side voltage converter
     sn_trafo_mva = get_trafo_values(trafo_df, "sn_mva")
     z_sc = vk_percent / 100. / sn_trafo_mva * tap_lv
     r_sc = vkr_percent / 100. / sn_trafo_mva * tap_lv

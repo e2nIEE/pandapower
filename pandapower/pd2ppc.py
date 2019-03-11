@@ -113,7 +113,7 @@ def _pd2ppc(net, sequence=None):
                 isolated_nodes, _, _ = aux._check_connectivity_opf(ppc)
             else:
                 isolated_nodes, _, _ = aux._check_connectivity(ppc)
-            net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
+            net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes,sequence)
 
         else:
             isolated_nodes, _, _ = aux._check_connectivity(ppc)
