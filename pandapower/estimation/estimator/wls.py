@@ -7,6 +7,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
 
+from pandapower.idx_bus import BUS_TYPE, VA, VM, bus_cols
+from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
 
@@ -132,15 +134,17 @@ class WLSEstimator:
 
 class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
     def estimate(self, ppci):
-        slack_buses, non_slack_buses, n_active, r_inv, v_m, delta_masked, delta, z = self.wls_preprocessing(ppci)
-
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
-        zero_injection_bus_sel = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6]==0).all(axis=1)
+        zero_injection_bus = np.argwhere(ppci["bus"][:, bus_cols+ZERO_INJ_FLAG] == True).ravel()
+        ppci["bus"][zero_injection_bus, [bus_cols+P, bus_cols+P_STD, bus_cols+Q, bus_cols+Q_STD]] = np.NaN
         # Withn pq buses with zero injection identify those who have also no p or q measurement
-        p_zero_injections = np.where(zero_injection_bus_sel & np.isnan(ppci["bus"][:, 15+2]))[0]
-        q_zero_injections = np.where(zero_injection_bus_sel & np.isnan(ppci["bus"][:, 15+4]))[0]
+        p_zero_injections = zero_injection_bus
+        q_zero_injections = zero_injection_bus
         new_states = np.zeros(len(p_zero_injections) + len(q_zero_injections))
+
+        slack_buses, non_slack_buses, n_active, r_inv, v_m, delta_masked, delta, z = self.wls_preprocessing(ppci)
+
         E = np.concatenate((delta_masked.compressed(), v_m, new_states))
         # matrix calculation object
         sem = WLSAlgebraZeroInjectionConstraints(ppci, slack_buses, non_slack_buses)

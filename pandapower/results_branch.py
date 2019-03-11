@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
 from pandapower.auxiliary import _sum_by_group
-from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT
+from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
 from pandapower.idx_bus import BASE_KV, VM, VA
 
 
@@ -108,8 +108,8 @@ def _get_line_results(net, ppc, i_ft):
     i_to_ka = i_ft[f:t][:, 1]
     line_df = net["line"]
     i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
-    from_buses = ppc["branch"][f:t, F_BUS].real.astype(int)
-    to_buses = ppc["branch"][f:t, T_BUS].real.astype(int)
+    from_bus = ppc["branch"][f:t, F_BUS].real.astype(int)
+    to_bus = ppc["branch"][f:t, T_BUS].real.astype(int)
 
     # write to line
     res_line_df = net["res_line"]
@@ -122,11 +122,19 @@ def _get_line_results(net, ppc, i_ft):
     res_line_df["i_from_ka"].values[:] = i_from_ka
     res_line_df["i_to_ka"].values[:] = i_to_ka
     res_line_df["i_ka"].values[:] = i_ka
-    res_line_df["vm_from_pu"].values[:] = ppc["bus"][from_buses, VM]
-    res_line_df["va_from_degree"].values[:] = ppc["bus"][from_buses, VA]
-    res_line_df["vm_to_pu"].values[:] = ppc["bus"][to_buses, VM]
-    res_line_df["va_to_degree"].values[:] = ppc["bus"][to_buses, VA]
+    res_line_df["vm_from_pu"].values[:] = ppc["bus"][from_bus, VM]
+    res_line_df["va_from_degree"].values[:] = ppc["bus"][from_bus, VA]
+    res_line_df["vm_to_pu"].values[:] = ppc["bus"][to_bus, VM]
+    res_line_df["va_to_degree"].values[:] = ppc["bus"][to_bus, VA]
     res_line_df["loading_percent"].values[:] = i_ka / i_max * 100
+
+    # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
+    if net["_options"]["consider_line_temperature"]:
+        base_kv = ppc["bus"][from_bus, BASE_KV]
+        baseR = np.square(base_kv) / net.sn_mva
+        length_km = line_df.length_km.values
+        parallel = line_df.parallel.values
+        res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
 
 
 def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):

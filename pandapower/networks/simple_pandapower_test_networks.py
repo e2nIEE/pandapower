@@ -12,7 +12,7 @@ import pandapower as pp
 def panda_four_load_branch():
     """
     This function creates a simple six bus system with four radial low voltage nodes connected to \
-    a medium valtage slack bus. At every low voltage node the same load is connected.
+    a medium voltage slack bus. At every low voltage node the same load is connected.
 
     OUTPUT:
          **net** - Returns the required four load system
@@ -58,7 +58,7 @@ def panda_four_load_branch():
 def four_loads_with_branches_out():
     """
     This function creates a simple ten bus system with four radial low voltage nodes connected to \
-    a medium valtage slack bus. At every of the four radial low voltage nodes another low voltage \
+    a medium voltage slack bus. At every of the four radial low voltage nodes another low voltage \
     node with a load is connected via cable.
 
     OUTPUT:
@@ -117,7 +117,7 @@ def four_loads_with_branches_out():
 def simple_four_bus_system():
     """
     This function creates a simple four bus system with two radial low voltage nodes connected to \
-    a medium valtage slack bus. At both low voltage nodes the a load and a static generator is \
+    a medium voltage slack bus. At both low voltage nodes the a load and a static generator is \
     connected.
 
     OUTPUT:
@@ -139,8 +139,8 @@ def simple_four_bus_system():
     pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.50000, std_type="NAYY 4x50 SE")
     pp.create_load(net, busnr3, 0.030, 0.010, name="load1")
     pp.create_load(net, busnr4, 0.030, 0.010, name="load2")
-    pp.create_sgen(net, busnr3, p_mw=0.020, q_mvar=-0.005, name="pv1", sn_mva=0.03)
-    pp.create_sgen(net, busnr4, p_mw=0.015, q_mvar=-0.002, name="pv2", sn_mva=0.02)
+    pp.create_sgen(net, busnr3, p_mw=0.020, q_mvar=0.005, name="pv1", sn_mva=0.03)
+    pp.create_sgen(net, busnr4, p_mw=0.015, q_mvar=0.002, name="pv2", sn_mva=0.02)
 
     n = busnr4 + 1
     net.bus_geodata.loc[:, ['x', 'y']] = array([[0]*n, range(0, -n, -1)]).T

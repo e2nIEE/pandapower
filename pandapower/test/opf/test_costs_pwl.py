@@ -39,7 +39,7 @@ def test_cost_piecewise_linear_gen():
 
     pp.create_pwl_cost(net, 0, "gen", [(0, 75, 1.5), (75, 150, 1.5)])
 
-    pp.runopp(net, )
+    pp.runopp(net)
 
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values * 1.5, atol=1e-3)

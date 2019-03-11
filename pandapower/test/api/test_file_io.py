@@ -62,14 +62,11 @@ def test_json(net_in, tempdir):
         import geopandas as gpd
 
         for tab in ('bus_geodata', 'line_geodata'):
-            net_geo[tab]['geometry'] = None
-            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry='geometry', crs=from_epsg(4326))
-
-        for idx, row in net_geo.bus_geodata.iterrows():
-            net_geo.bus_geodata.at[idx, 'geometry'] = Point(row.x, row.y)
-
-        for idx, row in net_geo.line_geodata.iterrows():
-            net_geo.line_geodata.at[idx, 'geometry'] = LineString(row.coords)
+            if tab == 'bus_geodata':
+                geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
+            else:
+                geometry = net_geo[tab].coords.apply(LineString)
+            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=from_epsg(4326))
 
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)
@@ -101,8 +98,7 @@ def test_sqlite(net_in, tempdir):
 
 
 def test_convert_format():  # TODO what is this thing testing ?
-    folder = os.path.abspath(os.path.dirname(pp.__file__))
-    net = pp.from_pickle(os.path.join(folder, "test", "api", "old_net.p"))
+    net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "api", "old_net.p"))
     pp.runpp(net)
     assert net.converged
 
@@ -185,5 +181,4 @@ def test_json_tuple_in_pandas():
 
 
 if __name__ == "__main__":
-#    test_excel(net_in([1]), tempdir())
     pytest.main(["test_file_io.py", "-x"])

@@ -14,8 +14,7 @@ from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.results import _extract_results, reset_results, _copy_results_ppci_to_ppc
 from pandapower.auxiliary import _clean_up, _add_auxiliary_elements
-import pandapower.opf
-opf_folder = os.path.abspath(os.path.dirname(pandapower.opf.__file__))
+from pandapower import pp_dir
 
 try:
     import pplog as logging
@@ -24,14 +23,15 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-from pandapower.idx_gen import  PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
+from pandapower.idx_gen import PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
 from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
 from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
-                                ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
+    ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
 from pandapower.idx_cost import MODEL, COST, NCOST
 
+
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv"):
+          trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
     """
     Runs a power system optimization using PowerModels.jl.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -73,16 +73,17 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
      """
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=False,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
     _runpm(net)
+
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv"):
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
     """
     Runs a power system optimization using PowerModels.jl.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -122,20 +123,21 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
      """
-    julia_file = os.path.join(opf_folder, 'run_powermodels_dc.jl')
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_dc.jl')
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=False,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
     _runpm(net)
+
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=0, trafo3w_losses="hv"):
+                 trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True):
     """
     Runs a power system optimization using PowerModels.jl.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -175,17 +177,18 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
         **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
 
      """
-    julia_file = os.path.join(opf_folder, 'run_powermodels_ac.jl')
+    julia_file = os.path.join(pp_dir, "opf", 'run_powermodels_ac.jl')
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=False,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", r_switch=0, init_vm_pu="flat", init_va_degree="flat",
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file=julia_file)
     _runpm(net)
+
 
 def _runpm(net):
     net["OPF_converged"] = False
@@ -211,9 +214,10 @@ def _runpm(net):
         _clean_up(net, res=False)
         logger.warning("OPF did not converge!")
 
+
 def _call_powermodels(pm, julia_file):
     buffer_file = os.path.join(tempfile.gettempdir(), "pp_pm.json")
-    logger.debug("writing PowerModels data structure to %s"%buffer_file)
+    logger.debug("writing PowerModels data structure to %s" % buffer_file)
     with open(buffer_file, 'w') as outfile:
         json.dump(pm, outfile)
     try:
@@ -224,19 +228,21 @@ def _call_powermodels(pm, julia_file):
     try:
         j = julia.Julia()
     except:
-        raise UserWarning("Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
+        raise UserWarning(
+            "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
 
-    Main.include(os.path.join(opf_folder, 'pp_2_pm.jl'))
+    Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
-        run_powermodels = j.include(julia_file)
-    except:
-        raise UserWarning("File %s could not be imported"%julia_file)
+        run_powermodels = Main.include(julia_file)
+    except ImportError:
+        raise UserWarning("File %s could not be imported" % julia_file)
     result_pm = run_powermodels(buffer_file)
     return result_pm
 
+
 def ppc_to_pm(net, ppc):
-    pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(),
-          "baseMVA": ppc["baseMVA"],  "source_version": "2.0.0", "shunt": dict(),
+    pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(), "storage": dict(),
+          "baseMVA": ppc["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     load_idx = 1
     shunt_idx = 1
@@ -256,13 +262,13 @@ def ppc_to_pm(net, ppc):
         qd = row[QD]
         if pd != 0 or qd != 0:
             pm["load"][str(load_idx)] = {"pd": pd, "qd": qd, "load_bus": idx,
-                                        "status": True, "index": load_idx}
+                                         "status": True, "index": load_idx}
             load_idx += 1
         bs = row[BS]
         gs = row[GS]
         if pd != 0 or qd != 0:
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx,
-                                        "status": True, "index": shunt_idx}
+                                           "status": True, "index": shunt_idx}
             shunt_idx += 1
         pm["bus"][str(idx)] = bus
 
@@ -311,7 +317,7 @@ def ppc_to_pm(net, ppc):
         gen["model"] = int(row[MODEL])
         if gen["model"] == 1:
             gen["ncost"] = int(row[NCOST])
-            gen["cost"] = row[COST:COST+gen["ncost"]*2].tolist()
+            gen["cost"] = row[COST:COST + gen["ncost"] * 2].tolist()
         elif gen["model"] == 2:
             gen["ncost"] = 2
             gen["cost"] = [0] * 3
@@ -322,24 +328,25 @@ def ppc_to_pm(net, ppc):
             gen["cost"][-len(costs):] = costs
     return pm
 
+
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     options = net._options
     sol = result_pm["solution"]
     for i, bus in sol["bus"].items():
-        ppci["bus"][int(i)-1, VM] = bus["vm"]
-        ppci["bus"][int(i)-1, VA] = math.degrees(bus["va"])
+        ppci["bus"][int(i) - 1, VM] = bus["vm"]
+        ppci["bus"][int(i) - 1, VA] = math.degrees(bus["va"])
 
     for i, gen in sol["gen"].items():
-        ppci["gen"][int(i)-1, PG] = gen["pg"]
-        ppci["gen"][int(i)-1, QG] = gen["qg"]
+        ppci["gen"][int(i) - 1, PG] = gen["pg"]
+        ppci["gen"][int(i) - 1, QG] = gen["qg"]
 
     dc_results = np.isnan(sol["branch"]["1"]["qf"])
     for i, branch in sol["branch"].items():
-        ppci["branch"][int(i)-1, PF] = branch["pf"]
-        ppci["branch"][int(i)-1, PT] = branch["pt"]
+        ppci["branch"][int(i) - 1, PF] = branch["pf"]
+        ppci["branch"][int(i) - 1, PT] = branch["pt"]
         if not dc_results:
-            ppci["branch"][int(i)-1, QF] = branch["qf"]
-            ppci["branch"][int(i)-1, QT] = branch["qt"]
+            ppci["branch"][int(i) - 1, QF] = branch["qf"]
+            ppci["branch"][int(i) - 1, QT] = branch["qt"]
 
     ppc["obj"] = result_pm["objective"]
     ppci["success"] = result_pm["status"] == "LocalOptimal"
