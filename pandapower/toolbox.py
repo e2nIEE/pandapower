@@ -16,6 +16,7 @@ from pandapower.create import create_empty_network, create_switch, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
+from pandapower.powerflow import reset_results
 
 try:
     import pplog as logging
@@ -831,6 +832,7 @@ def convert_format(net):
 
         pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
         net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
+        reset_results(net)
 
     _convert_to_mw(net)
     _revert_pfe_mw(net)
