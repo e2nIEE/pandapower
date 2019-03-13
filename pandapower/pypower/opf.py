@@ -22,7 +22,7 @@ from pandapower.pypower.opf_execute import opf_execute
 from pandapower.pypower.opf_setup import opf_setup
 
 
-def opf(*args):
+def opf(ppc, ppopt):
     """Solves an optimal power flow.
 
     Returns a C{results} dict.
@@ -150,7 +150,7 @@ def opf(*args):
     t0 = time()         ## start timer
 
     ## process input arguments
-    ppc, ppopt = opf_args2(*args)
+    ppc, ppopt = opf_args2(ppc, ppopt)
 
     ## add zero columns to bus, gen, branch for multipliers, etc if needed
     nb   = shape(ppc['bus'])[0]    ## number of buses
