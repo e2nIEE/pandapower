@@ -545,25 +545,28 @@ def make_nw(net,vector_group):
     net.ext_grid["x0x_max"] = 1.0
     
     pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112,
-                        "c_nf_per_km": 304,'pfe_kw': 29, "max_i_ka": 1.00,
+                        "c_nf_per_km": 304, "max_i_ka": 0.421,
                         "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
-                        'shift_degree': 0,'vk_percent': 11.2,
-                        'vkr_percent': 0.282,"x0_ohm_per_km": 0.336,
+                        'shift_degree': 0,
+                        "x0_ohm_per_km": 0.336,
                         "c0_nf_per_km": 2000}, "unsymmetric_line_type")
     l1 = pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type",
     			   index=pp.get_free_id(net.line)+1)
     l2 = pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
-#    pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
+    pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
     
     
-    transformer_type = copy.copy(pp.load_std_type(net, "25 MVA 110/20 kV","trafo"))
+    transformer_type = copy.copy(pp.load_std_type(net, 
+                                                  "25 MVA 110/20 kV","trafo"))
     transformer_type.update({"vk0_percent": 5, "vkr0_percent": 0.4, "mag0_percent": 10,
     						 "mag0_rx": 0.4, "mag0_rx": 0.4, "si0_hv_partial": 0.9,
-    						 "vector_group": vector_group})
+    						 "vector_group": vector_group,"i0_percent":0.071,
+                             "pfe_kw": 29,'vkr_percent': 0.282,
+                             'vk_percent': 11.2, })
     pp.create_std_type(net, transformer_type, vector_group, "trafo")
     t1 = pp.create_transformer(net, b1, b2, std_type=vector_group, parallel=2,
     					  index=pp.get_free_id(net.trafo)+1)
-#    pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
+    pp.create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
     
     create_asymmetric_load(net, b4, p_A_mw=3, q_A_mvar=1, p_B_mw=3, q_B_mvar=2,
                                p_C_mw=5, q_C_mvar=1)
