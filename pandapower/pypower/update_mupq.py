@@ -5,7 +5,7 @@
 """Updates values of generator limit shadow prices.
 """
 
-from pypower.idx_gen import MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from pandapower.pypower.idx_gen import MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
 
 
 def update_mupq(baseMVA, gen, mu_PQh, mu_PQl, data):

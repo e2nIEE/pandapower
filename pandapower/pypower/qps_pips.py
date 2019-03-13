@@ -10,7 +10,7 @@ from numpy import Inf, ones, zeros, dot
 
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.pips import pips
+from pandapower.pypower.pips import pips
 
 
 def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):

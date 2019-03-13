@@ -22,10 +22,10 @@ from pandapower.pypower.idx_brch import PF, PT, QF, QT, RATE_A, MU_SF, MU_ST
 from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL, PW_LINEAR, NCOST, COST
 
 from pandapower.pypower.util import sub2ind, have_fcn
-from pandapower.pypower.ipopt_options import ipopt_options
-from pandapower.pypower.cplex_options import cplex_options
-from pandapower.pypower.mosek_options import mosek_options
-from pandapower.pypower.gurobi_options import gurobi_options
+#from pandapower.pypower.ipopt_options import ipopt_options
+#from pandapower.pypower.cplex_options import cplex_options
+#from pandapower.pypower.mosek_options import mosek_options
+#from pandapower.pypower.gurobi_options import gurobi_options
 from pandapower.pypower.qps_pypower import qps_pypower
 
 
@@ -222,20 +222,20 @@ def dcopf_solver(om, ppopt, out_opt=None):
                              'max_it':  max_it,
                              'max_red': max_red,
                              'cost_mult': 1  }
-    elif alg == 400:
-        opt['ipopt_opt'] = ipopt_options([], ppopt)
-    elif alg == 500:
-        opt['cplex_opt'] = cplex_options([], ppopt)
-    elif alg == 600:
-        opt['mosek_opt'] = mosek_options([], ppopt)
-    elif alg == 700:
-        ppopt['GRB_OPT'] = 0
-        ppopt['GRB_METHOD'] = "automatic"
-        ppopt['GRB_TIMELIMIT'] = Inf
-        ppopt['GRB_THREADS'] = 0
-        opt['GRB_OPT'] = gurobi_options(None, ppopt)
-    else:
-        raise ValueError("Unrecognised solver [%d]." % alg)
+#    elif alg == 400:
+#        opt['ipopt_opt'] = ipopt_options([], ppopt)
+#    elif alg == 500:
+#        opt['cplex_opt'] = cplex_options([], ppopt)
+#    elif alg == 600:
+#        opt['mosek_opt'] = mosek_options([], ppopt)
+#    elif alg == 700:
+#        ppopt['GRB_OPT'] = 0
+#        ppopt['GRB_METHOD'] = "automatic"
+#        ppopt['GRB_TIMELIMIT'] = Inf
+#        ppopt['GRB_THREADS'] = 0
+#        opt['GRB_OPT'] = gurobi_options(None, ppopt)
+#    else:
+#        raise ValueError("Unrecognised solver [%d]." % alg)
 
     ##-----  run opf  -----
     x, f, info, output, lmbda = \

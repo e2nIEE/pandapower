@@ -9,9 +9,9 @@ from numpy import array, linalg, zeros, arange, r_, c_
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_gen import PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
+from pandapower.pypower.idx_gen import PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
 
-from pypower.hasPQcap import hasPQcap
+from pandapower.pypower.hasPQcap import hasPQcap
 
 
 def makeApq(baseMVA, gen):

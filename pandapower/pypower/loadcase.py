@@ -15,9 +15,9 @@ from numpy import array, zeros, ones, c_
 
 from scipy.io import loadmat
 
-from pypower._compat import PY2
-from pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, APF
-from pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, BR_STATUS
+from pandapower.pypower._compat import PY2
+from pandapower.pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, APF
+from pandapower.pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, BR_STATUS
 
 
 if not PY2:

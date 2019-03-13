@@ -9,7 +9,7 @@ from numpy import array, diff, any, zeros, r_, flatnonzero as find
 #from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import lil_matrix as sparse
 
-from pypower.idx_cost import MODEL, PW_LINEAR, NCOST, COST
+from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST, COST
 
 
 def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
