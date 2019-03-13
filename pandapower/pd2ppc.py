@@ -117,7 +117,8 @@ def _pd2ppc(net, sequence=None):
 
         else:
             isolated_nodes, _, _ = aux._check_connectivity(ppc)
-            ppc["bus"][isolated_nodes, 1] = NONE                                                                                                                                                       
+            ppc["bus"][isolated_nodes, 1] = NONE 
+            net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes,sequence)                                                                                                                                                      
     
     # sets buses out of service, which aren't connected to branches / REF buses  
     aux._set_isolated_buses_out_of_service(net, ppc)
