@@ -32,7 +32,7 @@ install:
          conda uninstall numba --yes;
     fi
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
-         pip install pypower --yes;
+         pip install pypower;
     fi
   - conda install matplotlib --yes
   - pip install pytest pytest-cov
