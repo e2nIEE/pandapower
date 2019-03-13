@@ -8,10 +8,10 @@
 from numpy import array, ones, zeros, arange, r_, dot, flatnonzero as find
 from scipy.sparse import issparse, csr_matrix as sparse
 
-from pypower.idx_cost import MODEL, POLYNOMIAL
+from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL
 
-from pypower.totcost import totcost
-from pypower.polycost import polycost
+from pandapower.pypower.totcost import totcost
+from pandapower.pypower.polycost import polycost
 
 
 def opf_costfcn(x, om, return_hessian=False):

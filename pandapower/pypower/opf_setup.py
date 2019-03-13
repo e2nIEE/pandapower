@@ -14,21 +14,20 @@
 from sys import stdout, stderr
 
 from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
-from pandapower.idx_brch import RATE_A
-from pandapower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from pandapower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from pandapower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
-from pypower.makeAang import makeAang
-from pypower.makeApq import makeApq
-from pypower.makeAvl import makeAvl
-from pypower.makeAy import makeAy
-from pypower.makeBdc import makeBdc
-from pypower.opf_args import opf_args
-from pypower.pqcost import pqcost
-from pypower.run_userfcn import run_userfcn
 from scipy.sparse import hstack, csr_matrix as sparse
-
-from pandapower.opf.opf_model import opf_model
+from pandapower.pypower.idx_brch import RATE_A
+from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
+from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
+from pandapower.pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
+from pandapower.pypower.makeAang import makeAang
+from pandapower.pypower.makeApq import makeApq
+from pandapower.pypower.makeAvl import makeAvl
+from pandapower.pypower.makeAy import makeAy
+from pandapower.pypower.makeBdc import makeBdc
+from pandapower.pypower.opf_args import opf_args
+from pandapower.pypower.pqcost import pqcost
+from pandapower.pypower.run_userfcn import run_userfcn
+from pandapower.pypower.opf_model import opf_model
 
 
 def opf_setup(ppc, ppopt):
@@ -141,7 +140,7 @@ def opf_setup(ppc, ppopt):
         q1    = array([])    ## index of 1st Qg column in Ay
 
         ## power mismatch constraints
-        B, Bf, Pbusinj, Pfinj = makeBdc(baseMVA, bus, branch)
+        B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
         neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], arange(ng))), (nb, ng))   ## Pbus w.r.t. Pg
         Amis = hstack([B, neg_Cg], 'csr')
         bmis = -(bus[:, PD] + bus[:, GS]) / baseMVA - Pbusinj

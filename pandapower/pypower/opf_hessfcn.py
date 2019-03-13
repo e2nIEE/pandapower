@@ -12,19 +12,19 @@
 """
 
 from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
-from pypower.d2AIbr_dV2 import d2AIbr_dV2
-from pypower.d2ASbr_dV2 import d2ASbr_dV2
-from pypower.d2Sbus_dV2 import d2Sbus_dV2
-from pypower.dIbr_dV import dIbr_dV
-from pypower.dSbr_dV import dSbr_dV
-from pandapower.idx_brch import F_BUS, T_BUS
-from pandapower.idx_cost import MODEL, POLYNOMIAL
-from pandapower.idx_gen import PG, QG
-from pypower.opf_consfcn import opf_consfcn
-from pandapower.opf.opf_costfcn import opf_costfcn
-
-from pypower.polycost import polycost
 from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
+
+from pandapower.pypower.d2AIbr_dV2 import d2AIbr_dV2
+from pandapower.pypower.d2ASbr_dV2 import d2ASbr_dV2
+from pandapower.pypower.d2Sbus_dV2 import d2Sbus_dV2
+from pandapower.pypower.dIbr_dV import dIbr_dV
+from pandapower.pypower.dSbr_dV import dSbr_dV
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL
+from pandapower.pypower.idx_gen import PG, QG
+from pandapower.pypower.opf_consfcn import opf_consfcn
+from pandapower.pypower.opf_costfcn import opf_costfcn
+from pandapower.pypower.polycost import polycost
 
 
 def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
