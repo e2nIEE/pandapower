@@ -13,16 +13,16 @@
 from time import time
 
 from numpy import zeros, c_, shape
-from pandapower.idx_brch import MU_ANGMAX
-from pandapower.idx_bus import MU_VMIN
-from pandapower.idx_gen import MU_QMIN
-from pypower.opf_args import opf_args2
+from pandapower.pypower.idx_brch import MU_ANGMAX
+from pandapower.pypower.idx_bus import MU_VMIN
+from pandapower.pypower.idx_gen import MU_QMIN
 
-from pandapower.opf.opf_execute import opf_execute #temporary changed import to match bugfix path
-from pandapower.opf.opf_setup import opf_setup #temporary changed import to match bugfix path
+from pandapower.pypower.opf_args import opf_args2
+from pandapower.pypower.opf_execute import opf_execute
+from pandapower.pypower.opf_setup import opf_setup
 
 
-def opf(*args):
+def opf(ppc, ppopt):
     """Solves an optimal power flow.
 
     Returns a C{results} dict.
@@ -150,7 +150,7 @@ def opf(*args):
     t0 = time()         ## start timer
 
     ## process input arguments
-    ppc, ppopt = opf_args2(*args)
+    ppc, ppopt = opf_args2(ppc, ppopt)
 
     ## add zero columns to bus, gen, branch for multipliers, etc if needed
     nb   = shape(ppc['bus'])[0]    ## number of buses

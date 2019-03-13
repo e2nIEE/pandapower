@@ -8,16 +8,12 @@ import copy
 
 import numpy as np
 
-from pandapower.idx_area import PRICE_REF_BUS
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pandapower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_area import PRICE_REF_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 
-try:
-    from pypower.run_userfcn import run_userfcn
-except ImportError:
-    # ToDo: Error only for OPF functions if PYPOWER is not installed
-    pass
+from pandapower.pypower.run_userfcn import run_userfcn
 
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \

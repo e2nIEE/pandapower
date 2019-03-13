@@ -12,18 +12,18 @@
 """
 
 from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_
-from pandapower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
-from pandapower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
-from pandapower.idx_cost import MODEL, PW_LINEAR, NCOST
-from pandapower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from pypower.makeYbus import makeYbus
-from pypower.opf_consfcn import opf_consfcn
-from pandapower.opf.opf_costfcn import opf_costfcn
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
+from pandapower.pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
+from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.opf_consfcn import opf_consfcn
+from pandapower.pypower.opf_costfcn import opf_costfcn
 
-from pypower.util import sub2ind
+from pandapower.pypower.util import sub2ind
 
-from pandapower.opf.opf_hessfcn import opf_hessfcn #temporary changed import to match bugfix path
-from pandapower.opf.pips import pips
+from pandapower.pypower.opf_hessfcn import opf_hessfcn
+from pandapower.pypower.pips import pips
 
 
 def pipsopf_solver(om, ppopt, out_opt=None):

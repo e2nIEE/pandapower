@@ -31,6 +31,9 @@ install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then
          conda uninstall numba --yes;
     fi
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then
+         pip install pypower;
+    fi
   - conda install matplotlib --yes
   - pip install pytest pytest-cov
   - pip install codecov

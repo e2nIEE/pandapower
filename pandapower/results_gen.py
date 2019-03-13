@@ -5,8 +5,8 @@
 
 
 import numpy as np
-from pandapower.idx_bus import VM, VA
-from pandapower.idx_gen import PG, QG
+from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_gen import PG, QG
 
 from pandapower.auxiliary import _sum_by_group
 

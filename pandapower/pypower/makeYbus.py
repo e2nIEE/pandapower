@@ -14,8 +14,8 @@
 from numpy import ones, conj, nonzero, any, exp, pi, hstack, real
 from scipy.sparse import csr_matrix
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
-from pandapower.idx_bus import GS, BS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
+from pandapower.pypower.idx_bus import GS, BS
 
 
 def makeYbus(baseMVA, bus, branch):

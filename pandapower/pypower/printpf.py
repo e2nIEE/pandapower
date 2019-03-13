@@ -13,16 +13,16 @@ from numpy import \
 
 from numpy import flatnonzero as find
 
-from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
     VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
-from pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, GEN_STATUS, \
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, GEN_STATUS, \
     PMAX, PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, \
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, \
     TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST
 
-from pypower.isload import isload
-from pypower.run_userfcn import run_userfcn
-from pypower.ppoption import ppoption
+from pandapower.pypower.isload import isload
+from pandapower.pypower.run_userfcn import run_userfcn
+from pandapower.pypower.ppoption import ppoption
 
 
 def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,

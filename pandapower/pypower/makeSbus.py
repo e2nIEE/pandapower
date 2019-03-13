@@ -6,11 +6,11 @@
 """
 
 from numpy import ones, flatnonzero as find
-from pypower.idx_bus import PD, QD
-from pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
+from pandapower.pypower.idx_bus import PD, QD
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.idx_bus import CID, CZD
+from pandapower.pypower.idx_bus import CID, CZD
 
 
 def _get_Sbus(baseMVA, bus, gen_on, Cg, vm=None):

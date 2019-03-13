@@ -5,7 +5,7 @@
 
 
 import numpy as np
-from pandapower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T

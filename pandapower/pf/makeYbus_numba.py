@@ -12,9 +12,9 @@ import numpy as np
 from numba import jit
 from scipy.sparse import csr_matrix, coo_matrix
 
-from pandapower.idx_brch import F_BUS, T_BUS
-from pandapower.idx_bus import GS, BS
-from pandapower.pf.makeYbus_pypower import branch_vectors
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import GS, BS
+from pandapower.pypower.makeYbus import branch_vectors
 
 
 @jit(nopython=True, cache=True)
