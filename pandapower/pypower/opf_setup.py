@@ -239,29 +239,6 @@ def opf_setup(ppc, ppopt):
         om.add_vars('y', ny)
         om.add_constraints('ycon', Ay, array([]), by, ycon_vars)          ## ncony
 
-    ## add user vars, constraints and costs (as specified via A, ..., N, ...)
-    if nz > 0: # pragma: no cover
-        om.add_vars('z', nz, z0, zl, zu)
-        user_vars.append('z')
-
-    if nusr: # pragma: no cover
-        om.add_constraints('usr', ppc['A'], lbu, ubu, user_vars)      ## nusr
-
-    if nw: # pragma: no cover
-        user_cost = {}
-        user_cost['N'] = ppc['N']
-        user_cost['Cw'] = Cw
-        if len(fparm) > 0:
-            user_cost['dd'] = fparm[:, 0]
-            user_cost['rh'] = fparm[:, 1]
-            user_cost['kk'] = fparm[:, 2]
-            user_cost['mm'] = fparm[:, 3]
-
-#        if len(H) > 0:
-        user_cost['H'] = H
-
-        om.add_costs('usr', user_cost, user_vars)
-
     ## execute userfcn callbacks for 'formulation' stage
     run_userfcn(userfcn, 'formulation', om)
 

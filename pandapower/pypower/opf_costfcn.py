@@ -72,29 +72,6 @@ def opf_costfcn(x, om, return_hessian=False):
     else:
         ccost = zeros(nxyz)
 
-    ## generalized cost term
-    if issparse(N) and N.nnz > 0:
-        nw = N.shape[0]
-        r = N * x - rh                   ## Nx - rhat
-        iLT = find(r < -kk)              ## below dead zone
-        iEQ = find((r == 0) & (kk == 0)) ## dead zone doesn't exist
-        iGT = find(r > kk)               ## above dead zone
-        iND = r_[iLT, iEQ, iGT]          ## rows that are Not in the Dead region
-        iL = find(dd == 1)           ## rows using linear function
-        iQ = find(dd == 2)           ## rows using quadratic function
-        LL = sparse((ones(len(iL)), (iL, iL)), (nw, nw))
-        QQ = sparse((ones(len(iQ)), (iQ, iQ)), (nw, nw))
-        kbar = sparse((r_[ones(len(iLT)), zeros(len(iEQ)), -ones(len(iGT))],
-                       (iND, iND)), (nw, nw)) * kk
-        rr = r + kbar                  ## apply non-dead zone shift
-        M = sparse((mm[iND], (iND, iND)), (nw, nw))  ## dead zone or scale
-        diagrr = sparse((rr, (arange(nw), arange(nw))), (nw, nw))
-
-        ## linear rows multiplied by rr(i), quadratic rows by rr(i)^2
-        w = M * (LL + QQ * diagrr) * rr
-
-        f = f + dot(w * H, w) / 2 + dot(Cw, w)
-
     ##----- evaluate cost gradient -----
     ## index ranges
     iPg = range(vv["i1"]["Pg"], vv["iN"]["Pg"])
@@ -110,32 +87,6 @@ def opf_costfcn(x, om, return_hessian=False):
 
     ## piecewise linear cost of P and Q
     df = df + ccost  # The linear cost row is additive wrt any nonlinear cost.
-
-    ## generalized cost term
-    if issparse(N) and N.nnz > 0:
-        HwC = H * w + Cw
-        AA = N.T * M * (LL + 2 * QQ * diagrr)
-        df = df + AA * HwC
-
-        ## numerical check
-        if 0:    ## 1 to check, 0 to skip check
-            ddff = zeros(df.shape)
-            step = 1e-7
-            tol  = 1e-3
-            for k in range(len(x)):
-                xx = x
-                xx[k] = xx[k] + step
-                ddff[k] = (opf_costfcn(xx, om) - f) / step
-            if max(abs(ddff - df)) > tol:
-                idx = find(abs(ddff - df) == max(abs(ddff - df)))
-                print('Mismatch in gradient')
-                print('idx             df(num)         df              diff')
-                print('%4d%16g%16g%16g' %
-                      (range(len(df)), ddff.T, df.T, abs(ddff - df).T))
-                print('MAX')
-                print('%4d%16g%16g%16g' %
-                      (idx.T, ddff[idx].T, df[idx].T,
-                       abs(ddff[idx] - df[idx]).T))
 
     if not return_hessian:
         return f, df

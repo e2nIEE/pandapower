@@ -115,25 +115,6 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ##----- input argument handling  -----
-    ## gather inputs
-    if isinstance(H, dict):       ## problem struct
-        p = H
-        if 'opt' in p: opt = p['opt']
-        if 'x0' in p: x0 = p['x0']
-        if 'xmax' in p: xmax = p['xmax']
-        if 'xmin' in p: xmin = p['xmin']
-        if 'u' in p: u = p['u']
-        if 'l' in p: l = p['l']
-        if 'A' in p: A = p['A']
-        if 'c' in p: c = p['c']
-        if 'H' in p: H = p['H']
-    else:                         ## individual args
-#        assert H is not None  zero dimensional sparse matrices not supported
-        assert c is not None
-#        assert A is not None  zero dimensional sparse matrices not supported
-#        assert l is not None  no lower bounds indicated by None
-
     if opt is None:
         opt = {}
 #    if x0 is None:
@@ -154,18 +135,8 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
     else:
         verbose = 0
 
-    if alg == 0:
-        if have_fcn('cplex'):        ## use CPLEX by default, if available
-            alg = 500
-        elif have_fcn('mosek'):      ## if not, then MOSEK, if available
-            alg = 600
-        elif have_fcn('gurobipy'):   ## if not, then Gurobi, if available
-            alg = 700
-        else:                        ## otherwise PIPS
-            alg = 200
-
     ##----- call the appropriate solver  -----
-    if alg == 200 or alg == 250:    ## use MIPS or sc-MIPS
+    if alg == 0 or alg == 200 or alg == 250:    ## use MIPS or sc-MIPS
         ## set up options
         if 'pips_opt' in opt:
             pips_opt = opt['pips_opt']
@@ -204,8 +175,3 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
         output['alg'] = alg
 
     return x, f, eflag, output, lmbda
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
