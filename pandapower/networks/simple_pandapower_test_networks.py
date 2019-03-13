@@ -4,8 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from pandas import DataFrame
-from numpy import array
 import pandapower as pp
 
 
@@ -22,37 +20,33 @@ def panda_four_load_branch():
 
          net_four_load = pn.panda_four_load_branch()
     """
-    pd_net = pp.create_empty_network()
+    net = pp.create_empty_network()
 
-    busnr1 = pp.create_bus(pd_net, name="bus1", vn_kv=10.)
-    busnr2 = pp.create_bus(pd_net, name="bus2", vn_kv=.4)
-    busnr3 = pp.create_bus(pd_net, name="bus3", vn_kv=.4)
-    busnr4 = pp.create_bus(pd_net, name="bus4", vn_kv=.4)
-    busnr5 = pp.create_bus(pd_net, name="bus5", vn_kv=.4)
-    busnr6 = pp.create_bus(pd_net, name="bus6", vn_kv=.4)
+    busnr1 = pp.create_bus(net, name="bus1", vn_kv=10., geodata=[0, 0])
+    busnr2 = pp.create_bus(net, name="bus2", vn_kv=.4, geodata=[0, -1])
+    busnr3 = pp.create_bus(net, name="bus3", vn_kv=.4, geodata=[0, -2])
+    busnr4 = pp.create_bus(net, name="bus4", vn_kv=.4, geodata=[0, -3])
+    busnr5 = pp.create_bus(net, name="bus5", vn_kv=.4, geodata=[0, -4])
+    busnr6 = pp.create_bus(net, name="bus6", vn_kv=.4, geodata=[0, -5])
 
-    pp.create_ext_grid(pd_net, busnr1)
+    pp.create_ext_grid(net, busnr1)
 
-    pp.create_transformer(pd_net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
+    pp.create_transformer(net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
 
-    pp.create_line(pd_net,  busnr2, busnr3, name="line1", length_km=0.05,
+    pp.create_line(net,  busnr2, busnr3, name="line1", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    pp.create_line(pd_net, busnr3, busnr4, name="line2", length_km=0.05,
+    pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    pp.create_line(pd_net, busnr4, busnr5, name="line3", length_km=0.05,
+    pp.create_line(net, busnr4, busnr5, name="line3", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    pp.create_line(pd_net, busnr5, busnr6, name="line4", length_km=0.05,
+    pp.create_line(net, busnr5, busnr6, name="line4", length_km=0.05,
                    std_type="NAYY 4x120 SE")
 
-    pp.create_load(pd_net, busnr3, 0.030, 0.010)
-    pp.create_load(pd_net, busnr4, 0.030, 0.010)
-    pp.create_load(pd_net, busnr5, 0.030, 0.010)
-    pp.create_load(pd_net, busnr6, 0.030, 0.010)
-
-    n = busnr6 + 1
-    pd_net.bus_geodata = DataFrame(array([[0]*n, range(0, -n, -1)]).T, columns=['x', 'y'])
-
-    return pd_net
+    pp.create_load(net, busnr3, 0.030, 0.010)
+    pp.create_load(net, busnr4, 0.030, 0.010)
+    pp.create_load(net, busnr5, 0.030, 0.010)
+    pp.create_load(net, busnr6, 0.030, 0.010)
+    return net
 
 
 def four_loads_with_branches_out():
@@ -69,49 +63,42 @@ def four_loads_with_branches_out():
 
          net_four_load_with_branches = pn.four_loads_with_branches_out()
     """
-    pd_net = pp.create_empty_network()
+    net = pp.create_empty_network()
 
-    busnr1 = pp.create_bus(pd_net, name="bus1ref", vn_kv=10.)
-    pp.create_ext_grid(pd_net, busnr1)
-    busnr2 = pp.create_bus(pd_net, name="bus2", vn_kv=.4)
-    pp.create_transformer(pd_net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
-    busnr3 = pp.create_bus(pd_net, name="bus3", vn_kv=.4)
-    pp.create_line(pd_net, busnr2, busnr3, name="line1", length_km=0.05,
+    busnr1 = pp.create_bus(net, name="bus1ref", vn_kv=10., geodata=[0, 0])
+    pp.create_ext_grid(net, busnr1)
+    busnr2 = pp.create_bus(net, name="bus2", vn_kv=.4, geodata=[0, -1])
+    pp.create_transformer(net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
+    busnr3 = pp.create_bus(net, name="bus3", vn_kv=.4, geodata=[0, -2])
+    pp.create_line(net, busnr2, busnr3, name="line1", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr4 = pp.create_bus(pd_net, name="bus4", vn_kv=.4)
-    pp.create_line(pd_net, busnr3, busnr4, name="line2", length_km=0.05,
+    busnr4 = pp.create_bus(net, name="bus4", vn_kv=.4, geodata=[0, -3])
+    pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr5 = pp.create_bus(pd_net, name="bus5", vn_kv=.4)
-    pp.create_line(pd_net, busnr4, busnr5, name="line3", length_km=0.05,
+    busnr5 = pp.create_bus(net, name="bus5", vn_kv=.4, geodata=[0, -4])
+    pp.create_line(net, busnr4, busnr5, name="line3", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr6 = pp.create_bus(pd_net, name="bus6", vn_kv=.4)
-    pp.create_line(pd_net, busnr5, busnr6, name="line4", length_km=0.05,
+    busnr6 = pp.create_bus(net, name="bus6", vn_kv=.4, geodata=[0, -5])
+    pp.create_line(net, busnr5, busnr6, name="line4", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr7 = pp.create_bus(pd_net, name="bus7", vn_kv=.4)
-    pp.create_line(pd_net, busnr3, busnr7, name="line5", length_km=0.05,
+    busnr7 = pp.create_bus(net, name="bus7", vn_kv=.4, geodata=[1, -3])
+    pp.create_line(net, busnr3, busnr7, name="line5", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr8 = pp.create_bus(pd_net, name="bus8", vn_kv=.4)
-    pp.create_line(pd_net, busnr4, busnr8, name="line6", length_km=0.05,
+    busnr8 = pp.create_bus(net, name="bus8", vn_kv=.4, geodata=[1, -4])
+    pp.create_line(net, busnr4, busnr8, name="line6", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr9 = pp.create_bus(pd_net, name="bus9", vn_kv=.4)
-    pp.create_line(pd_net, busnr5, busnr9, name="line7", length_km=0.05,
+    busnr9 = pp.create_bus(net, name="bus9", vn_kv=.4, geodata=[1, -5])
+    pp.create_line(net, busnr5, busnr9, name="line7", length_km=0.05,
                    std_type="NAYY 4x120 SE")
-    busnr10 = pp.create_bus(pd_net, name="bus10", vn_kv=.4)
-    pp.create_line(pd_net, busnr6, busnr10, name="line8", length_km=0.05,
+    busnr10 = pp.create_bus(net, name="bus10", vn_kv=.4, geodata=[1, -6])
+    pp.create_line(net, busnr6, busnr10, name="line8", length_km=0.05,
                    std_type="NAYY 4x120 SE")
 
-    pp.create_load(pd_net, busnr7, p_mw=0.030, q_mvar=0.010)
-    pp.create_load(pd_net, busnr8, p_mw=0.030, q_mvar=0.010)
-    pp.create_load(pd_net, busnr9, p_mw=0.030, q_mvar=0.010)
-    pp.create_load(pd_net, busnr10, p_mw=0.030, q_mvar=0.010)
-
-    n1 = 6
-    n2 = 10
-    pd_net.bus_geodata = DataFrame(array([[0]*n1, range(0, -n1, -1)]).T, columns=['x', 'y'])
-    pd_net.bus_geodata = pd_net.bus_geodata.append(DataFrame(
-        array([[1]*(n2-n1), range(-3, -n2+n1-3, -1)]).T, columns=['x', 'y']), ignore_index=True)
-
-    return pd_net
+    pp.create_load(net, busnr7, p_mw=0.030, q_mvar=0.010)
+    pp.create_load(net, busnr8, p_mw=0.030, q_mvar=0.010)
+    pp.create_load(net, busnr9, p_mw=0.030, q_mvar=0.010)
+    pp.create_load(net, busnr10, p_mw=0.030, q_mvar=0.010)
+    return net
 
 
 def simple_four_bus_system():
@@ -129,22 +116,18 @@ def simple_four_bus_system():
          net_simple_four_bus = pn.simple_four_bus_system()
     """
     net = pp.create_empty_network()
-    busnr1 = pp.create_bus(net, name="bus1ref", vn_kv=10)
+    busnr1 = pp.create_bus(net, name="bus1ref", vn_kv=10, geodata=[0, 0])
     pp.create_ext_grid(net, busnr1)
-    busnr2 = pp.create_bus(net, name="bus2", vn_kv=.4)
+    busnr2 = pp.create_bus(net, name="bus2", vn_kv=.4, geodata=[0, -1])
     pp.create_transformer(net, busnr1, busnr2, name="transformer", std_type="0.25 MVA 10/0.4 kV")
-    busnr3 = pp.create_bus(net, name="bus3", vn_kv=.4)
+    busnr3 = pp.create_bus(net, name="bus3", vn_kv=.4, geodata=[0, -2])
     pp.create_line(net, busnr2, busnr3, name="line1", length_km=0.50000, std_type="NAYY 4x50 SE")
-    busnr4 = pp.create_bus(net, name="bus4", vn_kv=.4)
+    busnr4 = pp.create_bus(net, name="bus4", vn_kv=.4, geodata=[0, -3])
     pp.create_line(net, busnr3, busnr4, name="line2", length_km=0.50000, std_type="NAYY 4x50 SE")
     pp.create_load(net, busnr3, 0.030, 0.010, name="load1")
     pp.create_load(net, busnr4, 0.030, 0.010, name="load2")
     pp.create_sgen(net, busnr3, p_mw=0.020, q_mvar=0.005, name="pv1", sn_mva=0.03)
     pp.create_sgen(net, busnr4, p_mw=0.015, q_mvar=0.002, name="pv2", sn_mva=0.02)
-
-    n = busnr4 + 1
-    net.bus_geodata.loc[:, ['x', 'y']] = array([[0]*n, range(0, -n, -1)]).T
-
     return net
 
 
@@ -165,13 +148,13 @@ def simple_mv_open_ring_net():
 
     net = pp.create_empty_network()
 
-    pp.create_bus(net, name="110 kV bar", vn_kv=110, type='b')
-    pp.create_bus(net, name="20 kV bar", vn_kv=20, type='b')
-    pp.create_bus(net, name="bus 2", vn_kv=20, type='b')
-    pp.create_bus(net, name="bus 3", vn_kv=20, type='b')
-    pp.create_bus(net, name="bus 4", vn_kv=20, type='b')
-    pp.create_bus(net, name="bus 5", vn_kv=20, type='b')
-    pp.create_bus(net, name="bus 6", vn_kv=20, type='b')
+    pp.create_bus(net, name="110 kV bar", vn_kv=110, type='b', geodata=[0, 0])
+    pp.create_bus(net, name="20 kV bar", vn_kv=20, type='b', geodata=[0, -1])
+    pp.create_bus(net, name="bus 2", vn_kv=20, type='b', geodata=[-0.5, -2])
+    pp.create_bus(net, name="bus 3", vn_kv=20, type='b', geodata=[-0.5, -3])
+    pp.create_bus(net, name="bus 4", vn_kv=20, type='b', geodata=[-0.5, -4])
+    pp.create_bus(net, name="bus 5", vn_kv=20, type='b', geodata=[0.5, -4])
+    pp.create_bus(net, name="bus 6", vn_kv=20, type='b', geodata=[0.5, -3])
 
     pp.create_ext_grid(net, 0, vm_pu=1)
 
@@ -208,8 +191,4 @@ def simple_mv_open_ring_net():
     pp.create_switch(net, bus=6, element=4, et='l')
     pp.create_switch(net, bus=6, element=5, et='l')
     pp.create_switch(net, bus=1, element=5, et='l')
-
-    net.bus_geodata = DataFrame([[0, 0], [0, -1], [-0.5, -2], [-0.5, -3], [-0.5, -4], [0.5, -4],
-                                 [0.5, -3]], columns=['x', 'y'])
-
     return net
