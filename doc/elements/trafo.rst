@@ -153,10 +153,10 @@ The reference voltage is then multiplied with the tap factor:
    :nowrap:
    
    \begin{align*}
-    n_{tap} = 1 + (tp\_pos - tp\_neutral) \cdot \frac{tp\_st\_percent}{100}
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100}
     \end{align*}
     
-On which side the reference voltage is adapted depends on the :math:`tp\_side` variable:
+On which side the reference voltage is adapted depends on the :math:`tap\_side` variable:
 
 .. tabularcolumns:: |p{0.2\linewidth}|p{0.15\linewidth}|p{0.15\linewidth}|
 .. csv-table:: 
@@ -192,7 +192,7 @@ The angle shift can be directly defined in tap_step_degree, in which case:
    :nowrap:
    
    \begin{align*}
-   \theta_{tp} = tp\_st\_degree \cdot (tp\_pos - tp\_neutral)
+   \theta_{tp} = tap\_st\_degree \cdot (tap\_pos - tap\_neutral)
    \end{align*}
 
 or it can be given as a constant voltage step in tap_step_percent, in which case the angle is calculated as:
@@ -201,7 +201,7 @@ or it can be given as a constant voltage step in tap_step_percent, in which case
    :nowrap:
    
    \begin{align*}
-   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tp\_st\_percent}{100})  \cdot (tp\_pos - tp\_neutral)
+   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tap\_st\_percent}{100})  \cdot (tap\_pos - tap\_neutral)
    \end{align*}
 
 If both values are given for an ideal phase shift transformer, the power flow will raise an error.
