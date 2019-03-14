@@ -35,11 +35,9 @@ import scipy as sp
 import six
 from numpy import complex128
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF,VMIN, VMAX
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
-
-from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD,VM,VA,REF, VMIN, VMAX, PV
+from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
     from numba import jit

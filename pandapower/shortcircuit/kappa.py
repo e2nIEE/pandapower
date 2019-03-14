@@ -8,8 +8,8 @@ import copy
 import networkx as nx
 import numpy as np
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
-from pandapower.idx_bus import BUS_I, GS, BS, BASE_KV
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
+from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
 
 from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV
 from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx

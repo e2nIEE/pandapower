@@ -18,10 +18,10 @@ try:
 except ImportError:
     from pandapower.pf.no_numba import jit
 
-from pandapower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
-from pandapower.idx_bus import VM, VA, PD, QD
-from pandapower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
-from pandapower.pf.pfsoln_pypower import _update_v, _update_q, _update_p
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
+from pandapower.pypower.idx_bus import VM, VA, PD, QD
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
+from pandapower.pypower.pfsoln import _update_v, _update_q, _update_p
 
 EPS = finfo(float).eps
 

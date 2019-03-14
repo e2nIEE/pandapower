@@ -6,8 +6,8 @@
 
 import numpy as np
 from numpy import complex128
-from pandapower.idx_bus import VM, VA
-from pandapower.idx_gen import PG, QG, GEN_BUS
+from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
     I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012

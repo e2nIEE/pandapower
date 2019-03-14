@@ -15,7 +15,7 @@ from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_l
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
-from pandapower.pf.makeSbus import makeSbus
+from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 
 

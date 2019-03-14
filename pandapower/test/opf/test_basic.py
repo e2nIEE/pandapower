@@ -828,4 +828,4 @@ def test_line_temperature():
 
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main([__file__, "-xs"])

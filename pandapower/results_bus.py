@@ -8,8 +8,8 @@ import numpy as np
 from numpy import complex128
 import pandas as pd
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE
-from pandapower.idx_gen import PG, QG
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV,NONE
+from pandapower.pypower.idx_gen import PG, QG
 
 
 def _set_buses_out_of_service(ppc):

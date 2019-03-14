@@ -14,9 +14,9 @@
 
 from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find,\
                   setdiff1d, intersect1d
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.idx_bus import VM, VA, PD, QD
-from pandapower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.pypower.idx_bus import VM, VA, PD, QD
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX
 from scipy.sparse import csr_matrix
 
 EPS = finfo(float).eps
