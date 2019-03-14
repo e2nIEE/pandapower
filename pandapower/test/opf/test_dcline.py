@@ -44,8 +44,8 @@ def dcline_net():
 
 def test_dispatch1(dcline_net):
     net = dcline_net
-    pp.create_pwl_cost(net, 0, "ext_grid", [(-1e12, 1e9, 100)])
-    pp.create_pwl_cost(net, 1, "ext_grid", [(-1e12, 1e9, 80)])
+    pp.create_pwl_cost(net, 0, "ext_grid", [[-1e12, 1e9, 100]])
+    pp.create_pwl_cost(net, 1, "ext_grid", [[-1e12, 1e9, 80]])
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained

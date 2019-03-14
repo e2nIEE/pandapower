@@ -60,7 +60,7 @@ def test_cost_mixed():
 
     net.load.controllable.at[0] = False
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
-    pp.create_pwl_cost(net, 0, "ext_grid", [(-1000, 0, -2000), (0, 1000, 2000)], power_type="p")
+    pp.create_pwl_cost(net, 0, "ext_grid", [[-1000, 0, -2000], [0, 1000, 2000]], power_type="p")
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 1000
     net.poly_cost.cp2_eur_per_mw2.at[0] = 0
@@ -111,8 +111,8 @@ def test_mixed_p_q_pwl():
                                    max_loading_percent=100 * 690)
 
     # testing some combinations
-    pp.create_pwl_cost(net, 0, "gen", [(-150, 150, 1)])
-    pp.create_pwl_cost(net, 0, "gen", [(-150, 150, 1)], power_type="q")
+    pp.create_pwl_cost(net, 0, "gen", [[-150, 150, 1]])
+    pp.create_pwl_cost(net, 0, "gen", [[-150, 150, 1]], power_type="q")
     pp.runopp(net, )
     assert net["OPF_converged"]
     assert net.res_cost == net.res_gen.p_mw.values + net.res_gen.q_mvar.values
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     net.load.controllable.at[0] = False
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
-    pp.create_pwl_cost(net, 0, "ext_grid", [(-1000, 0, -2000), (0, 1000, 2000)], power_type="p")
+    pp.create_pwl_cost(net, 0, "ext_grid", [[-1000, 0, -2000], [0, 1000, 2000]], power_type="p")
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 1000
     net.poly_cost.cp2_eur_per_mw2.at[0] = 0
