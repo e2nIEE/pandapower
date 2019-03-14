@@ -12,7 +12,7 @@ from time import time
 import numpy as np
 from numpy import flatnonzero as find, pi, exp
 
-from pandapower.pf.pfsoln import pfsoln
+from pandapower.pypower.pfsoln import pfsoln
 
 try:
     import pplog as logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
-from pandapower.pf.makeYbus import makeYbus
+from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pypower.idx_bus import GS, BS, PD , QD
 from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed, \
     _check_bus_index_and_print_warning_if_high, _check_gen_index_and_print_warning_if_high, \
@@ -30,7 +30,7 @@ from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed, \
     I1_from_V012, S_from_VI_elementwise, V1_from_ppc, V_from_I, combine_X012, I0_from_V012, I2_from_V012
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
-from pandapower.pf.bustypes import bustypes
+from pandapower.pypower.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG

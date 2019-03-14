@@ -12,7 +12,7 @@ from pandapower.pf.runpp_3ph import combine_X012
 from pandapower.create import create_asymmetric_load, create_load
 from pandapower.pf.runpp_3ph import runpp_3ph
 import copy
-from pandapower.pf.makeYbus import makeYbus 
+from pandapower.pypower.makeYbus import makeYbus 
 from pandapower.pf.runpp_3ph import I0_from_V012,I1_from_V012,I2_from_V012
 
 
@@ -667,7 +667,7 @@ def test_2trafos():
     runpp_3ph(net)
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
     
-#@pytest.mark.xfail
+@pytest.mark.xfail
 def test_3ph_isolated_nodes():
     V_base = 110  # 110kV Base Voltage
     MVA_base = 100  # 100 MVA
@@ -707,7 +707,7 @@ def test_3ph_isolated_nodes():
 
     r = runpp_3ph(net)
 
-#    assert r[3]["success"]
+    assert r[3]["success"]
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["vmA_pu", "vaA_degree", "vmB_pu",
                        "vaB_degree", "vmC_pu", "vaC_degree"]], np.nan, equal_nan=True)
     assert np.allclose(net.res_bus_3ph.T[[0, 2, 3]].T[["p_A_mw", "q_A_mvar", "p_B_mw", "q_B_mvar",
