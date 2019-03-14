@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pf.makeYbus import makeYbus
-from pandapower.idx_bus import GS, BS, PD , QD
+from pandapower.pypower.idx_bus import GS, BS, PD , QD
 from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed, \
     _check_bus_index_and_print_warning_if_high, _check_gen_index_and_print_warning_if_high, \
     _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, phase_to_sequence, X012_to_X0, X012_to_X2, \
@@ -32,8 +32,8 @@ from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pf.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
-from pandapower.idx_bus import VM, VA
-from pandapower.idx_gen import GEN_BUS, GEN_STATUS, VG
+from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph, reset_results
 
 
