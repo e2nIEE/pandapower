@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -23,10 +23,8 @@ setup(
     long_description=long_description,
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pypower>=5.0.1",
-                      "pandas>=0.17.0",
+    install_requires=["pandas>=0.17.0",
                       "networkx",
-                      "numpy",
                       "scipy"],
     extras_require = {":python_version<'3.0'": ["future"],
                       "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"]},

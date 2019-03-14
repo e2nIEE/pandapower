@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import networkx as nx
@@ -13,7 +13,7 @@ except ImportError:
 
 from pandapower.pd2ppc import _init_ppc
 from pandapower.auxiliary import _init_nx_options 
-from pandapower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV
 
 from pandapower.build_branch import _calc_impedance_parameters_from_dataframe,\
                                     _calc_branch_values_from_trafo_df, \

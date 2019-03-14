@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 
 from time import time
 
-from numpy import flatnonzero as find, pi, zeros, real, bincount
+from numpy import pi, zeros, real, bincount
 
-from pandapower.idx_brch import PF, PT, QF, QT
-from pandapower.idx_bus import VA, GS
-from pandapower.idx_gen import PG, GEN_BUS
-from pandapower.pf.dcpf import dcpf
-from pandapower.pf.makeBdc import makeBdc
-from pandapower.pf.makeSbus import makeSbus
+from pandapower.pypower.idx_brch import PF, PT, QF, QT
+from pandapower.pypower.idx_bus import VA, GS
+from pandapower.pypower.idx_gen import PG, GEN_BUS
+from pandapower.pypower.dcpf import dcpf
+from pandapower.pypower.makeBdc import makeBdc
+from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 def _run_dc_pf(ppci):
