@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,11 +12,11 @@ from scipy.linalg import inv
 
 
 from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
-from pandapower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV
 try:
-    from pandapower.pf.makeYbus import makeYbus
+    from pandapower.pf.makeYbus_numba import makeYbus
 except ImportError:
-    from pandapower.pf.makeYbus_pypower import makeYbus
+    from pandapower.pypower.makeYbus import makeYbus
 
 
 def _calc_rx(net, ppc):

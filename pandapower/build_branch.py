@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -12,9 +12,9 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_values
-from pandapower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, branch_cols
-from pandapower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 
 
 def _build_branch_ppc(net, ppc):
