@@ -25,11 +25,11 @@ Create Function
     All short circuit voltages are given relative to the maximum apparent power
     flow. For example vk_hv_percent is the short circuit voltage from the high to
     the medium level, it is given relative to the minimum of the rated apparent
-    power in high and medium level: min(sn_hv_kva, sn_mv_kva). This is consistent
+    power in high and medium level: min(sn_hv_mva, sn_mv_mva). This is consistent
     with most commercial network calculation software (e.g. PowerFactory).
     Some tools (like PSS Sincal) however define all short ciruit voltages relative
     to the overall rated apparent power of the transformer:
-    max(sn_hv_kva, sn_mv_kva, sn_lv_kva). You might have to convert the
+    max(sn_hv_mva, sn_mv_mva, sn_lv_mva). You might have to convert the
     values depending on how the short-circuit voltages are defined.
 
 Input Parameters
@@ -76,8 +76,8 @@ To calculate the short-circuit voltages :math:`v_{k, t1..t3}` and :math:`v_{r, t
 
    \begin{align*}
     v'_{k, h} &= vk\_hv\_percent  \\
-    v'_{k, m} &= vk\_mv\_percent \cdot \frac{sn\_hv\_kva}{sn\_mv\_kva} \\
-    v'_{k, l} &= vk\_lv\_percent \cdot \frac{sn\_hv\_kva}{sn\_lv\_kva}
+    v'_{k, m} &= vk\_mv\_percent \cdot \frac{sn\_hv\_mva}{sn\_mv\_mva} \\
+    v'_{k, l} &= vk\_lv\_percent \cdot \frac{sn\_hv\_mva}{sn\_lv\_mva}
     \end{align*}
 
 
@@ -101,8 +101,8 @@ Since these voltages are given relative to the high voltage side, they have to b
 
    \begin{align*}
     v_{k, t1} &= v'_{k, t1} \\
-    v_{k, t2} &= v'_{k, t2} \cdot \frac{sn\_mv\_kva}{sn\_hv\_kva} \\
-    v_{k, t3} &= v'_{k, t3} \cdot \frac{sn\_lv\_kva}{sn\_hv\_kva}
+    v_{k, t2} &= v'_{k, t2} \cdot \frac{sn\_mv\_mva}{sn\_hv\_mva} \\
+    v_{k, t3} &= v'_{k, t3} \cdot \frac{sn\_lv\_mva}{sn\_hv\_mva}
     \end{align*}
 
 The real part of the short-circuit voltage is calculated in the same way.
@@ -111,11 +111,11 @@ The real part of the short-circuit voltage is calculated in the same way.
     All short circuit voltages are given relative to the maximum apparent power
     flow. For example vk_hv_percent is the short circuit voltage from the high to
     the medium level, it is given relative to the minimum of the rated apparent
-    power in high and medium level: min(sn_hv_kva, sn_mv_kva). This is consistent
+    power in high and medium level: min(sn_hv_mva, sn_mv_mva). This is consistent
     with most commercial network calculation software (e.g. PowerFactory).
     Some tools (like PSS Sincal) however define all short circuit voltages relative
     to the overall rated apparent power of the transformer:
-    max(sn_hv_kva, sn_mv_kva, sn_lv_kva). You might have to convert the
+    max(sn_hv_mva, sn_mv_mva, sn_lv_mva). You might have to convert the
     values depending on how the short-circuit voltages are defined.
 
 The tap changer adapts the nominal voltages of the transformer in the equivalent to the 2W-Model:
@@ -156,13 +156,13 @@ Result Parameters
    
    \begin{align*}
     p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    
-    q\_hv\_kvar &= Im(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\
+    q\_hv\_mvar &= Im(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\
     p\_mv\_mw &= Re(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\    
-    q\_mv\_kvar &= Im(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\
+    q\_mv\_mvar &= Im(\underline{v}_{mv} \cdot \underline{i}_{mv}) \\
     p\_lv\_mw &= Re(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
-    q\_lv\_kvar &= Im(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
+    q\_lv\_mvar &= Im(\underline{v}_{lv} \cdot \underline{i}_{lv}) \\
 	pl\_mw &= p\_hv\_mw + p\_lv\_mw \\
-	ql\_kvar &= q\_hv\_kvar + q\_lv\_kvar \\
+	ql\_mvar &= q\_hv\_mvar + q\_lv\_mvar \\
     i\_hv\_ka &= i_{hv} \\
     i\_mv\_ka &= i_{mv} \\
     i\_lv\_ka &= i_{lv}
@@ -176,7 +176,7 @@ For trafo_loading="current", the loading is calculated as:
    :nowrap:
    
    \begin{align*}  
-    loading\_percent &= max(\frac{i_{hv} \cdot vn\_hv\_kv}{sn\_hv\_kva}, \frac{i_{mv} \cdot vn\_mv\_kv}{sn\_mv\_kva}, \frac{i_{lv} \cdot vn\_lv\_kv}{sn\_lv\_kva})  \cdot 100
+    loading\_percent &= max(\frac{i_{hv} \cdot vn\_hv\_kv}{sn\_hv\_mva}, \frac{i_{mv} \cdot vn\_mv\_kv}{sn\_mv\_mva}, \frac{i_{lv} \cdot vn\_lv\_kv}{sn\_lv\_mva})  \cdot 100
    \end{align*}
     
 
@@ -186,5 +186,5 @@ For trafo_loading="power", the loading is defined as:
    :nowrap:
    
    \begin{align*}  
-    loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_hv\_kva}, \frac{i_{mv} \cdot v_{mv}}{sn\_mv\_kva}, \frac{i_{lv} \cdot v_{lv}}{sn\_lv\_kva}) \cdot 100
+    loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_hv\_mva}, \frac{i_{mv} \cdot v_{mv}}{sn\_mv\_mva}, \frac{i_{lv} \cdot v_{lv}}{sn\_lv\_mva}) \cdot 100
     \end{align*}

@@ -109,11 +109,11 @@ The power flow results in the net.res_line table are defined as:
    
    \begin{align*}
     p\_from\_mw &= Re(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\    
-    q\_from\_kvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
+    q\_from\_mvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
     p\_to\_mw &= Re(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
-    q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
+    q\_to\_mvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
 	pl\_mw &= p\_from\_mw + p\_to\_mw \\
-	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
+	ql\_mvar &= q\_from\_mvar + q\_to\_mvar \\
     i\_from\_ka &= i_{from} \\
     i\_to\_ka &= i_{to} \\
     i\_ka &= max(i_{from}, i_{to}) \\
