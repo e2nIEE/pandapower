@@ -14,6 +14,7 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_traf
                                                                    add_test_impedance, \
                                                                    add_test_bus_bus_switch
 from pandapower.pypower.idx_brch import BR_R, BR_X
+from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 
 def test_line():
     net = pp.create_empty_network()

@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices, pandapowerNet, _preserve_dtypes
-from pandapower.create import create_switch, create_line_from_parameters, create_impedance
+from pandapower.create import create_switch, create_line_from_parameters, \
+                              create_impedance, create_empty_network
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses

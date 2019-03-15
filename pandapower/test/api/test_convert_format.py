@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Mar 15 16:07:58 2019
 
-@author: thurner
-"""
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 
 from pandapower import pp_dir
 import pandapower as pp
@@ -34,6 +33,4 @@ def test_convert_format():
                 raise UserWarning("Power flow results mismatch with pandapower version %s"%version)
                 
 if __name__ == '__main__':
-#    path = os.path.join(pp_dir, "test", "test_files", "old_versions", "example_1.6.1.json")
-#    net = pp.from_json(path, convert=False)
     pytest.main(__file__)
