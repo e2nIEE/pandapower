@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -36,9 +36,10 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'switch_rx_ratio', 'init', 'enforce_q_lims',
-                           'recycle', 'voltage_depend_loads', 'delta', 'tolerance_mva',
-                           'trafo_loading', 'numba', 'ac', 'algorithm', 'max_iteration',
-                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree']
+                           'voltage_depend_loads', 'consider_line_temperature', 'delta',
+                           'trafo3w_losses', 'init_vm_pu', 'init_va_degree',  'init_results',
+                           'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
+                           'max_iteration', 'v_debug']
 
     if overwrite or 'user_pf_options' not in net.keys():
         net['user_pf_options'] = dict()
@@ -60,7 +61,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
-          voltage_depend_loads=True, **kwargs):
+          voltage_depend_loads=True, consider_line_temperature=False, **kwargs):
     """
     Runs a power flow
 
@@ -145,6 +146,11 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
+        **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided
+            line temperature. If True, net.line must contain a column "temperature_degree_celsius".
+            The temperature dependency coefficient alpha must be provided in the net.line.alpha
+            column, otherwise the default value of 0.004 is used
+
 
         **KWARGS:
 
@@ -194,11 +200,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
     # if dict 'user_pf_options' is present in net, these options overrule the net.__internal_options
     # except for parameters that are passed by user
     passed_parameters = _passed_runpp_parameters(locals())
-    _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles, init=init,
-                        max_iteration=max_iteration, tolerance_mva=tolerance_mva, trafo_model=trafo_model,
-                        trafo_loading=trafo_loading, enforce_q_lims=enforce_q_lims,
-                        check_connectivity=check_connectivity,
-                        voltage_depend_loads=voltage_depend_loads, 
+    _init_runpp_options(net, algorithm=algorithm, calculate_voltage_angles=calculate_voltage_angles,
+                        init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
+                        trafo_model=trafo_model, trafo_loading=trafo_loading,
+                        enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
+                        voltage_depend_loads=voltage_depend_loads,
+                        consider_line_temperature=consider_line_temperature,
                         passed_parameters=passed_parameters, **kwargs)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -243,8 +250,9 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
         ****kwargs** - options to use for PYPOWER.runpf
     """
-    _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading, recycle=recycle,
+    _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
                           check_connectivity=check_connectivity, switch_rx_ratio=switch_rx_ratio, trafo3w_losses=trafo3w_losses)
+                          trafo3w_losses=trafo3w_losses)
 
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -253,7 +261,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
 def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivity=True,
            suppress_warnings=True, switch_rx_ratio=0.5, delta=1e-10, init="flat", numba=True,
-           trafo3w_losses="hv", **kwargs):
+           trafo3w_losses="hv", consider_line_temperature=False, **kwargs):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -304,6 +312,11 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
             "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
             convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
 
+        **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided
+            line temperature. If True, net.line must contain a column "temperature_degree_celsius".
+            The temperature dependency coefficient alpha must be provided in the net.line.alpha
+            column, otherwise the default value of 0.004 is used
+
          **kwargs** - Pypower / Matpower keyword arguments: - OPF_VIOLATION (5e-6) constraint violation tolerance
                                                             - PDIPM_COSTTOL (1e-6) optimality tolerance
                                                             - PDIPM_GRADTOL (1e-6) gradient tolerance
@@ -317,7 +330,8 @@ def runopp(net, verbose=False, calculate_voltage_angles=False, check_connectivit
     _init_runopp_options(net, calculate_voltage_angles=calculate_voltage_angles,
                          check_connectivity=check_connectivity,
                          switch_rx_ratio=switch_rx_ratio, delta=delta, init=init, numba=numba,
-                         trafo3w_losses=trafo3w_losses)
+                         trafo3w_losses=trafo3w_losses,
+                         consider_line_temperature=consider_line_temperature)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)

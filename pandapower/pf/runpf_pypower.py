@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -16,20 +16,18 @@ from time import time
 
 from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d
 
-from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
-from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
-from pandapower.pf.bustypes import bustypes
-from pandapower.pf.makeSbus import makeSbus
-from pandapower.pf.pfsoln_pypower import pfsoln
+from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
+from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+from pandapower.pypower.bustypes import bustypes
+from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
-try:
-    from pypower.makeB import makeB
-    from pypower.ppoption import ppoption
-    from pypower.fdpf import fdpf
-    from pypower.gausspf import gausspf
-except ImportError:
-    raise ImportError("Cannot import PYPOWER functions. Select a different solver, for example nr, or install PYPOWER")
+
+from pandapower.pypower.makeB import makeB
+from pandapower.pypower.ppoption import ppoption
+from pandapower.pypower.fdpf import fdpf
+from pandapower.pypower.gausspf import gausspf
 
 try:
     import pplog as logging
@@ -115,9 +113,9 @@ def _import_numba_extensions_if_flag_is_true(numba):
             numba = False
 
     if numba:
-        from pandapower.pf.makeYbus import makeYbus
+        from pandapower.pf.makeYbus_numba import makeYbus
     else:
-        from pandapower.pf.makeYbus_pypower import makeYbus
+        from pandapower.pypower.makeYbus import makeYbus
 
     return numba, makeYbus
 

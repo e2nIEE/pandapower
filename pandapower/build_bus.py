@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
-from pandapower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA,\
+from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, VM, VA,\
                                CID, CZD, bus_cols, REF
 
 try:
@@ -104,7 +104,7 @@ class DisjointSet(dict):
         p2 = self.find(item2)
         self[p1] = p2
 
-
+def create_consecutive_bus_lookup(net, bus_index):
 def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):
     # if there are any closed bus-bus switches update those entries
     slidx = ((net["switch"]["closed"].values == 1) &
@@ -126,6 +126,10 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
     # bus lookup as mask from pandapower -> pypower
     bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
     bus_lookup[bus_index] = consec_buses
+    return bus_lookup    
+
+def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_switch):
+    bus_lookup = create_consecutive_bus_lookup(net, bus_index)
 
     if net._fused_bb_switches.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
@@ -241,11 +245,15 @@ def _build_bus_ppc(net, ppc):
     else:
         bus_index = net["bus"].index.values
     # get in service elements
-    _is_elements = net["_is_elements"]
-    eg_is_mask = _is_elements['ext_grid']
-    gen_is_mask = _is_elements['gen']
-    bus_is_idx = _is_elements['bus_is_idx']
 
+
+    if mode == "nx":
+        bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    else:
+        _is_elements = net["_is_elements"]
+        eg_is_mask = _is_elements['ext_grid']
+        gen_is_mask = _is_elements['gen']
+        bus_is_idx = _is_elements['bus_is_idx']
     bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
                                    gen_is_mask, eg_is_mask, numba=numba)
 
@@ -274,7 +282,8 @@ def _build_bus_ppc(net, ppc):
     else:
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
-    set_reference_buses(net, ppc, bus_lookup)
+    if mode != "nx":
+        set_reference_buses(net, ppc, bus_lookup)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude")
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu

@@ -2,7 +2,7 @@
 name;string;;name of the ward equivalent
 bus*;integer;;index of connected bus
 ps_mw*;float;;constant active power demand [MW]
-qs_kvar*;float;;constant reactive power demand [kVar]
+qs_mvar*;float;;constant reactive power demand [MVar]
 pz_mw*;float;;constant impedance active power demand at 1.0 pu [MW]
-qz_kvar*;float;;constant impedance reactive power demand at 1.0 pu [kVar]
+qz_mvar*;float;;constant impedance reactive power demand at 1.0 pu [MVar]
 in_service*;boolean;True / False;specifies if the ward equivalent is in service.

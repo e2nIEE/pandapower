@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -272,7 +272,7 @@ def from_excel(filename, convert=True):
         xls = pd.ExcelFile(filename).parse(sheet_name=None)
     else:
         xls = pd.ExcelFile(filename).parse(sheet_name=None, index_col=0)
-        
+
     try:
         net = from_dict_of_dfs(xls)
     except:

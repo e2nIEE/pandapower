@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -1206,7 +1206,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
 
 def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
-                df=1., parallel=1, in_service=True, max_loading_percent=nan):
+                df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=None,
+                temperature_degree_celsius=None):
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -1281,6 +1282,10 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     if "type" in lineparam:
         v["type"] = lineparam["type"]
 
+    # if net.line column already has alpha, add it from std_type
+    if "alpha" in net.line.columns and "alpha" in lineparam:
+        v["alpha"] = lineparam["alpha"]
+
     # store dtypes
     dtypes = net.line.dtypes
 
@@ -1298,13 +1303,24 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
+    if alpha is not None:
+        if "alpha" not in net.line.columns:
+            net.line.loc[:, "alpha"] = pd.Series()
+        net.line.loc[index, "alpha"] = alpha
+
+    if temperature_degree_celsius is not None:
+        if "temperature_degree_celsius" not in net.line.columns:
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
+        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
     return index
 
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                max_loading_percent=nan, **kwargs):
+                                max_loading_percent=nan, alpha=None,
+                                temperature_degree_celsius=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -1396,6 +1412,16 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
             net.line.loc[:, "max_loading_percent"] = pd.Series()
 
         net.line.loc[index, "max_loading_percent"] = float(max_loading_percent)
+
+    if alpha is not None:
+        if "alpha" not in net.line.columns:
+            net.line.loc[:, "alpha"] = pd.Series()
+        net.line.loc[index, "alpha"] = alpha
+
+    if temperature_degree_celsius is not None:
+        if "temperature_degree_celsius" not in net.line.columns:
+            net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
+        net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
 
     return index
 
@@ -2430,13 +2456,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"]
 
-        **data_points** - (numpy array) Numpy array containing n data points (see example)
+        **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
+        **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -2445,12 +2470,13 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
-        create_piecewise_linear_cost(net, 0, "load", np.array([[0, 0], [75, 50], [150, 100]]))
-
-    NOTE:
-      - costs for reactive power can only be quadratic, linear or constant. No higher grades \
-          supported.
-      - costs for storages are positive per definition (similar to sgen costs)
+        The cost function is given by the x-values p1 and p2 with the slope m between those points. The constant part
+        b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continous (the
+        starting point of an interval has to be equal to th end point of the previous interval).
+       
+        To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
+        
+        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
 
     if index is None:
@@ -2466,6 +2492,48 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
 
 def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
                            cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, type="p", index=None):
+    """
+    Creates an entry for polynimoal costs for an element. The currently supported elements are
+     - Generator{}
+     - External Grid
+     - Static Generator
+     - Load
+     - Dcline
+     - Storage
+
+    INPUT:
+        **element** (int) - ID of the element in the respective element table
+
+        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
+            are possible
+
+        **cp1_eur_per_mw** (float) - Linear costs per MW
+
+        **cp0_eur=0** (float) - Offset active power costs in euro
+
+        **cq1_eur_per_mvar=0** (float) - Linear costs per Mvar
+
+        **cq0_eur=0** (float) - Offset reactive power costs in euro
+
+        **cp2_eur_per_mw2=0** (float) - Quadratic costs per MW
+
+        **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
+
+    OPTIONAL:
+        **type** - (string) - Type of cost ["p", "q"] are allowed
+
+        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of created cost entry
+
+    EXAMPLE:
+        The polynomial cost function is given by the linear and quadratic cost coefficients.
+
+        create_poly_cost(net, 0, "load", cp1_eur_per_mw = 0.1)
+    """
+
     if index is None:
         index = get_free_id(net["poly_cost"])
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",

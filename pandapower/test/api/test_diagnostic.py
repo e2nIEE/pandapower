@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import copy
-import warnings
+import pytest
+pytestmark = pytest.mark.filterwarnings("ignore")
 
 import numpy as np
 import pytest
@@ -554,8 +555,7 @@ def test_different_voltage_levels_connected(test_net, diag_params, diag_errors, 
 
 
 def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, report_methods):
-    # this will raise the warning "devide by zero encountered in true devide" -> ignore
-    warnings.simplefilter("ignore")
+
     # line test
     net = copy.deepcopy(test_net)
     check_function = 'impedance_values_close_to_zero'

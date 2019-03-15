@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -23,11 +23,11 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-from pandapower.idx_gen import PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
-from pandapower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
-from pandapower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
+from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, QMAX, GEN_STATUS, QMIN, PMIN, PMAX
+from pandapower.pypower.idx_bus import BUS_I, ZONE, BUS_TYPE, VMAX, VMIN, VA, VM, BASE_KV, PD, QD, GS, BS
+from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, F_BUS, T_BUS, BR_STATUS, \
     ANGMIN, ANGMAX, TAP, SHIFT, PF, PT, QF, QT
-from pandapower.idx_cost import MODEL, COST, NCOST
+from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 
 
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -233,7 +233,7 @@ def _call_powermodels(pm, julia_file):
 
     Main.include(os.path.join(pp_dir, "opf", 'pp_2_pm.jl'))
     try:
-        run_powermodels = j.include(julia_file)
+        run_powermodels = Main.include(julia_file)
     except ImportError:
         raise UserWarning("File %s could not be imported" % julia_file)
     result_pm = run_powermodels(buffer_file)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,8 +10,8 @@ from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _a
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
-from pandapower.idx_brch import branch_cols
-from pandapower.idx_bus import bus_cols
+from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines

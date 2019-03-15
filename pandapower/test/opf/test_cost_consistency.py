@@ -32,7 +32,7 @@ def test_contingency_sgen(base_net):
     #                 / |
     #                /  |
 
-    pwl = pp.create_pwl_cost(net, 0, "sgen", [(0, net.sgen.max_p_mw.at[0], 1)])
+    pwl = pp.create_pwl_cost(net, 0, "sgen", [[0, net.sgen.max_p_mw.at[0], 1]])
     pp.runopp(net)
 
 
@@ -82,7 +82,7 @@ def test_contingency_load(base_net):
     #                 / |
     #                /  |
 
-    pp.create_pwl_cost(net, 0, "gen",[(0, net.gen.max_p_mw.at[0], 1)])
+    pp.create_pwl_cost(net, 0, "gen",[[0, net.gen.max_p_mw.at[0], 1]])
     pp.runopp(net)
 
 
@@ -132,7 +132,7 @@ def test_contingency_gen(base_net):
     #                 / |
     #                /  |
 
-    pp.create_pwl_cost(net, 0, "gen", [(0, net.gen.max_p_mw.at[0], 1)])
+    pp.create_pwl_cost(net, 0, "gen", [[0, net.gen.max_p_mw.at[0], 1]])
     pp.runopp(net)
 
 

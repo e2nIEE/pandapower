@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 from pandapower.auxiliary import _sum_by_group
-from pandapower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
-from pandapower.idx_gen import PG, QG
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV
+from pandapower.pypower.idx_gen import PG, QG
 
 
 def _set_buses_out_of_service(ppc):

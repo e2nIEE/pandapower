@@ -1,10 +1,14 @@
 Change Log
 =============
+[develop]
+----------------------
+- [CHANGED] Patch size in create_bus_collection is not duplicated for rectangles anymore #181
+- [ADDED] Load flow and OPF for user-defined temperature of lines, with the optional columns in line table "alpha" and "temperature_degree_celsius"
 
 [1.6.1] - 2019-02-18
 ----------------------
 - [CHANGED] Patch size in create_bus_collection is not duplicated for rectangles anymore #181
-- [CHANGED] Mask colormap z array to ensure nan handling 
+- [CHANGED] Mask colormap z array to ensure nan handling
 - [FIXED] active power distribution in DC OPF for multiple generators at one bus
 - [ADDED] support for networkx graphs in json IO
 - [ADDED] support for shapely objects in json IO
