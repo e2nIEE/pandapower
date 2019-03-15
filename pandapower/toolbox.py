@@ -716,22 +716,6 @@ def convert_format(net):
 #        # for storages
 #        net.time_resolution = 1.0
 
-    new_net = create_empty_network()
-    for key, item in net.items():
-        if isinstance(item, pd.DataFrame):
-            for col in item.columns:
-                if key in new_net and col in new_net[key].columns:
-                    if set(item.columns) == set(new_net[key]):
-                        try:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                        except TypeError:  # legacy for pandas <0.21
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                    if int(pd.__version__[2]) < 2:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
     if "g_us_per_km" not in net.line:
         net.line["g_us_per_km"] = 0.
     if "slack" not in net.gen:
@@ -783,6 +767,24 @@ def convert_format(net):
 
     _update_trafo_parameter_names(net)
     _update_trafo_type_parameter_names(net)
+
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            for col in item.columns:
+                if key in new_net and col in new_net[key].columns:
+                    if set(item.columns) == set(new_net[key]):
+                        try:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                        except TypeError:  # legacy for pandas <0.21
+                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                    if int(pd.__version__[2]) < 2:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             errors="ignore")
+
     return net
 
 
