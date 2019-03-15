@@ -20,11 +20,8 @@ def test_convert_format():
                 net = pp.from_json(filename, convert=False)
             except:
                 raise UserWarning("Can not load network saved in pandapower version %s"%version)
-            net.res_bus.sort(inplace=True)
-            net.bus.sort(inplace=True)
             vm_pu_old = net.res_bus.vm_pu.copy()
             pp.convert_format(net)
-            net.trafo["tap_step_degree"] = np.nan
             try:
                 pp.runpp(net)
             except:
