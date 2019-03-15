@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -110,7 +110,7 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
     kappa = ith or ip
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=False, trafo_model="pi",
-                     check_connectivity=False, mode="sc", r_switch=0.0, 
+                     check_connectivity=False, mode="sc", switch_rx_ratio=2, 
                      init_vm_pu="flat", init_va_degree="flat", enforce_q_lims=False,
                      recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s,
@@ -128,21 +128,16 @@ def calc_sc(net, fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip
 
 
 def _calc_sc(net):
-    #    t0 = time.perf_counter()
     _add_auxiliary_elements(net)
     ppc, ppci = _pd2ppc(net)
-#    t1 = time.perf_counter()
     _calc_ybus(ppci)
-#    t2 = time.perf_counter()
     try:
         _calc_zbus(ppci)
     except Exception as e:
         _clean_up(net, res=False)
         raise(e)
     _calc_rx(net, ppci)
-#    t3 = time.perf_counter()
     _add_kappa_to_ppc(net, ppci)
-#    t4 = time.perf_counter()
     _calc_ikss(net, ppci)
     if net["_options"]["ip"]:
         _calc_ip(net, ppci)
@@ -153,9 +148,6 @@ def _calc_sc(net):
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
     _extract_results(net, ppc, ppc_0=None)
     _clean_up(net)
-#    t5 = time.perf_counter()
-#    net._et = {"sum": t5-t0, "model": t1-t0, "ybus": t2-t1, "zbus": t3-t2, "kappa": t4-t3,
-#               "currents": t5-t4}
 
 
 def _calc_sc_1ph(net):
@@ -163,7 +155,7 @@ def _calc_sc_1ph(net):
     calculation method for single phase to ground short-circuit currents
     """
     _add_auxiliary_elements(net)
-# pos. seq bus impedance
+    # pos. seq bus impedance
     ppc, ppci = _pd2ppc(net)
     _calc_ybus(ppci)
     try:
@@ -173,7 +165,7 @@ def _calc_sc_1ph(net):
         raise(e)
     _calc_rx(net, ppci)
     _add_kappa_to_ppc(net, ppci)
-# zero seq bus impedance
+    # zero seq bus impedance
     ppc_0, ppci_0 = _pd2ppc_zero(net)
     _calc_ybus(ppci_0)
     try:

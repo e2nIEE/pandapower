@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -126,8 +126,8 @@ def create_generic_coordinates(net, mg=None, library="igraph", respect_switches=
         coords = list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(nxg, prog='neato').values()))))
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'"%library)
-    net.bus_geodata.x = coords[0]
-    net.bus_geodata.y = coords[1]
+    net.bus_geodata.x = coords[1]
+    net.bus_geodata.y = coords[0]
     net.bus_geodata.index = gnet.bus.index
     return net
 

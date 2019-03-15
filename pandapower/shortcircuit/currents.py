@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
-from pandapower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV
 import pandas as pd
 
 from pandapower.shortcircuit.idx_brch import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T
@@ -57,12 +57,13 @@ def _current_source_current(net, ppc):
     if len(sgen) == 0:
         return
     if any(pd.isnull(sgen.sn_mva)):
-        raise UserWarning(
-            "sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
+        raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
     baseI = ppc["internal"]["baseI"]
     sgen_buses = sgen.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
     Zbus = ppc["internal"]["Zbus"]
+    if not "k" in sgen:
+        raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")        
     i_sgen_pu = sgen.sn_mva.values / net.sn_mva * sgen.k.values
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
     ppc["bus"][buses, IKCV] = ikcv_pu

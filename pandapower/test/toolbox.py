@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -29,7 +29,7 @@ def run_all_tests():
     """
     logger = logging.getLogger()
     logger.setLevel(logging.CRITICAL)
-    pytest.main([os.path.abspath(os.path.dirname(pandapower.test.__file__)), "-s"])
+    pytest.main([os.path.abspath(os.path.join(pp.pp_dir, "test")), "-s"])
     logger.setLevel(logging.INFO)
 
 
@@ -256,8 +256,7 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    folder = os.path.abspath(os.path.dirname(pandapower.test.__file__))
-    net = pp.from_pickle(os.path.join(folder, "loadflow", "testgrid.p"))
+    net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "loadflow", "testgrid.p"))
     #    net = pp.file_io.from_pickle("testgrid.p")
 
     return net

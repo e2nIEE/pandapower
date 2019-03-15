@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -94,15 +94,15 @@ def geo_data_to_latlong(net, projection):
         return
 
 def set_mapbox_token(token):
-    import pandapower.plotting.plotly as ppplotly
-    path = os.path.dirname(ppplotly.__file__)
+    from pandapower import pp_dir
+    path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "w") as mapbox_file:
         mapbox_file.write(token)
 
 def _get_mapbox_token():
-    import pandapower.plotting.plotly as ppplotly
-    path = os.path.dirname(ppplotly.__file__)
+    from pandapower import pp_dir
+    path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "r") as mapbox_file:
         return mapbox_file.read()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,7 +9,8 @@ import pytest
 
 import pandapower as pp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, add_test_trafo
+from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, \
+                                                                   add_test_trafo
 from pandapower.test.toolbox import create_test_network2, add_grid_connection
 
 #TODO: 2 gen 2 ext_grid missing
@@ -382,7 +383,8 @@ def test_oos_buses_at_trafo3w():
     assert np.isnan(net.res_trafo3w.i_hv_ka.at[tidx])
 
 
-def test_trafo3w_switches():
+@pytest.fixture
+def network_with_trafo3ws():
     net = pp.create_empty_network()
     add_test_trafo(net)
     slack, hv, ln = add_grid_connection(net, zone="test_trafo3w")
@@ -400,6 +402,12 @@ def test_trafo3w_switches():
                                                 name="test", index=pp.get_free_id(net.trafo3w) + 1,
                                                 tap_side="hv", tap_pos=2, tap_step_percent=1.25,
                                                 tap_min=-5, tap_neutral=0, tap_max=5)
+    return (net, t3, hv, mv, lv)
+        
+    
+def test_trafo3w_switches(network_with_trafo3ws):
+    net, t3, hv, mv, lv = network_with_trafo3ws
+
     # open switch at hv side - t3 is disconnected
     s1 = pp.create_switch(net, bus=hv, element=t3, et="t3", closed=False)
     runpp_with_consistency_checks(net)
@@ -455,6 +463,31 @@ def test_generator_as_slack():
     net.gen.slack.iloc[0] = False
     with pytest.raises(UserWarning):
         pp.runpp(net)
+        
+def test_transformer_with_two_open_switches():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110.)
+    pp.create_ext_grid(net, b1, vm_pu=1.02)
+    b2 = pp.create_bus(net, 20.)
+    t = pp.create_transformer(net, b1, b2, std_type='63 MVA 110/20 kV')
+    b3 = pp.create_bus(net, 20.)
+    pp.create_line(net, b2, b3, length_km=7., std_type='149-AL1/24-ST1A 110.0')
+    pp.create_load(net, b2, p_mw=2)
+    pp.runpp(net)
 
+    assert net.res_trafo.vm_hv_pu.at[t] == net.res_bus.vm_pu.at[b1]
+    assert net.res_trafo.vm_lv_pu.at[t] == net.res_bus.vm_pu.at[b2]
+
+    pp.create_switch(net, b2, element=t, et="t", closed=False)
+    pp.runpp(net)
+    assert net.res_trafo.vm_hv_pu.at[t] == net.res_bus.vm_pu.at[b1]
+    assert net.res_trafo.vm_lv_pu.at[t] != net.res_bus.vm_pu.at[b2]
+
+
+    pp.create_switch(net, b1, element=t, et="t", closed=False)
+    pp.runpp(net)
+    assert net.res_trafo.vm_hv_pu.at[t] != net.res_bus.vm_pu.at[b1]
+    assert net.res_trafo.vm_lv_pu.at[t] != net.res_bus.vm_pu.at[b2]
+    
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main(["-xs", __file__])

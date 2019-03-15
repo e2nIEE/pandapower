@@ -2,10 +2,10 @@
 name;string;;name of the extended ward equivalent
 bus*;integer;;index of connected bus
 ps_mw*;float;;constant active power demand [MW]
-qs_kvar*;float;;constant reactive power demand [kVar]
+qs_mvar*;float;;constant reactive power demand [MVar]
 pz_mw*;float;;constant impedance active power demand at 1.0 pu [MW]
-qz_kvar*;float;;constant impedance reactive power demand at 1.0 pu [kVar]
-r_pu*;float;:math:`>` 0;internal resistance of the voltage source [p.u]
-x_pu*;float;:math:`>` 0;internal reactance of the voltage source [p.u]
+qz_mvar*;float;;constant impedance reactive power demand at 1.0 pu [MVar]
+r_ohm*;float;:math:`>` 0;internal resistance of the voltage source [ohm]
+x_ohm*;float;:math:`>` 0;internal reactance of the voltage source [ohm]
 vm_pu*;float;:math:`>` 0;voltage source set point [p.u]
 in_service*;boolean;True / False;specifies if the extended ward equivalent is in service.

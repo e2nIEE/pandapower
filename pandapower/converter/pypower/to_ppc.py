@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -16,7 +16,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
+def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio=2,
            check_connectivity=True, voltage_depend_loads=True, init="results", mode=None):
 
     """
@@ -42,9 +42,10 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
             it is less exact than the T-model. It is only recommended for validation with other \
             software that uses the pi-model.
 
-        **r_switch** (float, 0.0) - resistance of bus-bus-switches. If impedance is zero, buses
-        connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are
-        modelled as branches with resistance r_switch.
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, \
+        buses connected by a closed bus-bus switch are fused to model an ideal bus. \
+        Otherwise, they are modelled as branches with resistance defined as z_ohm column in \
+        switch table and this parameter 
 
         **check_connectivity** (bool, True) - Perform an extra connectivity test after the
         conversion from pandapower to PYPOWER
@@ -94,7 +95,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", r_switch=0.0,
     net["_options"] = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init,
+                     mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
                      init_va_degree=init, enforce_q_lims=True,
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
     #  do the conversion

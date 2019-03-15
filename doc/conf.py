@@ -13,7 +13,6 @@
 
 import os
 import sys
-import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -48,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pandapower'
-copyright = u'2016-2018 by Fraunhofer IEE and University of Kassel'
+copyright = u'2016-2019 by Fraunhofer IEE and University of Kassel'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -73,8 +72,6 @@ release = "2.0.0"
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
-autodoc_mock_imports = ['numpy', 'scipy', 'numba', 'pandas', 'matplotlib',
-                        'scipy', 'seaborn', 'plotly', 'geopandas']
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 

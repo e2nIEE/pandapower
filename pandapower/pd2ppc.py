@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,16 +8,12 @@ import copy
 
 import numpy as np
 
-from pandapower.idx_area import PRICE_REF_BUS
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pandapower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_area import PRICE_REF_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 
-try:
-    from pypower.run_userfcn import run_userfcn
-except ImportError:
-    # ToDo: Error only for OPF functions if PYPOWER is not installed
-    pass
+from pandapower.pypower.run_userfcn import run_userfcn
 
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _build_branch_ppc, _switch_branches, _branches_with_oos_buses, \
@@ -101,7 +97,10 @@ def _pd2ppc(net):
 
     if check_connectivity:
         # sets islands (multiple isolated nodes) out of service
-        isolated_nodes, _, _ = aux._check_connectivity(ppc)
+        if "opf" in mode:
+            isolated_nodes, _, _ = aux._check_connectivity_opf(ppc)
+        else:
+            isolated_nodes, _, _ = aux._check_connectivity(ppc)
         net["_is_elements"] = aux._select_is_elements_numba(net, isolated_nodes)
 
     # sets buses out of service, which aren't connected to branches / REF buses
@@ -144,7 +143,6 @@ def _init_ppc(net):
             , "Yt": np.array([], dtype=np.complex128)
             , "branch_is": np.array([], dtype=bool)
             , "gen_is": np.array([], dtype=bool)
-
             , "DLF": np.array([], dtype=np.complex128)
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }
@@ -161,7 +159,7 @@ def _ppc2ppci(ppc, ppci, net):
     oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
     ppci['bus'] = ppc['bus'][~oos_busses]
     # in ppc the OOS busses are included and at the end of the array
-    ppc['bus'] = np.r_[ppc['bus'][~oos_busses], ppc['bus'][oos_busses]]
+    ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(int)

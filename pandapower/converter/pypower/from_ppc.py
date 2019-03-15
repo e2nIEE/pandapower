@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from math import pi
-from numpy import sign, nan, append, zeros, array, power, sqrt, where
+from numpy import sign, nan, append, zeros, array, sqrt, where
 from numpy import max as max_
 from pandas import Series, DataFrame, concat
-from pandapower.idx_gen import GEN_BUS, PMIN, PMAX, QMIN, QMAX, GEN_STATUS
-from pandapower.idx_cost import COST, NCOST
-from pandapower.idx_bus import BUS_I, BASE_KV
+from pandapower.pypower.idx_gen import GEN_BUS, PMIN, PMAX, QMIN, QMAX, GEN_STATUS
+from pandapower.pypower.idx_cost import COST, NCOST
+from pandapower.pypower.idx_bus import BUS_I, BASE_KV
 import pandapower as pp
 
 try:

@@ -7,14 +7,14 @@ type;string;"| naming conventions:
 bus*;integer;;index of connected bus
 p_mw*;float;:math:`\leq` 0;the real power of the generator [MW]
 vm_pu*;float;;voltage set point of the generator [p.u]
-sn_kva;float;:math:`>` 0;nominal power of the generator [kVA]
-min_q_kvar;float;;minimal reactive power of the generator [kVar]
-max_q_kvar;float;;maximal reactive power of the generator [kVar]
+sn_mva;float;:math:`>` 0;nominal power of the generator [MVA]
+min_q_mvar;float;;minimal reactive power of the generator [MVar]
+max_q_mvar;float;;maximal reactive power of the generator [MVar]
 scaling*;float;:math:`\leq` 0;scaling factor for the active power
 max_p_mw**;float;;Maximum active power
 min_p_mw**;float;;Minimum active power
-max_q_kvar**;float;;Maximum reactive power
-min_q_kvar**;float;;Minimum reactive power
+max_q_mvar**;float;;Maximum reactive power
+min_q_mvar**;float;;Minimum reactive power
 vn_kv***;float;;Rated voltage of the generator
 xdss_pu***;float;:math:`>` 0;Subtransient generator reactance in per unit
 rdss_pu***;float;:math:`>` 0;Subtransient generator resistence in per unit

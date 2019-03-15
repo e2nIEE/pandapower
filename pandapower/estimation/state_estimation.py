@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
 from scipy.stats import chi2
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.topology import estimate_voltage_vector
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors, _init_ppc,\
+                                                  _init_ppc, _add_aux_elements_for_bb_switch, \
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch, _add_zero_injection
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results, _calc_power_flow, _extract_result_ppci_to_pp
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
@@ -70,6 +70,7 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
         iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
             as zero-injection bus
         **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
+        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
         be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
         auxiliary line will be automatically added to the network to make the buses with different p,q injection
         measurements identifieble
@@ -89,6 +90,8 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
     return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
                         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **hyperparameter)
+    return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
+                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -181,7 +184,7 @@ class StateEstimation(object):
         self.bad_data_present = None
 
     def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True, zero_injection=None, 
-                 fuse_buses_with_bb_switch='all', **hyperparameter):
+                 fuse_buses_with_bb_switch='all'):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -236,7 +239,7 @@ class StateEstimation(object):
         """
         if self.net is None:
             raise UserWarning("SE Component was not initialized with a network.")
-        
+
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
         bus_to_be_fused = None

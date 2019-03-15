@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,8 +10,8 @@ from pandapower.auxiliary import _select_is_elements_numba, _add_ppc_options, _a
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
-from pandapower.idx_brch import branch_cols
-from pandapower.idx_bus import bus_cols
+from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_bus import bus_cols
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.run import rundcpp
 from pandapower.build_branch import get_is_lines
@@ -77,7 +77,7 @@ def _add_aux_elements_for_bb_switch(net, bus_to_be_fused):
 
     # create aux switches with selecting the existed switches
     aux_switch = net.switch.loc[switch_to_be_replaced_sel, ['bus', 'closed', 'element', 
-                                                            'et', 'name', 'original_closed']]
+                                                            'et', 'name', 'original_closed', 'z_ohm']]
     aux_switch.loc[:,'name'] = AUX_SWITCH_NAME
     
     # replace the original bus with the correspondent auxiliary bus
@@ -88,7 +88,10 @@ def _add_aux_elements_for_bb_switch(net, bus_to_be_fused):
     aux_switch.loc[element_to_be_replaced.index, 'element'] =\
         bus_aux_mapping[element_to_be_replaced].values.astype(int)
     aux_switch['closed'] = aux_switch['original_closed']
-    net.switch = net.switch.append(aux_switch, ignore_index=True, sort=False)
+
+    net.switch = net.switch.append(aux_switch, ignore_index=True)
+    # PY34 compatibility
+#    net.switch = net.switch.append(aux_switch, ignore_index=True, sort=False)
 
     # create auxiliary lines as small impedance
     for bus_ori, bus_aux in bus_aux_mapping.iteritems():
@@ -124,7 +127,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     net._options = {}
     _add_ppc_options(net, check_connectivity=False, init_vm_pu=v_start, init_va_degree=delta_start,
                      trafo_model="pi", mode="pf", enforce_q_lims=False,
-                     calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                     calculate_voltage_angles=calculate_voltage_angles, switch_rx_ratio=2,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
     net["_is_elements"] = _select_is_elements_numba(net)
     _add_auxiliary_elements(net)
@@ -471,11 +474,10 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
 
         zero_inj_bus = np.argwhere(bus_append[:, ZERO_INJ_FLAG]).ravel()
         bus_append[zero_inj_bus, P] = 0
-        bus_append[zero_inj_bus, P_STD] = 0.05
+        bus_append[zero_inj_bus, P_STD] = 1
         bus_append[zero_inj_bus, Q] = 0
-        bus_append[zero_inj_bus, Q_STD] = 0.05
+        bus_append[zero_inj_bus, Q_STD] = 1
     return bus_append
-    
 
 
 def _build_measurement_vectors(ppci):
@@ -528,13 +530,4 @@ def _build_measurement_vectors(ppci):
                             ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
                             ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD]
                             )).real.astype(np.float64)
-    meas_mask = np.concatenate([p_bus_not_nan,
-                                p_line_f_not_nan,
-                                p_line_t_not_nan,
-                                q_bus_not_nan,
-                                q_line_f_not_nan,
-                                q_line_t_not_nan,
-                                v_bus_not_nan,
-                                i_line_f_not_nan,
-                                i_line_t_not_nan])
-    return z, pp_meas_indices, r_cov, meas_mask
+    return z, pp_meas_indices, r_cov

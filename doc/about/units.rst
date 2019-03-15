@@ -40,7 +40,7 @@ All power values are given in MW / MVA / MVar except the iron losses of transfor
 
 Bus voltages are given in the per unit system. The per unit values are relative to the phase-to-phase voltages defined in net.bus.vn_kv for each bus. 
 
-The rated apparent power for the per unit system can be defined with the net.sn_kva parameter when creating an empty network. The default value is :math:`S_{N} = 1000 kVA`.
+The rated apparent power for the per unit system can be defined with the net.sn_mva parameter when creating an empty network. The default value is :math:`S_{N} = 1 MVA`.
 The value should not be relevant in most applications since all power values are given in physical units.
 
 **Signing System**

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -37,7 +37,7 @@ def version_check():
             raise UserWarning("Your plotly version {} is no longer supported.\r\n"
                               "Please upgrade your python-plotly installation, "
                               "e.g., via pip install --upgrade plotly".format(__version__))
-    except ImportError:
+    except (NameError, ImportError):
         logger.info("Failed to import packaging. Version check for plotly will not be possible. "
                     "Make sure to have plotly 3.1.1 or higher installed")
 

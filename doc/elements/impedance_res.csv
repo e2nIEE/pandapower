@@ -1,9 +1,9 @@
 **Parameter**;**Datatype**;**Explanation**
 p_from_mw;float;"active power flow into the impedance at ""from"" bus [MW]"
-q_from_kvar;float;"reactive power flow into the impedance at ""from"" bus [kVAr]"
+q_from_mvar;float;"reactive power flow into the impedance at ""from"" bus [MVAr]"
 p_to_mw;float;"active power flow into the impedance at ""to"" bus [MW]"
-q_to_kvar;float;"reactive power flow into the impedance at ""to"" bus [kVAr]"
+q_to_mvar;float;"reactive power flow into the impedance at ""to"" bus [MVAr]"
 pl_mw;float;active power losses of the impedance [MW]
-ql_kvar;float;reactive power consumption of the impedance [kVar]
+ql_mvar;float;reactive power consumption of the impedance [MVar]
 i_from_ka;float;current at from bus [kA]
 i_to_ka;float;current at to bus [kA]

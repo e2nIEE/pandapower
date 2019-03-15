@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,12 @@ import pytest
 import pandapower as pp
 import pandapower.networks as pn
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
-import pypower.case24_ieee_rts as c24
+
+try:
+    import pypower.case24_ieee_rts as c24
+    pypower_installed = True
+except ImportError:
+    pypower_installed = False
 
 try:
     import pplog as logging
@@ -29,8 +34,7 @@ def get_testgrids(name, filename):
     This function return the ppc (or pp net) which is saved in ppc_testgrids.p to validate the
     from_ppc function via validate_from_ppc.
     """
-    pp_path = os.path.split(pp.__file__)[0]
-    folder = os.path.join(pp_path, 'test', 'converter')
+    folder = os.path.join(pp.pp_dir, 'test', 'converter')
     ppcs = pickle.load(open(os.path.join(folder, filename), "rb"))
     return ppcs[name]
 
@@ -38,7 +42,7 @@ def get_testgrids(name, filename):
 def test_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
     net_by_ppc = from_ppc(ppc)
-    net_by_code = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
+    net_by_code = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
@@ -53,7 +57,7 @@ def test_from_ppc():
 
 def test_validate_from_ppc():
     ppc = get_testgrids('case2_2', 'ppc_testgrids.p')
-    net = pp.from_json(os.path.join(os.path.split(pp.__file__)[0], 'test', 'converter', 'case2_2_by_code.json'))
+    net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
@@ -110,7 +114,7 @@ def test_case9_conversion():
     pp.runopp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
-
+@pytest.mark.skipif(pypower_installed==False, reason="needs pypower installation")
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)

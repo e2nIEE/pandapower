@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,8 @@ import numpy as np
 import pandapower as pp
 import pytest
 import pandapower.topology as top
-
+import pandapower.networks as nw
+import networkx as nx
 
 @pytest.fixture
 def feeder_network():
@@ -161,6 +162,17 @@ def test_graph_characteristics(feeder_network):
                                 12: [(2, 11)], 13: [(2, 11)]}
     assert notn1_areas == {8: {9, 10}, 3: {4, 5, 6}, 2: {11, 12, 13}}
 
+
+def test_elements_on_path():
+    net = nw.example_simple()
+    for multi in [True, False]:
+        mg = top.create_nxgraph(net, multi=multi)
+        path = nx.shortest_path(mg, 0, 6)
+        assert top.elements_on_path(mg, path, "line") == [0, 3]
+        assert top.lines_on_path(mg, path) == [0, 3]
+        assert top.elements_on_path(mg, path, "trafo") == [0]
+        assert top.elements_on_path(mg, path, "trafo3w") == []
+        assert top.elements_on_path(mg, path, "switch") == [0, 1]    
 
 if __name__ == '__main__':
     pytest.main([__file__])
