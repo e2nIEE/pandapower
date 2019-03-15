@@ -7,13 +7,13 @@ import warnings
 import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack, diags
 
-from pandapower.idx_brch import F_BUS, T_BUS
-from pandapower.idx_bus import BUS_TYPE
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BUS_TYPE
 
 #try:
 #from pandapower.pf.makeYbus import makeYbus
 #except ImportError:
-from pandapower.pf.makeYbus_pypower import makeYbus
+from pandapower.pypower.makeYbus import makeYbus
 
 
 class WLSAlgebra:

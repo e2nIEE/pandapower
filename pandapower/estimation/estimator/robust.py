@@ -9,7 +9,7 @@ from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve, inv
 from scipy.optimize import minimize
 
-from pandapower.idx_bus import BUS_TYPE, VA, VM
+from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
 from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebraOptimization

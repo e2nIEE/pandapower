@@ -90,8 +90,8 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
     return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
                         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **hyperparameter)
-    return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
-                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch)
+#    return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
+#                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -184,7 +184,7 @@ class StateEstimation(object):
         self.bad_data_present = None
 
     def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True, zero_injection=None, 
-                 fuse_buses_with_bb_switch='all'):
+                 fuse_buses_with_bb_switch='all', **hyperparameter):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial

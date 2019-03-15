@@ -5,9 +5,9 @@
 
 import numpy as np
 
-from pandapower.idx_bus import PD, QD
+from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
-from pandapower.pf.pfsoln_pypower import pfsoln
+from pandapower.pf.pfsoln_numba import pfsoln
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, reset_results
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 

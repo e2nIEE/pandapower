@@ -7,7 +7,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve
 
-from pandapower.idx_bus import BUS_TYPE, VA, VM
+from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
 from pandapower.estimation.estimator.wls import WLSEstimator
