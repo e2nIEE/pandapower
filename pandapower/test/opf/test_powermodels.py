@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -62,9 +62,9 @@ def net_3w_trafo_opf():
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
     net = net_3w_trafo_opf
-    pp.create_pwl_cost(net, 0, 'ext_grid', [(0, 1, 1)])
-    pp.create_pwl_cost(net, 0, 'gen', [(0, 30, 3), (30, 80, 3)])
-    pp.create_pwl_cost(net, 1, 'gen', [(0, 100, 2)])
+    pp.create_pwl_cost(net, 0, 'ext_grid', [[0, 1, 1]])
+    pp.create_pwl_cost(net, 0, 'gen', [[0, 30, 3], [30, 80, 3]])
+    pp.create_pwl_cost(net, 1, 'gen', [[0, 100, 2]])
 
     pp.runpm_ac_opf(net)
     consistency_checks(net)
@@ -116,8 +116,8 @@ def test_pwl():
     g2 = pp.create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
     #    net.gen["controllable"] = False
 
-    pp.create_pwl_cost(net, g1, 'gen', [(0, 2, 2), (2, 80, 5)])
-    pp.create_pwl_cost(net, g2, 'gen', [(0, 2, 2), (2, 80, 5)])
+    pp.create_pwl_cost(net, g1, 'gen', [[0, 2, 2], [2, 80, 5]])
+    pp.create_pwl_cost(net, g2, 'gen', [[0, 2, 2], [2, 80, 5]])
 
     pp.runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
@@ -127,9 +127,9 @@ def test_pwl():
     net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
     g3 = pp.create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
 
-    pp.create_pwl_cost(net, g1, 'gen', [(0, 2, 1.), (2, 80, 8.)])
-    pp.create_pwl_cost(net, g2, 'gen', [(0, 3, 2.), (3, 80, 14)])
-    pp.create_pwl_cost(net, g3, 'gen', [(0, 1, 3.), (1, 80, 10.)])
+    pp.create_pwl_cost(net, g1, 'gen', [[0, 2, 1.], [2, 80, 8.]])
+    pp.create_pwl_cost(net, g2, 'gen', [[0, 3, 2.], [3, 80, 14]])
+    pp.create_pwl_cost(net, g3, 'gen', [[0, 1, 3.], [1, 80, 10.]])
 
     net.load.p_mw = 1
     pp.runpm_ac_opf(net)

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.idx_bus import VM
+from pandapower.pypower.idx_bus import VM
 from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
 from pandapower.pd2ppc import _pd2ppc, _update_ppc
 from pandapower.pf.run_bfswpf import _run_bfswpf
@@ -11,8 +11,8 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, reset_results, verify_results
-from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
-from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
+from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 
 

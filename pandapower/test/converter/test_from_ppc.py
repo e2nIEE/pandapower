@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,12 @@ import pytest
 import pandapower as pp
 import pandapower.networks as pn
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
-import pypower.case24_ieee_rts as c24
+
+try:
+    import pypower.case24_ieee_rts as c24
+    pypower_installed = True
+except ImportError:
+    pypower_installed = False
 
 try:
     import pplog as logging
@@ -109,7 +114,7 @@ def test_case9_conversion():
     pp.runopp(net2)
     assert pp.nets_equal(net, net2, check_only_results=True, tol=1e-10)
 
-
+@pytest.mark.skipif(pypower_installed==False, reason="needs pypower installation")
 def test_case24():
     net = from_ppc(c24.case24_ieee_rts())
     pp.runopp(net)

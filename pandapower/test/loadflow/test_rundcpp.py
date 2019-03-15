@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -91,10 +91,10 @@ def test_single_bus_network():
     net = pp.create_empty_network()
     b = pp.create_bus(net, vn_kv=20.)
     pp.create_ext_grid(net, b)
-    
+
     pp.runpp(net)
     assert net.converged
-    
+
     pp.rundcpp(net)
     assert net.converged
 

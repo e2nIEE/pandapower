@@ -108,8 +108,8 @@ The short-circuit impedance is calculated as:
    :nowrap:
 
    \begin{align*}
-   z_k &= \frac{vk\_percent}{100} \cdot \frac{1000}{sn\_kva} \\
-   r_k &= \frac{vkr\_percent}{100} \cdot \frac{1000}{sn\_kva} \\
+   z_k &= \frac{vk\_percent}{100} \cdot \frac{1000}{sn\_mva} \\
+   r_k &= \frac{vkr\_percent}{100} \cdot \frac{1000}{sn\_mva} \\
    x_k &= \sqrt{z^2 - r^2} \\
    \underline{z}_k &= r_k + j \cdot x_k
    \end{align*}    
@@ -121,7 +121,7 @@ The magnetising admittance is calculated as:
 
    \begin{align*}
    y_m &= \frac{i0\_percent}{100} \\
-   g_m &= \frac{pfe\_mw}{sn\_kva \cdot 1000} \cdot \frac{1000}{sn\_kva} \\
+   g_m &= \frac{pfe\_mw}{sn\_mva \cdot 1000} \cdot \frac{1000}{sn\_mva} \\
    b_m &= \sqrt{y_m^2 - g_m^2} \\
    \underline{y_m} &= g_m - j \cdot b_m
    \end{align*}    
@@ -133,7 +133,7 @@ The values calculated in that way are relative to the rated values of the transf
 
    \begin{align*}
     Z_{N} &= \frac{V_{N}^2}{S_{N}} \\
-    Z_{ref, trafo} &= \frac{vn\_lv\_kv^2 \cdot 1000}{sn\_kva} \\
+    Z_{ref, trafo} &= \frac{vn\_lv\_kv^2 \cdot 1000}{sn\_mva} \\
     \underline{z} &= \underline{z}_k \cdot \frac{Z_{ref, trafo}}{Z_{N}} \\
     \underline{y} &= \underline{y}_m \cdot \frac{Z_{N}}{Z_{ref, trafo}} \\
     \end{align*}
@@ -153,10 +153,10 @@ The reference voltage is then multiplied with the tap factor:
    :nowrap:
    
    \begin{align*}
-    n_{tap} = 1 + (tp\_pos - tp\_neutral) \cdot \frac{tp\_st\_percent}{100}
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100}
     \end{align*}
     
-On which side the reference voltage is adapted depends on the :math:`tp\_side` variable:
+On which side the reference voltage is adapted depends on the :math:`tap\_side` variable:
 
 .. tabularcolumns:: |p{0.2\linewidth}|p{0.15\linewidth}|p{0.15\linewidth}|
 .. csv-table:: 
@@ -192,7 +192,7 @@ The angle shift can be directly defined in tap_step_degree, in which case:
    :nowrap:
    
    \begin{align*}
-   \theta_{tp} = tp\_st\_degree \cdot (tp\_pos - tp\_neutral)
+   \theta_{tp} = tap\_st\_degree \cdot (tap\_pos - tap\_neutral)
    \end{align*}
 
 or it can be given as a constant voltage step in tap_step_percent, in which case the angle is calculated as:
@@ -201,7 +201,7 @@ or it can be given as a constant voltage step in tap_step_percent, in which case
    :nowrap:
    
    \begin{align*}
-   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tp\_st\_percent}{100})  \cdot (tp\_pos - tp\_neutral)
+   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tap\_st\_percent}{100})  \cdot (tap\_pos - tap\_neutral)
    \end{align*}
 
 If both values are given for an ideal phase shift transformer, the power flow will raise an error.
@@ -231,11 +231,11 @@ Result Parameters
    
    \begin{align*}
     p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\    
-    q\_hv\_kvar &= Im(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\
+    q\_hv\_mvar &= Im(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\
     p\_lv\_mw &= Re(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
-    q\_lv\_kvar &= Im(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
+    q\_lv\_mvar &= Im(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
 	pl\_mw &= p\_hv\_mw + p\_lv\_mw \\
-	ql\_kvar &= q\_hv\_kvar + q\_lv\_kvar \\
+	ql\_mvar &= q\_hv\_mvar + q\_lv\_mvar \\
     i\_hv\_ka &= i_{hv} \\
     i\_lv\_ka &= i_{lv}
     \end{align*}
@@ -248,7 +248,7 @@ For trafo_loading="current", the loading is calculated as:
    :nowrap:
    
    \begin{align*}  
-    loading\_percent &= max(\frac{i_{hv} \cdot vn\_hv\_kv}{sn\_kva}, \frac{i_{lv} \cdot vn\_lv\_kv}{sn\_kva})  \cdot 100
+    loading\_percent &= max(\frac{i_{hv} \cdot vn\_hv\_kv}{sn\_mva}, \frac{i_{lv} \cdot vn\_lv\_kv}{sn\_mva})  \cdot 100
    \end{align*}
     
 
@@ -258,5 +258,5 @@ For trafo_loading="power", the loading is defined as:
    :nowrap:
    
    \begin{align*}  
-    loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_kva}, \frac{i_{lv} \cdot v_{lv}}{sn\_kva}) \cdot 100
+    loading\_percent &= max( \frac{i_{hv} \cdot v_{hv}}{sn\_mva}, \frac{i_{lv} \cdot v_{lv}}{sn\_mva}) \cdot 100
     \end{align*} 

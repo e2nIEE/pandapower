@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -16,6 +16,7 @@ from pandapower.create import create_empty_network, create_switch, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.topology import unsupplied_buses
+from pandapower.powerflow import reset_results
 
 try:
     import pplog as logging
@@ -715,22 +716,6 @@ def convert_format(net):
 #        # for storages
 #        net.time_resolution = 1.0
 
-    new_net = create_empty_network()
-    for key, item in net.items():
-        if isinstance(item, pd.DataFrame):
-            for col in item.columns:
-                if key in new_net and col in new_net[key].columns:
-                    if set(item.columns) == set(new_net[key]):
-                        try:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                        except TypeError:  # legacy for pandas <0.21
-                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                    if int(pd.__version__[2]) < 2:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             raise_on_error=False)
-                    else:
-                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                             errors="ignore")
     if "g_us_per_km" not in net.line:
         net.line["g_us_per_km"] = 0.
     if "slack" not in net.gen:
@@ -772,16 +757,44 @@ def convert_format(net):
 
         pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
         net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
+        reset_results(net)
 
     _convert_to_mw(net)
     _revert_pfe_mw(net)
     if "sn_kva" in net.keys():
-        net.sn_mva = net.sn_kva*1e-3
-        del net.sn_kva
+        net.sn_mva = net.pop("sn_kva") * 1e-3
     net.version = float(__version__[:3])
 
     _update_trafo_parameter_names(net)
+    _update_trafo_type_parameter_names(net)
+
+    new_net = create_empty_network()
+    for key, item in net.items():
+        if isinstance(item, pd.DataFrame):
+            for col in item.columns:
+                if key in new_net and col in new_net[key].columns:
+                    if set(item.columns) == set(new_net[key]):
+                        try:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                        except TypeError:  # legacy for pandas <0.21
+                            net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
+                    if int(pd.__version__[2]) < 2:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             raise_on_error=False)
+                    else:
+                        net[key][col] = net[key][col].astype(new_net[key][col].dtype,
+                                                             errors="ignore")
+
     return net
+
+
+def _update_trafo_type_parameter_names(net):
+    for element in ('trafo', 'trafo3w'):
+        for type in net.std_types[element].keys():
+            keys = {col: _update_column(col) for col in net.std_types[element][type].keys() if
+                            col.startswith("tp") or col.startswith("vsc")}
+            for old_key, new_key in keys.items():
+                net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
 
 def _update_trafo_parameter_names(net):
@@ -2200,7 +2213,8 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
                                         zero_length=True, zero_impedance=True, in_service_only=True,
                                         min_length_km=0, min_r_ohm_per_km=0, min_x_ohm_per_km=0,
                                         min_c_nf_per_km=0, min_rft_pu=0, min_xft_pu=0, min_rtf_pu=0,
-                                        min_xtf_pu=0, drop_affected=False):
+                                        min_xtf_pu=0, drop_affected=False,
+                                        drop_affected_switches=False):
     """
     Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
     out of service.
@@ -2257,6 +2271,13 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'),
         if drop_affected:
             net[elm] = net[elm][~net[elm].index.isin(affected_elements)]
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
+            if drop_affected_switches:
+                if elm == 'line':
+                    affected_switches = net.switch[net.switch.element.isin(affected_elements)
+                                                   & (net.switch.et == 'l')].index
+                    net.switch.drop(affected_switches, inplace=True)
+                    logger.info('dropped %d switches that were connected to replaced lines'
+                                % (len(affected_switches)))
         else:
             logger.info('set %d %ss out of service' % (len(affected_elements), elm))
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2018 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -34,9 +34,9 @@ import pandas as pd
 import scipy as sp
 import six
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
-from pandapower.idx_gen import PMIN, PMAX, QMIN, QMAX
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VMIN, VMAX, PV
+from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 
 try:
     from numba import jit
@@ -418,7 +418,8 @@ def _select_is_elements_numba(net, isolated_nodes=None):
 def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectivity, mode,
                      r_switch, enforce_q_lims, recycle, delta=1e-10,
                      voltage_depend_loads=False, trafo3w_losses="hv", init_vm_pu=1.0,
-                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9, neglect_open_switch_branches=False):
+                     init_va_degree=0, p_lim_default=1e9, q_lim_default=1e9,
+                     neglect_open_switch_branches=False, consider_line_temperature=False):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -437,6 +438,7 @@ def _add_ppc_options(net, calculate_voltage_angles, trafo_model, check_connectiv
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
+        "consider_line_temperature": consider_line_temperature,
         "delta": delta,
         "trafo3w_losses": trafo3w_losses,
         "init_vm_pu": init_vm_pu,
@@ -618,7 +620,8 @@ def _replace_nans_with_default_limits(net, ppc):
 def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                         max_iteration, tolerance_mva, trafo_model,
                         trafo_loading, enforce_q_lims, check_connectivity,
-                        voltage_depend_loads, passed_parameters=None, **kwargs):
+                        voltage_depend_loads, passed_parameters=None,
+                        consider_line_temperature=False, **kwargs):
     """
     Inits _options in net for runpp.
     """
@@ -696,14 +699,24 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
-                     enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     mode=mode, r_switch=r_switch, init_vm_pu=init_vm_pu,
+                     init_va_degree=init_va_degree, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=voltage_depend_loads, delta=delta_q,
-                     trafo3w_losses=trafo3w_losses, neglect_open_switch_branches=neglect_open_switch_branches)
+                     trafo3w_losses=trafo3w_losses,
+                     neglect_open_switch_branches=neglect_open_switch_branches,
+                     consider_line_temperature=consider_line_temperature)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug)
     net._options.update(overrule_options)
+
+def _init_nx_options(net):
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=False,
+                     trafo_model="t", check_connectivity=False,
+                     mode="nx", r_switch=0, init_vm_pu='flat', init_va_degree="flat",
+                     enforce_q_lims=False, recycle=False,
+                     voltage_depend_loads=False, delta=0, trafo3w_losses="hv")
 
 
 def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connectivity, r_switch, trafo3w_losses):
@@ -731,8 +744,8 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration)
 
 
-def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, r_switch, delta, init, numba,
-                         trafo3w_losses):
+def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, r_switch, delta, init,
+                         numba, trafo3w_losses, consider_line_temperature=False):
     if numba:
         numba = _check_if_numba_is_installed(numba)
     mode = "opf"
@@ -747,7 +760,8 @@ def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, r_sw
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, r_switch=r_switch, init_vm_pu=init, init_va_degree=init,
                      enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses,
+                     consider_line_temperature=consider_line_temperature)
     _add_opf_options(net, trafo_loading=trafo_loading, ac=ac, init=init, numba=numba)
 
 

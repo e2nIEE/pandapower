@@ -2,6 +2,12 @@
 Static Generator
 ==================
 
+.. note::
+
+   Static generators should always have a positive p_mw value, since all power values are given in the consumer system. If you want to model constant power consumption, it is recommended to use a load element instead of a static generator with negative active power value.
+   If you want to model a voltage controlled generator, use the generator element.
+
+
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
@@ -47,17 +53,13 @@ The PQ-Values are calculated from the parameter table values as:
    
    \begin{align*}
     P_{sgen} &= p\_mw \cdot scaling \\
-    Q_{sgen} &= q\_kvar \cdot scaling \\
+    Q_{sgen} &= q\_mvar \cdot scaling \\
     \end{align*}
 
-.. note::
-
-   Static generators should always have a negative p_mw value, since all power values are given in the consumer system. If you want to model constant power consumption, please use the load element instead of a static generator with positive active power value.
-   If you want to model a voltage controlled generator, use the generator element.
 
 .. note::
     
-    The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!
+    The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!
 
 Result Parameters
 ==========================

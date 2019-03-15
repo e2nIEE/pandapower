@@ -77,8 +77,8 @@ Result Parameters
     p\_from\_mw &= P_{from} \\
     p\_to\_mw &= P_{to} \\
     pl\_mw &= p\_from\_mw + p\_to\_mw \\
-    q\_from\_kvar &= Q_{from} \\
-    q\_to\_kvar &= Q_{to} \\
+    q\_from\_mvar &= Q_{from} \\
+    q\_to\_mvar &= Q_{to} \\
     va\_from\_degree &= \angle \underline{v}_{from} \\
     va\_to\_degree &= \angle \underline{v}_{to} \\
     vm\_from\_degree &= |\underline{v}_{from}| \\    
