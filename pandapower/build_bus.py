@@ -43,10 +43,10 @@ def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
 
 
 @jit(nopython=True, cache=True)
-def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_r_ohm,
+def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm,
               bus_is_pv, bus_in_service):  # pragma: no cover
     for i in range(len(switch_bus)):
-        if not switch_closed[i] or not switch_et_bus[i] or switch_r_ohm[i]>0:
+        if not switch_closed[i] or not switch_et_bus[i] or switch_z_ohm[i]>0:
             continue
         bus1 = switch_bus[i]
         bus2 = switch_elm[i]
@@ -104,20 +104,8 @@ class DisjointSet(dict):
         p2 = self.find(item2)
         self[p1] = p2
 
+
 def create_consecutive_bus_lookup(net, bus_index):
-def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):
-    # if there are any closed bus-bus switches update those entries
-    slidx = ((net["switch"]["closed"].values == 1) &
-             (net["switch"]["et"].values == "b") &
-             (net["switch"]["bus"].isin(bus_is_idx).values) &
-             (net["switch"]["element"].isin(bus_is_idx).values))
-    net._fused_bb_switches = slidx & (net["switch"]["z_ohm"].values<=0)
-    net._impedance_bb_switches = slidx & (net["switch"]["z_ohm"].values>0)
-
-    # if numba activated, use numba version to create the lookup
-    if numba:
-        return create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
-
     # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
     consec_buses = np.arange(len(bus_index))
     # bus_lookup as dict:
@@ -126,11 +114,22 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
     # bus lookup as mask from pandapower -> pypower
     bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
     bus_lookup[bus_index] = consec_buses
-    return bus_lookup    
+    return bus_lookup 
 
-def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, r_switch):
+
+def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):   
+    # if there are any closed bus-bus switches update those entries
+    slidx = ((net["switch"]["closed"].values == 1) &
+             (net["switch"]["et"].values == "b") &
+             (net["switch"]["bus"].isin(bus_is_idx).values) &
+             (net["switch"]["element"].isin(bus_is_idx).values))
+    net._fused_bb_switches = slidx & (net["switch"]["z_ohm"].values<=0)
+    net._impedance_bb_switches = slidx & (net["switch"]["z_ohm"].values>0)
+    
+    if numba:
+        create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
+    
     bus_lookup = create_consecutive_bus_lookup(net, bus_index)
-
     if net._fused_bb_switches.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final

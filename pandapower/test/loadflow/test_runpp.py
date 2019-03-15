@@ -197,7 +197,8 @@ def z_switch_net():
         pp.create_bus(net, vn_kv=.4)
         pp.create_load(net, i, p_mw=0.1)
     pp.create_ext_grid(net, 0, vm_pu=1.0)
-    pp.create_line_from_parameters(net, 0, 1, 0.1, r_ohm_per_km=0.1, x_ohm_per_km=0.1,
+    pp.create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1/np.sqrt(2),
+                                   x_ohm_per_km=0.1/np.sqrt(2),
                                    c_nf_per_km=0, max_i_ka=.2)
     pp.create_switch(net, 0, 2, et="b", z_ohm=0.1)
     return net
@@ -205,14 +206,24 @@ def z_switch_net():
 
 def test_z_switch(z_switch_net):
     net = z_switch_net
-    pp.runpp(net, numba=False, switch_rx_ratio = 0.5)
+    pp.runpp(net, numba=False, switch_rx_ratio=1)
     assert net.res_bus.vm_pu.at[1] == net.res_bus.vm_pu.at[2]
+
+    net_zero_z_switch = copy.deepcopy(net)
+    net_zero_z_switch.switch.z_ohm = 0
+    pp.runpp(net_zero_z_switch, numba=False, switch_rx_ratio=1)
+    assert net_zero_z_switch.res_bus.vm_pu.at[0] == net_zero_z_switch.res_bus.vm_pu.at[2]
 
 
 def test_z_switch_numba(z_switch_net):
     net = z_switch_net
-    pp.runpp(net, numba=True, switch_rx_ratio = 0.5)
+    pp.runpp(net, numba=True, switch_rx_ratio=1)
     assert net.res_bus.vm_pu.at[1] == net.res_bus.vm_pu.at[2]
+
+    net_zero_z_switch = copy.deepcopy(net)
+    net_zero_z_switch.switch.z_ohm = 0
+    pp.runpp(net_zero_z_switch, numba=True, switch_rx_ratio=1)
+    assert net_zero_z_switch.res_bus.vm_pu.at[0] == net_zero_z_switch.res_bus.vm_pu.at[2]
 
 
 def test_two_open_switches():
@@ -245,7 +256,7 @@ def get_isolated(net):
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
-                     mode="pf", r_switch=0.0, init_vm_pu="flat",
+                     mode="pf", switch_rx_ratio=2, init_vm_pu="flat",
                      init_va_degree="flat",
                      enforce_q_lims=False, recycle=None)
 
