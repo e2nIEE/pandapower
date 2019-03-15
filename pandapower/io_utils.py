@@ -16,6 +16,7 @@ from networkx.readwrite import json_graph
 import importlib
 from numpy import ndarray
 from warnings import warn
+import numpy as np
 
 try:
     from functools import singledispatch
@@ -25,7 +26,7 @@ except ImportError:
 
 try:
     import fiona
-    import geopandas as gpd
+    import geopandas
 
     GEOPANDAS_INSTALLED = True
 except ImportError:
@@ -49,30 +50,29 @@ logger = logging.getLogger(__name__)
 
 def coords_to_df(value, geotype="line"):
     geo = pd.DataFrame()
-    for i in value.index:
-        # get bus x y to save
-        if geotype == "bus":
-            geo.loc[i, "x"] = value.at[i, 'x']
-            geo.loc[i, "y"] = value.at[i, 'y']
-        # get coords and convert them to x1, y1, x2, y2...
-        coords = value.at[i, 'coords']
+    if any(~value.coords.isnull()):
+        k = max(len(v) for v in value.coords.values)
+        v = np.empty((len(value), k * 2))
+        v.fill(np.nan)
+        for i, idx in enumerate(value.index):
+            # get coords and convert them to x1, y1, x2, y2...
+            coords = value.at[idx, 'coords']
+            if coords is None:
+                continue
+            v[i, :len(coords) * 2] = np.array(coords).flatten()
+        geo = pd.DataFrame(v)
+        geo.columns = ["%s%i" % (w, i) for i in range(k) for w in "xy"]
+    if geotype == "bus":
+        geo["x"] = value["x"].values
+        geo["y"] = value["y"].values
 
-        if isinstance(coords, list) or isinstance(coords, ndarray):
-            for nr, (x, y) in enumerate(coords):
-                geo.loc[i, "x%u" % nr] = x
-                geo.loc[i, "y%u" % nr] = y
-        elif pd.isnull(coords):
-            continue
-        else:
-            logger.error("unkown format for coords for value {}".format(value))
-            raise ValueError("coords unkown format")
     return geo
 
 
-def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
+def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, exclude_empty=False):
     dodfs = dict()
     dtypes = []
-    dodfs["parameters"] = pd.DataFrame(columns=["parameter"])
+    dodfs["parameters"] = dict() #pd.DataFrame(columns=["parameter"])
     for item, value in net.items():
         # dont save internal variables and results (if not explicitely specified)
         if item.startswith("_") or (item.startswith("res") and not include_results):
@@ -85,21 +85,32 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True):
                 dodfs["user_pf_options"] = pd.DataFrame(value, index=[0])
         elif isinstance(value, (int, float, bool, str)):
             # attributes of primitive types are just stored in a DataFrame "parameters"
-            dodfs["parameters"].loc[item] = net[item]
-        elif not isinstance(value, pd.DataFrame) and \
-                (GEOPANDAS_INSTALLED and not isinstance(value, gpd.GeoDataFrame)):
+            dodfs["parameters"][item] = net[item]
+        elif not isinstance(value, pd.DataFrame):
             logger.warning("Could not serialize net.%s" % item)
-        elif item == "bus_geodata":
+            continue
+
+        # value is pandas DataFrame
+        if exclude_empty and value.empty:
+            continue
+        
+        if item == "bus_geodata":
             geo = coords_to_df(value, geotype="bus")
+            if isinstance(value, geopandas.GeoDataFrame):
+                geo["geometry"] = [s.to_wkt() for s in net.bus_geodata.geometry.values]
             dodfs[item] = geo
         elif item == "line_geodata":
             geo = coords_to_df(value)
+            if isinstance(value, geopandas.GeoDataFrame):
+                geo["geometry"] = [s.to_wkt() for s in net.line_geodata.geometry.values]
             dodfs[item] = geo
         else:
             dodfs[item] = value
-            for column, dtype in value.dtypes.iteritems():
-                dtypes.append((item, column, str(dtype)))
+        # save dtypes 
+        for column, dtype in value.dtypes.iteritems():
+            dtypes.append((item, column, str(dtype)))
     dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
+    dodfs["parameters"] = pd.DataFrame(dodfs["parameters"], index=[0])
     return dodfs
 
 
@@ -140,8 +151,8 @@ def df_to_coords(net, item, table):
 
 def from_dict_of_dfs(dodfs):
     net = create_empty_network()
-    for p, v in dodfs["parameters"].iterrows():
-        net[p] = v.parameter
+    for c in dodfs["parameters"].columns:
+        net[c] = dodfs["parameters"].at[0, c]
     for item, table in dodfs.items():
         if item in ("parameters", "dtypes"):
             continue
@@ -270,7 +281,7 @@ def pp_hook(d):
                 logger.debug("failed setting int64 index")
             return df
         elif GEOPANDAS_INSTALLED and class_name == 'GeoDataFrame':
-            df = gpd.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
+            df = geopandas.GeoDataFrame.from_features(fiona.Collection(obj), crs=d['crs'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
@@ -329,7 +340,7 @@ def json_dataframe(obj):
 
 
 if GEOPANDAS_INSTALLED:
-    @to_serializable.register(gpd.GeoDataFrame)
+    @to_serializable.register(geopandas.GeoDataFrame)
     def json_geodataframe(obj):
         logger.debug('GeoDataFrame')
         d = with_signature(obj, obj.to_json())
