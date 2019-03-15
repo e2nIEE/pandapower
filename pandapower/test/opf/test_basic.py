@@ -9,7 +9,7 @@ import numpy as np
 
 import pandapower as pp
 from pandapower.test.toolbox import add_grid_connection
-from pandapower.toolbox import convert_format
+from pandapower.convert_format import convert_format
 
 try:
     import pplog as logging
