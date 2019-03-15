@@ -9,12 +9,12 @@ import pytest
 from pandapower.topology import create_nxgraph
 import pandapower as pp
 import numpy as np
-from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 from pandapower.test.loadflow.result_test_network_generator import add_test_trafo3w, \
                                                                    add_test_trafo, add_test_line, \
                                                                    add_test_impedance, \
                                                                    add_test_bus_bus_switch
 from pandapower.pypower.idx_brch import BR_R, BR_X
+from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 
 def test_line():
     net = pp.create_empty_network()
