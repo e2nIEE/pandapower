@@ -4,6 +4,7 @@ import os
 pp_dir = os.path.dirname(os.path.realpath(__file__))
 
 from pandapower.auxiliary import *
+from pandapower.convert_format import *
 from pandapower.create import *
 from pandapower.diagnostic import *
 from pandapower.file_io import *
