@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2019 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import numpy as np
 from scipy.stats import chi2
 
@@ -12,10 +13,8 @@ from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
                                                   _init_ppc, _add_aux_elements_for_bb_switch, \
     _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch, _add_zero_injection
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results, _calc_power_flow, _extract_result_ppci_to_pp
-from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
-from pandapower.estimation.estimator.robust import SHGMEstimator
-from pandapower.estimation.estimator.lav import LAVEstimator
-
+from pandapower.estimation.algorithm.wls import WLSAlgorithm, WLSZeroInjectionConstraintsAlgorithm
+from pandapower.estimation.algorithm.optimization import OptAlgorithm
 
 try:
     import pplog as logging
@@ -23,10 +22,9 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-ESTIMATOR_MAPPING = {'wls': WLSEstimator,
-                     'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints,
-                     'shgm': SHGMEstimator,
-                     'lav': LAVEstimator}
+ESTIMATOR_MAPPING = {'wls': WLSAlgorithm,
+                     'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
+                     'opt': OptAlgorithm}
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -90,8 +88,6 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
     return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
                         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **hyperparameter)
-#    return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
-#                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -243,12 +239,9 @@ class StateEstimation(object):
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
         bus_to_be_fused = None
-        if isinstance(fuse_buses_with_bb_switch, str) and fuse_buses_with_bb_switch != 'all' and\
-            not self.net.switch.empty:
+        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
             if isinstance(fuse_buses_with_bb_switch, str):
                 raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
-            if callable(fuse_buses_with_bb_switch):
-                bus_to_be_fused = fuse_buses_with_bb_switch()
             elif hasattr(fuse_buses_with_bb_switch, '__iter__'):
                 bus_to_be_fused = fuse_buses_with_bb_switch      
             _add_aux_elements_for_bb_switch(self.net, bus_to_be_fused)
@@ -274,8 +267,7 @@ class StateEstimation(object):
         self.net = _extract_result_ppci_to_pp(self.net, ppc, ppci)
 
         # clear the aux elements and calculation results created for the substitution of bb switches
-        if isinstance(fuse_buses_with_bb_switch, str) and fuse_buses_with_bb_switch != 'all' and\
-            not self.net.switch.empty:
+        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
             _drop_aux_elements_for_bb_switch(self.net)
 
         return self.estimator.successful

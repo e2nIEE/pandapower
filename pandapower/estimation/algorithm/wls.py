@@ -11,12 +11,10 @@ from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM, bus_cols
 from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
-from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
-#from pandapower.estimation.estimator.wls_matrix_ops import WLSAlgebra
-#from pandapower.estimation.estimator.wls_matrix_ops_old import WLSAlgebraZeroInjectionConstraints
+from pandapower.estimation.algorithm.matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
 
 
-class WLSEstimator:
+class WLSAlgorithm:
     def __init__(self, net, tolerance, maximum_iterations, logger):
         self.net = net
         self.tolerance = tolerance
@@ -70,13 +68,14 @@ class WLSEstimator:
 
         # set the starting values for all active buses
         v_m = ppci["bus"][:, VM]
-        delta = ppci["bus"][:, VA] * np.pi / 180  # convert to rad
+        delta = np.radians(ppci["bus"][:, VA])  # convert to rad
         delta_masked = delta[non_slack_bus_mask]
         E = np.r_[delta_masked, v_m]
         return non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask
 
     def estimate(self, ppci):
-        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
+        non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
+            self.wls_preprocessing(ppci)
 
         # matrix calculation object
         sem = WLSAlgebra(ppci, non_nan_meas_mask)
@@ -92,7 +91,7 @@ class WLSEstimator:
 
                 # residual r
                 r = csr_matrix(z - h_x).T
-                
+
                 # jacobian matrix H
                 H = csr_matrix(sem.create_hx_jacobian(v_m, delta))
 
@@ -112,9 +111,7 @@ class WLSEstimator:
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
-#                print(cur_it, current_error)
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
@@ -136,7 +133,7 @@ class WLSEstimator:
         return V
 
 
-class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
+class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
     def estimate(self, ppci):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
@@ -200,7 +197,6 @@ class WLSEstimatorZeroInjectionConstraints(WLSEstimator):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E[:len(non_slack_buses) + num_bus]))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")

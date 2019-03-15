@@ -740,7 +740,7 @@ def test_net_with_zero_injection():
     b3 = pp.create_bus(net, name="Bus 3", vn_kv=220, index=3)
     b4 = pp.create_bus(net, name="Bus 4", vn_kv=220, index=4)
     
-    pp.create_ext_grid(net, 1)  # set the slack bus to bus 1
+    pp.create_ext_grid(net, b1)  # set the slack bus to bus 1
     factor = 48.4 * 2 * np.pi * 50 * 1e-9  # capacity factor
 
     pp.create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=.0221*48.4,
@@ -766,8 +766,8 @@ def test_net_with_zero_injection():
 
     success = estimate(net, tolerance=1e-10, zero_injection='auto', algorithm='wls_with_zero_constraint')
     assert success
-    assert np.abs(net.res_bus_est.at[1, 'p_mw']) < 1e-8
-    assert np.abs(net.res_bus_est.at[1, 'q_mvar']) < 1e-8
+    assert np.abs(net.res_bus_est.at[b2, 'p_mw']) < 1e-8
+    assert np.abs(net.res_bus_est.at[b2, 'q_mvar']) < 1e-8
 
     net_given_bus = deepcopy(net)
     success = estimate(net, tolerance=1e-6, zero_injection="auto")
