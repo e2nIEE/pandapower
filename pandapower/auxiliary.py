@@ -714,7 +714,7 @@ def _init_nx_options(net):
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
-                     mode="nx", r_switch=0, init_vm_pu='flat', init_va_degree="flat",
+                     mode="nx", switch_rx_ratio=2, init_vm_pu='flat', init_va_degree="flat",
                      enforce_q_lims=False, recycle=False,
                      voltage_depend_loads=False, delta=0, trafo3w_losses="hv")
 
