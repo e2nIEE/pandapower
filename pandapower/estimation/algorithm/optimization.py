@@ -30,9 +30,9 @@ class OptAlgorithm(WLSAlgorithm):
 #        sem = WLSEstimatorOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
 #        sem = LAVEstimatorOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
 
-        res = minimize(estm.cost_function, E, 
+        res = minimize(estm.cost_function, x0=E, 
                        method=opt_method, jac=estm.create_rx_jacobian, 
-                       tol=self.tolerance, options={'maxiter':50})
+                       tol=self.tolerance, options={'maxiter':50, 'disp': True})
 #        res = minimize(sem.cost_function, E, 
 #                       method="Powell", jac=sem.create_rx_jacobian, tol=self.tolerance)
 #        res = minimize(sem.cost_function, E, 
@@ -84,5 +84,5 @@ if __name__ == '__main__':
     # 2. Do state estimation
     from copy import deepcopy
     net_opt = deepcopy(net)
-    success = estimate(net_opt, algorithm='opt', estimator="ql", a=10)
+    success = estimate(net_opt, algorithm='opt', estimator="wls", a=10, tolerance=1e-4)
 

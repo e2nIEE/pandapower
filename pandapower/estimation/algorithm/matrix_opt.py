@@ -14,7 +14,7 @@ class BaseEstimatorOpt:
         self.num_non_slack_bus = np.sum(self.base_algebra.non_slack_bus_mask)
         self.non_slack_buses = np.argwhere(self.base_algebra.non_slack_bus_mask).ravel()
         self.delta = np.zeros(self.base_algebra.n_bus)
-        self.v = np.zeros(self.base_algebra.n_bus)
+        self.v = np.ones(self.base_algebra.n_bus)
         self.z = z
         self.sigma = sigma
         self.jac_available = False
@@ -74,6 +74,7 @@ class LAVEstimatorOpt(BaseEstimatorOpt):
         rx = self.base_algebra.create_rx(self.v, self.delta)
         hx_jac = self.base_algebra.create_hx_jacobian(self.v, self.delta)
         jac = - np.sum(np.sign(rx.reshape((-1, 1))) * hx_jac, axis=0)  
+        print(jac)
         return jac
     
 

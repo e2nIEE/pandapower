@@ -124,7 +124,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.001, p_std_dev=0.03, q_std_d
 def add_virtual_meas_error(net, v_std_dev, p_std_dev, q_std_dev):
     assert not net.measurement.empty
     
-    r = np.random.rand(net.measurement.shape[0]) * 2 - 1 # random error in range from -1, 1
+    r = np.random.normal(0, 1, net.measurement.shape[0]) # random error in range from -1, 1
     p_meas_mask = net.measurement.measurement_type=="p"
     q_meas_mask = net.measurement.measurement_type=="q"    
     v_meas_mask = net.measurement.measurement_type=="v" 
@@ -141,13 +141,13 @@ if __name__ == "__main__":
     import pandapower.networks as pn
     from pandapower.estimation.state_estimation import estimate
     
-    net = pn.case57()
+    net = pn.case9()
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
-    estimate(net, algorithm="opt", init="slack", estimator='wls')
+    estimate(net, algorithm="opt", estimator='wls')
 #    estimate(net)
     
-    assert np.isclose(net.res_bus_est.vm_pu, net.res_bus_power_flow.vm_pu, atol=0.01).all()
+    assert np.isclose(net.res_bus_est.va_degree, net.res_bus_power_flow.va_degree, atol=0.2).all()
     
     
     

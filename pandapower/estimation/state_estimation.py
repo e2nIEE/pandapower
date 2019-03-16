@@ -22,9 +22,9 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-ESTIMATOR_MAPPING = {'wls': WLSAlgorithm,
-                     'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
-                     'opt': OptAlgorithm}
+SOLVER_MAPPING = {'wls': WLSAlgorithm,
+                  'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
+                  'opt': OptAlgorithm}
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -81,7 +81,7 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    if algorithm not in ESTIMATOR_MAPPING:
+    if algorithm not in SOLVER_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
@@ -173,14 +173,15 @@ class StateEstimation:
             self.logger = std_logger
             # self.logger.setLevel(logging.DEBUG)
         self.net = net
-        self.solver = ESTIMATOR_MAPPING[algorithm](self.net, tolerance, maximum_iterations, self.logger)
+        self.solver = SOLVER_MAPPING[algorithm](self.net, tolerance,
+                                                maximum_iterations, self.logger)
 
         # variables for chi^2 / rn_max tests
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True, zero_injection=None, 
-                 fuse_buses_with_bb_switch='all', **hyperparameter):
+    def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
+                 zero_injection=None, fuse_buses_with_bb_switch='all', **hyperparameter):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
