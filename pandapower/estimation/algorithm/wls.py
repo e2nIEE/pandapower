@@ -11,8 +11,9 @@ from pandapower.pypower.idx_bus import BUS_TYPE, VA, VM, bus_cols
 from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversions import _build_measurement_vectors
 
-from pandapower.estimation.algorithm.matrix_ops import WLSAlgebra, WLSAlgebraZeroInjectionConstraints
+from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, BaseAlgebraZeroInjConstraints
 
+__all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm"]
 
 class WLSAlgorithm:
     def __init__(self, net, tolerance, maximum_iterations, logger):
@@ -78,19 +79,19 @@ class WLSAlgorithm:
             self.wls_preprocessing(ppci)
 
         # matrix calculation object
-        sem = WLSAlgebra(ppci, non_nan_meas_mask)
+        sem = BaseAlgebra(ppci, non_nan_meas_mask, z)
 
         current_error, cur_it = 100., 0
-        G_m, r, H, h_x = None, None, None, None
+        G_m, r, H, hx = None, None, None, None
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # create h(x) for the current iteration
-                h_x = sem.create_hx(v_m, delta)
+                hx = sem.create_hx(v_m, delta)
 
                 # residual r
-                r = csr_matrix(z - h_x).T
+                r = csr_matrix(sem.create_rx(v_m, delta)).T
 
                 # jacobian matrix H
                 H = csr_matrix(sem.create_hx_jacobian(v_m, delta))
@@ -105,8 +106,8 @@ class WLSAlgorithm:
                 E += d_E.ravel()
 
                 # update V/delta
-                delta[non_slack_buses] = E[:len(non_slack_buses)]
                 v_m = E[len(non_slack_buses):]
+                delta[non_slack_buses] = E[:len(non_slack_buses)]
 
                 # prepare next iteration
                 cur_it += 1
@@ -127,7 +128,7 @@ class WLSAlgorithm:
             self.r = r.toarray()
             self.H = H.toarray()
             self.Ht = self.H.T
-            self.hx = h_x
+            self.hx = hx
             self.V = v_m
             self.delta = delta
         return V
@@ -147,25 +148,22 @@ class WLSZeroInjectionConstraintsAlgorithm(WLSAlgorithm):
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask = self.wls_preprocessing(ppci)
         num_bus = ppci["bus"].shape[0]
 
-
         # update the E matrix
         E = np.r_[E, new_states]
 
         # matrix calculation object
-        sem = WLSAlgebraZeroInjectionConstraints(ppci, non_nan_meas_mask)
+        sem = BaseAlgebraZeroInjConstraints(ppci, non_nan_meas_mask, z)
 
         current_error, cur_it = 100., 0
-        G_m, r, H, h_x = None, None, None, None
+        G_m, r, H = None, None, None
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
-                # create h(x) for the current iteration
-                h_x = sem.create_hx(v_m, delta)
                 c_x = sem.create_cx(v_m, delta, p_zero_injections, q_zero_injections)
 
                 # residual r
-                r = csr_matrix(z - h_x).T
+                r = csr_matrix(sem.create_rx(v_m, delta)).T
                 c_rxh = csr_matrix(c_x).T
 
                 # jacobian matrix H

@@ -84,9 +84,9 @@ def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iteratio
     if algorithm not in ESTIMATOR_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
-    wls = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
+    se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
-    return wls.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
+    return se.estimate(v_start, delta_start, calculate_voltage_angles, zero_injection=zero_injection,
                         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **hyperparameter)
 
 
@@ -121,9 +121,9 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
-    wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
+    wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
-    return wls.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
+    return wls_se.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
                                    rn_max_threshold)
 
 
@@ -154,13 +154,13 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     OUTPUT:
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
-    wls = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
+    wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
-    return wls.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
+    return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
                                  chi2_prob_false)
 
 
-class StateEstimation(object):
+class StateEstimation:
     """
     Any user of the estimation module only needs to use the class state_estimation. It contains all
     relevant functions to control and operator the module. Two functions are used to configure the
@@ -173,7 +173,7 @@ class StateEstimation(object):
             self.logger = std_logger
             # self.logger.setLevel(logging.DEBUG)
         self.net = net
-        self.estimator = ESTIMATOR_MAPPING[algorithm](self.net, tolerance, maximum_iterations, self.logger)
+        self.solver = ESTIMATOR_MAPPING[algorithm](self.net, tolerance, maximum_iterations, self.logger)
 
         # variables for chi^2 / rn_max tests
         self.delta = None
@@ -253,13 +253,13 @@ class StateEstimation(object):
         ppc, ppci = _init_ppc(self.net, v_start, delta_start, calculate_voltage_angles)
 
         # add measurements to ppci structure
+        # Finished converting pandapower network to ppci
         ppci = _add_measurements_to_ppc(self.net, ppci, zero_injection)
 
-        # Finished converting pandapower network to ppci
         # Estimate voltage magnitude and angle with the given estimator
-        V = self.estimator.estimate(ppci, **hyperparameter)
+        V = self.solver.estimate(ppci, **hyperparameter)
         
-        if self.estimator.successful:
+        if self.solver.successful:
             # calculate the branch power flow and bus power injection based on the estimated voltage vector
             ppci = _calc_power_flow(ppci, V)
 
@@ -270,7 +270,7 @@ class StateEstimation(object):
         if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
             _drop_aux_elements_for_bb_switch(self.net)
 
-        return self.estimator.successful
+        return self.solver.successful
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
                           calculate_voltage_angles=True, chi2_prob_false=0.05):
@@ -310,13 +310,13 @@ class StateEstimation(object):
         self.estimate(v_in_out, delta_in_out, calculate_voltage_angles)
 
         # Performance index J(hx)
-        J = np.dot(self.estimator.r.T, np.dot(self.estimator.R_inv, self.estimator.r))
+        J = np.dot(self.estimator.r.T, np.dot(self.solver.R_inv, self.solver.r))
 
         # Number of measurements
         m = len(self.net.measurement)
 
         # Number of state variables (the -1 is due to the reference bus)
-        n = len(self.estimator.V) + len(self.estimator.delta) - 1
+        n = len(self.solver.V) + len(self.solver.delta) - 1
 
         # Chi^2 test threshold
         test_thresh = chi2.ppf(1 - chi2_prob_false, m - n)
@@ -335,7 +335,7 @@ class StateEstimation(object):
             self.bad_data_present = True
             self.logger.debug("Chi^2 test failed. Bad data or topology error detected.")
 
-        if self.estimator.successful:
+        if self.solver.successful:
             return self.bad_data_present
 
     def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
@@ -386,7 +386,7 @@ class StateEstimation(object):
             # Try to remove the bad data
             try:
                 # Error covariance matrix:
-                R = np.linalg.inv(self.estimator.R_inv)
+                R = np.linalg.inv(self.solver.R_inv)
 
                 # for future debugging: this line's results have changed with the ppc
                 # overhaul in April 2017 after commit 9ae5b8f42f69ae39f8c8cf (which still works)
@@ -396,7 +396,7 @@ class StateEstimation(object):
                 # was removed which caused this issue
                 # Covariance matrix of the residuals: \Omega = S*R = R - H*G^(-1)*H^T
                 # (S is the sensitivity matrix: r = S*e):
-                Omega = R - np.dot(self.estimator.H, np.dot(np.linalg.inv(self.estimator.Gm), self.estimator.Ht))
+                Omega = R - np.dot(self.solver.H, np.dot(np.linalg.inv(self.solver.Gm), self.solver.Ht))
 
                 # Diagonalize \Omega:
                 Omega = np.diag(np.diag(Omega))
@@ -407,7 +407,7 @@ class StateEstimation(object):
                 OmegaInv = np.linalg.inv(Omega)
 
                 # Compute normalized residuals (r^N_i = |r_i|/sqrt{Omega_ii}):
-                rN = np.dot(OmegaInv, np.absolute(self.estimator.r))
+                rN = np.dot(OmegaInv, np.absolute(self.solver.r))
 
                 if max(rN) <= rn_max_threshold:
                     self.logger.debug("Largest normalized residual test passed. "
@@ -422,7 +422,7 @@ class StateEstimation(object):
                     idx_rN = np.argsort(rN, axis=0)[-1]
 
                     # Determine pandapower index of measurement to be removed:
-                    meas_idx = self.estimator.pp_meas_indices[idx_rN]
+                    meas_idx = self.solver.pp_meas_indices[idx_rN]
 
                     # Remove bad measurement:
                     self.logger.debug("Removing measurement: %s"

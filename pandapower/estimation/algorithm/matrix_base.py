@@ -11,11 +11,14 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE
 from pandapower.pypower.makeYbus import makeYbus
 
+__all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
 
-class WLSAlgebra:
-    def __init__(self, ppci, non_nan_meas_mask):
+
+class BaseAlgebra:
+    def __init__(self, ppci, non_nan_meas_mask, z):
         np.seterr(divide='ignore', invalid='ignore')
         self.ppci = ppci
+        self.z = z
         self.fb = self.ppci["branch"][:, F_BUS].real.astype(int)
         self.tb = self.ppci["branch"][:, T_BUS].real.astype(int)
         self.n_bus = self.ppci['bus'].shape[0]
@@ -48,6 +51,10 @@ class WLSAlgebra:
         self.B = self.Ybus.imag
         self.Gshunt = None
         self.Bshunt = None
+
+    def create_rx(self, v, delta):
+        hx = self.create_hx(v, delta)
+        return (self.z - hx).ravel()
 
     def create_hx(self, v, delta):
         f_bus, t_bus = self.fb, self.tb
@@ -138,7 +145,7 @@ class WLSAlgebra:
         return dif_dth, dit_dth, dif_dv, dit_dv
 
 
-class WLSAlgebraZeroInjectionConstraints(WLSAlgebra):
+class BaseAlgebraZeroInjConstraints(BaseAlgebra):
     def create_cx(self, v, delta, p_zero_inj, q_zero_inj):
         V = v * np.exp(1j * delta)
         Sbus = V * np.conj(self.Ybus * V)
@@ -155,48 +162,4 @@ class WLSAlgebraZeroInjectionConstraints(WLSAlgebra):
         c_jac_v = np.r_[np.real(dSbus_dv.todense())[p_zero_inj],
                         np.imag(dSbus_dv.todense())[q_zero_inj]]
         c_jac = np.c_[c_jac_th, c_jac_v]
-        return c_jac[:, self.delta_v_bus_mask]
-
-
-class WLSAlgebraOptimization(WLSAlgebra):
-    def __init__(self, ppci, non_nan_meas_mask, z, sigma):
-        super(WLSAlgebraOptimization, self).__init__(ppci, non_nan_meas_mask)
-        self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
-        self.non_slack_buses = np.argwhere(self.non_slack_bus_mask).ravel()
-        self.delta = np.zeros(self.n_bus)
-        self.v = np.zeros(self.n_bus)
-        self.z = z
-        self.sigma = sigma
-
-    def cost_function(self, E):
-        # Must be implemented according to the estimator for the optimization
-        pass
-    
-    def create_jac(self, E):
-        pass
-
-    def create_rx(self, E):
-        self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
-        self.v = E[self.num_non_slack_bus:]
-        hx = self.create_hx(self.v, self.delta)
-        return (self.z - hx).ravel()
-    
-
-class WLSAlgebraOpt(WLSAlgebraOptimization):
-    def cost_function(self, E):
-        rx = self.create_rx(E) 
-        cost = (1/self.sigma**2) * (rx**2)
-        print(np.sum(cost))
-        return np.sum(cost)
-    
-    def create_rx_jacobian(self, E):
-        # dr/dE = drho / dr * d(z-hx) / dE
-        # dr/dE = (drho/dr) * - (d(hx)/dE)
-        # 2 * rx * -(dhx/dE)
-        self.delta[self.non_slack_buses] = E[:self.num_non_slack_bus]
-        self.v = E[self.num_non_slack_bus:]
-        rx = self.create_rx(E)
-        hx_jac = self.create_hx_jacobian(self.v, self.delta)
-        jac = - np.sum(2 * rx.reshape((-1, 1)) * hx_jac, axis=0)  
-        return jac
-    
+        return c_jac[:, self.delta_v_bus_mask]  

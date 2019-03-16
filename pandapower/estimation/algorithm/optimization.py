@@ -6,23 +6,41 @@
 import numpy as np
 from scipy.optimize import minimize
 
-from pandapower.estimation.algorithm.matrix_ops import WLSAlgebra, WLSAlgebraOpt
+from pandapower.estimation.algorithm.matrix_opt import (WLSEstimatorOpt, LAVEstimatorOpt, 
+                                                        QCEstimatorOpt, QLEstimatorOpt)
 from pandapower.estimation.algorithm.wls import WLSAlgorithm
 
+DEFAULT_OPT_METHOD = "Newton-CG"
+ESTIMATOR_MAPPING = {'wls': WLSEstimatorOpt,
+                     'lav': LAVEstimatorOpt,
+                     'qc': QCEstimatorOpt,
+                     'ql': QLEstimatorOpt}
 
 class OptAlgorithm(WLSAlgorithm):
     def estimate(self, ppci, **hyperparameter):
+        assert 'estimator' in hyperparameter and hyperparameter['estimator'] in ESTIMATOR_MAPPING
+        opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in hyperparameter else hyperparameter['opt_method']
+
         non_slack_buses, v_m, delta, delta_masked, E, r_cov, r_inv, z, non_nan_meas_mask =\
             self.wls_preprocessing(ppci)
 
         # matrix calculation object
-        sem = WLSAlgebraOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
+        estm = ESTIMATOR_MAPPING[hyperparameter['estimator']](ppci, non_nan_meas_mask, 
+                                z=z, sigma=r_cov, **hyperparameter)
+#        sem = WLSEstimatorOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
+#        sem = LAVEstimatorOpt(ppci, non_nan_meas_mask, z=z, sigma=r_cov)
+
+        res = minimize(estm.cost_function, E, 
+                       method=opt_method, jac=estm.create_rx_jacobian, 
+                       tol=self.tolerance, options={'maxiter':50})
 #        res = minimize(sem.cost_function, E, 
-#                       method="Newton-CG", jac=sem.create_jac, tol=self.tolerance)
-        res = minimize(sem.cost_function, E, 
-                       method="Powell", jac=sem.create_rx_jacobian, tol=self.tolerance)
+#                       method="Powell", jac=sem.create_rx_jacobian, tol=self.tolerance)
 #        res = minimize(sem.cost_function, E, 
-#                       method="CG", jac=sem.create_jac, tol=self.tolerance)
+#                       method="BFGS", jac=sem.create_rx_jacobian, tol=self.tolerance)
+#        res = minimize(sem.cost_function, E, 
+#                       method="CG", jac=sem.create_rx_jacobian, tol=self.tolerance)
+#        res = minimize(sem.cost_function, E, 
+#                       method="Nelder-Mead", jac=sem.create_rx_jacobian, tol=self.tolerance)
 
         self.successful = res.success
         if self.successful:
@@ -35,8 +53,8 @@ class OptAlgorithm(WLSAlgorithm):
             raise Exception("Optimiaztion failed! State Estimation not successful!")
         
 if __name__ == '__main__':
-    from pandapower.estimation import estimate
     import pandapower as pp
+    from pandapower.estimation.state_estimation import estimate
     
     # 1. Create network
     net = pp.create_empty_network()
@@ -61,10 +79,10 @@ if __name__ == '__main__':
     pp.create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
 
     # 2. Do state estimation
-    success = estimate(net, init='flat')
+    estimate(net, init='flat')
 
     # 2. Do state estimation
     from copy import deepcopy
     net_opt = deepcopy(net)
-    success = estimate(net_opt, init='flat', algorithm='opt')
+    success = estimate(net_opt, algorithm='opt', estimator="ql", a=10)
 
