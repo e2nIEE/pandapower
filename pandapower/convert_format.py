@@ -22,10 +22,9 @@ def convert_format(net):
     if net.version < 2:
         _convert_to_generation_system(net)
         _convert_costs(net)
+        _convert_to_mw(net)
+        _update_trafo_parameter_names(net)
         reset_results(net)
-    _convert_to_mw(net)
-    _update_trafo_parameter_names(net)
-    _update_trafo_type_parameter_names(net)
     _set_data_type_of_columns(net)
     net.version = float(__version__[:3])
     return net
@@ -202,7 +201,7 @@ def _update_trafo_parameter_names(net):
         replace_cols = {col: _update_column(col) for col in net[element].columns if
                         col.startswith("tp") or col.startswith("vsc")}
         net[element].rename(columns=replace_cols, inplace=True)
-
+    _update_trafo_type_parameter_names(net)
 
 def _update_column(column):
     column = column.replace("tp_", "tap_")
