@@ -11,7 +11,12 @@ except ImportError:
 class GraphToolInterface(gt.Graph):
     """
     A interface to Graph Tool from https://graph-tool.skewed.de, which looks like networkx so that it can be
-    used by the pandapower topology package without any code changes
+    used by the pandapower topology package without any code changes.
+
+    Notice:
+    The graph-tool graph needs to have consecutive buses starting with 0 and be in range(0, max_bus).
+    This means that "nogobuses" are not working (yet) and also you should use
+    pandapower.toolbox.create_continuous_bus_index() to have a graph without many "unnecessary" buses
     """
 
     def __init__(self, bus_indices, g=None, directed=False, prune=False, vorder=None):
