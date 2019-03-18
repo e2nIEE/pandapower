@@ -265,7 +265,6 @@ def pp_hook(d):
         class_name = d.pop('_class')
         module_name = d.pop('_module')
         obj = d.pop('_object')
-
         keys = copy.deepcopy(list(d.keys()))
         for key in keys:
             if isinstance(d[key], dict):

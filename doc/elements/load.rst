@@ -2,6 +2,10 @@
 Load
 =============
 
+.. note::
+
+   Loads should always have a positive p_mw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (sgen element) instead of a negative load.
+
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
@@ -28,12 +32,8 @@ Input Parameters
 \*necessary for executing a power flow calculation.
 
 .. note::
-
-   Loads should always have a positive p_mw value, since all power values are given in the consumer system. If you want to model constant generation, use a Static Generator (sgen element) instead of a negative load.
-
-.. note::
     
-    The apparent power value sn_kva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!  
+    The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!  
 
 Electric Model
 =================
@@ -64,7 +64,7 @@ The load power values are then defines as:
    
    \begin{align*}
     P_{load} =&  p\_mw \cdot scaling \cdot (p_{const} + z_{const} \cdot V^2 + i_{const} \cdot V ) \\
-    Q_{load} =&  q\_kvar \cdot scaling \cdot (p_{const} + z_{const} \cdot V^2 + i_{const} \cdot V)
+    Q_{load} =&  q\_mvar \cdot scaling \cdot (p_{const} + z_{const} \cdot V^2 + i_{const} \cdot V)
     \end{align*}
 
 

@@ -4,9 +4,13 @@
 Generator
 =============
 
+.. note::
+    A generator with positive active power represents a voltage controlled generator. If you want to model constant generation without voltage control, use the Static Generator element.
+
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
+    
 Create Function
 =====================
 
@@ -28,10 +32,6 @@ Input Parameters
    <br />
    
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
-
-.. note::
-    Active power should normally be negative to model a voltage controlled generator, since all power values are given in the load reference system. A generator with positive active power represents a voltage controlled machine.
-    If you want to model constant generation without voltage control, use the Static Generator element.
 
    
 Electric Model
@@ -71,7 +71,7 @@ The power flow returns reactive generator power and generator voltage angle:
 
    \begin{align*}
     p\_mw &= P_{gen} \\
-    q\_kvar &= Q_{gen} \\
+    q\_mvar &= Q_{gen} \\
     va\_degree &= \angle \underline{v}_{bus} \\
     vm\_degree &= |\underline{v}_{bus}|
    \end{align*}
