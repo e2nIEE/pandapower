@@ -12,11 +12,11 @@ from scipy.linalg import inv
 
 
 from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
-from pandapower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV
 try:
-    from pandapower.pf.makeYbus import makeYbus
+    from pandapower.pf.makeYbus_numba import makeYbus
 except ImportError:
-    from pandapower.pf.makeYbus_pypower import makeYbus
+    from pandapower.pypower.makeYbus import makeYbus
 
 
 def _calc_rx(net, ppc):
@@ -33,6 +33,8 @@ def _calc_rx(net, ppc):
 
 def _calc_ybus(ppc):
     Ybus, Yf, Yt = makeYbus(ppc["baseMVA"], ppc["bus"],  ppc["branch"])
+    if np.isnan(Ybus.data).any():
+        raise ValueError("nan value detected in Ybus matrix - check calculation parameters for nan values")
     ppc["internal"]["Yf"] = Yf
     ppc["internal"]["Yt"] = Yt
     ppc["internal"]["Ybus"] = Ybus

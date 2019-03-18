@@ -42,8 +42,8 @@ The per unit values are therefore transformed into the network per unit system:
    :nowrap:
 
    \begin{align*}
-    \underline{z}_{ft} &= (rft\_pu + j \cdot xft\_pu) \cdot \frac{S_{N}}{sn\_kva} \\
-    \underline{z}_{tf} &= (rft\_pu + j \cdot xtf\_pu) \cdot \frac{S_{N}}{sn\_kva} \\
+    \underline{z}_{ft} &= (rft\_pu + j \cdot xft\_pu) \cdot \frac{S_{N}}{sn\_mva} \\
+    \underline{z}_{tf} &= (rft\_pu + j \cdot xtf\_pu) \cdot \frac{S_{N}}{sn\_mva} \\
     \end{align*}
 
 where :math:`S_{N}` is the reference power of the per unit system (see :ref:`Unit Systems and Conventions<conventions>`). 
@@ -77,9 +77,9 @@ Result Parameters
     i\_from\_ka &= i_{from}\\
     i\_to\_ka &= i_{to}\\
     p\_from\_mw &= Re(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\    
-    q\_from\_kvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
+    q\_from\_mvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
     p\_to\_mw &= Re(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
-    q\_to\_kvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
+    q\_to\_mvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
 	pl\_mw &= p\_from\_mw + p\_to\_mw \\
-	ql\_kvar &= q\_from\_kvar + q\_to\_kvar \\
+	ql\_mvar &= q\_from\_mvar + q\_to\_mvar \\
     \end{align*}

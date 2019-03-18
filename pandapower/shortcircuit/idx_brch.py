@@ -5,7 +5,7 @@
 
 
 
-from pandapower.idx_brch import branch_cols as start
+from pandapower.pypower.idx_brch import branch_cols as start
 
 IKSS_F    = start + 0
 IKSS_T    = start + 1

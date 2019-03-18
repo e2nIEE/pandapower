@@ -8,8 +8,8 @@ loss_mw*;float;:math:`>` 0;Total transmission loss in MW
 vm_from_pu*;float;:math:`>` 0;Voltage setpoint at from bus
 vm_to_pu*;float;:math:`>` 0;Voltage setpoint at to bus
 max_p_mw**;float;:math:`>` 0;Maximum active power transmission
-min_q_from_kvar**;float;;Minimum reactive power at from bus
-max_q_from_kvar**;float;;Maximum reactive power at from bus
-min_q_to_kvar**;float;;Minimum reactive power at to bus
-max_q_to_kvar**;float;;Maximum reactive power at to bus
+min_q_from_mvar**;float;;Minimum reactive power at from bus
+max_q_from_mvar**;float;;Maximum reactive power at from bus
+min_q_to_mvar**;float;;Minimum reactive power at to bus
+max_q_to_mvar**;float;;Maximum reactive power at to bus
 in_service*;bool;True/False;specifies if DC line is in service

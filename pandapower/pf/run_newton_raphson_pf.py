@@ -9,19 +9,19 @@ from time import time
 
 from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d
 
-from pandapower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
-from pandapower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
-from pandapower.pf.bustypes import bustypes
-from pandapower.pf.makeSbus import makeSbus
-from pandapower.pf.makeYbus_pypower import makeYbus as makeYbus_pypower
-from pandapower.pf.newtonpf import newtonpf
-from pandapower.pf.pfsoln_pypower import pfsoln as pfsoln_pypower
+from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ
+from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+from pandapower.pypower.bustypes import bustypes
+from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.newtonpf import newtonpf
+from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 try:
-    from pandapower.pf.makeYbus import makeYbus as makeYbus_numba
-    from pandapower.pf.pfsoln import pfsoln as pfsoln_numba
+    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+    from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba
 except ImportError:
     pass
 

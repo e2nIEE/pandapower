@@ -21,7 +21,7 @@ def test_3point_pwl():
                                    max_loading_percent=100 * 690)
 
     # creating a pwl cost function that actually is realistic: The absolute value of the reactive power has costs.
-    pp.create_pwl_cost(net, 0, "sgen", [(-50, 0, -1.5), (0, 50, 1.5)], power_type="q")
+    pp.create_pwl_cost(net, 0, "sgen", [[-50, 0, -1.5], [0, 50, 1.5]], power_type="q")
 
     pp.runopp(net, )
 

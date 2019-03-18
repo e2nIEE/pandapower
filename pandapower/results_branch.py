@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
-from pandapower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
-from pandapower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
+from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses):

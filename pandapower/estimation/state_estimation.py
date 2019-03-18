@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.stats import chi2
 
-from pandapower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.auxiliary import _add_pf_options, get_values, _clean_up
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se
@@ -13,10 +13,9 @@ from pandapower.topology import estimate_voltage_vector
 from time import time
 
 from pandapower.estimation.ppc_conversions import _add_measurements_to_ppc, \
-    _build_measurement_vectors, _init_ppc,\
-    _add_aux_elements_for_bb_switch, _drop_aux_elements_for_bb_switch
+                                                  _init_ppc, _add_aux_elements_for_bb_switch, \
+                                                  _drop_aux_elements_for_bb_switch
 from pandapower.estimation.results import _copy_power_flow_results, _rename_results
-#from pandapower.estimation.estimator.wls_matrix_ops import wls_matrix_ops
 from pandapower.estimation.estimator.wls import WLSEstimator, WLSEstimatorZeroInjectionConstraints
 
 try:

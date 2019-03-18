@@ -8,12 +8,12 @@ import warnings
 import numpy as np
 from pandapower.estimation.idx_bus import *
 from pandapower.estimation.idx_brch import *
-from pandapower.idx_brch import branch_cols
-from pandapower.idx_bus import bus_cols
+from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_bus import bus_cols
 try:
     from pandapower.pf.makeYbus import makeYbus
 except ImportError:
-    from pandapower.pf.makeYbus_pypower import makeYbus
+    from pandapower.pypower.makeYbus import makeYbus
 
 
 class WLSAlgebra:
