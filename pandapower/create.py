@@ -2811,13 +2811,12 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
     INPUT:
         **element** (int) - ID of the element in the respective element table
 
-        **element_type** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] \
-            are possible
+        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"]
 
-        **data_points** - (numpy array) Numpy array containing data points and slopes (see example)
+        **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
-        **type** - (string) - Type of cost ["p", "q"] are allowed
+        **type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
 
         **index** (int, index) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -2826,12 +2825,13 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None):
         **index** (int) - The unique ID of created cost entry
 
     EXAMPLE:
-        The cost function is given by the x-values x1 and x2 with the slope m between those points. The constant part
-        b of a linear function y = m*x + b can be neglected for OPF purposes. If the PWL function contains more than 1
-        interval, the intervals are put together in a way, where the right point of the left interval equals the left
-        point of the right interval.
-
-        create_pwl_cost(net, 0, "load", [(x1, x2, m)])
+        The cost function is given by the x-values p1 and p2 with the slope m between those points. The constant part
+        b of a linear function y = m*x + b can be neglected for OPF purposes. The intervals have to be continous (the
+        starting point of an interval has to be equal to th end point of the previous interval).
+       
+        To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
+        
+        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
 
     if index is None:

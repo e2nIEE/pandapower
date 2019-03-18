@@ -2,15 +2,15 @@
 name;string;;name of the storage unit
 bus*;integer;;index of connected bus
 p_mw*;float;:math:`\leq` 0;Momentary real power of the storage (positive for charging, negative for discharging)
-q_kvar*;float;;Reactive power of the storage [kVar]
-sn_kva;float;:math:`>` 0;Nominal power ot the storage [kVA]
+q_mvar*;float;;Reactive power of the storage [MVar]
+sn_mva;float;:math:`>` 0;Nominal power ot the storage [MVA]
 scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
 max_e_mwh ;float;;The maximum energy content of the storage (maximum charge level)
 min_e_mwh ;float;;The minimum energy content of the storage (minimum charge level)
 max_p_mw**;float;;Maximum active power
 min_p_mw**;float;;Minimum active power
 soc_percent;float;0 :math:`\leq` soc_percent :math:`\leq` 100;The state of charge of the storage
-max_q_kvar**;float;;Maximum reactive power
-min_q_kvar**;float;;Minimum reactive power
+max_q_mvar**;float;;Maximum reactive power [MVar]
+min_q_mvar**;float;;Minimum reactive power [MVar]
 controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable
 in_service*;boolean;True / False;specifies if the generator is in service.

@@ -115,16 +115,13 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "nom_voltage_tolerance": nom_voltage_tolerance,
         "numba_tolerance": numba_tolerance
     }
-    if warnings_only:
-        logger.setLevel(logging.WARNING)
-    else:
-        logger.setLevel(logging.INFO)
-    logger.propagate = False
 
     if report_style == 'detailed':
-        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=False)
+        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=False,
+                          warnings_only=warnings_only)
     elif report_style == 'compact':
-        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=True)
+        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=True,
+                          warnings_only=warnings_only)
     if return_result_dict:
         return diag_results
 
@@ -801,15 +798,15 @@ def wrong_reference_system(net):
     """
     check_results = {}
     neg_loads = list(net.load[net.load.p_mw < 0].index)
-    pos_gens = list(net.gen[net.gen.p_mw < 0].index)
-    pos_sgens = list(net.sgen[net.sgen.p_mw < 0].index)
+    neg_gens = list(net.gen[net.gen.p_mw < 0].index)
+    neg_sgens = list(net.sgen[net.sgen.p_mw < 0].index)
 
     if neg_loads:
         check_results['loads'] = neg_loads
-    if pos_gens:
-        check_results['gens'] = pos_gens
-    if pos_sgens:
-        check_results['sgens'] = pos_sgens
+    if neg_gens:
+        check_results['gens'] = neg_gens
+    if neg_sgens:
+        check_results['sgens'] = neg_sgens
 
     if check_results:
         return check_results

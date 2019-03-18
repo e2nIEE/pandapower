@@ -40,7 +40,7 @@ The ward equivalent is a combination of a constant apparent power consumption an
    
    \begin{align*}
    P_{const} &= ps\_mw\\
-   Q_{const} &= qs\_kvar\\
+   Q_{const} &= qs\_mvar\\
    \end{align*}
     
 The shunt admittance part of the ward equivalent is calculated as described :ref:`here<shunt>`:
@@ -49,7 +49,7 @@ The shunt admittance part of the ward equivalent is calculated as described :ref
    :nowrap:
    
    \begin{align*}
-   \underline{y}_{shunt} &= \frac{pz\_mw + j \cdot qz\_kvar}{S_{N}}
+   \underline{y}_{shunt} &= \frac{pz\_mw + j \cdot qz\_mvar}{S_{N}}
    \end{align*}
 
 Result Parameters
@@ -69,5 +69,5 @@ Result Parameters
    \begin{align*}
    vm\_pu &= v_{bus} \\
    p\_mw &= P_{const} + Re(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}}) \\
-   q\_kvar &= Q_{const} + Im(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}})
+   q\_mvar &= Q_{const} + Im(\frac{\underline{V}_{bus}^2}{\underline{Y}_{shunt}})
    \end{align*}
