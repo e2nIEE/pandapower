@@ -24,8 +24,10 @@ except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
 
-ESTIMATOR_MAPPING = {'wls': WLSEstimator,
-                     'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints}
+ESTIMATOR_MAPPING = {
+    'wls': WLSEstimator,
+    'wls_with_zero_constraint': WLSEstimatorZeroInjectionConstraints
+}
 
 
 def estimate(net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -118,9 +120,6 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **rn_max_threshold** (float) - Identification threshold to determine
         if the largest normalized residual reflects a bad measurement
         (default value of 3.0)
-
-        **chi2_prob_false** (float) - probability of error / false alarms
-        (default value: 0.05)
 
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
@@ -457,9 +456,6 @@ class StateEstimation(object):
             **rn_max_threshold** (float) - Identification threshold to determine
             if the largest normalized residual reflects a bad measurement
             (standard value of 3.0)
-
-            **chi2_prob_false** (float) - probability of error / false alarms
-            (standard value: 0.05)
 
         OUTPUT:
             **successful** (boolean) - True if all bad data could be removed
