@@ -1,14 +1,14 @@
 import copy
 
 try:
-    import graph_tool.all as gt
+    from graph_tool import Graph
     graph_tool_available = True
 except ImportError:
     graph_tool_available = False
     pass
 
 
-class GraphToolInterface(gt.Graph):
+class GraphToolInterface(Graph):
     """
     A interface to Graph Tool from https://graph-tool.skewed.de, which looks like networkx so that it can be
     used by the pandapower topology package without any code changes.
@@ -20,7 +20,7 @@ class GraphToolInterface(gt.Graph):
     """
 
     def __init__(self, bus_indices, g=None, directed=False, prune=False, vorder=None):
-        gt.Graph.__init__(self, g, directed, prune, vorder)
+        Graph.__init__(self, g, directed, prune, vorder)
 
         # init edge properties (=edge_data of networkx)
         self.properties["e", "edge_data"] = self.new_edge_property("object")
