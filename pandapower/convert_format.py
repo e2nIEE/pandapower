@@ -184,6 +184,10 @@ def _add_missing_columns(net):
         net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
         net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
 
+    # Update the switch table with 'z_ohm'
+    if 'z_ohm' not in net.switch:
+        net.switch['z_ohm'] = 0
+
     if "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
         

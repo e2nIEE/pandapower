@@ -60,7 +60,6 @@ def _build_branch_ppc(net, ppc):
 
 
 def _initialize_branch_lookup(net):
-    r_switch = net["_options"]["r_switch"]
     start = 0
     end = 0
     net._pd2ppc_lookups["branch"] = {}
@@ -72,8 +71,8 @@ def _initialize_branch_lookup(net):
                 end = start + len(net[element])
             net._pd2ppc_lookups["branch"][element] = (start, end)
             start = end
-    if r_switch > 0 and len(net._closed_bb_switches) > 0:
-        end = start + net._closed_bb_switches.sum()
+    if len(net._impedance_bb_switches) > 0:
+        end = start + net._impedance_bb_switches.sum()
         net._pd2ppc_lookups["branch"]["switch"] = (start, end)
     return end
 
@@ -696,17 +695,24 @@ def _calc_switch_parameter(net, ppc):
                 Nunmpy array. with the following order:
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
+    rx_ratio = net["_options"]["switch_rx_ratio"]
+    rz_ratio = rx_ratio / np.sqrt(1 + rx_ratio**2)
+    xz_ratio = 1 / np.sqrt(1 + rx_ratio**2)
+
     f, t = net["_pd2ppc_lookups"]["branch"]["switch"]
     branch = ppc["branch"]
-    r_switch = net["_options"]["r_switch"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    switch = net.switch[net._closed_bb_switches]
+    switch = net.switch[net._impedance_bb_switches]
     fb = bus_lookup[switch["bus"].values]
     tb = bus_lookup[switch["element"].values]
     baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     branch[f:t, F_BUS] = fb
     branch[f:t, T_BUS] = tb
-    branch[f:t, BR_R] = r_switch / baseR
+    
+    z_switch = switch['z_ohm'].values
+    # x_switch will have the same value of r_switch to avoid zero dividence
+    branch[f:t, BR_R] = z_switch / baseR * rz_ratio
+    branch[f:t, BR_X] = z_switch / baseR * xz_ratio
 
 
 def _end_temperature_correction_factor(net, short_circuit=False):

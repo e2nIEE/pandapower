@@ -77,7 +77,7 @@ def _add_aux_elements_for_bb_switch(net, bus_to_be_fused):
 
     # create aux switches with selecting the existed switches
     aux_switch = net.switch.loc[switch_to_be_replaced_sel, ['bus', 'closed', 'element', 
-                                                            'et', 'name', 'original_closed']]
+                                                            'et', 'name', 'original_closed', 'z_ohm']]
     aux_switch.loc[:,'name'] = AUX_SWITCH_NAME
     
     # replace the original bus with the correspondent auxiliary bus
@@ -127,7 +127,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     net._options = {}
     _add_ppc_options(net, check_connectivity=False, init_vm_pu=v_start, init_va_degree=delta_start,
                      trafo_model="pi", mode="pf", enforce_q_lims=False,
-                     calculate_voltage_angles=calculate_voltage_angles, r_switch=0.0,
+                     calculate_voltage_angles=calculate_voltage_angles, switch_rx_ratio=2,
                      recycle=dict(_is_elements=False, ppc=False, Ybus=False))
     net["_is_elements"] = _select_is_elements_numba(net)
     _add_auxiliary_elements(net)

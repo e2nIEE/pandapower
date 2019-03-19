@@ -86,7 +86,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                    ("et", dtype(object)),
                    ("type", dtype(object)),
                    ("closed", "bool"),
-                   ("name", dtype(object))],
+                   ("name", dtype(object)),
+                   ("z_ohm", "f8")],
         "shunt": [("bus", "u4"),
                   ("name", dtype(object)),
                   ("q_mvar", "f8"),
@@ -1908,7 +1909,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0):
     """
     Adds a switch in the net["switch"] table.
 
@@ -1932,19 +1933,23 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
         bus and transformer, "b" = switch between two buses
 
+    OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
 
         **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
             Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
-    OPTIONAL:
+        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
+            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
+            0 a branch will be created for the switch which has also effects on the bus mapping
+
         **name** (string, default None) - The name for this switch
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
 
     EXAMPLE:
-        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS")
+        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
 
         create_switch(net, bus = 0, element = 1, et = 'l')
 
@@ -1987,8 +1992,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name"]] = \
-        [bus, element, et, closed, type, name]
+    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name", "z_ohm"]] = \
+        [bus, element, et, closed, type, name, z_ohm]
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)
