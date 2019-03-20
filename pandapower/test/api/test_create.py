@@ -177,15 +177,4 @@ def test_create_line_alpha_temperature():
 
 
 if __name__ == '__main__':
-    expected_default = False
-    net = pp.create_empty_network()
-    pp.create_bus(net, 110)
-    pp.create_bus(net, 20)
-    data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
-    if "tap_phase_shifter" in data:
-        del data["tap_phase_shifter"]
-    pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
-    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
-    pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
-    assert (net.trafo.tap_phase_shifter == expected_default).all()
-#    pytest.main(["test_create.py"])
+    pytest.main(["test_create.py"])

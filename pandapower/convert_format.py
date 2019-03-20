@@ -6,6 +6,7 @@
 import pandas as pd
 import numpy as np
 import copy
+from packaging import version
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower import __version__
@@ -14,19 +15,21 @@ def convert_format(net):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
+    if isinstance(net.version, str) and version.parse(__version__) < version.parse(__version__):
+        return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net)
     _add_missing_columns(net)
     _create_seperate_cost_tables(net)
-    if net.version < 2:
+    if isinstance(net.version, float) and net.version < 2:
         _convert_to_generation_system(net)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net)
         reset_results(net)
     _set_data_type_of_columns(net)
-    net.version = float(__version__[:3])
+    net.version = __version__
     return net
 
 
@@ -222,11 +225,11 @@ def _set_data_type_of_columns(net):
             for col in item.columns:
                 if key in new_net and col in new_net[key].columns:
                     if set(item.columns) == set(new_net[key]):
-                        try:
-                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                        except TypeError:  # legacy for pandas <0.21
+                        if version.parse(pd.__version__) < version.parse("0.21"):
                             net[key] = net[key].reindex_axis(new_net[key].columns, axis=1)
-                    if int(pd.__version__[2]) < 2:
+                        else:
+                            net[key] = net[key].reindex(new_net[key].columns, axis=1)
+                    if version.parse(pd.__version__) < version.parse("0.20.0"):
                         net[key][col] = net[key][col].astype(new_net[key][col].dtype,
                                                              raise_on_error=False)
                     else:
