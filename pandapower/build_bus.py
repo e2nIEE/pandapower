@@ -110,26 +110,15 @@ def create_consecutive_bus_lookup(net, bus_index):
     consec_buses = np.arange(len(bus_index))
     # bus_lookup as dict:
     # bus_lookup = dict(zip(bus_index, consec_buses))
-
     # bus lookup as mask from pandapower -> pypower
     bus_lookup = -np.ones(max(bus_index) + 1, dtype=int)
     bus_lookup[bus_index] = consec_buses
     return bus_lookup 
 
 
-def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):   
-    # if there are any closed bus-bus switches update those entries
-    slidx = ((net["switch"]["closed"].values == 1) &
-             (net["switch"]["et"].values == "b") &
-             (net["switch"]["bus"].isin(bus_is_idx).values) &
-             (net["switch"]["element"].isin(bus_is_idx).values))
-    net._fused_bb_switches = slidx & (net["switch"]["z_ohm"].values<=0)
-    net._impedance_bb_switches = slidx & (net["switch"]["z_ohm"].values>0)
-    
-    if numba:
-        create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
-    
+def create_bus_lookup_numpy(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, closed_bb_switch_mask):
     bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    net._fused_bb_switches = closed_bb_switch_mask & (net["switch"]["z_ohm"].values<=0)
     if net._fused_bb_switches.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
@@ -188,6 +177,30 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
                     bus_lookup[bus] = map_to
     return bus_lookup
 
+
+def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):   
+    switches_with_pos_z_ohm = net["switch"]["z_ohm"].values > 0
+    if switches_with_pos_z_ohm.any() or numba == False:
+        # if there are any closed bus-bus switches find them
+        closed_bb_switch_mask = ((net["switch"]["closed"].values == True) &
+                                 (net["switch"]["et"].values == "b") &
+                                 np.in1d(net["switch"]["bus"].values, bus_is_idx) &
+                                 np.in1d(net["switch"]["element"].values, bus_is_idx))
+
+    if switches_with_pos_z_ohm.any():
+        net._impedance_bb_switches = closed_bb_switch_mask & switches_with_pos_z_ohm
+    else:
+        net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
+
+    if numba:
+        bus_lookup = create_bus_lookup_numba(net, bus_index, bus_is_idx, 
+                                             gen_is_mask, eg_is_mask)
+    else:
+        bus_lookup = create_bus_lookup_numpy(net, bus_index, bus_is_idx, 
+                                             gen_is_mask, eg_is_mask, closed_bb_switch_mask)
+    return bus_lookup
+
+
 def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
         if init_v == "results":
@@ -219,7 +232,6 @@ def _build_bus_ppc(net, ppc):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
-#    r_switch = net["_options"]["r_switch"]
     init_vm_pu = net["_options"]["init_vm_pu"]
     init_va_degree = net["_options"]["init_va_degree"]
     mode = net["_options"]["mode"]
@@ -254,7 +266,7 @@ def _build_bus_ppc(net, ppc):
         gen_is_mask = _is_elements['gen']
         bus_is_idx = _is_elements['bus_is_idx']
         bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
-                                       gen_is_mask, eg_is_mask, numba=numba)
+                                       gen_is_mask, eg_is_mask, numba=True)
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
