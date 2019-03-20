@@ -15,7 +15,6 @@ import tempfile
 import shutil
 
 import pandapower as pp
-import pandapower.test
 import pandapower.networks as networks
 
 try:

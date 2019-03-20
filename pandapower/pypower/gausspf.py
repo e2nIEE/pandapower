@@ -7,7 +7,7 @@
 
 import sys
 
-from numpy import linalg, conj, r_, Inf, asscalar
+from numpy import linalg, conj, r_, Inf
 
 from pandapower.pypower.ppoption import ppoption
 
@@ -80,16 +80,15 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
         ## at PQ buses
         for k in pq[list(range(npq))]:
             tmp = (conj(Sbus[k] / V[k]) - Ybus[k, :] * V) / Ybus[k, k]
-            V[k] = V[k] + asscalar(tmp)
+            V[k] = V[k] + tmp.item()
 
         ## at PV buses
         if npv:
             for k in pv[list(range(npv))]:
                 tmp = (V[k] * conj(Ybus[k,:] * V)).imag
-                Sbus[k] = Sbus[k].real + 1j * asscalar(tmp)
+                Sbus[k] = Sbus[k].real + 1j * tmp.item()
                 tmp = (conj(Sbus[k] / V[k]) - Ybus[k, :] * V) / Ybus[k, k]
-                V[k] = V[k] + asscalar(tmp)
-#               V[k] = Vm[k] * V[k] / abs(V[k])
+                V[k] = V[k] + tmp.item()
             V[pv] = Vm[pv] * V[pv] / abs(V[pv])
 
         ## evalute F(x)
