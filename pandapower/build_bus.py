@@ -116,79 +116,90 @@ def create_consecutive_bus_lookup(net, bus_index):
     return bus_lookup 
 
 
+def create_bus_lookup_numpy(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, closed_bb_switch_mask):
+    bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    net._fused_bb_switches = closed_bb_switch_mask & (net["switch"]["z_ohm"].values<=0)
+    if net._fused_bb_switches.any():
+        # Note: this might seem a little odd - first constructing a pp to ppc mapping without
+        # fused busses and then update the entries. The alternative (to construct the final
+        # mapping at once) would require to determine how to fuse busses and which busses
+        # are not part of any opened bus-bus switches first. It turns out, that the latter takes
+        # quite some time in the average usecase, where #busses >> #bus-bus switches.
+
+        # Find PV / Slack nodes -> their bus must be kept when fused with a PQ node
+        pv_list = [net["ext_grid"]["bus"].values[eg_is_mask], net["gen"]["bus"].values[gen_is_mask]]
+        pv_ref = np.unique(np.hstack(pv_list))
+        # get the pp-indices of the buses which are connected to a switch to be fused
+        fbus = net["switch"]["bus"].values[net._fused_bb_switches]
+        tbus = net["switch"]["element"].values[net._fused_bb_switches]
+
+        # create a mapping to map each bus to itself at frist ...
+        ds = DisjointSet({e: e for e in chain(fbus, tbus)})
+
+        # ... to follow each bus along a possible chain of switches to its final bus and update the
+        # map
+        for f, t in zip(fbus, tbus):
+            ds.union(f, t)
+
+        # now we can find out how to fuse each bus by looking up the final bus of the chain they
+        # are connected to
+        v = defaultdict(set)
+        for a in ds:
+            v[ds.find(a)].add(a)
+        # build sets of buses which will be fused
+        disjoint_sets = [e for e in v.values() if len(e) > 1]
+
+        # check if PV buses need to be fused
+        # if yes: the sets with PV buses must be found (which is slow)
+        # if no: the check can be omitted
+        if any(i in fbus or i in tbus for i in pv_ref):
+            # for every disjoint set
+            for dj in disjoint_sets:
+                # check if pv buses are in the disjoint set dj
+                pv_buses_in_set = set(pv_ref) & dj
+                nr_pv_bus = len(pv_buses_in_set)
+                if nr_pv_bus == 0:
+                    # no pv buses. Use any bus in dj
+                    map_to = bus_lookup[dj.pop()]
+                else:
+                    # one pv bus. Get bus from pv_buses_in_set
+                    map_to = bus_lookup[pv_buses_in_set.pop()]
+                for bus in dj:
+                    # update lookup
+                    bus_lookup[bus] = map_to
+        else:
+            # no PV buses in set
+            for dj in disjoint_sets:
+                # use any bus in set
+                map_to = bus_lookup[dj.pop()]
+                for bus in dj:
+                    # update bus lookup
+                    bus_lookup[bus] = map_to
+    return bus_lookup
+
+
 def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):   
-    # if there are any closed bus-bus switches update those entries
-    slidx = ((net["switch"]["closed"].values == 1) &
-             (net["switch"]["et"].values == "b") &
-             (net["switch"]["bus"].isin(bus_is_idx).values) &
-             (net["switch"]["element"].isin(bus_is_idx).values))
-    if (net["switch"]["z_ohm"].values>0).any():
-        net._impedance_bb_switches = slidx & (net["switch"]["z_ohm"].values>0)
+    switches_with_pos_z_ohm = net["switch"]["z_ohm"].values > 0
+    if switches_with_pos_z_ohm.any() or numba == False:
+        # if there are any closed bus-bus switches find them
+        closed_bb_switch_mask = ((net["switch"]["closed"].values == True) &
+                                 (net["switch"]["et"].values == "b") &
+                                 np.in1d(net["switch"]["bus"].values, bus_is_idx) &
+                                 np.in1d(net["switch"]["element"].values, bus_is_idx))
+
+    if switches_with_pos_z_ohm.any():
+        net._impedance_bb_switches = closed_bb_switch_mask & switches_with_pos_z_ohm
     else:
-        net._impedance_bb_switches = None
+        net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
 
     if numba:
-        bus_lookup = create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
+        bus_lookup = create_bus_lookup_numba(net, bus_index, bus_is_idx, 
+                                             gen_is_mask, eg_is_mask)
     else:
-        bus_lookup = create_consecutive_bus_lookup(net, bus_index)
-        net._fused_bb_switches = slidx & (net["switch"]["z_ohm"].values<=0)
-        if net._fused_bb_switches.any():
-            # Note: this might seem a little odd - first constructing a pp to ppc mapping without
-            # fused busses and then update the entries. The alternative (to construct the final
-            # mapping at once) would require to determine how to fuse busses and which busses
-            # are not part of any opened bus-bus switches first. It turns out, that the latter takes
-            # quite some time in the average usecase, where #busses >> #bus-bus switches.
-    
-            # Find PV / Slack nodes -> their bus must be kept when fused with a PQ node
-            pv_list = [net["ext_grid"]["bus"].values[eg_is_mask], net["gen"]["bus"].values[gen_is_mask]]
-            pv_ref = np.unique(np.hstack(pv_list))
-            # get the pp-indices of the buses which are connected to a switch to be fused
-            fbus = net["switch"]["bus"].values[net._fused_bb_switches]
-            tbus = net["switch"]["element"].values[net._fused_bb_switches]
-    
-            # create a mapping to map each bus to itself at frist ...
-            ds = DisjointSet({e: e for e in chain(fbus, tbus)})
-    
-            # ... to follow each bus along a possible chain of switches to its final bus and update the
-            # map
-            for f, t in zip(fbus, tbus):
-                ds.union(f, t)
-    
-            # now we can find out how to fuse each bus by looking up the final bus of the chain they
-            # are connected to
-            v = defaultdict(set)
-            for a in ds:
-                v[ds.find(a)].add(a)
-            # build sets of buses which will be fused
-            disjoint_sets = [e for e in v.values() if len(e) > 1]
-    
-            # check if PV buses need to be fused
-            # if yes: the sets with PV buses must be found (which is slow)
-            # if no: the check can be omitted
-            if any(i in fbus or i in tbus for i in pv_ref):
-                # for every disjoint set
-                for dj in disjoint_sets:
-                    # check if pv buses are in the disjoint set dj
-                    pv_buses_in_set = set(pv_ref) & dj
-                    nr_pv_bus = len(pv_buses_in_set)
-                    if nr_pv_bus == 0:
-                        # no pv buses. Use any bus in dj
-                        map_to = bus_lookup[dj.pop()]
-                    else:
-                        # one pv bus. Get bus from pv_buses_in_set
-                        map_to = bus_lookup[pv_buses_in_set.pop()]
-                    for bus in dj:
-                        # update lookup
-                        bus_lookup[bus] = map_to
-            else:
-                # no PV buses in set
-                for dj in disjoint_sets:
-                    # use any bus in set
-                    map_to = bus_lookup[dj.pop()]
-                    for bus in dj:
-                        # update bus lookup
-                        bus_lookup[bus] = map_to
+        bus_lookup = create_bus_lookup_numpy(net, bus_index, bus_is_idx, 
+                                             gen_is_mask, eg_is_mask, closed_bb_switch_mask)
     return bus_lookup
+
 
 def get_voltage_init_vector(net, init_v, mode):
     if isinstance(init_v, str):
@@ -255,7 +266,7 @@ def _build_bus_ppc(net, ppc):
         gen_is_mask = _is_elements['gen']
         bus_is_idx = _is_elements['bus_is_idx']
         bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
-                                       gen_is_mask, eg_is_mask, numba=numba)
+                                       gen_is_mask, eg_is_mask, numba=True)
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
