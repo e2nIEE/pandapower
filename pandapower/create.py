@@ -6,6 +6,7 @@
 
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, zeros
+from packaging import version
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
@@ -114,7 +115,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                    ("et", dtype(object)),
                    ("type", dtype(object)),
                    ("closed", "bool"),
-                   ("name", dtype(object))],
+                   ("name", dtype(object)),
+                   ("z_ohm", "f8")],
         "shunt": [("bus", "u4"),
                   ("name", dtype(object)),
                   ("q_mvar", "f8"),
@@ -531,7 +533,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_pd2ppc_lookups": {"bus": None,
                             "ext_grid": None,
                             "gen": None},
-        "version": float(__version__[:3]),
+        "version": __version__,
         "converged": False,
         "name": name,
         "f_hz": f_hz,
@@ -2115,10 +2117,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
-    try:
-        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
-    except TypeError:  # legacy for pandas <0.21
+    if version.parse(pd.__version__) < version.parse("0.21"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex_axis(net["trafo3w"].columns, axis=1)
+    else:
+        net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
@@ -2268,7 +2270,7 @@ def create_transformer3w_from_parameters(net, hv_bus, mv_bus, lv_bus, vn_hv_kv, 
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None):
+def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0):
     """
     Adds a switch in the net["switch"] table.
 
@@ -2292,19 +2294,23 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
         bus and transformer, "b" = switch between two buses
 
+    OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
 
         **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
             Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
-    OPTIONAL:
+        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
+            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
+            0 a branch will be created for the switch which has also effects on the bus mapping
+
         **name** (string, default None) - The name for this switch
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
 
     EXAMPLE:
-        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS")
+        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
 
         create_switch(net, bus = 0, element = 1, et = 'l')
 
@@ -2347,8 +2353,8 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name"]] = \
-        [bus, element, et, closed, type, name]
+    net.switch.loc[index, ["bus", "element", "et", "closed", "type", "name", "z_ohm"]] = \
+        [bus, element, et, closed, type, name, z_ohm]
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)

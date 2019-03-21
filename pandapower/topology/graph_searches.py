@@ -7,6 +7,7 @@
 import networkx as nx
 import pandas as pd
 from collections import deque
+from itertools import combinations
 
 from pandapower.topology.create_graph import create_nxgraph
 
@@ -493,3 +494,24 @@ def estimate_voltage_vector(net):
                 res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
                 return res_bus
     return res_bus
+
+
+def get_end_points_of_continously_connected_lines(net, lines):
+    mg = nx.MultiGraph()
+    line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
+    mg.add_edges_from(line_buses)
+    switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values=="b"]
+    mg.add_edges_from(switch_buses)
+    
+    all_buses = set(line_buses.flatten())
+    longest_path = []
+    for b1, b2 in combinations(all_buses, 2):
+        try:
+            path = nx.shortest_path(mg, b1, b2)
+        except nx.NetworkXNoPath:
+            raise UserWarning("Lines not continously connected")
+        if len(path) > len(longest_path):
+            longest_path = path
+    if all_buses - set(longest_path):
+        raise UserWarning("Lines have branching points")
+    return longest_path[0], longest_path[-1]

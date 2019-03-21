@@ -495,4 +495,4 @@ def _get_switch_results(net, i_ft):
     with np.errstate(invalid='ignore'):
         i_ka = np.max(i_ft[f:t], axis=1)
     net["res_switch"] = pd.DataFrame(data=i_ka, columns=["i_ka"],
-                                     index=net.switch[net._closed_bb_switches].index)
+                                     index=net.switch[net._impedance_bb_switches].index)
