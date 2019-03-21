@@ -143,7 +143,6 @@ def _init_ppc(net):
             , "Yt": np.array([], dtype=np.complex128)
             , "branch_is": np.array([], dtype=bool)
             , "gen_is": np.array([], dtype=bool)
-
             , "DLF": np.array([], dtype=np.complex128)
             , "buses_ord_bfs_nets": np.array([], dtype=float)
         }

@@ -340,7 +340,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         'compcond': compcond, 'costcond': costcond, 'gamma': gamma,
         'stepsize': 0, 'obj': f / opt["cost_mult"], 'alphap': 0, 'alphad': 0})
 
-    if opt["verbose"]:
+    if opt["verbose"]: # pragma: no cover
         s = '-sc' if opt["step_control"] else ''
         v = pipsver('all')
         print('Python Interior Point Solver - PIPS%s, Version %s, %s' %
@@ -403,96 +403,6 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         dlam = dxdlam[nx:nx + neq]
         dz = -h - z if dh is None else -h - z - dh.T * dx
         dmu = -mu if dh is None else -mu + zinvdiag * (gamma * e - mudiag * dz)
-
-        # optional step-size control
-        sc = False
-        if opt["step_control"]:
-            x1 = x + dx
-
-            # evaluate cost, constraints, derivatives at x1
-            f1, df1 = f_fcn(x1)          # cost
-            f1 = f1 * opt["cost_mult"]
-            df1 = df1 * opt["cost_mult"]
-            if nonlinear:
-                hn1, gn1, dhn1, dgn1 = gh_fcn(x1) # nonlinear constraints
-
-                h1 = hn1 if Ai is None else r_[hn1, Ai * x1 - bi] # ieq constraints
-                g1 = gn1 if Ae is None else r_[gn1, Ae * x1 - be] # eq constraints
-
-                # 1st der of ieq
-                if (dhn1 is None) and (Ai is None):
-                    dh1 = None
-                elif dhn1 is None:
-                    dh1 = Ai.T
-                elif Ai is None:
-                    dh1 = dhn1
-                else:
-                    dh1 = hstack([dhn1, Ai.T])
-
-                # 1st der of eqs
-                if (dgn1 is None) and (Ae is None):
-                    dg1 = None
-                elif dgn is None:
-                    dg1 = Ae.T
-                elif Ae is None:
-                    dg1 = dgn1
-                else:
-                    dg1 = hstack([dgn1, Ae.T])
-            else:
-                h1 = -bi if Ai is None else Ai * x1 - bi    # inequality constraints
-                g1 = -be if Ae is None else Ae * x1 - be    # equality constraints
-
-                dh1 = dh                       ## 1st derivative of inequalities
-                dg1 = dg                       ## 1st derivative of equalities
-
-            # check tolerance
-            Lx1 = df1
-            Lx1 = Lx1 + dg1 * lam if dg1 is not None else Lx1
-            Lx1 = Lx1 + dh1 * mu  if dh1 is not None else Lx1
-
-            maxh1 = zeros(1) if len(h1) == 0 else max(h1)
-
-            g1norm = norm(g1, Inf) if len(g1) else 0.0
-            lam1_norm = norm(lam, Inf) if len(lam) else 0.0
-            mu1_norm = norm(mu, Inf) if len(mu) else 0.0
-            z1norm = norm(z, Inf) if len(z) else 0.0
-
-            feascond1 = max([ g1norm, maxh1 ]) / \
-                (1 + max([ norm(x1, Inf), z1norm ]))
-            gradcond1 = norm(Lx1, Inf) / (1 + max([ lam1_norm, mu1_norm ]))
-
-            if (feascond1 > feascond) and (gradcond1 > gradcond):
-                sc = True
-        if sc:
-            alpha = 1.0
-            for j in range(opt["max_red"]):
-                dx1 = alpha * dx
-                x1 = x + dx1
-                f1, _ = f_fcn(x1)             # cost
-                f1 = f1 * opt["cost_mult"]
-                if nonlinear:
-                    hn1, gn1, _, _ = gh_fcn(x1)              # nonlinear constraints
-                    h1 = hn1 if Ai is None else r_[hn1, Ai * x1 - bi]         # inequality constraints
-                    g1 = gn1 if Ae is None else r_[gn1, Ae * x1 - be]         # equality constraints
-                else:
-                    h1 = -bi if Ai is None else Ai * x1 - bi    # inequality constraints
-                    g1 = -be if Ae is None else Ae * x1 - be    # equality constraints
-
-                L1 = f1 + dot(lam, g1) + dot(mu, h1 + z) - gamma * sum(log(z))
-
-                if opt["verbose"] > 2:
-                    print("   %3d            %10.5f" % (-j, norm(dx1)))
-
-                rho = (L1 - L) / (dot(Lx, dx1) + 0.5 * dot(dx1, Lxx * dx1))
-
-                if (rho > rho_min) and (rho < rho_max):
-                    break
-                else:
-                    alpha = alpha / 2.0
-            dx = alpha * dx
-            dz = alpha * dz
-            dlam = alpha * dlam
-            dmu = alpha * dmu
 
         # do the update
         k = find(dz < 0.0)

@@ -41,7 +41,7 @@ def _run_newton_raphson_pf(ppci, options):
 
 
     t0 = time()
-    if options["init_va_degree"] == "dc":
+    if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc":
         ppci = _run_dc_pf(ppci)
     if options["enforce_q_lims"]:
         ppci, success, iterations, bus, gen, branch = _run_ac_pf_with_qlims_enforced(ppci, options)
