@@ -33,7 +33,8 @@ from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl.
+    Runs a power system optimization using PowerModels.jl. with a custom julia file.
+    
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
@@ -85,7 +86,8 @@ def runpm(net, julia_file, pp_to_pm_callback=None, calculate_voltage_angles=True
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl.
+    Runs a linearized power system optimization using PowerModels.jl.
+    
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
@@ -139,7 +141,8 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=0, trafo3w_losses="hv", check_connectivity=True): #pragma: no cover
     """
-    Runs a power system optimization using PowerModels.jl.
+    Runs a non-linear power system optimization using PowerModels.jl.
+
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
 
     Flexibilities can be defined in net.sgen / net.gen /net.load
